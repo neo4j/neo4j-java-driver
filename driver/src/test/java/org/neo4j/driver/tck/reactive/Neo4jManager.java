@@ -18,50 +18,38 @@
  */
 package org.neo4j.driver.tck.reactive;
 
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testng.SkipException;
 
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.GraphDatabase;
+public class Neo4jManager {
+    private final Neo4jContainer<?> NEO4J = new Neo4jContainer<>("neo4j:4.4").withAdminPassword(null);
 
-public class Neo4jManager
-{
-    private final Neo4jContainer<?> NEO4J = new Neo4jContainer<>( "neo4j:4.4" )
-            .withAdminPassword( null );
-
-    public void start()
-    {
+    public void start() {
         NEO4J.start();
     }
 
-    public void stop()
-    {
+    public void stop() {
         NEO4J.stop();
     }
 
-    public Driver getDriver()
-    {
-        return GraphDatabase.driver( NEO4J.getBoltUrl() );
+    public Driver getDriver() {
+        return GraphDatabase.driver(NEO4J.getBoltUrl());
     }
 
-    public void skipIfDockerUnavailable()
-    {
-        if ( !isDockerAvailable() )
-        {
-            throw new SkipException( "Docker is unavailable" );
+    public void skipIfDockerUnavailable() {
+        if (!isDockerAvailable()) {
+            throw new SkipException("Docker is unavailable");
         }
     }
 
-    private boolean isDockerAvailable()
-    {
-        try
-        {
+    private boolean isDockerAvailable() {
+        try {
             DockerClientFactory.instance().client();
             return true;
-        }
-        catch ( Throwable ex )
-        {
+        } catch (Throwable ex) {
             return false;
         }
     }

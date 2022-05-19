@@ -19,62 +19,50 @@
 package org.neo4j.driver.internal.value;
 
 import java.util.Arrays;
-
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
-public class BytesValue extends ValueAdapter
-{
+public class BytesValue extends ValueAdapter {
     private final byte[] val;
 
-    public BytesValue( byte[] val )
-    {
-        if ( val == null )
-        {
-            throw new IllegalArgumentException( "Cannot construct BytesValue from null" );
+    public BytesValue(byte[] val) {
+        if (val == null) {
+            throw new IllegalArgumentException("Cannot construct BytesValue from null");
         }
         this.val = val;
     }
 
     @Override
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return val.length == 0;
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return val.length;
     }
 
     @Override
-    public byte[] asObject()
-    {
+    public byte[] asObject() {
         return val;
     }
 
     @Override
-    public byte[] asByteArray()
-    {
+    public byte[] asByteArray() {
         return val;
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.BYTES();
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
@@ -83,19 +71,15 @@ public class BytesValue extends ValueAdapter
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Arrays.hashCode(val);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         StringBuilder s = new StringBuilder("#");
-        for (byte b : val)
-        {
-            if (b < 0x10)
-            {
+        for (byte b : val) {
+            if (b < 0x10) {
                 s.append('0');
             }
             s.append(Integer.toHexString(b));

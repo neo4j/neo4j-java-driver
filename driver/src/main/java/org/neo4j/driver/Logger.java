@@ -26,8 +26,7 @@ package org.neo4j.driver;
  * Thus all supplied message templates will contain "%s" as parameter placeholders. This is different from all SLF4J-compatible logging frameworks
  * where parameter placeholder is "{}". Implementations of this interface should adapt placeholders from "%s" to "{}", if required.
  */
-public interface Logger
-{
+public interface Logger {
     /**
      * Logs errors from this driver.
      * <p>
@@ -41,7 +40,7 @@ public interface Logger
      * @param message the error message.
      * @param cause the cause of the error.
      */
-    void error( String message, Throwable cause );
+    void error(String message, Throwable cause);
 
     /**
      * Logs information from the driver.
@@ -55,7 +54,7 @@ public interface Logger
      * @param message the information message template. Can contain {@link String#format(String, Object...)}-style placeholders, like "%s".
      * @param params parameters used in the information message.
      */
-    void info( String message, Object... params );
+    void info(String message, Object... params);
 
     /**
      * Logs warnings that happened when using the driver.
@@ -69,7 +68,7 @@ public interface Logger
      * @param message the warning message template. Can contain {@link String#format(String, Object...)}-style placeholders, like "%s".
      * @param params parameters used in the warning message.
      */
-    void warn( String message, Object... params );
+    void warn(String message, Object... params);
 
     /**
      * Logs warnings that happened during using the driver
@@ -84,7 +83,7 @@ public interface Logger
      * @param message the warning message
      * @param cause the cause of the warning
      */
-    void warn( String message, Throwable cause );
+    void warn(String message, Throwable cause);
 
     /**
      * Logs bolt messages sent and received by this driver.
@@ -101,7 +100,7 @@ public interface Logger
      * @param message the debug message template. Can contain {@link String#format(String, Object...)}-style placeholders, like "%s".
      * @param params parameters used in generating the bolt message
      */
-    void debug( String message, Object... params );
+    void debug(String message, Object... params);
 
     /**
      * Logs debug message with throwable.
@@ -109,7 +108,7 @@ public interface Logger
      * @param message   the message to log
      * @param throwable the throwable to include into the log entry
      */
-    void debug( String message, Throwable throwable );
+    void debug(String message, Throwable throwable);
 
     /**
      * Logs binary sent and received by this driver.
@@ -128,7 +127,7 @@ public interface Logger
      * @param message the trace message template. Can contain {@link String#format(String, Object...)}-style placeholders, like "%s".
      * @param params parameters used in generating the hex message
      */
-    void trace( String message, Object... params );
+    void trace(String message, Object... params);
 
     /**
      * Return true if the trace logging level is enabled.

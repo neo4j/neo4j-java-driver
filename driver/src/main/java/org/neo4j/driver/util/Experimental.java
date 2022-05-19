@@ -32,7 +32,5 @@ import java.lang.annotation.Target;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Target( { ElementType.TYPE, ElementType.METHOD } )
-public @interface Experimental
-{
-}
+@Target({ElementType.TYPE, ElementType.METHOD})
+public @interface Experimental {}

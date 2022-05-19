@@ -21,7 +21,6 @@ package org.neo4j.driver.types;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
 import org.neo4j.driver.Value;
 
 /**
@@ -30,8 +29,7 @@ import org.neo4j.driver.Value;
  * If the type of the value found A differs from the type of the default value B, a cast from A to B would happen automatically. Note: Error might arise if the
  * cast from A to B is not possible.
  */
-public interface MapAccessorWithDefaultValue extends MapAccessor
-{
+public interface MapAccessorWithDefaultValue extends MapAccessor {
     /**
      * Retrieve the value with the given key.
      * If no value found by the key, then the default value provided would be returned.
@@ -39,7 +37,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default value that would be returned if no value found by the key in the map
      * @return the value found by the key or the default value if no such key exists
      */
-    Value get( String key, Value defaultValue );
+    Value get(String key, Value defaultValue);
 
     /**
      * Retrieve the object with the given key.
@@ -48,7 +46,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default object that would be returned if no object found by the key in the map
      * @return the object found by the key or the default object if no such key exists
      */
-    Object get( String key, Object defaultValue );
+    Object get(String key, Object defaultValue);
 
     /**
      * Retrieve the number with the given key.
@@ -57,7 +55,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default number that would be returned if no number found by the key in the map
      * @return the number found by the key or the default number if no such key exists
      */
-    Number get( String key, Number defaultValue );
+    Number get(String key, Number defaultValue);
 
     /**
      * Retrieve the entity with the given key.
@@ -66,7 +64,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default entity that would be returned if no entity found by the key in the map
      * @return the entity found by the key or the default entity if no such key exists
      */
-    Entity get( String key, Entity defaultValue );
+    Entity get(String key, Entity defaultValue);
 
     /**
      * Retrieve the node with the given key.
@@ -75,7 +73,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default node that would be returned if no node found by the key in the map
      * @return the node found by the key or the default node if no such key exists
      */
-    Node get( String key, Node defaultValue );
+    Node get(String key, Node defaultValue);
 
     /**
      * Retrieve the path with the given key.
@@ -84,7 +82,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default path that would be returned if no path found by the key in the map
      * @return the path found by the key or the default path if no such key exists
      */
-    Path get( String key, Path defaultValue );
+    Path get(String key, Path defaultValue);
 
     /**
      * Retrieve the value with the given key.
@@ -93,7 +91,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default value that would be returned if no value found by the key in the map
      * @return the value found by the key or the default value if no such key exists
      */
-    Relationship get( String key, Relationship defaultValue );
+    Relationship get(String key, Relationship defaultValue);
 
     /**
      * Retrieve the list of objects with the given key.
@@ -102,7 +100,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default value that would be returned if no value found by the key in the map
      * @return the list of objects found by the key or the default value if no such key exists
      */
-    List<Object> get( String key, List<Object> defaultValue );
+    List<Object> get(String key, List<Object> defaultValue);
 
     /**
      * Retrieve the list with the given key.
@@ -113,7 +111,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param <T> the type of the elements in the returned list
      * @return the converted list found by the key or the default list if no such key exists
      */
-    <T> List<T> get( String key, List<T> defaultValue, Function<Value,T> mapFunc );
+    <T> List<T> get(String key, List<T> defaultValue, Function<Value, T> mapFunc);
 
     /**
      * Retrieve the map with the given key.
@@ -122,7 +120,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default value that would be returned if no value found by the key in the map
      * @return the map found by the key or the default value if no such key exists
      */
-    Map<String, Object> get( String key, Map<String,Object> defaultValue );
+    Map<String, Object> get(String key, Map<String, Object> defaultValue);
 
     /**
      * Retrieve the map with the given key.
@@ -133,7 +131,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param <T> the type of the values in the returned map
      * @return the converted map found by the key or the default map if no such key exists.
      */
-    <T> Map<String, T> get( String key, Map<String,T> defaultValue, Function<Value,T> mapFunc );
+    <T> Map<String, T> get(String key, Map<String, T> defaultValue, Function<Value, T> mapFunc);
 
     /**
      * Retrieve the java integer with the given key.
@@ -142,7 +140,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default integer that would be returned if no integer found by the key in the map
      * @return the integer found by the key or the default integer if no such key exists
      */
-    int get( String key, int defaultValue );
+    int get(String key, int defaultValue);
 
     /**
      * Retrieve the java long number with the given key.
@@ -151,7 +149,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default value that would be returned if no value found by the key in the map
      * @return the java long number found by the key or the default value if no such key exists
      */
-    long get( String key, long defaultValue );
+    long get(String key, long defaultValue);
 
     /**
      * Retrieve the java boolean with the given key.
@@ -160,7 +158,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default value that would be returned if no value found by the key in the map
      * @return the java boolean found by the key or the default value if no such key exists
      */
-    boolean get( String key, boolean defaultValue );
+    boolean get(String key, boolean defaultValue);
 
     /**
      * Retrieve the java string with the given key.
@@ -169,7 +167,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default string that would be returned if no string found by the key in the map
      * @return the string found by the key or the default string if no such key exists
      */
-    String get( String key, String defaultValue );
+    String get(String key, String defaultValue);
 
     /**
      * Retrieve the java float number with the given key.
@@ -178,7 +176,7 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default value that would be returned if no value found by the key in the map
      * @return the java float number found by the key or the default value if no such key exists
      */
-    float get( String key, float defaultValue );
+    float get(String key, float defaultValue);
 
     /**
      * Retrieve the java double number with the given key.
@@ -187,5 +185,5 @@ public interface MapAccessorWithDefaultValue extends MapAccessor
      * @param defaultValue the default value that would be returned if no value found by the key in the map
      * @return the java double number found by the key or the default value if no such key exists
      */
-    double get( String key, double defaultValue );
+    double get(String key, double defaultValue);
 }

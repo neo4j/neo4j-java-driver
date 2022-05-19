@@ -18,20 +18,18 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
-import org.neo4j.driver.summary.Plan;
-import java.util.function.Function;
-
 import static java.lang.String.format;
 import static org.neo4j.driver.Values.ofString;
 
-public class InternalPlan<T extends Plan> implements Plan
-{
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.summary.Plan;
+
+public class InternalPlan<T extends Plan> implements Plan {
     private final String operatorType;
     private final List<String> identifiers;
     private final Map<String, Value> arguments;
@@ -39,11 +37,7 @@ public class InternalPlan<T extends Plan> implements Plan
 
     // Only call when sub-classing, for constructing plans, use .plan instead
     protected InternalPlan(
-            String operatorType,
-            Map<String, Value> arguments,
-            List<String> identifiers,
-            List<T> children )
-    {
+            String operatorType, Map<String, Value> arguments, List<String> identifiers, List<T> children) {
         this.operatorType = operatorType;
         this.identifiers = identifiers;
         this.arguments = arguments;
@@ -51,61 +45,51 @@ public class InternalPlan<T extends Plan> implements Plan
     }
 
     @Override
-    public String operatorType()
-    {
+    public String operatorType() {
         return operatorType;
     }
 
     @Override
-    public List<String> identifiers()
-    {
+    public List<String> identifiers() {
         return identifiers;
     }
 
     @Override
-    public Map<String, Value> arguments()
-    {
+    public Map<String, Value> arguments() {
         return arguments;
     }
 
     @Override
-    public List<T> children()
-    {
+    public List<T> children() {
         return children;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return format(
-            "SimplePlanTreeNode{operatorType='%s', arguments=%s, identifiers=%s, children=%s}",
-            operatorType, arguments, identifiers, children
-        );
+                "SimplePlanTreeNode{operatorType='%s', arguments=%s, identifiers=%s, children=%s}",
+                operatorType, arguments, identifiers, children);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         InternalPlan that = (InternalPlan) o;
 
-        return operatorType.equals( that.operatorType )
-            && arguments.equals( that.arguments )
-            && identifiers.equals( that.identifiers )
-            && children.equals( that.children );
+        return operatorType.equals(that.operatorType)
+                && arguments.equals(that.arguments)
+                && identifiers.equals(that.identifiers)
+                && children.equals(that.children);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = operatorType.hashCode();
         result = 31 * result + identifiers.hashCode();
         result = 31 * result + arguments.hashCode();
@@ -114,20 +98,19 @@ public class InternalPlan<T extends Plan> implements Plan
     }
 
     public static Plan plan(
-            String operatorType,
-            Map<String, Value> arguments,
-            List<String> identifiers,
-            List<Plan> children )
-    {
-        return EXPLAIN_PLAN.create( operatorType, arguments, identifiers, children, null );
+            String operatorType, Map<String, Value> arguments, List<String> identifiers, List<Plan> children) {
+        return EXPLAIN_PLAN.create(operatorType, arguments, identifiers, children, null);
     }
 
-    public static final PlanCreator<Plan> EXPLAIN_PLAN = new PlanCreator<Plan>()
-    {
+    public static final PlanCreator<Plan> EXPLAIN_PLAN = new PlanCreator<Plan>() {
         @Override
-        public Plan create( String operatorType, Map<String,Value> arguments, List<String> identifiers, List<Plan> children, Value originalPlanValue )
-        {
-            return new InternalPlan<>( operatorType, arguments, identifiers, children );
+        public Plan create(
+                String operatorType,
+                Map<String, Value> arguments,
+                List<String> identifiers,
+                List<Plan> children,
+                Value originalPlanValue) {
+            return new InternalPlan<>(operatorType, arguments, identifiers, children);
         }
     };
 
@@ -139,46 +122,39 @@ public class InternalPlan<T extends Plan> implements Plan
      * around to contain the small difference, and share the rest of the code for building plan trees.
      * @param <T>
      */
-    interface PlanCreator<T extends Plan>
-    {
-        T create( String operatorType,
-                  Map<String, Value> arguments,
-                  List<String> identifiers,
-                  List<T> children,
-                  Value originalPlanValue );
+    interface PlanCreator<T extends Plan> {
+        T create(
+                String operatorType,
+                Map<String, Value> arguments,
+                List<String> identifiers,
+                List<T> children,
+                Value originalPlanValue);
     }
 
-    static class Converter<T extends Plan> implements Function<Value, T>
-    {
+    static class Converter<T extends Plan> implements Function<Value, T> {
         private final PlanCreator<T> planCreator;
 
-        public Converter( PlanCreator<T> planCreator )
-        {
+        public Converter(PlanCreator<T> planCreator) {
             this.planCreator = planCreator;
         }
 
         @Override
-        public T apply( Value plan )
-        {
-            final String operatorType = plan.get( "operatorType" ).asString();
+        public T apply(Value plan) {
+            final String operatorType = plan.get("operatorType").asString();
 
-            final Value argumentsValue = plan.get( "args" );
+            final Value argumentsValue = plan.get("args");
             final Map<String, Value> arguments = argumentsValue.isNull()
                     ? Collections.<String, Value>emptyMap()
-                    : argumentsValue.asMap( Values.ofValue() );
+                    : argumentsValue.asMap(Values.ofValue());
 
-            final Value identifiersValue = plan.get( "identifiers" );
-            final List<String> identifiers = identifiersValue.isNull()
-                    ? Collections.<String>emptyList()
-                    : identifiersValue.asList( ofString() );
+            final Value identifiersValue = plan.get("identifiers");
+            final List<String> identifiers =
+                    identifiersValue.isNull() ? Collections.<String>emptyList() : identifiersValue.asList(ofString());
 
-            final Value childrenValue = plan.get( "children" );
-            final List<T> children = childrenValue.isNull()
-                    ? Collections.<T>emptyList()
-                    : childrenValue.asList( this );
+            final Value childrenValue = plan.get("children");
+            final List<T> children = childrenValue.isNull() ? Collections.<T>emptyList() : childrenValue.asList(this);
 
-            return planCreator.create( operatorType, arguments, identifiers, children, plan );
+            return planCreator.create(operatorType, arguments, identifiers, children, plan);
         }
     }
 }
-

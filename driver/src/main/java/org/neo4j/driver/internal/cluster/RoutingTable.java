@@ -20,20 +20,18 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
 import java.util.Set;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 
-public interface RoutingTable
-{
-    boolean isStaleFor( AccessMode mode );
+public interface RoutingTable {
+    boolean isStaleFor(AccessMode mode);
 
-    boolean hasBeenStaleFor( long staleRoutingTableTimeout );
+    boolean hasBeenStaleFor(long staleRoutingTableTimeout);
 
-    void update( ClusterComposition cluster );
+    void update(ClusterComposition cluster);
 
-    void forget( BoltServerAddress address );
+    void forget(BoltServerAddress address);
 
     /**
      * Returns an immutable list of reader addresses.
@@ -47,7 +45,6 @@ public interface RoutingTable
      *
      * @return the immutable list of write addresses.
      */
-
     List<BoltServerAddress> writers();
 
     /**
@@ -55,7 +52,6 @@ public interface RoutingTable
      *
      * @return the immutable list of router addresses.
      */
-
     List<BoltServerAddress> routers();
 
     /**
@@ -67,9 +63,9 @@ public interface RoutingTable
 
     DatabaseName database();
 
-    void forgetWriter( BoltServerAddress toRemove );
+    void forgetWriter(BoltServerAddress toRemove);
 
-    void replaceRouterIfPresent( BoltServerAddress oldRouter, BoltServerAddress newRouter );
+    void replaceRouterIfPresent(BoltServerAddress oldRouter, BoltServerAddress newRouter);
 
     boolean preferInitialRouter();
 

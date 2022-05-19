@@ -18,71 +18,66 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.driver.internal.value.IntegerValue;
-import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.summary.InputPosition;
-import org.neo4j.driver.summary.Notification;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 
-class InternalNotificationTest
-{
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.value.IntegerValue;
+import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.summary.InputPosition;
+import org.neo4j.driver.summary.Notification;
+
+class InternalNotificationTest {
     @Test
-    void shouldHandleNotificationWithPosition()
-    {
+    void shouldHandleNotificationWithPosition() {
         // GIVEN
-        Map<String,Value> map = new HashMap<>();
-        map.put( "description", new StringValue( "A description" ) );
-        map.put( "code", new StringValue( "Neo.DummyNotification" ) );
-        map.put( "title", new StringValue( "A title" ) );
-        map.put( "severity", new StringValue( "WARNING" ) );
-        Map<String,Value> position = new HashMap<>();
-        position.put( "offset", new IntegerValue( 0 ) );
-        position.put( "column", new IntegerValue( 1 ) );
-        position.put( "line", new IntegerValue( 2 ) );
-        map.put( "position", new MapValue( position ) );
-        Value value = new MapValue( map );
+        Map<String, Value> map = new HashMap<>();
+        map.put("description", new StringValue("A description"));
+        map.put("code", new StringValue("Neo.DummyNotification"));
+        map.put("title", new StringValue("A title"));
+        map.put("severity", new StringValue("WARNING"));
+        Map<String, Value> position = new HashMap<>();
+        position.put("offset", new IntegerValue(0));
+        position.put("column", new IntegerValue(1));
+        position.put("line", new IntegerValue(2));
+        map.put("position", new MapValue(position));
+        Value value = new MapValue(map);
 
         // WHEN
-        Notification notification = InternalNotification.VALUE_TO_NOTIFICATION.apply( value );
+        Notification notification = InternalNotification.VALUE_TO_NOTIFICATION.apply(value);
 
         // THEN
-        assertThat( notification.description(), equalTo( "A description" ) );
-        assertThat( notification.code(), equalTo( "Neo.DummyNotification" ) );
-        assertThat( notification.title(), equalTo( "A title" ) );
-        assertThat( notification.severity(), equalTo( "WARNING" ) );
+        assertThat(notification.description(), equalTo("A description"));
+        assertThat(notification.code(), equalTo("Neo.DummyNotification"));
+        assertThat(notification.title(), equalTo("A title"));
+        assertThat(notification.severity(), equalTo("WARNING"));
         InputPosition pos = notification.position();
-        assertThat( pos.offset(), equalTo( 0 ) );
-        assertThat( pos.column(), equalTo( 1 ) );
-        assertThat( pos.line(), equalTo( 2 ) );
+        assertThat(pos.offset(), equalTo(0));
+        assertThat(pos.column(), equalTo(1));
+        assertThat(pos.line(), equalTo(2));
     }
 
     @Test
-    void shouldHandleNotificationWithoutPosition()
-    {
+    void shouldHandleNotificationWithoutPosition() {
         // GIVEN
-        Map<String,Value> map = new HashMap<>();
-        map.put( "description", new StringValue( "A description" ) );
-        map.put( "code", new StringValue( "Neo.DummyNotification" ) );
-        map.put( "title", new StringValue( "A title" ) );
-        Value value = new MapValue( map );
+        Map<String, Value> map = new HashMap<>();
+        map.put("description", new StringValue("A description"));
+        map.put("code", new StringValue("Neo.DummyNotification"));
+        map.put("title", new StringValue("A title"));
+        Value value = new MapValue(map);
 
         // WHEN
-        Notification notification = InternalNotification.VALUE_TO_NOTIFICATION.apply( value );
+        Notification notification = InternalNotification.VALUE_TO_NOTIFICATION.apply(value);
 
         // THEN
-        assertThat( notification.description(), equalTo( "A description" ) );
-        assertThat( notification.code(), equalTo( "Neo.DummyNotification" ) );
-        assertThat( notification.title(), equalTo( "A title" ) );
-        assertThat( notification.position(), nullValue());
+        assertThat(notification.description(), equalTo("A description"));
+        assertThat(notification.code(), equalTo("Neo.DummyNotification"));
+        assertThat(notification.title(), equalTo("A title"));
+        assertThat(notification.position(), nullValue());
     }
 }

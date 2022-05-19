@@ -24,8 +24,7 @@ package org.neo4j.driver.util;
  *
  * @since 1.0
  */
-public interface Resource extends AutoCloseable
-{
+public interface Resource extends AutoCloseable {
     /**
      * Detect whether this resource is still open
      *

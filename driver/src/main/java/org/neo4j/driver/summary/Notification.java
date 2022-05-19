@@ -27,8 +27,7 @@ import org.neo4j.driver.util.Immutable;
  * @since 1.0
  */
 @Immutable
-public interface Notification
-{
+public interface Notification {
     /**
      * Returns a notification code for the discovered issue.
      * @return the notification code

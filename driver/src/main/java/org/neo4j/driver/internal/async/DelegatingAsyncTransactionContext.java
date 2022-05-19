@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.async;
 
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -28,42 +27,35 @@ import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionContext;
 import org.neo4j.driver.async.ResultCursor;
 
-final class DelegatingAsyncTransactionContext implements AsyncTransactionContext
-{
+final class DelegatingAsyncTransactionContext implements AsyncTransactionContext {
     private final AsyncTransaction delegate;
 
-    public DelegatingAsyncTransactionContext( AsyncTransaction delegate )
-    {
+    public DelegatingAsyncTransactionContext(AsyncTransaction delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public CompletionStage<ResultCursor> runAsync( String query, Value parameters )
-    {
-        return delegate.runAsync( query, parameters );
+    public CompletionStage<ResultCursor> runAsync(String query, Value parameters) {
+        return delegate.runAsync(query, parameters);
     }
 
     @Override
-    public CompletionStage<ResultCursor> runAsync( String query, Map<String,Object> parameters )
-    {
-        return delegate.runAsync( query, parameters );
+    public CompletionStage<ResultCursor> runAsync(String query, Map<String, Object> parameters) {
+        return delegate.runAsync(query, parameters);
     }
 
     @Override
-    public CompletionStage<ResultCursor> runAsync( String query, Record parameters )
-    {
-        return delegate.runAsync( query, parameters );
+    public CompletionStage<ResultCursor> runAsync(String query, Record parameters) {
+        return delegate.runAsync(query, parameters);
     }
 
     @Override
-    public CompletionStage<ResultCursor> runAsync( String query )
-    {
-        return delegate.runAsync( query );
+    public CompletionStage<ResultCursor> runAsync(String query) {
+        return delegate.runAsync(query);
     }
 
     @Override
-    public CompletionStage<ResultCursor> runAsync( Query query )
-    {
-        return delegate.runAsync( query );
+    public CompletionStage<ResultCursor> runAsync(Query query) {
+        return delegate.runAsync(query);
     }
 }

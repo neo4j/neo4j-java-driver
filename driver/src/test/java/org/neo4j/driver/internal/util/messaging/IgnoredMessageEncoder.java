@@ -19,17 +19,14 @@
 package org.neo4j.driver.internal.util.messaging;
 
 import java.io.IOException;
-
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
 
-public class IgnoredMessageEncoder implements MessageEncoder
-{
+public class IgnoredMessageEncoder implements MessageEncoder {
     @Override
-    public void encode( Message message, ValuePacker packer ) throws IOException
-    {
-        packer.packStructHeader( 0, IgnoredMessage.SIGNATURE );
+    public void encode(Message message, ValuePacker packer) throws IOException {
+        packer.packStructHeader(0, IgnoredMessage.SIGNATURE);
     }
 }

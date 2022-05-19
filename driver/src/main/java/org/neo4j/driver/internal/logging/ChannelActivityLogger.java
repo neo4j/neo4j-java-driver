@@ -18,65 +18,57 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import io.netty.channel.Channel;
+import static java.lang.String.format;
+import static org.neo4j.driver.internal.util.Format.valueOrEmpty;
 
+import io.netty.channel.Channel;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 
-import static java.lang.String.format;
-import static org.neo4j.driver.internal.util.Format.valueOrEmpty;
-
-public class ChannelActivityLogger extends ReformattedLogger
-{
+public class ChannelActivityLogger extends ReformattedLogger {
     private final Channel channel;
     private final String localChannelId;
 
     private String dbConnectionId;
     private String serverAddress;
 
-    public ChannelActivityLogger( Channel channel, Logging logging, Class<?> owner )
-    {
-        this( channel, logging.getLog( owner ) );
+    public ChannelActivityLogger(Channel channel, Logging logging, Class<?> owner) {
+        this(channel, logging.getLog(owner));
     }
 
-    private ChannelActivityLogger( Channel channel, Logger delegate )
-    {
-        super( delegate );
+    private ChannelActivityLogger(Channel channel, Logger delegate) {
+        super(delegate);
         this.channel = channel;
         this.localChannelId = channel != null ? channel.id().toString() : null;
     }
 
     @Override
-    protected String reformat( String message )
-    {
-        if ( channel == null )
-        {
+    protected String reformat(String message) {
+        if (channel == null) {
             return message;
         }
 
         String dbConnectionId = getDbConnectionId();
         String serverAddress = getServerAddress();
 
-        return format( "[0x%s][%s][%s] %s", localChannelId, valueOrEmpty( serverAddress ), valueOrEmpty( dbConnectionId ), message );
+        return format(
+                "[0x%s][%s][%s] %s",
+                localChannelId, valueOrEmpty(serverAddress), valueOrEmpty(dbConnectionId), message);
     }
 
-    private String getDbConnectionId()
-    {
-        if ( dbConnectionId == null )
-        {
-            dbConnectionId = ChannelAttributes.connectionId( channel );
+    private String getDbConnectionId() {
+        if (dbConnectionId == null) {
+            dbConnectionId = ChannelAttributes.connectionId(channel);
         }
         return dbConnectionId;
     }
 
-    private String getServerAddress()
-    {
+    private String getServerAddress() {
 
-        if ( serverAddress == null )
-        {
-            BoltServerAddress serverAddress = ChannelAttributes.serverAddress( channel );
+        if (serverAddress == null) {
+            BoltServerAddress serverAddress = ChannelAttributes.serverAddress(channel);
             this.serverAddress = serverAddress != null ? serverAddress.toString() : null;
         }
 

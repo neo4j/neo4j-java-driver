@@ -18,58 +18,52 @@
  */
 package org.neo4j.driver.stress;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxSession;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class RxWriteQueryWithRetries<C extends AbstractContext> extends AbstractRxQuery<C>
-{
+public class RxWriteQueryWithRetries<C extends AbstractContext> extends AbstractRxQuery<C> {
     private AbstractStressTestBase<C> stressTest;
 
-    public RxWriteQueryWithRetries( AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+    public RxWriteQueryWithRetries(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
         this.stressTest = stressTest;
     }
 
     @Override
-    public CompletionStage<Void> execute( C context )
-    {
+    public CompletionStage<Void> execute(C context) {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
 
         AtomicInteger createdNodesNum = new AtomicInteger();
         Flux.usingWhen(
-                Mono.fromSupplier( driver::rxSession ),
-                session -> session.writeTransaction( tx -> tx.run( "CREATE ()" ).consume() ),
-                session -> Mono.empty(),
-                ( session, error ) -> session.close(),
-                RxSession::close
-        ).subscribe(
-                resultSummary -> createdNodesNum.addAndGet( resultSummary.counters().nodesCreated() ),
-                error -> handleError( Futures.completionExceptionCause( error ), context, queryFinished ),
-                () ->
-                {
-                    assertEquals( 1, createdNodesNum.get() );
-                    context.nodeCreated();
-                    queryFinished.complete( null );
-                }
-        );
+                        Mono.fromSupplier(driver::rxSession),
+                        session -> session.writeTransaction(
+                                tx -> tx.run("CREATE ()").consume()),
+                        session -> Mono.empty(),
+                        (session, error) -> session.close(),
+                        RxSession::close)
+                .subscribe(
+                        resultSummary -> createdNodesNum.addAndGet(
+                                resultSummary.counters().nodesCreated()),
+                        error -> handleError(Futures.completionExceptionCause(error), context, queryFinished),
+                        () -> {
+                            assertEquals(1, createdNodesNum.get());
+                            context.nodeCreated();
+                            queryFinished.complete(null);
+                        });
 
         return queryFinished;
     }
 
-    private void handleError( Throwable error, C context, CompletableFuture<Void> queryFinished )
-    {
-        stressTest.handleWriteFailure( error, context );
-        queryFinished.completeExceptionally( error );
+    private void handleError(Throwable error, C context, CompletableFuture<Void> queryFinished) {
+        stressTest.handleWriteFailure(error, context);
+        queryFinished.completeExceptionally(error);
     }
 }

@@ -18,69 +18,59 @@
  */
 package org.neo4j.driver.internal.messaging.request;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-
-import org.neo4j.driver.Value;
-
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.security.InternalAuthToken.CREDENTIALS_KEY;
 
-public class HelloMessage extends MessageWithMetadata
-{
-    public final static byte SIGNATURE = 0x01;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import org.neo4j.driver.Value;
+
+public class HelloMessage extends MessageWithMetadata {
+    public static final byte SIGNATURE = 0x01;
 
     private static final String USER_AGENT_METADATA_KEY = "user_agent";
     private static final String ROUTING_CONTEXT_METADATA_KEY = "routing";
 
-    public HelloMessage( String userAgent, Map<String,Value> authToken, Map<String,String> routingContext )
-    {
-        super( buildMetadata( userAgent, authToken, routingContext ) );
+    public HelloMessage(String userAgent, Map<String, Value> authToken, Map<String, String> routingContext) {
+        super(buildMetadata(userAgent, authToken, routingContext));
     }
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         HelloMessage that = (HelloMessage) o;
-        return Objects.equals( metadata(), that.metadata() );
+        return Objects.equals(metadata(), that.metadata());
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( metadata() );
+    public int hashCode() {
+        return Objects.hash(metadata());
     }
 
     @Override
-    public String toString()
-    {
-        Map<String,Value> metadataCopy = new HashMap<>( metadata() );
-        metadataCopy.replace( CREDENTIALS_KEY, value( "******" ) );
+    public String toString() {
+        Map<String, Value> metadataCopy = new HashMap<>(metadata());
+        metadataCopy.replace(CREDENTIALS_KEY, value("******"));
         return "HELLO " + metadataCopy;
     }
 
-    private static Map<String,Value> buildMetadata( String userAgent, Map<String,Value> authToken, Map<String,String> routingContext )
-    {
-        Map<String,Value> result = new HashMap<>( authToken );
-        result.put( USER_AGENT_METADATA_KEY, value( userAgent ) );
-        if ( routingContext != null )
-        {
-            result.put( ROUTING_CONTEXT_METADATA_KEY, value( routingContext ) );
+    private static Map<String, Value> buildMetadata(
+            String userAgent, Map<String, Value> authToken, Map<String, String> routingContext) {
+        Map<String, Value> result = new HashMap<>(authToken);
+        result.put(USER_AGENT_METADATA_KEY, value(userAgent));
+        if (routingContext != null) {
+            result.put(ROUTING_CONTEXT_METADATA_KEY, value(routingContext));
         }
         return result;
     }

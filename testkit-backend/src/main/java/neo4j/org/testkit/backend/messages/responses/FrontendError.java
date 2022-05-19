@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class FrontendError implements TestkitResponse
-{
+public class FrontendError implements TestkitResponse {
     private final FrontendErrorBody data = new FrontendErrorBody("Imagine client code that throws...");
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "FrontendError";
     }
 
     @Getter
     @Builder
-    public static class FrontendErrorBody
-    {
+    public static class FrontendErrorBody {
         private String msg;
     }
 }

@@ -18,9 +18,15 @@
  */
 package org.neo4j.driver.integration;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -30,45 +36,32 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ParallelizableIT
-class LoggingIT
-{
+class LoggingIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
-    void logShouldRecordDebugAndTraceInfo()
-    {
+    void logShouldRecordDebugAndTraceInfo() {
         // Given
-        Logging logging = mock( Logging.class );
-        Logger logger = mock( Logger.class );
+        Logging logging = mock(Logging.class);
+        Logger logger = mock(Logger.class);
 
-        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
-        when( logger.isDebugEnabled() ).thenReturn( true );
-        when( logger.isTraceEnabled() ).thenReturn( true );
+        when(logging.getLog(any(Class.class))).thenReturn(logger);
+        when(logger.isDebugEnabled()).thenReturn(true);
+        when(logger.isTraceEnabled()).thenReturn(true);
 
-        Config config = Config.builder()
-                .withLogging( logging )
-                .build();
+        Config config = Config.builder().withLogging(logging).build();
 
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ) )
-        {
+        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), config)) {
             // When
-            try ( Session session = driver.session() )
-            {
-                session.run( "CREATE (a {name:'Cat'})" );
+            try (Session session = driver.session()) {
+                session.run("CREATE (a {name:'Cat'})");
             }
         }
 
         // Then
-        verify( logger, atLeastOnce() ).debug( anyString(), any( Object[].class ) );
-        verify( logger, atLeastOnce() ).trace( anyString(), any() );
+        verify(logger, atLeastOnce()).debug(anyString(), any(Object[].class));
+        verify(logger, atLeastOnce()).trace(anyString(), any());
     }
 }

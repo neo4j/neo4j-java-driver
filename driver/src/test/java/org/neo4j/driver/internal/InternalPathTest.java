@@ -18,160 +18,135 @@
  */
 package org.neo4j.driver.internal;
 
-import org.hamcrest.MatcherAssert;
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 import java.util.List;
-
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-class InternalPathTest
-{
+class InternalPathTest {
     // (A)-[AB:KNOWS]->(B)<-[CB:KNOWS]-(C)-[CD:KNOWS]->(D)
-    private InternalPath testPath()
-    {
+    private InternalPath testPath() {
         return new InternalPath(
-                new InternalNode( 1 ),
-                new InternalRelationship( -1, 1, 2, "KNOWS" ),
-                new InternalNode( 2 ),
-                new InternalRelationship( -2, 3, 2, "KNOWS" ),
-                new InternalNode( 3 ),
-                new InternalRelationship( -3, 3, 4, "KNOWS" ),
-                new InternalNode( 4 )
-        );
+                new InternalNode(1),
+                new InternalRelationship(-1, 1, 2, "KNOWS"),
+                new InternalNode(2),
+                new InternalRelationship(-2, 3, 2, "KNOWS"),
+                new InternalNode(3),
+                new InternalRelationship(-3, 3, 4, "KNOWS"),
+                new InternalNode(4));
     }
 
     @Test
-    void pathSizeShouldReturnNumberOfRelationships()
-    {
+    void pathSizeShouldReturnNumberOfRelationships() {
         // When
         InternalPath path = testPath();
 
         // Then
-        assertThat( path.length(), equalTo( 3 ) );
+        assertThat(path.length(), equalTo(3));
     }
 
     @Test
-    void shouldBeAbleToCreatePathWithSingleNode()
-    {
+    void shouldBeAbleToCreatePathWithSingleNode() {
         // When
-        InternalPath path = new InternalPath( new InternalNode( 1 ) );
+        InternalPath path = new InternalPath(new InternalNode(1));
 
         // Then
-        assertThat( path.length(), equalTo( 0 ) );
+        assertThat(path.length(), equalTo(0));
     }
 
     @Test
-    void shouldBeAbleToIterateOverPathAsSegments()
-    {
+    void shouldBeAbleToIterateOverPathAsSegments() {
         // Given
         InternalPath path = testPath();
 
         // When
-        List<Path.Segment> segments = Iterables.asList( path );
+        List<Path.Segment> segments = Iterables.asList(path);
 
         // Then
-        MatcherAssert.assertThat( segments, equalTo( Arrays.asList( (Path.Segment)
-                                new InternalPath.SelfContainedSegment(
-                                        new InternalNode( 1 ),
-                                        new InternalRelationship( -1, 1, 2, "KNOWS" ),
-                                        new InternalNode( 2 )
-                                ),
+        MatcherAssert.assertThat(
+                segments,
+                equalTo(Arrays.asList(
+                        (Path.Segment) new InternalPath.SelfContainedSegment(
+                                new InternalNode(1), new InternalRelationship(-1, 1, 2, "KNOWS"), new InternalNode(2)),
                         new InternalPath.SelfContainedSegment(
-                                new InternalNode( 2 ),
-                                new InternalRelationship( -2, 3, 2, "KNOWS" ),
-                                new InternalNode( 3 )
-                        ),
+                                new InternalNode(2), new InternalRelationship(-2, 3, 2, "KNOWS"), new InternalNode(3)),
                         new InternalPath.SelfContainedSegment(
-                                new InternalNode( 3 ),
-                                new InternalRelationship( -3, 3, 4, "KNOWS" ),
-                                new InternalNode( 4 )
-                        )
-                )
-        ) );
+                                new InternalNode(3),
+                                new InternalRelationship(-3, 3, 4, "KNOWS"),
+                                new InternalNode(4)))));
     }
 
     @Test
-    void shouldBeAbleToIterateOverPathNodes()
-    {
+    void shouldBeAbleToIterateOverPathNodes() {
         // Given
         InternalPath path = testPath();
 
         // When
-        List<Node> segments = Iterables.asList( path.nodes() );
+        List<Node> segments = Iterables.asList(path.nodes());
 
         // Then
-        assertThat( segments, equalTo( Arrays.asList( (Node)
-                new InternalNode( 1 ),
-                new InternalNode( 2 ),
-                new InternalNode( 3 ),
-                new InternalNode( 4 ) ) ) );
+        assertThat(
+                segments,
+                equalTo(Arrays.asList(
+                        (Node) new InternalNode(1), new InternalNode(2), new InternalNode(3), new InternalNode(4))));
     }
 
     @Test
-    void shouldBeAbleToIterateOverPathRelationships()
-    {
+    void shouldBeAbleToIterateOverPathRelationships() {
         // Given
         InternalPath path = testPath();
 
         // When
-        List<Relationship> segments = Iterables.asList( path.relationships() );
+        List<Relationship> segments = Iterables.asList(path.relationships());
 
         // Then
-        assertThat( segments, equalTo( Arrays.asList( (Relationship)
-                                                              new InternalRelationship( -1, 1, 2, "KNOWS" ),
-                                                      new InternalRelationship( -2, 3, 2, "KNOWS" ),
-                                                      new InternalRelationship( -3, 3, 4, "KNOWS" ) ) ) );
+        assertThat(
+                segments,
+                equalTo(Arrays.asList(
+                        (Relationship) new InternalRelationship(-1, 1, 2, "KNOWS"),
+                        new InternalRelationship(-2, 3, 2, "KNOWS"),
+                        new InternalRelationship(-3, 3, 4, "KNOWS"))));
     }
 
     @Test
-    void shouldNotBeAbleToCreatePathWithNoEntities()
-    {
-        assertThrows( IllegalArgumentException.class, InternalPath::new );
+    void shouldNotBeAbleToCreatePathWithNoEntities() {
+        assertThrows(IllegalArgumentException.class, InternalPath::new);
     }
 
     @Test
-    void shouldNotBeAbleToCreatePathWithEvenNumberOfEntities()
-    {
-        assertThrows( IllegalArgumentException.class,
-                      () -> new InternalPath(
-                              new InternalNode( 1 ),
-                              new InternalRelationship( 2, 3, 4, "KNOWS" ) ) );
+    void shouldNotBeAbleToCreatePathWithEvenNumberOfEntities() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new InternalPath(new InternalNode(1), new InternalRelationship(2, 3, 4, "KNOWS")));
     }
 
     @Test
-    void shouldNotBeAbleToCreatePathWithNullEntities()
-    {
+    void shouldNotBeAbleToCreatePathWithNullEntities() {
         InternalNode nullNode = null;
-        assertThrows( IllegalArgumentException.class, () -> new InternalPath( nullNode ) );
+        assertThrows(IllegalArgumentException.class, () -> new InternalPath(nullNode));
     }
 
     @Test
-    void shouldNotBeAbleToCreatePathWithNodeThatDoesNotConnect()
-    {
-        assertThrows( IllegalArgumentException.class,
+    void shouldNotBeAbleToCreatePathWithNodeThatDoesNotConnect() {
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> new InternalPath(
-                        new InternalNode( 1 ),
-                        new InternalRelationship( 2, 1, 3, "KNOWS" ),
-                        new InternalNode( 4 ) ) );
+                        new InternalNode(1), new InternalRelationship(2, 1, 3, "KNOWS"), new InternalNode(4)));
     }
 
     @Test
-    void shouldNotBeAbleToCreatePathWithRelationshipThatDoesNotConnect()
-    {
-        assertThrows( IllegalArgumentException.class,
+    void shouldNotBeAbleToCreatePathWithRelationshipThatDoesNotConnect() {
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> new InternalPath(
-                        new InternalNode( 1 ),
-                        new InternalRelationship( 2, 3, 4, "KNOWS" ),
-                        new InternalNode( 3 ) ) );
+                        new InternalNode(1), new InternalRelationship(2, 3, 4, "KNOWS"), new InternalNode(3)));
     }
-
 }

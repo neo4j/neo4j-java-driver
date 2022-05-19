@@ -18,28 +18,22 @@
  */
 package org.neo4j.driver.internal.util;
 
-public enum Neo4jEdition
-{
-    UNDEFINED( "n/a" ),
-    COMMUNITY( "community" ),
-    ENTERPRISE( "enterprise" );
+public enum Neo4jEdition {
+    UNDEFINED("n/a"),
+    COMMUNITY("community"),
+    ENTERPRISE("enterprise");
 
     private final String value;
 
-    Neo4jEdition( String value )
-    {
+    Neo4jEdition(String value) {
         this.value = value;
     }
 
-    public boolean matches( String otherValue )
-    {
-        if ( this == UNDEFINED )
-        {
+    public boolean matches(String otherValue) {
+        if (this == UNDEFINED) {
             return true;
-        }
-        else
-        {
-            return this.value.equals( otherValue );
+        } else {
+            return this.value.equals(otherValue);
         }
     }
 }

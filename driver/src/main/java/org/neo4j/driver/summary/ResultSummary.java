@@ -20,7 +20,6 @@ package org.neo4j.driver.summary;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.util.Immutable;
 
@@ -35,8 +34,7 @@ import org.neo4j.driver.util.Immutable;
  * @since 1.0
  */
 @Immutable
-public interface ResultSummary
-{
+public interface ResultSummary {
     /**
      * @return query that has been executed
      */
@@ -98,7 +96,7 @@ public interface ResultSummary
      * @param unit The unit of the duration.
      * @return The time it took for the server to have the result available in the provided time unit.
      */
-    long resultAvailableAfter( TimeUnit unit );
+    long resultAvailableAfter(TimeUnit unit);
 
     /**
      * The time it took the server to consume the result.
@@ -106,7 +104,7 @@ public interface ResultSummary
      * @param unit The unit of the duration.
      * @return The time it took for the server to consume the result in the provided time unit.
      */
-    long resultConsumedAfter( TimeUnit unit );
+    long resultConsumedAfter(TimeUnit unit);
 
     /**
      * The basic information of the server where the result is obtained from

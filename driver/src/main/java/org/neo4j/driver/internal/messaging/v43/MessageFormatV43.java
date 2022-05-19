@@ -26,17 +26,14 @@ import org.neo4j.driver.internal.packstream.PackOutput;
 /**
  * Bolt message format v4.3
  */
-public class MessageFormatV43 implements MessageFormat
-{
+public class MessageFormatV43 implements MessageFormat {
     @Override
-    public Writer newWriter( PackOutput output )
-    {
-        return new MessageWriterV43( output );
+    public Writer newWriter(PackOutput output) {
+        return new MessageWriterV43(output);
     }
 
     @Override
-    public Reader newReader( PackInput input )
-    {
-        return new CommonMessageReader( input );
+    public Reader newReader(PackInput input) {
+        return new CommonMessageReader(input);
     }
 }

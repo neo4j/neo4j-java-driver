@@ -18,23 +18,20 @@
  */
 package org.neo4j.driver.internal.handlers.pulln;
 
+import java.util.function.BiConsumer;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.summary.ResultSummary;
 import org.reactivestreams.Subscription;
 
-import java.util.function.BiConsumer;
-
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.summary.ResultSummary;
-
-public interface PullResponseHandler extends ResponseHandler, Subscription
-{
+public interface PullResponseHandler extends ResponseHandler, Subscription {
     /**
      * Register a record consumer for each record received.
      * STREAMING shall not be started before this consumer is registered.
      * A null record with no error indicates the end of streaming.
      * @param recordConsumer register a record consumer to be notified for each record received.
      */
-    void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer );
+    void installRecordConsumer(BiConsumer<Record, Throwable> recordConsumer);
 
     /**
      * Register a summary consumer to be notified when a summary is received.
@@ -42,6 +39,5 @@ public interface PullResponseHandler extends ResponseHandler, Subscription
      * A null summary with no error indicates a SUCCESS message with has_more=true has arrived.
      * @param summaryConsumer register a summary consumer
      */
-    void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> summaryConsumer );
-
+    void installSummaryConsumer(BiConsumer<ResultSummary, Throwable> summaryConsumer);
 }

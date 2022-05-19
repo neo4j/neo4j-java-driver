@@ -18,24 +18,21 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-class InternalInputPositionTest
-{
+import org.junit.jupiter.api.Test;
+
+class InternalInputPositionTest {
     @Test
-    void shouldBehaveAsExpected()
-    {
+    void shouldBehaveAsExpected() {
         // GIVEN, WHEN
-        InternalInputPosition position = new InternalInputPosition( 0, 2, 1 );
+        InternalInputPosition position = new InternalInputPosition(0, 2, 1);
 
         // THEN
-        assertThat( position.offset(), equalTo( 0 ) );
-        assertThat( position.column(), equalTo( 1 ) );
-        assertThat( position.line(), equalTo( 2 ) );
-        assertThat( position.toString(), equalTo( "offset=0, line=2, column=1" ) );
+        assertThat(position.offset(), equalTo(0));
+        assertThat(position.column(), equalTo(1));
+        assertThat(position.line(), equalTo(2));
+        assertThat(position.toString(), equalTo("offset=0, line=2, column=1"));
     }
-
 }

@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Config;
@@ -34,16 +33,14 @@ import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 
-public class SessionFactoryImpl implements SessionFactory
-{
+public class SessionFactoryImpl implements SessionFactory {
     private final ConnectionProvider connectionProvider;
     private final RetryLogic retryLogic;
     private final Logging logging;
     private final boolean leakedSessionsLoggingEnabled;
     private final long defaultFetchSize;
 
-    SessionFactoryImpl( ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config )
-    {
+    SessionFactoryImpl(ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config) {
         this.connectionProvider = connectionProvider;
         this.leakedSessionsLoggingEnabled = config.logLeakedSessions();
         this.retryLogic = retryLogic;
@@ -52,69 +49,62 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     @Override
-    public NetworkSession newInstance( SessionConfig sessionConfig )
-    {
-        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( toDistinctSet( sessionConfig.bookmarks() ) );
-        return createSession( connectionProvider, retryLogic, parseDatabaseName( sessionConfig ),
-                              sessionConfig.defaultAccessMode(), bookmarksHolder, parseFetchSize( sessionConfig ),
-                              sessionConfig.impersonatedUser().orElse( null ), logging );
+    public NetworkSession newInstance(SessionConfig sessionConfig) {
+        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder(toDistinctSet(sessionConfig.bookmarks()));
+        return createSession(
+                connectionProvider,
+                retryLogic,
+                parseDatabaseName(sessionConfig),
+                sessionConfig.defaultAccessMode(),
+                bookmarksHolder,
+                parseFetchSize(sessionConfig),
+                sessionConfig.impersonatedUser().orElse(null),
+                logging);
     }
 
-    private Set<Bookmark> toDistinctSet( Iterable<Bookmark> bookmarks )
-    {
+    private Set<Bookmark> toDistinctSet(Iterable<Bookmark> bookmarks) {
         Set<Bookmark> set = new HashSet<>();
-        if ( bookmarks != null )
-        {
-            for ( Bookmark bookmark : bookmarks )
-            {
-                if ( bookmark != null )
-                {
+        if (bookmarks != null) {
+            for (Bookmark bookmark : bookmarks) {
+                if (bookmark != null) {
                     Set<String> values = bookmark.values();
                     int size = values.size();
-                    if ( size == 1 )
-                    {
-                        set.add( bookmark );
-                    }
-                    else if ( size > 1 )
-                    {
-                        for ( String value : values )
-                        {
-                            set.add( Bookmark.from( value ) );
+                    if (size == 1) {
+                        set.add(bookmark);
+                    } else if (size > 1) {
+                        for (String value : values) {
+                            set.add(Bookmark.from(value));
                         }
                     }
                 }
             }
         }
-        return Collections.unmodifiableSet( set );
+        return Collections.unmodifiableSet(set);
     }
 
-    private long parseFetchSize( SessionConfig sessionConfig )
-    {
-        return sessionConfig.fetchSize().orElse( defaultFetchSize );
+    private long parseFetchSize(SessionConfig sessionConfig) {
+        return sessionConfig.fetchSize().orElse(defaultFetchSize);
     }
 
-    private DatabaseName parseDatabaseName( SessionConfig sessionConfig )
-    {
-        return sessionConfig.database()
-                            .flatMap( name -> Optional.of( DatabaseNameUtil.database( name ) ) )
-                            .orElse( DatabaseNameUtil.defaultDatabase() );
+    private DatabaseName parseDatabaseName(SessionConfig sessionConfig) {
+        return sessionConfig
+                .database()
+                .flatMap(name -> Optional.of(DatabaseNameUtil.database(name)))
+                .orElse(DatabaseNameUtil.defaultDatabase());
     }
 
     @Override
-    public CompletionStage<Void> verifyConnectivity()
-    {
+    public CompletionStage<Void> verifyConnectivity() {
         return connectionProvider.verifyConnectivity();
     }
 
     @Override
-    public CompletionStage<Void> close()
-    {
+    public CompletionStage<Void> close() {
         return connectionProvider.close();
     }
 
     @Override
-    public CompletionStage<Boolean> supportsMultiDb()
-    {
+    public CompletionStage<Boolean> supportsMultiDb() {
         return connectionProvider.supportsMultiDb();
     }
 
@@ -125,16 +115,37 @@ public class SessionFactoryImpl implements SessionFactory
      *
      * @return the connection provider used by this factory.
      */
-    public ConnectionProvider getConnectionProvider()
-    {
+    public ConnectionProvider getConnectionProvider() {
         return connectionProvider;
     }
 
-    private NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, DatabaseName databaseName, AccessMode mode,
-                                          BookmarksHolder bookmarksHolder, long fetchSize, String impersonatedUser, Logging logging )
-    {
+    private NetworkSession createSession(
+            ConnectionProvider connectionProvider,
+            RetryLogic retryLogic,
+            DatabaseName databaseName,
+            AccessMode mode,
+            BookmarksHolder bookmarksHolder,
+            long fetchSize,
+            String impersonatedUser,
+            Logging logging) {
         return leakedSessionsLoggingEnabled
-               ? new LeakLoggingNetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarksHolder, impersonatedUser, fetchSize, logging )
-               : new NetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarksHolder, impersonatedUser, fetchSize, logging );
+                ? new LeakLoggingNetworkSession(
+                        connectionProvider,
+                        retryLogic,
+                        databaseName,
+                        mode,
+                        bookmarksHolder,
+                        impersonatedUser,
+                        fetchSize,
+                        logging)
+                : new NetworkSession(
+                        connectionProvider,
+                        retryLogic,
+                        databaseName,
+                        mode,
+                        bookmarksHolder,
+                        impersonatedUser,
+                        fetchSize,
+                        logging);
     }
 }

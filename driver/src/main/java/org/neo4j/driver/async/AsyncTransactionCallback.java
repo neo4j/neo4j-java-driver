@@ -23,13 +23,12 @@ package org.neo4j.driver.async;
  *
  * @param <T> the return type of this work.
  */
-public interface AsyncTransactionCallback<T>
-{
+public interface AsyncTransactionCallback<T> {
     /**
      * Executes all given operations against the same transaction context.
      *
      * @param context the transaction context to use.
      * @return result object or {@code null} if none.
      */
-    T execute( AsyncTransactionContext context );
+    T execute(AsyncTransactionContext context);
 }

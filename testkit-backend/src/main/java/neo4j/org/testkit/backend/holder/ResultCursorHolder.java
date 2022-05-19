@@ -20,21 +20,17 @@ package neo4j.org.testkit.backend.holder;
 
 import org.neo4j.driver.async.ResultCursor;
 
-public class ResultCursorHolder extends AbstractResultHolder<AsyncSessionHolder,AsyncTransactionHolder,ResultCursor>
-{
-    public ResultCursorHolder( AsyncSessionHolder sessionHolder, ResultCursor result )
-    {
-        super( sessionHolder, result );
+public class ResultCursorHolder extends AbstractResultHolder<AsyncSessionHolder, AsyncTransactionHolder, ResultCursor> {
+    public ResultCursorHolder(AsyncSessionHolder sessionHolder, ResultCursor result) {
+        super(sessionHolder, result);
     }
 
-    public ResultCursorHolder( AsyncTransactionHolder transactionHolder, ResultCursor result )
-    {
-        super( transactionHolder, result );
+    public ResultCursorHolder(AsyncTransactionHolder transactionHolder, ResultCursor result) {
+        super(transactionHolder, result);
     }
 
     @Override
-    protected AsyncSessionHolder getSessionHolder( AsyncTransactionHolder transactionHolder )
-    {
+    protected AsyncSessionHolder getSessionHolder(AsyncTransactionHolder transactionHolder) {
         return transactionHolder.getSessionHolder();
     }
 }

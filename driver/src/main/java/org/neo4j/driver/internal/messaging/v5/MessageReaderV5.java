@@ -21,10 +21,8 @@ package org.neo4j.driver.internal.messaging.v5;
 import org.neo4j.driver.internal.messaging.common.CommonMessageReader;
 import org.neo4j.driver.internal.packstream.PackInput;
 
-public class MessageReaderV5 extends CommonMessageReader
-{
-    public MessageReaderV5( PackInput input )
-    {
-        super( new ValueUnpackerV5( input ) );
+public class MessageReaderV5 extends CommonMessageReader {
+    public MessageReaderV5(PackInput input) {
+        super(new ValueUnpackerV5(input));
     }
 }

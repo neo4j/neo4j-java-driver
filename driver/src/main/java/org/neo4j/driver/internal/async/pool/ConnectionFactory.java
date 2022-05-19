@@ -19,10 +19,8 @@
 package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
-
 import org.neo4j.driver.internal.spi.Connection;
 
-public interface ConnectionFactory
-{
-    Connection createConnection( Channel channel, ExtendedChannelPool pool );
+public interface ConnectionFactory {
+    Connection createConnection(Channel channel, ExtendedChannelPool pool);
 }

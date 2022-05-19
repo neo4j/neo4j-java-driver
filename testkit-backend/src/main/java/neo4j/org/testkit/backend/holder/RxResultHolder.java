@@ -18,41 +18,35 @@
  */
 package neo4j.org.testkit.backend.holder;
 
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.RxBufferedSubscriber;
-
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.reactive.RxResult;
 
-public class RxResultHolder extends AbstractResultHolder<RxSessionHolder,RxTransactionHolder,RxResult>
-{
+public class RxResultHolder extends AbstractResultHolder<RxSessionHolder, RxTransactionHolder, RxResult> {
     @Setter
     private RxBufferedSubscriber<Record> subscriber;
+
     @Getter
     private final AtomicLong requestedRecordsCounter = new AtomicLong();
 
-    public RxResultHolder( RxSessionHolder sessionHolder, RxResult result )
-    {
-        super( sessionHolder, result );
+    public RxResultHolder(RxSessionHolder sessionHolder, RxResult result) {
+        super(sessionHolder, result);
     }
 
-    public RxResultHolder( RxTransactionHolder transactionHolder, RxResult result )
-    {
-        super( transactionHolder, result );
+    public RxResultHolder(RxTransactionHolder transactionHolder, RxResult result) {
+        super(transactionHolder, result);
     }
 
-    public Optional<RxBufferedSubscriber<Record>> getSubscriber()
-    {
-        return Optional.ofNullable( subscriber );
+    public Optional<RxBufferedSubscriber<Record>> getSubscriber() {
+        return Optional.ofNullable(subscriber);
     }
 
     @Override
-    protected RxSessionHolder getSessionHolder( RxTransactionHolder transactionHolder )
-    {
+    protected RxSessionHolder getSessionHolder(RxTransactionHolder transactionHolder) {
         return transactionHolder.getSessionHolder();
     }
 }

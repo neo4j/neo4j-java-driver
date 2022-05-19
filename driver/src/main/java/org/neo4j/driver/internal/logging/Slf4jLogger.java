@@ -19,90 +19,71 @@
 package org.neo4j.driver.internal.logging;
 
 import java.util.Objects;
-
 import org.neo4j.driver.Logger;
 
-class Slf4jLogger implements Logger
-{
+class Slf4jLogger implements Logger {
     private final org.slf4j.Logger delegate;
 
-    Slf4jLogger( org.slf4j.Logger delegate )
-    {
-        this.delegate = Objects.requireNonNull( delegate );
+    Slf4jLogger(org.slf4j.Logger delegate) {
+        this.delegate = Objects.requireNonNull(delegate);
     }
 
     @Override
-    public void error( String message, Throwable cause )
-    {
-        if ( delegate.isErrorEnabled() )
-        {
-            delegate.error( message, cause );
+    public void error(String message, Throwable cause) {
+        if (delegate.isErrorEnabled()) {
+            delegate.error(message, cause);
         }
     }
 
     @Override
-    public void info( String message, Object... params )
-    {
-        if ( delegate.isInfoEnabled() )
-        {
-            delegate.info( formatMessage( message, params ) );
+    public void info(String message, Object... params) {
+        if (delegate.isInfoEnabled()) {
+            delegate.info(formatMessage(message, params));
         }
     }
 
     @Override
-    public void warn( String message, Object... params )
-    {
-        if ( delegate.isWarnEnabled() )
-        {
-            delegate.warn( formatMessage( message, params ) );
+    public void warn(String message, Object... params) {
+        if (delegate.isWarnEnabled()) {
+            delegate.warn(formatMessage(message, params));
         }
     }
 
     @Override
-    public void warn( String message, Throwable cause )
-    {
-        if ( delegate.isWarnEnabled() )
-        {
-            delegate.warn( message, cause );
+    public void warn(String message, Throwable cause) {
+        if (delegate.isWarnEnabled()) {
+            delegate.warn(message, cause);
         }
     }
 
     @Override
-    public void debug( String message, Object... params )
-    {
-        if ( isDebugEnabled() )
-        {
-            delegate.debug( formatMessage( message, params ) );
+    public void debug(String message, Object... params) {
+        if (isDebugEnabled()) {
+            delegate.debug(formatMessage(message, params));
         }
     }
 
     @Override
-    public void debug( String message, Throwable throwable )
-    {
-        if ( isDebugEnabled() )
-        {
-            delegate.debug( message, throwable );
+    public void debug(String message, Throwable throwable) {
+        if (isDebugEnabled()) {
+            delegate.debug(message, throwable);
         }
     }
 
     @Override
-    public void trace( String message, Object... params )
-    {
-        if ( isTraceEnabled() )
-        {
-            delegate.trace( formatMessage( message, params ) );
+    public void trace(String message, Object... params) {
+        if (isTraceEnabled()) {
+            delegate.trace(formatMessage(message, params));
         }
     }
 
     @Override
-    public boolean isTraceEnabled()
-    {
+    public boolean isTraceEnabled() {
         return delegate.isTraceEnabled();
     }
 
     @Override
-    public boolean isDebugEnabled()
-    {
+    public boolean isDebugEnabled() {
         return delegate.isDebugEnabled();
     }
 
@@ -114,8 +95,7 @@ class Slf4jLogger implements Logger
      * @param params the parameters.
      * @return fully formatted message string.
      */
-    private static String formatMessage( String messageTemplate, Object... params )
-    {
-        return String.format( messageTemplate, params );
+    private static String formatMessage(String messageTemplate, Object... params) {
+        return String.format(messageTemplate, params);
     }
 }

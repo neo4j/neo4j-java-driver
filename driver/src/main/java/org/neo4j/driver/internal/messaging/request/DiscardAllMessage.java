@@ -20,25 +20,20 @@ package org.neo4j.driver.internal.messaging.request;
 
 import org.neo4j.driver.internal.messaging.Message;
 
-public class DiscardAllMessage implements Message
-{
-    public final static byte SIGNATURE = 0x2F;
+public class DiscardAllMessage implements Message {
+    public static final byte SIGNATURE = 0x2F;
 
     public static final DiscardAllMessage DISCARD_ALL = new DiscardAllMessage();
 
-    private DiscardAllMessage()
-    {
-    }
+    private DiscardAllMessage() {}
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "DISCARD_ALL";
     }
 }

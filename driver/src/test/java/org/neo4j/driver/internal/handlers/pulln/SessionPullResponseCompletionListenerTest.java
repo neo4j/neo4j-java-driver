@@ -18,9 +18,15 @@
  */
 package org.neo4j.driver.internal.handlers.pulln;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import java.util.Collections;
 import java.util.function.BiConsumer;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.BookmarksHolder;
@@ -30,75 +36,71 @@ import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
-class SessionPullResponseCompletionListenerTest extends BasicPullResponseHandlerTestBase
-{
-    protected void shouldHandleSuccessWithSummary( BasicPullResponseHandler.State state )
-    {
+class SessionPullResponseCompletionListenerTest extends BasicPullResponseHandlerTestBase {
+    protected void shouldHandleSuccessWithSummary(BasicPullResponseHandler.State state) {
         // Given
         Connection conn = mockConnection();
-        BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
-        BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
-        BookmarksHolder bookmarksHolder = mock( BookmarksHolder.class );
-        PullResponseHandler handler = newSessionResponseHandler( conn, recordConsumer, summaryConsumer, bookmarksHolder, state );
+        BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
+        BookmarksHolder bookmarksHolder = mock(BookmarksHolder.class);
+        PullResponseHandler handler =
+                newSessionResponseHandler(conn, recordConsumer, summaryConsumer, bookmarksHolder, state);
 
         // When
-        handler.onSuccess( Collections.emptyMap() );
+        handler.onSuccess(Collections.emptyMap());
 
         // Then
-        verify( conn ).release();
-        verify( bookmarksHolder ).setBookmark( any() );
-        verify( recordConsumer ).accept( null, null );
-        verify( summaryConsumer ).accept( any( ResultSummary.class ), eq( null ) );
+        verify(conn).release();
+        verify(bookmarksHolder).setBookmark(any());
+        verify(recordConsumer).accept(null, null);
+        verify(summaryConsumer).accept(any(ResultSummary.class), eq(null));
     }
 
     @Override
-    protected void shouldHandleFailure( BasicPullResponseHandler.State state )
-    {
+    protected void shouldHandleFailure(BasicPullResponseHandler.State state) {
         // Given
         Connection conn = mockConnection();
-        BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
-        BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
-        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, state );
+        BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
 
         // When
-        RuntimeException error = new RuntimeException( "I am an error" );
-        handler.onFailure( error );
+        RuntimeException error = new RuntimeException("I am an error");
+        handler.onFailure(error);
 
         // Then
-        assertThat( handler.state(), equalTo( BasicPullResponseHandler.State.FAILURE_STATE ) );
-        verify( conn ).release();
-        verify( recordConsumer ).accept( null, error );
-        verify( summaryConsumer ).accept( any( ResultSummary.class ), eq( error ) );
+        assertThat(handler.state(), equalTo(BasicPullResponseHandler.State.FAILURE_STATE));
+        verify(conn).release();
+        verify(recordConsumer).accept(null, error);
+        verify(summaryConsumer).accept(any(ResultSummary.class), eq(error));
     }
 
     @Override
-    protected BasicPullResponseHandler newResponseHandlerWithStatus( Connection conn, BiConsumer<Record,Throwable> recordConsumer,
-                                                                     BiConsumer<ResultSummary,Throwable> summaryConsumer, BasicPullResponseHandler.State state )
-    {
+    protected BasicPullResponseHandler newResponseHandlerWithStatus(
+            Connection conn,
+            BiConsumer<Record, Throwable> recordConsumer,
+            BiConsumer<ResultSummary, Throwable> summaryConsumer,
+            BasicPullResponseHandler.State state) {
         BookmarksHolder bookmarksHolder = BookmarksHolder.NO_OP;
-        return newSessionResponseHandler( conn, recordConsumer, summaryConsumer, bookmarksHolder, state );
+        return newSessionResponseHandler(conn, recordConsumer, summaryConsumer, bookmarksHolder, state);
     }
 
-    private static BasicPullResponseHandler newSessionResponseHandler( Connection conn, BiConsumer<Record,Throwable> recordConsumer,
-                                                                       BiConsumer<ResultSummary,Throwable> summaryConsumer, BookmarksHolder bookmarksHolder,
-                                                                       BasicPullResponseHandler.State state )
-    {
-        RunResponseHandler runHandler = mock( RunResponseHandler.class );
-        SessionPullResponseCompletionListener listener = new SessionPullResponseCompletionListener( conn, bookmarksHolder );
-        BasicPullResponseHandler handler =
-                new BasicPullResponseHandler( mock( Query.class ), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener );
+    private static BasicPullResponseHandler newSessionResponseHandler(
+            Connection conn,
+            BiConsumer<Record, Throwable> recordConsumer,
+            BiConsumer<ResultSummary, Throwable> summaryConsumer,
+            BookmarksHolder bookmarksHolder,
+            BasicPullResponseHandler.State state) {
+        RunResponseHandler runHandler = mock(RunResponseHandler.class);
+        SessionPullResponseCompletionListener listener =
+                new SessionPullResponseCompletionListener(conn, bookmarksHolder);
+        BasicPullResponseHandler handler = new BasicPullResponseHandler(
+                mock(Query.class), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener);
 
-        handler.installRecordConsumer( recordConsumer );
-        handler.installSummaryConsumer( summaryConsumer );
+        handler.installRecordConsumer(recordConsumer);
+        handler.installSummaryConsumer(summaryConsumer);
 
-        handler.state( state );
+        handler.state(state);
         return handler;
     }
 }

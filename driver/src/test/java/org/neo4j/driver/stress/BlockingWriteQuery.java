@@ -18,46 +18,38 @@
  */
 package org.neo4j.driver.stress;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlockingQuery<C>
-{
+public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlockingQuery<C> {
     private AbstractStressTestBase<C> stressTest;
 
-    public BlockingWriteQuery( AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+    public BlockingWriteQuery(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
         this.stressTest = stressTest;
     }
 
     @Override
-    public void execute( C context )
-    {
+    public void execute(C context) {
         ResultSummary summary = null;
         Throwable queryError = null;
 
-        try ( Session session = newSession( AccessMode.WRITE, context ) )
-        {
-            summary = session.run( "CREATE ()" ).consume();
-            context.setBookmark( session.lastBookmark() );
-        }
-        catch ( Throwable error )
-        {
+        try (Session session = newSession(AccessMode.WRITE, context)) {
+            summary = session.run("CREATE ()").consume();
+            context.setBookmark(session.lastBookmark());
+        } catch (Throwable error) {
             queryError = error;
-            if ( !stressTest.handleWriteFailure( error, context ) )
-            {
+            if (!stressTest.handleWriteFailure(error, context)) {
                 throw error;
             }
         }
 
-        if ( queryError == null && summary != null )
-        {
-            assertEquals( 1, summary.counters().nodesCreated() );
+        if (queryError == null && summary != null) {
+            assertEquals(1, summary.counters().nodesCreated());
             context.nodeCreated();
         }
     }

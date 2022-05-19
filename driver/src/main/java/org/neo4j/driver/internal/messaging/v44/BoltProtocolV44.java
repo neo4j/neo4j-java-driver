@@ -26,20 +26,17 @@ import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 /**
  * Definition of the Bolt Protocol 4.4
  */
-public class BoltProtocolV44 extends BoltProtocolV43
-{
-    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 4 );
+public class BoltProtocolV44 extends BoltProtocolV43 {
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(4, 4);
     public static final BoltProtocol INSTANCE = new BoltProtocolV44();
 
     @Override
-    public MessageFormat createMessageFormat()
-    {
+    public MessageFormat createMessageFormat() {
         return new MessageFormatV44();
     }
 
     @Override
-    public BoltProtocolVersion version()
-    {
+    public BoltProtocolVersion version() {
         return VERSION;
     }
 }

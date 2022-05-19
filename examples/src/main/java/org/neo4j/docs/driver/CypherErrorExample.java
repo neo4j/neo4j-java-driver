@@ -20,49 +20,39 @@ package org.neo4j.docs.driver;
 
 // tag::cypher-error-import[]
 
-import org.neo4j.driver.Session;
+import static org.neo4j.driver.Values.parameters;
+// end::cypher-error-import[]
+
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.ClientException;
 
-import static org.neo4j.driver.Values.parameters;
-// end::cypher-error-import[]
-
-public class CypherErrorExample extends BaseApplication
-{
-    public CypherErrorExample( String uri, String user, String password )
-    {
-        super( uri, user, password );
+public class CypherErrorExample extends BaseApplication {
+    public CypherErrorExample(String uri, String user, String password) {
+        super(uri, user, password);
     }
 
     // tag::cypher-error[]
-    public int getEmployeeNumber( final String name )
-    {
-        try ( Session session = driver.session() )
-        {
-            return session.readTransaction( new TransactionWork<Integer>()
-            {
+    public int getEmployeeNumber(final String name) {
+        try (Session session = driver.session()) {
+            return session.readTransaction(new TransactionWork<Integer>() {
                 @Override
-                public Integer execute( Transaction tx )
-                {
-                    return selectEmployee( tx, name );
+                public Integer execute(Transaction tx) {
+                    return selectEmployee(tx, name);
                 }
-            } );
+            });
         }
     }
 
-    private static int selectEmployee( Transaction tx, String name )
-    {
-        try
-        {
-            Result result = tx.run( "SELECT * FROM Employees WHERE name = $name", parameters( "name", name ) );
-            return result.single().get( "employee_number" ).asInt();
-        }
-        catch ( ClientException ex )
-        {
+    private static int selectEmployee(Transaction tx, String name) {
+        try {
+            Result result = tx.run("SELECT * FROM Employees WHERE name = $name", parameters("name", name));
+            return result.single().get("employee_number").asInt();
+        } catch (ClientException ex) {
             tx.rollback();
-            System.err.println( ex.getMessage() );
+            System.err.println(ex.getMessage());
             return -1;
         }
     }

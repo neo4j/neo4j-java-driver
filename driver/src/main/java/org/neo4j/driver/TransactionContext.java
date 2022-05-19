@@ -21,6 +21,4 @@ package org.neo4j.driver;
 /**
  * A context for running queries within transaction.
  */
-public interface TransactionContext extends SimpleQueryRunner
-{
-}
+public interface TransactionContext extends SimpleQueryRunner {}

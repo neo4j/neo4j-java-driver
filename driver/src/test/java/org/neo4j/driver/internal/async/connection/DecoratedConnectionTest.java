@@ -18,19 +18,6 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.net.ServerAddress;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
@@ -39,180 +26,176 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 
-class DecoratedConnectionTest
-{
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.net.ServerAddress;
+
+class DecoratedConnectionTest {
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldDelegateIsOpen( String open )
-    {
-        Connection mockConnection = mock( Connection.class );
-        when( mockConnection.isOpen() ).thenReturn( Boolean.valueOf( open ) );
+    @ValueSource(strings = {"true", "false"})
+    void shouldDelegateIsOpen(String open) {
+        Connection mockConnection = mock(Connection.class);
+        when(mockConnection.isOpen()).thenReturn(Boolean.valueOf(open));
 
-        DirectConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection(mockConnection);
 
-        assertEquals( Boolean.valueOf( open ).booleanValue(), connection.isOpen() );
-        verify( mockConnection ).isOpen();
+        assertEquals(Boolean.valueOf(open).booleanValue(), connection.isOpen());
+        verify(mockConnection).isOpen();
     }
 
     @Test
-    void shouldDelegateEnableAutoRead()
-    {
-        Connection mockConnection = mock( Connection.class );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldDelegateEnableAutoRead() {
+        Connection mockConnection = mock(Connection.class);
+        DirectConnection connection = newConnection(mockConnection);
 
         connection.enableAutoRead();
 
-        verify( mockConnection ).enableAutoRead();
+        verify(mockConnection).enableAutoRead();
     }
 
     @Test
-    void shouldDelegateDisableAutoRead()
-    {
-        Connection mockConnection = mock( Connection.class );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldDelegateDisableAutoRead() {
+        Connection mockConnection = mock(Connection.class);
+        DirectConnection connection = newConnection(mockConnection);
 
         connection.disableAutoRead();
 
-        verify( mockConnection ).disableAutoRead();
+        verify(mockConnection).disableAutoRead();
     }
 
     @Test
-    void shouldDelegateWrite()
-    {
-        Connection mockConnection = mock( Connection.class );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldDelegateWrite() {
+        Connection mockConnection = mock(Connection.class);
+        DirectConnection connection = newConnection(mockConnection);
 
-        Message message = mock( Message.class );
-        ResponseHandler handler = mock( ResponseHandler.class );
+        Message message = mock(Message.class);
+        ResponseHandler handler = mock(ResponseHandler.class);
 
-        connection.write( message, handler );
+        connection.write(message, handler);
 
-        verify( mockConnection ).write( message, handler );
+        verify(mockConnection).write(message, handler);
     }
 
     @Test
-    void shouldDelegateWriteTwoMessages()
-    {
-        Connection mockConnection = mock( Connection.class );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldDelegateWriteTwoMessages() {
+        Connection mockConnection = mock(Connection.class);
+        DirectConnection connection = newConnection(mockConnection);
 
-        Message message1 = mock( Message.class );
-        ResponseHandler handler1 = mock( ResponseHandler.class );
-        Message message2 = mock( Message.class );
-        ResponseHandler handler2 = mock( ResponseHandler.class );
+        Message message1 = mock(Message.class);
+        ResponseHandler handler1 = mock(ResponseHandler.class);
+        Message message2 = mock(Message.class);
+        ResponseHandler handler2 = mock(ResponseHandler.class);
 
-        connection.write( message1, handler1, message2, handler2 );
+        connection.write(message1, handler1, message2, handler2);
 
-        verify( mockConnection ).write( message1, handler1, message2, handler2 );
+        verify(mockConnection).write(message1, handler1, message2, handler2);
     }
 
     @Test
-    void shouldDelegateWriteAndFlush()
-    {
-        Connection mockConnection = mock( Connection.class );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldDelegateWriteAndFlush() {
+        Connection mockConnection = mock(Connection.class);
+        DirectConnection connection = newConnection(mockConnection);
 
-        Message message = mock( Message.class );
-        ResponseHandler handler = mock( ResponseHandler.class );
+        Message message = mock(Message.class);
+        ResponseHandler handler = mock(ResponseHandler.class);
 
-        connection.writeAndFlush( message, handler );
+        connection.writeAndFlush(message, handler);
 
-        verify( mockConnection ).writeAndFlush( message, handler );
+        verify(mockConnection).writeAndFlush(message, handler);
     }
 
     @Test
-    void shouldDelegateWriteAndFlush1()
-    {
-        Connection mockConnection = mock( Connection.class );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldDelegateWriteAndFlush1() {
+        Connection mockConnection = mock(Connection.class);
+        DirectConnection connection = newConnection(mockConnection);
 
-        Message message1 = mock( Message.class );
-        ResponseHandler handler1 = mock( ResponseHandler.class );
-        Message message2 = mock( Message.class );
-        ResponseHandler handler2 = mock( ResponseHandler.class );
+        Message message1 = mock(Message.class);
+        ResponseHandler handler1 = mock(ResponseHandler.class);
+        Message message2 = mock(Message.class);
+        ResponseHandler handler2 = mock(ResponseHandler.class);
 
-        connection.writeAndFlush( message1, handler1, message2, handler2 );
+        connection.writeAndFlush(message1, handler1, message2, handler2);
 
-        verify( mockConnection ).writeAndFlush( message1, handler1, message2, handler2 );
+        verify(mockConnection).writeAndFlush(message1, handler1, message2, handler2);
     }
 
     @Test
-    void shouldDelegateReset()
-    {
-        Connection mockConnection = mock( Connection.class );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldDelegateReset() {
+        Connection mockConnection = mock(Connection.class);
+        DirectConnection connection = newConnection(mockConnection);
 
         connection.reset();
 
-        verify( mockConnection ).reset();
+        verify(mockConnection).reset();
     }
 
     @Test
-    void shouldDelegateRelease()
-    {
-        Connection mockConnection = mock( Connection.class );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldDelegateRelease() {
+        Connection mockConnection = mock(Connection.class);
+        DirectConnection connection = newConnection(mockConnection);
 
         connection.release();
 
-        verify( mockConnection ).release();
+        verify(mockConnection).release();
     }
 
     @Test
-    void shouldDelegateTerminateAndRelease()
-    {
-        Connection mockConnection = mock( Connection.class );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldDelegateTerminateAndRelease() {
+        Connection mockConnection = mock(Connection.class);
+        DirectConnection connection = newConnection(mockConnection);
 
-        connection.terminateAndRelease( "a reason" );
+        connection.terminateAndRelease("a reason");
 
-        verify( mockConnection ).terminateAndRelease( "a reason" );
+        verify(mockConnection).terminateAndRelease("a reason");
     }
 
     @Test
-    void shouldDelegateServerAddress()
-    {
-        BoltServerAddress address = BoltServerAddress.from( ServerAddress.of( "localhost", 9999 ) );
-        Connection mockConnection = mock( Connection.class );
-        when( mockConnection.serverAddress() ).thenReturn( address );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldDelegateServerAddress() {
+        BoltServerAddress address = BoltServerAddress.from(ServerAddress.of("localhost", 9999));
+        Connection mockConnection = mock(Connection.class);
+        when(mockConnection.serverAddress()).thenReturn(address);
+        DirectConnection connection = newConnection(mockConnection);
 
-        assertSame( address, connection.serverAddress() );
-        verify( mockConnection ).serverAddress();
+        assertSame(address, connection.serverAddress());
+        verify(mockConnection).serverAddress();
     }
 
     @Test
-    void shouldDelegateProtocol()
-    {
-        BoltProtocol protocol = mock( BoltProtocol.class );
-        Connection mockConnection = mock( Connection.class );
-        when( mockConnection.protocol() ).thenReturn( protocol );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldDelegateProtocol() {
+        BoltProtocol protocol = mock(BoltProtocol.class);
+        Connection mockConnection = mock(Connection.class);
+        when(mockConnection.protocol()).thenReturn(protocol);
+        DirectConnection connection = newConnection(mockConnection);
 
-        assertSame( protocol, connection.protocol() );
-        verify( mockConnection ).protocol();
+        assertSame(protocol, connection.protocol());
+        verify(mockConnection).protocol();
     }
 
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldReturnModeFromConstructor( AccessMode mode )
-    {
-        DirectConnection connection = new DirectConnection( mock( Connection.class ), defaultDatabase(), mode, null );
+    @EnumSource(AccessMode.class)
+    void shouldReturnModeFromConstructor(AccessMode mode) {
+        DirectConnection connection = new DirectConnection(mock(Connection.class), defaultDatabase(), mode, null);
 
-        assertEquals( mode, connection.mode() );
+        assertEquals(mode, connection.mode());
     }
 
     @Test
-    void shouldReturnConnection()
-    {
-        Connection mockConnection = mock( Connection.class );
-        DirectConnection connection = newConnection( mockConnection );
+    void shouldReturnConnection() {
+        Connection mockConnection = mock(Connection.class);
+        DirectConnection connection = newConnection(mockConnection);
 
-        assertSame( mockConnection, connection.connection() );
+        assertSame(mockConnection, connection.connection());
     }
-    
-    private static DirectConnection newConnection( Connection connection )
-    {
-        return new DirectConnection( connection, defaultDatabase(), READ, null );
+
+    private static DirectConnection newConnection(Connection connection) {
+        return new DirectConnection(connection, defaultDatabase(), READ, null);
     }
 }

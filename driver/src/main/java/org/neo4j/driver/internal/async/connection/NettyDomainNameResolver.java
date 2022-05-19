@@ -21,47 +21,35 @@ package org.neo4j.driver.internal.async.connection;
 import io.netty.resolver.InetNameResolver;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Promise;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
-
 import org.neo4j.driver.internal.DomainNameResolver;
 
-public class NettyDomainNameResolver extends InetNameResolver
-{
+public class NettyDomainNameResolver extends InetNameResolver {
     private final DomainNameResolver domainNameResolver;
 
-    public NettyDomainNameResolver( EventExecutor executor, DomainNameResolver domainNameResolver )
-    {
-        super( executor );
+    public NettyDomainNameResolver(EventExecutor executor, DomainNameResolver domainNameResolver) {
+        super(executor);
         this.domainNameResolver = domainNameResolver;
     }
 
     @Override
-    protected void doResolve( String inetHost, Promise<InetAddress> promise )
-    {
-        try
-        {
-            promise.setSuccess( domainNameResolver.resolve( inetHost )[0] );
-        }
-        catch ( UnknownHostException e )
-        {
-            promise.setFailure( e );
+    protected void doResolve(String inetHost, Promise<InetAddress> promise) {
+        try {
+            promise.setSuccess(domainNameResolver.resolve(inetHost)[0]);
+        } catch (UnknownHostException e) {
+            promise.setFailure(e);
         }
     }
 
     @Override
-    protected void doResolveAll( String inetHost, Promise<List<InetAddress>> promise )
-    {
-        try
-        {
-            promise.setSuccess( Arrays.asList( domainNameResolver.resolve( inetHost ) ) );
-        }
-        catch ( UnknownHostException e )
-        {
-            promise.setFailure( e );
+    protected void doResolveAll(String inetHost, Promise<List<InetAddress>> promise) {
+        try {
+            promise.setSuccess(Arrays.asList(domainNameResolver.resolve(inetHost)));
+        } catch (UnknownHostException e) {
+            promise.setFailure(e);
         }
     }
 }

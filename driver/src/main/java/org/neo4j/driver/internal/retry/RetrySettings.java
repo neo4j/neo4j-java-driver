@@ -20,22 +20,19 @@ package org.neo4j.driver.internal.retry;
 
 import java.io.Serializable;
 
-public final class RetrySettings implements Serializable
-{
+public final class RetrySettings implements Serializable {
     private static final long serialVersionUID = -2895062473220745239L;
 
     public static final RetrySettings DEFAULT =
-            new RetrySettings( ExponentialBackoffRetryLogic.DEFAULT_MAX_RETRY_TIME_MS );
+            new RetrySettings(ExponentialBackoffRetryLogic.DEFAULT_MAX_RETRY_TIME_MS);
 
     private final long maxRetryTimeMs;
 
-    public RetrySettings( long maxRetryTimeMs )
-    {
+    public RetrySettings(long maxRetryTimeMs) {
         this.maxRetryTimeMs = maxRetryTimeMs;
     }
 
-    public long maxRetryTimeMs()
-    {
+    public long maxRetryTimeMs() {
         return maxRetryTimeMs;
     }
 }

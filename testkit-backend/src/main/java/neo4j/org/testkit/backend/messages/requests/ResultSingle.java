@@ -18,64 +18,57 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import reactor.core.publisher.Mono;
-
-import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.async.ResultCursor;
+import reactor.core.publisher.Mono;
 
 @Setter
 @Getter
-public class ResultSingle implements TestkitRequest
-{
+public class ResultSingle implements TestkitRequest {
     private ResultSingleBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        return createResponse( testkitState.getResultHolder( data.getResultId() ).getResult().single() );
+    public TestkitResponse process(TestkitState testkitState) {
+        return createResponse(
+                testkitState.getResultHolder(data.getResultId()).getResult().single());
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncResultHolder( data.getResultId() )
-                           .thenApply( ResultCursorHolder::getResult )
-                           .thenCompose( ResultCursor::singleAsync )
-                           .thenApply( this::createResponse );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState
+                .getAsyncResultHolder(data.getResultId())
+                .thenApply(ResultCursorHolder::getResult)
+                .thenCompose(ResultCursor::singleAsync)
+                .thenApply(this::createResponse);
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        throw new UnsupportedOperationException( "Single method is not supported by reactive API" );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        throw new UnsupportedOperationException("Single method is not supported by reactive API");
     }
 
     @Override
-    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
-    {
-        throw new UnsupportedOperationException( "Single method is not supported by reactive API" );
+    public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
+        throw new UnsupportedOperationException("Single method is not supported by reactive API");
     }
 
-    private neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponse( Record record )
-    {
+    private neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponse(Record record) {
         return neo4j.org.testkit.backend.messages.responses.Record.builder()
-                                                                  .data( neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()
-                                                                                                                                       .values( record )
-                                                                                                                                       .build() )
-                                                                  .build();
+                .data(neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()
+                        .values(record)
+                        .build())
+                .build();
     }
 
     @Setter
     @Getter
-    public static class ResultSingleBody
-    {
+    public static class ResultSingleBody {
         private String resultId;
     }
 }

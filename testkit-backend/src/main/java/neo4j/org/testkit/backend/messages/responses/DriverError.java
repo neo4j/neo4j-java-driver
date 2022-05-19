@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class DriverError implements TestkitResponse
-{
+public class DriverError implements TestkitResponse {
     private DriverErrorBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "DriverError";
     }
 
     @Getter
     @Builder
-    public static class DriverErrorBody
-    {
+    public static class DriverErrorBody {
         private String id;
 
         private String errorType;

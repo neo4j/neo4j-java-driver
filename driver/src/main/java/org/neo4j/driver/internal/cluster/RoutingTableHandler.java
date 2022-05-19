@@ -20,20 +20,18 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.async.ConnectionContext;
 
-public interface RoutingTableHandler extends RoutingErrorHandler
-{
+public interface RoutingTableHandler extends RoutingErrorHandler {
     Set<BoltServerAddress> servers();
 
     boolean isRoutingTableAged();
 
-    CompletionStage<RoutingTable> ensureRoutingTable( ConnectionContext context );
+    CompletionStage<RoutingTable> ensureRoutingTable(ConnectionContext context);
 
-    CompletionStage<RoutingTable> updateRoutingTable( ClusterCompositionLookupResult compositionLookupResult );
+    CompletionStage<RoutingTable> updateRoutingTable(ClusterCompositionLookupResult compositionLookupResult);
 
     RoutingTable routingTable();
 }

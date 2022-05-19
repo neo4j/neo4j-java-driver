@@ -20,33 +20,25 @@ package org.neo4j.driver.internal.util.io;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-
 import java.io.IOException;
-
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 
-public class MessageToByteBufWriter
-{
+public class MessageToByteBufWriter {
     private final MessageFormat messageFormat;
 
-    public MessageToByteBufWriter( MessageFormat messageFormat )
-    {
+    public MessageToByteBufWriter(MessageFormat messageFormat) {
         this.messageFormat = messageFormat;
     }
 
-    public ByteBuf asByteBuf( Message message )
-    {
-        try
-        {
+    public ByteBuf asByteBuf(Message message) {
+        try {
             ByteBuf buf = Unpooled.buffer();
-            ByteBufOutput output = new ByteBufOutput( buf );
-            messageFormat.newWriter( output ).write( message );
+            ByteBufOutput output = new ByteBufOutput(buf);
+            messageFormat.newWriter(output).write(message);
             return buf;
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

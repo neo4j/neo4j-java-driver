@@ -18,82 +18,63 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.Mono;
+import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
+import static reactor.core.publisher.FluxSink.OverflowStrategy.IGNORE;
 
 import java.util.List;
 import java.util.function.BiConsumer;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.summary.ResultSummary;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Mono;
 
-import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
-import static reactor.core.publisher.FluxSink.OverflowStrategy.IGNORE;
-
-public class InternalReactiveResult implements ReactiveResult
-{
+public class InternalReactiveResult implements ReactiveResult {
     private final RxResultCursor cursor;
 
-    public InternalReactiveResult( RxResultCursor cursor )
-    {
+    public InternalReactiveResult(RxResultCursor cursor) {
         this.cursor = cursor;
     }
 
     @Override
-    public List<String> keys()
-    {
+    public List<String> keys() {
         return cursor.keys();
     }
 
     @Override
-    public Publisher<Record> records()
-    {
+    public Publisher<Record> records() {
         return Flux.create(
-                sink ->
-                {
-
-                    if ( cursor.isDone() )
-                    {
-                        sink.error( newResultConsumedError() );
+                sink -> {
+                    if (cursor.isDone()) {
+                        sink.error(newResultConsumedError());
+                    } else {
+                        cursor.installRecordConsumer(createRecordConsumer(sink));
+                        sink.onCancel(cursor::cancel);
+                        sink.onRequest(cursor::request);
                     }
-                    else
-                    {
-                        cursor.installRecordConsumer( createRecordConsumer( sink ) );
-                        sink.onCancel( cursor::cancel );
-                        sink.onRequest( cursor::request );
-                    }
-                }, IGNORE );
+                },
+                IGNORE);
     }
 
     @Override
-    public Publisher<ResultSummary> consume()
-    {
-        return Mono.create(
-                sink -> cursor.summaryAsync()
-                              .whenComplete(
-                                      ( summary, summaryCompletionError ) ->
-                                      {
-                                          Throwable error = Futures.completionExceptionCause( summaryCompletionError );
-                                          if ( summary != null )
-                                          {
-                                              sink.success( summary );
-                                          }
-                                          else
-                                          {
-                                              sink.error( error );
-                                          }
-                                      } ) );
+    public Publisher<ResultSummary> consume() {
+        return Mono.create(sink -> cursor.summaryAsync().whenComplete((summary, summaryCompletionError) -> {
+            Throwable error = Futures.completionExceptionCause(summaryCompletionError);
+            if (summary != null) {
+                sink.success(summary);
+            } else {
+                sink.error(error);
+            }
+        }));
     }
 
     @Override
-    public Publisher<Boolean> isOpen()
-    {
-        return Mono.just( !cursor.isDone() );
+    public Publisher<Boolean> isOpen() {
+        return Mono.just(!cursor.isDone());
     }
 
     /**
@@ -104,20 +85,13 @@ public class InternalReactiveResult implements ReactiveResult
      * @param sink the subscriber
      * @return a record consumer.
      */
-    private BiConsumer<Record,Throwable> createRecordConsumer( FluxSink<Record> sink )
-    {
-        return ( r, e ) ->
-        {
-            if ( r != null )
-            {
-                sink.next( r );
-            }
-            else if ( e != null )
-            {
-                sink.error( e );
-            }
-            else
-            {
+    private BiConsumer<Record, Throwable> createRecordConsumer(FluxSink<Record> sink) {
+        return (r, e) -> {
+            if (r != null) {
+                sink.next(r);
+            } else if (e != null) {
+                sink.error(e);
+            } else {
                 sink.complete();
             }
         };

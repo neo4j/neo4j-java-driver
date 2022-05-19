@@ -20,33 +20,27 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class RoundRobinArrayIndex
-{
+public class RoundRobinArrayIndex {
     private final AtomicInteger offset;
 
-    RoundRobinArrayIndex()
-    {
-        this( 0 );
+    RoundRobinArrayIndex() {
+        this(0);
     }
 
     // only for testing
-    RoundRobinArrayIndex( int initialOffset )
-    {
-        this.offset = new AtomicInteger( initialOffset );
+    RoundRobinArrayIndex(int initialOffset) {
+        this.offset = new AtomicInteger(initialOffset);
     }
 
-    public int next( int arrayLength )
-    {
-        if ( arrayLength == 0 )
-        {
+    public int next(int arrayLength) {
+        if (arrayLength == 0) {
             return -1;
         }
 
         int nextOffset;
-        while ( (nextOffset = offset.getAndIncrement()) < 0 )
-        {
+        while ((nextOffset = offset.getAndIncrement()) < 0) {
             // overflow, try resetting back to zero
-            offset.compareAndSet( nextOffset + 1, 0 );
+            offset.compareAndSet(nextOffset + 1, 0);
         }
         return nextOffset % arrayLength;
     }

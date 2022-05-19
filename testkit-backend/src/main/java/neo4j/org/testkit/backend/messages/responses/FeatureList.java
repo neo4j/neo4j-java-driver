@@ -18,27 +18,23 @@
  */
 package neo4j.org.testkit.backend.messages.responses;
 
+import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.Set;
-
 @Getter
 @Builder
-public class FeatureList implements TestkitResponse
-{
+public class FeatureList implements TestkitResponse {
     private final FeatureListBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "FeatureList";
     }
 
     @Getter
     @Builder
-    public static class FeatureListBody
-    {
+    public static class FeatureListBody {
         private final Set<String> features;
     }
 }

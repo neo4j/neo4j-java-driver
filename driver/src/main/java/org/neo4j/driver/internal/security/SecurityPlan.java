@@ -19,14 +19,12 @@
 package org.neo4j.driver.internal.security;
 
 import javax.net.ssl.SSLContext;
-
 import org.neo4j.driver.internal.RevocationStrategy;
 
 /**
  * A SecurityPlan consists of encryption and trust details.
  */
-public interface SecurityPlan
-{
+public interface SecurityPlan {
     boolean requiresEncryption();
 
     SSLContext sslContext();

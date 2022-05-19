@@ -19,39 +19,35 @@
 package org.neo4j.docs.driver;
 // tag::config-connection-pool-import[]
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
 // end::config-connection-pool-import[]
-public class ConfigConnectionPoolExample  implements AutoCloseable
-{
+
+public class ConfigConnectionPoolExample implements AutoCloseable {
     private final Driver driver;
 
     // tag::config-connection-pool[]
-    public ConfigConnectionPoolExample( String uri, String user, String password )
-    {
+    public ConfigConnectionPoolExample(String uri, String user, String password) {
         Config config = Config.builder()
-                .withMaxConnectionLifetime( 30, TimeUnit.MINUTES )
-                .withMaxConnectionPoolSize( 50 )
-                .withConnectionAcquisitionTimeout( 2, TimeUnit.MINUTES )
+                .withMaxConnectionLifetime(30, TimeUnit.MINUTES)
+                .withMaxConnectionPoolSize(50)
+                .withConnectionAcquisitionTimeout(2, TimeUnit.MINUTES)
                 .build();
 
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
     // end::config-connection-pool[]
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         driver.close();
     }
 
-    public boolean canConnect()
-    {
-        Result result = driver.session().run( "RETURN 1" );
-        return result.single().get( 0 ).asInt() == 1;
+    public boolean canConnect() {
+        Result result = driver.session().run("RETURN 1");
+        return result.single().get(0).asInt() == 1;
     }
 }

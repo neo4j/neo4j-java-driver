@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.tck.reactive;
 
+import java.time.Duration;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.reactive.ReactiveResult;
+import org.neo4j.driver.reactive.ReactiveSession;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
@@ -26,60 +30,48 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.reactive.ReactiveResult;
-import org.neo4j.driver.reactive.ReactiveSession;
-
-@Testcontainers( disabledWithoutDocker = true )
-public class ReactiveResultPublisherVerificationIT extends PublisherVerification<ReactiveResult>
-{
+@Testcontainers(disabledWithoutDocker = true)
+public class ReactiveResultPublisherVerificationIT extends PublisherVerification<ReactiveResult> {
     private final Neo4jManager NEO4J = new Neo4jManager();
-    private static final Duration TIMEOUT = Duration.ofSeconds( 10 );
-    private static final Duration TIMEOUT_FOR_NO_SIGNALS = Duration.ofSeconds( 1 );
-    private static final Duration PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS = Duration.ofSeconds( 1 );
+    private static final Duration TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration TIMEOUT_FOR_NO_SIGNALS = Duration.ofSeconds(1);
+    private static final Duration PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS = Duration.ofSeconds(1);
 
     private Driver driver;
 
-    public ReactiveResultPublisherVerificationIT()
-    {
-        super( new TestEnvironment( TIMEOUT.toMillis(), TIMEOUT_FOR_NO_SIGNALS.toMillis() ),
-               PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS.toMillis() );
+    public ReactiveResultPublisherVerificationIT() {
+        super(
+                new TestEnvironment(TIMEOUT.toMillis(), TIMEOUT_FOR_NO_SIGNALS.toMillis()),
+                PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS.toMillis());
     }
 
     @BeforeClass
-    public void beforeClass()
-    {
+    public void beforeClass() {
         NEO4J.skipIfDockerUnavailable();
         NEO4J.start();
         driver = NEO4J.getDriver();
     }
 
     @AfterClass
-    public void afterClass()
-    {
+    public void afterClass() {
         NEO4J.stop();
     }
 
     @Override
-    public long maxElementsFromPublisher()
-    {
+    public long maxElementsFromPublisher() {
         return 1;
     }
 
     @Override
-    public Publisher<ReactiveResult> createPublisher( long elements )
-    {
+    public Publisher<ReactiveResult> createPublisher(long elements) {
         ReactiveSession session = driver.reactiveSession();
-        return Mono.fromDirect( session.run( "RETURN 1" ) );
+        return Mono.fromDirect(session.run("RETURN 1"));
     }
 
     @Override
-    public Publisher<ReactiveResult> createFailedPublisher()
-    {
+    public Publisher<ReactiveResult> createFailedPublisher() {
         ReactiveSession session = driver.reactiveSession();
         // Please note that this publisher fails on run stage.
-        return Mono.fromDirect( session.run( "RETURN 5/0" ) );
+        return Mono.fromDirect(session.run("RETURN 5/0"));
     }
 }

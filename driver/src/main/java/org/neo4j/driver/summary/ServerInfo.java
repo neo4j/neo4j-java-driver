@@ -21,8 +21,7 @@ package org.neo4j.driver.summary;
 /**
  * Provides some basic information of the server where the result is obtained from.
  */
-public interface ServerInfo
-{
+public interface ServerInfo {
 
     /**
      * Returns a string telling the address of the server the query was executed.

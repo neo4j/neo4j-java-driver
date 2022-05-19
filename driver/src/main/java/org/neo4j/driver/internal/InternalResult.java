@@ -25,7 +25,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.async.ResultCursor;
@@ -35,101 +34,85 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.summary.ResultSummary;
 
-public class InternalResult implements Result
-{
+public class InternalResult implements Result {
     private final Connection connection;
     private final ResultCursor cursor;
 
-    public InternalResult(Connection connection, ResultCursor cursor )
-    {
+    public InternalResult(Connection connection, ResultCursor cursor) {
         this.connection = connection;
         this.cursor = cursor;
     }
 
     @Override
-    public List<String> keys()
-    {
+    public List<String> keys() {
         return cursor.keys();
     }
 
     @Override
-    public boolean hasNext()
-    {
-        return blockingGet( cursor.peekAsync() ) != null;
+    public boolean hasNext() {
+        return blockingGet(cursor.peekAsync()) != null;
     }
 
     @Override
-    public Record next()
-    {
-        Record record = blockingGet( cursor.nextAsync() );
-        if ( record == null )
-        {
-            throw new NoSuchRecordException( "No more records" );
+    public Record next() {
+        Record record = blockingGet(cursor.nextAsync());
+        if (record == null) {
+            throw new NoSuchRecordException("No more records");
         }
         return record;
     }
 
     @Override
-    public Record single()
-    {
-        return blockingGet( cursor.singleAsync() );
+    public Record single() {
+        return blockingGet(cursor.singleAsync());
     }
 
     @Override
-    public Record peek()
-    {
-        Record record = blockingGet( cursor.peekAsync() );
-        if ( record == null )
-        {
-            throw new NoSuchRecordException( "Cannot peek past the last record" );
+    public Record peek() {
+        Record record = blockingGet(cursor.peekAsync());
+        if (record == null) {
+            throw new NoSuchRecordException("Cannot peek past the last record");
         }
         return record;
     }
 
     @Override
-    public Stream<Record> stream()
-    {
-        Spliterator<Record> spliterator = Spliterators.spliteratorUnknownSize( this, Spliterator.IMMUTABLE | Spliterator.ORDERED );
-        return StreamSupport.stream( spliterator, false );
+    public Stream<Record> stream() {
+        Spliterator<Record> spliterator =
+                Spliterators.spliteratorUnknownSize(this, Spliterator.IMMUTABLE | Spliterator.ORDERED);
+        return StreamSupport.stream(spliterator, false);
     }
 
     @Override
-    public List<Record> list()
-    {
-        return blockingGet( cursor.listAsync() );
+    public List<Record> list() {
+        return blockingGet(cursor.listAsync());
     }
 
     @Override
-    public <T> List<T> list( Function<Record,T> mapFunction )
-    {
-        return blockingGet( cursor.listAsync( mapFunction ) );
+    public <T> List<T> list(Function<Record, T> mapFunction) {
+        return blockingGet(cursor.listAsync(mapFunction));
     }
 
     @Override
-    public ResultSummary consume()
-    {
-        return blockingGet( cursor.consumeAsync() );
+    public ResultSummary consume() {
+        return blockingGet(cursor.consumeAsync());
     }
 
     @Override
-    public boolean isOpen()
-    {
-        return blockingGet( cursor.isOpenAsync() );
+    public boolean isOpen() {
+        return blockingGet(cursor.isOpenAsync());
     }
 
     @Override
-    public void remove()
-    {
-        throw new ClientException( "Removing records from a result is not supported." );
+    public void remove() {
+        throw new ClientException("Removing records from a result is not supported.");
     }
 
-    private <T> T blockingGet( CompletionStage<T> stage )
-    {
-        return Futures.blockingGet( stage, this::terminateConnectionOnThreadInterrupt );
+    private <T> T blockingGet(CompletionStage<T> stage) {
+        return Futures.blockingGet(stage, this::terminateConnectionOnThreadInterrupt);
     }
 
-    private void terminateConnectionOnThreadInterrupt()
-    {
-        connection.terminateAndRelease( "Thread interrupted while waiting for result to arrive" );
+    private void terminateConnectionOnThreadInterrupt() {
+        connection.terminateAndRelease("Thread interrupted while waiting for result to arrive");
     }
 }

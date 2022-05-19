@@ -23,11 +23,9 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class NullRecord implements TestkitResponse
-{
+public class NullRecord implements TestkitResponse {
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "NullRecord";
     }
 }

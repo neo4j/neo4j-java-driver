@@ -18,29 +18,27 @@
  */
 package org.neo4j.driver.stress;
 
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 
-public class BlockingWrongQueryWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C>
-{
-    public BlockingWrongQueryWithRetries( Driver driver )
-    {
-        super( driver, false );
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Session;
+
+public class BlockingWrongQueryWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C> {
+    public BlockingWrongQueryWithRetries(Driver driver) {
+        super(driver, false);
     }
 
     @Override
-    public void execute( C context )
-    {
-        try ( Session session = newSession( AccessMode.READ, context ) )
-        {
-            Exception e = assertThrows( Exception.class, () -> session.readTransaction( tx -> tx.run( "RETURN" ).consume() ) );
-            assertThat( e, is( syntaxError() ) );
+    public void execute(C context) {
+        try (Session session = newSession(AccessMode.READ, context)) {
+            Exception e = assertThrows(
+                    Exception.class,
+                    () -> session.readTransaction(tx -> tx.run("RETURN").consume()));
+            assertThat(e, is(syntaxError()));
         }
     }
 }

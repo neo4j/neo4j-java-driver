@@ -19,63 +19,52 @@
 package org.neo4j.driver.internal;
 
 import java.util.Objects;
-
 import org.neo4j.driver.util.Pair;
 
-public class InternalPair<K, V> implements Pair<K, V>
-{
+public class InternalPair<K, V> implements Pair<K, V> {
     private final K key;
     private final V value;
 
-    protected InternalPair( K key, V value )
-    {
-        Objects.requireNonNull( key );
-        Objects.requireNonNull( value );
+    protected InternalPair(K key, V value) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(value);
         this.key = key;
         this.value = value;
     }
 
-    public K key()
-    {
+    public K key() {
         return key;
     }
 
-    public V value()
-    {
+    public V value() {
         return value;
     }
 
-    public static <K, V> Pair<K, V> of( K key, V value )
-    {
-        return new InternalPair<>( key, value );
+    public static <K, V> Pair<K, V> of(K key, V value) {
+        return new InternalPair<>(key, value);
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "%s: %s", Objects.toString( key ), Objects.toString( value ) );
+    public String toString() {
+        return String.format("%s: %s", Objects.toString(key), Objects.toString(value));
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         InternalPair<?, ?> that = (InternalPair<?, ?>) o;
 
-        return key.equals( that.key ) && value.equals( that.value );
+        return key.equals(that.key) && value.equals(that.value);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = key.hashCode();
         result = 31 * result + value.hashCode();
         return result;

@@ -18,8 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-public class Scheme
-{
+public class Scheme {
     public static final String BOLT_URI_SCHEME = "bolt";
     public static final String BOLT_HIGH_TRUST_URI_SCHEME = "bolt+s";
     public static final String BOLT_LOW_TRUST_URI_SCHEME = "bolt+ssc";
@@ -27,45 +26,41 @@ public class Scheme
     public static final String NEO4J_HIGH_TRUST_URI_SCHEME = "neo4j+s";
     public static final String NEO4J_LOW_TRUST_URI_SCHEME = "neo4j+ssc";
 
-    public static void validateScheme( String scheme )
-    {
-        if ( scheme == null )
-        {
-            throw new IllegalArgumentException( "Scheme must not be null" );
+    public static void validateScheme(String scheme) {
+        if (scheme == null) {
+            throw new IllegalArgumentException("Scheme must not be null");
         }
-        switch ( scheme )
-        {
-        case BOLT_URI_SCHEME:
-        case BOLT_LOW_TRUST_URI_SCHEME:
-        case BOLT_HIGH_TRUST_URI_SCHEME:
-        case NEO4J_URI_SCHEME:
-        case NEO4J_LOW_TRUST_URI_SCHEME:
-        case NEO4J_HIGH_TRUST_URI_SCHEME:
-            return;
-        default:
-            throw new IllegalArgumentException( "Invalid address format " + scheme );
+        switch (scheme) {
+            case BOLT_URI_SCHEME:
+            case BOLT_LOW_TRUST_URI_SCHEME:
+            case BOLT_HIGH_TRUST_URI_SCHEME:
+            case NEO4J_URI_SCHEME:
+            case NEO4J_LOW_TRUST_URI_SCHEME:
+            case NEO4J_HIGH_TRUST_URI_SCHEME:
+                return;
+            default:
+                throw new IllegalArgumentException("Invalid address format " + scheme);
         }
     }
 
-    public static boolean isHighTrustScheme( String scheme )
-    {
-        return scheme.equals( BOLT_HIGH_TRUST_URI_SCHEME ) || scheme.equals( NEO4J_HIGH_TRUST_URI_SCHEME );
+    public static boolean isHighTrustScheme(String scheme) {
+        return scheme.equals(BOLT_HIGH_TRUST_URI_SCHEME) || scheme.equals(NEO4J_HIGH_TRUST_URI_SCHEME);
     }
 
-    public static boolean isLowTrustScheme( String scheme )
-    {
-        return scheme.equals( BOLT_LOW_TRUST_URI_SCHEME ) || scheme.equals( NEO4J_LOW_TRUST_URI_SCHEME );
+    public static boolean isLowTrustScheme(String scheme) {
+        return scheme.equals(BOLT_LOW_TRUST_URI_SCHEME) || scheme.equals(NEO4J_LOW_TRUST_URI_SCHEME);
     }
 
-    public static boolean isSecurityScheme( String scheme )
-    {
-        return scheme.equals( BOLT_LOW_TRUST_URI_SCHEME ) || scheme.equals( NEO4J_LOW_TRUST_URI_SCHEME )
-                || scheme.equals( BOLT_HIGH_TRUST_URI_SCHEME ) || scheme.equals( NEO4J_HIGH_TRUST_URI_SCHEME );
+    public static boolean isSecurityScheme(String scheme) {
+        return scheme.equals(BOLT_LOW_TRUST_URI_SCHEME)
+                || scheme.equals(NEO4J_LOW_TRUST_URI_SCHEME)
+                || scheme.equals(BOLT_HIGH_TRUST_URI_SCHEME)
+                || scheme.equals(NEO4J_HIGH_TRUST_URI_SCHEME);
     }
 
-    public static boolean isRoutingScheme( String scheme )
-    {
-        return scheme.equals( NEO4J_LOW_TRUST_URI_SCHEME ) || scheme.equals( NEO4J_HIGH_TRUST_URI_SCHEME )
-                || scheme.equals( NEO4J_URI_SCHEME );
+    public static boolean isRoutingScheme(String scheme) {
+        return scheme.equals(NEO4J_LOW_TRUST_URI_SCHEME)
+                || scheme.equals(NEO4J_HIGH_TRUST_URI_SCHEME)
+                || scheme.equals(NEO4J_URI_SCHEME);
     }
 }

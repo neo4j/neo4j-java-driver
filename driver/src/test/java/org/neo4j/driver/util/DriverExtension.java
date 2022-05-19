@@ -18,51 +18,43 @@
  */
 package org.neo4j.driver.util;
 
+import static org.neo4j.driver.util.TestUtil.await;
+
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-
 import org.neo4j.driver.Session;
 import org.neo4j.driver.async.AsyncSession;
-
-import static org.neo4j.driver.util.TestUtil.await;
 
 /**
  * A little utility for integration testing, this provides tests with sessions they can work with.
  * If you want more direct control, have a look at {@link DatabaseExtension} instead.
  */
-public class DriverExtension extends DatabaseExtension implements BeforeEachCallback, AfterEachCallback
-{
+public class DriverExtension extends DatabaseExtension implements BeforeEachCallback, AfterEachCallback {
     private AsyncSession asyncSession;
     private Session session;
 
-    public AsyncSession asyncSession()
-    {
+    public AsyncSession asyncSession() {
         return asyncSession;
     }
 
-    public Session session()
-    {
+    public Session session() {
         return session;
     }
 
     @Override
-    public void beforeEach( ExtensionContext context ) throws Exception
-    {
-        super.beforeEach( context );
+    public void beforeEach(ExtensionContext context) throws Exception {
+        super.beforeEach(context);
         asyncSession = driver().asyncSession();
         session = driver().session();
     }
 
     @Override
-    public void afterEach( ExtensionContext context )
-    {
-        if ( asyncSession != null )
-        {
-            await( asyncSession.closeAsync() );
+    public void afterEach(ExtensionContext context) {
+        if (asyncSession != null) {
+            await(asyncSession.closeAsync());
         }
-        if ( session != null )
-        {
+        if (session != null) {
             session.close();
         }
     }

@@ -19,7 +19,6 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.driver.util.Experimental;
 
 /**
@@ -27,8 +26,7 @@ import org.neo4j.driver.util.Experimental;
  * The pool metrics is uniquely identified using {@link ConnectionPoolMetrics#id()}.
  */
 @Experimental
-public interface ConnectionPoolMetrics
-{
+public interface ConnectionPoolMetrics {
     /**
      * A unique id that identifies this pool metrics.
      *

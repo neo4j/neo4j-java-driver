@@ -20,7 +20,6 @@ package org.neo4j.driver.internal;
 
 import java.util.Collections;
 import java.util.Map;
-
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.types.Relationship;
@@ -28,28 +27,32 @@ import org.neo4j.driver.types.Relationship;
 /**
  * {@link Relationship} implementation that directly contains type and properties.
  */
-public class InternalRelationship extends InternalEntity implements Relationship
-{
+public class InternalRelationship extends InternalEntity implements Relationship {
     private long start;
     private String startElementId;
     private long end;
     private String endElementId;
     private final String type;
 
-    public InternalRelationship( long id, long start, long end, String type )
-    {
-        this( id, start, end, type, Collections.emptyMap() );
+    public InternalRelationship(long id, long start, long end, String type) {
+        this(id, start, end, type, Collections.emptyMap());
     }
 
-    public InternalRelationship( long id, long start, long end, String type, Map<String,Value> properties )
-    {
-        this( id, String.valueOf( id ), start, String.valueOf( start ), end, String.valueOf( end ), type, properties, true );
+    public InternalRelationship(long id, long start, long end, String type, Map<String, Value> properties) {
+        this(id, String.valueOf(id), start, String.valueOf(start), end, String.valueOf(end), type, properties, true);
     }
 
-    public InternalRelationship( long id, String elementId, long start, String startElementId, long end, String endElementId, String type,
-                                 Map<String,Value> properties, boolean numericIdAvailable )
-    {
-        super( id, elementId, properties, numericIdAvailable );
+    public InternalRelationship(
+            long id,
+            String elementId,
+            long start,
+            String startElementId,
+            long end,
+            String endElementId,
+            String type,
+            Map<String, Value> properties,
+            boolean numericIdAvailable) {
+        super(id, elementId, properties, numericIdAvailable);
         this.start = start;
         this.startElementId = startElementId;
         this.end = end;
@@ -58,16 +61,14 @@ public class InternalRelationship extends InternalEntity implements Relationship
     }
 
     @Override
-    public boolean hasType( String relationshipType )
-    {
-        return type().equals( relationshipType );
+    public boolean hasType(String relationshipType) {
+        return type().equals(relationshipType);
     }
 
     /**
      * Modify the start/end identities of this relationship
      */
-    public void setStartAndEnd( long start, String startElementId, long end, String endElementId )
-    {
+    public void setStartAndEnd(long start, String startElementId, long end, String endElementId) {
         this.start = start;
         this.startElementId = startElementId;
         this.end = end;
@@ -75,46 +76,39 @@ public class InternalRelationship extends InternalEntity implements Relationship
     }
 
     @Override
-    public long startNodeId()
-    {
+    public long startNodeId() {
         assertNumericIdAvailable();
         return start;
     }
 
     @Override
-    public String startNodeElementId()
-    {
+    public String startNodeElementId() {
         return startElementId;
     }
 
     @Override
-    public long endNodeId()
-    {
+    public long endNodeId() {
         assertNumericIdAvailable();
         return end;
     }
 
     @Override
-    public String endNodeElementId()
-    {
+    public String endNodeElementId() {
         return endElementId;
     }
 
     @Override
-    public String type()
-    {
+    public String type() {
         return type;
     }
 
     @Override
-    public Value asValue()
-    {
-        return new RelationshipValue( this );
+    public Value asValue() {
+        return new RelationshipValue(this);
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "relationship<%s>", id() );
+    public String toString() {
+        return String.format("relationship<%s>", id());
     }
 }

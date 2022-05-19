@@ -24,13 +24,10 @@ import static java.lang.String.format;
  * A <em>Uncoercible</em> exception indicates that the conversion cannot be achieved.
  * @since 1.0
  */
-public class Uncoercible extends ValueException
-{
+public class Uncoercible extends ValueException {
     private static final long serialVersionUID = -6259981390929065201L;
 
-    public Uncoercible( String sourceTypeName, String destinationTypeName )
-    {
-        super( format( "Cannot coerce %s to %s", sourceTypeName, destinationTypeName ) );
+    public Uncoercible(String sourceTypeName, String destinationTypeName) {
+        super(format("Cannot coerce %s to %s", sourceTypeName, destinationTypeName));
     }
-
 }

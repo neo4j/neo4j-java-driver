@@ -18,17 +18,21 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InOrder;
+import static java.util.Collections.emptyList;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.Values.value;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InOrder;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -36,64 +40,54 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.RouteMessage;
 
-import static java.util.Collections.emptyList;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.Values.value;
-
-class RouteMessageEncoderTest
-{
-    private final ValuePacker packer = mock( ValuePacker.class );
+class RouteMessageEncoderTest {
+    private final ValuePacker packer = mock(ValuePacker.class);
     private final RouteMessageEncoder encoder = new RouteMessageEncoder();
 
-
     @ParameterizedTest
-    @ValueSource(strings = { "neo4j"})
+    @ValueSource(strings = {"neo4j"})
     @NullSource
-    void shouldEncodeRouteMessage(String databaseName) throws IOException
-    {
+    void shouldEncodeRouteMessage(String databaseName) throws IOException {
         Map<String, Value> routingContext = getRoutingContext();
 
-        encoder.encode( new RouteMessage( getRoutingContext(), Collections.emptySet(), databaseName, null ), packer );
+        encoder.encode(new RouteMessage(getRoutingContext(), Collections.emptySet(), databaseName, null), packer);
 
-        InOrder inOrder = inOrder( packer );
+        InOrder inOrder = inOrder(packer);
 
-        inOrder.verify( packer ).packStructHeader( 3, (byte) 0x66 );
-        inOrder.verify( packer ).pack( routingContext );
-        inOrder.verify( packer ).pack( value( emptyList() ) );
-        inOrder.verify( packer ).pack( databaseName );
+        inOrder.verify(packer).packStructHeader(3, (byte) 0x66);
+        inOrder.verify(packer).pack(routingContext);
+        inOrder.verify(packer).pack(value(emptyList()));
+        inOrder.verify(packer).pack(databaseName);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "neo4j"})
+    @ValueSource(strings = {"neo4j"})
     @NullSource
-    void shouldEncodeRouteMessageWithBookmark(String databaseName) throws IOException
-    {
+    void shouldEncodeRouteMessageWithBookmark(String databaseName) throws IOException {
         Map<String, Value> routingContext = getRoutingContext();
-        Bookmark bookmark = InternalBookmark.parse( "somebookmark" );
+        Bookmark bookmark = InternalBookmark.parse("somebookmark");
 
-        encoder.encode( new RouteMessage( getRoutingContext(), Collections.singleton( bookmark ), databaseName, null ), packer );
+        encoder.encode(
+                new RouteMessage(getRoutingContext(), Collections.singleton(bookmark), databaseName, null), packer);
 
-        InOrder inOrder = inOrder( packer );
+        InOrder inOrder = inOrder(packer);
 
-        inOrder.verify( packer ).packStructHeader( 3, (byte) 0x66 );
-        inOrder.verify( packer ).pack( routingContext );
-        inOrder.verify( packer ).pack( value( Collections.singleton( bookmark.value() ) ) );
-        inOrder.verify( packer ).pack( databaseName );
+        inOrder.verify(packer).packStructHeader(3, (byte) 0x66);
+        inOrder.verify(packer).pack(routingContext);
+        inOrder.verify(packer).pack(value(Collections.singleton(bookmark.value())));
+        inOrder.verify(packer).pack(databaseName);
     }
 
     @Test
-    void shouldThrowIllegalArgumentIfMessageIsNotRouteMessage()
-    {
-        Message message = mock( Message.class );
+    void shouldThrowIllegalArgumentIfMessageIsNotRouteMessage() {
+        Message message = mock(Message.class);
 
-        assertThrows(IllegalArgumentException.class, () -> encoder.encode( message, packer ));
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(message, packer));
     }
 
-    private Map<String,Value> getRoutingContext() {
+    private Map<String, Value> getRoutingContext() {
         Map<String, Value> routingContext = new HashMap<>();
-        routingContext.put( "ip", value( "127.0.0.1" ) );
+        routingContext.put("ip", value("127.0.0.1"));
         return routingContext;
     }
 }

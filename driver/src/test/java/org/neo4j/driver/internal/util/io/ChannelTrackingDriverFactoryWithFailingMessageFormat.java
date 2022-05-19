@@ -28,26 +28,32 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FailingMessageFormat;
 
-public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends ChannelTrackingDriverFactory
-{
-    private final ChannelPipelineBuilderWithFailingMessageFormat pipelineBuilder = new ChannelPipelineBuilderWithFailingMessageFormat();
+public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends ChannelTrackingDriverFactory {
+    private final ChannelPipelineBuilderWithFailingMessageFormat pipelineBuilder =
+            new ChannelPipelineBuilderWithFailingMessageFormat();
 
-    public ChannelTrackingDriverFactoryWithFailingMessageFormat( Clock clock )
-    {
-        super( clock );
+    public ChannelTrackingDriverFactoryWithFailingMessageFormat(Clock clock) {
+        super(clock);
     }
 
     @Override
-    protected ChannelConnector createRealConnector( ConnectionSettings settings, SecurityPlan securityPlan,
-                                                    Config config, Clock clock, RoutingContext routingContext )
-    {
-        return new ChannelConnectorImpl( settings, securityPlan, pipelineBuilder, config.logging(), clock, routingContext,
-                                         DefaultDomainNameResolver.getInstance() );
+    protected ChannelConnector createRealConnector(
+            ConnectionSettings settings,
+            SecurityPlan securityPlan,
+            Config config,
+            Clock clock,
+            RoutingContext routingContext) {
+        return new ChannelConnectorImpl(
+                settings,
+                securityPlan,
+                pipelineBuilder,
+                config.logging(),
+                clock,
+                routingContext,
+                DefaultDomainNameResolver.getInstance());
     }
 
-    public FailingMessageFormat getFailingMessageFormat()
-    {
+    public FailingMessageFormat getFailingMessageFormat() {
         return pipelineBuilder.getFailingMessageFormat();
     }
 }
-

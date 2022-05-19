@@ -20,44 +20,37 @@ package org.neo4j.driver.internal.handlers;
 
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.Promise;
-
 import java.util.Map;
-
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
-public class PingResponseHandler implements ResponseHandler
-{
+public class PingResponseHandler implements ResponseHandler {
     private final Promise<Boolean> result;
     private final Channel channel;
     private final Logger log;
 
-    public PingResponseHandler( Promise<Boolean> result, Channel channel, Logging logging )
-    {
+    public PingResponseHandler(Promise<Boolean> result, Channel channel, Logging logging) {
         this.result = result;
         this.channel = channel;
-        this.log = logging.getLog( getClass() );
+        this.log = logging.getLog(getClass());
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
-    {
-        log.trace( "Channel %s pinged successfully", channel );
-        result.setSuccess( true );
+    public void onSuccess(Map<String, Value> metadata) {
+        log.trace("Channel %s pinged successfully", channel);
+        result.setSuccess(true);
     }
 
     @Override
-    public void onFailure( Throwable error )
-    {
-        log.trace( "Channel %s failed ping %s", channel, error );
-        result.setSuccess( false );
+    public void onFailure(Throwable error) {
+        log.trace("Channel %s failed ping %s", channel, error);
+        result.setSuccess(false);
     }
 
     @Override
-    public void onRecord( Value[] fields )
-    {
+    public void onRecord(Value[] fields) {
         throw new UnsupportedOperationException();
     }
 }

@@ -28,87 +28,74 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-
 import java.util.function.Function;
 
-public class Iterables
-{
-    @SuppressWarnings( "rawtypes" )
+public class Iterables {
+    @SuppressWarnings("rawtypes")
     private static final Queue EMPTY_QUEUE = new EmptyQueue();
+
     private static final float DEFAULT_HASH_MAP_LOAD_FACTOR = 0.75F;
 
-    public static int count( Iterable<?> it )
-    {
-        if ( it instanceof Collection ) { return ((Collection) it).size(); }
+    public static int count(Iterable<?> it) {
+        if (it instanceof Collection) {
+            return ((Collection) it).size();
+        }
         int size = 0;
-        for ( Object o : it )
-        {
+        for (Object o : it) {
             size++;
         }
         return size;
     }
 
-    public static <T> List<T> asList( Iterable<T> it )
-    {
-        if ( it instanceof List ) { return (List<T>) it; }
+    public static <T> List<T> asList(Iterable<T> it) {
+        if (it instanceof List) {
+            return (List<T>) it;
+        }
         List<T> list = new ArrayList<>();
-        for ( T t : it )
-        {
-            list.add( t );
+        for (T t : it) {
+            list.add(t);
         }
         return list;
     }
 
-    public static <T> T single( Iterable<T> it )
-    {
+    public static <T> T single(Iterable<T> it) {
         Iterator<T> iterator = it.iterator();
-        if ( !iterator.hasNext() )
-        {
-            throw new IllegalArgumentException( "Given iterable is empty" );
+        if (!iterator.hasNext()) {
+            throw new IllegalArgumentException("Given iterable is empty");
         }
         T result = iterator.next();
-        if ( iterator.hasNext() )
-        {
-            throw new IllegalArgumentException( "Given iterable contains more than one element: " + it );
+        if (iterator.hasNext()) {
+            throw new IllegalArgumentException("Given iterable contains more than one element: " + it);
         }
         return result;
     }
 
-    public static Map<String, String> map( String ... alternatingKeyValue )
-    {
-        Map<String,String> out = newHashMapWithSize( alternatingKeyValue.length / 2 );
-        for ( int i = 0; i < alternatingKeyValue.length; i+=2 )
-        {
-            out.put( alternatingKeyValue[i], alternatingKeyValue[i+1] );
+    public static Map<String, String> map(String... alternatingKeyValue) {
+        Map<String, String> out = newHashMapWithSize(alternatingKeyValue.length / 2);
+        for (int i = 0; i < alternatingKeyValue.length; i += 2) {
+            out.put(alternatingKeyValue[i], alternatingKeyValue[i + 1]);
         }
         return out;
     }
 
-    public static <A,B> Iterable<B> map(final Iterable<A> it, final Function<A,B> f)
-    {
-        return new Iterable<B>()
-        {
+    public static <A, B> Iterable<B> map(final Iterable<A> it, final Function<A, B> f) {
+        return new Iterable<B>() {
             @Override
-            public Iterator<B> iterator()
-            {
+            public Iterator<B> iterator() {
                 final Iterator<A> aIterator = it.iterator();
-                return new Iterator<B>()
-                {
+                return new Iterator<B>() {
                     @Override
-                    public boolean hasNext()
-                    {
+                    public boolean hasNext() {
                         return aIterator.hasNext();
                     }
 
                     @Override
-                    public B next()
-                    {
-                        return f.apply( aIterator.next() );
+                    public B next() {
+                        return f.apply(aIterator.next());
                     }
 
                     @Override
-                    public void remove()
-                    {
+                    public void remove() {
                         aIterator.remove();
                     }
                 };
@@ -116,64 +103,52 @@ public class Iterables
         };
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static <T> Queue<T> emptyQueue()
-    {
+    @SuppressWarnings("unchecked")
+    public static <T> Queue<T> emptyQueue() {
         return (Queue<T>) EMPTY_QUEUE;
     }
 
-    public static <K, V> HashMap<K,V> newHashMapWithSize( int expectedSize )
-    {
-        return new HashMap<>( hashMapCapacity( expectedSize ) );
+    public static <K, V> HashMap<K, V> newHashMapWithSize(int expectedSize) {
+        return new HashMap<>(hashMapCapacity(expectedSize));
     }
 
-    public static <K, V> LinkedHashMap<K,V> newLinkedHashMapWithSize( int expectedSize )
-    {
-        return new LinkedHashMap<>( hashMapCapacity( expectedSize ) );
+    public static <K, V> LinkedHashMap<K, V> newLinkedHashMapWithSize(int expectedSize) {
+        return new LinkedHashMap<>(hashMapCapacity(expectedSize));
     }
 
-    private static int hashMapCapacity( int expectedSize )
-    {
-        if ( expectedSize < 3 )
-        {
-            if ( expectedSize < 0 )
-            {
-                throw new IllegalArgumentException( "Illegal map size: " + expectedSize );
+    private static int hashMapCapacity(int expectedSize) {
+        if (expectedSize < 3) {
+            if (expectedSize < 0) {
+                throw new IllegalArgumentException("Illegal map size: " + expectedSize);
             }
             return expectedSize + 1;
         }
         return (int) ((float) expectedSize / DEFAULT_HASH_MAP_LOAD_FACTOR + 1.0F);
     }
 
-    private static class EmptyQueue<T> extends AbstractQueue<T>
-    {
+    private static class EmptyQueue<T> extends AbstractQueue<T> {
         @Override
-        public Iterator<T> iterator()
-        {
+        public Iterator<T> iterator() {
             return Collections.emptyIterator();
         }
 
         @Override
-        public int size()
-        {
+        public int size() {
             return 0;
         }
 
         @Override
-        public boolean offer( T t )
-        {
+        public boolean offer(T t) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public T poll()
-        {
+        public T poll() {
             return null;
         }
 
         @Override
-        public T peek()
-        {
+        public T peek() {
             return null;
         }
     }

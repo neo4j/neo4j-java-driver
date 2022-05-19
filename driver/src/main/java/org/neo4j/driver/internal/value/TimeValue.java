@@ -19,26 +19,21 @@
 package org.neo4j.driver.internal.value;
 
 import java.time.OffsetTime;
-
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
-public class TimeValue extends ObjectValueAdapter<OffsetTime>
-{
-    public TimeValue( OffsetTime time )
-    {
-        super( time );
+public class TimeValue extends ObjectValueAdapter<OffsetTime> {
+    public TimeValue(OffsetTime time) {
+        super(time);
     }
 
     @Override
-    public OffsetTime asOffsetTime()
-    {
+    public OffsetTime asOffsetTime() {
         return asObject();
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.TIME();
     }
 }

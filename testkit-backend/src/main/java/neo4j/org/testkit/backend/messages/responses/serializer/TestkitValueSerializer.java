@@ -18,39 +18,32 @@
  */
 package neo4j.org.testkit.backend.messages.responses.serializer;
 
+import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherObject;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import java.io.IOException;
-
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 
-import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherObject;
-
-public class TestkitValueSerializer extends StdSerializer<Value>
-{
-    public TestkitValueSerializer( )
-    {
-        super( Value.class );
+public class TestkitValueSerializer extends StdSerializer<Value> {
+    public TestkitValueSerializer() {
+        super(Value.class);
     }
 
     @Override
-    public void serialize( Value value, JsonGenerator gen, SerializerProvider provider ) throws IOException
-    {
-        if ( InternalTypeSystem.TYPE_SYSTEM.BOOLEAN().isTypeOf( value ) )
-        {
-            cypherObject( gen, "CypherBool", value.asBoolean() );
-        } else if ( InternalTypeSystem.TYPE_SYSTEM.NULL().isTypeOf( value ) ) {
-            cypherObject( gen, "CypherNull", () -> gen.writeNullField( "value" ) );
-        } else if ( InternalTypeSystem.TYPE_SYSTEM.INTEGER().isTypeOf( value ) ) {
-            cypherObject( gen, "CypherInt", value.asInt() );
-        } else if ( InternalTypeSystem.TYPE_SYSTEM.FLOAT().isTypeOf( value ) ) {
-            cypherObject( gen, "CypherFloat", value.asDouble() );
-        } else if ( InternalTypeSystem.TYPE_SYSTEM.STRING().isTypeOf( value ) ) {
-            cypherObject( gen, "CypherString", value.asString() );
+    public void serialize(Value value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        if (InternalTypeSystem.TYPE_SYSTEM.BOOLEAN().isTypeOf(value)) {
+            cypherObject(gen, "CypherBool", value.asBoolean());
+        } else if (InternalTypeSystem.TYPE_SYSTEM.NULL().isTypeOf(value)) {
+            cypherObject(gen, "CypherNull", () -> gen.writeNullField("value"));
+        } else if (InternalTypeSystem.TYPE_SYSTEM.INTEGER().isTypeOf(value)) {
+            cypherObject(gen, "CypherInt", value.asInt());
+        } else if (InternalTypeSystem.TYPE_SYSTEM.FLOAT().isTypeOf(value)) {
+            cypherObject(gen, "CypherFloat", value.asDouble());
+        } else if (InternalTypeSystem.TYPE_SYSTEM.STRING().isTypeOf(value)) {
+            cypherObject(gen, "CypherString", value.asString());
         }
-
     }
 }

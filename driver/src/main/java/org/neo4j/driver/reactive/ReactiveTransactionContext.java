@@ -23,6 +23,4 @@ package org.neo4j.driver.reactive;
  *
  * @since 5.0
  */
-public interface ReactiveTransactionContext extends ReactiveQueryRunner
-{
-}
+public interface ReactiveTransactionContext extends ReactiveQueryRunner {}

@@ -23,6 +23,4 @@ package org.neo4j.driver;
  *
  * @since 1.0
  */
-public interface QueryRunner extends SimpleQueryRunner, AutoCloseable
-{
-}
+public interface QueryRunner extends SimpleQueryRunner, AutoCloseable {}

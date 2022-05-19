@@ -26,37 +26,30 @@ import org.neo4j.driver.internal.messaging.Message;
  * Sent by the server to signal that an operation has been ignored.
  * Terminates response sequence.
  */
-public class IgnoredMessage implements Message
-{
-    public final static byte SIGNATURE = 0x7E;
+public class IgnoredMessage implements Message {
+    public static final byte SIGNATURE = 0x7E;
 
     public static final IgnoredMessage IGNORED = new IgnoredMessage();
 
-    private IgnoredMessage()
-    {
-    }
+    private IgnoredMessage() {}
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "IGNORED {}";
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
+    public boolean equals(Object obj) {
         return obj != null && obj.getClass() == getClass();
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return 1;
     }
 }

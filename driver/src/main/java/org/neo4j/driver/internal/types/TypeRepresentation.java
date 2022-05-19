@@ -18,49 +18,44 @@
  */
 package org.neo4j.driver.internal.types;
 
+import static org.neo4j.driver.internal.types.TypeConstructor.LIST;
+
 import org.neo4j.driver.Value;
 import org.neo4j.driver.types.Type;
 
-import static org.neo4j.driver.internal.types.TypeConstructor.LIST;
-
-public class TypeRepresentation implements Type
-{
+public class TypeRepresentation implements Type {
     private final TypeConstructor tyCon;
 
-    public TypeRepresentation( TypeConstructor tyCon )
-    {
+    public TypeRepresentation(TypeConstructor tyCon) {
         this.tyCon = tyCon;
     }
 
     @Override
-    public boolean isTypeOf( Value value )
-    {
-        return tyCon.covers( value );
+    public boolean isTypeOf(Value value) {
+        return tyCon.covers(value);
     }
 
     @Override
-    public String name()
-    {
-        if ( tyCon == LIST )
-        {
+    public String name() {
+        if (tyCon == LIST) {
             return "LIST OF ANY?";
         }
 
         return tyCon.toString();
     }
 
-    public TypeConstructor constructor()
-    {
+    public TypeConstructor constructor() {
         return tyCon;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        { return true; }
-        if ( o == null || getClass() != o.getClass() )
-        { return false; }
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         TypeRepresentation that = (TypeRepresentation) o;
 
@@ -68,8 +63,7 @@ public class TypeRepresentation implements Type
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return tyCon.hashCode();
     }
 }

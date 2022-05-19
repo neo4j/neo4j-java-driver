@@ -25,10 +25,8 @@ package org.neo4j.driver.exceptions;
  * <p>
  * Error code: Neo.ClientError.Security.TokenExpired
  */
-public class TokenExpiredException extends SecurityException
-{
-    public TokenExpiredException( String code, String message )
-    {
-        super( code, message );
+public class TokenExpiredException extends SecurityException {
+    public TokenExpiredException(String code, String message) {
+        super(code, message);
     }
 }

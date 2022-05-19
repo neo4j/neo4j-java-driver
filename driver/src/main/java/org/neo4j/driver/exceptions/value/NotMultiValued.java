@@ -23,13 +23,10 @@ package org.neo4j.driver.exceptions.value;
  * or array.
  * @since 1.0
  */
-public class NotMultiValued extends ValueException
-{
+public class NotMultiValued extends ValueException {
     private static final long serialVersionUID = -7380569883011364090L;
 
-    public NotMultiValued( String message )
-    {
-        super( message );
+    public NotMultiValued(String message) {
+        super(message);
     }
-
 }

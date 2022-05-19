@@ -18,57 +18,47 @@
  */
 package org.neo4j.driver.stress;
 
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.util.cc.LocalOrRemoteClusterExtension;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers( disabledWithoutDocker = true )
-class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
-{
+@Testcontainers(disabledWithoutDocker = true)
+class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context> {
     @RegisterExtension
     static final LocalOrRemoteClusterExtension clusterRule = new LocalOrRemoteClusterExtension();
 
     @Override
-    URI databaseUri()
-    {
+    URI databaseUri() {
         return clusterRule.getClusterUri();
     }
 
     @Override
-    AuthToken authToken()
-    {
+    AuthToken authToken() {
         return clusterRule.getAuthToken();
     }
 
     @Override
-    Config.ConfigBuilder config( Config.ConfigBuilder builder )
-    {
+    Config.ConfigBuilder config(Config.ConfigBuilder builder) {
         return builder;
     }
 
     @Override
-    Context createContext()
-    {
+    Context createContext() {
         return new Context();
     }
 
     @Override
-    boolean handleWriteFailure( Throwable error, Context context )
-    {
-        if ( error instanceof SessionExpiredException )
-        {
-            boolean isLeaderSwitch = error.getMessage().endsWith( "no longer accepts writes" );
-            if ( isLeaderSwitch )
-            {
+    boolean handleWriteFailure(Throwable error, Context context) {
+        if (error instanceof SessionExpiredException) {
+            boolean isLeaderSwitch = error.getMessage().endsWith("no longer accepts writes");
+            if (isLeaderSwitch) {
                 context.leaderSwitch();
                 return true;
             }
@@ -77,34 +67,29 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
     }
 
     @Override
-    void printStats( Context context )
-    {
-        System.out.println( "Nodes read: " + context.getReadNodesCount() );
-        System.out.println( "Nodes created: " + context.getCreatedNodesCount() );
+    void printStats(Context context) {
+        System.out.println("Nodes read: " + context.getReadNodesCount());
+        System.out.println("Nodes created: " + context.getCreatedNodesCount());
 
-        System.out.println( "Leader switches: " + context.getLeaderSwitchCount() );
-        System.out.println( "Bookmark failures: " + context.getBookmarkFailures() );
+        System.out.println("Leader switches: " + context.getLeaderSwitchCount());
+        System.out.println("Bookmark failures: " + context.getBookmarkFailures());
     }
 
     @Override
-    List<BlockingCommand<Context>> createTestSpecificBlockingCommands()
-    {
+    List<BlockingCommand<Context>> createTestSpecificBlockingCommands() {
         return Arrays.asList(
-                new BlockingWriteQueryUsingReadSessionWithRetries<>( driver, false ),
-                new BlockingWriteQueryUsingReadSessionWithRetries<>( driver, true ) );
+                new BlockingWriteQueryUsingReadSessionWithRetries<>(driver, false),
+                new BlockingWriteQueryUsingReadSessionWithRetries<>(driver, true));
     }
 
-    static class Context extends AbstractContext
-    {
+    static class Context extends AbstractContext {
         final AtomicInteger leaderSwitches = new AtomicInteger();
 
-        void leaderSwitch()
-        {
+        void leaderSwitch() {
             leaderSwitches.incrementAndGet();
         }
 
-        int getLeaderSwitchCount()
-        {
+        int getLeaderSwitchCount() {
             return leaderSwitches.get();
         }
     }

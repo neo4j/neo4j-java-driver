@@ -28,40 +28,33 @@ import neo4j.org.testkit.backend.messages.TestkitModule;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler
-{
+public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
     private final ObjectMapper objectMapper = newObjectMapper();
 
     @Override
-    public void channelRead( ChannelHandlerContext ctx, Object msg )
-    {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         String testkitMessage = (String) msg;
         TestkitRequest testkitRequest;
-        try
-        {
-            testkitRequest = objectMapper.readValue( testkitMessage, TestkitRequest.class );
+        try {
+            testkitRequest = objectMapper.readValue(testkitMessage, TestkitRequest.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to deserialize Testkit message", e);
         }
-        catch ( JsonProcessingException e )
-        {
-            throw new RuntimeException( "Failed to deserialize Testkit message", e );
-        }
-        ctx.fireChannelRead( testkitRequest );
+        ctx.fireChannelRead(testkitRequest);
     }
 
     @Override
-    public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
-    {
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         TestkitResponse testkitResponse = (TestkitResponse) msg;
-        String responseStr = objectMapper.writeValueAsString( testkitResponse );
-        ctx.writeAndFlush( responseStr, promise );
+        String responseStr = objectMapper.writeValueAsString(testkitResponse);
+        ctx.writeAndFlush(responseStr, promise);
     }
 
-    public static ObjectMapper newObjectMapper()
-    {
+    public static ObjectMapper newObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
         TestkitModule testkitModule = new TestkitModule();
-        objectMapper.registerModule( testkitModule );
-        objectMapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
+        objectMapper.registerModule(testkitModule);
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         return objectMapper;
     }
 }

@@ -18,44 +18,36 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
+
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-import org.neo4j.driver.internal.async.UnmanagedTransaction;
-
-import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
-
-abstract class AbstractReactiveTransaction
-{
+abstract class AbstractReactiveTransaction {
     protected final UnmanagedTransaction tx;
 
-    protected AbstractReactiveTransaction( UnmanagedTransaction tx )
-    {
+    protected AbstractReactiveTransaction(UnmanagedTransaction tx) {
         this.tx = tx;
     }
 
-    public <T> Publisher<T> commit()
-    {
-        return createEmptyPublisher( tx::commitAsync );
+    public <T> Publisher<T> commit() {
+        return createEmptyPublisher(tx::commitAsync);
     }
 
-    public <T> Publisher<T> rollback()
-    {
-        return createEmptyPublisher( tx::rollbackAsync );
+    public <T> Publisher<T> rollback() {
+        return createEmptyPublisher(tx::rollbackAsync);
     }
 
-    public Publisher<Void> close()
-    {
-        return close( false );
+    public Publisher<Void> close() {
+        return close(false);
     }
 
-    public Publisher<Boolean> isOpen()
-    {
-        return Mono.just( tx.isOpen() );
+    public Publisher<Boolean> isOpen() {
+        return Mono.just(tx.isOpen());
     }
 
-    Publisher<Void> close( boolean commit )
-    {
-        return createEmptyPublisher( () -> tx.closeAsync( commit ) );
+    Publisher<Void> close(boolean commit) {
+        return createEmptyPublisher(() -> tx.closeAsync(commit));
     }
 }

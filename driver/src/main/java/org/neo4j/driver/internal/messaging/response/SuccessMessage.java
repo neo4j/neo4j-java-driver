@@ -18,12 +18,11 @@
  */
 package org.neo4j.driver.internal.messaging.response;
 
-import java.util.Map;
-
-import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.Value;
-
 import static java.lang.String.format;
+
+import java.util.Map;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.messaging.Message;
 
 /**
  * SUCCESS response message
@@ -31,43 +30,36 @@ import static java.lang.String.format;
  * Sent by the server to signal a successful operation.
  * Terminates response sequence.
  */
-public class SuccessMessage implements Message
-{
-    public final static byte SIGNATURE = 0x70;
+public class SuccessMessage implements Message {
+    public static final byte SIGNATURE = 0x70;
 
-    private final Map<String,Value> metadata;
+    private final Map<String, Value> metadata;
 
-    public SuccessMessage( Map<String,Value> metadata )
-    {
+    public SuccessMessage(Map<String, Value> metadata) {
         this.metadata = metadata;
     }
 
-    public Map<String,Value> metadata()
-    {
+    public Map<String, Value> metadata() {
         return metadata;
     }
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public String toString()
-    {
-        return format( "SUCCESS %s", metadata );
+    public String toString() {
+        return format("SUCCESS %s", metadata);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
+    public boolean equals(Object obj) {
         return obj != null && obj.getClass() == getClass();
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return 1;
     }
 }

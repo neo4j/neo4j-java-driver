@@ -18,35 +18,6 @@
  */
 package org.neo4j.driver.internal.async.inbound;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelConfig;
-import io.netty.channel.DefaultChannelId;
-import io.netty.util.Attribute;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.driver.internal.logging.ChannelActivityLogger;
-import org.neo4j.driver.internal.logging.ChannelErrorLogger;
-import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.response.FailureMessage;
-import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
-import org.neo4j.driver.internal.messaging.response.RecordMessage;
-import org.neo4j.driver.internal.messaging.response.SuccessMessage;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.value.IntegerValue;
-
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -69,411 +40,405 @@ import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 
-class InboundMessageDispatcherTest
-{
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelConfig;
+import io.netty.channel.DefaultChannelId;
+import io.netty.util.Attribute;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
+import org.neo4j.driver.internal.logging.ChannelErrorLogger;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
+import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.response.RecordMessage;
+import org.neo4j.driver.internal.messaging.response.SuccessMessage;
+import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.value.IntegerValue;
+
+class InboundMessageDispatcherTest {
     private static final String FAILURE_CODE = "Neo.ClientError.Security.Unauthorized";
     private static final String FAILURE_MESSAGE = "Error Message";
 
     @Test
-    void shouldFailWhenCreatedWithNullChannel()
-    {
-        assertThrows( NullPointerException.class, () -> new InboundMessageDispatcher( null, DEV_NULL_LOGGING ) );
+    void shouldFailWhenCreatedWithNullChannel() {
+        assertThrows(NullPointerException.class, () -> new InboundMessageDispatcher(null, DEV_NULL_LOGGING));
     }
 
     @Test
-    void shouldFailWhenCreatedWithNullLogging()
-    {
-        assertThrows( NullPointerException.class, () -> new InboundMessageDispatcher( newChannelMock(), null ) );
+    void shouldFailWhenCreatedWithNullLogging() {
+        assertThrows(NullPointerException.class, () -> new InboundMessageDispatcher(newChannelMock(), null));
     }
 
     @Test
-    void shouldDequeHandlerOnSuccess()
-    {
+    void shouldDequeHandlerOnSuccess() {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.enqueue( handler );
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
+        ResponseHandler handler = mock(ResponseHandler.class);
+        dispatcher.enqueue(handler);
+        assertEquals(1, dispatcher.queuedHandlersCount());
 
-        Map<String,Value> metadata = new HashMap<>();
-        metadata.put( "key1", value( 1 ) );
-        metadata.put( "key2", value( "2" ) );
-        dispatcher.handleSuccessMessage( metadata );
+        Map<String, Value> metadata = new HashMap<>();
+        metadata.put("key1", value(1));
+        metadata.put("key2", value("2"));
+        dispatcher.handleSuccessMessage(metadata);
 
-        assertEquals( 0, dispatcher.queuedHandlersCount() );
-        verify( handler ).onSuccess( metadata );
+        assertEquals(0, dispatcher.queuedHandlersCount());
+        verify(handler).onSuccess(metadata);
     }
 
     @Test
-    void shouldDequeHandlerOnFailure()
-    {
+    void shouldDequeHandlerOnFailure() {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.enqueue( handler );
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
+        ResponseHandler handler = mock(ResponseHandler.class);
+        dispatcher.enqueue(handler);
+        assertEquals(1, dispatcher.queuedHandlersCount());
 
-        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
+        dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
 
         // "RESET after failure" handler should remain queued
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
-        verifyFailure( handler );
-        assertEquals( FAILURE_CODE, ((Neo4jException) dispatcher.currentError()).code() );
-        assertEquals( FAILURE_MESSAGE, dispatcher.currentError().getMessage() );
+        assertEquals(1, dispatcher.queuedHandlersCount());
+        verifyFailure(handler);
+        assertEquals(FAILURE_CODE, ((Neo4jException) dispatcher.currentError()).code());
+        assertEquals(FAILURE_MESSAGE, dispatcher.currentError().getMessage());
     }
 
     @Test
-    void shouldSendResetOnFailure()
-    {
+    void shouldSendResetOnFailure() {
         Channel channel = newChannelMock();
-        InboundMessageDispatcher dispatcher = newDispatcher( channel );
+        InboundMessageDispatcher dispatcher = newDispatcher(channel);
 
-        dispatcher.enqueue( mock( ResponseHandler.class ) );
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
+        dispatcher.enqueue(mock(ResponseHandler.class));
+        assertEquals(1, dispatcher.queuedHandlersCount());
 
-        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
+        dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
 
-        verify( channel ).writeAndFlush( eq( RESET ), any() );
+        verify(channel).writeAndFlush(eq(RESET), any());
     }
 
     @Test
-    void shouldClearFailureOnSuccessOfResetAfterFailure()
-    {
+    void shouldClearFailureOnSuccessOfResetAfterFailure() {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        dispatcher.enqueue( mock( ResponseHandler.class ) );
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
+        dispatcher.enqueue(mock(ResponseHandler.class));
+        assertEquals(1, dispatcher.queuedHandlersCount());
 
-        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
-        dispatcher.handleSuccessMessage( emptyMap() );
+        dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
+        dispatcher.handleSuccessMessage(emptyMap());
 
-        assertNull( dispatcher.currentError() );
+        assertNull(dispatcher.currentError());
     }
 
     @Test
-    void shouldPeekHandlerOnRecord()
-    {
+    void shouldPeekHandlerOnRecord() {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.enqueue( handler );
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
+        ResponseHandler handler = mock(ResponseHandler.class);
+        dispatcher.enqueue(handler);
+        assertEquals(1, dispatcher.queuedHandlersCount());
 
-        Value[] fields1 = {new IntegerValue( 1 )};
-        Value[] fields2 = {new IntegerValue( 2 )};
-        Value[] fields3 = {new IntegerValue( 3 )};
+        Value[] fields1 = {new IntegerValue(1)};
+        Value[] fields2 = {new IntegerValue(2)};
+        Value[] fields3 = {new IntegerValue(3)};
 
-        dispatcher.handleRecordMessage( fields1 );
-        dispatcher.handleRecordMessage( fields2 );
-        dispatcher.handleRecordMessage( fields3 );
+        dispatcher.handleRecordMessage(fields1);
+        dispatcher.handleRecordMessage(fields2);
+        dispatcher.handleRecordMessage(fields3);
 
-        verify( handler ).onRecord( fields1 );
-        verify( handler ).onRecord( fields2 );
-        verify( handler ).onRecord( fields3 );
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
+        verify(handler).onRecord(fields1);
+        verify(handler).onRecord(fields2);
+        verify(handler).onRecord(fields3);
+        assertEquals(1, dispatcher.queuedHandlersCount());
     }
 
     @Test
-    void shouldFailAllHandlersOnChannelError()
-    {
+    void shouldFailAllHandlersOnChannelError() {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        ResponseHandler handler1 = mock( ResponseHandler.class );
-        ResponseHandler handler2 = mock( ResponseHandler.class );
-        ResponseHandler handler3 = mock( ResponseHandler.class );
+        ResponseHandler handler1 = mock(ResponseHandler.class);
+        ResponseHandler handler2 = mock(ResponseHandler.class);
+        ResponseHandler handler3 = mock(ResponseHandler.class);
 
-        dispatcher.enqueue( handler1 );
-        dispatcher.enqueue( handler2 );
-        dispatcher.enqueue( handler3 );
+        dispatcher.enqueue(handler1);
+        dispatcher.enqueue(handler2);
+        dispatcher.enqueue(handler3);
 
-        RuntimeException fatalError = new RuntimeException( "Fatal!" );
-        dispatcher.handleChannelError( fatalError );
+        RuntimeException fatalError = new RuntimeException("Fatal!");
+        dispatcher.handleChannelError(fatalError);
 
-        InOrder inOrder = inOrder( handler1, handler2, handler3 );
-        inOrder.verify( handler1 ).onFailure( fatalError );
-        inOrder.verify( handler2 ).onFailure( fatalError );
-        inOrder.verify( handler3 ).onFailure( fatalError );
+        InOrder inOrder = inOrder(handler1, handler2, handler3);
+        inOrder.verify(handler1).onFailure(fatalError);
+        inOrder.verify(handler2).onFailure(fatalError);
+        inOrder.verify(handler3).onFailure(fatalError);
     }
 
     @Test
-    void shouldFailNewHandlerAfterChannelError()
-    {
+    void shouldFailNewHandlerAfterChannelError() {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        RuntimeException fatalError = new RuntimeException( "Fatal!" );
-        dispatcher.handleChannelError( fatalError );
+        RuntimeException fatalError = new RuntimeException("Fatal!");
+        dispatcher.handleChannelError(fatalError);
 
-        ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.enqueue( handler );
+        ResponseHandler handler = mock(ResponseHandler.class);
+        dispatcher.enqueue(handler);
 
-        verify( handler ).onFailure( fatalError );
+        verify(handler).onFailure(fatalError);
     }
 
     @Test
-    void shouldAttachChannelErrorOnExistingError()
-    {
+    void shouldAttachChannelErrorOnExistingError() {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.enqueue( handler );
+        ResponseHandler handler = mock(ResponseHandler.class);
+        dispatcher.enqueue(handler);
 
-        dispatcher.handleFailureMessage( "Neo.ClientError", "First error!" );
-        RuntimeException fatalError = new RuntimeException( "Second Error!" );
-        dispatcher.handleChannelError( fatalError );
+        dispatcher.handleFailureMessage("Neo.ClientError", "First error!");
+        RuntimeException fatalError = new RuntimeException("Second Error!");
+        dispatcher.handleChannelError(fatalError);
 
-        verify( handler ).onFailure( argThat(
-                error -> error instanceof ClientException && error.getMessage().equals( "First error!" ) &&
-                        error.getSuppressed().length == 1 && error.getSuppressed()[0].getMessage().equals( "Second Error!" ) ) );
+        verify(handler)
+                .onFailure(argThat(error -> error instanceof ClientException
+                        && error.getMessage().equals("First error!")
+                        && error.getSuppressed().length == 1
+                        && error.getSuppressed()[0].getMessage().equals("Second Error!")));
     }
 
     @Test
-    void shouldDequeHandlerOnIgnored()
-    {
+    void shouldDequeHandlerOnIgnored() {
         InboundMessageDispatcher dispatcher = newDispatcher();
-        ResponseHandler handler = mock( ResponseHandler.class );
+        ResponseHandler handler = mock(ResponseHandler.class);
 
-        dispatcher.enqueue( handler );
+        dispatcher.enqueue(handler);
         dispatcher.handleIgnoredMessage();
 
-        assertEquals( 0, dispatcher.queuedHandlersCount() );
+        assertEquals(0, dispatcher.queuedHandlersCount());
     }
 
     @Test
-    void shouldFailHandlerOnIgnoredMessageWithExistingError()
-    {
+    void shouldFailHandlerOnIgnoredMessageWithExistingError() {
         InboundMessageDispatcher dispatcher = newDispatcher();
-        ResponseHandler handler1 = mock( ResponseHandler.class );
-        ResponseHandler handler2 = mock( ResponseHandler.class );
+        ResponseHandler handler1 = mock(ResponseHandler.class);
+        ResponseHandler handler2 = mock(ResponseHandler.class);
 
-        dispatcher.enqueue( handler1 );
-        dispatcher.enqueue( handler2 );
+        dispatcher.enqueue(handler1);
+        dispatcher.enqueue(handler2);
 
-        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
-        verifyFailure( handler1 );
-        verify( handler2, only() ).canManageAutoRead();
+        dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
+        verifyFailure(handler1);
+        verify(handler2, only()).canManageAutoRead();
 
         dispatcher.handleIgnoredMessage();
-        verifyFailure( handler2 );
+        verifyFailure(handler2);
     }
 
     @Test
-    void shouldFailHandlerOnIgnoredMessageWhenNoErrorAndNotHandlingReset()
-    {
+    void shouldFailHandlerOnIgnoredMessageWhenNoErrorAndNotHandlingReset() {
         InboundMessageDispatcher dispatcher = newDispatcher();
-        ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.enqueue( handler );
+        ResponseHandler handler = mock(ResponseHandler.class);
+        dispatcher.enqueue(handler);
 
         dispatcher.handleIgnoredMessage();
 
-        verify( handler ).onFailure( any( ClientException.class ) );
+        verify(handler).onFailure(any(ClientException.class));
     }
 
     @Test
-    void shouldDequeAndFailHandlerOnIgnoredWhenErrorHappened()
-    {
+    void shouldDequeAndFailHandlerOnIgnoredWhenErrorHappened() {
         InboundMessageDispatcher dispatcher = newDispatcher();
-        ResponseHandler handler1 = mock( ResponseHandler.class );
-        ResponseHandler handler2 = mock( ResponseHandler.class );
+        ResponseHandler handler1 = mock(ResponseHandler.class);
+        ResponseHandler handler2 = mock(ResponseHandler.class);
 
-        dispatcher.enqueue( handler1 );
-        dispatcher.enqueue( handler2 );
-        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
+        dispatcher.enqueue(handler1);
+        dispatcher.enqueue(handler2);
+        dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
         dispatcher.handleIgnoredMessage();
 
         // "RESET after failure" handler should remain queued
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
-        verifyFailure( handler1 );
-        verifyFailure( handler2 );
+        assertEquals(1, dispatcher.queuedHandlersCount());
+        verifyFailure(handler1);
+        verifyFailure(handler2);
     }
 
     @Test
-    void shouldThrowWhenNoHandlerToHandleRecordMessage()
-    {
+    void shouldThrowWhenNoHandlerToHandleRecordMessage() {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        assertThrows( IllegalStateException.class, () -> dispatcher.handleRecordMessage( new Value[]{value( 1 ), value( 2 )} ) );
+        assertThrows(
+                IllegalStateException.class, () -> dispatcher.handleRecordMessage(new Value[] {value(1), value(2)}));
     }
 
     @Test
-    void shouldKeepSingleAutoReadManagingHandler()
-    {
+    void shouldKeepSingleAutoReadManagingHandler() {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
         ResponseHandler handler1 = newAutoReadManagingResponseHandler();
         ResponseHandler handler2 = newAutoReadManagingResponseHandler();
         ResponseHandler handler3 = newAutoReadManagingResponseHandler();
 
-        dispatcher.enqueue( handler1 );
-        dispatcher.enqueue( handler2 );
-        dispatcher.enqueue( handler3 );
+        dispatcher.enqueue(handler1);
+        dispatcher.enqueue(handler2);
+        dispatcher.enqueue(handler3);
 
-        InOrder inOrder = inOrder( handler1, handler2, handler3 );
-        inOrder.verify( handler1 ).disableAutoReadManagement();
-        inOrder.verify( handler2 ).disableAutoReadManagement();
-        inOrder.verify( handler3, never() ).disableAutoReadManagement();
+        InOrder inOrder = inOrder(handler1, handler2, handler3);
+        inOrder.verify(handler1).disableAutoReadManagement();
+        inOrder.verify(handler2).disableAutoReadManagement();
+        inOrder.verify(handler3, never()).disableAutoReadManagement();
     }
 
     @Test
-    void shouldKeepTrackOfAutoReadManagingHandler()
-    {
+    void shouldKeepTrackOfAutoReadManagingHandler() {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
         ResponseHandler handler1 = newAutoReadManagingResponseHandler();
         ResponseHandler handler2 = newAutoReadManagingResponseHandler();
 
-        assertNull( dispatcher.autoReadManagingHandler() );
+        assertNull(dispatcher.autoReadManagingHandler());
 
-        dispatcher.enqueue( handler1 );
-        assertEquals( handler1, dispatcher.autoReadManagingHandler() );
+        dispatcher.enqueue(handler1);
+        assertEquals(handler1, dispatcher.autoReadManagingHandler());
 
-        dispatcher.enqueue( handler2 );
-        assertEquals( handler2, dispatcher.autoReadManagingHandler() );
+        dispatcher.enqueue(handler2);
+        assertEquals(handler2, dispatcher.autoReadManagingHandler());
     }
 
     @Test
-    void shouldForgetAutoReadManagingHandlerWhenItIsRemoved()
-    {
+    void shouldForgetAutoReadManagingHandlerWhenItIsRemoved() {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        ResponseHandler handler1 = mock( ResponseHandler.class );
-        ResponseHandler handler2 = mock( ResponseHandler.class );
+        ResponseHandler handler1 = mock(ResponseHandler.class);
+        ResponseHandler handler2 = mock(ResponseHandler.class);
         ResponseHandler handler3 = newAutoReadManagingResponseHandler();
 
-        dispatcher.enqueue( handler1 );
-        dispatcher.enqueue( handler2 );
-        dispatcher.enqueue( handler3 );
-        assertEquals( handler3, dispatcher.autoReadManagingHandler() );
+        dispatcher.enqueue(handler1);
+        dispatcher.enqueue(handler2);
+        dispatcher.enqueue(handler3);
+        assertEquals(handler3, dispatcher.autoReadManagingHandler());
 
-        dispatcher.handleSuccessMessage( emptyMap() );
-        dispatcher.handleSuccessMessage( emptyMap() );
-        dispatcher.handleSuccessMessage( emptyMap() );
+        dispatcher.handleSuccessMessage(emptyMap());
+        dispatcher.handleSuccessMessage(emptyMap());
+        dispatcher.handleSuccessMessage(emptyMap());
 
-        assertNull( dispatcher.autoReadManagingHandler() );
+        assertNull(dispatcher.autoReadManagingHandler());
     }
 
     @Test
-    void shouldReEnableAutoReadWhenAutoReadManagingHandlerIsRemoved()
-    {
+    void shouldReEnableAutoReadWhenAutoReadManagingHandlerIsRemoved() {
         Channel channel = newChannelMock();
-        InboundMessageDispatcher dispatcher = newDispatcher( channel );
+        InboundMessageDispatcher dispatcher = newDispatcher(channel);
 
         ResponseHandler handler = newAutoReadManagingResponseHandler();
-        dispatcher.enqueue( handler );
-        assertEquals( handler, dispatcher.autoReadManagingHandler() );
-        verify( handler, never() ).disableAutoReadManagement();
-        verify( channel.config(), never() ).setAutoRead( anyBoolean() );
+        dispatcher.enqueue(handler);
+        assertEquals(handler, dispatcher.autoReadManagingHandler());
+        verify(handler, never()).disableAutoReadManagement();
+        verify(channel.config(), never()).setAutoRead(anyBoolean());
 
-        dispatcher.handleSuccessMessage( emptyMap() );
+        dispatcher.handleSuccessMessage(emptyMap());
 
-        assertNull( dispatcher.autoReadManagingHandler() );
-        verify( handler ).disableAutoReadManagement();
-        verify( channel.config() ).setAutoRead( anyBoolean() );
+        assertNull(dispatcher.autoReadManagingHandler());
+        verify(handler).disableAutoReadManagement();
+        verify(channel.config()).setAutoRead(anyBoolean());
     }
 
     @ParameterizedTest
-    @ValueSource( classes = {SuccessMessage.class, FailureMessage.class, RecordMessage.class, IgnoredMessage.class} )
-    void shouldCreateChannelActivityLoggerAndLogDebugMessageOnMessageHandling( Class<? extends Message> message )
-    {
+    @ValueSource(classes = {SuccessMessage.class, FailureMessage.class, RecordMessage.class, IgnoredMessage.class})
+    void shouldCreateChannelActivityLoggerAndLogDebugMessageOnMessageHandling(Class<? extends Message> message) {
         // GIVEN
         Channel channel = newChannelMock();
-        Logging logging = mock( Logging.class );
-        Logger logger = mock( Logger.class );
-        when( logger.isDebugEnabled() ).thenReturn( true );
-        when( logging.getLog( InboundMessageDispatcher.class ) ).thenReturn( logger );
-        ChannelErrorLogger errorLogger = mock( ChannelErrorLogger.class );
-        when( logging.getLog( ChannelErrorLogger.class ) ).thenReturn( errorLogger );
-        InboundMessageDispatcher dispatcher = new InboundMessageDispatcher( channel, logging );
-        ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.enqueue( handler );
+        Logging logging = mock(Logging.class);
+        Logger logger = mock(Logger.class);
+        when(logger.isDebugEnabled()).thenReturn(true);
+        when(logging.getLog(InboundMessageDispatcher.class)).thenReturn(logger);
+        ChannelErrorLogger errorLogger = mock(ChannelErrorLogger.class);
+        when(logging.getLog(ChannelErrorLogger.class)).thenReturn(errorLogger);
+        InboundMessageDispatcher dispatcher = new InboundMessageDispatcher(channel, logging);
+        ResponseHandler handler = mock(ResponseHandler.class);
+        dispatcher.enqueue(handler);
 
         // WHEN
-        if ( SuccessMessage.class.isAssignableFrom( message ) )
-        {
-            dispatcher.handleSuccessMessage( new HashMap<>() );
-        }
-        else if ( FailureMessage.class.isAssignableFrom( message ) )
-        {
-            dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
-        }
-        else if ( RecordMessage.class.isAssignableFrom( message ) )
-        {
-            dispatcher.handleRecordMessage( Values.values() );
-        }
-        else if ( IgnoredMessage.class.isAssignableFrom( message ) )
-        {
+        if (SuccessMessage.class.isAssignableFrom(message)) {
+            dispatcher.handleSuccessMessage(new HashMap<>());
+        } else if (FailureMessage.class.isAssignableFrom(message)) {
+            dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
+        } else if (RecordMessage.class.isAssignableFrom(message)) {
+            dispatcher.handleRecordMessage(Values.values());
+        } else if (IgnoredMessage.class.isAssignableFrom(message)) {
             dispatcher.handleIgnoredMessage();
-        }
-        else
-        {
-            fail( "Unexpected message type parameter provided" );
+        } else {
+            fail("Unexpected message type parameter provided");
         }
 
         // THEN
-        assertTrue( dispatcher.getLog() instanceof ChannelActivityLogger );
-        assertTrue( dispatcher.getErrorLog() instanceof ChannelErrorLogger );
-        verify( logger ).debug( anyString(), any( Object.class ) );
+        assertTrue(dispatcher.getLog() instanceof ChannelActivityLogger);
+        assertTrue(dispatcher.getErrorLog() instanceof ChannelErrorLogger);
+        verify(logger).debug(anyString(), any(Object.class));
     }
 
     @Test
-    void shouldCreateChannelErrorLoggerAndLogDebugMessageOnChannelError()
-    {
+    void shouldCreateChannelErrorLoggerAndLogDebugMessageOnChannelError() {
         // GIVEN
         Channel channel = newChannelMock();
-        Logging logging = mock( Logging.class );
-        Logger logger = mock( Logger.class );
-        when( logger.isDebugEnabled() ).thenReturn( true );
-        when( logging.getLog( InboundMessageDispatcher.class ) ).thenReturn( logger );
-        ChannelErrorLogger errorLogger = mock( ChannelErrorLogger.class );
-        when( errorLogger.isDebugEnabled() ).thenReturn( true );
-        when( logging.getLog( ChannelErrorLogger.class ) ).thenReturn( errorLogger );
-        InboundMessageDispatcher dispatcher = new InboundMessageDispatcher( channel, logging );
-        ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.enqueue( handler );
-        Throwable throwable = mock( Throwable.class );
+        Logging logging = mock(Logging.class);
+        Logger logger = mock(Logger.class);
+        when(logger.isDebugEnabled()).thenReturn(true);
+        when(logging.getLog(InboundMessageDispatcher.class)).thenReturn(logger);
+        ChannelErrorLogger errorLogger = mock(ChannelErrorLogger.class);
+        when(errorLogger.isDebugEnabled()).thenReturn(true);
+        when(logging.getLog(ChannelErrorLogger.class)).thenReturn(errorLogger);
+        InboundMessageDispatcher dispatcher = new InboundMessageDispatcher(channel, logging);
+        ResponseHandler handler = mock(ResponseHandler.class);
+        dispatcher.enqueue(handler);
+        Throwable throwable = mock(Throwable.class);
 
         // WHEN
-        dispatcher.handleChannelError( throwable );
+        dispatcher.handleChannelError(throwable);
 
         // THEN
-        assertTrue( dispatcher.getLog() instanceof ChannelActivityLogger );
-        assertTrue( dispatcher.getErrorLog() instanceof ChannelErrorLogger );
-        verify( errorLogger ).debug( contains( throwable.getClass().toString() ) );
+        assertTrue(dispatcher.getLog() instanceof ChannelActivityLogger);
+        assertTrue(dispatcher.getErrorLog() instanceof ChannelErrorLogger);
+        verify(errorLogger).debug(contains(throwable.getClass().toString()));
     }
 
-    private static void verifyFailure( ResponseHandler handler )
-    {
-        ArgumentCaptor<Neo4jException> captor = ArgumentCaptor.forClass( Neo4jException.class );
-        verify( handler ).onFailure( captor.capture() );
-        assertEquals( FAILURE_CODE, captor.getValue().code() );
-        assertEquals( FAILURE_MESSAGE, captor.getValue().getMessage() );
+    private static void verifyFailure(ResponseHandler handler) {
+        ArgumentCaptor<Neo4jException> captor = ArgumentCaptor.forClass(Neo4jException.class);
+        verify(handler).onFailure(captor.capture());
+        assertEquals(FAILURE_CODE, captor.getValue().code());
+        assertEquals(FAILURE_MESSAGE, captor.getValue().getMessage());
     }
 
-    private static InboundMessageDispatcher newDispatcher()
-    {
-        return newDispatcher( newChannelMock() );
+    private static InboundMessageDispatcher newDispatcher() {
+        return newDispatcher(newChannelMock());
     }
 
-    private static InboundMessageDispatcher newDispatcher( Channel channel )
-    {
-        return new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
+    private static InboundMessageDispatcher newDispatcher(Channel channel) {
+        return new InboundMessageDispatcher(channel, DEV_NULL_LOGGING);
     }
 
-    @SuppressWarnings( "unchecked" )
-    private static Channel newChannelMock()
-    {
-        Channel channel = mock( Channel.class );
-        when( channel.id() ).thenReturn( DefaultChannelId.newInstance() );
-        ChannelConfig channelConfig = mock( ChannelConfig.class );
-        when( channel.config() ).thenReturn( channelConfig );
-        Attribute attribute = mock( Attribute.class );
-        when( channel.attr( any() ) ).thenReturn( attribute );
+    @SuppressWarnings("unchecked")
+    private static Channel newChannelMock() {
+        Channel channel = mock(Channel.class);
+        when(channel.id()).thenReturn(DefaultChannelId.newInstance());
+        ChannelConfig channelConfig = mock(ChannelConfig.class);
+        when(channel.config()).thenReturn(channelConfig);
+        Attribute attribute = mock(Attribute.class);
+        when(channel.attr(any())).thenReturn(attribute);
         return channel;
     }
 
-    private static ResponseHandler newAutoReadManagingResponseHandler()
-    {
-        ResponseHandler handler = mock( ResponseHandler.class );
-        when( handler.canManageAutoRead() ).thenReturn( true );
+    private static ResponseHandler newAutoReadManagingResponseHandler() {
+        ResponseHandler handler = mock(ResponseHandler.class);
+        when(handler.canManageAutoRead()).thenReturn(true);
         return handler;
     }
 }

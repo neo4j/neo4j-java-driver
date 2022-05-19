@@ -18,8 +18,9 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import java.util.Map;
+import static java.util.Objects.requireNonNull;
 
+import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
@@ -27,45 +28,33 @@ import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 
-import static java.util.Objects.requireNonNull;
-
-public class SessionPullResponseCompletionListener implements PullResponseCompletionListener
-{
+public class SessionPullResponseCompletionListener implements PullResponseCompletionListener {
     private final BookmarksHolder bookmarksHolder;
     private final Connection connection;
 
-    public SessionPullResponseCompletionListener( Connection connection, BookmarksHolder bookmarksHolder )
-    {
-        this.connection = requireNonNull( connection );
-        this.bookmarksHolder = requireNonNull( bookmarksHolder );
+    public SessionPullResponseCompletionListener(Connection connection, BookmarksHolder bookmarksHolder) {
+        this.connection = requireNonNull(connection);
+        this.bookmarksHolder = requireNonNull(bookmarksHolder);
     }
 
     @Override
-    public void afterSuccess( Map<String,Value> metadata )
-    {
+    public void afterSuccess(Map<String, Value> metadata) {
         releaseConnection();
-        bookmarksHolder.setBookmark( MetadataExtractor.extractBookmarks( metadata ) );
+        bookmarksHolder.setBookmark(MetadataExtractor.extractBookmarks(metadata));
     }
 
     @Override
-    public void afterFailure( Throwable error )
-    {
-        if ( error instanceof AuthorizationExpiredException )
-        {
-            connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
-        }
-        else if ( error instanceof ConnectionReadTimeoutException )
-        {
-            connection.terminateAndRelease( error.getMessage() );
-        }
-        else
-        {
+    public void afterFailure(Throwable error) {
+        if (error instanceof AuthorizationExpiredException) {
+            connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
+        } else if (error instanceof ConnectionReadTimeoutException) {
+            connection.terminateAndRelease(error.getMessage());
+        } else {
             releaseConnection();
         }
     }
 
-    private void releaseConnection()
-    {
+    private void releaseConnection() {
         connection.release(); // release in background
     }
 }

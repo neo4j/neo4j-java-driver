@@ -19,17 +19,15 @@
 package org.neo4j.driver.internal.spi;
 
 import java.util.Map;
-
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 
-public interface ResponseHandler
-{
-    void onSuccess( Map<String,Value> metadata );
+public interface ResponseHandler {
+    void onSuccess(Map<String, Value> metadata);
 
-    void onFailure( Throwable error );
+    void onFailure(Throwable error);
 
-    void onRecord( Value[] fields );
+    void onRecord(Value[] fields);
 
     /**
      * Tells whether this response handler is able to manage auto-read of the underlying connection using {@link Connection#enableAutoRead()} and
@@ -40,8 +38,7 @@ public interface ResponseHandler
      * racing with each other. {@link InboundMessageDispatcher} is responsible for tracking these handlers and disabling auto-read management to maintain just
      * a single auto-read managing handler per connection.
      */
-    default boolean canManageAutoRead()
-    {
+    default boolean canManageAutoRead() {
         return false;
     }
 
@@ -49,8 +46,5 @@ public interface ResponseHandler
      * If this response handler is able to manage auto-read of the underlying connection, then this method signals it to
      * stop changing auto-read setting for the connection.
      */
-    default void disableAutoReadManagement()
-    {
-
-    }
+    default void disableAutoReadManagement() {}
 }

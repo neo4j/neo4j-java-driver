@@ -18,45 +18,45 @@
  */
 package org.neo4j.driver.stress;
 
-import reactor.core.publisher.Flux;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.reactive.RxTransaction;
-
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 
-public class RxFailingQueryInTx<C extends AbstractContext> extends AbstractRxQuery<C>
-{
-    public RxFailingQueryInTx( Driver driver )
-    {
-        super( driver, false );
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.RxTransaction;
+import reactor.core.publisher.Flux;
+
+public class RxFailingQueryInTx<C extends AbstractContext> extends AbstractRxQuery<C> {
+    public RxFailingQueryInTx(Driver driver) {
+        super(driver, false);
     }
 
     @Override
-    public CompletionStage<Void> execute( C context )
-    {
+    public CompletionStage<Void> execute(C context) {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        RxSession session = newSession( AccessMode.READ, context );
-        Flux.usingWhen( session.beginTransaction(),
-                tx -> tx.run( "UNWIND [10, 5, 0] AS x RETURN 10 / x" ).records(),
-                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null )
-                .subscribe( record -> {
-                    assertThat( record.get( 0 ).asInt(), either( equalTo( 1 ) ).or( equalTo( 2 ) ) );
-                }, error -> {
-                    Throwable cause = Futures.completionExceptionCause( error );
-                    assertThat( cause, is( arithmeticError() ) );
-                    queryFinished.complete( null );
-                });
+        RxSession session = newSession(AccessMode.READ, context);
+        Flux.usingWhen(
+                        session.beginTransaction(),
+                        tx -> tx.run("UNWIND [10, 5, 0] AS x RETURN 10 / x").records(),
+                        RxTransaction::commit,
+                        (tx, error) -> tx.rollback(),
+                        null)
+                .subscribe(
+                        record -> {
+                            assertThat(record.get(0).asInt(), either(equalTo(1)).or(equalTo(2)));
+                        },
+                        error -> {
+                            Throwable cause = Futures.completionExceptionCause(error);
+                            assertThat(cause, is(arithmeticError()));
+                            queryFinished.complete(null);
+                        });
         return queryFinished;
     }
 }

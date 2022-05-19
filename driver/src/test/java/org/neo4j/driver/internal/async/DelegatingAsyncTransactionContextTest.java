@@ -18,117 +18,108 @@
  */
 package org.neo4j.driver.internal.async;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.mock;
-
-public class DelegatingAsyncTransactionContextTest
-{
+public class DelegatingAsyncTransactionContextTest {
     AsyncTransaction transaction;
     DelegatingAsyncTransactionContext context;
 
     @BeforeEach
-    void beforeEach()
-    {
-        transaction = mock( AsyncTransaction.class );
-        context = new DelegatingAsyncTransactionContext( transaction );
+    void beforeEach() {
+        transaction = mock(AsyncTransaction.class);
+        context = new DelegatingAsyncTransactionContext(transaction);
     }
 
     @Test
-    void shouldDelegateRunWithValueParams()
-    {
+    void shouldDelegateRunWithValueParams() {
         // GIVEN
         String query = "something";
-        Value params = mock( Value.class );
-        CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture( null );
-        given( transaction.runAsync( query, params ) ).willReturn( expected );
+        Value params = mock(Value.class);
+        CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture(null);
+        given(transaction.runAsync(query, params)).willReturn(expected);
 
         // WHEN
-        CompletionStage<ResultCursor> actual = context.runAsync( query, params );
+        CompletionStage<ResultCursor> actual = context.runAsync(query, params);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().runAsync( query, params );
+        assertEquals(expected, actual);
+        then(transaction).should().runAsync(query, params);
     }
 
     @Test
-    void shouldDelegateRunWithMapParams()
-    {
+    void shouldDelegateRunWithMapParams() {
         // GIVEN
         String query = "something";
-        Map<String,Object> params = Collections.emptyMap();
-        CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture( null );
-        given( transaction.runAsync( query, params ) ).willReturn( expected );
+        Map<String, Object> params = Collections.emptyMap();
+        CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture(null);
+        given(transaction.runAsync(query, params)).willReturn(expected);
 
         // WHEN
-        CompletionStage<ResultCursor> actual = context.runAsync( query, params );
+        CompletionStage<ResultCursor> actual = context.runAsync(query, params);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().runAsync( query, params );
+        assertEquals(expected, actual);
+        then(transaction).should().runAsync(query, params);
     }
 
     @Test
-    void shouldDelegateRunWithRecordParams()
-    {
+    void shouldDelegateRunWithRecordParams() {
         // GIVEN
         String query = "something";
-        Record params = mock( Record.class );
-        CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture( null );
-        given( transaction.runAsync( query, params ) ).willReturn( expected );
+        Record params = mock(Record.class);
+        CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture(null);
+        given(transaction.runAsync(query, params)).willReturn(expected);
 
         // WHEN
-        CompletionStage<ResultCursor> actual = context.runAsync( query, params );
+        CompletionStage<ResultCursor> actual = context.runAsync(query, params);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().runAsync( query, params );
+        assertEquals(expected, actual);
+        then(transaction).should().runAsync(query, params);
     }
 
     @Test
-    void shouldDelegateRun()
-    {
+    void shouldDelegateRun() {
         // GIVEN
         String query = "something";
-        CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture( null );
-        given( transaction.runAsync( query ) ).willReturn( expected );
+        CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture(null);
+        given(transaction.runAsync(query)).willReturn(expected);
 
         // WHEN
-        CompletionStage<ResultCursor> actual = context.runAsync( query );
+        CompletionStage<ResultCursor> actual = context.runAsync(query);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().runAsync( query );
+        assertEquals(expected, actual);
+        then(transaction).should().runAsync(query);
     }
 
     @Test
-    void shouldDelegateRunWithQueryType()
-    {
+    void shouldDelegateRunWithQueryType() {
         // GIVEN
-        Query query = mock( Query.class );
-        CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture( null );
-        given( transaction.runAsync( query ) ).willReturn( expected );
+        Query query = mock(Query.class);
+        CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture(null);
+        given(transaction.runAsync(query)).willReturn(expected);
 
         // WHEN
-        CompletionStage<ResultCursor> actual = context.runAsync( query );
+        CompletionStage<ResultCursor> actual = context.runAsync(query);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().runAsync( query );
+        assertEquals(expected, actual);
+        then(transaction).should().runAsync(query);
     }
 }

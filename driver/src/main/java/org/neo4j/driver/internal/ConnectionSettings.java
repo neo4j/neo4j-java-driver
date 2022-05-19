@@ -24,31 +24,26 @@ import org.neo4j.driver.AuthToken;
  * The connection settings are used whenever a new connection is
  * established to a server, specifically as part of the INIT request.
  */
-public class ConnectionSettings
-{
+public class ConnectionSettings {
     private final AuthToken authToken;
     private final String userAgent;
     private final int connectTimeoutMillis;
 
-    public ConnectionSettings( AuthToken authToken, String userAgent, int connectTimeoutMillis )
-    {
+    public ConnectionSettings(AuthToken authToken, String userAgent, int connectTimeoutMillis) {
         this.authToken = authToken;
         this.userAgent = userAgent;
         this.connectTimeoutMillis = connectTimeoutMillis;
     }
 
-    public AuthToken authToken()
-    {
+    public AuthToken authToken() {
         return authToken;
     }
 
-    public String userAgent()
-    {
+    public String userAgent() {
         return userAgent;
     }
 
-    public int connectTimeoutMillis()
-    {
+    public int connectTimeoutMillis() {
         return connectTimeoutMillis;
     }
 }

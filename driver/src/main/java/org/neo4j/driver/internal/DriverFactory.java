@@ -18,13 +18,15 @@
  */
 package org.neo4j.driver.internal;
 
+import static org.neo4j.driver.internal.Scheme.isRoutingScheme;
+import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
+import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-
 import java.net.URI;
-
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
@@ -57,113 +59,153 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddressResolver;
 
-import static org.neo4j.driver.internal.Scheme.isRoutingScheme;
-import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
-import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
+public class DriverFactory {
+    public static final String NO_ROUTING_CONTEXT_ERROR_MESSAGE =
+            "Routing parameters are not supported with scheme 'bolt'. Given URI: ";
 
-public class DriverFactory
-{
-    public static final String NO_ROUTING_CONTEXT_ERROR_MESSAGE = "Routing parameters are not supported with scheme 'bolt'. Given URI: ";
-
-    public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
-                                     RetrySettings retrySettings, Config config, SecurityPlan securityPlan )
-    {
-        return newInstance( uri, authToken, routingSettings, retrySettings, config, null, securityPlan );
+    public final Driver newInstance(
+            URI uri,
+            AuthToken authToken,
+            RoutingSettings routingSettings,
+            RetrySettings retrySettings,
+            Config config,
+            SecurityPlan securityPlan) {
+        return newInstance(uri, authToken, routingSettings, retrySettings, config, null, securityPlan);
     }
 
-    public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
-                                     RetrySettings retrySettings, Config config, EventLoopGroup eventLoopGroup, SecurityPlan securityPlan )
-    {
+    public final Driver newInstance(
+            URI uri,
+            AuthToken authToken,
+            RoutingSettings routingSettings,
+            RetrySettings retrySettings,
+            Config config,
+            EventLoopGroup eventLoopGroup,
+            SecurityPlan securityPlan) {
         Bootstrap bootstrap;
         boolean ownsEventLoopGroup;
-        if ( eventLoopGroup == null )
-        {
-            bootstrap = createBootstrap( config.eventLoopThreads() );
+        if (eventLoopGroup == null) {
+            bootstrap = createBootstrap(config.eventLoopThreads());
             ownsEventLoopGroup = true;
-        }
-        else
-        {
-            bootstrap = createBootstrap( eventLoopGroup );
+        } else {
+            bootstrap = createBootstrap(eventLoopGroup);
             ownsEventLoopGroup = false;
         }
 
         authToken = authToken == null ? AuthTokens.none() : authToken;
 
-        BoltServerAddress address = new BoltServerAddress( uri );
-        RoutingSettings newRoutingSettings = routingSettings.withRoutingContext( new RoutingContext( uri ) );
+        BoltServerAddress address = new BoltServerAddress(uri);
+        RoutingSettings newRoutingSettings = routingSettings.withRoutingContext(new RoutingContext(uri));
 
-        InternalLoggerFactory.setDefaultFactory( new NettyLogging( config.logging() ) );
+        InternalLoggerFactory.setDefaultFactory(new NettyLogging(config.logging()));
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
-        RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
+        RetryLogic retryLogic = createRetryLogic(retrySettings, eventExecutorGroup, config.logging());
 
-        MetricsProvider metricsProvider = getOrCreateMetricsProvider( config, createClock() );
-        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config,
-                                                              ownsEventLoopGroup, newRoutingSettings.routingContext() );
+        MetricsProvider metricsProvider = getOrCreateMetricsProvider(config, createClock());
+        ConnectionPool connectionPool = createConnectionPool(
+                authToken,
+                securityPlan,
+                bootstrap,
+                metricsProvider,
+                config,
+                ownsEventLoopGroup,
+                newRoutingSettings.routingContext());
 
-        return createDriver( uri, securityPlan, address, connectionPool, eventExecutorGroup, newRoutingSettings, retryLogic, metricsProvider, config );
+        return createDriver(
+                uri,
+                securityPlan,
+                address,
+                connectionPool,
+                eventExecutorGroup,
+                newRoutingSettings,
+                retryLogic,
+                metricsProvider,
+                config);
     }
 
-    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-            MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
-    {
+    protected ConnectionPool createConnectionPool(
+            AuthToken authToken,
+            SecurityPlan securityPlan,
+            Bootstrap bootstrap,
+            MetricsProvider metricsProvider,
+            Config config,
+            boolean ownsEventLoopGroup,
+            RoutingContext routingContext) {
         Clock clock = createClock();
-        ConnectionSettings settings = new ConnectionSettings( authToken, config.userAgent(), config.connectionTimeoutMillis() );
-        ChannelConnector connector = createConnector( settings, securityPlan, config, clock, routingContext );
-        PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
-                config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
-                config.idleTimeBeforeConnectionTest()
-        );
-        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, metricsProvider.metricsListener(), config.logging(), clock, ownsEventLoopGroup );
+        ConnectionSettings settings =
+                new ConnectionSettings(authToken, config.userAgent(), config.connectionTimeoutMillis());
+        ChannelConnector connector = createConnector(settings, securityPlan, config, clock, routingContext);
+        PoolSettings poolSettings = new PoolSettings(
+                config.maxConnectionPoolSize(),
+                config.connectionAcquisitionTimeoutMillis(),
+                config.maxConnectionLifetimeMillis(),
+                config.idleTimeBeforeConnectionTest());
+        return new ConnectionPoolImpl(
+                connector,
+                bootstrap,
+                poolSettings,
+                metricsProvider.metricsListener(),
+                config.logging(),
+                clock,
+                ownsEventLoopGroup);
     }
 
-    protected static MetricsProvider getOrCreateMetricsProvider( Config config, Clock clock )
-    {
+    protected static MetricsProvider getOrCreateMetricsProvider(Config config, Clock clock) {
         MetricsAdapter metricsAdapter = config.metricsAdapter();
         // This can actually only happen when someone mocks the config
-        if ( metricsAdapter == null )
-        {
+        if (metricsAdapter == null) {
             metricsAdapter = config.isMetricsEnabled() ? MetricsAdapter.DEFAULT : MetricsAdapter.DEV_NULL;
         }
-        switch ( metricsAdapter )
-        {
-        case DEV_NULL:
-            return DevNullMetricsProvider.INSTANCE;
-        case DEFAULT:
-            return new InternalMetricsProvider( clock, config.logging() );
-        case MICROMETER:
-            return MicrometerMetricsProvider.forGlobalRegistry();
+        switch (metricsAdapter) {
+            case DEV_NULL:
+                return DevNullMetricsProvider.INSTANCE;
+            case DEFAULT:
+                return new InternalMetricsProvider(clock, config.logging());
+            case MICROMETER:
+                return MicrometerMetricsProvider.forGlobalRegistry();
         }
-        throw new IllegalStateException( "Unknown or unsupported MetricsAdapter: " + metricsAdapter );
+        throw new IllegalStateException("Unknown or unsupported MetricsAdapter: " + metricsAdapter);
     }
 
-    protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,
-            Config config, Clock clock, RoutingContext routingContext )
-    {
-        return new ChannelConnectorImpl( settings, securityPlan, config.logging(), clock, routingContext, getDomainNameResolver() );
+    protected ChannelConnector createConnector(
+            ConnectionSettings settings,
+            SecurityPlan securityPlan,
+            Config config,
+            Clock clock,
+            RoutingContext routingContext) {
+        return new ChannelConnectorImpl(
+                settings, securityPlan, config.logging(), clock, routingContext, getDomainNameResolver());
     }
 
-    private InternalDriver createDriver( URI uri, SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
-                                         EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic,
-                                         MetricsProvider metricsProvider, Config config )
-    {
-        try
-        {
+    private InternalDriver createDriver(
+            URI uri,
+            SecurityPlan securityPlan,
+            BoltServerAddress address,
+            ConnectionPool connectionPool,
+            EventExecutorGroup eventExecutorGroup,
+            RoutingSettings routingSettings,
+            RetryLogic retryLogic,
+            MetricsProvider metricsProvider,
+            Config config) {
+        try {
             String scheme = uri.getScheme().toLowerCase();
 
-            if ( isRoutingScheme( scheme ) )
-            {
-                return createRoutingDriver( securityPlan, address, connectionPool, eventExecutorGroup, routingSettings, retryLogic, metricsProvider, config );
+            if (isRoutingScheme(scheme)) {
+                return createRoutingDriver(
+                        securityPlan,
+                        address,
+                        connectionPool,
+                        eventExecutorGroup,
+                        routingSettings,
+                        retryLogic,
+                        metricsProvider,
+                        config);
+            } else {
+                assertNoRoutingContext(uri, routingSettings);
+                return createDirectDriver(securityPlan, address, connectionPool, retryLogic, metricsProvider, config);
             }
-            else
-            {
-                assertNoRoutingContext( uri, routingSettings );
-                return createDirectDriver( securityPlan, address, connectionPool, retryLogic, metricsProvider, config );
-            }
-        }
-        catch ( Throwable driverError )
-        {
+        } catch (Throwable driverError) {
             // we need to close the connection pool if driver creation threw exception
-            closeConnectionPoolAndSuppressError( connectionPool, driverError );
+            closeConnectionPoolAndSuppressError(connectionPool, driverError);
             throw driverError;
         }
     }
@@ -173,14 +215,18 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected InternalDriver createDirectDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool, RetryLogic retryLogic,
-            MetricsProvider metricsProvider, Config config )
-    {
-        ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
-        SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
-        InternalDriver driver = createDriver( securityPlan, sessionFactory, metricsProvider, config );
-        Logger log = config.logging().getLog( getClass() );
-        log.info( "Direct driver instance %s created for server address %s", driver.hashCode(), address );
+    protected InternalDriver createDirectDriver(
+            SecurityPlan securityPlan,
+            BoltServerAddress address,
+            ConnectionPool connectionPool,
+            RetryLogic retryLogic,
+            MetricsProvider metricsProvider,
+            Config config) {
+        ConnectionProvider connectionProvider = new DirectConnectionProvider(address, connectionPool);
+        SessionFactory sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
+        InternalDriver driver = createDriver(securityPlan, sessionFactory, metricsProvider, config);
+        Logger log = config.logging().getLog(getClass());
+        log.info("Direct driver instance %s created for server address %s", driver.hashCode(), address);
         return driver;
     }
 
@@ -189,15 +235,21 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected InternalDriver createRoutingDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
-            EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic, MetricsProvider metricsProvider, Config config )
-    {
-        ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, eventExecutorGroup,
-                config, routingSettings );
-        SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
-        InternalDriver driver = createDriver( securityPlan, sessionFactory, metricsProvider, config );
-        Logger log = config.logging().getLog( getClass() );
-        log.info( "Routing driver instance %s created for server address %s", driver.hashCode(), address );
+    protected InternalDriver createRoutingDriver(
+            SecurityPlan securityPlan,
+            BoltServerAddress address,
+            ConnectionPool connectionPool,
+            EventExecutorGroup eventExecutorGroup,
+            RoutingSettings routingSettings,
+            RetryLogic retryLogic,
+            MetricsProvider metricsProvider,
+            Config config) {
+        ConnectionProvider connectionProvider =
+                createLoadBalancer(address, connectionPool, eventExecutorGroup, config, routingSettings);
+        SessionFactory sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
+        InternalDriver driver = createDriver(securityPlan, sessionFactory, metricsProvider, config);
+        Logger log = config.logging().getLog(getClass());
+        log.info("Routing driver instance %s created for server address %s", driver.hashCode(), address);
         return driver;
     }
 
@@ -206,9 +258,9 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
-    {
-        return new InternalDriver( securityPlan, sessionFactory, metricsProvider, config.logging() );
+    protected InternalDriver createDriver(
+            SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config) {
+        return new InternalDriver(securityPlan, sessionFactory, metricsProvider, config.logging());
     }
 
     /**
@@ -216,14 +268,26 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool,
-                                               EventExecutorGroup eventExecutorGroup, Config config, RoutingSettings routingSettings )
-    {
-        LoadBalancingStrategy loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy( connectionPool, config.logging() );
-        ServerAddressResolver resolver = createResolver( config );
-        LoadBalancer loadBalancer = new LoadBalancer( address, routingSettings, connectionPool, eventExecutorGroup, createClock(),
-                                                      config.logging(), loadBalancingStrategy, resolver, getDomainNameResolver() );
-        handleNewLoadBalancer( loadBalancer );
+    protected LoadBalancer createLoadBalancer(
+            BoltServerAddress address,
+            ConnectionPool connectionPool,
+            EventExecutorGroup eventExecutorGroup,
+            Config config,
+            RoutingSettings routingSettings) {
+        LoadBalancingStrategy loadBalancingStrategy =
+                new LeastConnectedLoadBalancingStrategy(connectionPool, config.logging());
+        ServerAddressResolver resolver = createResolver(config);
+        LoadBalancer loadBalancer = new LoadBalancer(
+                address,
+                routingSettings,
+                connectionPool,
+                eventExecutorGroup,
+                createClock(),
+                config.logging(),
+                loadBalancingStrategy,
+                resolver,
+                getDomainNameResolver());
+        handleNewLoadBalancer(loadBalancer);
         return loadBalancer;
     }
 
@@ -234,12 +298,9 @@ public class DriverFactory
      *
      * @param loadBalancer the new load balancer instance.
      */
-    protected void handleNewLoadBalancer( LoadBalancer loadBalancer )
-    {
-    }
+    protected void handleNewLoadBalancer(LoadBalancer loadBalancer) {}
 
-    private static ServerAddressResolver createResolver( Config config )
-    {
+    private static ServerAddressResolver createResolver(Config config) {
         ServerAddressResolver configuredResolver = config.resolver();
         return configuredResolver != null ? configuredResolver : IDENTITY_RESOLVER;
     }
@@ -249,8 +310,7 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected Clock createClock()
-    {
+    protected Clock createClock() {
         return Clock.SYSTEM;
     }
 
@@ -259,10 +319,9 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider, RetryLogic retryLogic,
-            Config config )
-    {
-        return new SessionFactoryImpl( connectionProvider, retryLogic, config );
+    protected SessionFactory createSessionFactory(
+            ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config) {
+        return new SessionFactoryImpl(connectionProvider, retryLogic, config);
     }
 
     /**
@@ -270,10 +329,9 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected RetryLogic createRetryLogic( RetrySettings settings, EventExecutorGroup eventExecutorGroup,
-            Logging logging )
-    {
-        return new ExponentialBackoffRetryLogic( settings, eventExecutorGroup, createClock(), logging );
+    protected RetryLogic createRetryLogic(
+            RetrySettings settings, EventExecutorGroup eventExecutorGroup, Logging logging) {
+        return new ExponentialBackoffRetryLogic(settings, eventExecutorGroup, createClock(), logging);
     }
 
     /**
@@ -281,9 +339,8 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected Bootstrap createBootstrap( int size )
-    {
-        return BootstrapFactory.newBootstrap( size );
+    protected Bootstrap createBootstrap(int size) {
+        return BootstrapFactory.newBootstrap(size);
     }
 
     /**
@@ -291,9 +348,8 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected Bootstrap createBootstrap( EventLoopGroup eventLoopGroup )
-    {
-        return BootstrapFactory.newBootstrap( eventLoopGroup );
+    protected Bootstrap createBootstrap(EventLoopGroup eventLoopGroup) {
+        return BootstrapFactory.newBootstrap(eventLoopGroup);
     }
 
     /**
@@ -303,29 +359,22 @@ public class DriverFactory
      *
      * @return the instance of {@link DomainNameResolver}.
      */
-    protected DomainNameResolver getDomainNameResolver()
-    {
+    protected DomainNameResolver getDomainNameResolver() {
         return DefaultDomainNameResolver.getInstance();
     }
 
-    private static void assertNoRoutingContext( URI uri, RoutingSettings routingSettings )
-    {
+    private static void assertNoRoutingContext(URI uri, RoutingSettings routingSettings) {
         RoutingContext routingContext = routingSettings.routingContext();
-        if ( routingContext.isDefined() )
-        {
-            throw new IllegalArgumentException( NO_ROUTING_CONTEXT_ERROR_MESSAGE + "'" + uri + "'" );
+        if (routingContext.isDefined()) {
+            throw new IllegalArgumentException(NO_ROUTING_CONTEXT_ERROR_MESSAGE + "'" + uri + "'");
         }
     }
 
-    private static void closeConnectionPoolAndSuppressError( ConnectionPool connectionPool, Throwable mainError )
-    {
-        try
-        {
-            Futures.blockingGet( connectionPool.close() );
-        }
-        catch ( Throwable closeError )
-        {
-            addSuppressed( mainError, closeError );
+    private static void closeConnectionPoolAndSuppressError(ConnectionPool connectionPool, Throwable mainError) {
+        try {
+            Futures.blockingGet(connectionPool.close());
+        } catch (Throwable closeError) {
+            addSuppressed(mainError, closeError);
         }
     }
 }

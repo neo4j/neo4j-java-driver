@@ -18,25 +18,22 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
-import java.io.IOException;
+import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
+import java.io.IOException;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 
-import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
-
-public class RunWithMetadataMessageEncoder implements MessageEncoder
-{
+public class RunWithMetadataMessageEncoder implements MessageEncoder {
     @Override
-    public void encode( Message message, ValuePacker packer ) throws IOException
-    {
-        checkArgument( message, RunWithMetadataMessage.class );
+    public void encode(Message message, ValuePacker packer) throws IOException {
+        checkArgument(message, RunWithMetadataMessage.class);
         RunWithMetadataMessage runMessage = (RunWithMetadataMessage) message;
-        packer.packStructHeader( 3, runMessage.signature() );
-        packer.pack( runMessage.query() );
-        packer.pack( runMessage.parameters() );
-        packer.pack( runMessage.metadata() );
+        packer.packStructHeader(3, runMessage.signature());
+        packer.pack(runMessage.query());
+        packer.pack(runMessage.parameters());
+        packer.pack(runMessage.metadata());
     }
 }

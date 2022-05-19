@@ -24,28 +24,27 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 // end::database-selection-import[]
 
-public class DatabaseSelectionExample extends BaseApplication
-{
-    public DatabaseSelectionExample( String uri, String user, String password )
-    {
-        super( uri, user, password );
+public class DatabaseSelectionExample extends BaseApplication {
+    public DatabaseSelectionExample(String uri, String user, String password) {
+        super(uri, user, password);
     }
 
-    public void useAnotherDatabaseExample()
-    {
+    public void useAnotherDatabaseExample() {
         // tag::database-selection[]
-        try ( Session session = driver.session( SessionConfig.forDatabase( "examples" ) ) )
-        {
-            session.run( "CREATE (a:Greeting {message: 'Hello, Example-Database'}) RETURN a" ).consume();
+        try (Session session = driver.session(SessionConfig.forDatabase("examples"))) {
+            session.run("CREATE (a:Greeting {message: 'Hello, Example-Database'}) RETURN a")
+                    .consume();
         }
 
         SessionConfig sessionConfig = SessionConfig.builder()
-                .withDatabase( "examples" )
-                .withDefaultAccessMode( AccessMode.READ )
+                .withDatabase("examples")
+                .withDefaultAccessMode(AccessMode.READ)
                 .build();
-        try ( Session session = driver.session( sessionConfig ) )
-        {
-            String msg = session.run( "MATCH (a:Greeting) RETURN a.message as msg" ).single().get( "msg" ).asString();
+        try (Session session = driver.session(sessionConfig)) {
+            String msg = session.run("MATCH (a:Greeting) RETURN a.message as msg")
+                    .single()
+                    .get("msg")
+                    .asString();
             System.out.println(msg);
         }
         // end::database-selection[]

@@ -18,22 +18,20 @@
  */
 package org.neo4j.driver.internal.cursor;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * Bolt V4
  */
-public class ResultCursorFactoryImpl implements ResultCursorFactory
-{
+public class ResultCursorFactoryImpl implements ResultCursorFactory {
     private final RunResponseHandler runHandler;
     private final Connection connection;
 
@@ -42,15 +40,19 @@ public class ResultCursorFactoryImpl implements ResultCursorFactory
     private final Message runMessage;
     private final CompletableFuture<Void> runFuture;
 
-    public ResultCursorFactoryImpl( Connection connection, Message runMessage, RunResponseHandler runHandler, CompletableFuture<Void> runFuture,
-                                    PullResponseHandler pullHandler, PullAllResponseHandler pullAllHandler )
-    {
-        requireNonNull( connection );
-        requireNonNull( runMessage );
-        requireNonNull( runHandler );
-        requireNonNull( runFuture );
-        requireNonNull( pullHandler );
-        requireNonNull( pullAllHandler );
+    public ResultCursorFactoryImpl(
+            Connection connection,
+            Message runMessage,
+            RunResponseHandler runHandler,
+            CompletableFuture<Void> runFuture,
+            PullResponseHandler pullHandler,
+            PullAllResponseHandler pullAllHandler) {
+        requireNonNull(connection);
+        requireNonNull(runMessage);
+        requireNonNull(runHandler);
+        requireNonNull(runFuture);
+        requireNonNull(pullHandler);
+        requireNonNull(pullAllHandler);
 
         this.connection = connection;
         this.runMessage = runMessage;
@@ -61,18 +63,17 @@ public class ResultCursorFactoryImpl implements ResultCursorFactory
     }
 
     @Override
-    public CompletionStage<AsyncResultCursor> asyncResult()
-    {
+    public CompletionStage<AsyncResultCursor> asyncResult() {
         // only write and flush messages when async result is wanted.
-        connection.write( runMessage, runHandler ); // queues the run message, will be flushed with pull message together
+        connection.write(runMessage, runHandler); // queues the run message, will be flushed with pull message together
         pullAllHandler.prePopulateRecords();
-        return runFuture.handle( ( ignored, error ) -> new DisposableAsyncResultCursor( new AsyncResultCursorImpl( error, runHandler, pullAllHandler ) ) );
+        return runFuture.handle((ignored, error) ->
+                new DisposableAsyncResultCursor(new AsyncResultCursorImpl(error, runHandler, pullAllHandler)));
     }
 
     @Override
-    public CompletionStage<RxResultCursor> rxResult()
-    {
-        connection.writeAndFlush( runMessage, runHandler );
-        return runFuture.handle( ( ignored, error ) -> new RxResultCursorImpl( error, runHandler, pullHandler ) );
+    public CompletionStage<RxResultCursor> rxResult() {
+        connection.writeAndFlush(runMessage, runHandler);
+        return runFuture.handle((ignored, error) -> new RxResultCursorImpl(error, runHandler, pullHandler));
     }
 }

@@ -18,29 +18,28 @@
  */
 package org.neo4j.driver.stress;
 
+import static org.neo4j.driver.SessionConfig.builder;
+
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.async.AsyncSession;
 
-import static org.neo4j.driver.SessionConfig.builder;
-
-public abstract class AbstractAsyncQuery<C extends AbstractContext> implements AsyncCommand<C>
-{
+public abstract class AbstractAsyncQuery<C extends AbstractContext> implements AsyncCommand<C> {
     protected final Driver driver;
     protected final boolean useBookmark;
 
-    public AbstractAsyncQuery( Driver driver, boolean useBookmark )
-    {
+    public AbstractAsyncQuery(Driver driver, boolean useBookmark) {
         this.driver = driver;
         this.useBookmark = useBookmark;
     }
 
-    public AsyncSession newSession( AccessMode mode, C context )
-    {
-        if ( useBookmark )
-        {
-            return driver.asyncSession( builder().withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ).build() );
+    public AsyncSession newSession(AccessMode mode, C context) {
+        if (useBookmark) {
+            return driver.asyncSession(builder()
+                    .withDefaultAccessMode(mode)
+                    .withBookmarks(context.getBookmark())
+                    .build());
         }
-        return driver.asyncSession( builder().withDefaultAccessMode( mode ).build() );
+        return driver.asyncSession(builder().withDefaultAccessMode(mode).build());
     }
 }

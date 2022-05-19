@@ -18,18 +18,17 @@
  */
 package neo4j.org.testkit.backend;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 
 /**
  * Buffered subscriber for testing purposes.
@@ -42,8 +41,7 @@ import java.util.function.Supplier;
  *
  * @param <T>
  */
-public class RxBufferedSubscriber<T> extends BaseSubscriber<T>
-{
+public class RxBufferedSubscriber<T> extends BaseSubscriber<T> {
     private final Lock lock = new ReentrantLock();
     private final long fetchSize;
     private final CompletableFuture<Subscription> subscriptionFuture = new CompletableFuture<>();
@@ -52,16 +50,15 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T>
     private long pendingItems;
     private boolean nextInProgress;
 
-    public RxBufferedSubscriber( long fetchSize )
-    {
+    public RxBufferedSubscriber(long fetchSize) {
         this.fetchSize = fetchSize;
         AtomicReference<FluxSink<T>> sinkRef = new AtomicReference<>();
         itemsSubscriber = new OneSignalSubscriber<>();
-        Flux.<T>create( fluxSink ->
-                        {
-                            sinkRef.set( fluxSink );
-                            fluxSink.onRequest( ignored -> requestFromUpstream() );
-                        } ).subscribe( itemsSubscriber );
+        Flux.<T>create(fluxSink -> {
+                    sinkRef.set(fluxSink);
+                    fluxSink.onRequest(ignored -> requestFromUpstream());
+                })
+                .subscribe(itemsSubscriber);
         itemsSink = sinkRef.get();
     }
 
@@ -76,166 +73,128 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T>
      *
      * @return the {@link Mono} of next signal.
      */
-    public Mono<T> next()
-    {
-        executeWithLock( lock, () ->
-        {
-            if ( nextInProgress )
-            {
-                throw new IllegalStateException( "Only one in progress next is allowed at a time" );
+    public Mono<T> next() {
+        executeWithLock(lock, () -> {
+            if (nextInProgress) {
+                throw new IllegalStateException("Only one in progress next is allowed at a time");
             }
             return nextInProgress = true;
-        } );
-        return Mono.fromCompletionStage( subscriptionFuture )
-                   .then( Mono.create( itemsSubscriber::requestNext ) )
-                   .doOnSuccess( ignored -> executeWithLock( lock, () -> nextInProgress = false ) )
-                   .doOnError( ignored -> executeWithLock( lock, () -> nextInProgress = false ) );
+        });
+        return Mono.fromCompletionStage(subscriptionFuture)
+                .then(Mono.create(itemsSubscriber::requestNext))
+                .doOnSuccess(ignored -> executeWithLock(lock, () -> nextInProgress = false))
+                .doOnError(ignored -> executeWithLock(lock, () -> nextInProgress = false));
     }
 
     @Override
-    protected void hookOnSubscribe( Subscription subscription )
-    {
-        subscriptionFuture.complete( subscription );
+    protected void hookOnSubscribe(Subscription subscription) {
+        subscriptionFuture.complete(subscription);
     }
 
     @Override
-    protected void hookOnNext( T value )
-    {
-        executeWithLock( lock, () -> pendingItems-- );
-        itemsSink.next( value );
+    protected void hookOnNext(T value) {
+        executeWithLock(lock, () -> pendingItems--);
+        itemsSink.next(value);
     }
 
     @Override
-    protected void hookOnComplete()
-    {
+    protected void hookOnComplete() {
         itemsSink.complete();
     }
 
     @Override
-    protected void hookOnError( Throwable throwable )
-    {
-        itemsSink.error( throwable );
+    protected void hookOnError(Throwable throwable) {
+        itemsSink.error(throwable);
     }
 
-    private void requestFromUpstream()
-    {
-        boolean moreItemsPending = executeWithLock( lock, () ->
-        {
+    private void requestFromUpstream() {
+        boolean moreItemsPending = executeWithLock(lock, () -> {
             boolean morePending;
-            if ( pendingItems > 0 )
-            {
+            if (pendingItems > 0) {
                 morePending = true;
-            }
-            else
-            {
+            } else {
                 pendingItems = fetchSize;
                 morePending = false;
             }
             return morePending;
-        } );
-        if ( moreItemsPending )
-        {
+        });
+        if (moreItemsPending) {
             return;
         }
-        Subscription subscription = subscriptionFuture.getNow( null );
-        if ( subscription == null )
-        {
-            throw new IllegalStateException( "Upstream subscription must not be null at this stage" );
+        Subscription subscription = subscriptionFuture.getNow(null);
+        if (subscription == null) {
+            throw new IllegalStateException("Upstream subscription must not be null at this stage");
         }
-        subscription.request( fetchSize );
+        subscription.request(fetchSize);
     }
 
-    public static <T> T executeWithLock( Lock lock, Supplier<T> supplier )
-    {
+    public static <T> T executeWithLock(Lock lock, Supplier<T> supplier) {
         lock.lock();
-        try
-        {
+        try {
             return supplier.get();
-        }
-        finally
-        {
+        } finally {
             lock.unlock();
         }
     }
 
-    private static class OneSignalSubscriber<T> extends BaseSubscriber<T>
-    {
+    private static class OneSignalSubscriber<T> extends BaseSubscriber<T> {
         private final Lock lock = new ReentrantLock();
         private final CompletableFuture<Void> completionFuture = new CompletableFuture<>();
         private MonoSink<T> sink;
         private boolean emitted;
 
-        public void requestNext( MonoSink<T> sink )
-        {
-            executeWithLock( lock, () ->
-            {
+        public void requestNext(MonoSink<T> sink) {
+            executeWithLock(lock, () -> {
                 this.sink = sink;
                 return emitted = false;
-            } );
+            });
 
-            if ( completionFuture.isDone() )
-            {
-                completionFuture.whenComplete(
-                        ( ignored, throwable ) ->
-                        {
-                            if ( throwable != null )
-                            {
-                                this.sink.error( throwable );
-                            }
-                            else
-                            {
-                                this.sink.success();
-                            }
-                        } );
-            }
-            else
-            {
-                upstream().request( 1 );
+            if (completionFuture.isDone()) {
+                completionFuture.whenComplete((ignored, throwable) -> {
+                    if (throwable != null) {
+                        this.sink.error(throwable);
+                    } else {
+                        this.sink.success();
+                    }
+                });
+            } else {
+                upstream().request(1);
             }
         }
 
         @Override
-        protected void hookOnSubscribe( Subscription subscription )
-        {
+        protected void hookOnSubscribe(Subscription subscription) {
             // left empty to prevent requesting signals immediately
         }
 
         @Override
-        protected void hookOnNext( T value )
-        {
-            MonoSink<T> sink = executeWithLock( lock, () ->
-            {
+        protected void hookOnNext(T value) {
+            MonoSink<T> sink = executeWithLock(lock, () -> {
                 emitted = true;
                 return this.sink;
-            } );
-            sink.success( value );
+            });
+            sink.success(value);
         }
 
         @Override
-        protected void hookOnComplete()
-        {
-            MonoSink<T> sink = executeWithLock( lock, () ->
-            {
-                completionFuture.complete( null );
+        protected void hookOnComplete() {
+            MonoSink<T> sink = executeWithLock(lock, () -> {
+                completionFuture.complete(null);
                 return !emitted ? this.sink : null;
-            } );
-            if ( sink != null )
-            {
+            });
+            if (sink != null) {
                 sink.success();
             }
         }
 
         @Override
-        protected void hookOnError( Throwable throwable )
-        {
-            MonoSink<T> sink = executeWithLock( lock, () ->
-            {
-                completionFuture.completeExceptionally( throwable );
+        protected void hookOnError(Throwable throwable) {
+            MonoSink<T> sink = executeWithLock(lock, () -> {
+                completionFuture.completeExceptionally(throwable);
                 return !emitted ? this.sink : null;
-            } );
-            if ( sink != null )
-            {
-                sink.error( throwable );
+            });
+            if (sink != null) {
+                sink.error(throwable);
             }
         }
     }

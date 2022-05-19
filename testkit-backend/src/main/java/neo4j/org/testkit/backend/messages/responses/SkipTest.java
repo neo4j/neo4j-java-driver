@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class SkipTest implements TestkitResponse
-{
+public class SkipTest implements TestkitResponse {
     private SkipTestBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "SkipTest";
     }
 
     @Getter
     @Builder
-    public static class SkipTestBody
-    {
+    public static class SkipTestBody {
         private final String reason;
     }
 }

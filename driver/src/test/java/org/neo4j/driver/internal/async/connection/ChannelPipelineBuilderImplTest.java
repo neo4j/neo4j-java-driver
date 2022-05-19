@@ -18,13 +18,16 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.Test;
-
 import java.util.Iterator;
 import java.util.Map;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
@@ -33,30 +36,24 @@ import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-
-class ChannelPipelineBuilderImplTest
-{
+class ChannelPipelineBuilderImplTest {
     @Test
-    void shouldBuildPipeline()
-    {
+    void shouldBuildPipeline() {
         EmbeddedChannel channel = new EmbeddedChannel();
-        ChannelAttributes.setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
+        ChannelAttributes.setMessageDispatcher(channel, new InboundMessageDispatcher(channel, DEV_NULL_LOGGING));
 
-        new ChannelPipelineBuilderImpl().build( new MessageFormatV3(), channel.pipeline(), DEV_NULL_LOGGING );
+        new ChannelPipelineBuilderImpl().build(new MessageFormatV3(), channel.pipeline(), DEV_NULL_LOGGING);
 
-        Iterator<Map.Entry<String,ChannelHandler>> iterator = channel.pipeline().iterator();
-        assertThat( iterator.next().getValue(), instanceOf( ChunkDecoder.class ) );
-        assertThat( iterator.next().getValue(), instanceOf( MessageDecoder.class ) );
-        assertThat( iterator.next().getValue(), instanceOf( InboundMessageHandler.class ) );
+        Iterator<Map.Entry<String, ChannelHandler>> iterator =
+                channel.pipeline().iterator();
+        assertThat(iterator.next().getValue(), instanceOf(ChunkDecoder.class));
+        assertThat(iterator.next().getValue(), instanceOf(MessageDecoder.class));
+        assertThat(iterator.next().getValue(), instanceOf(InboundMessageHandler.class));
 
-        assertThat( iterator.next().getValue(), instanceOf( OutboundMessageHandler.class ) );
+        assertThat(iterator.next().getValue(), instanceOf(OutboundMessageHandler.class));
 
-        assertThat( iterator.next().getValue(), instanceOf( ChannelErrorHandler.class ) );
+        assertThat(iterator.next().getValue(), instanceOf(ChannelErrorHandler.class));
 
-        assertFalse( iterator.hasNext() );
+        assertFalse(iterator.hasNext());
     }
 }

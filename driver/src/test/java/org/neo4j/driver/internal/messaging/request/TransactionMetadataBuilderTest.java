@@ -18,25 +18,6 @@
  */
 package org.neo4j.driver.internal.messaging.request;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.InternalBookmark;
-
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,65 +28,80 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.messaging.request.TransactionMetadataBuilder.buildMetadata;
 
-public class TransactionMetadataBuilderTest
-{
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.InternalBookmark;
+
+public class TransactionMetadataBuilderTest {
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldHaveCorrectMetadata( AccessMode mode )
-    {
-        Set<Bookmark> bookmarks =
-                Collections.singleton( InternalBookmark.parse( new HashSet<>( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) ) ) );
+    @EnumSource(AccessMode.class)
+    void shouldHaveCorrectMetadata(AccessMode mode) {
+        Set<Bookmark> bookmarks = Collections.singleton(
+                InternalBookmark.parse(new HashSet<>(asList("neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52"))));
 
-        Map<String,Value> txMetadata = new HashMap<>();
-        txMetadata.put( "foo", value( "bar" ) );
-        txMetadata.put( "baz", value( 111 ) );
-        txMetadata.put( "time", value( LocalDateTime.now() ) );
+        Map<String, Value> txMetadata = new HashMap<>();
+        txMetadata.put("foo", value("bar"));
+        txMetadata.put("baz", value(111));
+        txMetadata.put("time", value(LocalDateTime.now()));
 
-        Duration txTimeout = Duration.ofSeconds( 7 );
+        Duration txTimeout = Duration.ofSeconds(7);
 
-        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null );
+        Map<String, Value> metadata = buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null);
 
-        Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmarks.stream().map( Bookmark::value ).collect( Collectors.toSet() ) ) );
-        expectedMetadata.put( "tx_timeout", value( 7000 ) );
-        expectedMetadata.put( "tx_metadata", value( txMetadata ) );
-        if ( mode == READ )
-        {
-            expectedMetadata.put( "mode", value( "r" ) );
+        Map<String, Value> expectedMetadata = new HashMap<>();
+        expectedMetadata.put(
+                "bookmarks", value(bookmarks.stream().map(Bookmark::value).collect(Collectors.toSet())));
+        expectedMetadata.put("tx_timeout", value(7000));
+        expectedMetadata.put("tx_metadata", value(txMetadata));
+        if (mode == READ) {
+            expectedMetadata.put("mode", value("r"));
         }
 
-        assertEquals( expectedMetadata, metadata );
+        assertEquals(expectedMetadata, metadata);
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"", "foo", "data"} )
-    void shouldHaveCorrectMetadataForDatabaseName( String databaseName )
-    {
-        Set<Bookmark> bookmarks =
-                Collections.singleton( InternalBookmark.parse( new HashSet<>( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) ) ) );
+    @ValueSource(strings = {"", "foo", "data"})
+    void shouldHaveCorrectMetadataForDatabaseName(String databaseName) {
+        Set<Bookmark> bookmarks = Collections.singleton(
+                InternalBookmark.parse(new HashSet<>(asList("neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52"))));
 
-        Map<String,Value> txMetadata = new HashMap<>();
-        txMetadata.put( "foo", value( "bar" ) );
-        txMetadata.put( "baz", value( 111 ) );
-        txMetadata.put( "time", value( LocalDateTime.now() ) );
+        Map<String, Value> txMetadata = new HashMap<>();
+        txMetadata.put("foo", value("bar"));
+        txMetadata.put("baz", value(111));
+        txMetadata.put("time", value(LocalDateTime.now()));
 
-        Duration txTimeout = Duration.ofSeconds( 7 );
+        Duration txTimeout = Duration.ofSeconds(7);
 
-        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, database( databaseName ), WRITE, bookmarks, null );
+        Map<String, Value> metadata =
+                buildMetadata(txTimeout, txMetadata, database(databaseName), WRITE, bookmarks, null);
 
-        Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmarks.stream().map( Bookmark::value ).collect( Collectors.toSet() ) ) );
-        expectedMetadata.put( "tx_timeout", value( 7000 ) );
-        expectedMetadata.put( "tx_metadata", value( txMetadata ) );
-        expectedMetadata.put( "db", value( databaseName ) );
+        Map<String, Value> expectedMetadata = new HashMap<>();
+        expectedMetadata.put(
+                "bookmarks", value(bookmarks.stream().map(Bookmark::value).collect(Collectors.toSet())));
+        expectedMetadata.put("tx_timeout", value(7000));
+        expectedMetadata.put("tx_metadata", value(txMetadata));
+        expectedMetadata.put("db", value(databaseName));
 
-        assertEquals( expectedMetadata, metadata );
+        assertEquals(expectedMetadata, metadata);
     }
 
     @Test
-    void shouldNotHaveMetadataForDatabaseNameWhenIsNull()
-    {
-        Map<String,Value> metadata = buildMetadata( null, null, defaultDatabase(), WRITE, Collections.emptySet(), null );
-        assertTrue( metadata.isEmpty() );
+    void shouldNotHaveMetadataForDatabaseNameWhenIsNull() {
+        Map<String, Value> metadata = buildMetadata(null, null, defaultDatabase(), WRITE, Collections.emptySet(), null);
+        assertTrue(metadata.isEmpty());
     }
 }

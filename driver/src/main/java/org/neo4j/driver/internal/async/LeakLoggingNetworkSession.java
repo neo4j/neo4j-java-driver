@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.async;
 
+import static java.lang.System.lineSeparator;
+
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BookmarksHolder;
@@ -26,43 +28,53 @@ import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
 
-import static java.lang.System.lineSeparator;
-
-public class LeakLoggingNetworkSession extends NetworkSession
-{
+public class LeakLoggingNetworkSession extends NetworkSession {
     private final String stackTrace;
 
-    public LeakLoggingNetworkSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, DatabaseName databaseName, AccessMode mode,
-                                      BookmarksHolder bookmarksHolder, String impersonatedUser, long fetchSize, Logging logging )
-    {
-        super( connectionProvider, retryLogic, databaseName, mode, bookmarksHolder, impersonatedUser, fetchSize, logging );
+    public LeakLoggingNetworkSession(
+            ConnectionProvider connectionProvider,
+            RetryLogic retryLogic,
+            DatabaseName databaseName,
+            AccessMode mode,
+            BookmarksHolder bookmarksHolder,
+            String impersonatedUser,
+            long fetchSize,
+            Logging logging) {
+        super(
+                connectionProvider,
+                retryLogic,
+                databaseName,
+                mode,
+                bookmarksHolder,
+                impersonatedUser,
+                fetchSize,
+                logging);
         this.stackTrace = captureStackTrace();
     }
 
     @Override
-    protected void finalize() throws Throwable
-    {
+    protected void finalize() throws Throwable {
         logLeakIfNeeded();
         super.finalize();
     }
 
-    private void logLeakIfNeeded()
-    {
-        Boolean isOpen = Futures.blockingGet( currentConnectionIsOpen() );
-        if ( isOpen )
-        {
-            log.error( "Neo4j Session object leaked, please ensure that your application " +
-                       "fully consumes results in Sessions or explicitly calls `close` on Sessions before disposing of the objects.\n" +
-                       "Session was create at:\n" + stackTrace, null );
+    private void logLeakIfNeeded() {
+        Boolean isOpen = Futures.blockingGet(currentConnectionIsOpen());
+        if (isOpen) {
+            log.error(
+                    "Neo4j Session object leaked, please ensure that your application "
+                            + "fully consumes results in Sessions or explicitly calls `close` on Sessions before disposing of the objects.\n"
+                            + "Session was create at:\n"
+                            + stackTrace,
+                    null);
         }
     }
-    private static String captureStackTrace()
-    {
+
+    private static String captureStackTrace() {
         StringBuilder result = new StringBuilder();
         StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        for ( StackTraceElement element : elements )
-        {
-            result.append( "\t" ).append( element ).append( lineSeparator() );
+        for (StackTraceElement element : elements) {
+            result.append("\t").append(element).append(lineSeparator());
         }
         return result.toString();
     }

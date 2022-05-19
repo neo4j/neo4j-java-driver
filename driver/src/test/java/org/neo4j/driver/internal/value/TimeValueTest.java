@@ -18,49 +18,42 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.jupiter.api.Test;
-
-import java.time.OffsetTime;
-import java.time.ZoneOffset;
-
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.exceptions.value.Uncoercible;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class TimeValueTest
-{
+import java.time.OffsetTime;
+import java.time.ZoneOffset;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.exceptions.value.Uncoercible;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+
+class TimeValueTest {
     @Test
-    void shouldHaveCorrectType()
-    {
-        OffsetTime time = OffsetTime.now().withOffsetSameInstant( ZoneOffset.ofHoursMinutes( 5, 30 ) );
-        TimeValue timeValue = new TimeValue( time );
-        assertEquals( InternalTypeSystem.TYPE_SYSTEM.TIME(), timeValue.type() );
+    void shouldHaveCorrectType() {
+        OffsetTime time = OffsetTime.now().withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
+        TimeValue timeValue = new TimeValue(time);
+        assertEquals(InternalTypeSystem.TYPE_SYSTEM.TIME(), timeValue.type());
     }
 
     @Test
-    void shouldSupportAsObject()
-    {
-        OffsetTime time = OffsetTime.of( 19, 0, 10, 1, ZoneOffset.ofHours( -3 ) );
-        TimeValue timeValue = new TimeValue( time );
-        assertEquals( time, timeValue.asObject() );
+    void shouldSupportAsObject() {
+        OffsetTime time = OffsetTime.of(19, 0, 10, 1, ZoneOffset.ofHours(-3));
+        TimeValue timeValue = new TimeValue(time);
+        assertEquals(time, timeValue.asObject());
     }
 
     @Test
-    void shouldSupportAsOffsetTime()
-    {
-        OffsetTime time = OffsetTime.of( 23, 59, 59, 999_999_999, ZoneOffset.ofHoursMinutes( 2, 15 ) );
-        TimeValue timeValue = new TimeValue( time );
-        assertEquals( time, timeValue.asOffsetTime() );
+    void shouldSupportAsOffsetTime() {
+        OffsetTime time = OffsetTime.of(23, 59, 59, 999_999_999, ZoneOffset.ofHoursMinutes(2, 15));
+        TimeValue timeValue = new TimeValue(time);
+        assertEquals(time, timeValue.asOffsetTime());
     }
 
     @Test
-    void shouldNotSupportAsLong()
-    {
-        OffsetTime time = OffsetTime.now().withOffsetSameInstant( ZoneOffset.ofHours( -5 ) );
-        TimeValue timeValue = new TimeValue( time );
+    void shouldNotSupportAsLong() {
+        OffsetTime time = OffsetTime.now().withOffsetSameInstant(ZoneOffset.ofHours(-5));
+        TimeValue timeValue = new TimeValue(time);
 
-        assertThrows( Uncoercible.class, timeValue::asLong );
+        assertThrows(Uncoercible.class, timeValue::asLong);
     }
 }

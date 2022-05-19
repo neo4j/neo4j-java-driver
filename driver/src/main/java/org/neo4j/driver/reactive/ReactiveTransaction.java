@@ -18,9 +18,8 @@
  */
 package org.neo4j.driver.reactive;
 
-import org.reactivestreams.Publisher;
-
 import org.neo4j.driver.Transaction;
+import org.reactivestreams.Publisher;
 
 /**
  * Same as {@link Transaction} except this reactive transaction exposes a reactive API.
@@ -30,8 +29,7 @@ import org.neo4j.driver.Transaction;
  * @see Publisher
  * @since 5.0
  */
-public interface ReactiveTransaction extends ReactiveQueryRunner
-{
+public interface ReactiveTransaction extends ReactiveQueryRunner {
     /**
      * Commits the transaction. It completes without publishing anything if transaction is committed successfully. Otherwise, errors when there is any error to
      * commit.

@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class Field implements TestkitResponse
-{
+public class Field implements TestkitResponse {
     private final FieldBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "Field";
     }
 
     @Getter
     @Builder
-    public static class FieldBody
-    {
+    public static class FieldBody {
         private final String value;
     }
 }

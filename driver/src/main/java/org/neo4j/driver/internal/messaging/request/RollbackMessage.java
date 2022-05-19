@@ -20,25 +20,20 @@ package org.neo4j.driver.internal.messaging.request;
 
 import org.neo4j.driver.internal.messaging.Message;
 
-public class RollbackMessage implements Message
-{
+public class RollbackMessage implements Message {
     public static final byte SIGNATURE = 0x13;
 
     public static final Message ROLLBACK = new RollbackMessage();
 
-    private RollbackMessage()
-    {
-    }
+    private RollbackMessage() {}
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "ROLLBACK";
     }
 }

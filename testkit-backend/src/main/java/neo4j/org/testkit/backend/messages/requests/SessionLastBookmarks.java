@@ -18,71 +18,65 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.Bookmarks;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import reactor.core.publisher.Mono;
-
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
-
 import org.neo4j.driver.Bookmark;
+import reactor.core.publisher.Mono;
 
 @Setter
 @Getter
-public class SessionLastBookmarks implements TestkitRequest
-{
+public class SessionLastBookmarks implements TestkitRequest {
     private SessionLastBookmarksBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        SessionHolder sessionHolder = testkitState.getSessionHolder( data.getSessionId() );
-        return createResponse( sessionHolder.getSession().lastBookmarks() );
+    public TestkitResponse process(TestkitState testkitState) {
+        SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
+        return createResponse(sessionHolder.getSession().lastBookmarks());
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncSessionHolder( data.getSessionId() )
-                           .thenApply( sessionHolder -> sessionHolder.getSession().lastBookmarks() )
-                           .thenApply( this::createResponse );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState
+                .getAsyncSessionHolder(data.getSessionId())
+                .thenApply(sessionHolder -> sessionHolder.getSession().lastBookmarks())
+                .thenApply(this::createResponse);
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return testkitState.getRxSessionHolder( data.getSessionId() )
-                           .map( sessionHolder -> sessionHolder.getSession().lastBookmark() )
-                           .map( bookmark -> bookmark.values().stream().map( Bookmark::from ).collect( Collectors.toSet() ) )
-                           .map( this::createResponse );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return testkitState
+                .getRxSessionHolder(data.getSessionId())
+                .map(sessionHolder -> sessionHolder.getSession().lastBookmark())
+                .map(bookmark -> bookmark.values().stream().map(Bookmark::from).collect(Collectors.toSet()))
+                .map(this::createResponse);
     }
 
     @Override
-    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
-    {
-        return testkitState.getReactiveSessionHolder( data.getSessionId() )
-                           .map( sessionHolder -> sessionHolder.getSession().lastBookmarks() )
-                           .map( this::createResponse );
+    public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
+        return testkitState
+                .getReactiveSessionHolder(data.getSessionId())
+                .map(sessionHolder -> sessionHolder.getSession().lastBookmarks())
+                .map(this::createResponse);
     }
 
-    private Bookmarks createResponse( Set<Bookmark> bookmarks )
-    {
+    private Bookmarks createResponse(Set<Bookmark> bookmarks) {
         return Bookmarks.builder()
-                        .data( Bookmarks.BookmarksBody.builder()
-                                                      .bookmarks( bookmarks.stream().map( Bookmark::value ).collect( Collectors.toSet() ) )
-                                                      .build() )
-                        .build();
+                .data(Bookmarks.BookmarksBody.builder()
+                        .bookmarks(bookmarks.stream().map(Bookmark::value).collect(Collectors.toSet()))
+                        .build())
+                .build();
     }
 
     @Setter
     @Getter
-    public static class SessionLastBookmarksBody
-    {
+    public static class SessionLastBookmarksBody {
         private String sessionId;
     }
 }

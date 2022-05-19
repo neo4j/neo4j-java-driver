@@ -18,18 +18,14 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-enum DevNullListenerEvent implements ListenerEvent<Long>
-{
+enum DevNullListenerEvent implements ListenerEvent<Long> {
     INSTANCE;
 
     @Override
-    public void start()
-    {
-    }
+    public void start() {}
 
     @Override
-    public Long getSample()
-    {
+    public Long getSample() {
         return 0L;
     }
 }

@@ -18,27 +18,23 @@
  */
 package neo4j.org.testkit.backend.messages.responses;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.List;
-
 @Getter
 @Builder
-public class Result implements TestkitResponse
-{
+public class Result implements TestkitResponse {
     private ResultBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "Result";
     }
 
     @Getter
     @Builder
-    public static class ResultBody
-    {
+    public static class ResultBody {
         private String id;
 
         private List<String> keys;

@@ -18,18 +18,6 @@
  */
 package org.neo4j.driver.internal.cursor;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
-
-import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.AutoPullResponseHandler;
-import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.spi.Connection;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -41,102 +29,104 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.util.Futures.getNow;
 import static org.neo4j.driver.util.TestUtil.await;
 
-class AsyncResultCursorOnlyFactoryTest
-{
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.AutoPullResponseHandler;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.spi.Connection;
+
+class AsyncResultCursorOnlyFactoryTest {
     // asyncResult
     @Test
-    void shouldReturnAsyncResultWhenRunSucceeded()
-    {
+    void shouldReturnAsyncResultWhenRunSucceeded() {
         // Given
-        Connection connection = mock( Connection.class );
-        ResultCursorFactory cursorFactory = newResultCursorFactory( connection, null );
+        Connection connection = mock(Connection.class);
+        ResultCursorFactory cursorFactory = newResultCursorFactory(connection, null);
 
         // When
         CompletionStage<AsyncResultCursor> cursorFuture = cursorFactory.asyncResult();
 
         // Then
-        verifyRunCompleted( connection, cursorFuture );
+        verifyRunCompleted(connection, cursorFuture);
     }
 
     @Test
-    void shouldReturnAsyncResultWithRunErrorWhenRunFailed()
-    {
+    void shouldReturnAsyncResultWithRunErrorWhenRunFailed() {
         // Given
-        Throwable error = new RuntimeException( "Hi there" );
-        ResultCursorFactory cursorFactory = newResultCursorFactory( error );
+        Throwable error = new RuntimeException("Hi there");
+        ResultCursorFactory cursorFactory = newResultCursorFactory(error);
 
         // When
         CompletionStage<AsyncResultCursor> cursorFuture = cursorFactory.asyncResult();
 
         // Then
-        AsyncResultCursor cursor = getNow( cursorFuture );
-        Throwable actual = assertThrows( error.getClass(), () -> await( cursor.mapSuccessfulRunCompletionAsync() ) );
-        assertSame( error, actual );
+        AsyncResultCursor cursor = getNow(cursorFuture);
+        Throwable actual = assertThrows(error.getClass(), () -> await(cursor.mapSuccessfulRunCompletionAsync()));
+        assertSame(error, actual);
     }
 
     @Test
-    void shouldPrePopulateRecords()
-    {
+    void shouldPrePopulateRecords() {
         // Given
-        Connection connection = mock( Connection.class );
-        Message runMessage = mock( Message.class );
+        Connection connection = mock(Connection.class);
+        Message runMessage = mock(Message.class);
 
-        RunResponseHandler runHandler = mock( RunResponseHandler.class );
+        RunResponseHandler runHandler = mock(RunResponseHandler.class);
         CompletableFuture<Void> runFuture = new CompletableFuture<>();
 
-        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock(PullAllResponseHandler.class);
 
-        ResultCursorFactory cursorFactory = new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, runFuture, pullAllHandler );
+        ResultCursorFactory cursorFactory =
+                new AsyncResultCursorOnlyFactory(connection, runMessage, runHandler, runFuture, pullAllHandler);
 
         // When
         cursorFactory.asyncResult();
 
         // Then
-        verify( pullAllHandler ).prePopulateRecords();
+        verify(pullAllHandler).prePopulateRecords();
     }
 
     // rxResult
     @Test
-    void shouldErrorForRxResult()
-    {
+    void shouldErrorForRxResult() {
         // Given
-        ResultCursorFactory cursorFactory = newResultCursorFactory( null );
+        ResultCursorFactory cursorFactory = newResultCursorFactory(null);
 
         // When & Then
         CompletionStage<RxResultCursor> rxCursorFuture = cursorFactory.rxResult();
-        CompletionException error = assertThrows( CompletionException.class, () -> getNow( rxCursorFuture ) );
-        assertThat( error.getCause().getMessage(), containsString( "Driver is connected to the database that does not support driver reactive API" ) );
+        CompletionException error = assertThrows(CompletionException.class, () -> getNow(rxCursorFuture));
+        assertThat(
+                error.getCause().getMessage(),
+                containsString("Driver is connected to the database that does not support driver reactive API"));
     }
 
-    private AsyncResultCursorOnlyFactory newResultCursorFactory( Connection connection, Throwable runError )
-    {
-        Message runMessage = mock( Message.class );
+    private AsyncResultCursorOnlyFactory newResultCursorFactory(Connection connection, Throwable runError) {
+        Message runMessage = mock(Message.class);
 
-        RunResponseHandler runHandler = mock( RunResponseHandler.class );
+        RunResponseHandler runHandler = mock(RunResponseHandler.class);
         CompletableFuture<Void> runFuture = new CompletableFuture<>();
-        if ( runError != null )
-        {
-            runFuture.completeExceptionally( runError );
-        }
-        else
-        {
-            runFuture.complete( null );
+        if (runError != null) {
+            runFuture.completeExceptionally(runError);
+        } else {
+            runFuture.complete(null);
         }
 
-        AutoPullResponseHandler pullHandler = mock( AutoPullResponseHandler.class );
+        AutoPullResponseHandler pullHandler = mock(AutoPullResponseHandler.class);
 
-        return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, runFuture, pullHandler );
+        return new AsyncResultCursorOnlyFactory(connection, runMessage, runHandler, runFuture, pullHandler);
     }
 
-    private AsyncResultCursorOnlyFactory newResultCursorFactory( Throwable runError )
-    {
-        Connection connection = mock( Connection.class );
-        return newResultCursorFactory( connection, runError );
+    private AsyncResultCursorOnlyFactory newResultCursorFactory(Throwable runError) {
+        Connection connection = mock(Connection.class);
+        return newResultCursorFactory(connection, runError);
     }
 
-    private void verifyRunCompleted( Connection connection, CompletionStage<AsyncResultCursor> cursorFuture )
-    {
-        verify( connection ).write( any( Message.class ), any( RunResponseHandler.class ) );
-        assertThat( getNow( cursorFuture ), instanceOf( AsyncResultCursor.class ) );
+    private void verifyRunCompleted(Connection connection, CompletionStage<AsyncResultCursor> cursorFuture) {
+        verify(connection).write(any(Message.class), any(RunResponseHandler.class));
+        assertThat(getNow(cursorFuture), instanceOf(AsyncResultCursor.class));
     }
 }

@@ -23,10 +23,8 @@ package org.neo4j.driver.exceptions;
  * The error code provided can be used to determine further detail for the problem.
  * @since 1.0
  */
-public class DatabaseException extends Neo4jException
-{
-    public DatabaseException( String code, String message )
-    {
-        super( code, message );
+public class DatabaseException extends Neo4jException {
+    public DatabaseException(String code, String message) {
+        super(code, message);
     }
 }

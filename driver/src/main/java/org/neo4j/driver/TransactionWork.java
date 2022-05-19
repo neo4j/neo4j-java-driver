@@ -26,13 +26,12 @@ package org.neo4j.driver;
  * @deprecated superseded by {@link TransactionCallback}.
  */
 @Deprecated
-public interface TransactionWork<T>
-{
+public interface TransactionWork<T> {
     /**
      * Executes all given operations against the same transaction.
      *
      * @param tx the transaction to use.
      * @return some result object or {@code null} if none.
      */
-    T execute( Transaction tx );
+    T execute(Transaction tx);
 }

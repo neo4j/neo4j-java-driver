@@ -18,24 +18,6 @@
  */
 package org.neo4j.driver.integration;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
-
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.NoSuchRecordException;
-import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.SessionExtension;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -48,205 +30,193 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Transaction;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.util.SessionExtension;
+
 @ParallelizableIT
-class ResultStreamIT
-{
+class ResultStreamIT {
     @RegisterExtension
     static final SessionExtension session = new SessionExtension();
 
     @Test
-    void shouldAllowIteratingOverResultStream()
-    {
+    void shouldAllowIteratingOverResultStream() {
         // When
-        Result res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        Result res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
 
         // Then I should be able to iterate over the result
         int idx = 1;
-        while ( res.hasNext() )
-        {
-            assertEquals( idx++, res.next().get( "a" ).asLong() );
+        while (res.hasNext()) {
+            assertEquals(idx++, res.next().get("a").asLong());
         }
     }
 
     @Test
-    void shouldHaveFieldNamesInResult()
-    {
+    void shouldHaveFieldNamesInResult() {
         // When
-        Result res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
+        Result res = session.run("CREATE (n:TestNode {name:'test'}) RETURN n");
 
         // Then
-        assertEquals( "[n]", res.keys().toString() );
-        assertNotNull( res.single() );
-        assertEquals( "[n]", res.keys().toString() );
+        assertEquals("[n]", res.keys().toString());
+        assertNotNull(res.single());
+        assertEquals("[n]", res.keys().toString());
     }
 
     @Test
-    void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField()
-    {
+    void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField() {
         // Given
-        Result rs =
-                session.run( "CREATE (n:Person {name:$name}) RETURN n", parameters( "name", "Tom Hanks" ) );
+        Result rs = session.run("CREATE (n:Person {name:$name}) RETURN n", parameters("name", "Tom Hanks"));
 
         // When
         Record single = rs.single();
 
         // Then
-        assertTrue( single.get( "m" ).isNull() );
+        assertTrue(single.get("m").isNull());
     }
 
     @Test
-    void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode()
-    {
+    void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode() {
         // Given
-        Result rs =
-                session.run( "CREATE (n:Person {name:$name}) RETURN n", parameters( "name", "Tom Hanks" ) );
+        Result rs = session.run("CREATE (n:Person {name:$name}) RETURN n", parameters("name", "Tom Hanks"));
 
         // When
         Record record = rs.single();
 
         // Then
-        assertTrue( record.get( "n" ).get( "age" ).isNull() );
+        assertTrue(record.get("n").get("age").isNull());
     }
 
     @Test
-    void shouldNotReturnNullKeysOnEmptyResult()
-    {
+    void shouldNotReturnNullKeysOnEmptyResult() {
         // Given
-        Result rs = session.run( "CREATE (n:Person {name:$name})", parameters( "name", "Tom Hanks" ) );
+        Result rs = session.run("CREATE (n:Person {name:$name})", parameters("name", "Tom Hanks"));
 
         // THEN
-        assertNotNull( rs.keys() );
+        assertNotNull(rs.keys());
     }
 
     @Test
-    void shouldBeAbleToReuseSessionAfterFailure()
-    {
+    void shouldBeAbleToReuseSessionAfterFailure() {
         // Given
-        assertThrows( Exception.class, () -> session.run( "INVALID" ) );
+        assertThrows(Exception.class, () -> session.run("INVALID"));
 
         // When
-        Result res2 = session.run( "RETURN 1" );
+        Result res2 = session.run("RETURN 1");
 
         // Then
-        assertTrue( res2.hasNext() );
-        assertEquals( res2.next().get( "1" ).asLong(), 1L );
+        assertTrue(res2.hasNext());
+        assertEquals(res2.next().get("1").asLong(), 1L);
     }
 
     @Test
-    void shouldBeAbleToAccessSummaryAfterTransactionFailure()
-    {
+    void shouldBeAbleToAccessSummaryAfterTransactionFailure() {
         AtomicReference<Result> resultRef = new AtomicReference<>();
 
-        assertThrows( ClientException.class, () ->
-        {
-            try ( Transaction tx = session.beginTransaction() )
-            {
-                Result result = tx.run( "UNWIND [1,2,0] AS x RETURN 10/x" );
-                resultRef.set( result );
+        assertThrows(ClientException.class, () -> {
+            try (Transaction tx = session.beginTransaction()) {
+                Result result = tx.run("UNWIND [1,2,0] AS x RETURN 10/x");
+                resultRef.set(result);
                 tx.commit();
             }
-        } );
+        });
 
         Result result = resultRef.get();
-        assertNotNull( result );
-        assertEquals( 0, result.consume().counters().nodesCreated() );
+        assertNotNull(result);
+        assertEquals(0, result.consume().counters().nodesCreated());
     }
 
     @Test
-    void shouldConvertEmptyResultToStream()
-    {
-        long count = session.run( "MATCH (n:WrongLabel) RETURN n" )
-                .stream()
-                .count();
+    void shouldConvertEmptyResultToStream() {
+        long count = session.run("MATCH (n:WrongLabel) RETURN n").stream().count();
 
-        assertEquals( 0, count );
+        assertEquals(0, count);
 
-        Optional<Record> anyRecord = session.run( "MATCH (n:OtherWrongLabel) RETURN n" )
-                .stream()
-                .findAny();
+        Optional<Record> anyRecord =
+                session.run("MATCH (n:OtherWrongLabel) RETURN n").stream().findAny();
 
-        assertFalse( anyRecord.isPresent() );
+        assertFalse(anyRecord.isPresent());
     }
 
     @Test
-    void shouldConvertResultToStream()
-    {
-        List<Integer> receivedList = session.run( "UNWIND range(1, 10) AS x RETURN x" )
-                .stream()
-                .map( record -> record.get( 0 ) )
-                .map( Value::asInt )
-                .collect( toList() );
+    void shouldConvertResultToStream() {
+        List<Integer> receivedList = session.run("UNWIND range(1, 10) AS x RETURN x").stream()
+                .map(record -> record.get(0))
+                .map(Value::asInt)
+                .collect(toList());
 
-        assertEquals( asList( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ), receivedList );
+        assertEquals(asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), receivedList);
     }
 
     @Test
-    void shouldConvertImmediatelyFailingResultToStream()
-    {
+    void shouldConvertImmediatelyFailingResultToStream() {
         List<Integer> seen = new ArrayList<>();
 
-        ClientException e = assertThrows( ClientException.class,
-                () -> session.run( "RETURN 10 / 0" )
-                        .stream()
-                        .forEach( record -> seen.add( record.get( 0 ).asInt() ) ) );
+        ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN 10 / 0").stream()
+                .forEach(record -> seen.add(record.get(0).asInt())));
 
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        assertThat(e.getMessage(), containsString("/ by zero"));
 
-        assertEquals( emptyList(), seen );
+        assertEquals(emptyList(), seen);
     }
 
     @Test
-    void shouldConvertEventuallyFailingResultToStream()
-    {
+    void shouldConvertEventuallyFailingResultToStream() {
         List<Integer> seen = new ArrayList<>();
 
-        ClientException e = assertThrows( ClientException.class,
-                () -> session.run( "CYPHER runtime=interpreted UNWIND range(5, 0, -1) AS x RETURN x / x" )
-                        .stream()
-                        .forEach( record -> seen.add( record.get( 0 ).asInt() ) ) );
+        ClientException e = assertThrows(
+                ClientException.class,
+                () -> session.run("CYPHER runtime=interpreted UNWIND range(5, 0, -1) AS x RETURN x / x").stream()
+                        .forEach(record -> seen.add(record.get(0).asInt())));
 
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        assertThat(e.getMessage(), containsString("/ by zero"));
 
         // stream should manage to summary all elements except the last one, which produces an error
-        assertEquals( asList( 1, 1, 1, 1, 1 ), seen );
+        assertEquals(asList(1, 1, 1, 1, 1), seen);
     }
 
     @Test
-    void shouldEmptyResultWhenConvertedToStream()
-    {
-        Result result = session.run( "UNWIND range(1, 10) AS x RETURN x" );
+    void shouldEmptyResultWhenConvertedToStream() {
+        Result result = session.run("UNWIND range(1, 10) AS x RETURN x");
 
-        assertTrue( result.hasNext() );
-        assertEquals( 1, result.next().get( 0 ).asInt() );
+        assertTrue(result.hasNext());
+        assertEquals(1, result.next().get(0).asInt());
 
-        assertTrue( result.hasNext() );
-        assertEquals( 2, result.next().get( 0 ).asInt() );
+        assertTrue(result.hasNext());
+        assertEquals(2, result.next().get(0).asInt());
 
-        List<Integer> list = result.stream()
-                .map( record -> record.get( 0 ).asInt() )
-                .collect( toList() );
-        assertEquals( asList( 3, 4, 5, 6, 7, 8, 9, 10 ), list );
+        List<Integer> list =
+                result.stream().map(record -> record.get(0).asInt()).collect(toList());
+        assertEquals(asList(3, 4, 5, 6, 7, 8, 9, 10), list);
 
-        assertFalse( result.hasNext() );
-        assertThrows( NoSuchRecordException.class, result::next );
-        assertEquals( emptyList(), result.list() );
-        assertEquals( 0, result.stream().count() );
+        assertFalse(result.hasNext());
+        assertThrows(NoSuchRecordException.class, result::next);
+        assertEquals(emptyList(), result.list());
+        assertEquals(0, result.stream().count());
     }
 
     @Test
-    void shouldConsumeLargeResultAsParallelStream()
-    {
-        List<String> receivedList = session.run( "UNWIND range(1, 200000) AS x RETURN 'value-' + x" )
-                .stream()
+    void shouldConsumeLargeResultAsParallelStream() {
+        List<String> receivedList = session.run("UNWIND range(1, 200000) AS x RETURN 'value-' + x").stream()
                 .parallel()
-                .map( record -> record.get( 0 ) )
-                .map( Value::asString )
-                .collect( toList() );
+                .map(record -> record.get(0))
+                .map(Value::asString)
+                .collect(toList());
 
-        List<String> expectedList = IntStream.range( 1, 200001 )
-                .mapToObj( i -> "value-" + i )
-                .collect( toList() );
+        List<String> expectedList =
+                IntStream.range(1, 200001).mapToObj(i -> "value-" + i).collect(toList());
 
-        assertEquals( expectedList, receivedList );
+        assertEquals(expectedList, receivedList);
     }
 }

@@ -18,57 +18,36 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-enum DevNullPoolMetricsListener implements ConnectionPoolMetricsListener
-{
+enum DevNullPoolMetricsListener implements ConnectionPoolMetricsListener {
     INSTANCE;
 
     @Override
-    public void beforeCreating( ListenerEvent<?> listenerEvent )
-    {
-    }
+    public void beforeCreating(ListenerEvent<?> listenerEvent) {}
 
     @Override
-    public void afterCreated( ListenerEvent<?> listenerEvent )
-    {
-    }
+    public void afterCreated(ListenerEvent<?> listenerEvent) {}
 
     @Override
-    public void afterFailedToCreate()
-    {
-    }
+    public void afterFailedToCreate() {}
 
     @Override
-    public void afterClosed()
-    {
-    }
+    public void afterClosed() {}
 
     @Override
-    public void beforeAcquiringOrCreating( ListenerEvent<?> acquireEvent )
-    {
-    }
+    public void beforeAcquiringOrCreating(ListenerEvent<?> acquireEvent) {}
 
     @Override
-    public void afterAcquiringOrCreating()
-    {
-    }
+    public void afterAcquiringOrCreating() {}
 
     @Override
-    public void afterAcquiredOrCreated( ListenerEvent<?> acquireEvent )
-    {
-    }
+    public void afterAcquiredOrCreated(ListenerEvent<?> acquireEvent) {}
 
     @Override
-    public void afterTimedOutToAcquireOrCreate()
-    {
-    }
+    public void afterTimedOutToAcquireOrCreate() {}
 
     @Override
-    public void acquired( ListenerEvent<?> inUseEvent )
-    {
-    }
+    public void acquired(ListenerEvent<?> inUseEvent) {}
 
     @Override
-    public void released( ListenerEvent<?> inUseEvent )
-    {
-    }
+    public void released(ListenerEvent<?> inUseEvent) {}
 }

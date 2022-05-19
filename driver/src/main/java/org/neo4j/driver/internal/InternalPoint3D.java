@@ -19,18 +19,15 @@
 package org.neo4j.driver.internal;
 
 import java.util.Objects;
-
 import org.neo4j.driver.types.Point;
 
-public class InternalPoint3D implements Point
-{
+public class InternalPoint3D implements Point {
     private final int srid;
     private final double x;
     private final double y;
     private final double z;
 
-    public InternalPoint3D( int srid, double x, double y, double z )
-    {
+    public InternalPoint3D(int srid, double x, double y, double z) {
         this.srid = srid;
         this.x = x;
         this.y = y;
@@ -38,61 +35,47 @@ public class InternalPoint3D implements Point
     }
 
     @Override
-    public int srid()
-    {
+    public int srid() {
         return srid;
     }
 
     @Override
-    public double x()
-    {
+    public double x() {
         return x;
     }
 
     @Override
-    public double y()
-    {
+    public double y() {
         return y;
     }
 
     @Override
-    public double z()
-    {
+    public double z() {
         return z;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         InternalPoint3D that = (InternalPoint3D) o;
-        return srid == that.srid &&
-               Double.compare( that.x, x ) == 0 &&
-               Double.compare( that.y, y ) == 0 &&
-               Double.compare( that.z, z ) == 0;
+        return srid == that.srid
+                && Double.compare(that.x, x) == 0
+                && Double.compare(that.y, y) == 0
+                && Double.compare(that.z, z) == 0;
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( srid, x, y, z );
+    public int hashCode() {
+        return Objects.hash(srid, x, y, z);
     }
 
     @Override
-    public String toString()
-    {
-        return "Point{" +
-               "srid=" + srid +
-               ", x=" + x +
-               ", y=" + y +
-               ", z=" + z +
-               '}';
+    public String toString() {
+        return "Point{" + "srid=" + srid + ", x=" + x + ", y=" + y + ", z=" + z + '}';
     }
 }

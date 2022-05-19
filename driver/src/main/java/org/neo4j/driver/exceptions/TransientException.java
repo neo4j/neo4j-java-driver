@@ -24,10 +24,8 @@ package org.neo4j.driver.exceptions;
  *
  * @since 1.0
  */
-public class TransientException extends Neo4jException implements RetryableException
-{
-    public TransientException( String code, String message )
-    {
-        super( code, message );
+public class TransientException extends Neo4jException implements RetryableException {
+    public TransientException(String code, String message) {
+        super(code, message);
     }
 }

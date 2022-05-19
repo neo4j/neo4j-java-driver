@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -29,7 +31,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -40,123 +41,114 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 
-import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
-
-public class RoutingTableRegistryImpl implements RoutingTableRegistry
-{
-    private final ConcurrentMap<DatabaseName,RoutingTableHandler> routingTableHandlers;
-    private final Map<Principal,CompletionStage<DatabaseName>> principalToDatabaseNameStage;
+public class RoutingTableRegistryImpl implements RoutingTableRegistry {
+    private final ConcurrentMap<DatabaseName, RoutingTableHandler> routingTableHandlers;
+    private final Map<Principal, CompletionStage<DatabaseName>> principalToDatabaseNameStage;
     private final RoutingTableHandlerFactory factory;
     private final Logger log;
     private final Clock clock;
     private final ConnectionPool connectionPool;
     private final Rediscovery rediscovery;
 
-    public RoutingTableRegistryImpl( ConnectionPool connectionPool, Rediscovery rediscovery, Clock clock, Logging logging, long routingTablePurgeDelayMs )
-    {
-        this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, rediscovery, clock, logging, routingTablePurgeDelayMs ), clock,
-              connectionPool, rediscovery, logging );
+    public RoutingTableRegistryImpl(
+            ConnectionPool connectionPool,
+            Rediscovery rediscovery,
+            Clock clock,
+            Logging logging,
+            long routingTablePurgeDelayMs) {
+        this(
+                new ConcurrentHashMap<>(),
+                new RoutingTableHandlerFactory(connectionPool, rediscovery, clock, logging, routingTablePurgeDelayMs),
+                clock,
+                connectionPool,
+                rediscovery,
+                logging);
     }
 
-    RoutingTableRegistryImpl( ConcurrentMap<DatabaseName,RoutingTableHandler> routingTableHandlers, RoutingTableHandlerFactory factory, Clock clock,
-                              ConnectionPool connectionPool, Rediscovery rediscovery, Logging logging )
-    {
+    RoutingTableRegistryImpl(
+            ConcurrentMap<DatabaseName, RoutingTableHandler> routingTableHandlers,
+            RoutingTableHandlerFactory factory,
+            Clock clock,
+            ConnectionPool connectionPool,
+            Rediscovery rediscovery,
+            Logging logging) {
         this.factory = factory;
         this.routingTableHandlers = routingTableHandlers;
         this.principalToDatabaseNameStage = new HashMap<>();
         this.clock = clock;
         this.connectionPool = connectionPool;
         this.rediscovery = rediscovery;
-        this.log = logging.getLog( getClass() );
+        this.log = logging.getLog(getClass());
     }
 
     @Override
-    public CompletionStage<RoutingTableHandler> ensureRoutingTable( ConnectionContext context )
-    {
-        return ensureDatabaseNameIsCompleted( context )
-                .thenCompose( ctxAndHandler ->
-                              {
-                                  ConnectionContext completedContext = ctxAndHandler.getContext();
-                                  RoutingTableHandler handler = ctxAndHandler.getHandler() != null
-                                                                ? ctxAndHandler.getHandler()
-                                                                : getOrCreate( Futures.joinNowOrElseThrow( completedContext.databaseNameFuture(),
-                                                                                                           PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER ) );
-                                  return handler.ensureRoutingTable( completedContext )
-                                                .thenApply( ignored -> handler );
-                              } );
+    public CompletionStage<RoutingTableHandler> ensureRoutingTable(ConnectionContext context) {
+        return ensureDatabaseNameIsCompleted(context).thenCompose(ctxAndHandler -> {
+            ConnectionContext completedContext = ctxAndHandler.getContext();
+            RoutingTableHandler handler = ctxAndHandler.getHandler() != null
+                    ? ctxAndHandler.getHandler()
+                    : getOrCreate(Futures.joinNowOrElseThrow(
+                            completedContext.databaseNameFuture(), PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER));
+            return handler.ensureRoutingTable(completedContext).thenApply(ignored -> handler);
+        });
     }
 
-    private CompletionStage<ConnectionContextAndHandler> ensureDatabaseNameIsCompleted( ConnectionContext context )
-    {
+    private CompletionStage<ConnectionContextAndHandler> ensureDatabaseNameIsCompleted(ConnectionContext context) {
         CompletionStage<ConnectionContextAndHandler> contextAndHandlerStage;
         CompletableFuture<DatabaseName> contextDatabaseNameFuture = context.databaseNameFuture();
 
-        if ( contextDatabaseNameFuture.isDone() )
-        {
-            contextAndHandlerStage = CompletableFuture.completedFuture( new ConnectionContextAndHandler( context, null ) );
-        }
-        else
-        {
-            synchronized ( this )
-            {
-                if ( contextDatabaseNameFuture.isDone() )
-                {
-                    contextAndHandlerStage = CompletableFuture.completedFuture( new ConnectionContextAndHandler( context, null ) );
-                }
-                else
-                {
+        if (contextDatabaseNameFuture.isDone()) {
+            contextAndHandlerStage = CompletableFuture.completedFuture(new ConnectionContextAndHandler(context, null));
+        } else {
+            synchronized (this) {
+                if (contextDatabaseNameFuture.isDone()) {
+                    contextAndHandlerStage =
+                            CompletableFuture.completedFuture(new ConnectionContextAndHandler(context, null));
+                } else {
                     String impersonatedUser = context.impersonatedUser();
-                    Principal principal = new Principal( impersonatedUser );
-                    CompletionStage<DatabaseName> databaseNameStage = principalToDatabaseNameStage.get( principal );
+                    Principal principal = new Principal(impersonatedUser);
+                    CompletionStage<DatabaseName> databaseNameStage = principalToDatabaseNameStage.get(principal);
                     AtomicReference<RoutingTableHandler> handlerRef = new AtomicReference<>();
 
-                    if ( databaseNameStage == null )
-                    {
+                    if (databaseNameStage == null) {
                         CompletableFuture<DatabaseName> databaseNameFuture = new CompletableFuture<>();
-                        principalToDatabaseNameStage.put( principal, databaseNameFuture );
+                        principalToDatabaseNameStage.put(principal, databaseNameFuture);
                         databaseNameStage = databaseNameFuture;
 
-                        ClusterRoutingTable routingTable = new ClusterRoutingTable( DatabaseNameUtil.defaultDatabase(), clock );
-                        rediscovery.lookupClusterComposition( routingTable, connectionPool, context.rediscoveryBookmarks(), impersonatedUser )
-                                   .thenCompose(
-                                           compositionLookupResult ->
-                                           {
-                                               DatabaseName databaseName =
-                                                       DatabaseNameUtil.database( compositionLookupResult.getClusterComposition().databaseName() );
-                                               RoutingTableHandler handler = getOrCreate( databaseName );
-                                               handlerRef.set( handler );
-                                               return handler.updateRoutingTable( compositionLookupResult )
-                                                             .thenApply( ignored -> databaseName );
-                                           } )
-                                   .whenComplete( ( databaseName, throwable ) ->
-                                                  {
-                                                      synchronized ( this )
-                                                      {
-                                                          principalToDatabaseNameStage.remove( principal );
-                                                      }
-                                                  } )
-                                   .whenComplete( ( databaseName, throwable ) ->
-                                                  {
-                                                      if ( throwable != null )
-                                                      {
-                                                          databaseNameFuture.completeExceptionally( throwable );
-                                                      }
-                                                      else
-                                                      {
-                                                          databaseNameFuture.complete( databaseName );
-                                                      }
-                                                  } );
+                        ClusterRoutingTable routingTable =
+                                new ClusterRoutingTable(DatabaseNameUtil.defaultDatabase(), clock);
+                        rediscovery
+                                .lookupClusterComposition(
+                                        routingTable, connectionPool, context.rediscoveryBookmarks(), impersonatedUser)
+                                .thenCompose(compositionLookupResult -> {
+                                    DatabaseName databaseName = DatabaseNameUtil.database(compositionLookupResult
+                                            .getClusterComposition()
+                                            .databaseName());
+                                    RoutingTableHandler handler = getOrCreate(databaseName);
+                                    handlerRef.set(handler);
+                                    return handler.updateRoutingTable(compositionLookupResult)
+                                            .thenApply(ignored -> databaseName);
+                                })
+                                .whenComplete((databaseName, throwable) -> {
+                                    synchronized (this) {
+                                        principalToDatabaseNameStage.remove(principal);
+                                    }
+                                })
+                                .whenComplete((databaseName, throwable) -> {
+                                    if (throwable != null) {
+                                        databaseNameFuture.completeExceptionally(throwable);
+                                    } else {
+                                        databaseNameFuture.complete(databaseName);
+                                    }
+                                });
                     }
 
-                    contextAndHandlerStage = databaseNameStage.thenApply(
-                            databaseName ->
-                            {
-                                synchronized ( this )
-                                {
-                                    contextDatabaseNameFuture.complete( databaseName );
-                                }
-                                return new ConnectionContextAndHandler( context, handlerRef.get() );
-                            } );
+                    contextAndHandlerStage = databaseNameStage.thenApply(databaseName -> {
+                        synchronized (this) {
+                            contextDatabaseNameFuture.complete(databaseName);
+                        }
+                        return new ConnectionContextAndHandler(context, handlerRef.get());
+                    });
                 }
             }
         }
@@ -165,74 +157,65 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
     }
 
     @Override
-    public Set<BoltServerAddress> allServers()
-    {
+    public Set<BoltServerAddress> allServers() {
         // obviously we just had a snapshot of all servers in all routing tables
         // after we read it, the set could already be changed.
         Set<BoltServerAddress> servers = new HashSet<>();
-        for ( RoutingTableHandler tableHandler : routingTableHandlers.values() )
-        {
-            servers.addAll( tableHandler.servers() );
+        for (RoutingTableHandler tableHandler : routingTableHandlers.values()) {
+            servers.addAll(tableHandler.servers());
         }
         return servers;
     }
 
     @Override
-    public void remove( DatabaseName databaseName )
-    {
-        routingTableHandlers.remove( databaseName );
-        log.debug( "Routing table handler for database '%s' is removed.", databaseName.description() );
+    public void remove(DatabaseName databaseName) {
+        routingTableHandlers.remove(databaseName);
+        log.debug("Routing table handler for database '%s' is removed.", databaseName.description());
     }
 
     @Override
-    public void removeAged()
-    {
-        routingTableHandlers.forEach(
-                ( databaseName, handler ) ->
-                {
-                    if ( handler.isRoutingTableAged() )
-                    {
-                        log.info(
-                                "Routing table handler for database '%s' is removed because it has not been used for a long time. Routing table: %s",
-                                databaseName.description(), handler.routingTable() );
-                        routingTableHandlers.remove( databaseName );
-                    }
-                } );
+    public void removeAged() {
+        routingTableHandlers.forEach((databaseName, handler) -> {
+            if (handler.isRoutingTableAged()) {
+                log.info(
+                        "Routing table handler for database '%s' is removed because it has not been used for a long time. Routing table: %s",
+                        databaseName.description(), handler.routingTable());
+                routingTableHandlers.remove(databaseName);
+            }
+        });
     }
 
     @Override
-    public Optional<RoutingTableHandler> getRoutingTableHandler( DatabaseName databaseName )
-    {
-        return Optional.ofNullable( routingTableHandlers.get( databaseName ) );
+    public Optional<RoutingTableHandler> getRoutingTableHandler(DatabaseName databaseName) {
+        return Optional.ofNullable(routingTableHandlers.get(databaseName));
     }
 
     // For tests
-    public boolean contains( DatabaseName databaseName )
-    {
-        return routingTableHandlers.containsKey( databaseName );
+    public boolean contains(DatabaseName databaseName) {
+        return routingTableHandlers.containsKey(databaseName);
     }
 
-    private RoutingTableHandler getOrCreate( DatabaseName databaseName )
-    {
-        return routingTableHandlers.computeIfAbsent(
-                databaseName, name ->
-                {
-                    RoutingTableHandler handler = factory.newInstance( name, this );
-                    log.debug( "Routing table handler for database '%s' is added.", databaseName.description() );
-                    return handler;
-                } );
+    private RoutingTableHandler getOrCreate(DatabaseName databaseName) {
+        return routingTableHandlers.computeIfAbsent(databaseName, name -> {
+            RoutingTableHandler handler = factory.newInstance(name, this);
+            log.debug("Routing table handler for database '%s' is added.", databaseName.description());
+            return handler;
+        });
     }
 
-    static class RoutingTableHandlerFactory
-    {
+    static class RoutingTableHandlerFactory {
         private final ConnectionPool connectionPool;
         private final Rediscovery rediscovery;
         private final Logging logging;
         private final Clock clock;
         private final long routingTablePurgeDelayMs;
 
-        RoutingTableHandlerFactory( ConnectionPool connectionPool, Rediscovery rediscovery, Clock clock, Logging logging, long routingTablePurgeDelayMs )
-        {
+        RoutingTableHandlerFactory(
+                ConnectionPool connectionPool,
+                Rediscovery rediscovery,
+                Clock clock,
+                Logging logging,
+                long routingTablePurgeDelayMs) {
             this.connectionPool = connectionPool;
             this.rediscovery = rediscovery;
             this.clock = clock;
@@ -240,62 +223,52 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
             this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;
         }
 
-        RoutingTableHandler newInstance( DatabaseName databaseName, RoutingTableRegistry allTables )
-        {
-            ClusterRoutingTable routingTable = new ClusterRoutingTable( databaseName, clock );
-            return new RoutingTableHandlerImpl( routingTable, rediscovery, connectionPool, allTables, logging, routingTablePurgeDelayMs );
+        RoutingTableHandler newInstance(DatabaseName databaseName, RoutingTableRegistry allTables) {
+            ClusterRoutingTable routingTable = new ClusterRoutingTable(databaseName, clock);
+            return new RoutingTableHandlerImpl(
+                    routingTable, rediscovery, connectionPool, allTables, logging, routingTablePurgeDelayMs);
         }
     }
 
-    private static class Principal
-    {
+    private static class Principal {
         private final String id;
 
-        private Principal( String id )
-        {
+        private Principal(String id) {
             this.id = id;
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             Principal principal = (Principal) o;
-            return Objects.equals( id, principal.id );
+            return Objects.equals(id, principal.id);
         }
 
         @Override
-        public int hashCode()
-        {
-            return Objects.hash( id );
+        public int hashCode() {
+            return Objects.hash(id);
         }
     }
 
-    private static class ConnectionContextAndHandler
-    {
+    private static class ConnectionContextAndHandler {
         private final ConnectionContext context;
         private final RoutingTableHandler handler;
 
-        private ConnectionContextAndHandler( ConnectionContext context, RoutingTableHandler handler )
-        {
+        private ConnectionContextAndHandler(ConnectionContext context, RoutingTableHandler handler) {
             this.context = context;
             this.handler = handler;
         }
 
-        public ConnectionContext getContext()
-        {
+        public ConnectionContext getContext() {
             return context;
         }
 
-        public RoutingTableHandler getHandler()
-        {
+        public RoutingTableHandler getHandler() {
             return handler;
         }
     }

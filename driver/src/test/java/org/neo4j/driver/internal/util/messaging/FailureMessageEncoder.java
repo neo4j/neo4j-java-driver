@@ -21,24 +21,21 @@ package org.neo4j.driver.internal.util.messaging;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
 
-public class FailureMessageEncoder implements MessageEncoder
-{
+public class FailureMessageEncoder implements MessageEncoder {
     @Override
-    public void encode( Message message, ValuePacker packer ) throws IOException
-    {
+    public void encode(Message message, ValuePacker packer) throws IOException {
         FailureMessage failureMessage = (FailureMessage) message;
-        packer.packStructHeader( 1, failureMessage.signature() );
-        Map<String,Value> body = new HashMap<>();
-        body.put( "code", Values.value( failureMessage.code() ) );
-        body.put( "message", Values.value( failureMessage.message() ) );
-        packer.pack( body );
+        packer.packStructHeader(1, failureMessage.signature());
+        Map<String, Value> body = new HashMap<>();
+        body.put("code", Values.value(failureMessage.code()));
+        body.put("message", Values.value(failureMessage.message()));
+        packer.pack(body);
     }
 }

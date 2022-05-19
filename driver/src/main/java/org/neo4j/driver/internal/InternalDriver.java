@@ -18,9 +18,10 @@
  */
 package org.neo4j.driver.internal;
 
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -41,125 +42,108 @@ import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 
-import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-
-public class InternalDriver implements Driver
-{
+public class InternalDriver implements Driver {
     private final SecurityPlan securityPlan;
     private final SessionFactory sessionFactory;
     private final Logger log;
 
-    private AtomicBoolean closed = new AtomicBoolean( false );
+    private AtomicBoolean closed = new AtomicBoolean(false);
     private final MetricsProvider metricsProvider;
 
-    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Logging logging )
-    {
+    InternalDriver(
+            SecurityPlan securityPlan,
+            SessionFactory sessionFactory,
+            MetricsProvider metricsProvider,
+            Logging logging) {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
         this.metricsProvider = metricsProvider;
-        this.log = logging.getLog( getClass() );
+        this.log = logging.getLog(getClass());
     }
 
     @Override
-    public Session session()
-    {
-        return new InternalSession( newSession( SessionConfig.defaultConfig() )  );
+    public Session session() {
+        return new InternalSession(newSession(SessionConfig.defaultConfig()));
     }
 
     @Override
-    public Session session( SessionConfig sessionConfig )
-    {
-        return new InternalSession( newSession( sessionConfig ) );
+    public Session session(SessionConfig sessionConfig) {
+        return new InternalSession(newSession(sessionConfig));
     }
 
     @Override
-    public RxSession rxSession( SessionConfig sessionConfig )
-    {
-        return new InternalRxSession( newSession( sessionConfig ) );
+    public RxSession rxSession(SessionConfig sessionConfig) {
+        return new InternalRxSession(newSession(sessionConfig));
     }
 
     @Override
-    public ReactiveSession reactiveSession( SessionConfig sessionConfig )
-    {
-        return new InternalReactiveSession( newSession( sessionConfig ) );
+    public ReactiveSession reactiveSession(SessionConfig sessionConfig) {
+        return new InternalReactiveSession(newSession(sessionConfig));
     }
 
     @Override
-    public AsyncSession asyncSession()
-    {
-        return new InternalAsyncSession( newSession( SessionConfig.defaultConfig() ) );
+    public AsyncSession asyncSession() {
+        return new InternalAsyncSession(newSession(SessionConfig.defaultConfig()));
     }
 
     @Override
-    public AsyncSession asyncSession( SessionConfig sessionConfig )
-    {
-        return new InternalAsyncSession( newSession( sessionConfig ) );
+    public AsyncSession asyncSession(SessionConfig sessionConfig) {
+        return new InternalAsyncSession(newSession(sessionConfig));
     }
 
     @Override
-    public Metrics metrics()
-    {
+    public Metrics metrics() {
         return metricsProvider.metrics();
     }
 
     @Override
-    public boolean isMetricsEnabled()
-    {
+    public boolean isMetricsEnabled() {
         return metricsProvider != DevNullMetricsProvider.INSTANCE;
     }
 
     @Override
-    public boolean isEncrypted()
-    {
+    public boolean isEncrypted() {
         assertOpen();
         return securityPlan.requiresEncryption();
     }
 
     @Override
-    public void close()
-    {
-        Futures.blockingGet( closeAsync() );
+    public void close() {
+        Futures.blockingGet(closeAsync());
     }
 
     @Override
-    public CompletionStage<Void> closeAsync()
-    {
-        if ( closed.compareAndSet( false, true ) )
-        {
-            log.info( "Closing driver instance %s", hashCode() );
+    public CompletionStage<Void> closeAsync() {
+        if (closed.compareAndSet(false, true)) {
+            log.info("Closing driver instance %s", hashCode());
             return sessionFactory.close();
         }
         return completedWithNull();
     }
 
     @Override
-    public final TypeSystem defaultTypeSystem()
-    {
+    public final TypeSystem defaultTypeSystem() {
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
     @Override
-    public CompletionStage<Void> verifyConnectivityAsync()
-    {
+    public CompletionStage<Void> verifyConnectivityAsync() {
         return sessionFactory.verifyConnectivity();
     }
 
     @Override
-    public boolean supportsMultiDb()
-    {
-        return Futures.blockingGet( supportsMultiDbAsync() );
+    public boolean supportsMultiDb() {
+        return Futures.blockingGet(supportsMultiDbAsync());
     }
 
     @Override
-    public CompletionStage<Boolean> supportsMultiDbAsync()
-    {
+    public CompletionStage<Boolean> supportsMultiDbAsync() {
         return sessionFactory.supportsMultiDb();
     }
 
     @Override
-    public void verifyConnectivity()
-    {
-        Futures.blockingGet( verifyConnectivityAsync() );
+    public void verifyConnectivity() {
+        Futures.blockingGet(verifyConnectivityAsync());
     }
 
     /**
@@ -169,32 +153,26 @@ public class InternalDriver implements Driver
      *
      * @return the session factory used by this driver.
      */
-    public SessionFactory getSessionFactory()
-    {
+    public SessionFactory getSessionFactory() {
         return sessionFactory;
     }
 
-    private static RuntimeException driverCloseException()
-    {
-        return new IllegalStateException( "This driver instance has already been closed" );
+    private static RuntimeException driverCloseException() {
+        return new IllegalStateException("This driver instance has already been closed");
     }
 
-    public NetworkSession newSession( SessionConfig config )
-    {
+    public NetworkSession newSession(SessionConfig config) {
         assertOpen();
-        NetworkSession session = sessionFactory.newInstance( config );
-        if ( closed.get() )
-        {
+        NetworkSession session = sessionFactory.newInstance(config);
+        if (closed.get()) {
             // session does not immediately acquire connection, it is fine to just throw
             throw driverCloseException();
         }
         return session;
     }
 
-    private void assertOpen()
-    {
-        if ( closed.get() )
-        {
+    private void assertOpen() {
+        if (closed.get()) {
             throw driverCloseException();
         }
     }

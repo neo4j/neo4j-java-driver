@@ -18,6 +18,12 @@
  */
 package org.neo4j.driver.tck.reactive;
 
+import static org.neo4j.driver.Values.parameters;
+
+import java.time.Duration;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.reactive.ReactiveSession;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
@@ -27,68 +33,53 @@ import org.testng.annotations.BeforeClass;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.reactive.ReactiveSession;
-
-import static org.neo4j.driver.Values.parameters;
-
-@Testcontainers( disabledWithoutDocker = true )
-public class ReactiveResultRecordPublisherVerificationIT extends PublisherVerification<Record>
-{
+@Testcontainers(disabledWithoutDocker = true)
+public class ReactiveResultRecordPublisherVerificationIT extends PublisherVerification<Record> {
     private final Neo4jManager NEO4J = new Neo4jManager();
-    private final static long MAX_NUMBER_OF_RECORDS = 30000;
+    private static final long MAX_NUMBER_OF_RECORDS = 30000;
 
-    private static final Duration TIMEOUT = Duration.ofSeconds( 10 );
-    private static final Duration TIMEOUT_FOR_NO_SIGNALS = Duration.ofSeconds( 1 );
-    private static final Duration PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS = Duration.ofSeconds( 1 );
+    private static final Duration TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration TIMEOUT_FOR_NO_SIGNALS = Duration.ofSeconds(1);
+    private static final Duration PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS = Duration.ofSeconds(1);
 
-    private final static String QUERY = "UNWIND RANGE(1, $numberOfRecords) AS n RETURN 'String Number' + n";
+    private static final String QUERY = "UNWIND RANGE(1, $numberOfRecords) AS n RETURN 'String Number' + n";
 
     private Driver driver;
 
-    public ReactiveResultRecordPublisherVerificationIT()
-    {
-        super( new TestEnvironment( TIMEOUT.toMillis(), TIMEOUT_FOR_NO_SIGNALS.toMillis() ),
-               PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS.toMillis() );
+    public ReactiveResultRecordPublisherVerificationIT() {
+        super(
+                new TestEnvironment(TIMEOUT.toMillis(), TIMEOUT_FOR_NO_SIGNALS.toMillis()),
+                PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS.toMillis());
     }
 
     @BeforeClass
-    public void beforeClass()
-    {
+    public void beforeClass() {
         NEO4J.skipIfDockerUnavailable();
         NEO4J.start();
         driver = NEO4J.getDriver();
     }
 
     @AfterClass
-    public void afterClass()
-    {
+    public void afterClass() {
         NEO4J.stop();
     }
 
     @Override
-    public long maxElementsFromPublisher()
-    {
+    public long maxElementsFromPublisher() {
         return MAX_NUMBER_OF_RECORDS;
     }
 
     @Override
-    public Publisher<Record> createPublisher( long elements )
-    {
+    public Publisher<Record> createPublisher(long elements) {
         ReactiveSession session = driver.reactiveSession();
-        return Mono.fromDirect( session.run( QUERY, parameters( "numberOfRecords", elements ) ) )
-                   .flatMapMany( r -> Flux.from( r.records() ) );
+        return Mono.fromDirect(session.run(QUERY, parameters("numberOfRecords", elements)))
+                .flatMapMany(r -> Flux.from(r.records()));
     }
 
     @Override
-    public Publisher<Record> createFailedPublisher()
-    {
+    public Publisher<Record> createFailedPublisher() {
         ReactiveSession session = driver.reactiveSession();
         // Please note that this publisher fails on run stage.
-        return Mono.fromDirect( session.run( "RETURN 5/0" ) )
-                   .flatMapMany( r -> Flux.from( r.records() ) );
+        return Mono.fromDirect(session.run("RETURN 5/0")).flatMapMany(r -> Flux.from(r.records()));
     }
 }

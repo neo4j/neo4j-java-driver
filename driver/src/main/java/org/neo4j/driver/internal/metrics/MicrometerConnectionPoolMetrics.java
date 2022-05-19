@@ -18,26 +18,23 @@
  */
 package org.neo4j.driver.internal.metrics;
 
+import static java.lang.String.format;
+
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
-
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntSupplier;
-
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.net.ServerAddress;
 
-import static java.lang.String.format;
-
-final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsListener, ConnectionPoolMetrics
-{
+final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsListener, ConnectionPoolMetrics {
     public static final String PREFIX = "neo4j.driver.connections";
     public static final String IN_USE = PREFIX + ".in.use";
     public static final String IDLE = PREFIX + ".idle";
@@ -64,202 +61,197 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     private final Timer totalConnectionTimer;
     private final Timer totalInUseTimer;
 
-    MicrometerConnectionPoolMetrics( String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier, MeterRegistry registry )
-    {
-        this( poolId, address, inUseSupplier, idleSupplier, registry, Tags.empty() );
+    MicrometerConnectionPoolMetrics(
+            String poolId,
+            ServerAddress address,
+            IntSupplier inUseSupplier,
+            IntSupplier idleSupplier,
+            MeterRegistry registry) {
+        this(poolId, address, inUseSupplier, idleSupplier, registry, Tags.empty());
     }
 
-    MicrometerConnectionPoolMetrics( String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier, MeterRegistry registry, Iterable<Tag> initialTags )
-    {
-        Objects.requireNonNull( poolId );
-        Objects.requireNonNull( address );
-        Objects.requireNonNull( inUseSupplier );
-        Objects.requireNonNull( idleSupplier );
-        Objects.requireNonNull( registry );
+    MicrometerConnectionPoolMetrics(
+            String poolId,
+            ServerAddress address,
+            IntSupplier inUseSupplier,
+            IntSupplier idleSupplier,
+            MeterRegistry registry,
+            Iterable<Tag> initialTags) {
+        Objects.requireNonNull(poolId);
+        Objects.requireNonNull(address);
+        Objects.requireNonNull(inUseSupplier);
+        Objects.requireNonNull(idleSupplier);
+        Objects.requireNonNull(registry);
 
         this.id = poolId;
         this.inUseSupplier = inUseSupplier;
         this.idleSupplier = idleSupplier;
-        String host = address instanceof BoltServerAddress ? ((BoltServerAddress) address).connectionHost() : address.host();
-        Iterable<Tag> tags = Tags.concat( initialTags,
-                                          "address", String.format( "%s:%d", host, address.port() ) );
+        String host =
+                address instanceof BoltServerAddress ? ((BoltServerAddress) address).connectionHost() : address.host();
+        Iterable<Tag> tags = Tags.concat(initialTags, "address", String.format("%s:%d", host, address.port()));
 
-        Gauge.builder( IN_USE, this::inUse ).tags( tags ).register( registry );
-        Gauge.builder( IDLE, this::idle ).tags( tags ).register( registry );
-        Gauge.builder( CREATING, creating, AtomicInteger::get ).tags( tags ).register( registry );
-        failedToCreate = Counter.builder( FAILED ).tags( tags ).register( registry );
-        closed = Counter.builder( CLOSED ).tags( tags ).register( registry );
-        Gauge.builder( ACQUIRING, acquiring, AtomicInteger::get ).tags( tags ).register( registry );
-        timedOutToAcquire = Counter.builder( ACQUISITION_TIMEOUT ).tags( tags ).register( registry );
-        totalAcquisitionTimer = Timer.builder( ACQUISITION ).tags( tags ).register( registry );
-        totalConnectionTimer = Timer.builder( CREATION ).tags( tags ).register( registry );
-        totalInUseTimer = Timer.builder( USAGE ).tags( tags ).register( registry );
+        Gauge.builder(IN_USE, this::inUse).tags(tags).register(registry);
+        Gauge.builder(IDLE, this::idle).tags(tags).register(registry);
+        Gauge.builder(CREATING, creating, AtomicInteger::get).tags(tags).register(registry);
+        failedToCreate = Counter.builder(FAILED).tags(tags).register(registry);
+        closed = Counter.builder(CLOSED).tags(tags).register(registry);
+        Gauge.builder(ACQUIRING, acquiring, AtomicInteger::get).tags(tags).register(registry);
+        timedOutToAcquire = Counter.builder(ACQUISITION_TIMEOUT).tags(tags).register(registry);
+        totalAcquisitionTimer = Timer.builder(ACQUISITION).tags(tags).register(registry);
+        totalConnectionTimer = Timer.builder(CREATION).tags(tags).register(registry);
+        totalInUseTimer = Timer.builder(USAGE).tags(tags).register(registry);
     }
 
     @Override
-    public void beforeCreating( ListenerEvent<?> connEvent )
-    {
+    public void beforeCreating(ListenerEvent<?> connEvent) {
         creating.incrementAndGet();
         connEvent.start();
     }
 
     @Override
-    public void afterFailedToCreate()
-    {
+    public void afterFailedToCreate() {
         failedToCreate.increment();
         creating.decrementAndGet();
     }
 
     @Override
-    public void afterCreated( ListenerEvent<?> connEvent )
-    {
+    public void afterCreated(ListenerEvent<?> connEvent) {
         creating.decrementAndGet();
         Timer.Sample sample = ((MicrometerTimerListenerEvent) connEvent).getSample();
-        sample.stop( totalConnectionTimer );
+        sample.stop(totalConnectionTimer);
     }
 
     @Override
-    public void afterClosed()
-    {
+    public void afterClosed() {
         closed.increment();
     }
 
     @Override
-    public void beforeAcquiringOrCreating( ListenerEvent<?> acquireEvent )
-    {
+    public void beforeAcquiringOrCreating(ListenerEvent<?> acquireEvent) {
         acquireEvent.start();
         acquiring.incrementAndGet();
     }
 
     @Override
-    public void afterAcquiringOrCreating()
-    {
+    public void afterAcquiringOrCreating() {
         acquiring.decrementAndGet();
     }
 
     @Override
-    public void afterAcquiredOrCreated( ListenerEvent<?> acquireEvent )
-    {
+    public void afterAcquiredOrCreated(ListenerEvent<?> acquireEvent) {
         Timer.Sample sample = ((MicrometerTimerListenerEvent) acquireEvent).getSample();
-        sample.stop( totalAcquisitionTimer );
+        sample.stop(totalAcquisitionTimer);
     }
 
     @Override
-    public void afterTimedOutToAcquireOrCreate()
-    {
+    public void afterTimedOutToAcquireOrCreate() {
         timedOutToAcquire.increment();
     }
 
     @Override
-    public void acquired( ListenerEvent<?> inUseEvent )
-    {
+    public void acquired(ListenerEvent<?> inUseEvent) {
         inUseEvent.start();
     }
 
     @Override
-    public void released( ListenerEvent<?> inUseEvent )
-    {
+    public void released(ListenerEvent<?> inUseEvent) {
         Timer.Sample sample = ((MicrometerTimerListenerEvent) inUseEvent).getSample();
-        sample.stop( totalInUseTimer );
+        sample.stop(totalInUseTimer);
     }
 
     @Override
-    public String id()
-    {
+    public String id() {
         return this.id;
     }
 
     @Override
-    public int inUse()
-    {
+    public int inUse() {
         return inUseSupplier.getAsInt();
     }
 
     @Override
-    public int idle()
-    {
+    public int idle() {
         return idleSupplier.getAsInt();
     }
 
     @Override
-    public int creating()
-    {
+    public int creating() {
         return creating.get();
     }
 
     @Override
-    public long created()
-    {
+    public long created() {
         return totalConnectionTimer.count();
     }
 
     @Override
-    public long failedToCreate()
-    {
-        return count( failedToCreate );
+    public long failedToCreate() {
+        return count(failedToCreate);
     }
 
     @Override
-    public long closed()
-    {
-        return count( closed );
+    public long closed() {
+        return count(closed);
     }
 
     @Override
-    public int acquiring()
-    {
+    public int acquiring() {
         return acquiring.get();
     }
 
     @Override
-    public long acquired()
-    {
+    public long acquired() {
         return totalAcquisitionTimer.count();
     }
 
     @Override
-    public long timedOutToAcquire()
-    {
-        return count( timedOutToAcquire );
+    public long timedOutToAcquire() {
+        return count(timedOutToAcquire);
     }
 
     @Override
-    public long totalAcquisitionTime()
-    {
-        return (long) totalAcquisitionTimer.totalTime( TimeUnit.MILLISECONDS );
+    public long totalAcquisitionTime() {
+        return (long) totalAcquisitionTimer.totalTime(TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public long totalConnectionTime()
-    {
-        return (long) totalConnectionTimer.totalTime( TimeUnit.MILLISECONDS );
+    public long totalConnectionTime() {
+        return (long) totalConnectionTimer.totalTime(TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public long totalInUseTime()
-    {
-        return (long) totalInUseTimer.totalTime( TimeUnit.MILLISECONDS );
+    public long totalInUseTime() {
+        return (long) totalInUseTimer.totalTime(TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public long totalInUseCount()
-    {
+    public long totalInUseCount() {
         return totalInUseTimer.count();
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s=[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, " +
-                       "timedOutToAcquire=%s, inUse=%s, idle=%s, " +
-                       "totalAcquisitionTime=%s, totalConnectionTime=%s, totalInUseTime=%s, totalInUseCount=%s]",
-                       id(), created(), closed(), creating(), failedToCreate(), acquiring(), acquired(),
-                       timedOutToAcquire(), inUse(), idle(),
-                       totalAcquisitionTime(), totalConnectionTime(), totalInUseTime(), totalInUseCount() );
+    public String toString() {
+        return format(
+                "%s=[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, "
+                        + "timedOutToAcquire=%s, inUse=%s, idle=%s, "
+                        + "totalAcquisitionTime=%s, totalConnectionTime=%s, totalInUseTime=%s, totalInUseCount=%s]",
+                id(),
+                created(),
+                closed(),
+                creating(),
+                failedToCreate(),
+                acquiring(),
+                acquired(),
+                timedOutToAcquire(),
+                inUse(),
+                idle(),
+                totalAcquisitionTime(),
+                totalConnectionTime(),
+                totalInUseTime(),
+                totalInUseCount());
     }
 
-    private long count( Counter counter )
-    {
+    private long count(Counter counter) {
         return (long) counter.count();
     }
 }

@@ -18,35 +18,6 @@
  */
 package org.neo4j.driver.internal.async;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.InOrder;
-
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Query;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.exceptions.AuthorizationExpiredException;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
-import org.neo4j.driver.internal.DefaultBookmarksHolder;
-import org.neo4j.driver.internal.FailableCursor;
-import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,444 +50,443 @@ import static org.neo4j.driver.util.TestUtil.verifyRollbackTx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 import static org.neo4j.driver.util.TestUtil.verifyRunRx;
 
-class UnmanagedTransactionTest
-{
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InOrder;
+import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
+import org.neo4j.driver.internal.DefaultBookmarksHolder;
+import org.neo4j.driver.internal.FailableCursor;
+import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
+
+class UnmanagedTransactionTest {
     @Test
-    void shouldFlushOnRunAsync()
-    {
+    void shouldFlushOnRunAsync() {
         // Given
-        Connection connection = connectionMock( BoltProtocolV4.INSTANCE );
-        UnmanagedTransaction tx = beginTx( connection );
-        setupSuccessfulRunAndPull( connection );
+        Connection connection = connectionMock(BoltProtocolV4.INSTANCE);
+        UnmanagedTransaction tx = beginTx(connection);
+        setupSuccessfulRunAndPull(connection);
 
         // When
-        await( tx.runAsync( new Query( "RETURN 1" ) ) );
+        await(tx.runAsync(new Query("RETURN 1")));
 
         // Then
-        verifyRunAndPull( connection, "RETURN 1" );
+        verifyRunAndPull(connection, "RETURN 1");
     }
 
     @Test
-    void shouldFlushOnRunRx()
-    {
+    void shouldFlushOnRunRx() {
         // Given
-        Connection connection = connectionMock( BoltProtocolV4.INSTANCE );
-        UnmanagedTransaction tx = beginTx( connection );
-        setupSuccessfulRunRx( connection );
+        Connection connection = connectionMock(BoltProtocolV4.INSTANCE);
+        UnmanagedTransaction tx = beginTx(connection);
+        setupSuccessfulRunRx(connection);
 
         // When
-        await( tx.runRx( new Query( "RETURN 1" ) ) );
+        await(tx.runRx(new Query("RETURN 1")));
 
         // Then
-        verifyRunRx( connection, "RETURN 1" );
+        verifyRunRx(connection, "RETURN 1");
     }
 
     @Test
-    void shouldRollbackOnImplicitFailure()
-    {
+    void shouldRollbackOnImplicitFailure() {
         // Given
         Connection connection = connectionMock();
-        UnmanagedTransaction tx = beginTx( connection );
+        UnmanagedTransaction tx = beginTx(connection);
 
         // When
-        await( tx.closeAsync() );
+        await(tx.closeAsync());
 
         // Then
-        InOrder order = inOrder( connection );
-        verifyBeginTx( connection );
-        verifyRollbackTx( connection );
-        order.verify( connection ).release();
+        InOrder order = inOrder(connection);
+        verifyBeginTx(connection);
+        verifyRollbackTx(connection);
+        order.verify(connection).release();
     }
 
     @Test
-    void shouldOnlyQueueMessagesWhenNoBookmarkGiven()
-    {
+    void shouldOnlyQueueMessagesWhenNoBookmarkGiven() {
         Connection connection = connectionMock();
 
-        beginTx( connection, Collections.emptySet() );
+        beginTx(connection, Collections.emptySet());
 
-        verifyBeginTx( connection );
-        verify( connection, never() ).writeAndFlush( any(), any(), any(), any() );
+        verifyBeginTx(connection);
+        verify(connection, never()).writeAndFlush(any(), any(), any(), any());
     }
 
     @Test
-    void shouldFlushWhenBookmarkGiven()
-    {
-        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "hi, I'm bookmark" ) );
+    void shouldFlushWhenBookmarkGiven() {
+        Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("hi, I'm bookmark"));
         Connection connection = connectionMock();
 
-        beginTx( connection, bookmarks );
+        beginTx(connection, bookmarks);
 
-        verifyBeginTx( connection );
-        verify( connection, never() ).write( any(), any(), any(), any() );
+        verifyBeginTx(connection);
+        verify(connection, never()).write(any(), any(), any(), any());
     }
 
     @Test
-    void shouldBeOpenAfterConstruction()
-    {
-        UnmanagedTransaction tx = beginTx( connectionMock() );
+    void shouldBeOpenAfterConstruction() {
+        UnmanagedTransaction tx = beginTx(connectionMock());
 
-        assertTrue( tx.isOpen() );
+        assertTrue(tx.isOpen());
     }
 
     @Test
-    void shouldBeClosedWhenMarkedAsTerminated()
-    {
-        UnmanagedTransaction tx = beginTx( connectionMock() );
+    void shouldBeClosedWhenMarkedAsTerminated() {
+        UnmanagedTransaction tx = beginTx(connectionMock());
 
-        tx.markTerminated( null );
+        tx.markTerminated(null);
 
-        assertTrue( tx.isOpen() );
+        assertTrue(tx.isOpen());
     }
 
     @Test
-    void shouldBeClosedWhenMarkedTerminatedAndClosed()
-    {
-        UnmanagedTransaction tx = beginTx( connectionMock() );
+    void shouldBeClosedWhenMarkedTerminatedAndClosed() {
+        UnmanagedTransaction tx = beginTx(connectionMock());
 
-        tx.markTerminated( null );
-        await( tx.closeAsync() );
+        tx.markTerminated(null);
+        await(tx.closeAsync());
 
-        assertFalse( tx.isOpen() );
+        assertFalse(tx.isOpen());
     }
 
     @Test
-    void shouldReleaseConnectionWhenBeginFails()
-    {
-        RuntimeException error = new RuntimeException( "Wrong bookmark!" );
-        Connection connection = connectionWithBegin( handler -> handler.onFailure( error ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+    void shouldReleaseConnectionWhenBeginFails() {
+        RuntimeException error = new RuntimeException("Wrong bookmark!");
+        Connection connection = connectionWithBegin(handler -> handler.onFailure(error));
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
 
-        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "SomeBookmark" ) );
+        Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         TransactionConfig txConfig = TransactionConfig.empty();
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( tx.beginAsync( bookmarks, txConfig ) ) );
+        RuntimeException e = assertThrows(RuntimeException.class, () -> await(tx.beginAsync(bookmarks, txConfig)));
 
-        assertEquals( error, e );
-        verify( connection ).release();
+        assertEquals(error, e);
+        verify(connection).release();
     }
 
     @Test
-    void shouldNotReleaseConnectionWhenBeginSucceeds()
-    {
-        Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+    void shouldNotReleaseConnectionWhenBeginSucceeds() {
+        Connection connection = connectionWithBegin(handler -> handler.onSuccess(emptyMap()));
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
 
-        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "SomeBookmark" ) );
+        Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         TransactionConfig txConfig = TransactionConfig.empty();
 
-        await( tx.beginAsync( bookmarks, txConfig ) );
+        await(tx.beginAsync(bookmarks, txConfig));
 
-        verify( connection, never() ).release();
+        verify(connection, never()).release();
     }
 
     @Test
-    void shouldReleaseConnectionWhenTerminatedAndCommitted()
-    {
+    void shouldReleaseConnectionWhenTerminatedAndCommitted() {
         Connection connection = connectionMock();
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
 
-        tx.markTerminated( null );
+        tx.markTerminated(null);
 
-        assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertThrows(ClientException.class, () -> await(tx.commitAsync()));
 
-        assertFalse( tx.isOpen() );
-        verify( connection ).release();
+        assertFalse(tx.isOpen());
+        verify(connection).release();
     }
 
     @Test
-    void shouldNotCreateCircularExceptionWhenTerminationCauseEqualsToCursorFailure()
-    {
+    void shouldNotCreateCircularExceptionWhenTerminationCauseEqualsToCursorFailure() {
         Connection connection = connectionMock();
-        ClientException terminationCause = new ClientException( "Custom exception" );
-        ResultCursorsHolder resultCursorsHolder = mockResultCursorWith( terminationCause );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE, resultCursorsHolder );
+        ClientException terminationCause = new ClientException("Custom exception");
+        ResultCursorsHolder resultCursorsHolder = mockResultCursorWith(terminationCause);
+        UnmanagedTransaction tx = new UnmanagedTransaction(
+                connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE, resultCursorsHolder);
 
-        tx.markTerminated( terminationCause );
+        tx.markTerminated(terminationCause);
 
-        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertNoCircularReferences( e );
-        assertEquals( terminationCause, e );
+        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        assertNoCircularReferences(e);
+        assertEquals(terminationCause, e);
     }
 
     @Test
-    void shouldNotCreateCircularExceptionWhenTerminationCauseDifferentFromCursorFailure()
-    {
+    void shouldNotCreateCircularExceptionWhenTerminationCauseDifferentFromCursorFailure() {
         Connection connection = connectionMock();
-        ClientException terminationCause = new ClientException( "Custom exception" );
-        ResultCursorsHolder resultCursorsHolder = mockResultCursorWith( new ClientException( "Cursor error" ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE, resultCursorsHolder );
+        ClientException terminationCause = new ClientException("Custom exception");
+        ResultCursorsHolder resultCursorsHolder = mockResultCursorWith(new ClientException("Cursor error"));
+        UnmanagedTransaction tx = new UnmanagedTransaction(
+                connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE, resultCursorsHolder);
 
-        tx.markTerminated( terminationCause );
+        tx.markTerminated(terminationCause);
 
-        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertNoCircularReferences( e );
-        assertEquals( 1, e.getSuppressed().length );
+        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        assertNoCircularReferences(e);
+        assertEquals(1, e.getSuppressed().length);
 
         Throwable suppressed = e.getSuppressed()[0];
-        assertEquals( terminationCause, suppressed.getCause() );
+        assertEquals(terminationCause, suppressed.getCause());
     }
 
     @Test
-    void shouldNotCreateCircularExceptionWhenTerminatedWithoutFailure()
-    {
+    void shouldNotCreateCircularExceptionWhenTerminatedWithoutFailure() {
         Connection connection = connectionMock();
-        ClientException terminationCause = new ClientException( "Custom exception" );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+        ClientException terminationCause = new ClientException("Custom exception");
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
 
-        tx.markTerminated( terminationCause );
+        tx.markTerminated(terminationCause);
 
-        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertNoCircularReferences( e );
+        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        assertNoCircularReferences(e);
 
-        assertEquals( terminationCause, e.getCause() );
+        assertEquals(terminationCause, e.getCause());
     }
 
     @Test
-    void shouldReleaseConnectionWhenTerminatedAndRolledBack()
-    {
+    void shouldReleaseConnectionWhenTerminatedAndRolledBack() {
         Connection connection = connectionMock();
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
 
-        tx.markTerminated( null );
-        await( tx.rollbackAsync() );
+        tx.markTerminated(null);
+        await(tx.rollbackAsync());
 
-        verify( connection ).release();
+        verify(connection).release();
     }
 
     @Test
-    void shouldReleaseConnectionWhenClose() throws Throwable
-    {
+    void shouldReleaseConnectionWhenClose() throws Throwable {
         Connection connection = connectionMock();
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
 
-        await( tx.closeAsync() );
+        await(tx.closeAsync());
 
-        verify( connection ).release();
+        verify(connection).release();
     }
 
     @Test
-    void shouldReleaseConnectionOnConnectionAuthorizationExpiredExceptionFailure()
-    {
-        AuthorizationExpiredException exception = new AuthorizationExpiredException( "code", "message" );
-        Connection connection = connectionWithBegin( handler -> handler.onFailure( exception ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
-        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "SomeBookmark" ) );
+    void shouldReleaseConnectionOnConnectionAuthorizationExpiredExceptionFailure() {
+        AuthorizationExpiredException exception = new AuthorizationExpiredException("code", "message");
+        Connection connection = connectionWithBegin(handler -> handler.onFailure(exception));
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
+        Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         TransactionConfig txConfig = TransactionConfig.empty();
 
         AuthorizationExpiredException actualException =
-                assertThrows( AuthorizationExpiredException.class, () -> await( tx.beginAsync( bookmarks, txConfig ) ) );
+                assertThrows(AuthorizationExpiredException.class, () -> await(tx.beginAsync(bookmarks, txConfig)));
 
-        assertSame( exception, actualException );
-        verify( connection ).terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
-        verify( connection, never() ).release();
+        assertSame(exception, actualException);
+        verify(connection).terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
+        verify(connection, never()).release();
     }
 
     @Test
-    void shouldReleaseConnectionOnConnectionReadTimeoutExceptionFailure()
-    {
-        Connection connection = connectionWithBegin( handler -> handler.onFailure( ConnectionReadTimeoutException.INSTANCE ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
-        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "SomeBookmark" ) );
+    void shouldReleaseConnectionOnConnectionReadTimeoutExceptionFailure() {
+        Connection connection =
+                connectionWithBegin(handler -> handler.onFailure(ConnectionReadTimeoutException.INSTANCE));
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
+        Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         TransactionConfig txConfig = TransactionConfig.empty();
 
         ConnectionReadTimeoutException actualException =
-                assertThrows( ConnectionReadTimeoutException.class, () -> await( tx.beginAsync( bookmarks, txConfig ) ) );
+                assertThrows(ConnectionReadTimeoutException.class, () -> await(tx.beginAsync(bookmarks, txConfig)));
 
-        assertSame( ConnectionReadTimeoutException.INSTANCE, actualException );
-        verify( connection ).terminateAndRelease( ConnectionReadTimeoutException.INSTANCE.getMessage() );
-        verify( connection, never() ).release();
+        assertSame(ConnectionReadTimeoutException.INSTANCE, actualException);
+        verify(connection).terminateAndRelease(ConnectionReadTimeoutException.INSTANCE.getMessage());
+        verify(connection, never()).release();
     }
 
-    private static Stream<Arguments> similarTransactionCompletingActionArgs()
-    {
+    private static Stream<Arguments> similarTransactionCompletingActionArgs() {
         return Stream.of(
-                Arguments.of( true, "commit", "commit" ),
-
-                Arguments.of( false, "rollback", "rollback" ),
-                Arguments.of( false, "rollback", "close" ),
-
-                Arguments.of( false, "close", "rollback" ),
-                Arguments.of( false, "close", "close" )
-        );
+                Arguments.of(true, "commit", "commit"),
+                Arguments.of(false, "rollback", "rollback"),
+                Arguments.of(false, "rollback", "close"),
+                Arguments.of(false, "close", "rollback"),
+                Arguments.of(false, "close", "close"));
     }
 
     @ParameterizedTest
-    @MethodSource( "similarTransactionCompletingActionArgs" )
-    void shouldReturnExistingStageOnSimilarCompletingAction( boolean protocolCommit, String initialAction, String similarAction )
-    {
-        Connection connection = mock( Connection.class );
-        BoltProtocol protocol = mock( BoltProtocol.class );
-        given( connection.protocol() ).willReturn( protocol );
-        given( protocolCommit ? protocol.commitTransaction( connection ) : protocol.rollbackTransaction( connection ) ).willReturn( new CompletableFuture<>() );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+    @MethodSource("similarTransactionCompletingActionArgs")
+    void shouldReturnExistingStageOnSimilarCompletingAction(
+            boolean protocolCommit, String initialAction, String similarAction) {
+        Connection connection = mock(Connection.class);
+        BoltProtocol protocol = mock(BoltProtocol.class);
+        given(connection.protocol()).willReturn(protocol);
+        given(protocolCommit ? protocol.commitTransaction(connection) : protocol.rollbackTransaction(connection))
+                .willReturn(new CompletableFuture<>());
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
 
-        CompletionStage<Void> initialStage = mapTransactionAction( initialAction, tx ).get();
-        CompletionStage<Void> similarStage = mapTransactionAction( similarAction, tx ).get();
+        CompletionStage<Void> initialStage =
+                mapTransactionAction(initialAction, tx).get();
+        CompletionStage<Void> similarStage =
+                mapTransactionAction(similarAction, tx).get();
 
-        assertSame( initialStage, similarStage );
-        if ( protocolCommit )
-        {
-            then( protocol ).should( times( 1 ) ).commitTransaction( connection );
-        }
-        else
-        {
-            then( protocol ).should( times( 1 ) ).rollbackTransaction( connection );
+        assertSame(initialStage, similarStage);
+        if (protocolCommit) {
+            then(protocol).should(times(1)).commitTransaction(connection);
+        } else {
+            then(protocol).should(times(1)).rollbackTransaction(connection);
         }
     }
 
-    private static Stream<Arguments> conflictingTransactionCompletingActionArgs()
-    {
+    private static Stream<Arguments> conflictingTransactionCompletingActionArgs() {
         return Stream.of(
-                Arguments.of( true, true, "commit", "commit", UnmanagedTransaction.CANT_COMMIT_COMMITTED_MSG ),
-                Arguments.of( true, true, "commit", "rollback", UnmanagedTransaction.CANT_ROLLBACK_COMMITTED_MSG ),
-                Arguments.of( true, false, "commit", "rollback", UnmanagedTransaction.CANT_ROLLBACK_COMMITTING_MSG ),
-                Arguments.of( true, false, "commit", "close", UnmanagedTransaction.CANT_ROLLBACK_COMMITTING_MSG ),
-
-                Arguments.of( false, true, "rollback", "rollback", UnmanagedTransaction.CANT_ROLLBACK_ROLLED_BACK_MSG ),
-                Arguments.of( false, true, "rollback", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLED_BACK_MSG ),
-                Arguments.of( false, false, "rollback", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLING_BACK_MSG ),
-
-                Arguments.of( false, true, "close", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLED_BACK_MSG ),
-                Arguments.of( false, true, "close", "rollback", UnmanagedTransaction.CANT_ROLLBACK_ROLLED_BACK_MSG ),
-                Arguments.of( false, false, "close", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLING_BACK_MSG )
-        );
+                Arguments.of(true, true, "commit", "commit", UnmanagedTransaction.CANT_COMMIT_COMMITTED_MSG),
+                Arguments.of(true, true, "commit", "rollback", UnmanagedTransaction.CANT_ROLLBACK_COMMITTED_MSG),
+                Arguments.of(true, false, "commit", "rollback", UnmanagedTransaction.CANT_ROLLBACK_COMMITTING_MSG),
+                Arguments.of(true, false, "commit", "close", UnmanagedTransaction.CANT_ROLLBACK_COMMITTING_MSG),
+                Arguments.of(false, true, "rollback", "rollback", UnmanagedTransaction.CANT_ROLLBACK_ROLLED_BACK_MSG),
+                Arguments.of(false, true, "rollback", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLED_BACK_MSG),
+                Arguments.of(false, false, "rollback", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLING_BACK_MSG),
+                Arguments.of(false, true, "close", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLED_BACK_MSG),
+                Arguments.of(false, true, "close", "rollback", UnmanagedTransaction.CANT_ROLLBACK_ROLLED_BACK_MSG),
+                Arguments.of(false, false, "close", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLING_BACK_MSG));
     }
 
     @ParameterizedTest
-    @MethodSource( "conflictingTransactionCompletingActionArgs" )
-    void shouldReturnFailingStageOnConflictingCompletingAction( boolean protocolCommit, boolean protocolActionCompleted, String initialAction,
-                                                                String conflictingAction, String expectedErrorMsg )
-    {
-        Connection connection = mock( Connection.class );
-        BoltProtocol protocol = mock( BoltProtocol.class );
-        given( connection.protocol() ).willReturn( protocol );
-        given( protocolCommit ? protocol.commitTransaction( connection ) : protocol.rollbackTransaction( connection ) )
-                .willReturn( protocolActionCompleted ? completedFuture( null ) : new CompletableFuture<>() );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+    @MethodSource("conflictingTransactionCompletingActionArgs")
+    void shouldReturnFailingStageOnConflictingCompletingAction(
+            boolean protocolCommit,
+            boolean protocolActionCompleted,
+            String initialAction,
+            String conflictingAction,
+            String expectedErrorMsg) {
+        Connection connection = mock(Connection.class);
+        BoltProtocol protocol = mock(BoltProtocol.class);
+        given(connection.protocol()).willReturn(protocol);
+        given(protocolCommit ? protocol.commitTransaction(connection) : protocol.rollbackTransaction(connection))
+                .willReturn(protocolActionCompleted ? completedFuture(null) : new CompletableFuture<>());
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
 
-        CompletionStage<Void> originalActionStage = mapTransactionAction( initialAction, tx ).get();
-        CompletionStage<Void> conflictingActionStage = mapTransactionAction( conflictingAction, tx ).get();
+        CompletionStage<Void> originalActionStage =
+                mapTransactionAction(initialAction, tx).get();
+        CompletionStage<Void> conflictingActionStage =
+                mapTransactionAction(conflictingAction, tx).get();
 
-        assertNotNull( originalActionStage );
-        if ( protocolCommit )
-        {
-            then( protocol ).should( times( 1 ) ).commitTransaction( connection );
+        assertNotNull(originalActionStage);
+        if (protocolCommit) {
+            then(protocol).should(times(1)).commitTransaction(connection);
+        } else {
+            then(protocol).should(times(1)).rollbackTransaction(connection);
         }
-        else
-        {
-            then( protocol ).should( times( 1 ) ).rollbackTransaction( connection );
-        }
-        assertTrue( conflictingActionStage.toCompletableFuture().isCompletedExceptionally() );
-        Throwable throwable = assertThrows( ExecutionException.class, () -> conflictingActionStage.toCompletableFuture().get() ).getCause();
-        assertTrue( throwable instanceof ClientException );
-        assertEquals( expectedErrorMsg, throwable.getMessage() );
+        assertTrue(conflictingActionStage.toCompletableFuture().isCompletedExceptionally());
+        Throwable throwable = assertThrows(
+                        ExecutionException.class,
+                        () -> conflictingActionStage.toCompletableFuture().get())
+                .getCause();
+        assertTrue(throwable instanceof ClientException);
+        assertEquals(expectedErrorMsg, throwable.getMessage());
     }
 
-    private static Stream<Arguments> closingNotActionTransactionArgs()
-    {
+    private static Stream<Arguments> closingNotActionTransactionArgs() {
         return Stream.of(
-                Arguments.of( true, 1, "commit", null ),
-                Arguments.of( false, 1, "rollback", null ),
-                Arguments.of( false, 0, "terminate", null ),
-                Arguments.of( true, 1, "commit", true ),
-                Arguments.of( false, 1, "rollback", true ),
-                Arguments.of( true, 1, "commit", false ),
-                Arguments.of( false, 1, "rollback", false ),
-                Arguments.of( false, 0, "terminate", false )
-        );
+                Arguments.of(true, 1, "commit", null),
+                Arguments.of(false, 1, "rollback", null),
+                Arguments.of(false, 0, "terminate", null),
+                Arguments.of(true, 1, "commit", true),
+                Arguments.of(false, 1, "rollback", true),
+                Arguments.of(true, 1, "commit", false),
+                Arguments.of(false, 1, "rollback", false),
+                Arguments.of(false, 0, "terminate", false));
     }
 
     @ParameterizedTest
-    @MethodSource( "closingNotActionTransactionArgs" )
+    @MethodSource("closingNotActionTransactionArgs")
     void shouldReturnCompletedWithNullStageOnClosingInactiveTransactionExceptCommittingAborted(
-            boolean protocolCommit, int expectedProtocolInvocations, String originalAction, Boolean commitOnClose )
-    {
-        Connection connection = mock( Connection.class );
-        BoltProtocol protocol = mock( BoltProtocol.class );
-        given( connection.protocol() ).willReturn( protocol );
-        given( protocolCommit ? protocol.commitTransaction( connection ) : protocol.rollbackTransaction( connection ) )
-                .willReturn( completedFuture( null ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+            boolean protocolCommit, int expectedProtocolInvocations, String originalAction, Boolean commitOnClose) {
+        Connection connection = mock(Connection.class);
+        BoltProtocol protocol = mock(BoltProtocol.class);
+        given(connection.protocol()).willReturn(protocol);
+        given(protocolCommit ? protocol.commitTransaction(connection) : protocol.rollbackTransaction(connection))
+                .willReturn(completedFuture(null));
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
 
-        CompletionStage<Void> originalActionStage = mapTransactionAction( originalAction, tx ).get();
-        CompletionStage<Void> closeStage = commitOnClose != null ? tx.closeAsync( commitOnClose ) : tx.closeAsync();
+        CompletionStage<Void> originalActionStage =
+                mapTransactionAction(originalAction, tx).get();
+        CompletionStage<Void> closeStage = commitOnClose != null ? tx.closeAsync(commitOnClose) : tx.closeAsync();
 
-        assertTrue( originalActionStage.toCompletableFuture().isDone() );
-        assertFalse( originalActionStage.toCompletableFuture().isCompletedExceptionally() );
-        if ( protocolCommit )
-        {
-            then( protocol ).should( times( expectedProtocolInvocations ) ).commitTransaction( connection );
+        assertTrue(originalActionStage.toCompletableFuture().isDone());
+        assertFalse(originalActionStage.toCompletableFuture().isCompletedExceptionally());
+        if (protocolCommit) {
+            then(protocol).should(times(expectedProtocolInvocations)).commitTransaction(connection);
+        } else {
+            then(protocol).should(times(expectedProtocolInvocations)).rollbackTransaction(connection);
         }
-        else
-        {
-            then( protocol ).should( times( expectedProtocolInvocations ) ).rollbackTransaction( connection );
-        }
-        assertNull( closeStage.toCompletableFuture().join() );
+        assertNull(closeStage.toCompletableFuture().join());
     }
 
-    private static UnmanagedTransaction beginTx( Connection connection )
-    {
-        return beginTx( connection, Collections.emptySet() );
+    private static UnmanagedTransaction beginTx(Connection connection) {
+        return beginTx(connection, Collections.emptySet());
     }
 
-    private static UnmanagedTransaction beginTx( Connection connection, Set<Bookmark> initialBookmarks )
-    {
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
-        return await( tx.beginAsync( initialBookmarks, TransactionConfig.empty() ) );
+    private static UnmanagedTransaction beginTx(Connection connection, Set<Bookmark> initialBookmarks) {
+        UnmanagedTransaction tx =
+                new UnmanagedTransaction(connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE);
+        return await(tx.beginAsync(initialBookmarks, TransactionConfig.empty()));
     }
 
-    private static Connection connectionWithBegin( Consumer<ResponseHandler> beginBehaviour )
-    {
+    private static Connection connectionWithBegin(Consumer<ResponseHandler> beginBehaviour) {
         Connection connection = connectionMock();
 
-        doAnswer( invocation ->
-                  {
-                      ResponseHandler beginHandler = invocation.getArgument( 1 );
-                      beginBehaviour.accept( beginHandler );
-                      return null;
-                  } ).when( connection ).writeAndFlush( argThat( beginMessage() ), any() );
+        doAnswer(invocation -> {
+                    ResponseHandler beginHandler = invocation.getArgument(1);
+                    beginBehaviour.accept(beginHandler);
+                    return null;
+                })
+                .when(connection)
+                .writeAndFlush(argThat(beginMessage()), any());
 
         return connection;
     }
 
-    private ResultCursorsHolder mockResultCursorWith( ClientException clientException )
-    {
+    private ResultCursorsHolder mockResultCursorWith(ClientException clientException) {
         ResultCursorsHolder resultCursorsHolder = new ResultCursorsHolder();
-        FailableCursor cursor = mock( FailableCursor.class );
-        doReturn( completedFuture( clientException ) )
-                .when( cursor )
-                .discardAllFailureAsync();
-        resultCursorsHolder.add( completedFuture( cursor ) );
+        FailableCursor cursor = mock(FailableCursor.class);
+        doReturn(completedFuture(clientException)).when(cursor).discardAllFailureAsync();
+        resultCursorsHolder.add(completedFuture(cursor));
         return resultCursorsHolder;
     }
 
-    private Supplier<CompletionStage<Void>> mapTransactionAction( String actionName, UnmanagedTransaction tx )
-    {
+    private Supplier<CompletionStage<Void>> mapTransactionAction(String actionName, UnmanagedTransaction tx) {
         Supplier<CompletionStage<Void>> action;
-        if ( "commit".equals( actionName ) )
-        {
+        if ("commit".equals(actionName)) {
             action = tx::commitAsync;
-        }
-        else if ( "rollback".equals( actionName ) )
-        {
+        } else if ("rollback".equals(actionName)) {
             action = tx::rollbackAsync;
-        }
-        else if ( "terminate".equals( actionName ) )
-        {
-            action = () ->
-            {
-                tx.markTerminated( mock( Throwable.class ) );
-                return completedFuture( null );
+        } else if ("terminate".equals(actionName)) {
+            action = () -> {
+                tx.markTerminated(mock(Throwable.class));
+                return completedFuture(null);
             };
-        }
-        else if ( "close".equals( actionName ) )
-        {
+        } else if ("close".equals(actionName)) {
             action = tx::closeAsync;
-        }
-        else
-        {
-            throw new RuntimeException( String.format( "Unknown completing action type '%s'", actionName ) );
+        } else {
+            throw new RuntimeException(String.format("Unknown completing action type '%s'", actionName));
         }
         return action;
     }

@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class RetryableTry implements TestkitResponse
-{
+public class RetryableTry implements TestkitResponse {
     private RetryableTryBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "RetryableTry";
     }
 
     @Getter
     @Builder
-    public static class RetryableTryBody
-    {
+    public static class RetryableTryBody {
         private String id;
     }
 }

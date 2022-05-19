@@ -23,12 +23,11 @@ package org.neo4j.driver.exceptions;
  * <p>
  * Error code: Neo.ClientError.Security.AuthorizationExpired
  */
-public class AuthorizationExpiredException extends SecurityException implements RetryableException
-{
-    public static final String DESCRIPTION = "Authorization information kept on the server has expired, this connection is no longer valid.";
+public class AuthorizationExpiredException extends SecurityException implements RetryableException {
+    public static final String DESCRIPTION =
+            "Authorization information kept on the server has expired, this connection is no longer valid.";
 
-    public AuthorizationExpiredException( String code, String message )
-    {
-        super( code, message );
+    public AuthorizationExpiredException(String code, String message) {
+        super(code, message);
     }
 }

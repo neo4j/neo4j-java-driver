@@ -18,42 +18,6 @@
  */
 package org.neo4j.driver.internal.async;
 
-import org.hamcrest.junit.MatcherAssert;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Query;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.AsyncTransactionCallback;
-import org.neo4j.driver.async.AsyncTransactionWork;
-import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.util.FixedRetryLogic;
-import org.neo4j.driver.internal.value.IntegerValue;
-
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -87,363 +51,352 @@ import static org.neo4j.driver.util.TestUtil.verifyCommitTx;
 import static org.neo4j.driver.util.TestUtil.verifyRollbackTx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 
-class InternalAsyncSessionTest
-{
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import org.hamcrest.junit.MatcherAssert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.AsyncTransactionCallback;
+import org.neo4j.driver.async.AsyncTransactionWork;
+import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.SessionExpiredException;
+import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.util.FixedRetryLogic;
+import org.neo4j.driver.internal.value.IntegerValue;
+
+class InternalAsyncSessionTest {
     private Connection connection;
     private ConnectionProvider connectionProvider;
     private AsyncSession asyncSession;
     private NetworkSession session;
 
     @BeforeEach
-    void setUp()
-    {
-        connection = connectionMock( BoltProtocolV4.INSTANCE );
-        connectionProvider = mock( ConnectionProvider.class );
-        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
-                .thenReturn( completedFuture( connection ) );
-        session = newSession( connectionProvider );
-        asyncSession = new InternalAsyncSession( session );
+    void setUp() {
+        connection = connectionMock(BoltProtocolV4.INSTANCE);
+        connectionProvider = mock(ConnectionProvider.class);
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
+                .thenReturn(completedFuture(connection));
+        session = newSession(connectionProvider);
+        asyncSession = new InternalAsyncSession(session);
     }
 
-    private static Stream<Function<AsyncSession,CompletionStage<ResultCursor>>> allSessionRunMethods()
-    {
+    private static Stream<Function<AsyncSession, CompletionStage<ResultCursor>>> allSessionRunMethods() {
         return Stream.of(
-                session -> session.runAsync( "RETURN 1" ),
-                session -> session.runAsync( "RETURN $x", parameters( "x", 1 ) ),
-                session -> session.runAsync( "RETURN $x", singletonMap( "x", 1 ) ),
-                session -> session.runAsync( "RETURN $x",
-                        new InternalRecord( singletonList( "x" ), new Value[]{new IntegerValue( 1 )} ) ),
-                session -> session.runAsync( new Query( "RETURN $x", parameters( "x", 1 ) ) ),
-                session -> session.runAsync( new Query( "RETURN $x", parameters( "x", 1 ) ), empty() ),
-                session -> session.runAsync( "RETURN $x", singletonMap( "x", 1 ), empty() ),
-                session -> session.runAsync( "RETURN 1", empty() )
-        );
+                session -> session.runAsync("RETURN 1"),
+                session -> session.runAsync("RETURN $x", parameters("x", 1)),
+                session -> session.runAsync("RETURN $x", singletonMap("x", 1)),
+                session -> session.runAsync(
+                        "RETURN $x", new InternalRecord(singletonList("x"), new Value[] {new IntegerValue(1)})),
+                session -> session.runAsync(new Query("RETURN $x", parameters("x", 1))),
+                session -> session.runAsync(new Query("RETURN $x", parameters("x", 1)), empty()),
+                session -> session.runAsync("RETURN $x", singletonMap("x", 1), empty()),
+                session -> session.runAsync("RETURN 1", empty()));
     }
 
-    private static Stream<Function<AsyncSession,CompletionStage<AsyncTransaction>>> allBeginTxMethods()
-    {
+    private static Stream<Function<AsyncSession, CompletionStage<AsyncTransaction>>> allBeginTxMethods() {
         return Stream.of(
                 session -> session.beginTransactionAsync(),
-                session -> session.beginTransactionAsync( TransactionConfig.empty() )
-        );
+                session -> session.beginTransactionAsync(TransactionConfig.empty()));
     }
 
-    private static Stream<Function<AsyncSession, CompletionStage<String>>> allRunTxMethods()
-    {
+    private static Stream<Function<AsyncSession, CompletionStage<String>>> allRunTxMethods() {
         return Stream.of(
-                session -> session.readTransactionAsync( tx -> completedFuture( "a" ) ),
-                session -> session.writeTransactionAsync( tx -> completedFuture( "a" ) ),
-                session -> session.readTransactionAsync( tx -> completedFuture( "a" ), empty() ),
-                session -> session.writeTransactionAsync( tx -> completedFuture( "a" ), empty() )
-        );
+                session -> session.readTransactionAsync(tx -> completedFuture("a")),
+                session -> session.writeTransactionAsync(tx -> completedFuture("a")),
+                session -> session.readTransactionAsync(tx -> completedFuture("a"), empty()),
+                session -> session.writeTransactionAsync(tx -> completedFuture("a"), empty()));
     }
 
     @ParameterizedTest
-    @MethodSource( "allSessionRunMethods" )
-    void shouldFlushOnRun( Function<AsyncSession,CompletionStage<ResultCursor>> runReturnOne )
-    {
-        setupSuccessfulRunAndPull( connection );
+    @MethodSource("allSessionRunMethods")
+    void shouldFlushOnRun(Function<AsyncSession, CompletionStage<ResultCursor>> runReturnOne) {
+        setupSuccessfulRunAndPull(connection);
 
-        ResultCursor cursor = await( runReturnOne.apply( asyncSession ) );
+        ResultCursor cursor = await(runReturnOne.apply(asyncSession));
 
-        verifyRunAndPull( connection, await( cursor.consumeAsync() ).query().text() );
+        verifyRunAndPull(connection, await(cursor.consumeAsync()).query().text());
     }
 
     @ParameterizedTest
-    @MethodSource( "allBeginTxMethods" )
-    void shouldDelegateBeginTx( Function<AsyncSession,CompletionStage<AsyncTransaction>> beginTx )
-    {
-        AsyncTransaction tx = await( beginTx.apply( asyncSession ) );
+    @MethodSource("allBeginTxMethods")
+    void shouldDelegateBeginTx(Function<AsyncSession, CompletionStage<AsyncTransaction>> beginTx) {
+        AsyncTransaction tx = await(beginTx.apply(asyncSession));
 
-        verifyBeginTx( connection );
-        assertNotNull( tx );
+        verifyBeginTx(connection);
+        assertNotNull(tx);
     }
 
     @ParameterizedTest
-    @MethodSource( "allRunTxMethods" )
-    void txRunShouldBeginAndCommitTx( Function<AsyncSession,CompletionStage<String>> runTx )
-    {
-        String string = await( runTx.apply( asyncSession ) );
+    @MethodSource("allRunTxMethods")
+    void txRunShouldBeginAndCommitTx(Function<AsyncSession, CompletionStage<String>> runTx) {
+        String string = await(runTx.apply(asyncSession));
 
-        verifyBeginTx( connection );
-        verifyCommitTx( connection );
-        verify( connection ).release();
-        assertThat( string, equalTo( "a" ) );
-    }
-
-
-    @Test
-    void rollsBackReadTxWhenFunctionThrows()
-    {
-        testTxRollbackWhenThrows( READ );
+        verifyBeginTx(connection);
+        verifyCommitTx(connection);
+        verify(connection).release();
+        assertThat(string, equalTo("a"));
     }
 
     @Test
-    void rollsBackWriteTxWhenFunctionThrows()
-    {
-        testTxRollbackWhenThrows( WRITE );
+    void rollsBackReadTxWhenFunctionThrows() {
+        testTxRollbackWhenThrows(READ);
     }
 
     @Test
-    void readTxRetriedUntilSuccessWhenFunctionThrows()
-    {
-        testTxIsRetriedUntilSuccessWhenFunctionThrows( READ );
+    void rollsBackWriteTxWhenFunctionThrows() {
+        testTxRollbackWhenThrows(WRITE);
     }
 
     @Test
-    void writeTxRetriedUntilSuccessWhenFunctionThrows()
-    {
-        testTxIsRetriedUntilSuccessWhenFunctionThrows( WRITE );
+    void readTxRetriedUntilSuccessWhenFunctionThrows() {
+        testTxIsRetriedUntilSuccessWhenFunctionThrows(READ);
     }
 
     @Test
-    void readTxRetriedUntilSuccessWhenTxCloseThrows()
-    {
-        testTxIsRetriedUntilSuccessWhenCommitThrows( READ );
+    void writeTxRetriedUntilSuccessWhenFunctionThrows() {
+        testTxIsRetriedUntilSuccessWhenFunctionThrows(WRITE);
     }
 
     @Test
-    void writeTxRetriedUntilSuccessWhenTxCloseThrows()
-    {
-        testTxIsRetriedUntilSuccessWhenCommitThrows( WRITE );
+    void readTxRetriedUntilSuccessWhenTxCloseThrows() {
+        testTxIsRetriedUntilSuccessWhenCommitThrows(READ);
     }
 
     @Test
-    void readTxRetriedUntilFailureWhenFunctionThrows()
-    {
-        testTxIsRetriedUntilFailureWhenFunctionThrows( READ );
+    void writeTxRetriedUntilSuccessWhenTxCloseThrows() {
+        testTxIsRetriedUntilSuccessWhenCommitThrows(WRITE);
     }
 
     @Test
-    void writeTxRetriedUntilFailureWhenFunctionThrows()
-    {
-        testTxIsRetriedUntilFailureWhenFunctionThrows( WRITE );
+    void readTxRetriedUntilFailureWhenFunctionThrows() {
+        testTxIsRetriedUntilFailureWhenFunctionThrows(READ);
     }
 
     @Test
-    void readTxRetriedUntilFailureWhenTxCloseThrows()
-    {
-        testTxIsRetriedUntilFailureWhenCommitFails( READ );
+    void writeTxRetriedUntilFailureWhenFunctionThrows() {
+        testTxIsRetriedUntilFailureWhenFunctionThrows(WRITE);
     }
 
     @Test
-    void writeTxRetriedUntilFailureWhenTxCloseThrows()
-    {
-        testTxIsRetriedUntilFailureWhenCommitFails( WRITE );
+    void readTxRetriedUntilFailureWhenTxCloseThrows() {
+        testTxIsRetriedUntilFailureWhenCommitFails(READ);
     }
 
     @Test
-    void shouldCloseSession()
-    {
-        await( asyncSession.closeAsync() );
-        assertFalse( this.session.isOpen() );
+    void writeTxRetriedUntilFailureWhenTxCloseThrows() {
+        testTxIsRetriedUntilFailureWhenCommitFails(WRITE);
     }
 
     @Test
-    void shouldReturnBookmark()
-    {
-        session = newSession( connectionProvider, Collections.singleton( InternalBookmark.parse( "Bookmark1" ) ) );
-        asyncSession = new InternalAsyncSession( session );
+    void shouldCloseSession() {
+        await(asyncSession.closeAsync());
+        assertFalse(this.session.isOpen());
+    }
 
-        assertThat( asyncSession.lastBookmarks(), equalTo( session.lastBookmarks() ) );
+    @Test
+    void shouldReturnBookmark() {
+        session = newSession(connectionProvider, Collections.singleton(InternalBookmark.parse("Bookmark1")));
+        asyncSession = new InternalAsyncSession(session);
+
+        assertThat(asyncSession.lastBookmarks(), equalTo(session.lastBookmarks()));
     }
 
     @ParameterizedTest
-    @MethodSource( "executeVariations" )
-    void shouldDelegateExecuteReadToRetryLogic( ExecuteVariation executeVariation ) throws ExecutionException, InterruptedException
-    {
+    @MethodSource("executeVariations")
+    void shouldDelegateExecuteReadToRetryLogic(ExecuteVariation executeVariation)
+            throws ExecutionException, InterruptedException {
         // GIVEN
-        NetworkSession networkSession = mock( NetworkSession.class );
-        AsyncSession session = new InternalAsyncSession( networkSession );
-        RetryLogic logic = mock( RetryLogic.class );
+        NetworkSession networkSession = mock(NetworkSession.class);
+        AsyncSession session = new InternalAsyncSession(networkSession);
+        RetryLogic logic = mock(RetryLogic.class);
         String expected = "";
-        given( networkSession.retryLogic() ).willReturn( logic );
-        AsyncTransactionCallback<CompletionStage<String>> tc = ( ignored ) -> CompletableFuture.completedFuture( expected );
-        given( logic.<String>retryAsync( any() ) ).willReturn( tc.execute( null ) );
+        given(networkSession.retryLogic()).willReturn(logic);
+        AsyncTransactionCallback<CompletionStage<String>> tc = (ignored) -> CompletableFuture.completedFuture(expected);
+        given(logic.<String>retryAsync(any())).willReturn(tc.execute(null));
         TransactionConfig config = TransactionConfig.builder().build();
 
         // WHEN
-        CompletionStage<String> actual = executeVariation.readOnly ?
-                                         (
-                                                 executeVariation.explicitTxConfig ? session.executeReadAsync( tc, config ) : session.executeReadAsync( tc )
-                                         ) : (
-                                                 executeVariation.explicitTxConfig ? session.executeWriteAsync( tc, config ) : session.executeWriteAsync( tc )
-                                         );
+        CompletionStage<String> actual = executeVariation.readOnly
+                ? (executeVariation.explicitTxConfig
+                        ? session.executeReadAsync(tc, config)
+                        : session.executeReadAsync(tc))
+                : (executeVariation.explicitTxConfig
+                        ? session.executeWriteAsync(tc, config)
+                        : session.executeWriteAsync(tc));
 
         // THEN
-        assertEquals( expected, actual.toCompletableFuture().get() );
-        then( networkSession ).should().retryLogic();
-        then( logic ).should().retryAsync( any() );
+        assertEquals(expected, actual.toCompletableFuture().get());
+        then(networkSession).should().retryLogic();
+        then(logic).should().retryAsync(any());
     }
 
-    private void testTxRollbackWhenThrows( AccessMode transactionMode )
-    {
-        final RuntimeException error = new IllegalStateException( "Oh!" );
-        AsyncTransactionWork<CompletionStage<Void>> work = tx ->
-        {
+    private void testTxRollbackWhenThrows(AccessMode transactionMode) {
+        final RuntimeException error = new IllegalStateException("Oh!");
+        AsyncTransactionWork<CompletionStage<Void>> work = tx -> {
             throw error;
         };
 
-        Exception e = assertThrows( Exception.class, () -> executeTransaction( asyncSession, transactionMode, work ) );
-        assertEquals( error, e );
+        Exception e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, transactionMode, work));
+        assertEquals(error, e);
 
-        verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
-        verifyBeginTx( connection );
-        verifyRollbackTx( connection );
+        verify(connectionProvider).acquireConnection(any(ConnectionContext.class));
+        verifyBeginTx(connection);
+        verifyRollbackTx(connection);
     }
 
-    private void testTxIsRetriedUntilSuccessWhenFunctionThrows( AccessMode mode )
-    {
+    private void testTxIsRetriedUntilSuccessWhenFunctionThrows(AccessMode mode) {
         int failures = 12;
         int retries = failures + 1;
 
-        RetryLogic retryLogic = new FixedRetryLogic( retries );
-        session = newSession( connectionProvider, retryLogic );
-        asyncSession = new InternalAsyncSession( session );
+        RetryLogic retryLogic = new FixedRetryLogic(retries);
+        session = newSession(connectionProvider, retryLogic);
+        asyncSession = new InternalAsyncSession(session);
 
-        TxWork work = spy( new TxWork( 42, failures, new SessionExpiredException( "" ) ) );
-        int answer = executeTransaction( asyncSession, mode, work );
+        TxWork work = spy(new TxWork(42, failures, new SessionExpiredException("")));
+        int answer = executeTransaction(asyncSession, mode, work);
 
-        assertEquals( 42, answer );
-        verifyInvocationCount( work, failures + 1 );
-        verifyCommitTx( connection );
-        verifyRollbackTx( connection, times( failures ) );
+        assertEquals(42, answer);
+        verifyInvocationCount(work, failures + 1);
+        verifyCommitTx(connection);
+        verifyRollbackTx(connection, times(failures));
     }
 
-    private void testTxIsRetriedUntilSuccessWhenCommitThrows( AccessMode mode )
-    {
+    private void testTxIsRetriedUntilSuccessWhenCommitThrows(AccessMode mode) {
         int failures = 13;
         int retries = failures + 1;
 
-        RetryLogic retryLogic = new FixedRetryLogic( retries );
-        setupFailingCommit( connection, failures );
-        session = newSession( connectionProvider, retryLogic );
-        asyncSession = new InternalAsyncSession( session );
+        RetryLogic retryLogic = new FixedRetryLogic(retries);
+        setupFailingCommit(connection, failures);
+        session = newSession(connectionProvider, retryLogic);
+        asyncSession = new InternalAsyncSession(session);
 
-        TxWork work = spy( new TxWork( 43 ) );
-        int answer = executeTransaction( asyncSession, mode, work );
+        TxWork work = spy(new TxWork(43));
+        int answer = executeTransaction(asyncSession, mode, work);
 
-        assertEquals( 43, answer );
-        verifyInvocationCount( work, failures + 1 );
-        verifyCommitTx( connection, times( retries ) );
+        assertEquals(43, answer);
+        verifyInvocationCount(work, failures + 1);
+        verifyCommitTx(connection, times(retries));
     }
 
-    private void testTxIsRetriedUntilFailureWhenFunctionThrows( AccessMode mode )
-    {
+    private void testTxIsRetriedUntilFailureWhenFunctionThrows(AccessMode mode) {
         int failures = 14;
         int retries = failures - 1;
 
-        RetryLogic retryLogic = new FixedRetryLogic( retries );
-        session = newSession( connectionProvider, retryLogic );
-        asyncSession = new InternalAsyncSession( session );
+        RetryLogic retryLogic = new FixedRetryLogic(retries);
+        session = newSession(connectionProvider, retryLogic);
+        asyncSession = new InternalAsyncSession(session);
 
-        TxWork work = spy( new TxWork( 42, failures, new SessionExpiredException( "Oh!" ) ) );
+        TxWork work = spy(new TxWork(42, failures, new SessionExpiredException("Oh!")));
 
-        Exception e = assertThrows( Exception.class, () -> executeTransaction( asyncSession, mode, work ) );
+        Exception e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, mode, work));
 
-        MatcherAssert.assertThat( e, instanceOf( SessionExpiredException.class ) );
-        assertEquals( "Oh!", e.getMessage() );
-        verifyInvocationCount( work, failures );
-        verifyCommitTx( connection, never() );
-        verifyRollbackTx( connection, times( failures ) );
+        MatcherAssert.assertThat(e, instanceOf(SessionExpiredException.class));
+        assertEquals("Oh!", e.getMessage());
+        verifyInvocationCount(work, failures);
+        verifyCommitTx(connection, never());
+        verifyRollbackTx(connection, times(failures));
     }
 
-    private void testTxIsRetriedUntilFailureWhenCommitFails( AccessMode mode )
-    {
+    private void testTxIsRetriedUntilFailureWhenCommitFails(AccessMode mode) {
         int failures = 17;
         int retries = failures - 1;
 
-        RetryLogic retryLogic = new FixedRetryLogic( retries );
-        setupFailingCommit( connection, failures );
-        session = newSession( connectionProvider, retryLogic );
-        asyncSession = new InternalAsyncSession( session );
+        RetryLogic retryLogic = new FixedRetryLogic(retries);
+        setupFailingCommit(connection, failures);
+        session = newSession(connectionProvider, retryLogic);
+        asyncSession = new InternalAsyncSession(session);
 
-        TxWork work = spy( new TxWork( 42 ) );
+        TxWork work = spy(new TxWork(42));
 
-        Exception e = assertThrows( Exception.class, () -> executeTransaction( asyncSession, mode, work ) );
+        Exception e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, mode, work));
 
-        MatcherAssert.assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-        verifyInvocationCount( work, failures );
-        verifyCommitTx( connection, times( failures ) );
+        MatcherAssert.assertThat(e, instanceOf(ServiceUnavailableException.class));
+        verifyInvocationCount(work, failures);
+        verifyCommitTx(connection, times(failures));
     }
 
-    private static <T> T executeTransaction( AsyncSession session, AccessMode mode, AsyncTransactionWork<CompletionStage<T>> work )
-    {
-        if ( mode == READ )
-        {
-            return await( session.readTransactionAsync( work ) );
-        }
-        else if ( mode == WRITE )
-        {
-            return await( session.writeTransactionAsync( work ) );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown mode " + mode );
+    private static <T> T executeTransaction(
+            AsyncSession session, AccessMode mode, AsyncTransactionWork<CompletionStage<T>> work) {
+        if (mode == READ) {
+            return await(session.readTransactionAsync(work));
+        } else if (mode == WRITE) {
+            return await(session.writeTransactionAsync(work));
+        } else {
+            throw new IllegalArgumentException("Unknown mode " + mode);
         }
     }
 
-    private static void verifyInvocationCount( AsyncTransactionWork<?> workSpy, int expectedInvocationCount )
-    {
-        verify( workSpy, times( expectedInvocationCount ) ).execute( any( AsyncTransaction.class ) );
+    private static void verifyInvocationCount(AsyncTransactionWork<?> workSpy, int expectedInvocationCount) {
+        verify(workSpy, times(expectedInvocationCount)).execute(any(AsyncTransaction.class));
     }
 
-    private static class TxWork implements AsyncTransactionWork<CompletionStage<Integer>>
-    {
+    private static class TxWork implements AsyncTransactionWork<CompletionStage<Integer>> {
         final int result;
         final int timesToThrow;
         final Supplier<RuntimeException> errorSupplier;
 
         int invoked;
 
-        @SuppressWarnings( "unchecked" )
-        TxWork( int result )
-        {
-            this( result, 0, (Supplier) null );
+        @SuppressWarnings("unchecked")
+        TxWork(int result) {
+            this(result, 0, (Supplier) null);
         }
 
-        TxWork( int result, int timesToThrow, final RuntimeException error )
-        {
+        TxWork(int result, int timesToThrow, final RuntimeException error) {
             this.result = result;
             this.timesToThrow = timesToThrow;
             this.errorSupplier = () -> error;
         }
 
-        TxWork( int result, int timesToThrow, Supplier<RuntimeException> errorSupplier )
-        {
+        TxWork(int result, int timesToThrow, Supplier<RuntimeException> errorSupplier) {
             this.result = result;
             this.timesToThrow = timesToThrow;
             this.errorSupplier = errorSupplier;
         }
 
         @Override
-        public CompletionStage<Integer> execute( AsyncTransaction tx )
-        {
-            if ( timesToThrow > 0 && invoked++ < timesToThrow )
-            {
+        public CompletionStage<Integer> execute(AsyncTransaction tx) {
+            if (timesToThrow > 0 && invoked++ < timesToThrow) {
                 throw errorSupplier.get();
             }
-            return completedFuture( result );
+            return completedFuture(result);
         }
     }
 
-    static List<ExecuteVariation> executeVariations()
-    {
+    static List<ExecuteVariation> executeVariations() {
         return Arrays.asList(
-                new ExecuteVariation( false, false ),
-                new ExecuteVariation( false, true ),
-                new ExecuteVariation( true, false ),
-                new ExecuteVariation( true, true )
-        );
+                new ExecuteVariation(false, false),
+                new ExecuteVariation(false, true),
+                new ExecuteVariation(true, false),
+                new ExecuteVariation(true, true));
     }
 
-    private static class ExecuteVariation
-    {
+    private static class ExecuteVariation {
         private final boolean readOnly;
         private final boolean explicitTxConfig;
 
-        private ExecuteVariation( boolean readOnly, boolean explicitTxConfig )
-        {
+        private ExecuteVariation(boolean readOnly, boolean explicitTxConfig) {
             this.readOnly = readOnly;
             this.explicitTxConfig = explicitTxConfig;
         }

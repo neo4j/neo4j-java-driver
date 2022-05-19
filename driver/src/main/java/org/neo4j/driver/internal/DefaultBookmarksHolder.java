@@ -20,39 +20,32 @@ package org.neo4j.driver.internal;
 
 import java.util.Collections;
 import java.util.Set;
-
 import org.neo4j.driver.Bookmark;
 
 /**
  * @since 2.0
  */
-public class DefaultBookmarksHolder implements BookmarksHolder
-{
+public class DefaultBookmarksHolder implements BookmarksHolder {
     private volatile Set<Bookmark> bookmarks;
 
     // for testing only
-    public DefaultBookmarksHolder()
-    {
-        this( Collections.emptySet() );
+    public DefaultBookmarksHolder() {
+        this(Collections.emptySet());
     }
 
-    public DefaultBookmarksHolder( Set<Bookmark> bookmarks )
-    {
+    public DefaultBookmarksHolder(Set<Bookmark> bookmarks) {
         this.bookmarks = bookmarks;
     }
 
     @Override
-    public Set<Bookmark> getBookmarks()
-    {
+    public Set<Bookmark> getBookmarks() {
         return bookmarks;
     }
 
     @Override
-    public void setBookmark( Bookmark bookmark )
-    {
-        if ( bookmark != null && !bookmark.isEmpty() )
-        {
-            bookmarks = Collections.singleton( bookmark );
+    public void setBookmark(Bookmark bookmark) {
+        if (bookmark != null && !bookmark.isEmpty()) {
+            bookmarks = Collections.singleton(bookmark);
         }
     }
 }

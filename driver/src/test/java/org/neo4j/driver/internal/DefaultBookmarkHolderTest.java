@@ -18,74 +18,67 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-import java.util.Set;
-
-import org.neo4j.driver.Bookmark;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class DefaultBookmarkHolderTest
-{
+import java.util.Collections;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Bookmark;
+
+class DefaultBookmarkHolderTest {
     @Test
-    void shouldAllowToGetAndSetBookmarks()
-    {
+    void shouldAllowToGetAndSetBookmarks() {
         BookmarksHolder bookmarkHolder = new DefaultBookmarksHolder();
-        assertTrue( bookmarkHolder.getBookmarks().isEmpty() );
+        assertTrue(bookmarkHolder.getBookmarks().isEmpty());
 
-        bookmarkHolder.setBookmark( null );
-        assertTrue( bookmarkHolder.getBookmarks().isEmpty() );
+        bookmarkHolder.setBookmark(null);
+        assertTrue(bookmarkHolder.getBookmarks().isEmpty());
 
-        Bookmark bookmark1 = InternalBookmark.parse( "neo4j:bookmark:v1:tx1" );
-        bookmarkHolder.setBookmark( bookmark1 );
-        assertEquals( Collections.singleton( bookmark1 ), bookmarkHolder.getBookmarks() );
+        Bookmark bookmark1 = InternalBookmark.parse("neo4j:bookmark:v1:tx1");
+        bookmarkHolder.setBookmark(bookmark1);
+        assertEquals(Collections.singleton(bookmark1), bookmarkHolder.getBookmarks());
 
-        bookmarkHolder.setBookmark( null );
-        assertEquals( Collections.singleton( bookmark1 ), bookmarkHolder.getBookmarks() );
+        bookmarkHolder.setBookmark(null);
+        assertEquals(Collections.singleton(bookmark1), bookmarkHolder.getBookmarks());
 
-        bookmarkHolder.setBookmark( InternalBookmark.empty() );
-        assertEquals( Collections.singleton( bookmark1 ), bookmarkHolder.getBookmarks() );
+        bookmarkHolder.setBookmark(InternalBookmark.empty());
+        assertEquals(Collections.singleton(bookmark1), bookmarkHolder.getBookmarks());
 
-        Bookmark bookmark2 = InternalBookmark.parse( "neo4j:bookmark:v1:tx2" );
-        bookmarkHolder.setBookmark( bookmark2 );
-        assertEquals( Collections.singleton( bookmark2 ), bookmarkHolder.getBookmarks() );
+        Bookmark bookmark2 = InternalBookmark.parse("neo4j:bookmark:v1:tx2");
+        bookmarkHolder.setBookmark(bookmark2);
+        assertEquals(Collections.singleton(bookmark2), bookmarkHolder.getBookmarks());
 
-        Bookmark bookmark3 = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
-        bookmarkHolder.setBookmark( bookmark3 );
-        assertEquals( Collections.singleton( bookmark3 ), bookmarkHolder.getBookmarks() );
+        Bookmark bookmark3 = InternalBookmark.parse("neo4j:bookmark:v1:tx42");
+        bookmarkHolder.setBookmark(bookmark3);
+        assertEquals(Collections.singleton(bookmark3), bookmarkHolder.getBookmarks());
     }
 
     @Test
-    void bookmarkCanBeSet()
-    {
+    void bookmarkCanBeSet() {
         BookmarksHolder bookmarkHolder = new DefaultBookmarksHolder();
-        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx100" );
+        Bookmark bookmark = InternalBookmark.parse("neo4j:bookmark:v1:tx100");
 
-        bookmarkHolder.setBookmark( bookmark );
+        bookmarkHolder.setBookmark(bookmark);
 
-        assertEquals( Collections.singleton( bookmark ), bookmarkHolder.getBookmarks() );
+        assertEquals(Collections.singleton(bookmark), bookmarkHolder.getBookmarks());
     }
 
     @Test
-    void shouldNotOverwriteBookmarkWithNull()
-    {
-        Bookmark initBookmark = InternalBookmark.parse( "Cat" );
-        BookmarksHolder bookmarkHolder = new DefaultBookmarksHolder( Collections.singleton( initBookmark ) );
-        assertEquals( Collections.singleton( initBookmark ), bookmarkHolder.getBookmarks() );
-        bookmarkHolder.setBookmark( null );
-        assertEquals( Collections.singleton( initBookmark ), bookmarkHolder.getBookmarks() );
+    void shouldNotOverwriteBookmarkWithNull() {
+        Bookmark initBookmark = InternalBookmark.parse("Cat");
+        BookmarksHolder bookmarkHolder = new DefaultBookmarksHolder(Collections.singleton(initBookmark));
+        assertEquals(Collections.singleton(initBookmark), bookmarkHolder.getBookmarks());
+        bookmarkHolder.setBookmark(null);
+        assertEquals(Collections.singleton(initBookmark), bookmarkHolder.getBookmarks());
     }
 
     @Test
-    void shouldNotOverwriteBookmarkWithEmptyBookmark()
-    {
-        Set<Bookmark> initBookmark = Collections.singleton( InternalBookmark.parse( "Cat" ) );
-        BookmarksHolder bookmarkHolder = new DefaultBookmarksHolder( initBookmark );
-        assertEquals( initBookmark, bookmarkHolder.getBookmarks() );
-        bookmarkHolder.setBookmark( InternalBookmark.empty() );
-        assertEquals( initBookmark, bookmarkHolder.getBookmarks() );
+    void shouldNotOverwriteBookmarkWithEmptyBookmark() {
+        Set<Bookmark> initBookmark = Collections.singleton(InternalBookmark.parse("Cat"));
+        BookmarksHolder bookmarkHolder = new DefaultBookmarksHolder(initBookmark);
+        assertEquals(initBookmark, bookmarkHolder.getBookmarks());
+        bookmarkHolder.setBookmark(InternalBookmark.empty());
+        assertEquals(initBookmark, bookmarkHolder.getBookmarks());
     }
 }

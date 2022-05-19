@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.async;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
@@ -30,9 +29,9 @@ import org.neo4j.driver.internal.spi.ConnectionProvider;
 /**
  * Describes what kind of connection to return by {@link ConnectionProvider}
  */
-public interface ConnectionContext
-{
-    Supplier<IllegalStateException> PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER = () -> new IllegalStateException( "Pending database name encountered." );
+public interface ConnectionContext {
+    Supplier<IllegalStateException> PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER =
+            () -> new IllegalStateException("Pending database name encountered.");
 
     CompletableFuture<DatabaseName> databaseNameFuture();
 

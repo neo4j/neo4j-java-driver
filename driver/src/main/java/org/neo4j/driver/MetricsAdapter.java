@@ -21,8 +21,7 @@ package org.neo4j.driver;
 /**
  * Defines which metrics consumer to use: Should metrics be consumed and exposed via driver's default consumer or provided with one of the external facades.
  */
-public enum MetricsAdapter
-{
+public enum MetricsAdapter {
     /**
      * Disables metrics.
      */

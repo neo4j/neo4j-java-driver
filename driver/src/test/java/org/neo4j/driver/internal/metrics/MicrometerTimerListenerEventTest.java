@@ -18,27 +18,24 @@
  */
 package org.neo4j.driver.internal.metrics;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-class MicrometerTimerListenerEventTest
-{
+class MicrometerTimerListenerEventTest {
     MicrometerTimerListenerEvent event;
 
     @BeforeEach
-    void beforeEach()
-    {
-        event = new MicrometerTimerListenerEvent( new SimpleMeterRegistry() );
+    void beforeEach() {
+        event = new MicrometerTimerListenerEvent(new SimpleMeterRegistry());
     }
 
     @Test
-    void shouldCreateTimerSampleOnStartAndReturnOnGetSample()
-    {
+    void shouldCreateTimerSampleOnStartAndReturnOnGetSample() {
         // GIVEN
         Timer.Sample initialSample = event.getSample();
 
@@ -47,7 +44,7 @@ class MicrometerTimerListenerEventTest
 
         // THEN
         Timer.Sample sample = event.getSample();
-        assertNull( initialSample );
-        assertNotNull( sample );
+        assertNull(initialSample);
+        assertNotNull(sample);
     }
 }

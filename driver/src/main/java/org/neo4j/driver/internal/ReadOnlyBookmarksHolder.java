@@ -19,30 +19,25 @@
 package org.neo4j.driver.internal;
 
 import java.util.Set;
-
 import org.neo4j.driver.Bookmark;
 
 /**
  * @since 2.0
  */
-public class ReadOnlyBookmarksHolder implements BookmarksHolder
-{
+public class ReadOnlyBookmarksHolder implements BookmarksHolder {
     private final Set<Bookmark> bookmarks;
 
-    public ReadOnlyBookmarksHolder( Set<Bookmark> bookmarks )
-    {
+    public ReadOnlyBookmarksHolder(Set<Bookmark> bookmarks) {
         this.bookmarks = bookmarks;
     }
 
     @Override
-    public Set<Bookmark> getBookmarks()
-    {
+    public Set<Bookmark> getBookmarks() {
         return bookmarks;
     }
 
     @Override
-    public void setBookmark( Bookmark bookmark )
-    {
+    public void setBookmark(Bookmark bookmark) {
         // NO_OP
     }
 }

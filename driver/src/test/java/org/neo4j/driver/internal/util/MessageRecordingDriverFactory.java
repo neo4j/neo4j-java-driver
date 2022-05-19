@@ -22,12 +22,10 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.MessageToMessageEncoder;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.ConnectionSettings;
@@ -43,42 +41,49 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
-public class MessageRecordingDriverFactory extends DriverFactory
-{
-    private final Map<Channel,List<Message>> messagesByChannel = new ConcurrentHashMap<>();
+public class MessageRecordingDriverFactory extends DriverFactory {
+    private final Map<Channel, List<Message>> messagesByChannel = new ConcurrentHashMap<>();
 
-    public Map<Channel,List<Message>> getMessagesByChannel()
-    {
+    public Map<Channel, List<Message>> getMessagesByChannel() {
         return messagesByChannel;
     }
 
     @Override
-    protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan, Config config, Clock clock,
-                                                RoutingContext routingContext )
-    {
+    protected ChannelConnector createConnector(
+            ConnectionSettings settings,
+            SecurityPlan securityPlan,
+            Config config,
+            Clock clock,
+            RoutingContext routingContext) {
         ChannelPipelineBuilder pipelineBuilder = new MessageRecordingChannelPipelineBuilder();
-        return new ChannelConnectorImpl( settings, securityPlan, pipelineBuilder, config.logging(), clock, routingContext,
-                                         DefaultDomainNameResolver.getInstance() );
+        return new ChannelConnectorImpl(
+                settings,
+                securityPlan,
+                pipelineBuilder,
+                config.logging(),
+                clock,
+                routingContext,
+                DefaultDomainNameResolver.getInstance());
     }
 
-    private class MessageRecordingChannelPipelineBuilder extends ChannelPipelineBuilderImpl
-    {
+    private class MessageRecordingChannelPipelineBuilder extends ChannelPipelineBuilderImpl {
         @Override
-        public void build( MessageFormat messageFormat, ChannelPipeline pipeline, Logging logging )
-        {
-            super.build( messageFormat, pipeline, logging );
-            pipeline.addAfter( OutboundMessageHandler.NAME, MessageRecordingHandler.class.getSimpleName(), new MessageRecordingHandler() );
+        public void build(MessageFormat messageFormat, ChannelPipeline pipeline, Logging logging) {
+            super.build(messageFormat, pipeline, logging);
+            pipeline.addAfter(
+                    OutboundMessageHandler.NAME,
+                    MessageRecordingHandler.class.getSimpleName(),
+                    new MessageRecordingHandler());
         }
     }
 
-    private class MessageRecordingHandler extends MessageToMessageEncoder<Message>
-    {
+    private class MessageRecordingHandler extends MessageToMessageEncoder<Message> {
         @Override
-        protected void encode( ChannelHandlerContext ctx, Message msg, List<Object> out )
-        {
-            List<Message> messages = messagesByChannel.computeIfAbsent( ctx.channel(), ignore -> new CopyOnWriteArrayList<>() );
-            messages.add( msg );
-            out.add( msg );
+        protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
+            List<Message> messages =
+                    messagesByChannel.computeIfAbsent(ctx.channel(), ignore -> new CopyOnWriteArrayList<>());
+            messages.add(msg);
+            out.add(msg);
         }
     }
 }

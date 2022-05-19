@@ -21,6 +21,4 @@ package org.neo4j.driver.async;
 /**
  * A context for running queries within transaction.
  */
-public interface AsyncTransactionContext extends AsyncQueryRunner
-{
-}
+public interface AsyncTransactionContext extends AsyncQueryRunner {}

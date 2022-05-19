@@ -18,32 +18,28 @@
  */
 package org.neo4j.driver.internal.async.inbound;
 
-import io.netty.channel.ChannelHandlerContext;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
-
-import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
-
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.Mockito.mock;
 
-public class ConnectionReadTimeoutHandlerTest
-{
-    ConnectionReadTimeoutHandler handler = new ConnectionReadTimeoutHandler( 15L, TimeUnit.SECONDS );
-    ChannelHandlerContext context = mock( ChannelHandlerContext.class );
+import io.netty.channel.ChannelHandlerContext;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
+
+public class ConnectionReadTimeoutHandlerTest {
+    ConnectionReadTimeoutHandler handler = new ConnectionReadTimeoutHandler(15L, TimeUnit.SECONDS);
+    ChannelHandlerContext context = mock(ChannelHandlerContext.class);
 
     @Test
-    void shouldFireConnectionReadTimeoutExceptionAndCloseChannelOnReadTimeOutOnce()
-    {
+    void shouldFireConnectionReadTimeoutExceptionAndCloseChannelOnReadTimeOutOnce() {
         // WHEN
-        IntStream.range( 0, 10 ).forEach( i -> handler.readTimedOut( context ) );
+        IntStream.range(0, 10).forEach(i -> handler.readTimedOut(context));
 
         // THEN
-        then( context ).should( times( 1 ) ).fireExceptionCaught( any( ConnectionReadTimeoutException.class ) );
-        then( context ).should( times( 1 ) ).close();
+        then(context).should(times(1)).fireExceptionCaught(any(ConnectionReadTimeoutException.class));
+        then(context).should(times(1)).close();
     }
 }

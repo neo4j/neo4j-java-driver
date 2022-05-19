@@ -18,66 +18,58 @@
  */
 package org.neo4j.driver.internal.async.pool;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class PoolSettingsTest
-{
-    @Test
-    void idleTimeBeforeConnectionTestWhenConfigured()
-    {
-        PoolSettings settings = new PoolSettings( 5, -1, 10, 42 );
-        assertTrue( settings.idleTimeBeforeConnectionTestEnabled() );
-        assertEquals( 42, settings.idleTimeBeforeConnectionTest() );
-    }
+import org.junit.jupiter.api.Test;
 
+class PoolSettingsTest {
     @Test
-    void idleTimeBeforeConnectionTestWhenSetToZero()
-    {
-        //Always test idle time during acquisition
-        PoolSettings settings = new PoolSettings( 5, -1, 10, 0 );
-        assertTrue( settings.idleTimeBeforeConnectionTestEnabled() );
-        assertEquals( 0, settings.idleTimeBeforeConnectionTest() );
+    void idleTimeBeforeConnectionTestWhenConfigured() {
+        PoolSettings settings = new PoolSettings(5, -1, 10, 42);
+        assertTrue(settings.idleTimeBeforeConnectionTestEnabled());
+        assertEquals(42, settings.idleTimeBeforeConnectionTest());
     }
 
     @Test
-    void idleTimeBeforeConnectionTestWhenSetToNegativeValue()
-    {
-        //Never test idle time during acquisition
-        testIdleTimeBeforeConnectionTestWithIllegalValue( -1 );
-        testIdleTimeBeforeConnectionTestWithIllegalValue( -42 );
-        testIdleTimeBeforeConnectionTestWithIllegalValue( Integer.MIN_VALUE );
+    void idleTimeBeforeConnectionTestWhenSetToZero() {
+        // Always test idle time during acquisition
+        PoolSettings settings = new PoolSettings(5, -1, 10, 0);
+        assertTrue(settings.idleTimeBeforeConnectionTestEnabled());
+        assertEquals(0, settings.idleTimeBeforeConnectionTest());
     }
 
     @Test
-    void maxConnectionLifetimeWhenConfigured()
-    {
-        PoolSettings settings = new PoolSettings( 5, -1, 42, 10 );
-        assertTrue( settings.maxConnectionLifetimeEnabled() );
-        assertEquals( 42, settings.maxConnectionLifetime() );
+    void idleTimeBeforeConnectionTestWhenSetToNegativeValue() {
+        // Never test idle time during acquisition
+        testIdleTimeBeforeConnectionTestWithIllegalValue(-1);
+        testIdleTimeBeforeConnectionTestWithIllegalValue(-42);
+        testIdleTimeBeforeConnectionTestWithIllegalValue(Integer.MIN_VALUE);
     }
 
     @Test
-    void maxConnectionLifetimeWhenSetToZeroOrNegativeValue()
-    {
-        testMaxConnectionLifetimeWithIllegalValue( 0 );
-        testMaxConnectionLifetimeWithIllegalValue( -1 );
-        testMaxConnectionLifetimeWithIllegalValue( -42 );
-        testMaxConnectionLifetimeWithIllegalValue( Integer.MIN_VALUE );
+    void maxConnectionLifetimeWhenConfigured() {
+        PoolSettings settings = new PoolSettings(5, -1, 42, 10);
+        assertTrue(settings.maxConnectionLifetimeEnabled());
+        assertEquals(42, settings.maxConnectionLifetime());
     }
 
-    private static void testIdleTimeBeforeConnectionTestWithIllegalValue( int value )
-    {
-        PoolSettings settings = new PoolSettings( 5, -1, 10, value );
-        assertFalse( settings.idleTimeBeforeConnectionTestEnabled() );
+    @Test
+    void maxConnectionLifetimeWhenSetToZeroOrNegativeValue() {
+        testMaxConnectionLifetimeWithIllegalValue(0);
+        testMaxConnectionLifetimeWithIllegalValue(-1);
+        testMaxConnectionLifetimeWithIllegalValue(-42);
+        testMaxConnectionLifetimeWithIllegalValue(Integer.MIN_VALUE);
     }
 
-    private static void testMaxConnectionLifetimeWithIllegalValue( int value )
-    {
-        PoolSettings settings = new PoolSettings( 5, -1, value, 10 );
-        assertFalse( settings.maxConnectionLifetimeEnabled() );
+    private static void testIdleTimeBeforeConnectionTestWithIllegalValue(int value) {
+        PoolSettings settings = new PoolSettings(5, -1, 10, value);
+        assertFalse(settings.idleTimeBeforeConnectionTestEnabled());
+    }
+
+    private static void testMaxConnectionLifetimeWithIllegalValue(int value) {
+        PoolSettings settings = new PoolSettings(5, -1, value, 10);
+        assertFalse(settings.maxConnectionLifetimeEnabled());
     }
 }

@@ -19,7 +19,6 @@
 package org.neo4j.driver.summary;
 
 import java.util.function.Function;
-
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 
@@ -28,43 +27,36 @@ import org.neo4j.driver.exceptions.Neo4jException;
  *
  * @since 1.0
  */
-public enum QueryType
-{
+public enum QueryType {
     READ_ONLY,
     READ_WRITE,
     WRITE_ONLY,
     SCHEMA_WRITE;
 
     private static final String UNEXPECTED_TYPE_MSG_FMT = "Unknown query type: `%s`.";
-    private static final Function<String,ClientException> UNEXPECTED_TYPE_EXCEPTION_SUPPLIER =
-            ( type ) -> new ClientException( String.format( UNEXPECTED_TYPE_MSG_FMT, type ) );
+    private static final Function<String, ClientException> UNEXPECTED_TYPE_EXCEPTION_SUPPLIER =
+            (type) -> new ClientException(String.format(UNEXPECTED_TYPE_MSG_FMT, type));
 
-    public static QueryType fromCode( String type )
-    {
-        return fromCode( type, UNEXPECTED_TYPE_EXCEPTION_SUPPLIER );
+    public static QueryType fromCode(String type) {
+        return fromCode(type, UNEXPECTED_TYPE_EXCEPTION_SUPPLIER);
     }
 
-    public static QueryType fromCode( String type, Function<String,? extends Neo4jException> exceptionFunction )
-    {
-        switch ( type )
-        {
-        case "r":
-            return QueryType.READ_ONLY;
-        case "rw":
-            return QueryType.READ_WRITE;
-        case "w":
-            return QueryType.WRITE_ONLY;
-        case "s":
-            return QueryType.SCHEMA_WRITE;
-        default:
-            if ( exceptionFunction != null )
-            {
-                throw exceptionFunction.apply( type );
-            }
-            else
-            {
-                return null;
-            }
+    public static QueryType fromCode(String type, Function<String, ? extends Neo4jException> exceptionFunction) {
+        switch (type) {
+            case "r":
+                return QueryType.READ_ONLY;
+            case "rw":
+                return QueryType.READ_WRITE;
+            case "w":
+                return QueryType.WRITE_ONLY;
+            case "s":
+                return QueryType.SCHEMA_WRITE;
+            default:
+                if (exceptionFunction != null) {
+                    throw exceptionFunction.apply(type);
+                } else {
+                    return null;
+                }
         }
     }
 }

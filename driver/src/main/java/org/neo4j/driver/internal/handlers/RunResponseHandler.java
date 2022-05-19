@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
@@ -30,8 +29,7 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.internal.util.QueryKeys;
 
-public class RunResponseHandler implements ResponseHandler
-{
+public class RunResponseHandler implements ResponseHandler {
     private final CompletableFuture<Void> runFuture;
     private final MetadataExtractor metadataExtractor;
     private long queryId = MetadataExtractor.ABSENT_QUERY_ID;
@@ -42,8 +40,11 @@ public class RunResponseHandler implements ResponseHandler
     private final Connection connection;
     private final UnmanagedTransaction tx;
 
-    public RunResponseHandler( CompletableFuture<Void> runFuture, MetadataExtractor metadataExtractor, Connection connection, UnmanagedTransaction tx )
-    {
+    public RunResponseHandler(
+            CompletableFuture<Void> runFuture,
+            MetadataExtractor metadataExtractor,
+            Connection connection,
+            UnmanagedTransaction tx) {
         this.runFuture = runFuture;
         this.metadataExtractor = metadataExtractor;
         this.connection = connection;
@@ -51,51 +52,40 @@ public class RunResponseHandler implements ResponseHandler
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
-    {
-        queryKeys = metadataExtractor.extractQueryKeys( metadata );
-        resultAvailableAfter = metadataExtractor.extractResultAvailableAfter( metadata );
-        queryId = metadataExtractor.extractQueryId( metadata );
+    public void onSuccess(Map<String, Value> metadata) {
+        queryKeys = metadataExtractor.extractQueryKeys(metadata);
+        resultAvailableAfter = metadataExtractor.extractResultAvailableAfter(metadata);
+        queryId = metadataExtractor.extractQueryId(metadata);
 
-        runFuture.complete( null );
+        runFuture.complete(null);
     }
 
     @Override
-    public void onFailure( Throwable error )
-    {
-        if ( tx != null )
-        {
-            tx.markTerminated( error );
+    public void onFailure(Throwable error) {
+        if (tx != null) {
+            tx.markTerminated(error);
+        } else if (error instanceof AuthorizationExpiredException) {
+            connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
+        } else if (error instanceof ConnectionReadTimeoutException) {
+            connection.terminateAndRelease(error.getMessage());
         }
-        else if ( error instanceof AuthorizationExpiredException )
-        {
-            connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
-        }
-        else if ( error instanceof ConnectionReadTimeoutException )
-        {
-            connection.terminateAndRelease( error.getMessage() );
-        }
-        runFuture.completeExceptionally( error );
+        runFuture.completeExceptionally(error);
     }
 
     @Override
-    public void onRecord( Value[] fields )
-    {
+    public void onRecord(Value[] fields) {
         throw new UnsupportedOperationException();
     }
 
-    public QueryKeys queryKeys()
-    {
+    public QueryKeys queryKeys() {
         return queryKeys;
     }
 
-    public long resultAvailableAfter()
-    {
+    public long resultAvailableAfter() {
         return resultAvailableAfter;
     }
 
-    public long queryId()
-    {
+    public long queryId() {
         return queryId;
     }
 }

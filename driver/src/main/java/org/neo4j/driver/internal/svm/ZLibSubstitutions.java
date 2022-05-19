@@ -38,17 +38,17 @@ final class Target_org_neo4j_driver_internal_shaded_io_netty_handler_codec_compr
     }
 
     @Substitute
-    public static ZlibEncoder newZlibEncoder( ZlibWrapper wrapper) {
+    public static ZlibEncoder newZlibEncoder(ZlibWrapper wrapper) {
         return new JdkZlibEncoder(wrapper);
     }
 
     @Substitute
-    public static ZlibEncoder newZlibEncoder( ZlibWrapper wrapper, int compressionLevel) {
+    public static ZlibEncoder newZlibEncoder(ZlibWrapper wrapper, int compressionLevel) {
         return new JdkZlibEncoder(wrapper, compressionLevel);
     }
 
     @Substitute
-    public static ZlibEncoder newZlibEncoder( ZlibWrapper wrapper, int compressionLevel, int windowBits, int memLevel) {
+    public static ZlibEncoder newZlibEncoder(ZlibWrapper wrapper, int compressionLevel, int windowBits, int memLevel) {
         return new JdkZlibEncoder(wrapper, compressionLevel);
     }
 
@@ -73,7 +73,7 @@ final class Target_org_neo4j_driver_internal_shaded_io_netty_handler_codec_compr
     }
 
     @Substitute
-    public static ZlibDecoder newZlibDecoder( ZlibWrapper wrapper) {
+    public static ZlibDecoder newZlibDecoder(ZlibWrapper wrapper) {
         return new JdkZlibDecoder(wrapper);
     }
 
@@ -83,6 +83,4 @@ final class Target_org_neo4j_driver_internal_shaded_io_netty_handler_codec_compr
     }
 }
 
-class ZLibSubstitutions {
-
-}
+class ZLibSubstitutions {}

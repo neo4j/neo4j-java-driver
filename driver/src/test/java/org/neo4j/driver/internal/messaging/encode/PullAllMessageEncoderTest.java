@@ -18,32 +18,28 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.request.PullAllMessage;
-import org.neo4j.driver.internal.messaging.request.PullMessage;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class PullAllMessageEncoderTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.messaging.ValuePacker;
+import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
+
+class PullAllMessageEncoderTest {
     private final PullAllMessageEncoder encoder = new PullAllMessageEncoder();
-    private final ValuePacker packer = mock( ValuePacker.class );
+    private final ValuePacker packer = mock(ValuePacker.class);
 
     @Test
-    void shouldEncodePullAllMessage() throws Exception
-    {
-        encoder.encode( PullAllMessage.PULL_ALL, packer );
+    void shouldEncodePullAllMessage() throws Exception {
+        encoder.encode(PullAllMessage.PULL_ALL, packer);
 
-        verify( packer ).packStructHeader( 0, PullAllMessage.SIGNATURE );
+        verify(packer).packStructHeader(0, PullAllMessage.SIGNATURE);
     }
 
     @Test
-    void shouldFailToEncodeWrongMessage()
-    {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( new PullMessage( 100, 200 ), packer ) );
+    void shouldFailToEncodeWrongMessage() {
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(new PullMessage(100, 200), packer));
     }
 }

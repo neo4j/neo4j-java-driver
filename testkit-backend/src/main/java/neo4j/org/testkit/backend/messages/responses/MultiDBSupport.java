@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class MultiDBSupport implements TestkitResponse
-{
+public class MultiDBSupport implements TestkitResponse {
     private final MultiDBSupportBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "MultiDBSupport";
     }
 
     @Getter
     @Builder
-    public static class MultiDBSupportBody
-    {
+    public static class MultiDBSupportBody {
         private final String id;
 
         private final boolean available;

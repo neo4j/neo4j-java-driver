@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.cluster;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.ConnectionContext;
@@ -30,14 +29,13 @@ import org.neo4j.driver.internal.async.ConnectionContext;
  * A generic interface to access all routing tables as a whole.
  * It also provides methods to obtain a routing table or manage a routing table for a specified database.
  */
-public interface RoutingTableRegistry
-{
+public interface RoutingTableRegistry {
     /**
      * Ensures the routing table for the database with given access mode.
      * For server version lower than 4.0, the database name will be ignored while refreshing routing table.
      * @return The future of a new routing table handler.
      */
-    CompletionStage<RoutingTableHandler> ensureRoutingTable( ConnectionContext context );
+    CompletionStage<RoutingTableHandler> ensureRoutingTable(ConnectionContext context);
 
     /**
      * @return all servers in the registry
@@ -47,7 +45,7 @@ public interface RoutingTableRegistry
     /**
      * Removes a routing table of the given database from registry.
      */
-    void remove( DatabaseName databaseName );
+    void remove(DatabaseName databaseName);
 
     /**
      * Removes all routing tables that has been not used for a long time.
@@ -60,5 +58,5 @@ public interface RoutingTableRegistry
      * @param databaseName the database name
      * @return the routing table handler for the requested database name
      */
-    Optional<RoutingTableHandler> getRoutingTableHandler( DatabaseName databaseName );
+    Optional<RoutingTableHandler> getRoutingTableHandler(DatabaseName databaseName);
 }

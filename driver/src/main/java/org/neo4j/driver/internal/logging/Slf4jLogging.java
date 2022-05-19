@@ -18,12 +18,10 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import org.slf4j.LoggerFactory;
-
 import java.io.Serializable;
-
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.slf4j.LoggerFactory;
 
 /**
  * Internal implementation of the SLF4J logging.
@@ -31,28 +29,22 @@ import org.neo4j.driver.Logging;
  *
  * @see Logging#slf4j()
  */
-public class Slf4jLogging implements Logging, Serializable
-{
+public class Slf4jLogging implements Logging, Serializable {
     private static final long serialVersionUID = 4120390028025944991L;
 
     @Override
-    public Logger getLog( String name )
-    {
-        return new Slf4jLogger( LoggerFactory.getLogger( name ) );
+    public Logger getLog(String name) {
+        return new Slf4jLogger(LoggerFactory.getLogger(name));
     }
 
-    public static RuntimeException checkAvailability()
-    {
-        try
-        {
-            Class.forName( "org.slf4j.LoggerFactory" );
+    public static RuntimeException checkAvailability() {
+        try {
+            Class.forName("org.slf4j.LoggerFactory");
             return null;
-        }
-        catch ( Throwable error )
-        {
+        } catch (Throwable error) {
             return new IllegalStateException(
                     "SLF4J logging is not available. Please add dependencies on slf4j-api and SLF4J binding (Logback, Log4j, etc.)",
-                    error );
+                    error);
         }
     }
 }

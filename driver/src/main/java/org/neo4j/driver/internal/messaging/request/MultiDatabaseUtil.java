@@ -25,24 +25,21 @@ import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 
-public final class MultiDatabaseUtil
-{
-    public static void assertEmptyDatabaseName( DatabaseName databaseName, BoltProtocolVersion boltVersion )
-    {
-        if ( databaseName.databaseName().isPresent() )
-        {
-            throw new ClientException( String.format( "Database name parameter for selecting database is not supported in Bolt Protocol Version %s. " +
-                                                      "Database name: '%s'", boltVersion, databaseName.description() ) );
+public final class MultiDatabaseUtil {
+    public static void assertEmptyDatabaseName(DatabaseName databaseName, BoltProtocolVersion boltVersion) {
+        if (databaseName.databaseName().isPresent()) {
+            throw new ClientException(String.format(
+                    "Database name parameter for selecting database is not supported in Bolt Protocol Version %s. "
+                            + "Database name: '%s'",
+                    boltVersion, databaseName.description()));
         }
     }
 
-    public static boolean supportsMultiDatabase( Connection connection )
-    {
-        return connection.protocol().version().compareTo( BoltProtocolV4.VERSION ) >= 0;
+    public static boolean supportsMultiDatabase(Connection connection) {
+        return connection.protocol().version().compareTo(BoltProtocolV4.VERSION) >= 0;
     }
 
-    public static boolean supportsRouteMessage( Connection connection )
-    {
-        return connection.protocol().version().compareTo( BoltProtocolV43.VERSION ) >= 0;
+    public static boolean supportsRouteMessage(Connection connection) {
+        return connection.protocol().version().compareTo(BoltProtocolV43.VERSION) >= 0;
     }
 }
