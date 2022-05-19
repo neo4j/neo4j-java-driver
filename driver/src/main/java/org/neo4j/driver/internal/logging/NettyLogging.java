@@ -20,24 +20,20 @@ package org.neo4j.driver.internal.logging;
 
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-
 import org.neo4j.driver.Logging;
 
 /**
  * This is the logging factory to delegate netty's logging to our logging system
  */
-public class NettyLogging extends InternalLoggerFactory
-{
+public class NettyLogging extends InternalLoggerFactory {
     private Logging logging;
 
-    public NettyLogging( Logging logging )
-    {
+    public NettyLogging(Logging logging) {
         this.logging = logging;
     }
 
     @Override
-    protected InternalLogger newInstance( String name )
-    {
-        return new NettyLogger( name, logging.getLog( name ) );
+    protected InternalLogger newInstance(String name) {
+        return new NettyLogger(name, logging.getLog(name));
     }
 }

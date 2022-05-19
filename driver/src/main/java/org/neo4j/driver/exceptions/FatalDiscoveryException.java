@@ -23,15 +23,12 @@ package org.neo4j.driver.exceptions;
  * This exception should not be retried.
  * @since 4.0
  */
-public class FatalDiscoveryException extends ClientException
-{
-    public FatalDiscoveryException( String message )
-    {
-        super( message );
+public class FatalDiscoveryException extends ClientException {
+    public FatalDiscoveryException(String message) {
+        super(message);
     }
 
-    public FatalDiscoveryException( String code, String message )
-    {
-        super( code, message );
+    public FatalDiscoveryException(String code, String message) {
+        super(code, message);
     }
 }

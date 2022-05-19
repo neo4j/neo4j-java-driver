@@ -18,8 +18,11 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
-import io.netty.buffer.ByteBuf;
+import static io.netty.buffer.Unpooled.copyInt;
+import static io.netty.buffer.Unpooled.unreleasableBuffer;
+import static java.lang.Integer.toHexString;
 
+import io.netty.buffer.ByteBuf;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
@@ -27,60 +30,50 @@ import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
 import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
 
-import static io.netty.buffer.Unpooled.copyInt;
-import static io.netty.buffer.Unpooled.unreleasableBuffer;
-import static java.lang.Integer.toHexString;
-
-public final class BoltProtocolUtil
-{
+public final class BoltProtocolUtil {
     public static final int BOLT_MAGIC_PREAMBLE = 0x6060B017;
-    public static final BoltProtocolVersion NO_PROTOCOL_VERSION = new BoltProtocolVersion( 0 , 0 );
+    public static final BoltProtocolVersion NO_PROTOCOL_VERSION = new BoltProtocolVersion(0, 0);
 
     public static final int CHUNK_HEADER_SIZE_BYTES = 2;
 
     public static final int DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES = Short.MAX_VALUE / 2;
 
-    private static final ByteBuf HANDSHAKE_BUF = unreleasableBuffer( copyInt(
-            BOLT_MAGIC_PREAMBLE,
-            BoltProtocolV5.VERSION.toInt(),
-            BoltProtocolV44.VERSION.toIntRange( BoltProtocolV42.VERSION ),
-            BoltProtocolV41.VERSION.toInt(),
-            BoltProtocolV3.VERSION.toInt() ) ).asReadOnly();
+    private static final ByteBuf HANDSHAKE_BUF = unreleasableBuffer(copyInt(
+                    BOLT_MAGIC_PREAMBLE,
+                    BoltProtocolV5.VERSION.toInt(),
+                    BoltProtocolV44.VERSION.toIntRange(BoltProtocolV42.VERSION),
+                    BoltProtocolV41.VERSION.toInt(),
+                    BoltProtocolV3.VERSION.toInt()))
+            .asReadOnly();
 
     private static final String HANDSHAKE_STRING = createHandshakeString();
 
-    private BoltProtocolUtil()
-    {
-    }
+    private BoltProtocolUtil() {}
 
-    public static ByteBuf handshakeBuf()
-    {
+    public static ByteBuf handshakeBuf() {
         return HANDSHAKE_BUF.duplicate();
     }
 
-    public static String handshakeString()
-    {
+    public static String handshakeString() {
         return HANDSHAKE_STRING;
     }
 
-    public static void writeMessageBoundary( ByteBuf buf )
-    {
-        buf.writeShort( 0 );
+    public static void writeMessageBoundary(ByteBuf buf) {
+        buf.writeShort(0);
     }
 
-    public static void writeEmptyChunkHeader( ByteBuf buf )
-    {
-        buf.writeShort( 0 );
+    public static void writeEmptyChunkHeader(ByteBuf buf) {
+        buf.writeShort(0);
     }
 
-    public static void writeChunkHeader( ByteBuf buf, int chunkStartIndex, int headerValue )
-    {
-        buf.setShort( chunkStartIndex, headerValue );
+    public static void writeChunkHeader(ByteBuf buf, int chunkStartIndex, int headerValue) {
+        buf.setShort(chunkStartIndex, headerValue);
     }
 
-    private static String createHandshakeString()
-    {
+    private static String createHandshakeString() {
         ByteBuf buf = handshakeBuf();
-        return String.format( "[0x%s, %s, %s, %s, %s]", toHexString( buf.readInt() ), buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt() );
+        return String.format(
+                "[0x%s, %s, %s, %s, %s]",
+                toHexString(buf.readInt()), buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt());
     }
 }

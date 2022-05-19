@@ -19,6 +19,11 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.CustomDriverError;
@@ -31,14 +36,6 @@ import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import reactor.core.publisher.Mono;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
@@ -46,143 +43,120 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
+import reactor.core.publisher.Mono;
 
 @Setter
 @Getter
-public class SessionRun implements TestkitRequest
-{
+public class SessionRun implements TestkitRequest {
     private SessionRunBody data;
 
-    private void configureTimeout( TransactionConfig.Builder builder )
-    {
-        if ( data.getTimeoutPresent() )
-        {
-            try
-            {
-                if ( data.getTimeout() != null )
-                {
-                    builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
-                }
-                else
-                {
+    private void configureTimeout(TransactionConfig.Builder builder) {
+        if (data.getTimeoutPresent()) {
+            try {
+                if (data.getTimeout() != null) {
+                    builder.withTimeout(Duration.ofMillis(data.getTimeout()));
+                } else {
                     builder.withDefaultTimeout();
                 }
-            }
-            catch ( IllegalArgumentException e )
-            {
-                throw new CustomDriverError( e );
+            } catch (IllegalArgumentException e) {
+                throw new CustomDriverError(e);
             }
         }
     }
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        SessionHolder sessionHolder = testkitState.getSessionHolder( data.getSessionId() );
+    public TestkitResponse process(TestkitState testkitState) {
+        SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         Session session = sessionHolder.getSession();
-        Query query = Optional.ofNullable( data.params )
-                              .map( params -> new Query( data.cypher, data.params ) )
-                              .orElseGet( () -> new Query( data.cypher ) );
+        Query query = Optional.ofNullable(data.params)
+                .map(params -> new Query(data.cypher, data.params))
+                .orElseGet(() -> new Query(data.cypher));
         TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
-        Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
-        configureTimeout( transactionConfig );
-        org.neo4j.driver.Result result = session.run( query, transactionConfig.build() );
-        String id = testkitState.addResultHolder( new ResultHolder( sessionHolder, result ) );
+        Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
+        configureTimeout(transactionConfig);
+        org.neo4j.driver.Result result = session.run(query, transactionConfig.build());
+        String id = testkitState.addResultHolder(new ResultHolder(sessionHolder, result));
 
-        return createResponse( id, result.keys() );
+        return createResponse(id, result.keys());
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncSessionHolder( data.getSessionId() )
-                           .thenCompose( sessionHolder ->
-                                         {
-                                             AsyncSession session = sessionHolder.getSession();
-                                             Query query = Optional.ofNullable( data.params )
-                                                                   .map( params -> new Query( data.cypher, data.params ) )
-                                                                   .orElseGet( () -> new Query( data.cypher ) );
-                                             TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
-                                             Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
-                                             configureTimeout( transactionConfig );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState.getAsyncSessionHolder(data.getSessionId()).thenCompose(sessionHolder -> {
+            AsyncSession session = sessionHolder.getSession();
+            Query query = Optional.ofNullable(data.params)
+                    .map(params -> new Query(data.cypher, data.params))
+                    .orElseGet(() -> new Query(data.cypher));
+            TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
+            Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
+            configureTimeout(transactionConfig);
 
-                                             return session.runAsync( query, transactionConfig.build() )
-                                                           .thenApply( resultCursor ->
-                                                                       {
-                                                                           String id = testkitState.addAsyncResultHolder(
-                                                                                   new ResultCursorHolder( sessionHolder, resultCursor ) );
-                                                                           return createResponse( id, resultCursor.keys() );
-                                                                       } );
-                                         } );
+            return session.runAsync(query, transactionConfig.build()).thenApply(resultCursor -> {
+                String id = testkitState.addAsyncResultHolder(new ResultCursorHolder(sessionHolder, resultCursor));
+                return createResponse(id, resultCursor.keys());
+            });
+        });
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return testkitState.getRxSessionHolder( data.getSessionId() )
-                           .flatMap( sessionHolder ->
-                                     {
-                                         RxSession session = sessionHolder.getSession();
-                                         Query query = Optional.ofNullable( data.params )
-                                                               .map( params -> new Query( data.cypher, data.params ) )
-                                                               .orElseGet( () -> new Query( data.cypher ) );
-                                         TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
-                                         Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
-                                         configureTimeout( transactionConfig );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return testkitState.getRxSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
+            RxSession session = sessionHolder.getSession();
+            Query query = Optional.ofNullable(data.params)
+                    .map(params -> new Query(data.cypher, data.params))
+                    .orElseGet(() -> new Query(data.cypher));
+            TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
+            Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
+            configureTimeout(transactionConfig);
 
-                                         RxResult result = session.run( query, transactionConfig.build() );
-                                         String id = testkitState.addRxResultHolder( new RxResultHolder( sessionHolder, result ) );
+            RxResult result = session.run(query, transactionConfig.build());
+            String id = testkitState.addRxResultHolder(new RxResultHolder(sessionHolder, result));
 
-                                         // The keys() method causes RUN message exchange.
-                                         // However, it does not currently report errors.
-                                         return Mono.fromDirect( result.keys() )
-                                                    .map( keys -> createResponse( id, keys ) );
-                                     } );
+            // The keys() method causes RUN message exchange.
+            // However, it does not currently report errors.
+            return Mono.fromDirect(result.keys()).map(keys -> createResponse(id, keys));
+        });
     }
 
     @Override
-    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
-    {
-        return testkitState.getReactiveSessionHolder( data.getSessionId() )
-                           .flatMap( sessionHolder ->
-                                     {
-                                         ReactiveSession session = sessionHolder.getSession();
-                                         Query query = Optional.ofNullable( data.params )
-                                                               .map( params -> new Query( data.cypher, data.params ) )
-                                                               .orElseGet( () -> new Query( data.cypher ) );
-                                         TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
-                                         Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
-                                         configureTimeout( transactionConfig );
+    public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
+        return testkitState.getReactiveSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
+            ReactiveSession session = sessionHolder.getSession();
+            Query query = Optional.ofNullable(data.params)
+                    .map(params -> new Query(data.cypher, data.params))
+                    .orElseGet(() -> new Query(data.cypher));
+            TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
+            Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
+            configureTimeout(transactionConfig);
 
-                                         return Mono.fromDirect( session.run( query, transactionConfig.build() ) )
-                                                    .map( result ->
-                                                          {
-                                                              String id =
-                                                                      testkitState.addReactiveResultHolder( new ReactiveResultHolder( sessionHolder, result ) );
-                                                              return createResponse( id, result.keys() );
-                                                          } );
-                                     } );
+            return Mono.fromDirect(session.run(query, transactionConfig.build()))
+                    .map(result -> {
+                        String id =
+                                testkitState.addReactiveResultHolder(new ReactiveResultHolder(sessionHolder, result));
+                        return createResponse(id, result.keys());
+                    });
+        });
     }
 
-    private Result createResponse( String resultId, List<String> keys )
-    {
-        return Result.builder().data( Result.ResultBody.builder().id( resultId ).keys( keys ).build() ).build();
+    private Result createResponse(String resultId, List<String> keys) {
+        return Result.builder()
+                .data(Result.ResultBody.builder().id(resultId).keys(keys).build())
+                .build();
     }
 
     @Setter
     @Getter
-    public static class SessionRunBody
-    {
-        @JsonDeserialize( using = TestkitCypherParamDeserializer.class )
-        private Map<String,Object> params;
+    public static class SessionRunBody {
+        @JsonDeserialize(using = TestkitCypherParamDeserializer.class)
+        private Map<String, Object> params;
+
         private String sessionId;
         private String cypher;
-        private Map<String,Object> txMeta;
+        private Map<String, Object> txMeta;
         private Integer timeout;
         private Boolean timeoutPresent = false;
 
-        public void setTimeout( Integer timeout )
-        {
+        public void setTimeout(Integer timeout) {
             this.timeout = timeout;
             timeoutPresent = true;
         }

@@ -18,56 +18,47 @@
  */
 package org.neo4j.driver.internal;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
-
-public class InternalDatabaseName implements DatabaseName
-{
+public class InternalDatabaseName implements DatabaseName {
     private final String databaseName;
 
-    InternalDatabaseName( String databaseName )
-    {
-        this.databaseName = requireNonNull( databaseName );
+    InternalDatabaseName(String databaseName) {
+        this.databaseName = requireNonNull(databaseName);
     }
 
     @Override
-    public Optional<String> databaseName()
-    {
-        return Optional.of( databaseName );
+    public Optional<String> databaseName() {
+        return Optional.of(databaseName);
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return databaseName;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         InternalDatabaseName that = (InternalDatabaseName) o;
-        return databaseName.equals( that.databaseName );
+        return databaseName.equals(that.databaseName);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( databaseName );
+    public int hashCode() {
+        return Objects.hash(databaseName);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "InternalDatabaseName{" + "databaseName='" + databaseName + '\'' + '}';
     }
 }

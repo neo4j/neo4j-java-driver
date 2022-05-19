@@ -18,13 +18,6 @@
  */
 package org.neo4j.driver.internal.net;
 
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.net.ServerAddress;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,100 +27,94 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.DEFAULT_PORT;
 
-class BoltServerAddressTest
-{
+import java.net.URI;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.net.ServerAddress;
+
+class BoltServerAddressTest {
     @Test
-    void defaultPortShouldBe7687()
-    {
-        assertThat( DEFAULT_PORT, equalTo( 7687 ) );
+    void defaultPortShouldBe7687() {
+        assertThat(DEFAULT_PORT, equalTo(7687));
     }
 
     @Test
-    void portShouldUseDefaultIfNotSupplied()
-    {
-        assertThat( new BoltServerAddress( "localhost" ).port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
+    void portShouldUseDefaultIfNotSupplied() {
+        assertThat(new BoltServerAddress("localhost").port(), equalTo(BoltServerAddress.DEFAULT_PORT));
     }
 
     @Test
-    void shouldHaveCorrectToString()
-    {
-        assertEquals( "localhost:4242", new BoltServerAddress( "localhost", 4242 ).toString() );
-        assertEquals( "127.0.0.1:8888", new BoltServerAddress( "127.0.0.1", 8888 ).toString() );
+    void shouldHaveCorrectToString() {
+        assertEquals("localhost:4242", new BoltServerAddress("localhost", 4242).toString());
+        assertEquals("127.0.0.1:8888", new BoltServerAddress("127.0.0.1", 8888).toString());
     }
 
     @Test
-    void shouldVerifyHost()
-    {
-        assertThrows( NullPointerException.class, () -> new BoltServerAddress( null, 0 ) );
+    void shouldVerifyHost() {
+        assertThrows(NullPointerException.class, () -> new BoltServerAddress(null, 0));
     }
 
     @Test
-    void shouldVerifyPort()
-    {
-        assertThrows( IllegalArgumentException.class, () -> new BoltServerAddress( "localhost", -1 ) );
-        assertThrows( IllegalArgumentException.class, () -> new BoltServerAddress( "localhost", -42 ) );
-        assertThrows( IllegalArgumentException.class, () -> new BoltServerAddress( "localhost", 65_536 ) );
-        assertThrows( IllegalArgumentException.class, () -> new BoltServerAddress( "localhost", 99_999 ) );
+    void shouldVerifyPort() {
+        assertThrows(IllegalArgumentException.class, () -> new BoltServerAddress("localhost", -1));
+        assertThrows(IllegalArgumentException.class, () -> new BoltServerAddress("localhost", -42));
+        assertThrows(IllegalArgumentException.class, () -> new BoltServerAddress("localhost", 65_536));
+        assertThrows(IllegalArgumentException.class, () -> new BoltServerAddress("localhost", 99_999));
     }
 
     @Test
-    void shouldCreateBoltServerAddressFromServerAddress()
-    {
-        BoltServerAddress address1 = new BoltServerAddress( "my.server.com", 8899 );
-        assertSame( address1, BoltServerAddress.from( address1 ) );
+    void shouldCreateBoltServerAddressFromServerAddress() {
+        BoltServerAddress address1 = new BoltServerAddress("my.server.com", 8899);
+        assertSame(address1, BoltServerAddress.from(address1));
 
-        BoltServerAddress address2 = new BoltServerAddress( "db.neo4j.com" );
-        assertSame( address2, BoltServerAddress.from( address2 ) );
+        BoltServerAddress address2 = new BoltServerAddress("db.neo4j.com");
+        assertSame(address2, BoltServerAddress.from(address2));
 
-        ServerAddress address3 = mock( ServerAddress.class );
-        when( address3.host() ).thenReturn( "graph.database.com" );
-        when( address3.port() ).thenReturn( 20600 );
-        assertEquals( new BoltServerAddress( "graph.database.com", 20600 ), BoltServerAddress.from( address3 ) );
+        ServerAddress address3 = mock(ServerAddress.class);
+        when(address3.host()).thenReturn("graph.database.com");
+        when(address3.port()).thenReturn(20600);
+        assertEquals(new BoltServerAddress("graph.database.com", 20600), BoltServerAddress.from(address3));
     }
 
     @Test
-    void shouldFailToCreateBoltServerAddressFromInvalidServerAddress()
-    {
-        ServerAddress address1 = mock( ServerAddress.class );
-        when( address1.host() ).thenReturn( null );
-        when( address1.port() ).thenReturn( 8888 );
-        assertThrows( NullPointerException.class, () -> BoltServerAddress.from( address1 ) );
+    void shouldFailToCreateBoltServerAddressFromInvalidServerAddress() {
+        ServerAddress address1 = mock(ServerAddress.class);
+        when(address1.host()).thenReturn(null);
+        when(address1.port()).thenReturn(8888);
+        assertThrows(NullPointerException.class, () -> BoltServerAddress.from(address1));
 
-        ServerAddress address2 = mock( ServerAddress.class );
-        when( address2.host() ).thenReturn( "neo4j.host.com" );
-        when( address2.port() ).thenReturn( -1 );
-        assertThrows( IllegalArgumentException.class, () -> BoltServerAddress.from( address2 ) );
+        ServerAddress address2 = mock(ServerAddress.class);
+        when(address2.host()).thenReturn("neo4j.host.com");
+        when(address2.port()).thenReturn(-1);
+        assertThrows(IllegalArgumentException.class, () -> BoltServerAddress.from(address2));
 
-        ServerAddress address3 = mock( ServerAddress.class );
-        when( address3.host() ).thenReturn( "my.database.org" );
-        when( address3.port() ).thenReturn( 99_000 );
-        assertThrows( IllegalArgumentException.class, () -> BoltServerAddress.from( address3 ) );
+        ServerAddress address3 = mock(ServerAddress.class);
+        when(address3.host()).thenReturn("my.database.org");
+        when(address3.port()).thenReturn(99_000);
+        assertThrows(IllegalArgumentException.class, () -> BoltServerAddress.from(address3));
     }
 
     @Test
-    void shouldUseUriWithHostButWithoutPort()
-    {
-        URI uri = URI.create( "bolt://neo4j.com" );
-        BoltServerAddress address = new BoltServerAddress( uri );
+    void shouldUseUriWithHostButWithoutPort() {
+        URI uri = URI.create("bolt://neo4j.com");
+        BoltServerAddress address = new BoltServerAddress(uri);
 
-        assertEquals( "neo4j.com", address.host() );
-        assertEquals( DEFAULT_PORT, address.port() );
+        assertEquals("neo4j.com", address.host());
+        assertEquals(DEFAULT_PORT, address.port());
     }
 
     @Test
-    void shouldUseUriWithHostAndPort()
-    {
-        URI uri = URI.create( "bolt://neo4j.com:12345" );
-        BoltServerAddress address = new BoltServerAddress( uri );
+    void shouldUseUriWithHostAndPort() {
+        URI uri = URI.create("bolt://neo4j.com:12345");
+        BoltServerAddress address = new BoltServerAddress(uri);
 
-        assertEquals( "neo4j.com", address.host() );
-        assertEquals( 12345, address.port() );
+        assertEquals("neo4j.com", address.host());
+        assertEquals(12345, address.port());
     }
 
     @Test
-    void shouldIncludeHostAndPortInToString()
-    {
-        BoltServerAddress address = new BoltServerAddress( "localhost", 8081 );
-        assertThat( address.toString(), equalTo( "localhost:8081" ) );
+    void shouldIncludeHostAndPortInToString() {
+        BoltServerAddress address = new BoltServerAddress("localhost", 8081);
+        assertThat(address.toString(), equalTo("localhost:8081"));
     }
 }

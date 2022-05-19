@@ -18,12 +18,9 @@
  */
 package org.neo4j.driver.reactive;
 
-import org.reactivestreams.Publisher;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -31,6 +28,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
+import org.reactivestreams.Publisher;
 
 /**
  * A reactive session is the same as {@link Session} except it provides a reactive API.
@@ -41,8 +39,7 @@ import org.neo4j.driver.Values;
  * @see Publisher
  * @since 5.0
  */
-public interface ReactiveSession extends ReactiveQueryRunner
-{
+public interface ReactiveSession extends ReactiveQueryRunner {
     /**
      * Begin a new <em>unmanaged {@linkplain ReactiveTransaction transaction}</em>. At most one transaction may exist in a session at any point in time. To
      * maintain multiple concurrent transactions, use multiple concurrent sessions.
@@ -51,9 +48,8 @@ public interface ReactiveSession extends ReactiveQueryRunner
      *
      * @return a new {@link ReactiveTransaction}
      */
-    default Publisher<ReactiveTransaction> beginTransaction()
-    {
-        return beginTransaction( TransactionConfig.empty() );
+    default Publisher<ReactiveTransaction> beginTransaction() {
+        return beginTransaction(TransactionConfig.empty());
     }
 
     /**
@@ -65,7 +61,7 @@ public interface ReactiveSession extends ReactiveQueryRunner
      * @param config configuration for the new transaction.
      * @return a new {@link ReactiveTransaction}
      */
-    Publisher<ReactiveTransaction> beginTransaction( TransactionConfig config );
+    Publisher<ReactiveTransaction> beginTransaction(TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one
@@ -83,9 +79,8 @@ public interface ReactiveSession extends ReactiveQueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
      */
-    default <T> Publisher<T> executeRead( ReactiveTransactionCallback<? extends Publisher<T>> callback )
-    {
-        return executeRead( callback, TransactionConfig.empty() );
+    default <T> Publisher<T> executeRead(ReactiveTransactionCallback<? extends Publisher<T>> callback) {
+        return executeRead(callback, TransactionConfig.empty());
     }
 
     /**
@@ -105,7 +100,8 @@ public interface ReactiveSession extends ReactiveQueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
      */
-    <T> Publisher<T> executeRead( ReactiveTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config );
+    <T> Publisher<T> executeRead(
+            ReactiveTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for
@@ -123,9 +119,8 @@ public interface ReactiveSession extends ReactiveQueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
      */
-    default <T> Publisher<T> executeWrite( ReactiveTransactionCallback<? extends Publisher<T>> callback )
-    {
-        return executeWrite( callback, TransactionConfig.empty() );
+    default <T> Publisher<T> executeWrite(ReactiveTransactionCallback<? extends Publisher<T>> callback) {
+        return executeWrite(callback, TransactionConfig.empty());
     }
 
     /**
@@ -145,7 +140,8 @@ public interface ReactiveSession extends ReactiveQueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
      */
-    <T> Publisher<T> executeWrite( ReactiveTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config );
+    <T> Publisher<T> executeWrite(
+            ReactiveTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config);
 
     /**
      * Run a query with parameters in an auto-commit transaction with specified {@link TransactionConfig} and return a publisher of {@link ReactiveResult}.
@@ -157,9 +153,8 @@ public interface ReactiveSession extends ReactiveQueryRunner
      * @param config configuration for the new transaction.
      * @return a publisher of reactive result.
      */
-    default Publisher<ReactiveResult> run( String query, TransactionConfig config )
-    {
-        return run( new Query( query ), config );
+    default Publisher<ReactiveResult> run(String query, TransactionConfig config) {
+        return run(new Query(query), config);
     }
 
     /**
@@ -196,9 +191,8 @@ public interface ReactiveSession extends ReactiveQueryRunner
      * @param config     configuration for the new transaction.
      * @return a publisher of reactive result.
      */
-    default Publisher<ReactiveResult> run( String query, Map<String,Object> parameters, TransactionConfig config )
-    {
-        return run( new Query( query, parameters ), config );
+    default Publisher<ReactiveResult> run(String query, Map<String, Object> parameters, TransactionConfig config) {
+        return run(new Query(query, parameters), config);
     }
 
     /**
@@ -228,7 +222,7 @@ public interface ReactiveSession extends ReactiveQueryRunner
      * @param config configuration for the new transaction.
      * @return a publisher of reactive result.
      */
-    Publisher<ReactiveResult> run( Query query, TransactionConfig config );
+    Publisher<ReactiveResult> run(Query query, TransactionConfig config);
 
     /**
      * Return a set of last bookmarks.

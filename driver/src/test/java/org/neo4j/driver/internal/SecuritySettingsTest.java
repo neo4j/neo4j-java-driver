@@ -18,23 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.platform.commons.support.ReflectionSupport;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.stream.Stream;
-
-import org.neo4j.driver.Config;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.util.TestUtil;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,285 +26,293 @@ import static org.neo4j.driver.internal.RevocationStrategy.NO_CHECKS;
 import static org.neo4j.driver.internal.RevocationStrategy.STRICT;
 import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
 
-class SecuritySettingsTest
-{
-    private static Stream<String> selfSignedSchemes()
-    {
-        return Stream.of( "bolt+ssc", "neo4j+ssc" );
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.platform.commons.support.ReflectionSupport;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.util.TestUtil;
+
+class SecuritySettingsTest {
+    private static Stream<String> selfSignedSchemes() {
+        return Stream.of("bolt+ssc", "neo4j+ssc");
     }
 
-    private static Stream<String> systemCertSchemes()
-    {
-        return Stream.of( "neo4j+s", "bolt+s" );
+    private static Stream<String> systemCertSchemes() {
+        return Stream.of("neo4j+s", "bolt+s");
     }
 
-    private static Stream<String> unencryptedSchemes()
-    {
-        return Stream.of( "neo4j", "bolt" );
+    private static Stream<String> unencryptedSchemes() {
+        return Stream.of("neo4j", "bolt");
     }
 
-    private static Stream<String> allSecureSchemes()
-    {
-        return Stream.concat( selfSignedSchemes(), systemCertSchemes() );
+    private static Stream<String> allSecureSchemes() {
+        return Stream.concat(selfSignedSchemes(), systemCertSchemes());
     }
 
     @ParameterizedTest
-    @MethodSource( "allSecureSchemes" )
-    void testEncryptionSchemeEnablesEncryption( String scheme )
-    {
+    @MethodSource("allSecureSchemes")
+    void testEncryptionSchemeEnablesEncryption(String scheme) {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertTrue( securityPlan.requiresEncryption() );
+        assertTrue(securityPlan.requiresEncryption());
     }
 
     @ParameterizedTest
-    @MethodSource( "systemCertSchemes" )
-    void testSystemCertCompatibleConfiguration( String scheme ) throws Exception
-    {
+    @MethodSource("systemCertSchemes")
+    void testSystemCertCompatibleConfiguration(String scheme) throws Exception {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertTrue( securityPlan.requiresEncryption() );
-        assertTrue( securityPlan.requiresHostnameVerification() );
-        assertEquals( NO_CHECKS, securityPlan.revocationStrategy() );
+        assertTrue(securityPlan.requiresEncryption());
+        assertTrue(securityPlan.requiresHostnameVerification());
+        assertEquals(NO_CHECKS, securityPlan.revocationStrategy());
     }
 
     @ParameterizedTest
-    @MethodSource( "selfSignedSchemes" )
-    void testSelfSignedCertConfigDisablesHostnameVerification( String scheme ) throws Exception
-    {
+    @MethodSource("selfSignedSchemes")
+    void testSelfSignedCertConfigDisablesHostnameVerification(String scheme) throws Exception {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertTrue( securityPlan.requiresEncryption() );
-        assertFalse( securityPlan.requiresHostnameVerification() );
+        assertTrue(securityPlan.requiresEncryption());
+        assertFalse(securityPlan.requiresHostnameVerification());
     }
 
     @ParameterizedTest
-    @MethodSource( "allSecureSchemes" )
-    void testThrowsOnUserCustomizedEncryption( String scheme )
-    {
+    @MethodSource("allSecureSchemes")
+    void testThrowsOnUserCustomizedEncryption(String scheme) {
+        SecuritySettings securitySettings =
+                new SecuritySettings.SecuritySettingsBuilder().withEncryption().build();
+
+        ClientException ex = assertThrows(ClientException.class, () -> securitySettings.createSecurityPlan(scheme));
+
+        assertTrue(ex.getMessage()
+                .contains(String.format(
+                        "Scheme %s is not configurable with manual encryption and trust settings", scheme)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allSecureSchemes")
+    void testThrowsOnUserCustomizedTrustConfiguration(String scheme) {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
+                .build();
+
+        ClientException ex = assertThrows(ClientException.class, () -> securitySettings.createSecurityPlan(scheme));
+
+        assertTrue(ex.getMessage()
+                .contains(String.format(
+                        "Scheme %s is not configurable with manual encryption and trust settings", scheme)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allSecureSchemes")
+    void testThrowsOnUserCustomizedTrustConfigurationAndEncryption(String scheme) {
+        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
                 .withEncryption()
                 .build();
 
-        ClientException ex =
-                assertThrows( ClientException.class,
-                              () -> securitySettings.createSecurityPlan( scheme ) );
+        ClientException ex = assertThrows(ClientException.class, () -> securitySettings.createSecurityPlan(scheme));
 
-        assertTrue( ex.getMessage().contains( String.format( "Scheme %s is not configurable with manual encryption and trust settings", scheme ) ));
+        assertTrue(ex.getMessage()
+                .contains(String.format(
+                        "Scheme %s is not configurable with manual encryption and trust settings", scheme)));
     }
 
     @ParameterizedTest
-    @MethodSource( "allSecureSchemes" )
-    void testThrowsOnUserCustomizedTrustConfiguration( String scheme )
-    {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withTrustStrategy( Config.TrustStrategy.trustAllCertificates() )
-                .build();
-
-        ClientException ex =
-                assertThrows( ClientException.class,
-                              () -> securitySettings.createSecurityPlan( scheme ) );
-
-        assertTrue( ex.getMessage().contains( String.format( "Scheme %s is not configurable with manual encryption and trust settings", scheme ) ));
-    }
-
-    @ParameterizedTest
-    @MethodSource( "allSecureSchemes" )
-    void testThrowsOnUserCustomizedTrustConfigurationAndEncryption( String scheme )
-    {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates() )
-                .withEncryption()
-                .build();
-
-        ClientException ex =
-                assertThrows( ClientException.class,
-                              () -> securitySettings.createSecurityPlan( scheme ) );
-
-        assertTrue( ex.getMessage().contains( String.format( "Scheme %s is not configurable with manual encryption and trust settings", scheme ) ));
-    }
-
-    @ParameterizedTest
-    @MethodSource( "unencryptedSchemes" )
-    void testNoEncryption( String scheme )
-    {
+    @MethodSource("unencryptedSchemes")
+    void testNoEncryption(String scheme) {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertFalse( securityPlan.requiresEncryption() );
+        assertFalse(securityPlan.requiresEncryption());
     }
 
     @ParameterizedTest
-    @MethodSource( "unencryptedSchemes" )
-    void testConfiguredEncryption( String scheme )
-    {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withEncryption().build();
+    @MethodSource("unencryptedSchemes")
+    void testConfiguredEncryption(String scheme) {
+        SecuritySettings securitySettings =
+                new SecuritySettings.SecuritySettingsBuilder().withEncryption().build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertTrue( securityPlan.requiresEncryption() );
+        assertTrue(securityPlan.requiresEncryption());
     }
 
     @ParameterizedTest
-    @MethodSource( "unencryptedSchemes" )
-    void testConfiguredAllCertificates( String scheme)
-    {
+    @MethodSource("unencryptedSchemes")
+    void testConfiguredAllCertificates(String scheme) {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                 .withEncryption()
-                .withTrustStrategy( Config.TrustStrategy.trustAllCertificates() )
+                .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
                 .build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertTrue( securityPlan.requiresEncryption() );
+        assertTrue(securityPlan.requiresEncryption());
     }
 
     @ParameterizedTest
-    @MethodSource( "unencryptedSchemes" )
-    void testConfigureStrictRevocationChecking( String scheme )
-    {
+    @MethodSource("unencryptedSchemes")
+    void testConfigureStrictRevocationChecking(String scheme) {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates().withStrictRevocationChecks() )
+                .withTrustStrategy(
+                        Config.TrustStrategy.trustSystemCertificates().withStrictRevocationChecks())
                 .withEncryption()
                 .build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertEquals( STRICT, securityPlan.revocationStrategy() );
+        assertEquals(STRICT, securityPlan.revocationStrategy());
     }
 
     @ParameterizedTest
-    @MethodSource( "unencryptedSchemes" )
-    void testConfigureVerifyIfPresentRevocationChecking( String scheme )
-    {
+    @MethodSource("unencryptedSchemes")
+    void testConfigureVerifyIfPresentRevocationChecking(String scheme) {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates().withVerifyIfPresentRevocationChecks() )
+                .withTrustStrategy(
+                        Config.TrustStrategy.trustSystemCertificates().withVerifyIfPresentRevocationChecks())
                 .withEncryption()
                 .build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertEquals( VERIFY_IF_PRESENT, securityPlan.revocationStrategy() );
+        assertEquals(VERIFY_IF_PRESENT, securityPlan.revocationStrategy());
     }
 
     @ParameterizedTest
-    @MethodSource( "unencryptedSchemes" )
-    void testRevocationCheckingDisabledByDefault( String scheme )
-    {
+    @MethodSource("unencryptedSchemes")
+    void testRevocationCheckingDisabledByDefault(String scheme) {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates() )
+                .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
                 .withEncryption()
                 .build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertEquals( NO_CHECKS, securityPlan.revocationStrategy() );
+        assertEquals(NO_CHECKS, securityPlan.revocationStrategy());
     }
 
     @Nested
-    class SerializationTests
-    {
-        Method isCustomized = ReflectionSupport.findMethod( SecuritySettings.class, "isCustomized" ).orElseThrow(
-                () -> new RuntimeException( "This test requires isCustomized to be present." ) );
+    class SerializationTests {
+        Method isCustomized = ReflectionSupport.findMethod(SecuritySettings.class, "isCustomized")
+                .orElseThrow(() -> new RuntimeException("This test requires isCustomized to be present."));
 
-        boolean isCustomized( SecuritySettings securitySettings )
-        {
-            isCustomized.setAccessible( true );
-            try
-            {
-                return (boolean) isCustomized.invoke( securitySettings );
-            }
-            catch ( IllegalAccessException | InvocationTargetException e )
-            {
-                throw new RuntimeException( e );
+        boolean isCustomized(SecuritySettings securitySettings) {
+            isCustomized.setAccessible(true);
+            try {
+                return (boolean) isCustomized.invoke(securitySettings);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
             }
         }
 
         @Test
-        void defaultSettingsShouldNotBeCustomizedWhenReadBack() throws IOException, ClassNotFoundException
-        {
+        void defaultSettingsShouldNotBeCustomizedWhenReadBack() throws IOException, ClassNotFoundException {
             SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-            assertFalse( isCustomized( securitySettings ) );
+            assertFalse(isCustomized(securitySettings));
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack( securitySettings, SecuritySettings.class );
+            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
-            assertFalse( isCustomized( verify ) );
+            assertFalse(isCustomized(verify));
         }
 
         @Test
-        void defaultsShouldBeCheckCorrect() throws IOException, ClassNotFoundException
-        {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().withoutEncryption().withTrustStrategy(
-                    Config.TrustStrategy.trustSystemCertificates() ).build();
+        void defaultsShouldBeCheckCorrect() throws IOException, ClassNotFoundException {
+            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                    .withoutEncryption()
+                    .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
+                    .build();
 
-            // The settings are still equivalent to the defaults, even if the builder has been used. It is not customized.
-            assertFalse( isCustomized( securitySettings ) );
+            // The settings are still equivalent to the defaults, even if the builder has been used. It is not
+            // customized.
+            assertFalse(isCustomized(securitySettings));
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack( securitySettings, SecuritySettings.class );
+            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
-            assertFalse( isCustomized( verify ) );
+            assertFalse(isCustomized(verify));
         }
 
         @Test
-        void shouldReadBackChangedEncryption() throws IOException, ClassNotFoundException
-        {
-            SecuritySettings securitySettings =
-                    new SecuritySettings.SecuritySettingsBuilder().withEncryption().withTrustStrategy( Config.TrustStrategy.trustSystemCertificates() ).build();
+        void shouldReadBackChangedEncryption() throws IOException, ClassNotFoundException {
+            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                    .withEncryption()
+                    .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
+                    .build();
 
-            assertTrue( isCustomized( securitySettings ) );
-            assertTrue( securitySettings.encrypted() );
+            assertTrue(isCustomized(securitySettings));
+            assertTrue(securitySettings.encrypted());
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack( securitySettings, SecuritySettings.class );
+            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
-            assertTrue( isCustomized( verify ) );
-            assertTrue( securitySettings.encrypted() );
+            assertTrue(isCustomized(verify));
+            assertTrue(securitySettings.encrypted());
         }
 
         @Test
-        void shouldReadBackChangedStrategey() throws IOException, ClassNotFoundException
-        {
-            SecuritySettings securitySettings =
-                    new SecuritySettings.SecuritySettingsBuilder().withoutEncryption().withTrustStrategy( Config.TrustStrategy.trustAllCertificates() ).build();
+        void shouldReadBackChangedStrategey() throws IOException, ClassNotFoundException {
+            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                    .withoutEncryption()
+                    .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
+                    .build();
 
-            // The settings are still equivalent to the defaults, even if the builder has been used. It is not customized.
-            assertTrue( isCustomized( securitySettings ) );
-            assertFalse( securitySettings.encrypted() );
-            assertEquals( Config.TrustStrategy.trustAllCertificates().strategy(), securitySettings.trustStrategy().strategy() );
+            // The settings are still equivalent to the defaults, even if the builder has been used. It is not
+            // customized.
+            assertTrue(isCustomized(securitySettings));
+            assertFalse(securitySettings.encrypted());
+            assertEquals(
+                    Config.TrustStrategy.trustAllCertificates().strategy(),
+                    securitySettings.trustStrategy().strategy());
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack( securitySettings, SecuritySettings.class );
+            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
-            assertTrue( isCustomized( verify ) );
-            assertFalse( securitySettings.encrypted() );
-            assertEquals( Config.TrustStrategy.trustAllCertificates().strategy(), securitySettings.trustStrategy().strategy() );
+            assertTrue(isCustomized(verify));
+            assertFalse(securitySettings.encrypted());
+            assertEquals(
+                    Config.TrustStrategy.trustAllCertificates().strategy(),
+                    securitySettings.trustStrategy().strategy());
         }
 
         @Test
-        void shouldReadBackChangedCertFile() throws IOException, ClassNotFoundException
-        {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().withoutEncryption().withTrustStrategy(
-                    Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "some.cert" ) ) ).build();
+        void shouldReadBackChangedCertFile() throws IOException, ClassNotFoundException {
+            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                    .withoutEncryption()
+                    .withTrustStrategy(Config.TrustStrategy.trustCustomCertificateSignedBy(new File("some.cert")))
+                    .build();
 
-            // The settings are still equivalent to the defaults, even if the builder has been used. It is not customized.
-            assertTrue( isCustomized( securitySettings ) );
-            assertFalse( securitySettings.encrypted() );
-            assertEquals( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "some.cert" ) ).strategy(),
-                    securitySettings.trustStrategy().strategy() );
+            // The settings are still equivalent to the defaults, even if the builder has been used. It is not
+            // customized.
+            assertTrue(isCustomized(securitySettings));
+            assertFalse(securitySettings.encrypted());
+            assertEquals(
+                    Config.TrustStrategy.trustCustomCertificateSignedBy(new File("some.cert"))
+                            .strategy(),
+                    securitySettings.trustStrategy().strategy());
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack( securitySettings, SecuritySettings.class );
+            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
-            assertTrue( isCustomized( verify ) );
-            assertFalse( securitySettings.encrypted() );
-            assertEquals( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "some.cert" ) ).strategy(),
-                    securitySettings.trustStrategy().strategy() );
+            assertTrue(isCustomized(verify));
+            assertFalse(securitySettings.encrypted());
+            assertEquals(
+                    Config.TrustStrategy.trustCustomCertificateSignedBy(new File("some.cert"))
+                            .strategy(),
+                    securitySettings.trustStrategy().strategy());
         }
     }
 }

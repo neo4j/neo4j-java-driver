@@ -19,9 +19,11 @@
 package org.neo4j.docs.driver;
 // tag::config-custom-resolver-import[]
 
+import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.Values.parameters;
+
 import java.util.Arrays;
 import java.util.HashSet;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
@@ -32,58 +34,55 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.net.ServerAddress;
 
-import static org.neo4j.driver.SessionConfig.builder;
-import static org.neo4j.driver.Values.parameters;
-
 // end::config-custom-resolver-import[]
-public class ConfigCustomResolverExample implements AutoCloseable
-{
+public class ConfigCustomResolverExample implements AutoCloseable {
     private final Driver driver;
 
-    public ConfigCustomResolverExample( String virtualUri, AuthToken authToken, ServerAddress... addresses )
-    {
+    public ConfigCustomResolverExample(String virtualUri, AuthToken authToken, ServerAddress... addresses) {
         Config config = Config.builder()
-                              .withResolver( address -> new HashSet<>( Arrays.asList( addresses ) ) )
-                              .build();
+                .withResolver(address -> new HashSet<>(Arrays.asList(addresses)))
+                .build();
 
-        driver = GraphDatabase.driver( virtualUri, authToken, config );
+        driver = GraphDatabase.driver(virtualUri, authToken, config);
     }
 
     // tag::config-custom-resolver[]
-    private Driver createDriver( String virtualUri, String user, String password, ServerAddress... addresses )
-    {
+    private Driver createDriver(String virtualUri, String user, String password, ServerAddress... addresses) {
         Config config = Config.builder()
-                .withResolver( address -> new HashSet<>( Arrays.asList( addresses ) ) )
+                .withResolver(address -> new HashSet<>(Arrays.asList(addresses)))
                 .build();
 
-        return GraphDatabase.driver( virtualUri, AuthTokens.basic( user, password ), config );
+        return GraphDatabase.driver(virtualUri, AuthTokens.basic(user, password), config);
     }
 
-    private void addPerson( String name )
-    {
+    private void addPerson(String name) {
         String username = "neo4j";
         String password = "some password";
 
-        try ( Driver driver = createDriver( "neo4j://x.example.com", username, password, ServerAddress.of( "a.example.com", 7676 ),
-                ServerAddress.of( "b.example.com", 8787 ), ServerAddress.of( "c.example.com", 9898 ) ) )
-        {
-            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
-            {
-                session.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) );
+        try (Driver driver = createDriver(
+                "neo4j://x.example.com",
+                username,
+                password,
+                ServerAddress.of("a.example.com", 7676),
+                ServerAddress.of("b.example.com", 8787),
+                ServerAddress.of("c.example.com", 9898))) {
+            try (Session session = driver.session(
+                    builder().withDefaultAccessMode(AccessMode.WRITE).build())) {
+                session.run("CREATE (a:Person {name: $name})", parameters("name", name));
             }
         }
     }
     // end::config-custom-resolver[]
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         driver.close();
     }
 
-    public boolean canConnect()
-    {
-        Result result = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ).run( "RETURN 1" );
-        return result.single().get( 0 ).asInt() == 1;
+    public boolean canConnect() {
+        Result result = driver.session(
+                        builder().withDefaultAccessMode(AccessMode.READ).build())
+                .run("RETURN 1");
+        return result.single().get(0).asInt() == 1;
     }
 }

@@ -18,33 +18,29 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.request.RollbackMessage;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
 
-class RollbackMessageEncoderTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.messaging.ValuePacker;
+import org.neo4j.driver.internal.messaging.request.RollbackMessage;
+
+class RollbackMessageEncoderTest {
     private final RollbackMessageEncoder encoder = new RollbackMessageEncoder();
-    private final ValuePacker packer = mock( ValuePacker.class );
+    private final ValuePacker packer = mock(ValuePacker.class);
 
     @Test
-    void shouldEncodeRollbackMessage() throws Exception
-    {
-        encoder.encode( ROLLBACK, packer );
+    void shouldEncodeRollbackMessage() throws Exception {
+        encoder.encode(ROLLBACK, packer);
 
-        verify( packer ).packStructHeader( 0, RollbackMessage.SIGNATURE );
+        verify(packer).packStructHeader(0, RollbackMessage.SIGNATURE);
     }
 
     @Test
-    void shouldFailToEncodeWrongMessage()
-    {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( RESET, packer ) );
+    void shouldFailToEncodeWrongMessage() {
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(RESET, packer));
     }
 }

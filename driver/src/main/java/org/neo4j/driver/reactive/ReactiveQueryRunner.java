@@ -18,14 +18,12 @@
  */
 package org.neo4j.driver.reactive;
 
-import org.reactivestreams.Publisher;
-
 import java.util.Map;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.reactivestreams.Publisher;
 
 /**
  * Common interface for components that can execute Neo4j queries using Reactive API.
@@ -34,8 +32,7 @@ import org.neo4j.driver.Values;
  * @see ReactiveTransaction
  * @since 5.0
  */
-public interface ReactiveQueryRunner
-{
+public interface ReactiveQueryRunner {
     /**
      * Register running of a query and return a publisher of {@link ReactiveResult}.
      * <p>
@@ -54,7 +51,7 @@ public interface ReactiveQueryRunner
      * @param parameters input parameters, should be a map Value, see {@link Values#parameters(Object...)}.
      * @return a publisher of reactive result.
      */
-    Publisher<ReactiveResult> run( String query, Value parameters );
+    Publisher<ReactiveResult> run(String query, Value parameters);
 
     /**
      * Register running of a query and return a publisher of {@link ReactiveResult}.
@@ -72,7 +69,7 @@ public interface ReactiveQueryRunner
      * @param parameters input data for the query
      * @return a publisher of reactive result.
      */
-    Publisher<ReactiveResult> run( String query, Map<String,Object> parameters );
+    Publisher<ReactiveResult> run(String query, Map<String, Object> parameters);
 
     /**
      * Register running of a query and return a publisher of {@link ReactiveResult}.
@@ -89,7 +86,7 @@ public interface ReactiveQueryRunner
      * @param parameters input data for the query
      * @return a publisher of reactive result.
      */
-    Publisher<ReactiveResult> run( String query, Record parameters );
+    Publisher<ReactiveResult> run(String query, Record parameters);
 
     /**
      * Register running of a query and return a publisher of {@link ReactiveResult}.
@@ -100,7 +97,7 @@ public interface ReactiveQueryRunner
      * @param query text of a Neo4j query
      * @return a publisher of reactive result.
      */
-    Publisher<ReactiveResult> run( String query );
+    Publisher<ReactiveResult> run(String query);
 
     /**
      * Register running of a query and return a publisher of {@link ReactiveResult}.
@@ -111,5 +108,5 @@ public interface ReactiveQueryRunner
      * @param query a Neo4j query
      * @return a publisher of reactive result.
      */
-    Publisher<ReactiveResult> run( Query query );
+    Publisher<ReactiveResult> run(Query query);
 }

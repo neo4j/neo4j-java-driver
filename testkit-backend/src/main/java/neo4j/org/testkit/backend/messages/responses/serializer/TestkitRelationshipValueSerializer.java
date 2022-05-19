@@ -18,54 +18,45 @@
  */
 package neo4j.org.testkit.backend.messages.responses.serializer;
 
+import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherObject;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Relationship;
 
-import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherObject;
-
-public class TestkitRelationshipValueSerializer extends StdSerializer<RelationshipValue>
-{
-    public TestkitRelationshipValueSerializer()
-    {
-        super( RelationshipValue.class );
+public class TestkitRelationshipValueSerializer extends StdSerializer<RelationshipValue> {
+    public TestkitRelationshipValueSerializer() {
+        super(RelationshipValue.class);
     }
 
     @Override
-    public void serialize( RelationshipValue relationshipValue, JsonGenerator gen, SerializerProvider provider ) throws IOException
-    {
-        cypherObject( gen, "Relationship", () ->
-        {
+    public void serialize(RelationshipValue relationshipValue, JsonGenerator gen, SerializerProvider provider)
+            throws IOException {
+        cypherObject(gen, "Relationship", () -> {
             Relationship relationship = relationshipValue.asRelationship();
-            gen.writeObjectField( "id", new IntegerValue( getId( relationship::id ) ) );
-            gen.writeObjectField( "elementId", new StringValue( relationship.elementId() ) );
-            gen.writeObjectField( "startNodeId", new IntegerValue( getId( relationship::startNodeId ) ) );
-            gen.writeObjectField( "startNodeElementId", new StringValue( relationship.startNodeElementId() ) );
-            gen.writeObjectField( "endNodeId", new IntegerValue( getId( relationship::endNodeId ) ) );
-            gen.writeObjectField( "endNodeElementId", new StringValue( relationship.endNodeElementId() ) );
-            gen.writeObjectField( "type", new StringValue( relationship.type() ) );
-            gen.writeObjectField( "props", new MapValue( relationship.asMap( Function.identity() ) ) );
-        } );
+            gen.writeObjectField("id", new IntegerValue(getId(relationship::id)));
+            gen.writeObjectField("elementId", new StringValue(relationship.elementId()));
+            gen.writeObjectField("startNodeId", new IntegerValue(getId(relationship::startNodeId)));
+            gen.writeObjectField("startNodeElementId", new StringValue(relationship.startNodeElementId()));
+            gen.writeObjectField("endNodeId", new IntegerValue(getId(relationship::endNodeId)));
+            gen.writeObjectField("endNodeElementId", new StringValue(relationship.endNodeElementId()));
+            gen.writeObjectField("type", new StringValue(relationship.type()));
+            gen.writeObjectField("props", new MapValue(relationship.asMap(Function.identity())));
+        });
     }
 
-    private long getId( Supplier<Long> supplier )
-    {
-        try
-        {
+    private long getId(Supplier<Long> supplier) {
+        try {
             return supplier.get();
-        }
-        catch ( IllegalStateException e )
-        {
+        } catch (IllegalStateException e) {
             return -1;
         }
     }

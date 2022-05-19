@@ -18,41 +18,37 @@
  */
 package org.neo4j.docs.driver;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.net.URI;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.net.ServerAddress;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.net.URI;
-import java.util.Optional;
-
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.net.ServerAddress;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@Testcontainers( disabledWithoutDocker = true )
-class RoutingExamplesIT
-{
-    private static final String NEO4J_VERSION = Optional.ofNullable( System.getenv( "NEO4J_VERSION" ) )
-                                                        .orElse( "4.4" );
+@Testcontainers(disabledWithoutDocker = true)
+class RoutingExamplesIT {
+    private static final String NEO4J_VERSION =
+            Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
 
     @Container
-    private static final Neo4jContainer<?> NEO4J_CONTAINER = new Neo4jContainer<>( String.format( "neo4j:%s-enterprise", NEO4J_VERSION ) )
-            .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-            .withAdminPassword( null );
+    private static final Neo4jContainer<?> NEO4J_CONTAINER = new Neo4jContainer<>(
+                    String.format("neo4j:%s-enterprise", NEO4J_VERSION))
+            .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
+            .withAdminPassword(null);
 
     @Test
-    void testShouldRunConfigCustomResolverExample() throws Exception
-    {
+    void testShouldRunConfigCustomResolverExample() throws Exception {
         // Given
-        URI boltUri = URI.create( NEO4J_CONTAINER.getBoltUrl() );
-        String neo4jUrl = String.format( "neo4j://%s:%d", boltUri.getHost(), boltUri.getPort() );
-        try ( ConfigCustomResolverExample example = new ConfigCustomResolverExample( neo4jUrl, AuthTokens.none(),
-                                                                                     ServerAddress.of( boltUri.getHost(), boltUri.getPort() ) ) )
-        {
+        URI boltUri = URI.create(NEO4J_CONTAINER.getBoltUrl());
+        String neo4jUrl = String.format("neo4j://%s:%d", boltUri.getHost(), boltUri.getPort());
+        try (ConfigCustomResolverExample example = new ConfigCustomResolverExample(
+                neo4jUrl, AuthTokens.none(), ServerAddress.of(boltUri.getHost(), boltUri.getPort()))) {
             // Then
-            assertTrue( example.canConnect() );
+            assertTrue(example.canConnect());
         }
     }
 }

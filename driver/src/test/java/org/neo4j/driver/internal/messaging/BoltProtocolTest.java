@@ -18,9 +18,14 @@
  */
 package org.neo4j.driver.internal.messaging;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setProtocolVersion;
+
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
@@ -28,42 +33,33 @@ import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setProtocolVersion;
-
-class BoltProtocolTest
-{
+class BoltProtocolTest {
     @Test
-    void shouldCreateProtocolForKnownVersions()
-    {
+    void shouldCreateProtocolForKnownVersions() {
         assertAll(
-                () -> assertThat( BoltProtocol.forVersion( BoltProtocolV3.VERSION ), instanceOf( BoltProtocolV3.class ) ),
-                () -> assertThat( BoltProtocol.forVersion( BoltProtocolV4.VERSION ), instanceOf( BoltProtocolV4.class ) ),
-                () -> assertThat( BoltProtocol.forVersion( BoltProtocolV41.VERSION ), instanceOf( BoltProtocolV41.class ) ),
-                () -> assertThat( BoltProtocol.forVersion( BoltProtocolV42.VERSION ), instanceOf( BoltProtocolV42.class ) ),
-                () -> assertThat( BoltProtocol.forVersion( BoltProtocolV43.VERSION ), instanceOf( BoltProtocolV43.class ) )
-        );
+                () -> assertThat(BoltProtocol.forVersion(BoltProtocolV3.VERSION), instanceOf(BoltProtocolV3.class)),
+                () -> assertThat(BoltProtocol.forVersion(BoltProtocolV4.VERSION), instanceOf(BoltProtocolV4.class)),
+                () -> assertThat(BoltProtocol.forVersion(BoltProtocolV41.VERSION), instanceOf(BoltProtocolV41.class)),
+                () -> assertThat(BoltProtocol.forVersion(BoltProtocolV42.VERSION), instanceOf(BoltProtocolV42.class)),
+                () -> assertThat(BoltProtocol.forVersion(BoltProtocolV43.VERSION), instanceOf(BoltProtocolV43.class)));
     }
 
     @Test
-    void shouldThrowForUnknownVersion()
-    {
+    void shouldThrowForUnknownVersion() {
         assertAll(
-                () -> assertThrows( ClientException.class, () -> BoltProtocol.forVersion( new BoltProtocolVersion(  42, 0 ) ) ),
-                () -> assertThrows( ClientException.class, () -> BoltProtocol.forVersion( new BoltProtocolVersion( 142, 0 ) ) ),
-                () -> assertThrows( ClientException.class, () -> BoltProtocol.forVersion( new BoltProtocolVersion( -1, 0 ) ) )
-        );
+                () -> assertThrows(
+                        ClientException.class, () -> BoltProtocol.forVersion(new BoltProtocolVersion(42, 0))),
+                () -> assertThrows(
+                        ClientException.class, () -> BoltProtocol.forVersion(new BoltProtocolVersion(142, 0))),
+                () -> assertThrows(
+                        ClientException.class, () -> BoltProtocol.forVersion(new BoltProtocolVersion(-1, 0))));
     }
 
     @Test
-    void shouldThrowForChannelWithUnknownProtocolVersion()
-    {
+    void shouldThrowForChannelWithUnknownProtocolVersion() {
         EmbeddedChannel channel = new EmbeddedChannel();
-        setProtocolVersion( channel, new BoltProtocolVersion( 42, 0 ) );
+        setProtocolVersion(channel, new BoltProtocolVersion(42, 0));
 
-        assertThrows( ClientException.class, () -> BoltProtocol.forChannel( channel ) );
+        assertThrows(ClientException.class, () -> BoltProtocol.forChannel(channel));
     }
 }

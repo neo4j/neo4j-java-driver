@@ -18,164 +18,135 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
+import static io.netty.util.AttributeKey.newInstance;
+
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
-
 import java.util.Optional;
-
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 
-import static io.netty.util.AttributeKey.newInstance;
-
-public final class ChannelAttributes
-{
-    private static final AttributeKey<String> CONNECTION_ID = newInstance( "connectionId" );
-    private static final AttributeKey<String> POOL_ID = newInstance( "poolId" );
-    private static final AttributeKey<BoltProtocolVersion> PROTOCOL_VERSION = newInstance( "protocolVersion" );
-    private static final AttributeKey<String> SERVER_AGENT = newInstance( "serverAgent" );
-    private static final AttributeKey<BoltServerAddress> ADDRESS = newInstance( "serverAddress" );
-    private static final AttributeKey<Long> CREATION_TIMESTAMP = newInstance( "creationTimestamp" );
-    private static final AttributeKey<Long> LAST_USED_TIMESTAMP = newInstance( "lastUsedTimestamp" );
-    private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER = newInstance( "messageDispatcher" );
-    private static final AttributeKey<String> TERMINATION_REASON = newInstance( "terminationReason" );
-    private static final AttributeKey<AuthorizationStateListener> AUTHORIZATION_STATE_LISTENER = newInstance( "authorizationStateListener" );
+public final class ChannelAttributes {
+    private static final AttributeKey<String> CONNECTION_ID = newInstance("connectionId");
+    private static final AttributeKey<String> POOL_ID = newInstance("poolId");
+    private static final AttributeKey<BoltProtocolVersion> PROTOCOL_VERSION = newInstance("protocolVersion");
+    private static final AttributeKey<String> SERVER_AGENT = newInstance("serverAgent");
+    private static final AttributeKey<BoltServerAddress> ADDRESS = newInstance("serverAddress");
+    private static final AttributeKey<Long> CREATION_TIMESTAMP = newInstance("creationTimestamp");
+    private static final AttributeKey<Long> LAST_USED_TIMESTAMP = newInstance("lastUsedTimestamp");
+    private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER = newInstance("messageDispatcher");
+    private static final AttributeKey<String> TERMINATION_REASON = newInstance("terminationReason");
+    private static final AttributeKey<AuthorizationStateListener> AUTHORIZATION_STATE_LISTENER =
+            newInstance("authorizationStateListener");
 
     // configuration hints provided by the server
-    private static final AttributeKey<Long> CONNECTION_READ_TIMEOUT = newInstance( "connectionReadTimeout" );
+    private static final AttributeKey<Long> CONNECTION_READ_TIMEOUT = newInstance("connectionReadTimeout");
 
-    private ChannelAttributes()
-    {
+    private ChannelAttributes() {}
+
+    public static String connectionId(Channel channel) {
+        return get(channel, CONNECTION_ID);
     }
 
-    public static String connectionId( Channel channel )
-    {
-        return get( channel, CONNECTION_ID );
+    public static void setConnectionId(Channel channel, String id) {
+        setOnce(channel, CONNECTION_ID, id);
     }
 
-    public static void setConnectionId( Channel channel, String id )
-    {
-        setOnce( channel, CONNECTION_ID, id );
+    public static String poolId(Channel channel) {
+        return get(channel, POOL_ID);
     }
 
-    public static String poolId( Channel channel )
-    {
-        return get( channel, POOL_ID );
+    public static void setPoolId(Channel channel, String id) {
+        setOnce(channel, POOL_ID, id);
     }
 
-    public static void setPoolId( Channel channel, String id )
-    {
-        setOnce( channel, POOL_ID, id );
+    public static BoltProtocolVersion protocolVersion(Channel channel) {
+        return get(channel, PROTOCOL_VERSION);
     }
 
-    public static BoltProtocolVersion protocolVersion( Channel channel )
-    {
-        return get( channel, PROTOCOL_VERSION );
+    public static void setProtocolVersion(Channel channel, BoltProtocolVersion version) {
+        setOnce(channel, PROTOCOL_VERSION, version);
     }
 
-    public static void setProtocolVersion( Channel channel, BoltProtocolVersion version )
-    {
-        setOnce( channel, PROTOCOL_VERSION, version );
+    public static void setServerAgent(Channel channel, String serverAgent) {
+        setOnce(channel, SERVER_AGENT, serverAgent);
     }
 
-    public static void setServerAgent( Channel channel, String serverAgent )
-    {
-        setOnce( channel, SERVER_AGENT, serverAgent );
+    public static String serverAgent(Channel channel) {
+        return get(channel, SERVER_AGENT);
     }
 
-    public static String serverAgent( Channel channel )
-    {
-        return get( channel, SERVER_AGENT );
+    public static BoltServerAddress serverAddress(Channel channel) {
+        return get(channel, ADDRESS);
     }
 
-    public static BoltServerAddress serverAddress( Channel channel )
-    {
-        return get( channel, ADDRESS );
+    public static void setServerAddress(Channel channel, BoltServerAddress address) {
+        setOnce(channel, ADDRESS, address);
     }
 
-    public static void setServerAddress( Channel channel, BoltServerAddress address )
-    {
-        setOnce( channel, ADDRESS, address );
+    public static long creationTimestamp(Channel channel) {
+        return get(channel, CREATION_TIMESTAMP);
     }
 
-    public static long creationTimestamp( Channel channel )
-    {
-        return get( channel, CREATION_TIMESTAMP );
+    public static void setCreationTimestamp(Channel channel, long creationTimestamp) {
+        setOnce(channel, CREATION_TIMESTAMP, creationTimestamp);
     }
 
-    public static void setCreationTimestamp( Channel channel, long creationTimestamp )
-    {
-        setOnce( channel, CREATION_TIMESTAMP, creationTimestamp );
+    public static Long lastUsedTimestamp(Channel channel) {
+        return get(channel, LAST_USED_TIMESTAMP);
     }
 
-    public static Long lastUsedTimestamp( Channel channel )
-    {
-        return get( channel, LAST_USED_TIMESTAMP );
+    public static void setLastUsedTimestamp(Channel channel, long lastUsedTimestamp) {
+        set(channel, LAST_USED_TIMESTAMP, lastUsedTimestamp);
     }
 
-    public static void setLastUsedTimestamp( Channel channel, long lastUsedTimestamp )
-    {
-        set( channel, LAST_USED_TIMESTAMP, lastUsedTimestamp );
+    public static InboundMessageDispatcher messageDispatcher(Channel channel) {
+        return get(channel, MESSAGE_DISPATCHER);
     }
 
-    public static InboundMessageDispatcher messageDispatcher( Channel channel )
-    {
-        return get( channel, MESSAGE_DISPATCHER );
+    public static void setMessageDispatcher(Channel channel, InboundMessageDispatcher messageDispatcher) {
+        setOnce(channel, MESSAGE_DISPATCHER, messageDispatcher);
     }
 
-    public static void setMessageDispatcher( Channel channel, InboundMessageDispatcher messageDispatcher )
-    {
-        setOnce( channel, MESSAGE_DISPATCHER, messageDispatcher );
+    public static String terminationReason(Channel channel) {
+        return get(channel, TERMINATION_REASON);
     }
 
-    public static String terminationReason( Channel channel )
-    {
-        return get( channel, TERMINATION_REASON );
+    public static void setTerminationReason(Channel channel, String reason) {
+        setOnce(channel, TERMINATION_REASON, reason);
     }
 
-    public static void setTerminationReason( Channel channel, String reason )
-    {
-        setOnce( channel, TERMINATION_REASON, reason );
+    public static AuthorizationStateListener authorizationStateListener(Channel channel) {
+        return get(channel, AUTHORIZATION_STATE_LISTENER);
     }
 
-    public static AuthorizationStateListener authorizationStateListener( Channel channel )
-    {
-        return get( channel, AUTHORIZATION_STATE_LISTENER );
+    public static void setAuthorizationStateListener(
+            Channel channel, AuthorizationStateListener authorizationStateListener) {
+        set(channel, AUTHORIZATION_STATE_LISTENER, authorizationStateListener);
     }
 
-    public static void setAuthorizationStateListener( Channel channel, AuthorizationStateListener authorizationStateListener )
-    {
-        set( channel, AUTHORIZATION_STATE_LISTENER, authorizationStateListener );
+    public static Optional<Long> connectionReadTimeout(Channel channel) {
+        return Optional.ofNullable(get(channel, CONNECTION_READ_TIMEOUT));
     }
 
-    public static Optional<Long> connectionReadTimeout( Channel channel )
-    {
-        return Optional.ofNullable( get( channel, CONNECTION_READ_TIMEOUT ) );
+    public static void setConnectionReadTimeout(Channel channel, Long connectionReadTimeout) {
+        setOnce(channel, CONNECTION_READ_TIMEOUT, connectionReadTimeout);
     }
 
-    public static void setConnectionReadTimeout( Channel channel, Long connectionReadTimeout )
-    {
-        setOnce( channel, CONNECTION_READ_TIMEOUT, connectionReadTimeout );
+    private static <T> T get(Channel channel, AttributeKey<T> key) {
+        return channel.attr(key).get();
     }
 
-    private static <T> T get( Channel channel, AttributeKey<T> key )
-    {
-        return channel.attr( key ).get();
+    private static <T> void set(Channel channel, AttributeKey<T> key, T value) {
+        channel.attr(key).set(value);
     }
 
-    private static <T> void set( Channel channel, AttributeKey<T> key, T value )
-    {
-        channel.attr( key ).set( value );
-    }
-
-    private static <T> void setOnce( Channel channel, AttributeKey<T> key, T value )
-    {
-        T existingValue = channel.attr( key ).setIfAbsent( value );
-        if ( existingValue != null )
-        {
+    private static <T> void setOnce(Channel channel, AttributeKey<T> key, T value) {
+        T existingValue = channel.attr(key).setIfAbsent(value);
+        if (existingValue != null) {
             throw new IllegalStateException(
-                    "Unable to set " + key.name() + " because it is already set to " + existingValue );
+                    "Unable to set " + key.name() + " because it is already set to " + existingValue);
         }
     }
 }

@@ -20,28 +20,23 @@ package org.neo4j.driver.internal.logging;
 
 import org.neo4j.driver.Logger;
 
-public class PrefixedLogger extends ReformattedLogger
-{
+public class PrefixedLogger extends ReformattedLogger {
     private final String messagePrefix;
 
-    public PrefixedLogger( Logger delegate )
-    {
-        this( null, delegate );
+    public PrefixedLogger(Logger delegate) {
+        this(null, delegate);
     }
 
-    public PrefixedLogger( String messagePrefix, Logger delegate )
-    {
+    public PrefixedLogger(String messagePrefix, Logger delegate) {
         super(delegate);
         this.messagePrefix = messagePrefix;
     }
 
     @Override
-    protected String reformat( String message )
-    {
-        if ( messagePrefix == null )
-        {
+    protected String reformat(String message) {
+        if (messagePrefix == null) {
             return message;
         }
-        return String.format( "%s %s", messagePrefix, message );
+        return String.format("%s %s", messagePrefix, message);
     }
 }

@@ -18,42 +18,36 @@
  */
 package org.neo4j.driver.internal.async.outbound;
 
-import io.netty.buffer.ByteBuf;
-
-import org.neo4j.driver.internal.async.connection.BoltProtocolUtil;
-import org.neo4j.driver.internal.packstream.PackOutput;
-
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.CHUNK_HEADER_SIZE_BYTES;
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES;
 
-public class ChunkAwareByteBufOutput implements PackOutput
-{
+import io.netty.buffer.ByteBuf;
+import org.neo4j.driver.internal.async.connection.BoltProtocolUtil;
+import org.neo4j.driver.internal.packstream.PackOutput;
+
+public class ChunkAwareByteBufOutput implements PackOutput {
     private final int maxChunkSize;
 
     private ByteBuf buf;
     private int currentChunkStartIndex;
     private int currentChunkSize;
 
-    public ChunkAwareByteBufOutput()
-    {
-        this( DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES );
+    public ChunkAwareByteBufOutput() {
+        this(DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES);
     }
 
-    ChunkAwareByteBufOutput( int maxChunkSize )
-    {
-        this.maxChunkSize = verifyMaxChunkSize( maxChunkSize );
+    ChunkAwareByteBufOutput(int maxChunkSize) {
+        this.maxChunkSize = verifyMaxChunkSize(maxChunkSize);
     }
 
-    public void start( ByteBuf newBuf )
-    {
+    public void start(ByteBuf newBuf) {
         assertNotStarted();
-        buf = requireNonNull( newBuf );
-        startNewChunk( 0 );
+        buf = requireNonNull(newBuf);
+        startNewChunk(0);
     }
 
-    public void stop()
-    {
+    public void stop() {
         writeChunkSizeHeader();
         buf = null;
         currentChunkStartIndex = 0;
@@ -61,28 +55,25 @@ public class ChunkAwareByteBufOutput implements PackOutput
     }
 
     @Override
-    public PackOutput writeByte( byte value )
-    {
-        ensureCanFitInCurrentChunk( 1 );
-        buf.writeByte( value );
+    public PackOutput writeByte(byte value) {
+        ensureCanFitInCurrentChunk(1);
+        buf.writeByte(value);
         currentChunkSize += 1;
         return this;
     }
 
     @Override
-    public PackOutput writeBytes( byte[] data )
-    {
+    public PackOutput writeBytes(byte[] data) {
         int offset = 0;
         int length = data.length;
-        while ( offset < length )
-        {
+        while (offset < length) {
             // Ensure there is an open chunk, and that it has at least one byte of space left
-            ensureCanFitInCurrentChunk( 1 );
+            ensureCanFitInCurrentChunk(1);
 
             // Write as much as we can into the current chunk
-            int amountToWrite = Math.min( availableBytesInCurrentChunk(), length - offset );
+            int amountToWrite = Math.min(availableBytesInCurrentChunk(), length - offset);
 
-            buf.writeBytes( data, offset, amountToWrite );
+            buf.writeBytes(data, offset, amountToWrite);
             currentChunkSize += amountToWrite;
             offset += amountToWrite;
         }
@@ -90,83 +81,70 @@ public class ChunkAwareByteBufOutput implements PackOutput
     }
 
     @Override
-    public PackOutput writeShort( short value )
-    {
-        ensureCanFitInCurrentChunk( 2 );
-        buf.writeShort( value );
+    public PackOutput writeShort(short value) {
+        ensureCanFitInCurrentChunk(2);
+        buf.writeShort(value);
         currentChunkSize += 2;
         return this;
     }
 
     @Override
-    public PackOutput writeInt( int value )
-    {
-        ensureCanFitInCurrentChunk( 4 );
-        buf.writeInt( value );
+    public PackOutput writeInt(int value) {
+        ensureCanFitInCurrentChunk(4);
+        buf.writeInt(value);
         currentChunkSize += 4;
         return this;
     }
 
     @Override
-    public PackOutput writeLong( long value )
-    {
-        ensureCanFitInCurrentChunk( 8 );
-        buf.writeLong( value );
+    public PackOutput writeLong(long value) {
+        ensureCanFitInCurrentChunk(8);
+        buf.writeLong(value);
         currentChunkSize += 8;
         return this;
     }
 
     @Override
-    public PackOutput writeDouble( double value )
-    {
-        ensureCanFitInCurrentChunk( 8 );
-        buf.writeDouble( value );
+    public PackOutput writeDouble(double value) {
+        ensureCanFitInCurrentChunk(8);
+        buf.writeDouble(value);
         currentChunkSize += 8;
         return this;
     }
 
-    private void ensureCanFitInCurrentChunk( int numberOfBytes )
-    {
+    private void ensureCanFitInCurrentChunk(int numberOfBytes) {
         int targetChunkSize = currentChunkSize + numberOfBytes;
-        if ( targetChunkSize > maxChunkSize )
-        {
+        if (targetChunkSize > maxChunkSize) {
             writeChunkSizeHeader();
-            startNewChunk( buf.writerIndex() );
+            startNewChunk(buf.writerIndex());
         }
     }
 
-    private void startNewChunk( int index )
-    {
+    private void startNewChunk(int index) {
         currentChunkStartIndex = index;
-        BoltProtocolUtil.writeEmptyChunkHeader( buf );
+        BoltProtocolUtil.writeEmptyChunkHeader(buf);
         currentChunkSize = CHUNK_HEADER_SIZE_BYTES;
     }
 
-    private void writeChunkSizeHeader()
-    {
+    private void writeChunkSizeHeader() {
         // go to the beginning of the chunk and write the size header
         int chunkBodySize = currentChunkSize - CHUNK_HEADER_SIZE_BYTES;
-        BoltProtocolUtil.writeChunkHeader( buf, currentChunkStartIndex, chunkBodySize );
+        BoltProtocolUtil.writeChunkHeader(buf, currentChunkStartIndex, chunkBodySize);
     }
 
-    private int availableBytesInCurrentChunk()
-    {
+    private int availableBytesInCurrentChunk() {
         return maxChunkSize - currentChunkSize;
     }
 
-    private void assertNotStarted()
-    {
-        if ( buf != null )
-        {
-            throw new IllegalStateException( "Already started" );
+    private void assertNotStarted() {
+        if (buf != null) {
+            throw new IllegalStateException("Already started");
         }
     }
 
-    private static int verifyMaxChunkSize( int maxChunkSize )
-    {
-        if ( maxChunkSize <= 0 )
-        {
-            throw new IllegalArgumentException( "Max chunk size should be > 0, given: " + maxChunkSize );
+    private static int verifyMaxChunkSize(int maxChunkSize) {
+        if (maxChunkSize <= 0) {
+            throw new IllegalArgumentException("Max chunk size should be > 0, given: " + maxChunkSize);
         }
         return maxChunkSize;
     }

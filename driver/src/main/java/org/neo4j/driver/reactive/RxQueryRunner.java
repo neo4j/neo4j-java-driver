@@ -19,7 +19,6 @@
 package org.neo4j.driver.reactive;
 
 import java.util.Map;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -34,8 +33,7 @@ import org.neo4j.driver.internal.value.MapValue;
  * @since 4.0
  */
 @Deprecated
-public interface RxQueryRunner
-{
+public interface RxQueryRunner {
     /**
      * Register running of a query and return a reactive result stream.
      * The query is not executed when the reactive result is returned.
@@ -57,9 +55,8 @@ public interface RxQueryRunner
      * @param parameters input parameters, should be a map Value, see {@link Values#parameters(Object...)}.
      * @return a reactive result.
      */
-    default RxResult run( String query, Value parameters )
-    {
-        return run( new Query( query, parameters ) );
+    default RxResult run(String query, Value parameters) {
+        return run(new Query(query, parameters));
     }
 
     /**
@@ -80,9 +77,8 @@ public interface RxQueryRunner
      * @param parameters input data for the query
      * @return a reactive result.
      */
-    default RxResult run( String query, Map<String,Object> parameters )
-    {
-        return run( query, parameters( parameters ) );
+    default RxResult run(String query, Map<String, Object> parameters) {
+        return run(query, parameters(parameters));
     }
 
     /**
@@ -102,9 +98,8 @@ public interface RxQueryRunner
      * @param parameters input data for the query
      * @return a reactive result.
      */
-    default RxResult run( String query, Record parameters )
-    {
-        return run( query, parameters( parameters ) );
+    default RxResult run(String query, Record parameters) {
+        return run(query, parameters(parameters));
     }
 
     /**
@@ -114,9 +109,8 @@ public interface RxQueryRunner
      * @param query text of a Neo4j query
      * @return a reactive result.
      */
-    default RxResult run( String query )
-    {
-        return run( new Query( query ) );
+    default RxResult run(String query) {
+        return run(new Query(query));
     }
 
     /**
@@ -126,19 +120,16 @@ public interface RxQueryRunner
      * @param query a Neo4j query
      * @return a reactive result.
      */
-    RxResult run( Query query );
+    RxResult run(Query query);
 
-    static Value parameters( Record record )
-    {
-        return record == null ? Values.EmptyMap : parameters( record.asMap() );
+    static Value parameters(Record record) {
+        return record == null ? Values.EmptyMap : parameters(record.asMap());
     }
 
-    static Value parameters( Map<String,Object> map )
-    {
-        if ( map == null || map.isEmpty() )
-        {
+    static Value parameters(Map<String, Object> map) {
+        if (map == null || map.isEmpty()) {
             return Values.EmptyMap;
         }
-        return new MapValue( Extract.mapOfValues( map ) );
+        return new MapValue(Extract.mapOfValues(map));
     }
 }

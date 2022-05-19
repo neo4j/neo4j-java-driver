@@ -18,122 +18,113 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Mono;
-
-import java.util.Collections;
-import java.util.Map;
-
-import org.neo4j.driver.Query;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.reactive.ReactiveResult;
-import org.neo4j.driver.reactive.ReactiveTransaction;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
-public class DelegatingReactiveTransactionContextTest
-{
+import java.util.Collections;
+import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.reactive.ReactiveResult;
+import org.neo4j.driver.reactive.ReactiveTransaction;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
+
+public class DelegatingReactiveTransactionContextTest {
     ReactiveTransaction transaction;
     DelegatingReactiveTransactionContext context;
 
     @BeforeEach
-    void beforeEach()
-    {
-        transaction = mock( ReactiveTransaction.class );
-        context = new DelegatingReactiveTransactionContext( transaction );
+    void beforeEach() {
+        transaction = mock(ReactiveTransaction.class);
+        context = new DelegatingReactiveTransactionContext(transaction);
     }
 
     @Test
-    void shouldDelegateRunWithValueParams()
-    {
+    void shouldDelegateRunWithValueParams() {
         // GIVEN
         String query = "something";
-        Value params = mock( Value.class );
+        Value params = mock(Value.class);
         Publisher<ReactiveResult> expected = Mono.empty();
-        given( transaction.run( query, params ) ).willReturn( expected );
+        given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        @SuppressWarnings( "ReactiveStreamsUnusedPublisher" )
-        Publisher<ReactiveResult> actual = context.run( query, params );
+        @SuppressWarnings("ReactiveStreamsUnusedPublisher")
+        Publisher<ReactiveResult> actual = context.run(query, params);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().run( query, params );
+        assertEquals(expected, actual);
+        then(transaction).should().run(query, params);
     }
 
     @Test
-    void shouldDelegateRunWithMapParams()
-    {
+    void shouldDelegateRunWithMapParams() {
         // GIVEN
         String query = "something";
-        Map<String,Object> params = Collections.emptyMap();
+        Map<String, Object> params = Collections.emptyMap();
         Publisher<ReactiveResult> expected = Mono.empty();
-        given( transaction.run( query, params ) ).willReturn( expected );
+        given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        @SuppressWarnings( "ReactiveStreamsUnusedPublisher" )
-        Publisher<ReactiveResult> actual = context.run( query, params );
+        @SuppressWarnings("ReactiveStreamsUnusedPublisher")
+        Publisher<ReactiveResult> actual = context.run(query, params);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().run( query, params );
+        assertEquals(expected, actual);
+        then(transaction).should().run(query, params);
     }
 
     @Test
-    void shouldDelegateRunWithRecordParams()
-    {
+    void shouldDelegateRunWithRecordParams() {
         // GIVEN
         String query = "something";
-        Record params = mock( Record.class );
+        Record params = mock(Record.class);
         Publisher<ReactiveResult> expected = Mono.empty();
-        given( transaction.run( query, params ) ).willReturn( expected );
+        given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        @SuppressWarnings( "ReactiveStreamsUnusedPublisher" )
-        Publisher<ReactiveResult> actual = context.run( query, params );
+        @SuppressWarnings("ReactiveStreamsUnusedPublisher")
+        Publisher<ReactiveResult> actual = context.run(query, params);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().run( query, params );
+        assertEquals(expected, actual);
+        then(transaction).should().run(query, params);
     }
 
     @Test
-    void shouldDelegateRun()
-    {
+    void shouldDelegateRun() {
         // GIVEN
         String query = "something";
         Publisher<ReactiveResult> expected = Mono.empty();
-        given( transaction.run( query ) ).willReturn( expected );
+        given(transaction.run(query)).willReturn(expected);
 
         // WHEN
-        @SuppressWarnings( "ReactiveStreamsUnusedPublisher" )
-        Publisher<ReactiveResult> actual = context.run( query );
+        @SuppressWarnings("ReactiveStreamsUnusedPublisher")
+        Publisher<ReactiveResult> actual = context.run(query);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().run( query );
+        assertEquals(expected, actual);
+        then(transaction).should().run(query);
     }
 
     @Test
-    void shouldDelegateRunWithQueryType()
-    {
+    void shouldDelegateRunWithQueryType() {
         // GIVEN
-        Query query = mock( Query.class );
+        Query query = mock(Query.class);
         Publisher<ReactiveResult> expected = Mono.empty();
-        given( transaction.run( query ) ).willReturn( expected );
+        given(transaction.run(query)).willReturn(expected);
 
         // WHEN
-        @SuppressWarnings( "ReactiveStreamsUnusedPublisher" )
-        Publisher<ReactiveResult> actual = context.run( query );
+        @SuppressWarnings("ReactiveStreamsUnusedPublisher")
+        Publisher<ReactiveResult> actual = context.run(query);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().run( query );
+        assertEquals(expected, actual);
+        then(transaction).should().run(query);
     }
 }

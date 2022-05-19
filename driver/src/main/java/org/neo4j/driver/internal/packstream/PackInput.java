@@ -24,8 +24,7 @@ import java.io.IOException;
  * This is what {@link PackStream} uses to ingest data, implement this on top of any data source of your choice to
  * deserialize the stream with {@link PackStream}.
  */
-public interface PackInput
-{
+public interface PackInput {
     /** Consume one byte */
     byte readByte() throws IOException;
 
@@ -42,7 +41,7 @@ public interface PackInput
     double readDouble() throws IOException;
 
     /** Consume a specified number of bytes */
-    void readBytes( byte[] into, int offset, int toRead ) throws IOException;
+    void readBytes(byte[] into, int offset, int toRead) throws IOException;
 
     /** Get the next byte without forwarding the internal pointer */
     byte peekByte() throws IOException;

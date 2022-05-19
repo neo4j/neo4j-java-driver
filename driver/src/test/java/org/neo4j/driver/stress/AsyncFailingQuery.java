@@ -18,42 +18,37 @@
  */
 package org.neo4j.driver.stress;
 
-import java.util.concurrent.CompletionStage;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 
+import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
-
-public class AsyncFailingQuery<C extends AbstractContext> extends AbstractAsyncQuery<C>
-{
-    public AsyncFailingQuery( Driver driver )
-    {
-        super( driver, false );
+public class AsyncFailingQuery<C extends AbstractContext> extends AbstractAsyncQuery<C> {
+    public AsyncFailingQuery(Driver driver) {
+        super(driver, false);
     }
 
     @Override
-    public CompletionStage<Void> execute( C context )
-    {
-        AsyncSession session = newSession( AccessMode.READ, context );
+    public CompletionStage<Void> execute(C context) {
+        AsyncSession session = newSession(AccessMode.READ, context);
 
-        return session.runAsync( "UNWIND [10, 5, 0] AS x RETURN 10 / x" )
-                .thenCompose( ResultCursor::listAsync )
-                .handle( ( records, error ) ->
-                {
+        return session.runAsync("UNWIND [10, 5, 0] AS x RETURN 10 / x")
+                .thenCompose(ResultCursor::listAsync)
+                .handle((records, error) -> {
                     session.closeAsync();
 
-                    assertNull( records );
-                    Throwable cause = Futures.completionExceptionCause( error );
-                    assertThat( cause, is( arithmeticError() ) );
+                    assertNull(records);
+                    Throwable cause = Futures.completionExceptionCause(error);
+                    assertThat(cause, is(arithmeticError()));
 
                     return null;
-                } );
+                });
     }
 }

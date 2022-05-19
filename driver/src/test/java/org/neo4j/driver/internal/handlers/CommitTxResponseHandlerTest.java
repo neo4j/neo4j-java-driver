@@ -18,14 +18,6 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CompletableFuture;
-
-import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.InternalBookmark;
-
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,43 +26,44 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.util.TestUtil.await;
 
-class CommitTxResponseHandlerTest
-{
+import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.InternalBookmark;
+
+class CommitTxResponseHandlerTest {
     private final CompletableFuture<Bookmark> future = new CompletableFuture<>();
-    private final CommitTxResponseHandler handler = new CommitTxResponseHandler( future );
+    private final CommitTxResponseHandler handler = new CommitTxResponseHandler(future);
 
     @Test
-    void shouldHandleSuccessWithoutBookmark()
-    {
-        handler.onSuccess( emptyMap() );
+    void shouldHandleSuccessWithoutBookmark() {
+        handler.onSuccess(emptyMap());
 
-        assertNull( await( future ) );
+        assertNull(await(future));
     }
 
     @Test
-    void shouldHandleSuccessWithBookmark()
-    {
+    void shouldHandleSuccessWithBookmark() {
         String bookmarkString = "neo4j:bookmark:v1:tx12345";
 
-        handler.onSuccess( singletonMap( "bookmark", value( bookmarkString ) ) );
+        handler.onSuccess(singletonMap("bookmark", value(bookmarkString)));
 
-        assertEquals( InternalBookmark.parse( bookmarkString ), await( future ) );
+        assertEquals(InternalBookmark.parse(bookmarkString), await(future));
     }
 
     @Test
-    void shouldHandleFailure()
-    {
-        RuntimeException error = new RuntimeException( "Hello" );
+    void shouldHandleFailure() {
+        RuntimeException error = new RuntimeException("Hello");
 
-        handler.onFailure( error );
+        handler.onFailure(error);
 
-        RuntimeException receivedError = assertThrows( RuntimeException.class, () -> await( future ) );
-        assertEquals( error, receivedError );
+        RuntimeException receivedError = assertThrows(RuntimeException.class, () -> await(future));
+        assertEquals(error, receivedError);
     }
 
     @Test
-    void shouldFailToHandleRecord()
-    {
-        assertThrows( UnsupportedOperationException.class, () -> handler.onRecord( new Value[]{value( 42 )} ) );
+    void shouldFailToHandleRecord() {
+        assertThrows(UnsupportedOperationException.class, () -> handler.onRecord(new Value[] {value(42)}));
     }
 }

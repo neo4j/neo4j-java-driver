@@ -18,129 +18,144 @@
  */
 package org.neo4j.driver.integration.reactive;
 
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
+
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.neo4j.driver.exceptions.TransactionNestingException;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.util.DatabaseExtension;
+import org.neo4j.driver.util.ParallelizableIT;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.util.Collections;
-
-import org.neo4j.driver.exceptions.TransactionNestingException;
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxTransaction;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
-
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-
-@EnabledOnNeo4jWith( BOLT_V4 )
+@EnabledOnNeo4jWith(BOLT_V4)
 @ParallelizableIT
-class RxNestedQueriesIT
-{
+class RxNestedQueriesIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
-    void shouldErrorForNestingQueriesAmongSessionRuns()
-    {
+    void shouldErrorForNestingQueriesAmongSessionRuns() {
         int size = 12555;
 
         Flux<Integer> nodeIds = Flux.usingWhen(
-                Mono.fromSupplier( () -> neo4j.driver().rxSession() ),
-                session -> Flux.from( session.run( "UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap( "size", size ) ).records() )
-                        .limitRate( 20 ).flatMap( record -> {
-                            int x = record.get( "x" ).asInt();
-                            RxResult innerResult = session.run( "CREATE (n:Node {id: $x}) RETURN n.id", Collections.singletonMap( "x", x ) );
+                Mono.fromSupplier(() -> neo4j.driver().rxSession()),
+                session -> Flux.from(session.run(
+                                        "UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap("size", size))
+                                .records())
+                        .limitRate(20)
+                        .flatMap(record -> {
+                            int x = record.get("x").asInt();
+                            RxResult innerResult = session.run(
+                                    "CREATE (n:Node {id: $x}) RETURN n.id", Collections.singletonMap("x", x));
                             return innerResult.records();
-                        } ).map( r -> r.get( 0 ).asInt() ),
-                RxSession::close );
+                        })
+                        .map(r -> r.get(0).asInt()),
+                RxSession::close);
 
-        StepVerifier.create( nodeIds ).expectError( TransactionNestingException.class ).verify();
+        StepVerifier.create(nodeIds)
+                .expectError(TransactionNestingException.class)
+                .verify();
     }
 
     @Test
-    void shouldErrorForNestingQueriesAmongTransactionFunctions()
-    {
+    void shouldErrorForNestingQueriesAmongTransactionFunctions() {
         int size = 12555;
         Flux<Integer> nodeIds = Flux.usingWhen(
-                Mono.fromSupplier( () -> neo4j.driver().rxSession() ),
-                session -> Flux.from( session.readTransaction( tx ->
-                        tx.run( "UNWIND range(1, $size) AS x RETURN x",
-                                Collections.singletonMap( "size", size ) ).records() ) )
-                        .limitRate( 20 )
-                        .flatMap( record -> {
-                            int x = record.get( "x" ).asInt();
-                            return session.writeTransaction( tx ->
-                                    tx.run( "CREATE (n:Node {id: $x}) RETURN n.id",
-                                            Collections.singletonMap( "x", x ) ).records() );
-                        } ).map( r -> r.get( 0 ).asInt() ),
-                RxSession::close );
+                Mono.fromSupplier(() -> neo4j.driver().rxSession()),
+                session -> Flux.from(session.readTransaction(tx -> tx.run(
+                                        "UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap("size", size))
+                                .records()))
+                        .limitRate(20)
+                        .flatMap(record -> {
+                            int x = record.get("x").asInt();
+                            return session.writeTransaction(tx -> tx.run(
+                                            "CREATE (n:Node {id: $x}) RETURN n.id", Collections.singletonMap("x", x))
+                                    .records());
+                        })
+                        .map(r -> r.get(0).asInt()),
+                RxSession::close);
 
-        StepVerifier.create( nodeIds ).expectError( TransactionNestingException.class ).verify();
+        StepVerifier.create(nodeIds)
+                .expectError(TransactionNestingException.class)
+                .verify();
     }
 
     @Test
-    void shouldErrorForNestingQueriesAmongSessionRunAndTransactionFunction()
-    {
+    void shouldErrorForNestingQueriesAmongSessionRunAndTransactionFunction() {
         int size = 12555;
         Flux<Integer> nodeIds = Flux.usingWhen(
-                Mono.fromSupplier( () -> neo4j.driver().rxSession() ),
-                session -> Flux.from( session.run( "UNWIND range(1, $size) AS x RETURN x",
-                        Collections.singletonMap( "size", size ) ).records() )
-                        .limitRate( 20 )
-                        .flatMap( record -> {
-                            int x = record.get( "x" ).asInt();
-                            return session.writeTransaction( tx ->
-                                    tx.run( "CREATE (n:Node {id: $x}) RETURN n.id",
-                                            Collections.singletonMap( "x", x ) ).records() );
-                        } ).map( r -> r.get( 0 ).asInt() ),
-                RxSession::close );
+                Mono.fromSupplier(() -> neo4j.driver().rxSession()),
+                session -> Flux.from(session.run(
+                                        "UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap("size", size))
+                                .records())
+                        .limitRate(20)
+                        .flatMap(record -> {
+                            int x = record.get("x").asInt();
+                            return session.writeTransaction(tx -> tx.run(
+                                            "CREATE (n:Node {id: $x}) RETURN n.id", Collections.singletonMap("x", x))
+                                    .records());
+                        })
+                        .map(r -> r.get(0).asInt()),
+                RxSession::close);
 
-        StepVerifier.create( nodeIds ).expectError( TransactionNestingException.class ).verify();
+        StepVerifier.create(nodeIds)
+                .expectError(TransactionNestingException.class)
+                .verify();
     }
 
     @Test
-    void shouldErrorForNestingQueriesAmongTransactionFunctionAndSessionRun()
-    {
+    void shouldErrorForNestingQueriesAmongTransactionFunctionAndSessionRun() {
         int size = 12555;
         Flux<Integer> nodeIds = Flux.usingWhen(
-                Mono.fromSupplier( () -> neo4j.driver().rxSession() ),
-                session -> Flux.from( session.readTransaction( tx ->
-                        tx.run( "UNWIND range(1, $size) AS x RETURN x",
-                                Collections.singletonMap( "size", size ) ).records() ) )
-                        .limitRate( 20 )
-                        .flatMap( record -> {
-                            int x = record.get( "x" ).asInt();
-                            return session.run( "CREATE (n:Node {id: $x}) RETURN n.id",
-                                    Collections.singletonMap( "x", x ) ).records();
-                        } ).map( r -> r.get( 0 ).asInt() ),
-                RxSession::close );
+                Mono.fromSupplier(() -> neo4j.driver().rxSession()),
+                session -> Flux.from(session.readTransaction(tx -> tx.run(
+                                        "UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap("size", size))
+                                .records()))
+                        .limitRate(20)
+                        .flatMap(record -> {
+                            int x = record.get("x").asInt();
+                            return session.run("CREATE (n:Node {id: $x}) RETURN n.id", Collections.singletonMap("x", x))
+                                    .records();
+                        })
+                        .map(r -> r.get(0).asInt()),
+                RxSession::close);
 
-        StepVerifier.create( nodeIds ).expectError( TransactionNestingException.class ).verify();
+        StepVerifier.create(nodeIds)
+                .expectError(TransactionNestingException.class)
+                .verify();
     }
 
     @Test
-    void shouldHandleNestedQueriesInTheSameTransaction() throws Throwable
-    {
+    void shouldHandleNestedQueriesInTheSameTransaction() throws Throwable {
         int size = 12555;
 
         RxSession session = neo4j.driver().rxSession();
         Flux<Integer> nodeIds = Flux.usingWhen(
                 session.beginTransaction(),
                 tx -> {
-                    RxResult result = tx.run( "UNWIND range(1, $size) AS x RETURN x",
-                            Collections.singletonMap( "size", size ) );
-                    return Flux.from( result.records() ).limitRate( 20 ).flatMap( record -> {
-                        int x = record.get( "x" ).asInt();
-                        RxResult innerResult = tx.run( "CREATE (n:Node {id: $x}) RETURN n.id",
-                                Collections.singletonMap( "x", x ) );
-                        return innerResult.records();
-                    } ).map( record -> record.get( 0 ).asInt() );
-                }, RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
+                    RxResult result =
+                            tx.run("UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap("size", size));
+                    return Flux.from(result.records())
+                            .limitRate(20)
+                            .flatMap(record -> {
+                                int x = record.get("x").asInt();
+                                RxResult innerResult = tx.run(
+                                        "CREATE (n:Node {id: $x}) RETURN n.id", Collections.singletonMap("x", x));
+                                return innerResult.records();
+                            })
+                            .map(record -> record.get(0).asInt());
+                },
+                RxTransaction::commit,
+                (tx, error) -> tx.rollback(),
+                null);
 
-        StepVerifier.create( nodeIds ).expectNextCount( size ).verifyComplete();
+        StepVerifier.create(nodeIds).expectNextCount(size).verifyComplete();
     }
 }

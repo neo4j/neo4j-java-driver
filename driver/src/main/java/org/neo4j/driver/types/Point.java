@@ -28,8 +28,7 @@ import org.neo4j.driver.util.Immutable;
  * or {@link Values#point(int, double, double, double)} method.
  */
 @Immutable
-public interface Point
-{
+public interface Point {
     /**
      * Retrieve identifier of the coordinate reference system for this point.
      *

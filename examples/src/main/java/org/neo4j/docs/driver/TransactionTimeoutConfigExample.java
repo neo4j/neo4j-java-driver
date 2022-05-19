@@ -19,32 +19,29 @@
 
 package org.neo4j.docs.driver;
 
-import java.time.Duration;
+import static org.neo4j.driver.Values.parameters;
 
+import java.time.Duration;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 
-import static org.neo4j.driver.Values.parameters;
-
-public class TransactionTimeoutConfigExample extends BaseApplication
-{
-    public TransactionTimeoutConfigExample( String uri, String user, String password )
-    {
-        super( uri, user, password );
+public class TransactionTimeoutConfigExample extends BaseApplication {
+    public TransactionTimeoutConfigExample(String uri, String user, String password) {
+        super(uri, user, password);
     }
 
     // tag::transaction-timeout-config[]
-    public void addPerson( final String name )
-    {
-        try ( Session session = driver.session() )
-        {
+    public void addPerson(final String name) {
+        try (Session session = driver.session()) {
             TransactionConfig txConfig = TransactionConfig.builder()
-                                                          .withTimeout( Duration.ofSeconds( 5 ) ).build();
-            session.writeTransaction( tx ->
-                                      {
-                                          tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) );
-                                          return 1;
-                                      }, txConfig );
+                    .withTimeout(Duration.ofSeconds(5))
+                    .build();
+            session.writeTransaction(
+                    tx -> {
+                        tx.run("CREATE (a:Person {name: $name})", parameters("name", name));
+                        return 1;
+                    },
+                    txConfig);
         }
     }
     // end::transaction-timeout-config[]

@@ -25,51 +25,48 @@ import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.util.Futures;
 
-public class InternalTransaction extends AbstractQueryRunner implements Transaction
-{
+public class InternalTransaction extends AbstractQueryRunner implements Transaction {
     private final UnmanagedTransaction tx;
-    public InternalTransaction( UnmanagedTransaction tx )
-    {
+
+    public InternalTransaction(UnmanagedTransaction tx) {
         this.tx = tx;
     }
 
     @Override
-    public void commit()
-    {
-        Futures.blockingGet( tx.commitAsync(),
-                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while committing the transaction" ) );
+    public void commit() {
+        Futures.blockingGet(
+                tx.commitAsync(),
+                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while committing the transaction"));
     }
 
     @Override
-    public void rollback()
-    {
-        Futures.blockingGet( tx.rollbackAsync(),
-                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while rolling back the transaction" ) );
+    public void rollback() {
+        Futures.blockingGet(
+                tx.rollbackAsync(),
+                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while rolling back the transaction"));
     }
 
     @Override
-    public void close()
-    {
-        Futures.blockingGet( tx.closeAsync(),
-                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while closing the transaction" ) );
+    public void close() {
+        Futures.blockingGet(
+                tx.closeAsync(),
+                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while closing the transaction"));
     }
 
     @Override
-    public Result run(Query query)
-    {
-        ResultCursor cursor = Futures.blockingGet( tx.runAsync( query ),
-                                                   () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while running query in transaction" ) );
-        return new InternalResult( tx.connection(), cursor );
+    public Result run(Query query) {
+        ResultCursor cursor = Futures.blockingGet(
+                tx.runAsync(query),
+                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while running query in transaction"));
+        return new InternalResult(tx.connection(), cursor);
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return tx.isOpen();
     }
 
-    private void terminateConnectionOnThreadInterrupt( String reason )
-    {
-        tx.connection().terminateAndRelease( reason );
+    private void terminateConnectionOnThreadInterrupt(String reason) {
+        tx.connection().terminateAndRelease(reason);
     }
 }

@@ -18,37 +18,35 @@
  */
 package org.neo4j.driver.internal.util;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
 import java.time.Duration;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
-
-class PreconditionsTest
-{
+class PreconditionsTest {
     @Test
-    void shouldCheckBooleanArgument()
-    {
-        assertDoesNotThrow( () -> checkArgument( true, "" ) );
-        assertDoesNotThrow( () -> checkArgument( !Duration.ofSeconds( 1 ).isZero(), "" ) );
+    void shouldCheckBooleanArgument() {
+        assertDoesNotThrow(() -> checkArgument(true, ""));
+        assertDoesNotThrow(() -> checkArgument(!Duration.ofSeconds(1).isZero(), ""));
 
-        assertThrows( IllegalArgumentException.class, () -> checkArgument( false, "" ) );
-        assertThrows( IllegalArgumentException.class, () -> checkArgument( Period.ofDays( 2 ).isNegative(), "" ) );
+        assertThrows(IllegalArgumentException.class, () -> checkArgument(false, ""));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> checkArgument(Period.ofDays(2).isNegative(), ""));
     }
 
     @Test
-    void shouldCheckArgumentType()
-    {
-        assertDoesNotThrow( () -> checkArgument( "Hello", String.class ) );
-        assertDoesNotThrow( () -> checkArgument( new ArrayList<>(), List.class ) );
+    void shouldCheckArgumentType() {
+        assertDoesNotThrow(() -> checkArgument("Hello", String.class));
+        assertDoesNotThrow(() -> checkArgument(new ArrayList<>(), List.class));
 
-        assertThrows( IllegalArgumentException.class, () -> checkArgument( 42, String.class ) );
-        assertThrows( IllegalArgumentException.class, () -> checkArgument( new ArrayList<>(), Map.class ) );
+        assertThrows(IllegalArgumentException.class, () -> checkArgument(42, String.class));
+        assertThrows(IllegalArgumentException.class, () -> checkArgument(new ArrayList<>(), Map.class));
     }
 }

@@ -18,41 +18,35 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.Metrics;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class MicrometerMetricsProviderTest
-{
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Metrics;
+
+class MicrometerMetricsProviderTest {
     MetricsProvider provider;
 
     @BeforeEach
-    void beforeEach()
-    {
+    void beforeEach() {
         provider = MicrometerMetricsProvider.forGlobalRegistry();
     }
 
     @Test
-    void shouldReturnMicrometerMetricsOnMetrics()
-    {
+    void shouldReturnMicrometerMetricsOnMetrics() {
         // GIVEN & WHEN
         Metrics metrics = provider.metrics();
 
         // THEN
-        assertTrue( metrics instanceof MicrometerMetrics );
+        assertTrue(metrics instanceof MicrometerMetrics);
     }
 
     @Test
-    void shouldReturnMicrometerMetricsOnMetricsListener()
-    {
+    void shouldReturnMicrometerMetricsOnMetricsListener() {
         // GIVEN & WHEN
         MetricsListener listener = provider.metricsListener();
 
         // THEN
-        assertTrue( listener instanceof MicrometerMetrics );
+        assertTrue(listener instanceof MicrometerMetrics);
     }
 }

@@ -18,11 +18,7 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Mono;
-
 import java.util.Map;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -31,60 +27,48 @@ import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.reactive.ReactiveQueryRunner;
 import org.neo4j.driver.reactive.ReactiveResult;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
-interface BaseReactiveQueryRunner extends ReactiveQueryRunner
-{
+interface BaseReactiveQueryRunner extends ReactiveQueryRunner {
     @Override
-    default Publisher<ReactiveResult> run( String queryStr, Value parameters )
-    {
-        try
-        {
-            Query query = new Query( queryStr, parameters );
-            return run( query );
-        }
-        catch ( Throwable t )
-        {
-            return Mono.error( t );
+    default Publisher<ReactiveResult> run(String queryStr, Value parameters) {
+        try {
+            Query query = new Query(queryStr, parameters);
+            return run(query);
+        } catch (Throwable t) {
+            return Mono.error(t);
         }
     }
 
     @Override
-    default Publisher<ReactiveResult> run( String query, Map<String,Object> parameters )
-    {
-        return run( query, parameters( parameters ) );
+    default Publisher<ReactiveResult> run(String query, Map<String, Object> parameters) {
+        return run(query, parameters(parameters));
     }
 
     @Override
-    default Publisher<ReactiveResult> run( String query, Record parameters )
-    {
-        return run( query, parameters( parameters ) );
+    default Publisher<ReactiveResult> run(String query, Record parameters) {
+        return run(query, parameters(parameters));
     }
 
     @Override
-    default Publisher<ReactiveResult> run( String queryStr )
-    {
-        try
-        {
-            Query query = new Query( queryStr );
-            return run( query );
-        }
-        catch ( Throwable t )
-        {
-            return Mono.error( t );
+    default Publisher<ReactiveResult> run(String queryStr) {
+        try {
+            Query query = new Query(queryStr);
+            return run(query);
+        } catch (Throwable t) {
+            return Mono.error(t);
         }
     }
 
-    static Value parameters( Record record )
-    {
-        return record == null ? Values.EmptyMap : parameters( record.asMap() );
+    static Value parameters(Record record) {
+        return record == null ? Values.EmptyMap : parameters(record.asMap());
     }
 
-    static Value parameters( Map<String,Object> map )
-    {
-        if ( map == null || map.isEmpty() )
-        {
+    static Value parameters(Map<String, Object> map) {
+        if (map == null || map.isEmpty()) {
             return Values.EmptyMap;
         }
-        return new MapValue( Extract.mapOfValues( map ) );
+        return new MapValue(Extract.mapOfValues(map));
     }
 }

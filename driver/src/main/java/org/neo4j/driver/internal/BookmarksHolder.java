@@ -20,26 +20,20 @@ package org.neo4j.driver.internal;
 
 import java.util.Collections;
 import java.util.Set;
-
 import org.neo4j.driver.Bookmark;
 
-public interface BookmarksHolder
-{
+public interface BookmarksHolder {
     Set<Bookmark> getBookmarks();
 
-    void setBookmark( Bookmark bookmark );
+    void setBookmark(Bookmark bookmark);
 
-    BookmarksHolder NO_OP = new BookmarksHolder()
-    {
+    BookmarksHolder NO_OP = new BookmarksHolder() {
         @Override
-        public Set<Bookmark> getBookmarks()
-        {
+        public Set<Bookmark> getBookmarks() {
             return Collections.emptySet();
         }
 
         @Override
-        public void setBookmark( Bookmark bookmark )
-        {
-        }
+        public void setBookmark(Bookmark bookmark) {}
     };
 }

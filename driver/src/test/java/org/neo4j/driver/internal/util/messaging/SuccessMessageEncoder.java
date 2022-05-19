@@ -19,19 +19,16 @@
 package org.neo4j.driver.internal.util.messaging;
 
 import java.io.IOException;
-
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.response.SuccessMessage;
 
-public class SuccessMessageEncoder implements MessageEncoder
-{
+public class SuccessMessageEncoder implements MessageEncoder {
     @Override
-    public void encode( Message message, ValuePacker packer ) throws IOException
-    {
+    public void encode(Message message, ValuePacker packer) throws IOException {
         SuccessMessage successMessage = (SuccessMessage) message;
-        packer.packStructHeader( 1, successMessage.signature() );
-        packer.pack( successMessage.metadata() );
+        packer.packStructHeader(1, successMessage.signature());
+        packer.pack(successMessage.metadata());
     }
 }

@@ -20,32 +20,28 @@ package org.neo4j.docs.driver;
 
 // tag::config-max-retry-time-import[]
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+// end::config-max-retry-time-import[]
+
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-// end::config-max-retry-time-import[]
-
-public class ConfigMaxRetryTimeExample implements AutoCloseable
-{
+public class ConfigMaxRetryTimeExample implements AutoCloseable {
     private final Driver driver;
 
     // tag::config-max-retry-time[]
-    public ConfigMaxRetryTimeExample( String uri, String user, String password )
-    {
-        Config config = Config.builder()
-                .withMaxTransactionRetryTime( 15, SECONDS )
-                .build();
+    public ConfigMaxRetryTimeExample(String uri, String user, String password) {
+        Config config =
+                Config.builder().withMaxTransactionRetryTime(15, SECONDS).build();
 
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
     // end::config-max-retry-time[]
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         driver.close();
     }
 }

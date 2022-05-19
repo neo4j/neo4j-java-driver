@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class BackendError implements TestkitResponse
-{
+public class BackendError implements TestkitResponse {
     private final BackendErrorBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "BackendError";
     }
 
     @Getter
     @Builder
-    public static class BackendErrorBody
-    {
+    public static class BackendErrorBody {
         private String msg;
     }
 }

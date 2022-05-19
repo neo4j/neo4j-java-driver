@@ -19,26 +19,18 @@
 package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
-
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 
-public class NoOpResponseHandler implements ResponseHandler
-{
+public class NoOpResponseHandler implements ResponseHandler {
     public static final NoOpResponseHandler INSTANCE = new NoOpResponseHandler();
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
-    {
-    }
+    public void onSuccess(Map<String, Value> metadata) {}
 
     @Override
-    public void onFailure( Throwable error )
-    {
-    }
+    public void onFailure(Throwable error) {}
 
     @Override
-    public void onRecord( Value[] fields )
-    {
-    }
+    public void onRecord(Value[] fields) {}
 }

@@ -20,27 +20,24 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Map;
-
 @Setter
 @Getter
-@JsonTypeInfo( use = JsonTypeInfo.Id.NAME, property = "name" )
-public class AuthorizationToken
-{
-    @JsonProperty( "data" )
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "name")
+public class AuthorizationToken {
+    @JsonProperty("data")
     private Tokens tokens;
 
     @Getter
     @Setter
-    public static class Tokens
-    {
+    public static class Tokens {
         private String scheme;
         private String principal;
         private String credentials;
         private String realm;
-        private Map<String,Object> parameters;
+        private Map<String, Object> parameters;
     }
 }

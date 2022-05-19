@@ -18,60 +18,53 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import org.junit.jupiter.api.Test;
-import org.reactivestreams.Publisher;
-import reactor.test.StepVerifier;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Predicate;
-
-import org.neo4j.driver.internal.util.Futures;
-
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
 import static org.neo4j.driver.internal.reactive.RxUtils.createSingleItemPublisher;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-class RxUtilsTest
-{
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Predicate;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.util.Futures;
+import org.reactivestreams.Publisher;
+import reactor.test.StepVerifier;
+
+class RxUtilsTest {
     @Test
-    void emptyPublisherShouldComplete()
-    {
-        Publisher<Void> emptyPublisher = createEmptyPublisher( Futures::completedWithNull );
-        StepVerifier.create( emptyPublisher ).verifyComplete();
+    void emptyPublisherShouldComplete() {
+        Publisher<Void> emptyPublisher = createEmptyPublisher(Futures::completedWithNull);
+        StepVerifier.create(emptyPublisher).verifyComplete();
     }
 
     @Test
-    void emptyPublisherShouldErrorWhenSupplierErrors()
-    {
-        RuntimeException error = new RuntimeException( "Error" );
-        Publisher<Void> emptyPublisher = createEmptyPublisher( () -> failedFuture( error ) );
+    void emptyPublisherShouldErrorWhenSupplierErrors() {
+        RuntimeException error = new RuntimeException("Error");
+        Publisher<Void> emptyPublisher = createEmptyPublisher(() -> failedFuture(error));
 
-        StepVerifier.create( emptyPublisher ).verifyErrorMatches( Predicate.isEqual( error ) );
+        StepVerifier.create(emptyPublisher).verifyErrorMatches(Predicate.isEqual(error));
     }
 
     @Test
-    void singleItemPublisherShouldCompleteWithValue()
-    {
-        Publisher<String> publisher = createSingleItemPublisher( () -> CompletableFuture.completedFuture( "One" ), () -> mock( Throwable.class ) );
-        StepVerifier.create( publisher ).expectNext( "One" ).verifyComplete();
+    void singleItemPublisherShouldCompleteWithValue() {
+        Publisher<String> publisher =
+                createSingleItemPublisher(() -> CompletableFuture.completedFuture("One"), () -> mock(Throwable.class));
+        StepVerifier.create(publisher).expectNext("One").verifyComplete();
     }
 
     @Test
-    void singleItemPublisherShouldErrorWhenFutureCompletesWithNull()
-    {
-        Throwable error = mock( Throwable.class );
-        Publisher<String> publisher = createSingleItemPublisher( Futures::completedWithNull, () -> error );
+    void singleItemPublisherShouldErrorWhenFutureCompletesWithNull() {
+        Throwable error = mock(Throwable.class);
+        Publisher<String> publisher = createSingleItemPublisher(Futures::completedWithNull, () -> error);
 
-        StepVerifier.create( publisher ).verifyErrorMatches( actualError -> error == actualError );
+        StepVerifier.create(publisher).verifyErrorMatches(actualError -> error == actualError);
     }
 
     @Test
-    void singleItemPublisherShouldErrorWhenSupplierErrors()
-    {
-        RuntimeException error = mock( RuntimeException.class );
-        Publisher<String> publisher = createSingleItemPublisher( () -> failedFuture( error ), () -> mock( Throwable.class ) );
+    void singleItemPublisherShouldErrorWhenSupplierErrors() {
+        RuntimeException error = mock(RuntimeException.class);
+        Publisher<String> publisher = createSingleItemPublisher(() -> failedFuture(error), () -> mock(Throwable.class));
 
-        StepVerifier.create( publisher ).verifyErrorMatches( actualError -> error == actualError );
+        StepVerifier.create(publisher).verifyErrorMatches(actualError -> error == actualError);
     }
 }

@@ -21,25 +21,21 @@ package org.neo4j.driver.internal.util;
 /**
  * Since {@link java.time.Clock} is only available in Java 8, use our own until we drop java 7 support.
  */
-public interface Clock
-{
+public interface Clock {
     /** Current time, in milliseconds. */
     long millis();
 
-    void sleep( long millis ) throws InterruptedException;
+    void sleep(long millis) throws InterruptedException;
 
-    Clock SYSTEM = new Clock()
-    {
+    Clock SYSTEM = new Clock() {
         @Override
-        public long millis()
-        {
+        public long millis() {
             return System.currentTimeMillis();
         }
 
         @Override
-        public void sleep( long millis ) throws InterruptedException
-        {
-            Thread.sleep( millis );
+        public void sleep(long millis) throws InterruptedException {
+            Thread.sleep(millis);
         }
     };
 }

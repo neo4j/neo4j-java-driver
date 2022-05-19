@@ -18,6 +18,11 @@
  */
 package org.neo4j.driver.internal.messaging.common;
 
+import static java.time.ZoneOffset.UTC;
+import static org.neo4j.driver.Values.isoDuration;
+import static org.neo4j.driver.Values.point;
+import static org.neo4j.driver.Values.value;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -32,7 +37,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.InternalNode;
@@ -53,13 +57,7 @@ import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
 
-import static java.time.ZoneOffset.UTC;
-import static org.neo4j.driver.Values.isoDuration;
-import static org.neo4j.driver.Values.point;
-import static org.neo4j.driver.Values.value;
-
-public class CommonValueUnpacker implements ValueUnpacker
-{
+public class CommonValueUnpacker implements ValueUnpacker {
 
     public static final byte DATE = 'D';
     public static final int DATE_STRUCT_SIZE = 1;
@@ -96,200 +94,188 @@ public class CommonValueUnpacker implements ValueUnpacker
 
     protected final PackStream.Unpacker unpacker;
 
-    public CommonValueUnpacker( PackInput input )
-    {
-        this.unpacker = new PackStream.Unpacker( input );
+    public CommonValueUnpacker(PackInput input) {
+        this.unpacker = new PackStream.Unpacker(input);
     }
 
     @Override
-    public long unpackStructHeader() throws IOException
-    {
+    public long unpackStructHeader() throws IOException {
         return unpacker.unpackStructHeader();
     }
 
     @Override
-    public int unpackStructSignature() throws IOException
-    {
+    public int unpackStructSignature() throws IOException {
         return unpacker.unpackStructSignature();
     }
 
     @Override
-    public Map<String,Value> unpackMap() throws IOException
-    {
+    public Map<String, Value> unpackMap() throws IOException {
         int size = (int) unpacker.unpackMapHeader();
-        if ( size == 0 )
-        {
+        if (size == 0) {
             return Collections.emptyMap();
         }
-        Map<String,Value> map = Iterables.newHashMapWithSize( size );
-        for ( int i = 0; i < size; i++ )
-        {
+        Map<String, Value> map = Iterables.newHashMapWithSize(size);
+        for (int i = 0; i < size; i++) {
             String key = unpacker.unpackString();
-            map.put( key, unpack() );
+            map.put(key, unpack());
         }
         return map;
     }
 
     @Override
-    public Value[] unpackArray() throws IOException
-    {
+    public Value[] unpackArray() throws IOException {
         int size = (int) unpacker.unpackListHeader();
         Value[] values = new Value[size];
-        for ( int i = 0; i < size; i++ )
-        {
+        for (int i = 0; i < size; i++) {
             values[i] = unpack();
         }
         return values;
     }
 
-    protected Value unpack() throws IOException
-    {
+    protected Value unpack() throws IOException {
         PackType type = unpacker.peekNextType();
-        switch ( type )
-        {
-        case NULL:
-            return value( unpacker.unpackNull() );
-        case BOOLEAN:
-            return value( unpacker.unpackBoolean() );
-        case INTEGER:
-            return value( unpacker.unpackLong() );
-        case FLOAT:
-            return value( unpacker.unpackDouble() );
-        case BYTES:
-            return value( unpacker.unpackBytes() );
-        case STRING:
-            return value( unpacker.unpackString() );
-        case MAP:
-        {
-            return new MapValue( unpackMap() );
-        }
-        case LIST:
-        {
-            int size = (int) unpacker.unpackListHeader();
-            Value[] vals = new Value[size];
-            for ( int j = 0; j < size; j++ )
-            {
-                vals[j] = unpack();
+        switch (type) {
+            case NULL:
+                return value(unpacker.unpackNull());
+            case BOOLEAN:
+                return value(unpacker.unpackBoolean());
+            case INTEGER:
+                return value(unpacker.unpackLong());
+            case FLOAT:
+                return value(unpacker.unpackDouble());
+            case BYTES:
+                return value(unpacker.unpackBytes());
+            case STRING:
+                return value(unpacker.unpackString());
+            case MAP: {
+                return new MapValue(unpackMap());
             }
-            return new ListValue( vals );
+            case LIST: {
+                int size = (int) unpacker.unpackListHeader();
+                Value[] vals = new Value[size];
+                for (int j = 0; j < size; j++) {
+                    vals[j] = unpack();
+                }
+                return new ListValue(vals);
+            }
+            case STRUCT: {
+                long size = unpacker.unpackStructHeader();
+                byte structType = unpacker.unpackStructSignature();
+                return unpackStruct(size, structType);
+            }
         }
-        case STRUCT:
-        {
-            long size = unpacker.unpackStructHeader();
-            byte structType = unpacker.unpackStructSignature();
-            return unpackStruct( size, structType );
-        }
-        }
-        throw new IOException( "Unknown value type: " + type );
+        throw new IOException("Unknown value type: " + type);
     }
 
-    private Value unpackStruct( long size, byte type ) throws IOException
-    {
-        switch ( type )
-        {
-        case DATE:
-            ensureCorrectStructSize( TypeConstructor.DATE, DATE_STRUCT_SIZE, size );
-            return unpackDate();
-        case TIME:
-            ensureCorrectStructSize( TypeConstructor.TIME, TIME_STRUCT_SIZE, size );
-            return unpackTime();
-        case LOCAL_TIME:
-            ensureCorrectStructSize( TypeConstructor.LOCAL_TIME, LOCAL_TIME_STRUCT_SIZE, size );
-            return unpackLocalTime();
-        case LOCAL_DATE_TIME:
-            ensureCorrectStructSize( TypeConstructor.LOCAL_DATE_TIME, LOCAL_DATE_TIME_STRUCT_SIZE, size );
-            return unpackLocalDateTime();
-        case DATE_TIME_WITH_ZONE_OFFSET:
-            ensureCorrectStructSize( TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size );
-            return unpackDateTimeWithZoneOffset();
-        case DATE_TIME_WITH_ZONE_ID:
-            ensureCorrectStructSize( TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size );
-            return unpackDateTimeWithZoneId();
-        case DURATION:
-            ensureCorrectStructSize( TypeConstructor.DURATION, DURATION_TIME_STRUCT_SIZE, size );
-            return unpackDuration();
-        case POINT_2D_STRUCT_TYPE:
-            ensureCorrectStructSize( TypeConstructor.POINT, POINT_2D_STRUCT_SIZE, size );
-            return unpackPoint2D();
-        case POINT_3D_STRUCT_TYPE:
-            ensureCorrectStructSize( TypeConstructor.POINT, POINT_3D_STRUCT_SIZE, size );
-            return unpackPoint3D();
-        case NODE:
-            ensureCorrectStructSize( TypeConstructor.NODE, getNodeFields(), size );
-            InternalNode adapted = unpackNode();
-            return new NodeValue( adapted );
-        case RELATIONSHIP:
-            ensureCorrectStructSize( TypeConstructor.RELATIONSHIP, getRelationshipFields(), size );
-            return unpackRelationship();
-        case PATH:
-            ensureCorrectStructSize( TypeConstructor.PATH, 3, size );
-            return unpackPath();
-        default:
-            throw new IOException( "Unknown struct type: " + type );
+    private Value unpackStruct(long size, byte type) throws IOException {
+        switch (type) {
+            case DATE:
+                ensureCorrectStructSize(TypeConstructor.DATE, DATE_STRUCT_SIZE, size);
+                return unpackDate();
+            case TIME:
+                ensureCorrectStructSize(TypeConstructor.TIME, TIME_STRUCT_SIZE, size);
+                return unpackTime();
+            case LOCAL_TIME:
+                ensureCorrectStructSize(TypeConstructor.LOCAL_TIME, LOCAL_TIME_STRUCT_SIZE, size);
+                return unpackLocalTime();
+            case LOCAL_DATE_TIME:
+                ensureCorrectStructSize(TypeConstructor.LOCAL_DATE_TIME, LOCAL_DATE_TIME_STRUCT_SIZE, size);
+                return unpackLocalDateTime();
+            case DATE_TIME_WITH_ZONE_OFFSET:
+                ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
+                return unpackDateTimeWithZoneOffset();
+            case DATE_TIME_WITH_ZONE_ID:
+                ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
+                return unpackDateTimeWithZoneId();
+            case DURATION:
+                ensureCorrectStructSize(TypeConstructor.DURATION, DURATION_TIME_STRUCT_SIZE, size);
+                return unpackDuration();
+            case POINT_2D_STRUCT_TYPE:
+                ensureCorrectStructSize(TypeConstructor.POINT, POINT_2D_STRUCT_SIZE, size);
+                return unpackPoint2D();
+            case POINT_3D_STRUCT_TYPE:
+                ensureCorrectStructSize(TypeConstructor.POINT, POINT_3D_STRUCT_SIZE, size);
+                return unpackPoint3D();
+            case NODE:
+                ensureCorrectStructSize(TypeConstructor.NODE, getNodeFields(), size);
+                InternalNode adapted = unpackNode();
+                return new NodeValue(adapted);
+            case RELATIONSHIP:
+                ensureCorrectStructSize(TypeConstructor.RELATIONSHIP, getRelationshipFields(), size);
+                return unpackRelationship();
+            case PATH:
+                ensureCorrectStructSize(TypeConstructor.PATH, 3, size);
+                return unpackPath();
+            default:
+                throw new IOException("Unknown struct type: " + type);
         }
     }
 
-    protected Value unpackRelationship() throws IOException
-    {
+    protected Value unpackRelationship() throws IOException {
         long urn = unpacker.unpackLong();
         long startUrn = unpacker.unpackLong();
         long endUrn = unpacker.unpackLong();
         String relType = unpacker.unpackString();
-        Map<String,Value> props = unpackMap();
+        Map<String, Value> props = unpackMap();
 
-        InternalRelationship adapted = new InternalRelationship( urn, String.valueOf( urn ), startUrn, String.valueOf( startUrn ), endUrn,
-                                                                 String.valueOf( endUrn ), relType, props, true );
-        return new RelationshipValue( adapted );
+        InternalRelationship adapted = new InternalRelationship(
+                urn,
+                String.valueOf(urn),
+                startUrn,
+                String.valueOf(startUrn),
+                endUrn,
+                String.valueOf(endUrn),
+                relType,
+                props,
+                true);
+        return new RelationshipValue(adapted);
     }
 
-    protected InternalNode unpackNode() throws IOException
-    {
+    protected InternalNode unpackNode() throws IOException {
         long urn = unpacker.unpackLong();
 
         int numLabels = (int) unpacker.unpackListHeader();
-        List<String> labels = new ArrayList<>( numLabels );
-        for ( int i = 0; i < numLabels; i++ )
-        {
-            labels.add( unpacker.unpackString() );
+        List<String> labels = new ArrayList<>(numLabels);
+        for (int i = 0; i < numLabels; i++) {
+            labels.add(unpacker.unpackString());
         }
         int numProps = (int) unpacker.unpackMapHeader();
-        Map<String,Value> props = Iterables.newHashMapWithSize( numProps );
-        for ( int j = 0; j < numProps; j++ )
-        {
+        Map<String, Value> props = Iterables.newHashMapWithSize(numProps);
+        for (int j = 0; j < numProps; j++) {
             String key = unpacker.unpackString();
-            props.put( key, unpack() );
+            props.put(key, unpack());
         }
 
-        return new InternalNode( urn, String.valueOf( urn ), labels, props, true );
+        return new InternalNode(urn, String.valueOf(urn), labels, props, true);
     }
 
-    protected Value unpackPath() throws IOException
-    {
+    protected Value unpackPath() throws IOException {
         // List of unique nodes
         Node[] uniqNodes = new Node[(int) unpacker.unpackListHeader()];
-        for ( int i = 0; i < uniqNodes.length; i++ )
-        {
-            ensureCorrectStructSize( TypeConstructor.NODE, getNodeFields(), unpacker.unpackStructHeader() );
-            ensureCorrectStructSignature( "NODE", NODE, unpacker.unpackStructSignature() );
+        for (int i = 0; i < uniqNodes.length; i++) {
+            ensureCorrectStructSize(TypeConstructor.NODE, getNodeFields(), unpacker.unpackStructHeader());
+            ensureCorrectStructSignature("NODE", NODE, unpacker.unpackStructSignature());
             uniqNodes[i] = unpackNode();
         }
 
         // List of unique relationships, without start/end information
         InternalRelationship[] uniqRels = new InternalRelationship[(int) unpacker.unpackListHeader()];
-        for ( int i = 0; i < uniqRels.length; i++ )
-        {
-            ensureCorrectStructSize( TypeConstructor.RELATIONSHIP, 3, unpacker.unpackStructHeader() );
-            ensureCorrectStructSignature( "UNBOUND_RELATIONSHIP", UNBOUND_RELATIONSHIP, unpacker.unpackStructSignature() );
+        for (int i = 0; i < uniqRels.length; i++) {
+            ensureCorrectStructSize(TypeConstructor.RELATIONSHIP, 3, unpacker.unpackStructHeader());
+            ensureCorrectStructSignature(
+                    "UNBOUND_RELATIONSHIP", UNBOUND_RELATIONSHIP, unpacker.unpackStructSignature());
             long id = unpacker.unpackLong();
             String relType = unpacker.unpackString();
-            Map<String,Value> props = unpackMap();
-            uniqRels[i] = new InternalRelationship( id, String.valueOf( id ), -1, String.valueOf( -1 ), -1, String.valueOf( -1 ), relType, props, true );
+            Map<String, Value> props = unpackMap();
+            uniqRels[i] = new InternalRelationship(
+                    id, String.valueOf(id), -1, String.valueOf(-1), -1, String.valueOf(-1), relType, props, true);
         }
 
         // Path sequence
         int length = (int) unpacker.unpackListHeader();
 
-        // Knowing the sequence length, we can create the arrays that will represent the nodes, rels and segments in their "path order"
+        // Knowing the sequence length, we can create the arrays that will represent the nodes, rels and segments in
+        // their "path order"
         Path.Segment[] segments = new Path.Segment[length / 2];
         Node[] nodes = new Node[segments.length + 1];
         Relationship[] rels = new Relationship[segments.length];
@@ -297,136 +283,119 @@ public class CommonValueUnpacker implements ValueUnpacker
         Node prevNode = uniqNodes[0], nextNode; // Start node is always 0, and isn't encoded in the sequence
         nodes[0] = prevNode;
         InternalRelationship rel;
-        for ( int i = 0; i < segments.length; i++ )
-        {
+        for (int i = 0; i < segments.length; i++) {
             int relIdx = (int) unpacker.unpackLong();
             nextNode = uniqNodes[(int) unpacker.unpackLong()];
             // Negative rel index means this rel was traversed "inversed" from its direction
-            if ( relIdx < 0 )
-            {
+            if (relIdx < 0) {
                 rel = uniqRels[(-relIdx) - 1]; // -1 because rel idx are 1-indexed
-                rel.setStartAndEnd( nextNode.id(), String.valueOf( nextNode.id() ), prevNode.id(), String.valueOf( prevNode.id() ) );
-            }
-            else
-            {
+                rel.setStartAndEnd(
+                        nextNode.id(), String.valueOf(nextNode.id()), prevNode.id(), String.valueOf(prevNode.id()));
+            } else {
                 rel = uniqRels[relIdx - 1];
-                rel.setStartAndEnd( prevNode.id(), String.valueOf( prevNode.id() ), nextNode.id(), String.valueOf( nextNode.id() ) );
+                rel.setStartAndEnd(
+                        prevNode.id(), String.valueOf(prevNode.id()), nextNode.id(), String.valueOf(nextNode.id()));
             }
 
             nodes[i + 1] = nextNode;
             rels[i] = rel;
-            segments[i] = new InternalPath.SelfContainedSegment( prevNode, rel, nextNode );
+            segments[i] = new InternalPath.SelfContainedSegment(prevNode, rel, nextNode);
             prevNode = nextNode;
         }
-        return new PathValue( new InternalPath( Arrays.asList( segments ), Arrays.asList( nodes ), Arrays.asList( rels ) ) );
+        return new PathValue(new InternalPath(Arrays.asList(segments), Arrays.asList(nodes), Arrays.asList(rels)));
     }
 
-    protected final void ensureCorrectStructSize( TypeConstructor typeConstructor, int expected, long actual )
-    {
-        if ( expected != actual )
-        {
+    protected final void ensureCorrectStructSize(TypeConstructor typeConstructor, int expected, long actual) {
+        if (expected != actual) {
             String structName = typeConstructor.toString();
-            throw new ClientException( String.format(
+            throw new ClientException(String.format(
                     "Invalid message received, serialized %s structures should have %d fields, "
-                    + "received %s structure has %d fields.", structName, expected, structName, actual ) );
+                            + "received %s structure has %d fields.",
+                    structName, expected, structName, actual));
         }
     }
 
-    protected void ensureCorrectStructSignature( String structName, byte expected, byte actual )
-    {
-        if ( expected != actual )
-        {
-            throw new ClientException( String.format(
+    protected void ensureCorrectStructSignature(String structName, byte expected, byte actual) {
+        if (expected != actual) {
+            throw new ClientException(String.format(
                     "Invalid message received, expected a `%s`, signature 0x%s. Received signature was 0x%s.",
-                    structName, Integer.toHexString( expected ), Integer.toHexString( actual ) ) );
+                    structName, Integer.toHexString(expected), Integer.toHexString(actual)));
         }
     }
 
-    private Value unpackDate() throws IOException
-    {
+    private Value unpackDate() throws IOException {
         long epochDay = unpacker.unpackLong();
-        return value( LocalDate.ofEpochDay( epochDay ) );
+        return value(LocalDate.ofEpochDay(epochDay));
     }
 
-    private Value unpackTime() throws IOException
-    {
+    private Value unpackTime() throws IOException {
         long nanoOfDayLocal = unpacker.unpackLong();
-        int offsetSeconds = Math.toIntExact( unpacker.unpackLong() );
+        int offsetSeconds = Math.toIntExact(unpacker.unpackLong());
 
-        LocalTime localTime = LocalTime.ofNanoOfDay( nanoOfDayLocal );
-        ZoneOffset offset = ZoneOffset.ofTotalSeconds( offsetSeconds );
-        return value( OffsetTime.of( localTime, offset ) );
+        LocalTime localTime = LocalTime.ofNanoOfDay(nanoOfDayLocal);
+        ZoneOffset offset = ZoneOffset.ofTotalSeconds(offsetSeconds);
+        return value(OffsetTime.of(localTime, offset));
     }
 
-    private Value unpackLocalTime() throws IOException
-    {
+    private Value unpackLocalTime() throws IOException {
         long nanoOfDayLocal = unpacker.unpackLong();
-        return value( LocalTime.ofNanoOfDay( nanoOfDayLocal ) );
+        return value(LocalTime.ofNanoOfDay(nanoOfDayLocal));
     }
 
-    private Value unpackLocalDateTime() throws IOException
-    {
+    private Value unpackLocalDateTime() throws IOException {
         long epochSecondUtc = unpacker.unpackLong();
-        int nano = Math.toIntExact( unpacker.unpackLong() );
-        return value( LocalDateTime.ofEpochSecond( epochSecondUtc, nano, UTC ) );
+        int nano = Math.toIntExact(unpacker.unpackLong());
+        return value(LocalDateTime.ofEpochSecond(epochSecondUtc, nano, UTC));
     }
 
-    private Value unpackDateTimeWithZoneOffset() throws IOException
-    {
+    private Value unpackDateTimeWithZoneOffset() throws IOException {
         long epochSecondLocal = unpacker.unpackLong();
-        int nano = Math.toIntExact( unpacker.unpackLong() );
-        int offsetSeconds = Math.toIntExact( unpacker.unpackLong() );
-        return value( newZonedDateTime( epochSecondLocal, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        int nano = Math.toIntExact(unpacker.unpackLong());
+        int offsetSeconds = Math.toIntExact(unpacker.unpackLong());
+        return value(newZonedDateTime(epochSecondLocal, nano, ZoneOffset.ofTotalSeconds(offsetSeconds)));
     }
 
-    private Value unpackDateTimeWithZoneId() throws IOException
-    {
+    private Value unpackDateTimeWithZoneId() throws IOException {
         long epochSecondLocal = unpacker.unpackLong();
-        int nano = Math.toIntExact( unpacker.unpackLong() );
+        int nano = Math.toIntExact(unpacker.unpackLong());
         String zoneIdString = unpacker.unpackString();
-        return value( newZonedDateTime( epochSecondLocal, nano, ZoneId.of( zoneIdString ) ) );
+        return value(newZonedDateTime(epochSecondLocal, nano, ZoneId.of(zoneIdString)));
     }
 
-    private Value unpackDuration() throws IOException
-    {
+    private Value unpackDuration() throws IOException {
         long months = unpacker.unpackLong();
         long days = unpacker.unpackLong();
         long seconds = unpacker.unpackLong();
-        int nanoseconds = Math.toIntExact( unpacker.unpackLong() );
-        return isoDuration( months, days, seconds, nanoseconds );
+        int nanoseconds = Math.toIntExact(unpacker.unpackLong());
+        return isoDuration(months, days, seconds, nanoseconds);
     }
 
-    private Value unpackPoint2D() throws IOException
-    {
-        int srid = Math.toIntExact( unpacker.unpackLong() );
+    private Value unpackPoint2D() throws IOException {
+        int srid = Math.toIntExact(unpacker.unpackLong());
         double x = unpacker.unpackDouble();
         double y = unpacker.unpackDouble();
-        return point( srid, x, y );
+        return point(srid, x, y);
     }
 
-    private Value unpackPoint3D() throws IOException
-    {
-        int srid = Math.toIntExact( unpacker.unpackLong() );
+    private Value unpackPoint3D() throws IOException {
+        int srid = Math.toIntExact(unpacker.unpackLong());
         double x = unpacker.unpackDouble();
         double y = unpacker.unpackDouble();
         double z = unpacker.unpackDouble();
-        return point( srid, x, y, z );
+        return point(srid, x, y, z);
     }
 
-    private static ZonedDateTime newZonedDateTime( long epochSecondLocal, long nano, ZoneId zoneId )
-    {
-        Instant instant = Instant.ofEpochSecond( epochSecondLocal, nano );
-        LocalDateTime localDateTime = LocalDateTime.ofInstant( instant, UTC );
-        return ZonedDateTime.of( localDateTime, zoneId );
+    private static ZonedDateTime newZonedDateTime(long epochSecondLocal, long nano, ZoneId zoneId) {
+        Instant instant = Instant.ofEpochSecond(epochSecondLocal, nano);
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, UTC);
+        return ZonedDateTime.of(localDateTime, zoneId);
     }
 
-    protected int getNodeFields()
-    {
+    protected int getNodeFields() {
         return NODE_FIELDS;
     }
 
-    protected int getRelationshipFields()
-    {
+    protected int getRelationshipFields() {
         return RELATIONSHIP_FIELDS;
     }
 }

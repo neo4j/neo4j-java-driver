@@ -18,40 +18,34 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 
-import static java.util.Objects.requireNonNull;
-
-public class RollbackTxResponseHandler implements ResponseHandler
-{
+public class RollbackTxResponseHandler implements ResponseHandler {
     private final CompletableFuture<Void> rollbackFuture;
 
-    public RollbackTxResponseHandler( CompletableFuture<Void> rollbackFuture )
-    {
-        this.rollbackFuture = requireNonNull( rollbackFuture );
+    public RollbackTxResponseHandler(CompletableFuture<Void> rollbackFuture) {
+        this.rollbackFuture = requireNonNull(rollbackFuture);
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
-    {
-        rollbackFuture.complete( null );
+    public void onSuccess(Map<String, Value> metadata) {
+        rollbackFuture.complete(null);
     }
 
     @Override
-    public void onFailure( Throwable error )
-    {
-        rollbackFuture.completeExceptionally( error );
+    public void onFailure(Throwable error) {
+        rollbackFuture.completeExceptionally(error);
     }
 
     @Override
-    public void onRecord( Value[] fields )
-    {
+    public void onRecord(Value[] fields) {
         throw new UnsupportedOperationException(
-                "Transaction rollback is not expected to receive records: " + Arrays.toString( fields ) );
+                "Transaction rollback is not expected to receive records: " + Arrays.toString(fields));
     }
 }

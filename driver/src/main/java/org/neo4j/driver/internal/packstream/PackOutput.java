@@ -23,23 +23,22 @@ import java.io.IOException;
 /**
  * This is where {@link PackStream} writes its output to.
  */
-public interface PackOutput
-{
+public interface PackOutput {
     /** Produce a single byte */
-    PackOutput writeByte( byte value ) throws IOException;
+    PackOutput writeByte(byte value) throws IOException;
 
     /** Produce binary data */
-    PackOutput writeBytes( byte[] data ) throws IOException;
+    PackOutput writeBytes(byte[] data) throws IOException;
 
     /** Produce a 4-byte signed integer */
-    PackOutput writeShort( short value ) throws IOException;
+    PackOutput writeShort(short value) throws IOException;
 
     /** Produce a 4-byte signed integer */
-    PackOutput writeInt( int value ) throws IOException;
+    PackOutput writeInt(int value) throws IOException;
 
     /** Produce an 8-byte signed integer */
-    PackOutput writeLong( long value ) throws IOException;
+    PackOutput writeLong(long value) throws IOException;
 
     /** Produce an 8-byte IEEE 754 "double format" floating-point number */
-    PackOutput writeDouble( double value ) throws IOException;
+    PackOutput writeDouble(double value) throws IOException;
 }

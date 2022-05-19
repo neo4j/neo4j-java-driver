@@ -21,35 +21,30 @@ package neo4j.org.testkit.backend.messages.requests;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.messages.AbstractResultNext;
-
 import org.neo4j.driver.Record;
 
 @Setter
 @Getter
-public class ResultNext extends AbstractResultNext
-{
+public class ResultNext extends AbstractResultNext {
     private ResultNextBody data;
 
     @Override
-    protected neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponse( Record record )
-    {
+    protected neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponse(Record record) {
         return neo4j.org.testkit.backend.messages.responses.Record.builder()
-                                                                  .data( neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()
-                                                                                                                                       .values( record )
-                                                                                                                                       .build() )
-                                                                  .build();
+                .data(neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()
+                        .values(record)
+                        .build())
+                .build();
     }
 
     @Override
-    protected String getResultId()
-    {
+    protected String getResultId() {
         return data.getResultId();
     }
 
     @Setter
     @Getter
-    public static class ResultNextBody
-    {
+    public static class ResultNextBody {
         private String resultId;
     }
 }

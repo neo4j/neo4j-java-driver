@@ -18,6 +18,15 @@
  */
 package org.neo4j.driver.util;
 
+import static java.time.temporal.ChronoField.DAY_OF_MONTH;
+import static java.time.temporal.ChronoField.HOUR_OF_DAY;
+import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
+import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
+import static java.time.temporal.ChronoField.NANO_OF_SECOND;
+import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
+import static java.time.temporal.ChronoField.YEAR;
+import static java.util.stream.Collectors.toSet;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -32,21 +41,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.types.IsoDuration;
 
-import static java.time.temporal.ChronoField.DAY_OF_MONTH;
-import static java.time.temporal.ChronoField.HOUR_OF_DAY;
-import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
-import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
-import static java.time.temporal.ChronoField.NANO_OF_SECOND;
-import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
-import static java.time.temporal.ChronoField.YEAR;
-import static java.util.stream.Collectors.toSet;
-
-public final class TemporalUtil
-{
+public final class TemporalUtil {
     /**
      * A list of zone ids whose use might lead to unexpected results.
      * <p>
@@ -60,113 +58,110 @@ public final class TemporalUtil
             "Africa/Casablanca",
             "tzid",
             "Asia/Qostanay",
-            "America/Santiago",// Can cause flakyness on windows, see https://stackoverflow.com/questions/37533796/java-calendar-returns-wrong-hour-in-ms-windows-for-america-santiago-zone.
-            "US/Pacific-New", // Appeared out of nothing in windows, does not test reliable "org.neo4j.driver.exceptions.ClientException: Unable to construct ZonedDateTime value: `Unknown time-zone ID: US/Pacific-New`"
+            "America/Santiago", // Can cause flakyness on windows, see
+            // https://stackoverflow.com/questions/37533796/java-calendar-returns-wrong-hour-in-ms-windows-for-america-santiago-zone.
+            "US/Pacific-New", // Appeared out of nothing in windows, does not test reliable
+            // "org.neo4j.driver.exceptions.ClientException: Unable to construct ZonedDateTime value:
+            // `Unknown time-zone ID: US/Pacific-New`"
             "Pacific/Easter",
             "Pacific/Kanton",
             "Asia/Gaza",
-            "Antarctica/Macquarie"
-    );
+            "Antarctica/Macquarie");
 
-    private TemporalUtil()
-    {
+    private TemporalUtil() {}
+
+    public static LocalDate randomLocalDate() {
+        return LocalDate.of(random(YEAR), random(MONTH_OF_YEAR), random(DAY_OF_MONTH));
     }
 
-    public static LocalDate randomLocalDate()
-    {
-        return LocalDate.of( random( YEAR ), random( MONTH_OF_YEAR ), random( DAY_OF_MONTH ) );
-    }
-
-    public static OffsetTime randomOffsetTime()
-    {
+    public static OffsetTime randomOffsetTime() {
         ZoneOffset offset = randomZoneOffset();
-        return OffsetTime.of( random( HOUR_OF_DAY ), random( MINUTE_OF_HOUR ), random( SECOND_OF_MINUTE ), random( NANO_OF_SECOND ), offset );
+        return OffsetTime.of(
+                random(HOUR_OF_DAY), random(MINUTE_OF_HOUR), random(SECOND_OF_MINUTE), random(NANO_OF_SECOND), offset);
     }
 
-    public static LocalTime randomLocalTime()
-    {
-        return LocalTime.of( random( HOUR_OF_DAY ), random( MINUTE_OF_HOUR ), random( SECOND_OF_MINUTE ), random( NANO_OF_SECOND ) );
+    public static LocalTime randomLocalTime() {
+        return LocalTime.of(
+                random(HOUR_OF_DAY), random(MINUTE_OF_HOUR), random(SECOND_OF_MINUTE), random(NANO_OF_SECOND));
     }
 
-    public static LocalDateTime randomLocalDateTime()
-    {
-        return LocalDateTime.of( random( YEAR ), random( MONTH_OF_YEAR ), random( DAY_OF_MONTH ), random( HOUR_OF_DAY ),
-                random( MINUTE_OF_HOUR ), random( SECOND_OF_MINUTE ), random( NANO_OF_SECOND ) );
+    public static LocalDateTime randomLocalDateTime() {
+        return LocalDateTime.of(
+                random(YEAR),
+                random(MONTH_OF_YEAR),
+                random(DAY_OF_MONTH),
+                random(HOUR_OF_DAY),
+                random(MINUTE_OF_HOUR),
+                random(SECOND_OF_MINUTE),
+                random(NANO_OF_SECOND));
     }
 
-    public static OffsetDateTime randomOffsetDateTime()
-    {
+    public static OffsetDateTime randomOffsetDateTime() {
         return randomZonedDateTimeWithOffset().toOffsetDateTime();
     }
 
-    public static ZonedDateTime randomZonedDateTimeWithOffset()
-    {
-        return randomZonedDateTime( randomZoneOffset() );
+    public static ZonedDateTime randomZonedDateTimeWithOffset() {
+        return randomZonedDateTime(randomZoneOffset());
     }
 
-    public static ZonedDateTime randomZonedDateTimeWithZoneId()
-    {
-        return randomZonedDateTime( randomZoneId() );
+    public static ZonedDateTime randomZonedDateTimeWithZoneId() {
+        return randomZonedDateTime(randomZoneId());
     }
 
-    public static IsoDuration randomDuration()
-    {
+    public static IsoDuration randomDuration() {
         int sign = random().nextBoolean() ? 1 : -1; // duration can be negative
-        return new InternalIsoDuration( sign * randomInt(), sign * randomInt(), sign * randomInt(), Math.abs( random( NANO_OF_SECOND ) ) );
+        return new InternalIsoDuration(
+                sign * randomInt(), sign * randomInt(), sign * randomInt(), Math.abs(random(NANO_OF_SECOND)));
     }
 
-    private static ZonedDateTime randomZonedDateTime( ZoneId zoneId )
-    {
-        return ZonedDateTime.of( random( YEAR ), random( MONTH_OF_YEAR ), random( DAY_OF_MONTH ), random( HOUR_OF_DAY ),
-                random( MINUTE_OF_HOUR ), random( SECOND_OF_MINUTE ), random( NANO_OF_SECOND ), zoneId );
+    private static ZonedDateTime randomZonedDateTime(ZoneId zoneId) {
+        return ZonedDateTime.of(
+                random(YEAR),
+                random(MONTH_OF_YEAR),
+                random(DAY_OF_MONTH),
+                random(HOUR_OF_DAY),
+                random(MINUTE_OF_HOUR),
+                random(SECOND_OF_MINUTE),
+                random(NANO_OF_SECOND),
+                zoneId);
     }
 
-    private static ZoneOffset randomZoneOffset()
-    {
+    private static ZoneOffset randomZoneOffset() {
         int min = ZoneOffset.MIN.getTotalSeconds();
         int max = ZoneOffset.MAX.getTotalSeconds();
-        return ZoneOffset.ofTotalSeconds( random().nextInt( min, max ) );
+        return ZoneOffset.ofTotalSeconds(random().nextInt(min, max));
     }
 
-    private static ZoneId randomZoneId()
-    {
-        Set<String> availableZoneIds = ZoneId.getAvailableZoneIds()
-                .stream()
-                .filter( id -> !EXCLUDED_ZONE_IDS.contains( id ) )
-                .collect( toSet() );
+    private static ZoneId randomZoneId() {
+        Set<String> availableZoneIds = ZoneId.getAvailableZoneIds().stream()
+                .filter(id -> !EXCLUDED_ZONE_IDS.contains(id))
+                .collect(toSet());
 
-        int randomIndex = random().nextInt( availableZoneIds.size() );
+        int randomIndex = random().nextInt(availableZoneIds.size());
         int index = 0;
-        for ( String id : availableZoneIds )
-        {
-            if ( index == randomIndex )
-            {
-                return ZoneId.of( id );
-            }
-            else
-            {
+        for (String id : availableZoneIds) {
+            if (index == randomIndex) {
+                return ZoneId.of(id);
+            } else {
                 index++;
             }
         }
-        throw new AssertionError( "Unable to pick random ZoneId from the set of available ids: " + availableZoneIds );
+        throw new AssertionError("Unable to pick random ZoneId from the set of available ids: " + availableZoneIds);
     }
 
-    private static int random( ChronoField field )
-    {
+    private static int random(ChronoField field) {
         ValueRange range = field.range();
         long min = range.getMinimum();
         long max = range.getSmallestMaximum();
-        long value = random().nextLong( min, max );
-        return Math.toIntExact( value );
+        long value = random().nextLong(min, max);
+        return Math.toIntExact(value);
     }
 
-    private static int randomInt()
-    {
-        return random().nextInt( 0, Integer.MAX_VALUE );
+    private static int randomInt() {
+        return random().nextInt(0, Integer.MAX_VALUE);
     }
 
-    private static ThreadLocalRandom random()
-    {
+    private static ThreadLocalRandom random() {
         return ThreadLocalRandom.current();
     }
 }

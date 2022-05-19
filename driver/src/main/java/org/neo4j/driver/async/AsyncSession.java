@@ -24,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -71,8 +70,7 @@ import org.neo4j.driver.Values;
  *
  * @since 4.0
  */
-public interface AsyncSession extends AsyncQueryRunner
-{
+public interface AsyncSession extends AsyncQueryRunner {
     /**
      * Begin a new <em>unmanaged {@linkplain Transaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To
@@ -113,7 +111,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * @param config configuration for the new transaction.
      * @return a {@link CompletionStage completion stage} that represents the asynchronous begin of a transaction.
      */
-    CompletionStage<AsyncTransaction> beginTransactionAsync( TransactionConfig config );
+    CompletionStage<AsyncTransaction> beginTransactionAsync(TransactionConfig config);
 
     /**
      * Execute given unit of asynchronous work in a  {@link AccessMode#READ read} asynchronous transaction.
@@ -138,7 +136,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * @deprecated superseded by {@link #executeReadAsync(AsyncTransactionCallback)}.
      */
     @Deprecated
-    <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work );
+    <T> CompletionStage<T> readTransactionAsync(AsyncTransactionWork<CompletionStage<T>> work);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one
@@ -156,9 +154,8 @@ public interface AsyncSession extends AsyncQueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a completion stage that completes successfully with the result of the unit of work on success or completes exceptionally otherwise.
      */
-    default <T> CompletionStage<T> executeReadAsync( AsyncTransactionCallback<CompletionStage<T>> callback )
-    {
-        return executeReadAsync( callback, TransactionConfig.empty() );
+    default <T> CompletionStage<T> executeReadAsync(AsyncTransactionCallback<CompletionStage<T>> callback) {
+        return executeReadAsync(callback, TransactionConfig.empty());
     }
 
     /**
@@ -186,7 +183,8 @@ public interface AsyncSession extends AsyncQueryRunner
      * @deprecated superseded by {@link #executeReadAsync(AsyncTransactionCallback, TransactionConfig)}.
      */
     @Deprecated
-    <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config );
+    <T> CompletionStage<T> readTransactionAsync(
+            AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one or more statements to be run.
@@ -204,7 +202,8 @@ public interface AsyncSession extends AsyncQueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a completion stage that completes successfully with the result of the unit of work on success or completes exceptionally otherwise.
      */
-    <T> CompletionStage<T> executeReadAsync( AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config );
+    <T> CompletionStage<T> executeReadAsync(
+            AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config);
 
     /**
      * Execute given unit of asynchronous work in a  {@link AccessMode#WRITE write} asynchronous transaction.
@@ -229,7 +228,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * @deprecated superseded by {@link #executeWriteAsync(AsyncTransactionCallback)}.
      */
     @Deprecated
-    <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work );
+    <T> CompletionStage<T> writeTransactionAsync(AsyncTransactionWork<CompletionStage<T>> work);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for
@@ -247,9 +246,8 @@ public interface AsyncSession extends AsyncQueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a completion stage that completes successfully with the result of the unit of work on success or completes exceptionally otherwise.
      */
-    default <T> CompletionStage<T> executeWriteAsync( AsyncTransactionCallback<CompletionStage<T>> callback )
-    {
-        return executeWriteAsync( callback, TransactionConfig.empty() );
+    default <T> CompletionStage<T> executeWriteAsync(AsyncTransactionCallback<CompletionStage<T>> callback) {
+        return executeWriteAsync(callback, TransactionConfig.empty());
     }
 
     /**
@@ -277,7 +275,8 @@ public interface AsyncSession extends AsyncQueryRunner
      * @deprecated superseded by {@link #executeWriteAsync(AsyncTransactionCallback, TransactionConfig)}.
      */
     @Deprecated
-    <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config );
+    <T> CompletionStage<T> writeTransactionAsync(
+            AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.
@@ -295,7 +294,8 @@ public interface AsyncSession extends AsyncQueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a completion stage that completes successfully with the result of the unit of work on success or completes exceptionally otherwise.
      */
-    <T> CompletionStage<T> executeWriteAsync( AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config );
+    <T> CompletionStage<T> executeWriteAsync(
+            AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config);
 
     /**
      * Run a query asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
@@ -309,7 +309,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<ResultCursor> runAsync( String query, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync(String query, TransactionConfig config);
 
     /**
      * Run a query asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
@@ -352,7 +352,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<ResultCursor> runAsync( String query, Map<String,Object> parameters, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync(String query, Map<String, Object> parameters, TransactionConfig config);
 
     /**
      * Run a query asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
@@ -380,7 +380,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<ResultCursor> runAsync( Query query, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config);
 
     /**
      * Return the last bookmark of this session.

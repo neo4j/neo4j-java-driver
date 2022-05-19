@@ -22,22 +22,18 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.Type;
 
-public class DurationValue extends ObjectValueAdapter<IsoDuration>
-{
-    public DurationValue( IsoDuration duration )
-    {
-        super( duration );
+public class DurationValue extends ObjectValueAdapter<IsoDuration> {
+    public DurationValue(IsoDuration duration) {
+        super(duration);
     }
 
     @Override
-    public IsoDuration asIsoDuration()
-    {
+    public IsoDuration asIsoDuration() {
         return asObject();
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.DURATION();
     }
 }

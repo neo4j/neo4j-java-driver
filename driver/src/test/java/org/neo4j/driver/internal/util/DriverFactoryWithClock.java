@@ -20,18 +20,15 @@ package org.neo4j.driver.internal.util;
 
 import org.neo4j.driver.internal.DriverFactory;
 
-public class DriverFactoryWithClock extends DriverFactory
-{
+public class DriverFactoryWithClock extends DriverFactory {
     private final Clock clock;
 
-    public DriverFactoryWithClock( Clock clock )
-    {
+    public DriverFactoryWithClock(Clock clock) {
         this.clock = clock;
     }
 
     @Override
-    protected Clock createClock()
-    {
+    protected Clock createClock() {
         return clock;
     }
 }

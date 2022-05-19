@@ -18,35 +18,30 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.Value;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.neo4j.driver.Values.value;
 
-class ListValueTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+
+class ListValueTest {
     @Test
-    void shouldHaveSensibleToString()
-    {
-        ListValue listValue = listValue( value( 1 ), value( 2 ), value( 3 ) );
-        assertThat( listValue.toString(), equalTo( "[1, 2, 3]" ) );
+    void shouldHaveSensibleToString() {
+        ListValue listValue = listValue(value(1), value(2), value(3));
+        assertThat(listValue.toString(), equalTo("[1, 2, 3]"));
     }
 
     @Test
-    void shouldHaveCorrectType()
-    {
+    void shouldHaveCorrectType() {
 
         ListValue listValue = listValue();
 
-        assertThat(listValue.type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.LIST() ));
+        assertThat(listValue.type(), equalTo(InternalTypeSystem.TYPE_SYSTEM.LIST()));
     }
 
-    private ListValue listValue( Value... values )
-    {
-        return new ListValue( values );
+    private ListValue listValue(Value... values) {
+        return new ListValue(values);
     }
 }

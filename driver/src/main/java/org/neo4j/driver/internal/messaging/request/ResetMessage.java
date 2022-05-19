@@ -34,25 +34,20 @@ import org.neo4j.driver.internal.messaging.Message;
  * This message acts as a barrier after an error, informing the server that we've seen the error
  * message, and that messages that follow this one are safe to execute.
  */
-public class ResetMessage implements Message
-{
+public class ResetMessage implements Message {
     public static final byte SIGNATURE = 0x0F;
 
     public static final ResetMessage RESET = new ResetMessage();
 
-    private ResetMessage()
-    {
-    }
+    private ResetMessage() {}
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "RESET";
     }
 }

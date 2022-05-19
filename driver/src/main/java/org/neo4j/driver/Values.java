@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver;
 
+import static org.neo4j.driver.internal.util.Extract.assertParameter;
+import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
+
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,8 +37,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
-
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.InternalPoint2D;
@@ -55,7 +59,6 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.MapAccessor;
@@ -64,10 +67,6 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.TypeSystem;
-import java.util.function.Function;
-
-import static org.neo4j.driver.internal.util.Extract.assertParameter;
-import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
 /**
  * Utility for wrapping regular Java types and exposing them as {@link Value}
@@ -79,301 +78,325 @@ import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
  *
  * @since 1.0
  */
-public abstract class Values
-{
-    public static final Value EmptyMap = value( Collections.emptyMap() );
+public abstract class Values {
+    public static final Value EmptyMap = value(Collections.emptyMap());
     public static final Value NULL = NullValue.NULL;
 
-    private Values()
-    {
+    private Values() {
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static Value value( Object value )
-    {
-        if ( value == null ) { return NullValue.NULL; }
+    @SuppressWarnings("unchecked")
+    public static Value value(Object value) {
+        if (value == null) {
+            return NullValue.NULL;
+        }
 
-        if ( value instanceof AsValue ) { return ((AsValue) value).asValue(); }
-        if ( value instanceof Boolean ) { return value( (boolean) value ); }
-        if ( value instanceof String ) { return value( (String) value ); }
-        if ( value instanceof Character ) { return value( (char) value ); }
-        if ( value instanceof Long ) { return value( (long) value ); }
-        if ( value instanceof Short ) { return value( (short) value ); }
-        if ( value instanceof Byte ) { return value( (byte) value ); }
-        if ( value instanceof Integer ) { return value( (int) value ); }
-        if ( value instanceof Double ) { return value( (double) value ); }
-        if ( value instanceof Float ) { return value( (float) value ); }
-        if ( value instanceof LocalDate ) { return value( (LocalDate) value ); }
-        if ( value instanceof OffsetTime ) { return value( (OffsetTime) value ); }
-        if ( value instanceof LocalTime ) { return value( (LocalTime) value ); }
-        if ( value instanceof LocalDateTime ) { return value( (LocalDateTime) value ); }
-        if ( value instanceof OffsetDateTime ) { return value( (OffsetDateTime) value ); }
-        if ( value instanceof ZonedDateTime ) { return value( (ZonedDateTime) value ); }
-        if ( value instanceof IsoDuration ) { return value( (IsoDuration) value ); }
-        if ( value instanceof Period ) { return value( (Period) value ); }
-        if ( value instanceof Duration ) { return value( (Duration) value ); }
-        if ( value instanceof Point ) { return value( (Point) value ); }
+        if (value instanceof AsValue) {
+            return ((AsValue) value).asValue();
+        }
+        if (value instanceof Boolean) {
+            return value((boolean) value);
+        }
+        if (value instanceof String) {
+            return value((String) value);
+        }
+        if (value instanceof Character) {
+            return value((char) value);
+        }
+        if (value instanceof Long) {
+            return value((long) value);
+        }
+        if (value instanceof Short) {
+            return value((short) value);
+        }
+        if (value instanceof Byte) {
+            return value((byte) value);
+        }
+        if (value instanceof Integer) {
+            return value((int) value);
+        }
+        if (value instanceof Double) {
+            return value((double) value);
+        }
+        if (value instanceof Float) {
+            return value((float) value);
+        }
+        if (value instanceof LocalDate) {
+            return value((LocalDate) value);
+        }
+        if (value instanceof OffsetTime) {
+            return value((OffsetTime) value);
+        }
+        if (value instanceof LocalTime) {
+            return value((LocalTime) value);
+        }
+        if (value instanceof LocalDateTime) {
+            return value((LocalDateTime) value);
+        }
+        if (value instanceof OffsetDateTime) {
+            return value((OffsetDateTime) value);
+        }
+        if (value instanceof ZonedDateTime) {
+            return value((ZonedDateTime) value);
+        }
+        if (value instanceof IsoDuration) {
+            return value((IsoDuration) value);
+        }
+        if (value instanceof Period) {
+            return value((Period) value);
+        }
+        if (value instanceof Duration) {
+            return value((Duration) value);
+        }
+        if (value instanceof Point) {
+            return value((Point) value);
+        }
 
-        if ( value instanceof List<?> ) { return value( (List<Object>) value ); }
-        if ( value instanceof Map<?,?> ) { return value( (Map<String,Object>) value ); }
-        if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
-        if ( value instanceof Iterator<?> ) { return value( (Iterator<Object>) value ); }
-        if ( value instanceof Stream<?> ) { return value( (Stream<Object>) value ); }
+        if (value instanceof List<?>) {
+            return value((List<Object>) value);
+        }
+        if (value instanceof Map<?, ?>) {
+            return value((Map<String, Object>) value);
+        }
+        if (value instanceof Iterable<?>) {
+            return value((Iterable<Object>) value);
+        }
+        if (value instanceof Iterator<?>) {
+            return value((Iterator<Object>) value);
+        }
+        if (value instanceof Stream<?>) {
+            return value((Stream<Object>) value);
+        }
 
-        if ( value instanceof char[] ) { return value( (char[]) value ); }
-        if ( value instanceof byte[] ) { return value( (byte[]) value ); }
-        if ( value instanceof boolean[] ) { return value( (boolean[]) value ); }
-        if ( value instanceof String[] ) { return value( (String[]) value ); }
-        if ( value instanceof long[] ) { return value( (long[]) value ); }
-        if ( value instanceof int[] ) { return value( (int[]) value ); }
-        if ( value instanceof short[] ) { return value( (short[]) value ); }
-        if ( value instanceof double[] ) { return value( (double[]) value ); }
-        if ( value instanceof float[] ) { return value( (float[]) value ); }
-        if ( value instanceof Value[] ) { return value( (Value[]) value ); }
-        if ( value instanceof Object[] ) { return value( Arrays.asList( (Object[]) value ) ); }
+        if (value instanceof char[]) {
+            return value((char[]) value);
+        }
+        if (value instanceof byte[]) {
+            return value((byte[]) value);
+        }
+        if (value instanceof boolean[]) {
+            return value((boolean[]) value);
+        }
+        if (value instanceof String[]) {
+            return value((String[]) value);
+        }
+        if (value instanceof long[]) {
+            return value((long[]) value);
+        }
+        if (value instanceof int[]) {
+            return value((int[]) value);
+        }
+        if (value instanceof short[]) {
+            return value((short[]) value);
+        }
+        if (value instanceof double[]) {
+            return value((double[]) value);
+        }
+        if (value instanceof float[]) {
+            return value((float[]) value);
+        }
+        if (value instanceof Value[]) {
+            return value((Value[]) value);
+        }
+        if (value instanceof Object[]) {
+            return value(Arrays.asList((Object[]) value));
+        }
 
-        throw new ClientException( "Unable to convert " + value.getClass().getName() + " to Neo4j Value." );
+        throw new ClientException("Unable to convert " + value.getClass().getName() + " to Neo4j Value.");
     }
 
-    public static Value[] values( final Object... input )
-    {
+    public static Value[] values(final Object... input) {
         Value[] values = new Value[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            values[i] = value( input[i] );
+        for (int i = 0; i < input.length; i++) {
+            values[i] = value(input[i]);
         }
         return values;
     }
 
-    public static Value value( Value... input )
-    {
+    public static Value value(Value... input) {
         int size = input.length;
         Value[] values = new Value[size];
-        System.arraycopy( input, 0, values, 0, size );
-        return new ListValue( values );
+        System.arraycopy(input, 0, values, 0, size);
+        return new ListValue(values);
     }
 
-    public static BytesValue value( byte... input )
-    {
-        return new BytesValue( input );
+    public static BytesValue value(byte... input) {
+        return new BytesValue(input);
     }
 
-    public static Value value( String... input )
-    {
+    public static Value value(String... input) {
         StringValue[] values = new StringValue[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            values[i] = new StringValue( input[i] );
+        for (int i = 0; i < input.length; i++) {
+            values[i] = new StringValue(input[i]);
         }
-        return new ListValue( values );
+        return new ListValue(values);
     }
 
-    public static Value value( boolean... input )
-    {
+    public static Value value(boolean... input) {
         Value[] values = new Value[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            values[i] = value( input[i] );
+        for (int i = 0; i < input.length; i++) {
+            values[i] = value(input[i]);
         }
-        return new ListValue( values );
+        return new ListValue(values);
     }
 
-    public static Value value( char... input )
-    {
+    public static Value value(char... input) {
         Value[] values = new Value[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            values[i] = value( input[i] );
+        for (int i = 0; i < input.length; i++) {
+            values[i] = value(input[i]);
         }
-        return new ListValue( values );
+        return new ListValue(values);
     }
 
-    public static Value value( long... input )
-    {
+    public static Value value(long... input) {
         Value[] values = new Value[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            values[i] = value( input[i] );
+        for (int i = 0; i < input.length; i++) {
+            values[i] = value(input[i]);
         }
-        return new ListValue( values );
+        return new ListValue(values);
     }
 
-    public static Value value( short... input )
-    {
+    public static Value value(short... input) {
         Value[] values = new Value[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            values[i] = value( input[i] );
+        for (int i = 0; i < input.length; i++) {
+            values[i] = value(input[i]);
         }
-        return new ListValue( values );
+        return new ListValue(values);
     }
 
-    public static Value value( int... input )
-    {
+    public static Value value(int... input) {
         Value[] values = new Value[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            values[i] = value( input[i] );
+        for (int i = 0; i < input.length; i++) {
+            values[i] = value(input[i]);
         }
-        return new ListValue( values );
+        return new ListValue(values);
     }
 
-    public static Value value( double... input )
-    {
+    public static Value value(double... input) {
         Value[] values = new Value[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            values[i] = value( input[i] );
+        for (int i = 0; i < input.length; i++) {
+            values[i] = value(input[i]);
         }
-        return new ListValue( values );
+        return new ListValue(values);
     }
 
-    public static Value value( float... input )
-    {
+    public static Value value(float... input) {
         Value[] values = new Value[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            values[i] = value( input[i] );
+        for (int i = 0; i < input.length; i++) {
+            values[i] = value(input[i]);
         }
-        return new ListValue( values );
+        return new ListValue(values);
     }
 
-    public static Value value( List<Object> vals )
-    {
+    public static Value value(List<Object> vals) {
         Value[] values = new Value[vals.size()];
         int i = 0;
-        for ( Object val : vals )
-        {
-            values[i++] = value( val );
+        for (Object val : vals) {
+            values[i++] = value(val);
         }
-        return new ListValue( values );
+        return new ListValue(values);
     }
 
-    public static Value value( Iterable<Object> val )
-    {
-        return value( val.iterator() );
+    public static Value value(Iterable<Object> val) {
+        return value(val.iterator());
     }
 
-    public static Value value( Iterator<Object> val )
-    {
+    public static Value value(Iterator<Object> val) {
         List<Value> values = new ArrayList<>();
-        while ( val.hasNext() )
-        {
-            values.add( value( val.next() ) );
+        while (val.hasNext()) {
+            values.add(value(val.next()));
         }
-        return new ListValue( values.toArray( new Value[0] ) );
+        return new ListValue(values.toArray(new Value[0]));
     }
 
-    public static Value value( Stream<Object> stream )
-    {
-        Value[] values = stream.map( Values::value ).toArray( Value[]::new );
-        return new ListValue( values );
+    public static Value value(Stream<Object> stream) {
+        Value[] values = stream.map(Values::value).toArray(Value[]::new);
+        return new ListValue(values);
     }
 
-    public static Value value( final char val )
-    {
-        return new StringValue( String.valueOf( val ) );
+    public static Value value(final char val) {
+        return new StringValue(String.valueOf(val));
     }
 
-    public static Value value( final String val )
-    {
-        return new StringValue( val );
+    public static Value value(final String val) {
+        return new StringValue(val);
     }
 
-    public static Value value( final long val )
-    {
-        return new IntegerValue( val );
+    public static Value value(final long val) {
+        return new IntegerValue(val);
     }
 
-    public static Value value( final int val )
-    {
-        return new IntegerValue( val );
+    public static Value value(final int val) {
+        return new IntegerValue(val);
     }
 
-    public static Value value( final double val )
-    {
-        return new FloatValue( val );
+    public static Value value(final double val) {
+        return new FloatValue(val);
     }
 
-    public static Value value( final boolean val )
-    {
-        return BooleanValue.fromBoolean( val );
+    public static Value value(final boolean val) {
+        return BooleanValue.fromBoolean(val);
     }
 
-    public static Value value( final Map<String,Object> val )
-    {
-        Map<String,Value> asValues = newHashMapWithSize( val.size() );
-        for ( Map.Entry<String,Object> entry : val.entrySet() )
-        {
-            asValues.put( entry.getKey(), value( entry.getValue() ) );
+    public static Value value(final Map<String, Object> val) {
+        Map<String, Value> asValues = newHashMapWithSize(val.size());
+        for (Map.Entry<String, Object> entry : val.entrySet()) {
+            asValues.put(entry.getKey(), value(entry.getValue()));
         }
-        return new MapValue( asValues );
+        return new MapValue(asValues);
     }
 
-    public static Value value( LocalDate localDate )
-    {
-        return new DateValue( localDate );
+    public static Value value(LocalDate localDate) {
+        return new DateValue(localDate);
     }
 
-    public static Value value( OffsetTime offsetTime )
-    {
-        return new TimeValue( offsetTime );
+    public static Value value(OffsetTime offsetTime) {
+        return new TimeValue(offsetTime);
     }
 
-    public static Value value( LocalTime localTime )
-    {
-        return new LocalTimeValue( localTime );
+    public static Value value(LocalTime localTime) {
+        return new LocalTimeValue(localTime);
     }
 
-    public static Value value( LocalDateTime localDateTime )
-    {
-        return new LocalDateTimeValue( localDateTime );
+    public static Value value(LocalDateTime localDateTime) {
+        return new LocalDateTimeValue(localDateTime);
     }
 
-    public static Value value( OffsetDateTime offsetDateTime )
-    {
-        return new DateTimeValue( offsetDateTime.toZonedDateTime() );
+    public static Value value(OffsetDateTime offsetDateTime) {
+        return new DateTimeValue(offsetDateTime.toZonedDateTime());
     }
 
-    public static Value value( ZonedDateTime zonedDateTime )
-    {
-        return new DateTimeValue( zonedDateTime );
+    public static Value value(ZonedDateTime zonedDateTime) {
+        return new DateTimeValue(zonedDateTime);
     }
 
-    public static Value value( Period period )
-    {
-        return value( new InternalIsoDuration( period ) );
+    public static Value value(Period period) {
+        return value(new InternalIsoDuration(period));
     }
 
-    public static Value value( Duration duration )
-    {
-        return value( new InternalIsoDuration( duration ) );
+    public static Value value(Duration duration) {
+        return value(new InternalIsoDuration(duration));
     }
 
-    public static Value isoDuration( long months, long days, long seconds, int nanoseconds )
-    {
-        return value( new InternalIsoDuration( months, days, seconds, nanoseconds ) );
+    public static Value isoDuration(long months, long days, long seconds, int nanoseconds) {
+        return value(new InternalIsoDuration(months, days, seconds, nanoseconds));
     }
 
-    private static Value value( IsoDuration duration )
-    {
-        return new DurationValue( duration );
+    private static Value value(IsoDuration duration) {
+        return new DurationValue(duration);
     }
 
-    public static Value point( int srid, double x, double y )
-    {
-        return value( new InternalPoint2D( srid, x, y ) );
+    public static Value point(int srid, double x, double y) {
+        return value(new InternalPoint2D(srid, x, y));
     }
 
-    private static Value value( Point point )
-    {
-        return new PointValue( point );
+    private static Value value(Point point) {
+        return new PointValue(point);
     }
 
-    public static Value point( int srid, double x, double y, double z )
-    {
-        return value( new InternalPoint3D( srid, x, y, z ) );
+    public static Value point(int srid, double x, double y, double z) {
+        return value(new InternalPoint3D(srid, x, y, z));
     }
 
     /**
@@ -396,23 +419,20 @@ public abstract class Values
      * @return Map containing all parameters specified
      * @see QueryRunner#run(String, Value)
      */
-    public static Value parameters( Object... keysAndValues )
-    {
-        if ( keysAndValues.length % 2 != 0 )
-        {
-            throw new ClientException( "Parameters function requires an even number " +
-                                       "of arguments, " +
-                                       "alternating key and value. Arguments were: " +
-                                       Arrays.toString( keysAndValues ) + "." );
+    public static Value parameters(Object... keysAndValues) {
+        if (keysAndValues.length % 2 != 0) {
+            throw new ClientException("Parameters function requires an even number " + "of arguments, "
+                    + "alternating key and value. Arguments were: "
+                    + Arrays.toString(keysAndValues)
+                    + ".");
         }
-        HashMap<String,Value> map = newHashMapWithSize( keysAndValues.length / 2 );
-        for ( int i = 0; i < keysAndValues.length; i += 2 )
-        {
+        HashMap<String, Value> map = newHashMapWithSize(keysAndValues.length / 2);
+        for (int i = 0; i < keysAndValues.length; i += 2) {
             Object value = keysAndValues[i + 1];
-            assertParameter( value );
-            map.put( keysAndValues[i].toString(), value( value ) );
+            assertParameter(value);
+            map.put(keysAndValues[i].toString(), value(value));
         }
-        return value( map );
+        return value(map);
     }
 
     /**
@@ -420,8 +440,7 @@ public abstract class Values
      *
      * @return a function that returns the value passed into it - the identity function
      */
-    public static Function<Value,Value> ofValue()
-    {
+    public static Function<Value, Value> ofValue() {
         return val -> val;
     }
 
@@ -430,8 +449,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asObject()} of a {@link Value}
      */
-    public static Function<Value,Object> ofObject()
-    {
+    public static Function<Value, Object> ofObject() {
         return Value::asObject;
     }
 
@@ -440,8 +458,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asNumber()} of a {@link Value}
      */
-    public static Function<Value,Number> ofNumber()
-    {
+    public static Function<Value, Number> ofNumber() {
         return Value::asNumber;
     }
 
@@ -454,8 +471,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asString()} of a {@link Value}
      */
-    public static Function<Value,String> ofString()
-    {
+    public static Function<Value, String> ofString() {
         return Value::asString;
     }
 
@@ -472,8 +488,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#toString()} of a {@link Value}
      */
-    public static Function<Value,String> ofToString()
-    {
+    public static Function<Value, String> ofToString() {
         return Value::toString;
     }
 
@@ -482,8 +497,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asInt()} of a {@link Value}
      */
-    public static Function<Value,Integer> ofInteger()
-    {
+    public static Function<Value, Integer> ofInteger() {
         return Value::asInt;
     }
 
@@ -492,8 +506,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asLong()} of a {@link Value}
      */
-    public static Function<Value,Long> ofLong()
-    {
+    public static Function<Value, Long> ofLong() {
         return Value::asLong;
     }
 
@@ -502,8 +515,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asFloat()} of a {@link Value}
      */
-    public static Function<Value,Float> ofFloat()
-    {
+    public static Function<Value, Float> ofFloat() {
         return Value::asFloat;
     }
 
@@ -512,8 +524,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asDouble()} of a {@link Value}
      */
-    public static Function<Value,Double> ofDouble()
-    {
+    public static Function<Value, Double> ofDouble() {
         return Value::asDouble;
     }
 
@@ -522,8 +533,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asBoolean()} of a {@link Value}
      */
-    public static Function<Value,Boolean> ofBoolean()
-    {
+    public static Function<Value, Boolean> ofBoolean() {
         return Value::asBoolean;
     }
 
@@ -532,8 +542,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asMap()} of a {@link Value}
      */
-    public static Function<Value,Map<String,Object>> ofMap()
-    {
+    public static Function<Value, Map<String, Object>> ofMap() {
         return MapAccessor::asMap;
     }
 
@@ -545,9 +554,8 @@ public abstract class Values
      * @param <T> the type of values in the returned map
      * @return a function that returns {@link Value#asMap(Function)} of a {@link Value}
      */
-    public static <T> Function<Value,Map<String,T>> ofMap( final Function<Value,T> valueConverter )
-    {
-        return val -> val.asMap( valueConverter );
+    public static <T> Function<Value, Map<String, T>> ofMap(final Function<Value, T> valueConverter) {
+        return val -> val.asMap(valueConverter);
     }
 
     /**
@@ -555,8 +563,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asEntity()} of a {@link Value}
      */
-    public static Function<Value,Entity> ofEntity()
-    {
+    public static Function<Value, Entity> ofEntity() {
         return Value::asEntity;
     }
 
@@ -565,8 +572,7 @@ public abstract class Values
      *
      * @return a function that returns the id an entity {@link Value}
      */
-    public static Function<Value,Long> ofEntityId()
-    {
+    public static Function<Value, Long> ofEntityId() {
         return val -> val.asEntity().id();
     }
 
@@ -575,8 +581,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asNode()} of a {@link Value}
      */
-    public static Function<Value,Node> ofNode()
-    {
+    public static Function<Value, Node> ofNode() {
         return Value::asNode;
     }
 
@@ -585,8 +590,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asRelationship()} of a {@link Value}
      */
-    public static Function<Value,Relationship> ofRelationship()
-    {
+    public static Function<Value, Relationship> ofRelationship() {
         return Value::asRelationship;
     }
 
@@ -595,8 +599,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asPath()} of a {@link Value}
      */
-    public static Function<Value,Path> ofPath()
-    {
+    public static Function<Value, Path> ofPath() {
         return Value::asPath;
     }
 
@@ -605,8 +608,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asLocalDate()} of a {@link Value}
      */
-    public static Function<Value,LocalDate> ofLocalDate()
-    {
+    public static Function<Value, LocalDate> ofLocalDate() {
         return Value::asLocalDate;
     }
 
@@ -615,8 +617,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asOffsetTime()} of a {@link Value}
      */
-    public static Function<Value,OffsetTime> ofOffsetTime()
-    {
+    public static Function<Value, OffsetTime> ofOffsetTime() {
         return Value::asOffsetTime;
     }
 
@@ -625,8 +626,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asLocalTime()} of a {@link Value}
      */
-    public static Function<Value,LocalTime> ofLocalTime()
-    {
+    public static Function<Value, LocalTime> ofLocalTime() {
         return Value::asLocalTime;
     }
 
@@ -635,8 +635,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asLocalDateTime()} of a {@link Value}
      */
-    public static Function<Value,LocalDateTime> ofLocalDateTime()
-    {
+    public static Function<Value, LocalDateTime> ofLocalDateTime() {
         return Value::asLocalDateTime;
     }
 
@@ -645,8 +644,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asOffsetDateTime()} of a {@link Value}
      */
-    public static Function<Value,OffsetDateTime> ofOffsetDateTime()
-    {
+    public static Function<Value, OffsetDateTime> ofOffsetDateTime() {
         return Value::asOffsetDateTime;
     }
 
@@ -655,8 +653,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asZonedDateTime()} of a {@link Value}
      */
-    public static Function<Value,ZonedDateTime> ofZonedDateTime()
-    {
+    public static Function<Value, ZonedDateTime> ofZonedDateTime() {
         return Value::asZonedDateTime;
     }
 
@@ -665,8 +662,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asIsoDuration()} of a {@link Value}
      */
-    public static Function<Value,IsoDuration> ofIsoDuration()
-    {
+    public static Function<Value, IsoDuration> ofIsoDuration() {
         return Value::asIsoDuration;
     }
 
@@ -675,8 +671,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asPoint()} of a {@link Value}
      */
-    public static Function<Value,Point> ofPoint()
-    {
+    public static Function<Value, Point> ofPoint() {
         return Value::asPoint;
     }
 
@@ -685,8 +680,7 @@ public abstract class Values
      *
      * @return a function that returns {@link Value#asList()} of a {@link Value}
      */
-    public static Function<Value,List<Object>> ofList()
-    {
+    public static Function<Value, List<Object>> ofList() {
         return Value::asList;
     }
 
@@ -697,8 +691,7 @@ public abstract class Values
      * @param <T> the type of values inside the list
      * @return a function that returns {@link Value#asList(Function)} of a {@link Value}
      */
-    public static <T> Function<Value,List<T>> ofList( final Function<Value,T> innerMap )
-    {
-        return value -> value.asList( innerMap );
+    public static <T> Function<Value, List<T>> ofList(final Function<Value, T> innerMap) {
+        return value -> value.asList(innerMap);
     }
 }

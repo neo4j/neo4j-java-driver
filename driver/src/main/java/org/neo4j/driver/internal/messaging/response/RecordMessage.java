@@ -19,58 +19,48 @@
 package org.neo4j.driver.internal.messaging.response;
 
 import java.util.Arrays;
-
-import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.messaging.Message;
 
-public class RecordMessage implements Message
-{
-    public final static byte SIGNATURE = 0x71;
+public class RecordMessage implements Message {
+    public static final byte SIGNATURE = 0x71;
 
     private final Value[] fields;
 
-    public RecordMessage( Value[] fields )
-    {
+    public RecordMessage(Value[] fields) {
         this.fields = fields;
     }
 
-    public Value[] fields()
-    {
+    public Value[] fields() {
         return fields;
     }
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public String toString()
-    {
-        return "RECORD " + Arrays.toString( fields );
+    public String toString() {
+        return "RECORD " + Arrays.toString(fields);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         RecordMessage that = (RecordMessage) o;
 
-        return Arrays.equals( fields, that.fields );
+        return Arrays.equals(fields, that.fields);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Arrays.hashCode( fields );
+    public int hashCode() {
+        return Arrays.hashCode(fields);
     }
 }

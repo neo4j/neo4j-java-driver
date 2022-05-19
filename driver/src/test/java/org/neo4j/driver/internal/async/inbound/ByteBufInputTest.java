@@ -18,9 +18,6 @@
  */
 package org.neo4j.driver.internal.async.inbound;
 
-import io.netty.buffer.ByteBuf;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -28,100 +25,93 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class ByteBufInputTest
-{
+import io.netty.buffer.ByteBuf;
+import org.junit.jupiter.api.Test;
+
+class ByteBufInputTest {
     @Test
-    void shouldThrowWhenStartedWithNullBuf()
-    {
+    void shouldThrowWhenStartedWithNullBuf() {
         ByteBufInput input = new ByteBufInput();
 
-        assertThrows( NullPointerException.class, () -> input.start( null ) );
+        assertThrows(NullPointerException.class, () -> input.start(null));
     }
 
     @Test
-    void shouldThrowWhenStartedTwice()
-    {
+    void shouldThrowWhenStartedTwice() {
         ByteBufInput input = new ByteBufInput();
-        input.start( mock( ByteBuf.class ) );
+        input.start(mock(ByteBuf.class));
 
-        assertThrows( IllegalStateException.class, () -> input.start( mock( ByteBuf.class ) ) );
+        assertThrows(IllegalStateException.class, () -> input.start(mock(ByteBuf.class)));
     }
 
     @Test
-    void shouldDelegateReadByte()
-    {
+    void shouldDelegateReadByte() {
         ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock( ByteBuf.class );
-        when( buf.readByte() ).thenReturn( (byte) 42 );
-        input.start( buf );
+        ByteBuf buf = mock(ByteBuf.class);
+        when(buf.readByte()).thenReturn((byte) 42);
+        input.start(buf);
 
-        assertEquals( (byte) 42, input.readByte() );
+        assertEquals((byte) 42, input.readByte());
     }
 
     @Test
-    void shouldDelegateReadShort()
-    {
+    void shouldDelegateReadShort() {
         ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock( ByteBuf.class );
-        when( buf.readShort() ).thenReturn( (short) -42 );
-        input.start( buf );
+        ByteBuf buf = mock(ByteBuf.class);
+        when(buf.readShort()).thenReturn((short) -42);
+        input.start(buf);
 
-        assertEquals( (short) -42, input.readShort() );
+        assertEquals((short) -42, input.readShort());
     }
 
     @Test
-    void shouldDelegateReadInt()
-    {
+    void shouldDelegateReadInt() {
         ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock( ByteBuf.class );
-        when( buf.readInt() ).thenReturn( 15 );
-        input.start( buf );
+        ByteBuf buf = mock(ByteBuf.class);
+        when(buf.readInt()).thenReturn(15);
+        input.start(buf);
 
-        assertEquals( 15, input.readInt() );
+        assertEquals(15, input.readInt());
     }
 
     @Test
-    void shouldDelegateReadLong()
-    {
+    void shouldDelegateReadLong() {
         ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock( ByteBuf.class );
-        when( buf.readLong() ).thenReturn( 4242L );
-        input.start( buf );
+        ByteBuf buf = mock(ByteBuf.class);
+        when(buf.readLong()).thenReturn(4242L);
+        input.start(buf);
 
-        assertEquals( 4242L, input.readLong() );
+        assertEquals(4242L, input.readLong());
     }
 
     @Test
-    void shouldDelegateReadDouble()
-    {
+    void shouldDelegateReadDouble() {
         ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock( ByteBuf.class );
-        when( buf.readDouble() ).thenReturn( 42.42D );
-        input.start( buf );
+        ByteBuf buf = mock(ByteBuf.class);
+        when(buf.readDouble()).thenReturn(42.42D);
+        input.start(buf);
 
-        assertEquals( 42.42D, input.readDouble(), 0.00001 );
+        assertEquals(42.42D, input.readDouble(), 0.00001);
     }
 
     @Test
-    void shouldDelegateReadBytes()
-    {
+    void shouldDelegateReadBytes() {
         ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock( ByteBuf.class );
-        input.start( buf );
+        ByteBuf buf = mock(ByteBuf.class);
+        input.start(buf);
 
-        input.readBytes( new byte[10], 3, 5 );
+        input.readBytes(new byte[10], 3, 5);
 
-        verify( buf ).readBytes( new byte[10], 3, 5 );
+        verify(buf).readBytes(new byte[10], 3, 5);
     }
 
     @Test
-    void shouldDelegatePeekByte()
-    {
+    void shouldDelegatePeekByte() {
         ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock( ByteBuf.class );
-        when( buf.getByte( anyInt() ) ).thenReturn( (byte) 42 );
-        input.start( buf );
+        ByteBuf buf = mock(ByteBuf.class);
+        when(buf.getByte(anyInt())).thenReturn((byte) 42);
+        input.start(buf);
 
-        assertEquals( (byte) 42, input.peekByte() );
+        assertEquals((byte) 42, input.peekByte());
     }
 }

@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class Transaction implements TestkitResponse
-{
+public class Transaction implements TestkitResponse {
     private final TransactionBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "Transaction";
     }
 
     @Getter
     @Builder
-    public static class TransactionBody
-    {
+    public static class TransactionBody {
         private final String id;
     }
 }

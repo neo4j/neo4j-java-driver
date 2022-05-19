@@ -18,11 +18,14 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import static java.lang.String.format;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsRouteMessage;
+
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
@@ -32,12 +35,7 @@ import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 
-import static java.lang.String.format;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsRouteMessage;
-
-public class RoutingProcedureClusterCompositionProvider implements ClusterCompositionProvider
-{
+public class RoutingProcedureClusterCompositionProvider implements ClusterCompositionProvider {
     private static final String PROTOCOL_ERROR_MESSAGE = "Failed to parse '%s' result received from server due to ";
 
     private final Clock clock;
@@ -45,16 +43,19 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     private final RoutingProcedureRunner multiDatabaseRoutingProcedureRunner;
     private final RoutingProcedureRunner routeMessageRoutingProcedureRunner;
 
-    public RoutingProcedureClusterCompositionProvider( Clock clock, RoutingContext routingContext )
-    {
-        this( clock, new SingleDatabaseRoutingProcedureRunner( routingContext ), new MultiDatabasesRoutingProcedureRunner( routingContext ),
-              new RouteMessageRoutingProcedureRunner( routingContext ) );
+    public RoutingProcedureClusterCompositionProvider(Clock clock, RoutingContext routingContext) {
+        this(
+                clock,
+                new SingleDatabaseRoutingProcedureRunner(routingContext),
+                new MultiDatabasesRoutingProcedureRunner(routingContext),
+                new RouteMessageRoutingProcedureRunner(routingContext));
     }
 
-    RoutingProcedureClusterCompositionProvider( Clock clock, SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner,
-                                                MultiDatabasesRoutingProcedureRunner multiDatabaseRoutingProcedureRunner,
-                                                RouteMessageRoutingProcedureRunner routeMessageRoutingProcedureRunner )
-    {
+    RoutingProcedureClusterCompositionProvider(
+            Clock clock,
+            SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner,
+            MultiDatabasesRoutingProcedureRunner multiDatabaseRoutingProcedureRunner,
+            RouteMessageRoutingProcedureRunner routeMessageRoutingProcedureRunner) {
         this.clock = clock;
         this.singleDatabaseRoutingProcedureRunner = singleDatabaseRoutingProcedureRunner;
         this.multiDatabaseRoutingProcedureRunner = multiDatabaseRoutingProcedureRunner;
@@ -62,35 +63,29 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     }
 
     @Override
-    public CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Set<Bookmark> bookmarks,
-                                                                      String impersonatedUser )
-    {
+    public CompletionStage<ClusterComposition> getClusterComposition(
+            Connection connection, DatabaseName databaseName, Set<Bookmark> bookmarks, String impersonatedUser) {
         RoutingProcedureRunner runner;
 
-        if ( supportsRouteMessage( connection ) )
-        {
+        if (supportsRouteMessage(connection)) {
             runner = routeMessageRoutingProcedureRunner;
-        }
-        else if ( supportsMultiDatabase( connection ) )
-        {
+        } else if (supportsMultiDatabase(connection)) {
             runner = multiDatabaseRoutingProcedureRunner;
-        }
-        else
-        {
+        } else {
             runner = singleDatabaseRoutingProcedureRunner;
         }
 
-        return runner.run( connection, databaseName, bookmarks, impersonatedUser )
-                     .thenApply( this::processRoutingResponse );
+        return runner.run(connection, databaseName, bookmarks, impersonatedUser)
+                .thenApply(this::processRoutingResponse);
     }
 
-    private ClusterComposition processRoutingResponse( RoutingProcedureResponse response )
-    {
-        if ( !response.isSuccess() )
-        {
-            throw new CompletionException( format(
-                    "Failed to run '%s' on server. Please make sure that there is a Neo4j server or cluster up running.",
-                    invokedProcedureString( response ) ), response.error() );
+    private ClusterComposition processRoutingResponse(RoutingProcedureResponse response) {
+        if (!response.isSuccess()) {
+            throw new CompletionException(
+                    format(
+                            "Failed to run '%s' on server. Please make sure that there is a Neo4j server or cluster up running.",
+                            invokedProcedureString(response)),
+                    response.error());
         }
 
         List<Record> records = response.records();
@@ -98,40 +93,35 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
         long now = clock.millis();
 
         // the record size is wrong
-        if ( records.size() != 1 )
-        {
-            throw new ProtocolException( format(
+        if (records.size() != 1) {
+            throw new ProtocolException(format(
                     PROTOCOL_ERROR_MESSAGE + "records received '%s' is too few or too many.",
-                    invokedProcedureString( response ), records.size() ) );
+                    invokedProcedureString(response),
+                    records.size()));
         }
 
         // failed to parse the record
         ClusterComposition cluster;
-        try
-        {
-            cluster = ClusterComposition.parse( records.get( 0 ), now );
-        }
-        catch ( ValueException e )
-        {
-            throw new ProtocolException( format(
-                    PROTOCOL_ERROR_MESSAGE + "unparsable record received.",
-                    invokedProcedureString( response ) ), e );
+        try {
+            cluster = ClusterComposition.parse(records.get(0), now);
+        } catch (ValueException e) {
+            throw new ProtocolException(
+                    format(PROTOCOL_ERROR_MESSAGE + "unparsable record received.", invokedProcedureString(response)),
+                    e);
         }
 
         // the cluster result is not a legal reply
-        if ( !cluster.hasRoutersAndReaders() )
-        {
-            throw new ProtocolException( format(
+        if (!cluster.hasRoutersAndReaders()) {
+            throw new ProtocolException(format(
                     PROTOCOL_ERROR_MESSAGE + "no router or reader found in response.",
-                    invokedProcedureString( response ) ) );
+                    invokedProcedureString(response)));
         }
 
         // all good
         return cluster;
     }
 
-    private static String invokedProcedureString( RoutingProcedureResponse response )
-    {
+    private static String invokedProcedureString(RoutingProcedureResponse response) {
         Query query = response.procedure();
         return query.text() + " " + query.parameters();
     }

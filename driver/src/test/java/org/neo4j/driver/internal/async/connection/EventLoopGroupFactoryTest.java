@@ -18,15 +18,6 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.Future;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.ExecutionException;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -38,55 +29,57 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.Iterables.count;
 import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
 
-class EventLoopGroupFactoryTest
-{
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+class EventLoopGroupFactoryTest {
     private EventLoopGroup eventLoopGroup;
 
     @AfterEach
-    void tearDown()
-    {
-        shutdown( eventLoopGroup );
+    void tearDown() {
+        shutdown(eventLoopGroup);
     }
 
     @Test
-    void shouldReturnCorrectChannelClass()
-    {
-        assertEquals( NioSocketChannel.class, EventLoopGroupFactory.channelClass() );
+    void shouldReturnCorrectChannelClass() {
+        assertEquals(NioSocketChannel.class, EventLoopGroupFactory.channelClass());
     }
 
     @Test
-    void shouldCreateEventLoopGroupWithSpecifiedThreadCount()
-    {
+    void shouldCreateEventLoopGroupWithSpecifiedThreadCount() {
         int threadCount = 2;
-        eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup( threadCount );
-        assertEquals( threadCount, count( eventLoopGroup ) );
-        assertThat( eventLoopGroup, instanceOf( NioEventLoopGroup.class ) );
+        eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup(threadCount);
+        assertEquals(threadCount, count(eventLoopGroup));
+        assertThat(eventLoopGroup, instanceOf(NioEventLoopGroup.class));
     }
 
     @Test
-    void shouldAssertNotInEventLoopThread() throws Exception
-    {
-        eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup( 1 );
+    void shouldAssertNotInEventLoopThread() throws Exception {
+        eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup(1);
 
         // current thread is not an event loop thread, assertion should not throw
         EventLoopGroupFactory.assertNotInEventLoopThread();
 
         // submit assertion to the event loop thread, it should fail there
-        Future<?> assertFuture = eventLoopGroup.submit( EventLoopGroupFactory::assertNotInEventLoopThread );
+        Future<?> assertFuture = eventLoopGroup.submit(EventLoopGroupFactory::assertNotInEventLoopThread);
 
-        ExecutionException error = assertThrows( ExecutionException.class, () -> assertFuture.get( 30, SECONDS ) );
-        assertThat( error.getCause(), is( blockingOperationInEventLoopError() ) );
+        ExecutionException error = assertThrows(ExecutionException.class, () -> assertFuture.get(30, SECONDS));
+        assertThat(error.getCause(), is(blockingOperationInEventLoopError()));
     }
 
     @Test
-    void shouldCheckIfEventLoopThread() throws Exception
-    {
-        eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup( 1 );
+    void shouldCheckIfEventLoopThread() throws Exception {
+        eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup(1);
 
-        Thread eventLoopThread = getThread( eventLoopGroup );
-        assertTrue( EventLoopGroupFactory.isEventLoopThread( eventLoopThread ) );
+        Thread eventLoopThread = getThread(eventLoopGroup);
+        assertTrue(EventLoopGroupFactory.isEventLoopThread(eventLoopThread));
 
-        assertFalse( EventLoopGroupFactory.isEventLoopThread( Thread.currentThread() ) );
+        assertFalse(EventLoopGroupFactory.isEventLoopThread(Thread.currentThread()));
     }
 
     /**
@@ -94,39 +87,29 @@ class EventLoopGroupFactoryTest
      * It's needed because default Netty setup has good performance.
      */
     @Test
-    void shouldUseSameThreadClassAsNioEventLoopGroupDoesByDefault() throws Exception
-    {
-        NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup( 1 );
-        eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup( 1 );
-        try
-        {
-            Thread defaultThread = getThread( nioEventLoopGroup );
-            Thread driverThread = getThread( eventLoopGroup );
+    void shouldUseSameThreadClassAsNioEventLoopGroupDoesByDefault() throws Exception {
+        NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(1);
+        eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup(1);
+        try {
+            Thread defaultThread = getThread(nioEventLoopGroup);
+            Thread driverThread = getThread(eventLoopGroup);
 
-            assertEquals( defaultThread.getClass(), driverThread.getClass().getSuperclass() );
-            assertEquals( defaultThread.getPriority(), driverThread.getPriority() );
-        }
-        finally
-        {
-            shutdown( nioEventLoopGroup );
+            assertEquals(defaultThread.getClass(), driverThread.getClass().getSuperclass());
+            assertEquals(defaultThread.getPriority(), driverThread.getPriority());
+        } finally {
+            shutdown(nioEventLoopGroup);
         }
     }
 
-    private static Thread getThread( EventLoopGroup eventLoopGroup ) throws Exception
-    {
-        return eventLoopGroup.submit( Thread::currentThread ).get( 10, SECONDS );
+    private static Thread getThread(EventLoopGroup eventLoopGroup) throws Exception {
+        return eventLoopGroup.submit(Thread::currentThread).get(10, SECONDS);
     }
 
-    private static void shutdown( EventLoopGroup group )
-    {
-        if ( group != null )
-        {
-            try
-            {
+    private static void shutdown(EventLoopGroup group) {
+        if (group != null) {
+            try {
                 group.shutdownGracefully().syncUninterruptibly();
-            }
-            catch ( Throwable ignore )
-            {
+            } catch (Throwable ignore) {
             }
         }
     }

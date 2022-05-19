@@ -20,10 +20,8 @@ package neo4j.org.testkit.backend.holder;
 
 import org.neo4j.driver.Transaction;
 
-public class TransactionHolder extends AbstractTransactionHolder<SessionHolder,Transaction>
-{
-    public TransactionHolder( SessionHolder sessionHolder, Transaction transaction )
-    {
-        super( sessionHolder, transaction );
+public class TransactionHolder extends AbstractTransactionHolder<SessionHolder, Transaction> {
+    public TransactionHolder(SessionHolder sessionHolder, Transaction transaction) {
+        super(sessionHolder, transaction);
     }
 }

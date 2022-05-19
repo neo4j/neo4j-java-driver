@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.internal.util;
 
+import static java.util.Collections.unmodifiableList;
+import static org.mockito.Mockito.mock;
+
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
@@ -25,7 +28,6 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ProgressivePromise;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.ScheduledFuture;
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -35,218 +37,179 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static java.util.Collections.unmodifiableList;
-import static org.mockito.Mockito.mock;
-
-public class ImmediateSchedulingEventExecutor implements EventExecutor
-{
+public class ImmediateSchedulingEventExecutor implements EventExecutor {
     private final EventExecutor delegate;
     private final List<Long> scheduleDelays;
 
-    public ImmediateSchedulingEventExecutor()
-    {
-        this( GlobalEventExecutor.INSTANCE );
+    public ImmediateSchedulingEventExecutor() {
+        this(GlobalEventExecutor.INSTANCE);
     }
 
-    public ImmediateSchedulingEventExecutor( EventExecutor delegate )
-    {
+    public ImmediateSchedulingEventExecutor(EventExecutor delegate) {
         this.delegate = delegate;
         this.scheduleDelays = new CopyOnWriteArrayList<>();
     }
 
-    public List<Long> scheduleDelays()
-    {
-        return unmodifiableList( scheduleDelays );
+    public List<Long> scheduleDelays() {
+        return unmodifiableList(scheduleDelays);
     }
 
     @Override
-    public EventExecutor next()
-    {
+    public EventExecutor next() {
         return this;
     }
 
     @Override
-    public EventExecutorGroup parent()
-    {
+    public EventExecutorGroup parent() {
         return this;
     }
 
     @Override
-    public boolean inEventLoop()
-    {
+    public boolean inEventLoop() {
         return delegate.inEventLoop();
     }
 
     @Override
-    public boolean inEventLoop( Thread thread )
-    {
-        return delegate.inEventLoop( thread );
+    public boolean inEventLoop(Thread thread) {
+        return delegate.inEventLoop(thread);
     }
 
     @Override
-    public <V> Promise<V> newPromise()
-    {
+    public <V> Promise<V> newPromise() {
         return delegate.newPromise();
     }
 
     @Override
-    public <V> ProgressivePromise<V> newProgressivePromise()
-    {
+    public <V> ProgressivePromise<V> newProgressivePromise() {
         return delegate.newProgressivePromise();
     }
 
     @Override
-    public <V> Future<V> newSucceededFuture( V result )
-    {
-        return delegate.newSucceededFuture( result );
+    public <V> Future<V> newSucceededFuture(V result) {
+        return delegate.newSucceededFuture(result);
     }
 
     @Override
-    public <V> Future<V> newFailedFuture( Throwable cause )
-    {
-        return delegate.newFailedFuture( cause );
+    public <V> Future<V> newFailedFuture(Throwable cause) {
+        return delegate.newFailedFuture(cause);
     }
 
     @Override
-    public boolean isShuttingDown()
-    {
+    public boolean isShuttingDown() {
         return delegate.isShuttingDown();
     }
 
     @Override
-    public Future<?> shutdownGracefully()
-    {
+    public Future<?> shutdownGracefully() {
         return delegate.shutdownGracefully();
     }
 
     @Override
-    public Future<?> shutdownGracefully( long quietPeriod, long timeout, TimeUnit unit )
-    {
-        return delegate.shutdownGracefully( quietPeriod, timeout, unit );
+    public Future<?> shutdownGracefully(long quietPeriod, long timeout, TimeUnit unit) {
+        return delegate.shutdownGracefully(quietPeriod, timeout, unit);
     }
 
     @Override
-    public Future<?> terminationFuture()
-    {
+    public Future<?> terminationFuture() {
         return delegate.terminationFuture();
     }
 
     @Override
     @Deprecated
-    public void shutdown()
-    {
+    public void shutdown() {
         delegate.shutdown();
     }
 
     @Override
     @Deprecated
-    public List<Runnable> shutdownNow()
-    {
+    public List<Runnable> shutdownNow() {
         return delegate.shutdownNow();
     }
 
     @Override
-    public Iterator<EventExecutor> iterator()
-    {
+    public Iterator<EventExecutor> iterator() {
         return delegate.iterator();
     }
 
     @Override
-    public Future<?> submit( Runnable task )
-    {
-        return delegate.submit( task );
+    public Future<?> submit(Runnable task) {
+        return delegate.submit(task);
     }
 
     @Override
-    public <T> Future<T> submit( Runnable task, T result )
-    {
-        return delegate.submit( task, result );
+    public <T> Future<T> submit(Runnable task, T result) {
+        return delegate.submit(task, result);
     }
 
     @Override
-    public <T> Future<T> submit( Callable<T> task )
-    {
-        return delegate.submit( task );
+    public <T> Future<T> submit(Callable<T> task) {
+        return delegate.submit(task);
     }
 
     @Override
-    public ScheduledFuture<?> schedule( Runnable command, long delay, TimeUnit unit )
-    {
-        scheduleDelays.add( unit.toMillis( delay ) );
-        delegate.execute( command );
-        return mock( ScheduledFuture.class );
+    public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
+        scheduleDelays.add(unit.toMillis(delay));
+        delegate.execute(command);
+        return mock(ScheduledFuture.class);
     }
 
     @Override
-    public <V> ScheduledFuture<V> schedule( Callable<V> callable, long delay, TimeUnit unit )
-    {
-        scheduleDelays.add( unit.toMillis( delay ) );
-        delegate.submit( callable );
-        return mock( ScheduledFuture.class );
+    public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
+        scheduleDelays.add(unit.toMillis(delay));
+        delegate.submit(callable);
+        return mock(ScheduledFuture.class);
     }
 
     @Override
-    public ScheduledFuture<?> scheduleAtFixedRate( Runnable command, long initialDelay, long period,
-            TimeUnit unit )
-    {
+    public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ScheduledFuture<?> scheduleWithFixedDelay( Runnable command, long initialDelay, long delay,
-            TimeUnit unit )
-    {
+    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean isShutdown()
-    {
+    public boolean isShutdown() {
         return delegate.isShutdown();
     }
 
     @Override
-    public boolean isTerminated()
-    {
+    public boolean isTerminated() {
         return delegate.isTerminated();
     }
 
     @Override
-    public boolean awaitTermination( long timeout, TimeUnit unit ) throws InterruptedException
-    {
-        return delegate.awaitTermination( timeout, unit );
+    public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+        return delegate.awaitTermination(timeout, unit);
     }
 
     @Override
-    public <T> List<java.util.concurrent.Future<T>> invokeAll( Collection<? extends Callable<T>> tasks )
-            throws InterruptedException
-    {
-        return delegate.invokeAll( tasks );
+    public <T> List<java.util.concurrent.Future<T>> invokeAll(Collection<? extends Callable<T>> tasks)
+            throws InterruptedException {
+        return delegate.invokeAll(tasks);
     }
 
     @Override
-    public <T> List<java.util.concurrent.Future<T>> invokeAll( Collection<? extends Callable<T>> tasks, long timeout,
-            TimeUnit unit ) throws InterruptedException
-    {
-        return delegate.invokeAll( tasks, timeout, unit );
+    public <T> List<java.util.concurrent.Future<T>> invokeAll(
+            Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
+        return delegate.invokeAll(tasks, timeout, unit);
     }
 
     @Override
-    public <T> T invokeAny( Collection<? extends Callable<T>> tasks ) throws InterruptedException, ExecutionException
-    {
-        return delegate.invokeAny( tasks );
+    public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
+        return delegate.invokeAny(tasks);
     }
 
     @Override
-    public <T> T invokeAny( Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit )
-            throws InterruptedException, ExecutionException, TimeoutException
-    {
-        return delegate.invokeAny( tasks, timeout, unit );
+    public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        return delegate.invokeAny(tasks, timeout, unit);
     }
 
     @Override
-    public void execute( Runnable command )
-    {
-        delegate.execute( command );
+    public void execute(Runnable command) {
+        delegate.execute(command);
     }
 }

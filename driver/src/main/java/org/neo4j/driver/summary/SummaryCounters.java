@@ -25,8 +25,7 @@ import org.neo4j.driver.util.Immutable;
  * @since 1.0
  */
 @Immutable
-public interface SummaryCounters
-{
+public interface SummaryCounters {
     /**
      * Whether there were any updates at all, eg. any of the counters are greater than 0.
      * @return true if the query made any updates

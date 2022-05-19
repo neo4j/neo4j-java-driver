@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
 
-public interface MessageEncoder
-{
-    void encode( Message message, ValuePacker packer ) throws IOException;
+public interface MessageEncoder {
+    void encode(Message message, ValuePacker packer) throws IOException;
 }

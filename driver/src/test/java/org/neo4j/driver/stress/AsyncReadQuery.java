@@ -18,8 +18,9 @@
  */
 package org.neo4j.driver.stress;
 
-import java.util.concurrent.CompletionStage;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
@@ -28,42 +29,32 @@ import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Node;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-public class AsyncReadQuery<C extends AbstractContext> extends AbstractAsyncQuery<C>
-{
-    public AsyncReadQuery( Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+public class AsyncReadQuery<C extends AbstractContext> extends AbstractAsyncQuery<C> {
+    public AsyncReadQuery(Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
     }
 
     @Override
-    public CompletionStage<Void> execute( C context )
-    {
-        AsyncSession session = newSession( AccessMode.READ, context );
+    public CompletionStage<Void> execute(C context) {
+        AsyncSession session = newSession(AccessMode.READ, context);
 
-        CompletionStage<ResultSummary> queryFinished = session.runAsync( "MATCH (n) RETURN n LIMIT 1" )
-                .thenCompose( cursor -> cursor.nextAsync()
-                        .thenCompose( record -> processAndGetSummary( record, cursor ) ) );
+        CompletionStage<ResultSummary> queryFinished = session.runAsync("MATCH (n) RETURN n LIMIT 1")
+                .thenCompose(cursor -> cursor.nextAsync().thenCompose(record -> processAndGetSummary(record, cursor)));
 
-        queryFinished.whenComplete( ( summary, error ) ->
-        {
-            if ( summary != null )
-            {
-                context.readCompleted( summary );
+        queryFinished.whenComplete((summary, error) -> {
+            if (summary != null) {
+                context.readCompleted(summary);
             }
             session.closeAsync();
-        } );
+        });
 
-        return queryFinished.thenApply( summary -> null );
+        return queryFinished.thenApply(summary -> null);
     }
 
-    private CompletionStage<ResultSummary> processAndGetSummary( Record record, ResultCursor cursor )
-    {
-        if ( record != null )
-        {
-            Node node = record.get( 0 ).asNode();
-            assertNotNull( node );
+    private CompletionStage<ResultSummary> processAndGetSummary(Record record, ResultCursor cursor) {
+        if (record != null) {
+            Node node = record.get(0).asNode();
+            assertNotNull(node);
         }
         return cursor.consumeAsync();
     }

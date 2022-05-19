@@ -18,84 +18,76 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Scanner;
 import java.util.logging.Level;
-
-import org.neo4j.driver.internal.logging.ConsoleLogging.ConsoleLogger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Logger;
+import org.neo4j.driver.internal.logging.ConsoleLogging.ConsoleLogger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class ConsoleLoggingTest
-{
+class ConsoleLoggingTest {
     private static ByteArrayOutputStream out = new ByteArrayOutputStream();
     private static PrintStream sysErr;
 
     @BeforeAll
-    static void saveSysOut()
-    {
+    static void saveSysOut() {
         sysErr = System.err;
-        System.setErr( new PrintStream( out ) );
+        System.setErr(new PrintStream(out));
     }
 
     @AfterAll
-    static void restoreSysOut()
-    {
-        System.setErr( sysErr );
+    static void restoreSysOut() {
+        System.setErr(sysErr);
     }
 
     @BeforeEach
-    void setup()
-    {
+    void setup() {
         out.reset();
     }
 
     @Test
-    void shouldOnlyRecordMessageOnce()
-    {
+    void shouldOnlyRecordMessageOnce() {
         // Given
-        ConsoleLogging logging = new ConsoleLogging( Level.ALL );
-        Logger catLogger = logging.getLog( "Cat" );
-        Logger dogLogger = logging.getLog( "Dog" );
+        ConsoleLogging logging = new ConsoleLogging(Level.ALL);
+        Logger catLogger = logging.getLog("Cat");
+        Logger dogLogger = logging.getLog("Dog");
 
-        catLogger.debug( "Meow" );
-        dogLogger.debug( "Wow" );
+        catLogger.debug("Meow");
+        dogLogger.debug("Wow");
 
-        Scanner scanner = new Scanner( new ByteArrayInputStream( out.toByteArray() ) );
-        assertTrue( scanner.hasNextLine() );
-        assertTrue( scanner.nextLine().contains( "Meow" ) );
-        assertTrue( scanner.hasNextLine() );
-        assertTrue( scanner.nextLine().contains( "Wow" ) );
-        assertFalse( scanner.hasNextLine() );
+        Scanner scanner = new Scanner(new ByteArrayInputStream(out.toByteArray()));
+        assertTrue(scanner.hasNextLine());
+        assertTrue(scanner.nextLine().contains("Meow"));
+        assertTrue(scanner.hasNextLine());
+        assertTrue(scanner.nextLine().contains("Wow"));
+        assertFalse(scanner.hasNextLine());
     }
 
     @Test
-    void shouldResetLoggerLevel()
-    {
+    void shouldResetLoggerLevel() {
         // Given
         String logName = ConsoleLogging.class.getName();
-        java.util.logging.Logger logger = java.util.logging.Logger.getLogger( logName );
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(logName);
 
         // Then & When
-        new ConsoleLogger( logName, Level.ALL ).debug( "Meow" );
-        assertEquals( Level.ALL, logger.getLevel() );
+        new ConsoleLogger(logName, Level.ALL).debug("Meow");
+        assertEquals(Level.ALL, logger.getLevel());
 
-        new ConsoleLogger( logName, Level.SEVERE ).debug( "Wow" );
-        assertEquals( Level.SEVERE, logger.getLevel() );
+        new ConsoleLogger(logName, Level.SEVERE).debug("Wow");
+        assertEquals(Level.SEVERE, logger.getLevel());
 
-        Scanner scanner = new Scanner( new ByteArrayInputStream( out.toByteArray() ) );
-        assertTrue( scanner.hasNextLine() );
-        assertTrue( scanner.nextLine().contains( "Meow" ) );
-        assertFalse( scanner.hasNextLine() );
+        Scanner scanner = new Scanner(new ByteArrayInputStream(out.toByteArray()));
+        assertTrue(scanner.hasNextLine());
+        assertTrue(scanner.nextLine().contains("Meow"));
+        assertFalse(scanner.hasNextLine());
     }
 }

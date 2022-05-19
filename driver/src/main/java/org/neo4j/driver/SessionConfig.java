@@ -18,25 +18,22 @@
  */
 package org.neo4j.driver;
 
-import org.reactivestreams.Subscription;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.assertValidFetchSize;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
-
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
-
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.assertValidFetchSize;
+import org.reactivestreams.Subscription;
 
 /**
  * The session configurations used to configure a session.
  */
-public class SessionConfig implements Serializable
-{
+public class SessionConfig implements Serializable {
     private static final long serialVersionUID = 5773462156979050657L;
 
     private static final SessionConfig EMPTY = builder().build();
@@ -47,8 +44,7 @@ public class SessionConfig implements Serializable
     private final Long fetchSize;
     private final String impersonatedUser;
 
-    private SessionConfig( Builder builder )
-    {
+    private SessionConfig(Builder builder) {
         this.bookmarks = builder.bookmarks;
         this.defaultAccessMode = builder.defaultAccessMode;
         this.database = builder.database;
@@ -61,8 +57,7 @@ public class SessionConfig implements Serializable
      *
      * @return a session configuration builder.
      */
-    public static Builder builder()
-    {
+    public static Builder builder() {
         return new Builder();
     }
 
@@ -71,8 +66,7 @@ public class SessionConfig implements Serializable
      *
      * @return a session config for a general purpose session.
      */
-    public static SessionConfig defaultConfig()
-    {
+    public static SessionConfig defaultConfig() {
         return EMPTY;
     }
 
@@ -81,9 +75,8 @@ public class SessionConfig implements Serializable
      * @param database the database the session binds to.
      * @return a session config for a session for the specified database.
      */
-    public static SessionConfig forDatabase( String database )
-    {
-        return new Builder().withDatabase( database ).build();
+    public static SessionConfig forDatabase(String database) {
+        return new Builder().withDatabase(database).build();
     }
 
     /**
@@ -94,8 +87,7 @@ public class SessionConfig implements Serializable
      *
      * @return the initial bookmarks.
      */
-    public Iterable<Bookmark> bookmarks()
-    {
+    public Iterable<Bookmark> bookmarks() {
         return bookmarks;
     }
 
@@ -105,8 +97,7 @@ public class SessionConfig implements Serializable
      *
      * @return the access mode.
      */
-    public AccessMode defaultAccessMode()
-    {
+    public AccessMode defaultAccessMode() {
         return defaultAccessMode;
     }
 
@@ -115,9 +106,8 @@ public class SessionConfig implements Serializable
      *
      * @return the nullable database name where the session is going to connect to.
      */
-    public Optional<String> database()
-    {
-        return Optional.ofNullable( database );
+    public Optional<String> database() {
+        return Optional.ofNullable(database);
     }
 
     /**
@@ -125,9 +115,8 @@ public class SessionConfig implements Serializable
      *
      * @return an optional value of fetch size.
      */
-    public Optional<Long> fetchSize()
-    {
-        return Optional.ofNullable( fetchSize );
+    public Optional<Long> fetchSize() {
+        return Optional.ofNullable(fetchSize);
     }
 
     /**
@@ -135,54 +124,49 @@ public class SessionConfig implements Serializable
      *
      * @return an optional value of the impersonated user.
      */
-    public Optional<String> impersonatedUser()
-    {
-        return Optional.ofNullable( impersonatedUser );
+    public Optional<String> impersonatedUser() {
+        return Optional.ofNullable(impersonatedUser);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         SessionConfig that = (SessionConfig) o;
-        return Objects.equals( bookmarks, that.bookmarks ) && defaultAccessMode == that.defaultAccessMode && Objects.equals( database, that.database )
-               && Objects.equals( fetchSize, that.fetchSize ) && Objects.equals( impersonatedUser, that.impersonatedUser );
+        return Objects.equals(bookmarks, that.bookmarks)
+                && defaultAccessMode == that.defaultAccessMode
+                && Objects.equals(database, that.database)
+                && Objects.equals(fetchSize, that.fetchSize)
+                && Objects.equals(impersonatedUser, that.impersonatedUser);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( bookmarks, defaultAccessMode, database, impersonatedUser );
+    public int hashCode() {
+        return Objects.hash(bookmarks, defaultAccessMode, database, impersonatedUser);
     }
 
     @Override
-    public String toString()
-    {
-        return "SessionParameters{" + "bookmarks=" + bookmarks + ", defaultAccessMode=" + defaultAccessMode + ", database='" + database + '\'' +
-               ", fetchSize=" + fetchSize + "impersonatedUser=" + impersonatedUser + '}';
+    public String toString() {
+        return "SessionParameters{" + "bookmarks=" + bookmarks + ", defaultAccessMode=" + defaultAccessMode
+                + ", database='" + database + '\'' + ", fetchSize=" + fetchSize + "impersonatedUser=" + impersonatedUser
+                + '}';
     }
 
     /**
      * Builder used to configure {@link SessionConfig} which will be used to create a session.
      */
-    public static class Builder
-    {
+    public static class Builder {
         private Long fetchSize = null;
         private Iterable<Bookmark> bookmarks = null;
         private AccessMode defaultAccessMode = AccessMode.WRITE;
         private String database = null;
         private String impersonatedUser = null;
 
-        private Builder()
-        {
-        }
+        private Builder() {}
 
         /**
          * Set the initial bookmarks to be used in a session.
@@ -195,15 +179,11 @@ public class SessionConfig implements Serializable
          *                  or are unknown.
          * @return this builder.
          */
-        public Builder withBookmarks( Bookmark... bookmarks )
-        {
-            if ( bookmarks == null )
-            {
+        public Builder withBookmarks(Bookmark... bookmarks) {
+            if (bookmarks == null) {
                 this.bookmarks = null;
-            }
-            else
-            {
-                this.bookmarks = Arrays.asList( bookmarks );
+            } else {
+                this.bookmarks = Arrays.asList(bookmarks);
             }
             return this;
         }
@@ -227,8 +207,7 @@ public class SessionConfig implements Serializable
          *                  bookmarks do not exist or are unknown.
          * @return this builder
          */
-        public Builder withBookmarks( Iterable<Bookmark> bookmarks )
-        {
+        public Builder withBookmarks(Iterable<Bookmark> bookmarks) {
             this.bookmarks = bookmarks;
             return this;
         }
@@ -241,8 +220,7 @@ public class SessionConfig implements Serializable
          * @param mode access mode.
          * @return this builder.
          */
-        public Builder withDefaultAccessMode( AccessMode mode )
-        {
+        public Builder withDefaultAccessMode(AccessMode mode) {
             this.defaultAccessMode = mode;
             return this;
         }
@@ -259,13 +237,11 @@ public class SessionConfig implements Serializable
          * @param database the database the session going to connect to. Provided value should not be {@code null}.
          * @return this builder.
          */
-        public Builder withDatabase( String database )
-        {
-            requireNonNull( database, "Database name should not be null." );
-            if ( database.isEmpty() )
-            {
+        public Builder withDatabase(String database) {
+            requireNonNull(database, "Database name should not be null.");
+            if (database.isEmpty()) {
                 // Empty string is an illegal database name. Fail fast on client.
-                throw new IllegalArgumentException( String.format( "Illegal database name '%s'.", database ) );
+                throw new IllegalArgumentException(String.format("Illegal database name '%s'.", database));
             }
             this.database = database;
             return this;
@@ -286,9 +262,8 @@ public class SessionConfig implements Serializable
          * @param size the default record fetch size when pulling records in batches using Bolt V4.
          * @return this builder
          */
-        public Builder withFetchSize( long size )
-        {
-            this.fetchSize = assertValidFetchSize( size );
+        public Builder withFetchSize(long size) {
+            this.fetchSize = assertValidFetchSize(size);
             return this;
         }
 
@@ -305,21 +280,18 @@ public class SessionConfig implements Serializable
          * @param impersonatedUser the user to impersonate. Provided value should not be {@code null}.
          * @return this builder
          */
-        public Builder withImpersonatedUser( String impersonatedUser )
-        {
-            requireNonNull( impersonatedUser, "Impersonated user should not be null." );
-            if ( impersonatedUser.isEmpty() )
-            {
+        public Builder withImpersonatedUser(String impersonatedUser) {
+            requireNonNull(impersonatedUser, "Impersonated user should not be null.");
+            if (impersonatedUser.isEmpty()) {
                 // Empty string is an illegal user. Fail fast on client.
-                throw new IllegalArgumentException( String.format( "Illegal impersonated user '%s'.", impersonatedUser ) );
+                throw new IllegalArgumentException(String.format("Illegal impersonated user '%s'.", impersonatedUser));
             }
             this.impersonatedUser = impersonatedUser;
             return this;
         }
 
-        public SessionConfig build()
-        {
-            return new SessionConfig( this );
+        public SessionConfig build() {
+            return new SessionConfig(this);
         }
     }
 }

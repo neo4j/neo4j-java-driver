@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.internal.DatabaseNameUtil.DEFAULT_DATABASE_NAME;
 import static org.neo4j.driver.internal.DatabaseNameUtil.SYSTEM_DATABASE_NAME;
@@ -27,27 +25,26 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
 
-class DatabaseNameUtilTest
-{
+import org.junit.jupiter.api.Test;
+
+class DatabaseNameUtilTest {
     @Test
-    void shouldDatabaseNameBeEqual() throws Throwable
-    {
-        assertEquals( defaultDatabase(), defaultDatabase() );
-        assertEquals( defaultDatabase(), database( null ) );
-        assertEquals( defaultDatabase(), database( DEFAULT_DATABASE_NAME ) );
+    void shouldDatabaseNameBeEqual() throws Throwable {
+        assertEquals(defaultDatabase(), defaultDatabase());
+        assertEquals(defaultDatabase(), database(null));
+        assertEquals(defaultDatabase(), database(DEFAULT_DATABASE_NAME));
 
-        assertEquals( systemDatabase(), systemDatabase() );
-        assertEquals( systemDatabase(), database( "system" ) );
-        assertEquals( systemDatabase(), database( SYSTEM_DATABASE_NAME ) );
+        assertEquals(systemDatabase(), systemDatabase());
+        assertEquals(systemDatabase(), database("system"));
+        assertEquals(systemDatabase(), database(SYSTEM_DATABASE_NAME));
 
-        assertEquals( database( "hello" ), database( "hello" ) );
+        assertEquals(database("hello"), database("hello"));
     }
 
     @Test
-    void shouldReturnDatabaseNameInDescription() throws Throwable
-    {
-        assertEquals( "<default database>", defaultDatabase().description() );
-        assertEquals( "system", systemDatabase().description() );
-        assertEquals( "hello", database( "hello" ).description() );
+    void shouldReturnDatabaseNameInDescription() throws Throwable {
+        assertEquals("<default database>", defaultDatabase().description());
+        assertEquals("system", systemDatabase().description());
+        assertEquals("hello", database("hello").description());
     }
 }

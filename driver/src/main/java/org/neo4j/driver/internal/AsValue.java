@@ -20,8 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.neo4j.driver.Value;
 
-public interface AsValue
-{
+public interface AsValue {
     /**
      * Retrieve a value representation of this
      *

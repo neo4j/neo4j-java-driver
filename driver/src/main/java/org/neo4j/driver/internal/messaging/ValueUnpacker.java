@@ -20,16 +20,14 @@ package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.neo4j.driver.Value;
 
-public interface ValueUnpacker
-{
+public interface ValueUnpacker {
     long unpackStructHeader() throws IOException;
 
     int unpackStructSignature() throws IOException;
 
-    Map<String,Value> unpackMap() throws IOException;
+    Map<String, Value> unpackMap() throws IOException;
 
     Value[] unpackArray() throws IOException;
 }

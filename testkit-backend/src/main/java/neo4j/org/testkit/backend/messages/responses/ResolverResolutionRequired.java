@@ -23,26 +23,22 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class ResolverResolutionRequired implements TestkitCallback
-{
+public class ResolverResolutionRequired implements TestkitCallback {
     private ResolverResolutionRequiredBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "ResolverResolutionRequired";
     }
 
     @Override
-    public String getCallbackId()
-    {
+    public String getCallbackId() {
         return data.getId();
     }
 
     @Getter
     @Builder
-    public static class ResolverResolutionRequiredBody
-    {
+    public static class ResolverResolutionRequiredBody {
         private String id;
 
         private String address;

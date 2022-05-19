@@ -18,26 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Stream;
-
-import org.neo4j.driver.Query;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.async.ConnectionContext;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.value.IntegerValue;
-import org.neo4j.driver.summary.ResultSummary;
-
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -58,115 +38,119 @@ import static org.neo4j.driver.util.TestUtil.verifyCommitTx;
 import static org.neo4j.driver.util.TestUtil.verifyRollbackTx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 
-class InternalTransactionTest
-{
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Transaction;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.async.ConnectionContext;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.value.IntegerValue;
+import org.neo4j.driver.summary.ResultSummary;
+
+class InternalTransactionTest {
     private Connection connection;
     private Transaction tx;
 
     @BeforeEach
-    void setUp()
-    {
-        connection = connectionMock( BoltProtocolV4.INSTANCE );
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
-                .thenReturn( completedFuture( connection ) );
-        InternalSession session = new InternalSession( newSession( connectionProvider ) );
+    void setUp() {
+        connection = connectionMock(BoltProtocolV4.INSTANCE);
+        ConnectionProvider connectionProvider = mock(ConnectionProvider.class);
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
+                .thenReturn(completedFuture(connection));
+        InternalSession session = new InternalSession(newSession(connectionProvider));
         tx = session.beginTransaction();
     }
 
-    private static Stream<Function<Transaction, Result>> allSessionRunMethods()
-    {
+    private static Stream<Function<Transaction, Result>> allSessionRunMethods() {
         return Stream.of(
-                tx -> tx.run( "RETURN 1" ),
-                tx -> tx.run( "RETURN $x", parameters( "x", 1 ) ),
-                tx -> tx.run( "RETURN $x", singletonMap( "x", 1 ) ),
-                tx -> tx.run( "RETURN $x",
-                        new InternalRecord( singletonList( "x" ), new Value[]{new IntegerValue( 1 )} ) ),
-                tx -> tx.run( new Query( "RETURN $x", parameters( "x", 1 ) ) )
-        );
+                tx -> tx.run("RETURN 1"),
+                tx -> tx.run("RETURN $x", parameters("x", 1)),
+                tx -> tx.run("RETURN $x", singletonMap("x", 1)),
+                tx -> tx.run("RETURN $x", new InternalRecord(singletonList("x"), new Value[] {new IntegerValue(1)})),
+                tx -> tx.run(new Query("RETURN $x", parameters("x", 1))));
     }
 
     @ParameterizedTest
-    @MethodSource( "allSessionRunMethods" )
-    void shouldFlushOnRun( Function<Transaction,Result> runReturnOne )
-    {
-        setupSuccessfulRunAndPull( connection );
+    @MethodSource("allSessionRunMethods")
+    void shouldFlushOnRun(Function<Transaction, Result> runReturnOne) {
+        setupSuccessfulRunAndPull(connection);
 
-        Result result = runReturnOne.apply( tx );
+        Result result = runReturnOne.apply(tx);
         ResultSummary summary = result.consume();
 
-        verifyRunAndPull( connection, summary.query().text() );
+        verifyRunAndPull(connection, summary.query().text());
     }
 
     @Test
-    void shouldCommit()
-    {
+    void shouldCommit() {
         tx.commit();
         tx.close();
 
-        verifyCommitTx( connection );
-        assertFalse( tx.isOpen() );
+        verifyCommitTx(connection);
+        assertFalse(tx.isOpen());
     }
 
     @Test
-    void shouldRollbackByDefault()
-    {
+    void shouldRollbackByDefault() {
         tx.close();
 
-        verifyRollbackTx( connection );
-        assertFalse( tx.isOpen() );
+        verifyRollbackTx(connection);
+        assertFalse(tx.isOpen());
     }
 
     @Test
-    void shouldRollback()
-    {
+    void shouldRollback() {
         tx.rollback();
         tx.close();
 
-        verifyRollbackTx( connection );
-        assertFalse( tx.isOpen() );
+        verifyRollbackTx(connection);
+        assertFalse(tx.isOpen());
     }
 
     @Test
-    void shouldRollbackWhenFailedRun()
-    {
-        setupFailingRun( connection, new RuntimeException( "Bang!" ) );
-        assertThrows( RuntimeException.class, () -> tx.run( "RETURN 1" ) );
+    void shouldRollbackWhenFailedRun() {
+        setupFailingRun(connection, new RuntimeException("Bang!"));
+        assertThrows(RuntimeException.class, () -> tx.run("RETURN 1"));
 
         tx.close();
 
-        verify( connection ).release();
-        assertFalse( tx.isOpen() );
+        verify(connection).release();
+        assertFalse(tx.isOpen());
     }
 
     @Test
-    void shouldReleaseConnectionWhenFailedToCommit()
-    {
-        setupFailingCommit( connection );
-        assertThrows( Exception.class, () -> tx.commit() );
+    void shouldReleaseConnectionWhenFailedToCommit() {
+        setupFailingCommit(connection);
+        assertThrows(Exception.class, () -> tx.commit());
 
-        verify( connection ).release();
-        assertFalse( tx.isOpen() );
+        verify(connection).release();
+        assertFalse(tx.isOpen());
     }
 
     @Test
-    void shouldReleaseConnectionWhenFailedToRollback()
-    {
-        shouldReleaseConnectionWhenFailedToAction( Transaction::rollback );
+    void shouldReleaseConnectionWhenFailedToRollback() {
+        shouldReleaseConnectionWhenFailedToAction(Transaction::rollback);
     }
 
     @Test
-    void shouldReleaseConnectionWhenFailedToClose()
-    {
-        shouldReleaseConnectionWhenFailedToAction( Transaction::close );
+    void shouldReleaseConnectionWhenFailedToClose() {
+        shouldReleaseConnectionWhenFailedToAction(Transaction::close);
     }
 
-    private void shouldReleaseConnectionWhenFailedToAction( Consumer<Transaction> txAction )
-    {
-        setupFailingRollback( connection );
-        assertThrows( Exception.class, () -> txAction.accept( tx ) );
+    private void shouldReleaseConnectionWhenFailedToAction(Consumer<Transaction> txAction) {
+        setupFailingRollback(connection);
+        assertThrows(Exception.class, () -> txAction.accept(tx));
 
-        verify( connection ).release();
-        assertFalse( tx.isOpen() );
+        verify(connection).release();
+        assertFalse(tx.isOpen());
     }
 }

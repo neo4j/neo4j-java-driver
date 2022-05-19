@@ -18,6 +18,10 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.FrontendError;
@@ -31,14 +35,6 @@ import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.responses.RetryableDone;
 import neo4j.org.testkit.backend.messages.responses.RetryableTry;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Mono;
-
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.AsyncSession;
@@ -46,136 +42,120 @@ import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.reactive.ReactiveTransactionCallback;
 import org.neo4j.driver.reactive.RxTransactionWork;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 @Setter
 @Getter
-public class SessionWriteTransaction implements TestkitRequest
-{
+public class SessionWriteTransaction implements TestkitRequest {
     private SessionWriteTransactionBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        SessionHolder sessionHolder = testkitState.getSessionHolder( data.getSessionId() );
+    public TestkitResponse process(TestkitState testkitState) {
+        SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         Session session = sessionHolder.getSession();
-        session.writeTransaction( handle( testkitState, sessionHolder ) );
+        session.writeTransaction(handle(testkitState, sessionHolder));
         return retryableDone();
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncSessionHolder( data.getSessionId() )
-                           .thenCompose( sessionHolder ->
-                                         {
-                                             AsyncSession session = sessionHolder.getSession();
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState
+                .getAsyncSessionHolder(data.getSessionId())
+                .thenCompose(sessionHolder -> {
+                    AsyncSession session = sessionHolder.getSession();
 
-                                             AsyncTransactionWork<CompletionStage<Void>> workWrapper =
-                                                     tx ->
-                                                     {
-                                                         String txId =
-                                                                 testkitState.addAsyncTransactionHolder( new AsyncTransactionHolder( sessionHolder, tx ) );
-                                                         testkitState.getResponseWriter().accept( retryableTry( txId ) );
-                                                         CompletableFuture<Void> tryResult = new CompletableFuture<>();
-                                                         sessionHolder.setTxWorkFuture( tryResult );
-                                                         return tryResult;
-                                                     };
+                    AsyncTransactionWork<CompletionStage<Void>> workWrapper = tx -> {
+                        String txId =
+                                testkitState.addAsyncTransactionHolder(new AsyncTransactionHolder(sessionHolder, tx));
+                        testkitState.getResponseWriter().accept(retryableTry(txId));
+                        CompletableFuture<Void> tryResult = new CompletableFuture<>();
+                        sessionHolder.setTxWorkFuture(tryResult);
+                        return tryResult;
+                    };
 
-                                             return session.writeTransactionAsync( workWrapper );
-                                         } )
-                           .thenApply( nothing -> retryableDone() );
+                    return session.writeTransactionAsync(workWrapper);
+                })
+                .thenApply(nothing -> retryableDone());
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return testkitState.getRxSessionHolder( data.getSessionId() )
-                           .flatMap( sessionHolder ->
-                                     {
-                                         RxTransactionWork<Publisher<Void>> workWrapper = tx ->
-                                         {
-                                             String txId = testkitState.addRxTransactionHolder( new RxTransactionHolder( sessionHolder, tx ) );
-                                             testkitState.getResponseWriter().accept( retryableTry( txId ) );
-                                             CompletableFuture<Void> tryResult = new CompletableFuture<>();
-                                             sessionHolder.setTxWorkFuture( tryResult );
-                                             return Mono.fromCompletionStage( tryResult );
-                                         };
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return testkitState
+                .getRxSessionHolder(data.getSessionId())
+                .flatMap(sessionHolder -> {
+                    RxTransactionWork<Publisher<Void>> workWrapper = tx -> {
+                        String txId = testkitState.addRxTransactionHolder(new RxTransactionHolder(sessionHolder, tx));
+                        testkitState.getResponseWriter().accept(retryableTry(txId));
+                        CompletableFuture<Void> tryResult = new CompletableFuture<>();
+                        sessionHolder.setTxWorkFuture(tryResult);
+                        return Mono.fromCompletionStage(tryResult);
+                    };
 
-                                         return Mono.fromDirect( sessionHolder.getSession().writeTransaction( workWrapper ) );
-                                     } )
-                           .then( Mono.just( retryableDone() ) );
+                    return Mono.fromDirect(sessionHolder.getSession().writeTransaction(workWrapper));
+                })
+                .then(Mono.just(retryableDone()));
     }
 
     @Override
-    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
-    {
-        return testkitState.getReactiveSessionHolder( data.getSessionId() )
-                           .flatMap( sessionHolder ->
-                                     {
-                                         ReactiveTransactionCallback<Publisher<Void>> workWrapper = tx ->
-                                         {
-                                             String txId = testkitState.addReactiveTransactionHolder(
-                                                     new ReactiveTransactionHolder( sessionHolder, new ReactiveTransactionContextAdapter( tx ) ) );
-                                             testkitState.getResponseWriter().accept( retryableTry( txId ) );
-                                             CompletableFuture<Void> tryResult = new CompletableFuture<>();
-                                             sessionHolder.setTxWorkFuture( tryResult );
-                                             return Mono.fromCompletionStage( tryResult );
-                                         };
+    public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
+        return testkitState
+                .getReactiveSessionHolder(data.getSessionId())
+                .flatMap(sessionHolder -> {
+                    ReactiveTransactionCallback<Publisher<Void>> workWrapper = tx -> {
+                        String txId = testkitState.addReactiveTransactionHolder(new ReactiveTransactionHolder(
+                                sessionHolder, new ReactiveTransactionContextAdapter(tx)));
+                        testkitState.getResponseWriter().accept(retryableTry(txId));
+                        CompletableFuture<Void> tryResult = new CompletableFuture<>();
+                        sessionHolder.setTxWorkFuture(tryResult);
+                        return Mono.fromCompletionStage(tryResult);
+                    };
 
-                                         return Mono.fromDirect( sessionHolder.getSession().executeWrite( workWrapper ) );
-                                     } )
-                           .then( Mono.just( retryableDone() ) );
+                    return Mono.fromDirect(sessionHolder.getSession().executeWrite(workWrapper));
+                })
+                .then(Mono.just(retryableDone()));
     }
 
-    private TransactionWork<Void> handle( TestkitState testkitState, SessionHolder sessionHolder )
-    {
-        return tx ->
-        {
-            String txId = testkitState.addTransactionHolder( new TransactionHolder( sessionHolder, tx ) );
-            testkitState.getResponseWriter().accept( retryableTry( txId ) );
+    private TransactionWork<Void> handle(TestkitState testkitState, SessionHolder sessionHolder) {
+        return tx -> {
+            String txId = testkitState.addTransactionHolder(new TransactionHolder(sessionHolder, tx));
+            testkitState.getResponseWriter().accept(retryableTry(txId));
             CompletableFuture<Void> txWorkFuture = new CompletableFuture<>();
-            sessionHolder.setTxWorkFuture( txWorkFuture );
+            sessionHolder.setTxWorkFuture(txWorkFuture);
 
-            try
-            {
+            try {
                 return txWorkFuture.get();
-            }
-            catch ( Throwable throwable )
-            {
+            } catch (Throwable throwable) {
                 Throwable workThrowable = throwable;
-                if ( workThrowable instanceof ExecutionException )
-                {
+                if (workThrowable instanceof ExecutionException) {
                     workThrowable = workThrowable.getCause();
                 }
-                if ( workThrowable instanceof Neo4jException )
-                {
+                if (workThrowable instanceof Neo4jException) {
                     throw (Neo4jException) workThrowable;
                 }
-                if ( workThrowable instanceof FrontendError )
-                {
+                if (workThrowable instanceof FrontendError) {
                     throw (FrontendError) workThrowable;
                 }
-                throw new RuntimeException( "Unexpected exception occurred in transaction work function", workThrowable );
+                throw new RuntimeException("Unexpected exception occurred in transaction work function", workThrowable);
             }
         };
     }
 
-    private RetryableTry retryableTry( String txId )
-    {
-        return RetryableTry.builder().data( RetryableTry.RetryableTryBody.builder().id( txId ).build() ).build();
+    private RetryableTry retryableTry(String txId) {
+        return RetryableTry.builder()
+                .data(RetryableTry.RetryableTryBody.builder().id(txId).build())
+                .build();
     }
 
-    private RetryableDone retryableDone()
-    {
+    private RetryableDone retryableDone() {
         return RetryableDone.builder().build();
     }
 
     @Setter
     @Getter
-    public static class SessionWriteTransactionBody
-    {
+    public static class SessionWriteTransactionBody {
         private String sessionId;
-        private Map<String,String> txMeta;
+        private Map<String, String> txMeta;
         private String timeout;
     }
 }

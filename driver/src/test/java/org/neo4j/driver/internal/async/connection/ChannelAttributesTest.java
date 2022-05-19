@@ -18,13 +18,6 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,170 +43,156 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setSe
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTerminationReason;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.terminationReason;
 
-class ChannelAttributesTest
-{
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
+
+class ChannelAttributesTest {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
     @Test
-    void shouldSetAndGetConnectionId()
-    {
-        setConnectionId( channel, "bolt-42" );
-        assertEquals( "bolt-42", connectionId( channel ) );
+    void shouldSetAndGetConnectionId() {
+        setConnectionId(channel, "bolt-42");
+        assertEquals("bolt-42", connectionId(channel));
     }
 
     @Test
-    void shouldFailToSetConnectionIdTwice()
-    {
-        setConnectionId( channel, "bolt-42" );
+    void shouldFailToSetConnectionIdTwice() {
+        setConnectionId(channel, "bolt-42");
 
-        assertThrows( IllegalStateException.class, () -> setConnectionId( channel, "bolt-4242" ) );
+        assertThrows(IllegalStateException.class, () -> setConnectionId(channel, "bolt-4242"));
     }
 
     @Test
-    void shouldSetAndGetProtocolVersion()
-    {
-        setProtocolVersion( channel, new BoltProtocolVersion( 42, 0 ) );
-        assertEquals( new BoltProtocolVersion( 42, 0 ), protocolVersion( channel ) );
+    void shouldSetAndGetProtocolVersion() {
+        setProtocolVersion(channel, new BoltProtocolVersion(42, 0));
+        assertEquals(new BoltProtocolVersion(42, 0), protocolVersion(channel));
     }
 
     @Test
-    void shouldFailToSetProtocolVersionTwice()
-    {
-        setProtocolVersion( channel, new BoltProtocolVersion( 42, 0 ) );
+    void shouldFailToSetProtocolVersionTwice() {
+        setProtocolVersion(channel, new BoltProtocolVersion(42, 0));
 
-        assertThrows( IllegalStateException.class, () -> setProtocolVersion( channel, new BoltProtocolVersion( 43, 0 ) ) );
+        assertThrows(IllegalStateException.class, () -> setProtocolVersion(channel, new BoltProtocolVersion(43, 0)));
     }
 
     @Test
-    void shouldSetAndGetServerAgent()
-    {
+    void shouldSetAndGetServerAgent() {
         String agent = "Neo4j/4.2.5";
-        setServerAgent( channel, agent );
-        assertEquals( agent, serverAgent( channel ) );
+        setServerAgent(channel, agent);
+        assertEquals(agent, serverAgent(channel));
     }
 
     @Test
-    void shouldFailToSetServerAgentTwice()
-    {
+    void shouldFailToSetServerAgentTwice() {
         String agent = "Neo4j/4.2.5";
-        setServerAgent( channel, agent );
+        setServerAgent(channel, agent);
 
-        assertThrows( IllegalStateException.class, () -> setServerAgent( channel, agent ) );
+        assertThrows(IllegalStateException.class, () -> setServerAgent(channel, agent));
     }
 
     @Test
-    void shouldSetAndGetAddress()
-    {
-        BoltServerAddress address = new BoltServerAddress( "local:42" );
-        setServerAddress( channel, address );
-        assertEquals( address, serverAddress( channel ) );
+    void shouldSetAndGetAddress() {
+        BoltServerAddress address = new BoltServerAddress("local:42");
+        setServerAddress(channel, address);
+        assertEquals(address, serverAddress(channel));
     }
 
     @Test
-    void shouldFailToSetAddressTwice()
-    {
-        setServerAddress( channel, BoltServerAddress.LOCAL_DEFAULT );
+    void shouldFailToSetAddressTwice() {
+        setServerAddress(channel, BoltServerAddress.LOCAL_DEFAULT);
 
-        assertThrows( IllegalStateException.class, () -> setServerAddress( channel, BoltServerAddress.LOCAL_DEFAULT ) );
+        assertThrows(IllegalStateException.class, () -> setServerAddress(channel, BoltServerAddress.LOCAL_DEFAULT));
     }
 
     @Test
-    void shouldSetAndGetCreationTimestamp()
-    {
-        setCreationTimestamp( channel, 42L );
-        assertEquals( 42L, creationTimestamp( channel ) );
+    void shouldSetAndGetCreationTimestamp() {
+        setCreationTimestamp(channel, 42L);
+        assertEquals(42L, creationTimestamp(channel));
     }
 
     @Test
-    void shouldFailToSetCreationTimestampTwice()
-    {
-        setCreationTimestamp( channel, 42L );
+    void shouldFailToSetCreationTimestampTwice() {
+        setCreationTimestamp(channel, 42L);
 
-        assertThrows( IllegalStateException.class, () -> setCreationTimestamp( channel, 42L ) );
+        assertThrows(IllegalStateException.class, () -> setCreationTimestamp(channel, 42L));
     }
 
     @Test
-    void shouldSetAndGetLastUsedTimestamp()
-    {
-        assertNull( lastUsedTimestamp( channel ) );
-        setLastUsedTimestamp( channel, 42L );
-        assertEquals( 42L, lastUsedTimestamp( channel ).longValue() );
+    void shouldSetAndGetLastUsedTimestamp() {
+        assertNull(lastUsedTimestamp(channel));
+        setLastUsedTimestamp(channel, 42L);
+        assertEquals(42L, lastUsedTimestamp(channel).longValue());
     }
 
     @Test
-    void shouldAllowSettingLastUsedTimestampMultipleTimes()
-    {
-        setLastUsedTimestamp( channel, 42L );
-        setLastUsedTimestamp( channel, 4242L );
-        setLastUsedTimestamp( channel, 424242L );
+    void shouldAllowSettingLastUsedTimestampMultipleTimes() {
+        setLastUsedTimestamp(channel, 42L);
+        setLastUsedTimestamp(channel, 4242L);
+        setLastUsedTimestamp(channel, 424242L);
 
-        assertEquals( 424242L, lastUsedTimestamp( channel ).longValue() );
+        assertEquals(424242L, lastUsedTimestamp(channel).longValue());
     }
 
     @Test
-    void shouldSetAndGetMessageDispatcher()
-    {
-        InboundMessageDispatcher dispatcher = mock( InboundMessageDispatcher.class );
-        setMessageDispatcher( channel, dispatcher );
-        assertEquals( dispatcher, messageDispatcher( channel ) );
+    void shouldSetAndGetMessageDispatcher() {
+        InboundMessageDispatcher dispatcher = mock(InboundMessageDispatcher.class);
+        setMessageDispatcher(channel, dispatcher);
+        assertEquals(dispatcher, messageDispatcher(channel));
     }
 
     @Test
-    void shouldFailToSetMessageDispatcherTwice()
-    {
-        setMessageDispatcher( channel, mock( InboundMessageDispatcher.class ) );
+    void shouldFailToSetMessageDispatcherTwice() {
+        setMessageDispatcher(channel, mock(InboundMessageDispatcher.class));
 
-        assertThrows( IllegalStateException.class, () -> setMessageDispatcher( channel, mock( InboundMessageDispatcher.class ) ) );
+        assertThrows(
+                IllegalStateException.class, () -> setMessageDispatcher(channel, mock(InboundMessageDispatcher.class)));
     }
 
     @Test
-    void shouldSetAndGetTerminationReason()
-    {
+    void shouldSetAndGetTerminationReason() {
         String reason = "This channel has been terminated";
-        setTerminationReason( channel, reason );
-        assertEquals( reason, terminationReason( channel ) );
+        setTerminationReason(channel, reason);
+        assertEquals(reason, terminationReason(channel));
     }
 
     @Test
-    void shouldFailToSetTerminationReasonTwice()
-    {
-        setTerminationReason( channel, "Reason 1" );
+    void shouldFailToSetTerminationReasonTwice() {
+        setTerminationReason(channel, "Reason 1");
 
-        assertThrows( IllegalStateException.class, () -> setTerminationReason( channel, "Reason 2" ) );
+        assertThrows(IllegalStateException.class, () -> setTerminationReason(channel, "Reason 2"));
     }
 
     @Test
-    void shouldSetAndGetAuthorizationStateListener()
-    {
-        AuthorizationStateListener listener = mock( AuthorizationStateListener.class );
-        setAuthorizationStateListener( channel, listener );
-        assertEquals( listener, authorizationStateListener( channel ) );
+    void shouldSetAndGetAuthorizationStateListener() {
+        AuthorizationStateListener listener = mock(AuthorizationStateListener.class);
+        setAuthorizationStateListener(channel, listener);
+        assertEquals(listener, authorizationStateListener(channel));
     }
 
     @Test
-    void shouldAllowOverridingAuthorizationStateListener()
-    {
-        AuthorizationStateListener listener = mock( AuthorizationStateListener.class );
-        setAuthorizationStateListener( channel, listener );
-        assertEquals( listener, authorizationStateListener( channel ) );
-        AuthorizationStateListener newListener = mock( AuthorizationStateListener.class );
-        setAuthorizationStateListener( channel, newListener );
-        assertEquals( newListener, authorizationStateListener( channel ) );
+    void shouldAllowOverridingAuthorizationStateListener() {
+        AuthorizationStateListener listener = mock(AuthorizationStateListener.class);
+        setAuthorizationStateListener(channel, listener);
+        assertEquals(listener, authorizationStateListener(channel));
+        AuthorizationStateListener newListener = mock(AuthorizationStateListener.class);
+        setAuthorizationStateListener(channel, newListener);
+        assertEquals(newListener, authorizationStateListener(channel));
     }
 
     @Test
-    void shouldSetAndGetConnectionReadTimeout()
-    {
+    void shouldSetAndGetConnectionReadTimeout() {
         long timeout = 15L;
-        setConnectionReadTimeout( channel, timeout );
-        assertEquals( timeout, connectionReadTimeout( channel ).orElse( null ) );
+        setConnectionReadTimeout(channel, timeout);
+        assertEquals(timeout, connectionReadTimeout(channel).orElse(null));
     }
 
     @Test
-    void shouldFailToSetConnectionReadTimeoutTwice()
-    {
+    void shouldFailToSetConnectionReadTimeoutTwice() {
         long timeout = 15L;
-        setConnectionReadTimeout( channel, timeout );
-        assertThrows( IllegalStateException.class, () -> setConnectionReadTimeout( channel, timeout ) );
+        setConnectionReadTimeout(channel, timeout);
+        assertThrows(IllegalStateException.class, () -> setConnectionReadTimeout(channel, timeout));
     }
 }

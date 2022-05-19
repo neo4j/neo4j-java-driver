@@ -18,41 +18,35 @@
  */
 package org.neo4j.docs.driver;
 
-import java.io.File;
+import static org.neo4j.driver.Config.TrustStrategy.trustCustomCertificateSignedBy;
 
+import java.io.File;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 
-import static org.neo4j.driver.Config.TrustStrategy.trustCustomCertificateSignedBy;
-
-public class HostnameVerificationExample implements AutoCloseable
-{
+public class HostnameVerificationExample implements AutoCloseable {
     private final Driver driver;
 
-    HostnameVerificationExample( String uri, String user, String password, File certFile )
-    {
+    HostnameVerificationExample(String uri, String user, String password, File certFile) {
         Config config = Config.builder()
                 .withEncryption()
-                .withTrustStrategy( trustCustomCertificateSignedBy( certFile ).withHostnameVerification() )
+                .withTrustStrategy(trustCustomCertificateSignedBy(certFile).withHostnameVerification())
                 .build();
 
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
 
-    public boolean canConnect()
-    {
-        try ( Session session = driver.session() )
-        {
-            return session.run( "RETURN 42" ).single().get( 0 ).asInt() == 42;
+    public boolean canConnect() {
+        try (Session session = driver.session()) {
+            return session.run("RETURN 42").single().get(0).asInt() == 42;
         }
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         driver.close();
     }
 }

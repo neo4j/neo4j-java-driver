@@ -19,68 +19,57 @@
 package org.neo4j.driver.internal.summary;
 
 import java.util.Objects;
-
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.summary.ServerInfo;
 
-public class InternalServerInfo implements ServerInfo
-{
+public class InternalServerInfo implements ServerInfo {
     private static final String TO_STRING_FMT = "%s{address='%s'}";
 
     private final String agent;
     private final String address;
     private final String protocolVersion;
 
-    public InternalServerInfo( String agent, BoltServerAddress address, BoltProtocolVersion protocolVersion )
-    {
+    public InternalServerInfo(String agent, BoltServerAddress address, BoltProtocolVersion protocolVersion) {
         this.agent = agent;
         this.address = address.toString();
         this.protocolVersion = protocolVersion.toString();
     }
 
     @Override
-    public String agent()
-    {
+    public String agent() {
         return agent;
     }
 
     @Override
-    public String address()
-    {
+    public String address() {
         return address;
     }
 
     @Override
-    public String protocolVersion()
-    {
+    public String protocolVersion() {
         return protocolVersion;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         InternalServerInfo that = (InternalServerInfo) o;
-        return Objects.equals( address, that.address );
+        return Objects.equals(address, that.address);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( address );
+    public int hashCode() {
+        return Objects.hash(address);
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( TO_STRING_FMT, this.getClass().getSimpleName(), address );
+    public String toString() {
+        return String.format(TO_STRING_FMT, this.getClass().getSimpleName(), address);
     }
 }

@@ -18,10 +18,8 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-public interface ListenerEvent<T>
-{
+public interface ListenerEvent<T> {
     void start();
 
     T getSample();
 }
-

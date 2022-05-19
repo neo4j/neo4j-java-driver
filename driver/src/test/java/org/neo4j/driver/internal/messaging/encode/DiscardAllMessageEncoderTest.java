@@ -18,32 +18,28 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
-import org.neo4j.driver.internal.messaging.request.DiscardMessage;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class DiscardAllMessageEncoderTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.messaging.ValuePacker;
+import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
+import org.neo4j.driver.internal.messaging.request.DiscardMessage;
+
+class DiscardAllMessageEncoderTest {
     private final DiscardAllMessageEncoder encoder = new DiscardAllMessageEncoder();
-    private final ValuePacker packer = mock( ValuePacker.class );
+    private final ValuePacker packer = mock(ValuePacker.class);
 
     @Test
-    void shouldEncodeDiscardAllMessage() throws Exception
-    {
-        encoder.encode( DiscardAllMessage.DISCARD_ALL, packer );
+    void shouldEncodeDiscardAllMessage() throws Exception {
+        encoder.encode(DiscardAllMessage.DISCARD_ALL, packer);
 
-        verify( packer ).packStructHeader( 0, DiscardAllMessage.SIGNATURE );
+        verify(packer).packStructHeader(0, DiscardAllMessage.SIGNATURE);
     }
 
     @Test
-    void shouldFailToEncodeWrongMessage()
-    {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( new DiscardMessage( 100, 200 ), packer ) );
+    void shouldFailToEncodeWrongMessage() {
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(new DiscardMessage(100, 200), packer));
     }
 }

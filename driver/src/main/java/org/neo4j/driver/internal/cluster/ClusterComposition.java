@@ -22,15 +22,14 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BoltServerAddress;
 
-public final class ClusterComposition
-{
+public final class ClusterComposition {
     private static final long MAX_TTL = Long.MAX_VALUE / 1000L;
-    private static final Function<Value,BoltServerAddress> OF_BoltServerAddress = value -> new BoltServerAddress( value.asString() );
+    private static final Function<Value, BoltServerAddress> OF_BoltServerAddress =
+            value -> new BoltServerAddress(value.asString());
 
     private final Set<BoltServerAddress> readers;
     private final Set<BoltServerAddress> writers;
@@ -38,8 +37,7 @@ public final class ClusterComposition
     private final long expirationTimestamp;
     private final String databaseName;
 
-    private ClusterComposition( long expirationTimestamp, String databaseName )
-    {
+    private ClusterComposition(long expirationTimestamp, String databaseName) {
         this.readers = new LinkedHashSet<>();
         this.writers = new LinkedHashSet<>();
         this.routers = new LinkedHashSet<>();
@@ -55,126 +53,106 @@ public final class ClusterComposition
             Set<BoltServerAddress> readers,
             Set<BoltServerAddress> writers,
             Set<BoltServerAddress> routers,
-            String databaseName )
-    {
-        this( expirationTimestamp, databaseName );
-        this.readers.addAll( readers );
-        this.writers.addAll( writers );
-        this.routers.addAll( routers );
+            String databaseName) {
+        this(expirationTimestamp, databaseName);
+        this.readers.addAll(readers);
+        this.writers.addAll(writers);
+        this.routers.addAll(routers);
     }
 
-    public boolean hasWriters()
-    {
+    public boolean hasWriters() {
         return !writers.isEmpty();
     }
 
-    public boolean hasRoutersAndReaders()
-    {
+    public boolean hasRoutersAndReaders() {
         return !routers.isEmpty() && !readers.isEmpty();
     }
 
-    public Set<BoltServerAddress> readers()
-    {
-        return new LinkedHashSet<>( readers );
+    public Set<BoltServerAddress> readers() {
+        return new LinkedHashSet<>(readers);
     }
 
-    public Set<BoltServerAddress> writers()
-    {
-        return new LinkedHashSet<>( writers );
+    public Set<BoltServerAddress> writers() {
+        return new LinkedHashSet<>(writers);
     }
 
-    public Set<BoltServerAddress> routers()
-    {
-        return new LinkedHashSet<>( routers );
+    public Set<BoltServerAddress> routers() {
+        return new LinkedHashSet<>(routers);
     }
 
-    public long expirationTimestamp()
-    {
+    public long expirationTimestamp() {
         return this.expirationTimestamp;
     }
 
-    public String databaseName()
-    {
+    public String databaseName() {
         return databaseName;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         ClusterComposition that = (ClusterComposition) o;
-        return expirationTimestamp == that.expirationTimestamp &&
-               Objects.equals( databaseName, that.databaseName ) &&
-               Objects.equals( readers, that.readers ) &&
-               Objects.equals( writers, that.writers ) &&
-               Objects.equals( routers, that.routers );
+        return expirationTimestamp == that.expirationTimestamp
+                && Objects.equals(databaseName, that.databaseName)
+                && Objects.equals(readers, that.readers)
+                && Objects.equals(writers, that.writers)
+                && Objects.equals(routers, that.routers);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( readers, writers, routers, expirationTimestamp, databaseName );
+    public int hashCode() {
+        return Objects.hash(readers, writers, routers, expirationTimestamp, databaseName);
     }
 
     @Override
-    public String toString()
-    {
-        return "ClusterComposition{" +
-               "readers=" + readers +
-               ", writers=" + writers +
-               ", routers=" + routers +
-               ", expirationTimestamp=" + expirationTimestamp +
-               ", databaseName=" + databaseName +
-               '}';
+    public String toString() {
+        return "ClusterComposition{" + "readers="
+                + readers + ", writers="
+                + writers + ", routers="
+                + routers + ", expirationTimestamp="
+                + expirationTimestamp + ", databaseName="
+                + databaseName + '}';
     }
 
-    public static ClusterComposition parse( Record record, long now )
-    {
-        if ( record == null )
-        {
+    public static ClusterComposition parse(Record record, long now) {
+        if (record == null) {
             return null;
         }
 
-        final ClusterComposition result = new ClusterComposition( expirationTimestamp( now, record ), record.get( "db" ).asString( null ) );
-        record.get( "servers" ).asList( (Function<Value,Void>) value ->
-        {
-            result.servers( value.get( "role" ).asString() )
-                  .addAll( value.get( "addresses" ).asList( OF_BoltServerAddress ) );
+        final ClusterComposition result = new ClusterComposition(
+                expirationTimestamp(now, record), record.get("db").asString(null));
+        record.get("servers").asList((Function<Value, Void>) value -> {
+            result.servers(value.get("role").asString())
+                    .addAll(value.get("addresses").asList(OF_BoltServerAddress));
             return null;
-        } );
+        });
         return result;
     }
 
-    private static long expirationTimestamp( long now, Record record )
-    {
-        long ttl = record.get( "ttl" ).asLong();
+    private static long expirationTimestamp(long now, Record record) {
+        long ttl = record.get("ttl").asLong();
         long expirationTimestamp = now + ttl * 1000;
-        if ( ttl < 0 || ttl >= MAX_TTL || expirationTimestamp < 0 )
-        {
+        if (ttl < 0 || ttl >= MAX_TTL || expirationTimestamp < 0) {
             expirationTimestamp = Long.MAX_VALUE;
         }
         return expirationTimestamp;
     }
 
-    private Set<BoltServerAddress> servers( String role )
-    {
-        switch ( role )
-        {
-        case "READ":
-            return readers;
-        case "WRITE":
-            return writers;
-        case "ROUTE":
-            return routers;
-        default:
-            throw new IllegalArgumentException( "invalid server role: " + role );
+    private Set<BoltServerAddress> servers(String role) {
+        switch (role) {
+            case "READ":
+                return readers;
+            case "WRITE":
+                return writers;
+            case "ROUTE":
+                return routers;
+            default:
+                throw new IllegalArgumentException("invalid server role: " + role);
         }
     }
 }

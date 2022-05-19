@@ -26,37 +26,29 @@ import java.util.function.Function;
  * @see Result#list()
  * @since 1.0
  */
-public abstract class Records
-{
-    public static Function<Record,Value> column( int index )
-    {
-        return column( index, Values.ofValue() );
+public abstract class Records {
+    public static Function<Record, Value> column(int index) {
+        return column(index, Values.ofValue());
     }
 
-    public static Function<Record, Value> column( String key )
-    {
-        return column( key, Values.ofValue() );
+    public static Function<Record, Value> column(String key) {
+        return column(key, Values.ofValue());
     }
 
-    public static <T> Function<Record, T> column( final int index, final Function<Value, T> mapFunction )
-    {
-        return new Function<Record, T>()
-        {
+    public static <T> Function<Record, T> column(final int index, final Function<Value, T> mapFunction) {
+        return new Function<Record, T>() {
             @Override
-            public T apply( Record record )
-            {
-                return mapFunction.apply( record.get( index ) );
+            public T apply(Record record) {
+                return mapFunction.apply(record.get(index));
             }
         };
     }
-    public static <T> Function<Record, T> column( final String key, final Function<Value, T> mapFunction )
-    {
-        return new Function<Record, T>()
-        {
+
+    public static <T> Function<Record, T> column(final String key, final Function<Value, T> mapFunction) {
+        return new Function<Record, T>() {
             @Override
-            public T apply( Record recordAccessor )
-            {
-                return mapFunction.apply( recordAccessor.get( key ) );
+            public T apply(Record recordAccessor) {
+                return mapFunction.apply(recordAccessor.get(key));
             }
         };
     }

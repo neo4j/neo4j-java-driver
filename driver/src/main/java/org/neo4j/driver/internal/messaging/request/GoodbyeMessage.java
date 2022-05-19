@@ -20,25 +20,20 @@ package org.neo4j.driver.internal.messaging.request;
 
 import org.neo4j.driver.internal.messaging.Message;
 
-public class GoodbyeMessage implements Message
-{
-    public final static byte SIGNATURE = 0x02;
+public class GoodbyeMessage implements Message {
+    public static final byte SIGNATURE = 0x02;
 
     public static final GoodbyeMessage GOODBYE = new GoodbyeMessage();
 
-    private GoodbyeMessage()
-    {
-    }
+    private GoodbyeMessage() {}
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "GOODBYE";
     }
 }

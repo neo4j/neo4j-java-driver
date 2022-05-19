@@ -21,10 +21,8 @@ package neo4j.org.testkit.backend.holder;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.reactive.RxSession;
 
-public class RxSessionHolder extends AbstractSessionHolder<RxSession>
-{
-    public RxSessionHolder( DriverHolder driverHolder, RxSession session, SessionConfig config )
-    {
-        super( driverHolder, session, config );
+public class RxSessionHolder extends AbstractSessionHolder<RxSession> {
+    public RxSessionHolder(DriverHolder driverHolder, RxSession session, SessionConfig config) {
+        super(driverHolder, session, config);
     }
 }

@@ -18,35 +18,28 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Mono;
-
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
-
 import org.neo4j.driver.internal.util.Futures;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
-public class RxUtils
-{
+public class RxUtils {
     /**
      * The publisher created by this method will either succeed without publishing anything or fail with an error.
      * @param supplier supplies a {@link CompletionStage<Void>}.
      * @return A publisher that publishes nothing on completion or fails with an error.
      */
-    public static <T> Publisher<T> createEmptyPublisher( Supplier<CompletionStage<Void>> supplier )
-    {
-        return Mono.create( sink -> supplier.get().whenComplete( ( ignore, completionError ) -> {
-            Throwable error = Futures.completionExceptionCause( completionError );
-            if ( error != null )
-            {
-                sink.error( error );
-            }
-            else
-            {
+    public static <T> Publisher<T> createEmptyPublisher(Supplier<CompletionStage<Void>> supplier) {
+        return Mono.create(sink -> supplier.get().whenComplete((ignore, completionError) -> {
+            Throwable error = Futures.completionExceptionCause(completionError);
+            if (error != null) {
+                sink.error(error);
+            } else {
                 sink.success();
             }
-        } ) );
+        }));
     }
 
     /**
@@ -58,27 +51,20 @@ public class RxUtils
      * @param <T>                         the type of the item to publish.
      * @return A publisher that succeeds exactly one item or fails with an error.
      */
-    public static <T> Publisher<T> createSingleItemPublisher( Supplier<CompletionStage<T>> supplier, Supplier<Throwable> nullResultThrowableSupplier )
-    {
-        return Mono.create( sink -> supplier.get().whenComplete(
-                ( item, completionError ) ->
-                {
-                    if ( completionError == null )
-                    {
-                        if ( item != null )
-                        {
-                            sink.success( item );
-                        }
-                        else
-                        {
-                            sink.error( nullResultThrowableSupplier.get() );
-                        }
-                    }
-                    else
-                    {
-                        Throwable error = Optional.ofNullable( Futures.completionExceptionCause( completionError ) ).orElse( completionError );
-                        sink.error( error );
-                    }
-                } ) );
+    public static <T> Publisher<T> createSingleItemPublisher(
+            Supplier<CompletionStage<T>> supplier, Supplier<Throwable> nullResultThrowableSupplier) {
+        return Mono.create(sink -> supplier.get().whenComplete((item, completionError) -> {
+            if (completionError == null) {
+                if (item != null) {
+                    sink.success(item);
+                } else {
+                    sink.error(nullResultThrowableSupplier.get());
+                }
+            } else {
+                Throwable error = Optional.ofNullable(Futures.completionExceptionCause(completionError))
+                        .orElse(completionError);
+                sink.error(error);
+            }
+        }));
     }
 }

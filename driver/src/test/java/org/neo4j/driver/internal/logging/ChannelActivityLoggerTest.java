@@ -18,59 +18,53 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.connection.ChannelAttributes;
-import org.neo4j.driver.Logging;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class ChannelActivityLoggerTest
-{
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.connection.ChannelAttributes;
+
+class ChannelActivityLoggerTest {
     @Test
-    void shouldReformatWhenChannelIsNull()
-    {
-        ChannelActivityLogger activityLogger = new ChannelActivityLogger( null, Logging.none(), getClass() );
+    void shouldReformatWhenChannelIsNull() {
+        ChannelActivityLogger activityLogger = new ChannelActivityLogger(null, Logging.none(), getClass());
 
-        String reformatted = activityLogger.reformat( "Hello!" );
+        String reformatted = activityLogger.reformat("Hello!");
 
-        assertEquals( "Hello!", reformatted );
+        assertEquals("Hello!", reformatted);
     }
 
     @Test
-    void shouldReformatWithChannelId()
-    {
+    void shouldReformatWithChannelId() {
         EmbeddedChannel channel = new EmbeddedChannel();
-        ChannelActivityLogger activityLogger = new ChannelActivityLogger( channel, Logging.none(), getClass() );
+        ChannelActivityLogger activityLogger = new ChannelActivityLogger(channel, Logging.none(), getClass());
 
-        String reformatted = activityLogger.reformat( "Hello!" );
+        String reformatted = activityLogger.reformat("Hello!");
 
-        assertEquals( "[0x" + channel.id() + "][][] Hello!", reformatted );
+        assertEquals("[0x" + channel.id() + "][][] Hello!", reformatted);
     }
 
     @Test
-    void shouldReformatWithChannelIdAndServerAddress()
-    {
+    void shouldReformatWithChannelIdAndServerAddress() {
         EmbeddedChannel channel = new EmbeddedChannel();
-        ChannelAttributes.setServerAddress( channel, new BoltServerAddress( "somewhere", 1234 ) );
-        ChannelActivityLogger activityLogger = new ChannelActivityLogger( channel, Logging.none(), getClass() );
+        ChannelAttributes.setServerAddress(channel, new BoltServerAddress("somewhere", 1234));
+        ChannelActivityLogger activityLogger = new ChannelActivityLogger(channel, Logging.none(), getClass());
 
-        String reformatted = activityLogger.reformat( "Hello!" );
+        String reformatted = activityLogger.reformat("Hello!");
 
-        assertEquals( "[0x" + channel.id() + "][somewhere:1234][] Hello!", reformatted );
+        assertEquals("[0x" + channel.id() + "][somewhere:1234][] Hello!", reformatted);
     }
 
     @Test
-    void shouldReformatWithChannelIdAndConnectionId()
-    {
+    void shouldReformatWithChannelIdAndConnectionId() {
         EmbeddedChannel channel = new EmbeddedChannel();
-        ChannelAttributes.setConnectionId( channel, "bolt-12345" );
-        ChannelActivityLogger activityLogger = new ChannelActivityLogger( channel, Logging.none(), getClass() );
+        ChannelAttributes.setConnectionId(channel, "bolt-12345");
+        ChannelActivityLogger activityLogger = new ChannelActivityLogger(channel, Logging.none(), getClass());
 
-        String reformatted = activityLogger.reformat( "Hello!" );
+        String reformatted = activityLogger.reformat("Hello!");
 
-        assertEquals( "[0x" + channel.id() + "][][bolt-12345] Hello!", reformatted );
+        assertEquals("[0x" + channel.id() + "][][bolt-12345] Hello!", reformatted);
     }
 }

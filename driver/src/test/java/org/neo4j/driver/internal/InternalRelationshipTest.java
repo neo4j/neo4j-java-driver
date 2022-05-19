@@ -18,16 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.function.Function;
-
-import org.neo4j.driver.Value;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,78 +26,78 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.NULL;
 import static org.neo4j.driver.Values.value;
 
-class InternalRelationshipTest
-{
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.function.Function;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+
+class InternalRelationshipTest {
     @Test
-    void extractValuesFromNode()
-    {
+    void extractValuesFromNode() {
         // GIVEN
         InternalRelationship relationship = createRelationship();
-        Function<Value,Integer> extractor = Value::asInt;
+        Function<Value, Integer> extractor = Value::asInt;
 
-        //WHEN
-        Iterable<Integer> values = relationship.values( extractor );
+        // WHEN
+        Iterable<Integer> values = relationship.values(extractor);
 
-        //THEN
+        // THEN
         Iterator<Integer> iterator = values.iterator();
-        assertThat( iterator.next(), equalTo( 1 ) );
-        assertThat( iterator.next(), equalTo( 2 ) );
-        assertFalse( iterator.hasNext() );
+        assertThat(iterator.next(), equalTo(1));
+        assertThat(iterator.next(), equalTo(2));
+        assertFalse(iterator.hasNext());
     }
 
     @Test
-    void accessUnknownKeyShouldBeNull()
-    {
+    void accessUnknownKeyShouldBeNull() {
         InternalRelationship relationship = createRelationship();
 
-        assertThat( relationship.get( "k1" ), equalTo( value( 1 ) ) );
-        assertThat( relationship.get( "k2" ), equalTo( value( 2 ) ) );
-        assertThat( relationship.get( "k3" ), equalTo( NULL ) );
+        assertThat(relationship.get("k1"), equalTo(value(1)));
+        assertThat(relationship.get("k2"), equalTo(value(2)));
+        assertThat(relationship.get("k3"), equalTo(NULL));
     }
 
     @Test
-    void shouldThrowOnIdWhenNumericIdUnavailable()
-    {
+    void shouldThrowOnIdWhenNumericIdUnavailable() {
         // GIVEN
-        InternalRelationship relationship =
-                new InternalRelationship( -1, "value", 1, String.valueOf( 1 ), 2, String.valueOf( 2 ), "T", Collections.emptyMap(), false );
+        InternalRelationship relationship = new InternalRelationship(
+                -1, "value", 1, String.valueOf(1), 2, String.valueOf(2), "T", Collections.emptyMap(), false);
 
         // WHEN & THEN
-        IllegalStateException e = assertThrows( IllegalStateException.class, relationship::id );
-        assertEquals( InternalEntity.INVALID_ID_ERROR, e.getMessage() );
+        IllegalStateException e = assertThrows(IllegalStateException.class, relationship::id);
+        assertEquals(InternalEntity.INVALID_ID_ERROR, e.getMessage());
     }
 
     @Test
-    void shouldThrowOnStartNodeIdWhenNumericIdUnavailable()
-    {
+    void shouldThrowOnStartNodeIdWhenNumericIdUnavailable() {
         // GIVEN
-        InternalRelationship relationship =
-                new InternalRelationship( -1, "value", 1, String.valueOf( 1 ), 2, String.valueOf( 2 ), "T", Collections.emptyMap(), false );
+        InternalRelationship relationship = new InternalRelationship(
+                -1, "value", 1, String.valueOf(1), 2, String.valueOf(2), "T", Collections.emptyMap(), false);
 
         // WHEN & THEN
-        IllegalStateException e = assertThrows( IllegalStateException.class, relationship::startNodeId );
-        assertEquals( InternalEntity.INVALID_ID_ERROR, e.getMessage() );
+        IllegalStateException e = assertThrows(IllegalStateException.class, relationship::startNodeId);
+        assertEquals(InternalEntity.INVALID_ID_ERROR, e.getMessage());
     }
 
     @Test
-    void shouldThrowOnEndNodeIdWhenNumericIdUnavailable()
-    {
+    void shouldThrowOnEndNodeIdWhenNumericIdUnavailable() {
         // GIVEN
-        InternalRelationship relationship =
-                new InternalRelationship( -1, "value", 1, String.valueOf( 1 ), 2, String.valueOf( 2 ), "T", Collections.emptyMap(), false );
+        InternalRelationship relationship = new InternalRelationship(
+                -1, "value", 1, String.valueOf(1), 2, String.valueOf(2), "T", Collections.emptyMap(), false);
 
         // WHEN & THEN
-        IllegalStateException e = assertThrows( IllegalStateException.class, relationship::endNodeId );
-        assertEquals( InternalEntity.INVALID_ID_ERROR, e.getMessage() );
+        IllegalStateException e = assertThrows(IllegalStateException.class, relationship::endNodeId);
+        assertEquals(InternalEntity.INVALID_ID_ERROR, e.getMessage());
     }
 
-    private InternalRelationship createRelationship()
-    {
-        Map<String,Value> props = new HashMap<>();
-        props.put( "k1", value( 1 ) );
-        props.put( "k2", value( 2 ) );
+    private InternalRelationship createRelationship() {
+        Map<String, Value> props = new HashMap<>();
+        props.put("k1", value(1));
+        props.put("k2", value(2));
 
-        return new InternalRelationship( 1L, 0L, 1L, "T", props );
+        return new InternalRelationship(1L, 0L, 1L, "T", props);
     }
-
 }

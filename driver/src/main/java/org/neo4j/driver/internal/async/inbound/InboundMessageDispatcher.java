@@ -18,13 +18,16 @@
  */
 package org.neo4j.driver.internal.async.inbound;
 
-import io.netty.channel.Channel;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authorizationStateListener;
+import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
+import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
+import io.netty.channel.Channel;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
@@ -37,13 +40,7 @@ import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
 
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authorizationStateListener;
-import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
-import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
-
-public class InboundMessageDispatcher implements ResponseMessageHandler
-{
+public class InboundMessageDispatcher implements ResponseMessageHandler {
     private final Channel channel;
     private final Queue<ResponseHandler> handlers = new LinkedList<>();
     private final Logger log;
@@ -56,244 +53,201 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
 
     private ResponseHandler autoReadManagingHandler;
 
-    public InboundMessageDispatcher( Channel channel, Logging logging )
-    {
-        this.channel = requireNonNull( channel );
-        this.log = new ChannelActivityLogger( channel, logging, getClass() );
-        this.errorLog = new ChannelErrorLogger( channel, logging );
+    public InboundMessageDispatcher(Channel channel, Logging logging) {
+        this.channel = requireNonNull(channel);
+        this.log = new ChannelActivityLogger(channel, logging, getClass());
+        this.errorLog = new ChannelErrorLogger(channel, logging);
     }
 
-    public void enqueue( ResponseHandler handler )
-    {
-        if ( fatalErrorOccurred )
-        {
-            handler.onFailure( currentError );
-        }
-        else
-        {
-            handlers.add( handler );
-            updateAutoReadManagingHandlerIfNeeded( handler );
+    public void enqueue(ResponseHandler handler) {
+        if (fatalErrorOccurred) {
+            handler.onFailure(currentError);
+        } else {
+            handlers.add(handler);
+            updateAutoReadManagingHandlerIfNeeded(handler);
         }
     }
 
-    public void setBeforeLastHandlerHook( HandlerHook beforeLastHandlerHook )
-    {
-        if ( !channel.eventLoop().inEventLoop() )
-        {
-            throw new IllegalStateException( "This method may only be called in the EventLoop" );
+    public void setBeforeLastHandlerHook(HandlerHook beforeLastHandlerHook) {
+        if (!channel.eventLoop().inEventLoop()) {
+            throw new IllegalStateException("This method may only be called in the EventLoop");
         }
         this.beforeLastHandlerHook = beforeLastHandlerHook;
     }
 
-    public int queuedHandlersCount()
-    {
+    public int queuedHandlersCount() {
         return handlers.size();
     }
 
     @Override
-    public void handleSuccessMessage( Map<String,Value> meta )
-    {
-        log.debug( "S: SUCCESS %s", meta );
-        invokeBeforeLastHandlerHook( HandlerHook.MessageType.SUCCESS );
+    public void handleSuccessMessage(Map<String, Value> meta) {
+        log.debug("S: SUCCESS %s", meta);
+        invokeBeforeLastHandlerHook(HandlerHook.MessageType.SUCCESS);
         ResponseHandler handler = removeHandler();
-        handler.onSuccess( meta );
+        handler.onSuccess(meta);
     }
 
     @Override
-    public void handleRecordMessage( Value[] fields )
-    {
-        if ( log.isDebugEnabled() )
-        {
-            log.debug( "S: RECORD %s", Arrays.toString( fields ) );
+    public void handleRecordMessage(Value[] fields) {
+        if (log.isDebugEnabled()) {
+            log.debug("S: RECORD %s", Arrays.toString(fields));
         }
         ResponseHandler handler = handlers.peek();
-        if ( handler == null )
-        {
-            throw new IllegalStateException( "No handler exists to handle RECORD message with fields: " + Arrays.toString( fields ) );
+        if (handler == null) {
+            throw new IllegalStateException(
+                    "No handler exists to handle RECORD message with fields: " + Arrays.toString(fields));
         }
-        handler.onRecord( fields );
+        handler.onRecord(fields);
     }
 
     @Override
-    public void handleFailureMessage( String code, String message )
-    {
-        log.debug( "S: FAILURE %s \"%s\"", code, message );
+    public void handleFailureMessage(String code, String message) {
+        log.debug("S: FAILURE %s \"%s\"", code, message);
 
-        currentError = ErrorUtil.newNeo4jError( code, message );
+        currentError = ErrorUtil.newNeo4jError(code, message);
 
-        if ( ErrorUtil.isFatal( currentError ) )
-        {
+        if (ErrorUtil.isFatal(currentError)) {
             // we should not continue using channel after a fatal error
             // fire error event back to the pipeline and avoid sending RESET
-            channel.pipeline().fireExceptionCaught( currentError );
+            channel.pipeline().fireExceptionCaught(currentError);
             return;
         }
 
         Throwable currentError = this.currentError;
-        if ( currentError instanceof AuthorizationExpiredException )
-        {
-            authorizationStateListener( channel ).onExpired( (AuthorizationExpiredException) currentError, channel );
-        }
-        else
-        {
+        if (currentError instanceof AuthorizationExpiredException) {
+            authorizationStateListener(channel).onExpired((AuthorizationExpiredException) currentError, channel);
+        } else {
             // write a RESET to "acknowledge" the failure
-            enqueue( new ResetResponseHandler( this ) );
-            channel.writeAndFlush( RESET, channel.voidPromise() );
+            enqueue(new ResetResponseHandler(this));
+            channel.writeAndFlush(RESET, channel.voidPromise());
         }
 
-        invokeBeforeLastHandlerHook( HandlerHook.MessageType.FAILURE );
+        invokeBeforeLastHandlerHook(HandlerHook.MessageType.FAILURE);
         ResponseHandler handler = removeHandler();
-        handler.onFailure( currentError );
+        handler.onFailure(currentError);
     }
 
     @Override
-    public void handleIgnoredMessage()
-    {
-        log.debug( "S: IGNORED" );
+    public void handleIgnoredMessage() {
+        log.debug("S: IGNORED");
 
         ResponseHandler handler = removeHandler();
 
         Throwable error;
-        if ( currentError != null )
-        {
+        if (currentError != null) {
             error = currentError;
-        }
-        else
-        {
-            log.warn( "Received IGNORED message for handler %s but error is missing and RESET is not in progress. " +
-                      "Current handlers %s", handler, handlers );
+        } else {
+            log.warn(
+                    "Received IGNORED message for handler %s but error is missing and RESET is not in progress. "
+                            + "Current handlers %s",
+                    handler, handlers);
 
-            error = new ClientException( "Database ignored the request" );
+            error = new ClientException("Database ignored the request");
         }
-        handler.onFailure( error );
+        handler.onFailure(error);
     }
 
-    public void handleChannelInactive( Throwable cause )
-    {
+    public void handleChannelInactive(Throwable cause) {
         // report issue if the connection has not been terminated as a result of a graceful shutdown request from its
         // parent pool
-        if ( !gracefullyClosed )
-        {
-            handleChannelError( cause );
-        }
-        else
-        {
+        if (!gracefullyClosed) {
+            handleChannelError(cause);
+        } else {
             channel.close();
         }
     }
 
-    public void handleChannelError( Throwable error )
-    {
-        if ( currentError != null )
-        {
-            // we already have an error, this new error probably is caused by the existing one, thus we chain the new error on this current error
-            addSuppressed( currentError, error );
-        }
-        else
-        {
+    public void handleChannelError(Throwable error) {
+        if (currentError != null) {
+            // we already have an error, this new error probably is caused by the existing one, thus we chain the new
+            // error on this current error
+            addSuppressed(currentError, error);
+        } else {
             currentError = error;
         }
         fatalErrorOccurred = true;
 
-        while ( !handlers.isEmpty() )
-        {
+        while (!handlers.isEmpty()) {
             ResponseHandler handler = removeHandler();
-            handler.onFailure( currentError );
+            handler.onFailure(currentError);
         }
 
-        errorLog.traceOrDebug( "Closing channel because of a failure", error );
+        errorLog.traceOrDebug("Closing channel because of a failure", error);
         channel.close();
     }
 
-    public void clearCurrentError()
-    {
+    public void clearCurrentError() {
         currentError = null;
     }
 
-    public Throwable currentError()
-    {
+    public Throwable currentError() {
         return currentError;
     }
 
-    public boolean fatalErrorOccurred()
-    {
+    public boolean fatalErrorOccurred() {
         return fatalErrorOccurred;
     }
 
-    public void prepareToCloseChannel( )
-    {
+    public void prepareToCloseChannel() {
         this.gracefullyClosed = true;
     }
 
     /**
      * <b>Visible for testing</b>
      */
-    ResponseHandler autoReadManagingHandler()
-    {
+    ResponseHandler autoReadManagingHandler() {
         return autoReadManagingHandler;
     }
 
-    private ResponseHandler removeHandler()
-    {
+    private ResponseHandler removeHandler() {
         ResponseHandler handler = handlers.remove();
-        if ( handler == autoReadManagingHandler )
-        {
+        if (handler == autoReadManagingHandler) {
             // the auto-read managing handler is being removed
             // make sure this dispatcher does not hold on to a removed handler
-            updateAutoReadManagingHandler( null );
+            updateAutoReadManagingHandler(null);
         }
         return handler;
     }
 
-    private void updateAutoReadManagingHandlerIfNeeded( ResponseHandler handler )
-    {
-        if ( handler.canManageAutoRead() )
-        {
-            updateAutoReadManagingHandler( handler );
+    private void updateAutoReadManagingHandlerIfNeeded(ResponseHandler handler) {
+        if (handler.canManageAutoRead()) {
+            updateAutoReadManagingHandler(handler);
         }
     }
 
-    private void updateAutoReadManagingHandler( ResponseHandler newHandler )
-    {
-        if ( autoReadManagingHandler != null )
-        {
+    private void updateAutoReadManagingHandler(ResponseHandler newHandler) {
+        if (autoReadManagingHandler != null) {
             // there already exists a handler that manages channel's auto-read
             // make it stop because new managing handler is being added and there should only be a single such handler
             autoReadManagingHandler.disableAutoReadManagement();
             // restore the default value of auto-read
-            channel.config().setAutoRead( true );
+            channel.config().setAutoRead(true);
         }
         autoReadManagingHandler = newHandler;
     }
 
-    private void invokeBeforeLastHandlerHook( HandlerHook.MessageType messageType )
-    {
-        if ( handlers.size() == 1 && beforeLastHandlerHook != null )
-        {
-            beforeLastHandlerHook.run( messageType );
+    private void invokeBeforeLastHandlerHook(HandlerHook.MessageType messageType) {
+        if (handlers.size() == 1 && beforeLastHandlerHook != null) {
+            beforeLastHandlerHook.run(messageType);
         }
     }
 
-    public interface HandlerHook
-    {
-        enum MessageType
-        {
+    public interface HandlerHook {
+        enum MessageType {
             SUCCESS,
             FAILURE
         }
 
-        void run( MessageType messageType );
+        void run(MessageType messageType);
     }
 
     //    For testing only
-    Logger getLog()
-    {
+    Logger getLog() {
         return log;
     }
 
     //    For testing only
-    Logger getErrorLog()
-    {
+    Logger getErrorLog() {
         return errorLog;
     }
 }

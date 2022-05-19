@@ -18,6 +18,7 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -25,56 +26,48 @@ import neo4j.org.testkit.backend.messages.responses.MultiDBSupport;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletionStage;
-
 @Setter
 @Getter
-public class CheckMultiDBSupport implements TestkitRequest
-{
+public class CheckMultiDBSupport implements TestkitRequest {
     private CheckMultiDBSupportBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
+    public TestkitResponse process(TestkitState testkitState) {
         String driverId = data.getDriverId();
-        boolean available = testkitState.getDriverHolder( driverId ).getDriver().supportsMultiDb();
-        return createResponse( available );
+        boolean available = testkitState.getDriverHolder(driverId).getDriver().supportsMultiDb();
+        return createResponse(available);
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getDriverHolder( data.getDriverId() )
-                           .getDriver()
-                           .supportsMultiDbAsync()
-                           .thenApply( this::createResponse );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState
+                .getDriverHolder(data.getDriverId())
+                .getDriver()
+                .supportsMultiDbAsync()
+                .thenApply(this::createResponse);
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return processReactive( testkitState );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return processReactive(testkitState);
     }
 
     @Override
-    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
-    {
-        return Mono.fromCompletionStage( processAsync( testkitState ) );
+    public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
+        return Mono.fromCompletionStage(processAsync(testkitState));
     }
 
-    private MultiDBSupport createResponse( boolean available )
-    {
+    private MultiDBSupport createResponse(boolean available) {
         return MultiDBSupport.builder()
-                             .data( MultiDBSupport.MultiDBSupportBody.builder()
-                                                                     .available( available )
-                                                                     .build() )
-                             .build();
+                .data(MultiDBSupport.MultiDBSupportBody.builder()
+                        .available(available)
+                        .build())
+                .build();
     }
 
     @Setter
     @Getter
-    public static class CheckMultiDBSupportBody
-    {
+    public static class CheckMultiDBSupportBody {
         private String driverId;
     }
 }

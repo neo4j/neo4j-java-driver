@@ -23,85 +23,67 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
-public class FakeClock implements Clock
-{
+public class FakeClock implements Clock {
     private final AtomicLong timestamp = new AtomicLong();
     private final PriorityBlockingQueue<WaitingThread> threads;
 
-    public FakeClock()
-    {
-        this( false );
+    public FakeClock() {
+        this(false);
     }
 
-    private FakeClock( boolean progressOnSleep )
-    {
+    private FakeClock(boolean progressOnSleep) {
         this.threads = progressOnSleep ? null : new PriorityBlockingQueue<WaitingThread>();
     }
 
     @Override
-    public long millis()
-    {
+    public long millis() {
         return timestamp.get();
     }
 
     @Override
-    public void sleep( long millis )
-    {
-        if ( millis <= 0 )
-        {
+    public void sleep(long millis) {
+        if (millis <= 0) {
             return;
         }
         long target = timestamp.get() + millis;
-        if ( threads == null )
-        {
-            progress( millis );
-        }
-        else
-        {
+        if (threads == null) {
+            progress(millis);
+        } else {
             // park until the target time has been reached
-            WaitingThread token = new WaitingThread( Thread.currentThread(), target );
-            threads.add( token );
-            for ( ; ; )
-            {
-                if ( timestamp.get() >= target )
-                {
-                    threads.remove( token );
+            WaitingThread token = new WaitingThread(Thread.currentThread(), target);
+            threads.add(token);
+            for (; ; ) {
+                if (timestamp.get() >= target) {
+                    threads.remove(token);
                     return;
                 }
                 // park with a timeout to guarantee that we make progress even if something goes wrong
-                LockSupport.parkNanos( this, TimeUnit.MILLISECONDS.toNanos( millis ) );
+                LockSupport.parkNanos(this, TimeUnit.MILLISECONDS.toNanos(millis));
             }
         }
     }
 
-    public void progress( long millis )
-    {
-        if ( millis < 0 )
-        {
-            throw new IllegalArgumentException( "time can only progress forwards" );
+    public void progress(long millis) {
+        if (millis < 0) {
+            throw new IllegalArgumentException("time can only progress forwards");
         }
-        timestamp.addAndGet( millis );
-        if ( threads != null )
-        {
+        timestamp.addAndGet(millis);
+        if (threads != null) {
             // wake up the threads that are sleeping awaiting the current time
-            for ( WaitingThread thread; (thread = threads.peek()) != null; )
-            {
-                if ( thread.timestamp < timestamp.get() )
-                {
-                    threads.remove( thread );
-                    LockSupport.unpark( thread.thread );
+            for (WaitingThread thread; (thread = threads.peek()) != null; ) {
+                if (thread.timestamp < timestamp.get()) {
+                    threads.remove(thread);
+                    LockSupport.unpark(thread.thread);
                 }
             }
         }
     }
 
-    private static class WaitingThread
-    {
+    private static class WaitingThread {
         final Thread thread;
         final long timestamp;
 
-        private WaitingThread( Thread thread, long timestamp )
-        {
+        private WaitingThread(Thread thread, long timestamp) {
             this.thread = thread;
             this.timestamp = timestamp;
         }

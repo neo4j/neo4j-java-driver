@@ -18,19 +18,6 @@
  */
 package org.neo4j.driver.internal.util;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-import org.neo4j.driver.exceptions.AuthenticationException;
-import org.neo4j.driver.exceptions.AuthorizationExpiredException;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.DatabaseException;
-import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.exceptions.TokenExpiredException;
-import org.neo4j.driver.exceptions.TransientException;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
@@ -42,177 +29,170 @@ import static org.neo4j.driver.internal.util.ErrorUtil.isFatal;
 import static org.neo4j.driver.internal.util.ErrorUtil.newConnectionTerminatedError;
 import static org.neo4j.driver.internal.util.ErrorUtil.newNeo4jError;
 
-class ErrorUtilTest
-{
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.exceptions.AuthenticationException;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.DatabaseException;
+import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.TokenExpiredException;
+import org.neo4j.driver.exceptions.TransientException;
+
+class ErrorUtilTest {
     @Test
-    void shouldCreateAuthenticationException()
-    {
+    void shouldCreateAuthenticationException() {
         String code = "Neo.ClientError.Security.Unauthorized";
         String message = "Wrong credentials";
 
-        Neo4jException error = newNeo4jError( code, message );
+        Neo4jException error = newNeo4jError(code, message);
 
-        assertThat( error, instanceOf( AuthenticationException.class ) );
-        assertEquals( code, error.code() );
-        assertEquals( message, error.getMessage() );
+        assertThat(error, instanceOf(AuthenticationException.class));
+        assertEquals(code, error.code());
+        assertEquals(message, error.getMessage());
     }
 
     @Test
-    void shouldCreateClientException()
-    {
+    void shouldCreateClientException() {
         String code = "Neo.ClientError.Transaction.InvalidBookmark";
         String message = "Wrong bookmark";
 
-        Neo4jException error = newNeo4jError( code, message );
+        Neo4jException error = newNeo4jError(code, message);
 
-        assertThat( error, instanceOf( ClientException.class ) );
-        assertEquals( code, error.code() );
-        assertEquals( message, error.getMessage() );
+        assertThat(error, instanceOf(ClientException.class));
+        assertEquals(code, error.code());
+        assertEquals(message, error.getMessage());
     }
 
     @Test
-    void shouldCreateTransientException()
-    {
+    void shouldCreateTransientException() {
         String code = "Neo.TransientError.Transaction.DeadlockDetected";
         String message = "Deadlock occurred";
 
-        Neo4jException error = newNeo4jError( code, message );
+        Neo4jException error = newNeo4jError(code, message);
 
-        assertThat( error, instanceOf( TransientException.class ) );
-        assertEquals( code, error.code() );
-        assertEquals( message, error.getMessage() );
+        assertThat(error, instanceOf(TransientException.class));
+        assertEquals(code, error.code());
+        assertEquals(message, error.getMessage());
     }
 
     @Test
-    void shouldCreateDatabaseException()
-    {
+    void shouldCreateDatabaseException() {
         String code = "Neo.DatabaseError.Transaction.TransactionLogError";
         String message = "Failed to write the transaction log";
 
-        Neo4jException error = newNeo4jError( code, message );
+        Neo4jException error = newNeo4jError(code, message);
 
-        assertThat( error, instanceOf( DatabaseException.class ) );
-        assertEquals( code, error.code() );
-        assertEquals( message, error.getMessage() );
+        assertThat(error, instanceOf(DatabaseException.class));
+        assertEquals(code, error.code());
+        assertEquals(message, error.getMessage());
     }
 
     @Test
-    void shouldCreateDatabaseExceptionWhenErrorCodeIsWrong()
-    {
+    void shouldCreateDatabaseExceptionWhenErrorCodeIsWrong() {
         String code = "WrongErrorCode";
         String message = "Some really strange error";
 
-        Neo4jException error = newNeo4jError( code, message );
+        Neo4jException error = newNeo4jError(code, message);
 
-        assertThat( error, instanceOf( DatabaseException.class ) );
-        assertEquals( code, error.code() );
-        assertEquals( message, error.getMessage() );
+        assertThat(error, instanceOf(DatabaseException.class));
+        assertEquals(code, error.code());
+        assertEquals(message, error.getMessage());
     }
 
     @Test
-    void shouldTreatNotNeo4jExceptionAsFatal()
-    {
-        assertTrue( isFatal( new IOException( "IO failed!" ) ) );
+    void shouldTreatNotNeo4jExceptionAsFatal() {
+        assertTrue(isFatal(new IOException("IO failed!")));
     }
 
     @Test
-    void shouldTreatProtocolErrorAsFatal()
-    {
-        assertTrue( isFatal( new ClientException( "Neo.ClientError.Request.Invalid", "Illegal request" ) ) );
-        assertTrue( isFatal( new ClientException( "Neo.ClientError.Request.InvalidFormat", "Wrong format" ) ) );
-        assertTrue( isFatal( new ClientException( "Neo.ClientError.Request.TransactionRequired", "No tx!" ) ) );
+    void shouldTreatProtocolErrorAsFatal() {
+        assertTrue(isFatal(new ClientException("Neo.ClientError.Request.Invalid", "Illegal request")));
+        assertTrue(isFatal(new ClientException("Neo.ClientError.Request.InvalidFormat", "Wrong format")));
+        assertTrue(isFatal(new ClientException("Neo.ClientError.Request.TransactionRequired", "No tx!")));
     }
 
     @Test
-    void shouldTreatAuthenticationExceptionAsNonFatal()
-    {
-        assertFalse( isFatal( new AuthenticationException( "Neo.ClientError.Security.Unauthorized", "" ) ) );
+    void shouldTreatAuthenticationExceptionAsNonFatal() {
+        assertFalse(isFatal(new AuthenticationException("Neo.ClientError.Security.Unauthorized", "")));
     }
 
     @Test
-    void shouldTreatClientExceptionAsNonFatal()
-    {
-        assertFalse( isFatal( new ClientException( "Neo.ClientError.Transaction.ConstraintsChanged", "" ) ) );
+    void shouldTreatClientExceptionAsNonFatal() {
+        assertFalse(isFatal(new ClientException("Neo.ClientError.Transaction.ConstraintsChanged", "")));
     }
 
     @Test
-    void shouldTreatDatabaseExceptionAsFatal()
-    {
-        assertTrue( isFatal( new ClientException( "Neo.DatabaseError.Schema.ConstraintCreationFailed", "" ) ) );
+    void shouldTreatDatabaseExceptionAsFatal() {
+        assertTrue(isFatal(new ClientException("Neo.DatabaseError.Schema.ConstraintCreationFailed", "")));
     }
 
     @Test
-    void shouldCreateConnectionTerminatedError()
-    {
+    void shouldCreateConnectionTerminatedError() {
         ServiceUnavailableException error = newConnectionTerminatedError();
-        assertThat( error.getMessage(), startsWith( "Connection to the database terminated" ) );
+        assertThat(error.getMessage(), startsWith("Connection to the database terminated"));
     }
 
     @Test
-    void shouldCreateConnectionTerminatedErrorWithNullReason()
-    {
-        ServiceUnavailableException error = newConnectionTerminatedError( null );
-        assertThat( error.getMessage(), startsWith( "Connection to the database terminated" ) );
+    void shouldCreateConnectionTerminatedErrorWithNullReason() {
+        ServiceUnavailableException error = newConnectionTerminatedError(null);
+        assertThat(error.getMessage(), startsWith("Connection to the database terminated"));
     }
 
     @Test
-    void shouldCreateConnectionTerminatedErrorWithReason()
-    {
+    void shouldCreateConnectionTerminatedErrorWithReason() {
         String reason = "Thread interrupted";
-        ServiceUnavailableException error = newConnectionTerminatedError( reason );
-        assertThat( error.getMessage(), startsWith( "Connection to the database terminated" ) );
-        assertThat( error.getMessage(), containsString( reason ) );
+        ServiceUnavailableException error = newConnectionTerminatedError(reason);
+        assertThat(error.getMessage(), startsWith("Connection to the database terminated"));
+        assertThat(error.getMessage(), containsString(reason));
     }
 
     @Test
-    void shouldCreateAuthorizationExpiredException()
-    {
+    void shouldCreateAuthorizationExpiredException() {
         String code = "Neo.ClientError.Security.AuthorizationExpired";
         String message = "Expired authorization info";
 
-        Neo4jException error = newNeo4jError( code, message );
+        Neo4jException error = newNeo4jError(code, message);
 
-        assertThat( error, instanceOf( AuthorizationExpiredException.class ) );
-        assertEquals( code, error.code() );
-        assertEquals( message, error.getMessage() );
+        assertThat(error, instanceOf(AuthorizationExpiredException.class));
+        assertEquals(code, error.code());
+        assertEquals(message, error.getMessage());
     }
 
     @Test
-    void shouldCreateTokenExpiredException()
-    {
+    void shouldCreateTokenExpiredException() {
         String code = "Neo.ClientError.Security.TokenExpired";
         String message = "message";
 
-        Neo4jException error = newNeo4jError( code, message );
+        Neo4jException error = newNeo4jError(code, message);
 
-        assertThat( error, instanceOf( TokenExpiredException.class ) );
-        assertEquals( code, error.code() );
-        assertEquals( message, error.getMessage() );
+        assertThat(error, instanceOf(TokenExpiredException.class));
+        assertEquals(code, error.code());
+        assertEquals(message, error.getMessage());
     }
 
     @Test
-    void shouldMapTransientTransactionTerminatedToClientException()
-    {
+    void shouldMapTransientTransactionTerminatedToClientException() {
         String code = "Neo.TransientError.Transaction.Terminated";
         String message = "message";
 
-        Neo4jException error = newNeo4jError( code, message );
+        Neo4jException error = newNeo4jError(code, message);
 
-        assertThat( error, instanceOf( ClientException.class ) );
-        assertEquals( "Neo.ClientError.Transaction.Terminated", error.code() );
-        assertEquals( message, error.getMessage() );
+        assertThat(error, instanceOf(ClientException.class));
+        assertEquals("Neo.ClientError.Transaction.Terminated", error.code());
+        assertEquals(message, error.getMessage());
     }
 
     @Test
-    void shouldMapTransientTransactionLockClientStoppedToClientException()
-    {
+    void shouldMapTransientTransactionLockClientStoppedToClientException() {
         String code = "Neo.TransientError.Transaction.LockClientStopped";
         String message = "message";
 
-        Neo4jException error = newNeo4jError( code, message );
+        Neo4jException error = newNeo4jError(code, message);
 
-        assertThat( error, instanceOf( ClientException.class ) );
-        assertEquals( "Neo.ClientError.Transaction.LockClientStopped", error.code() );
-        assertEquals( message, error.getMessage() );
+        assertThat(error, instanceOf(ClientException.class));
+        assertEquals("Neo.ClientError.Transaction.LockClientStopped", error.code());
+        assertEquals(message, error.getMessage());
     }
 }

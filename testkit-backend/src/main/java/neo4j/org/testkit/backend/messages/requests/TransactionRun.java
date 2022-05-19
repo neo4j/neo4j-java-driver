@@ -19,6 +19,10 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -30,95 +34,76 @@ import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import reactor.core.publisher.Mono;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.neo4j.driver.reactive.RxResult;
+import reactor.core.publisher.Mono;
 
 @Setter
 @Getter
-public class TransactionRun implements TestkitRequest
-{
+public class TransactionRun implements TestkitRequest {
     protected TransactionRunBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        TransactionHolder transactionHolder = testkitState.getTransactionHolder( data.getTxId() );
-        org.neo4j.driver.Result result = transactionHolder.getTransaction()
-                                                          .run( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() );
-        String resultId = testkitState.addResultHolder( new ResultHolder( transactionHolder, result ) );
-        return createResponse( resultId, result.keys() );
+    public TestkitResponse process(TestkitState testkitState) {
+        TransactionHolder transactionHolder = testkitState.getTransactionHolder(data.getTxId());
+        org.neo4j.driver.Result result = transactionHolder
+                .getTransaction()
+                .run(data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap());
+        String resultId = testkitState.addResultHolder(new ResultHolder(transactionHolder, result));
+        return createResponse(resultId, result.keys());
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncTransactionHolder( data.getTxId() )
-                           .thenCompose( transactionHolder -> transactionHolder.getTransaction()
-                                                                               .runAsync( data.getCypher(),
-                                                                                          data.getParams() != null ? data.getParams() : Collections.emptyMap() )
-                                                                               .thenApply( resultCursor ->
-                                                                                           {
-                                                                                               String resultId = testkitState.addAsyncResultHolder(
-                                                                                                       new ResultCursorHolder( transactionHolder,
-                                                                                                                               resultCursor ) );
-                                                                                               return createResponse( resultId, resultCursor.keys() );
-                                                                                           } ) );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState.getAsyncTransactionHolder(data.getTxId()).thenCompose(transactionHolder -> transactionHolder
+                .getTransaction()
+                .runAsync(data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap())
+                .thenApply(resultCursor -> {
+                    String resultId =
+                            testkitState.addAsyncResultHolder(new ResultCursorHolder(transactionHolder, resultCursor));
+                    return createResponse(resultId, resultCursor.keys());
+                }));
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return testkitState.getRxTransactionHolder( data.getTxId() )
-                           .flatMap( transactionHolder ->
-                                     {
-                                         RxResult result = transactionHolder.getTransaction()
-                                                                            .run( data.getCypher(),
-                                                                                  data.getParams() != null ? data.getParams() : Collections.emptyMap() );
-                                         String resultId = testkitState.addRxResultHolder( new RxResultHolder( transactionHolder, result ) );
-                                         // The keys() method causes RUN message exchange.
-                                         // However, it does not currently report errors.
-                                         return Mono.fromDirect( result.keys() ).map( keys -> createResponse( resultId, keys ) );
-                                     } );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return testkitState.getRxTransactionHolder(data.getTxId()).flatMap(transactionHolder -> {
+            RxResult result = transactionHolder
+                    .getTransaction()
+                    .run(data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap());
+            String resultId = testkitState.addRxResultHolder(new RxResultHolder(transactionHolder, result));
+            // The keys() method causes RUN message exchange.
+            // However, it does not currently report errors.
+            return Mono.fromDirect(result.keys()).map(keys -> createResponse(resultId, keys));
+        });
     }
 
     @Override
-    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
-    {
-        return testkitState.getReactiveTransactionHolder( data.getTxId() )
-                           .flatMap( transactionHolder ->
-                                     {
-                                         ReactiveTransaction tx = transactionHolder.getTransaction();
-                                         Map<String,Object> params = data.getParams() != null ? data.getParams() : Collections.emptyMap();
+    public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
+        return testkitState.getReactiveTransactionHolder(data.getTxId()).flatMap(transactionHolder -> {
+            ReactiveTransaction tx = transactionHolder.getTransaction();
+            Map<String, Object> params = data.getParams() != null ? data.getParams() : Collections.emptyMap();
 
-                                         return Mono.fromDirect( tx.run( data.getCypher(), params ) )
-                                                    .map( result ->
-                                                          {
-                                                              String id = testkitState.addReactiveResultHolder(
-                                                                      new ReactiveResultHolder( transactionHolder, result ) );
-                                                              return createResponse( id, result.keys() );
-                                                          } );
-                                     } );
+            return Mono.fromDirect(tx.run(data.getCypher(), params)).map(result -> {
+                String id = testkitState.addReactiveResultHolder(new ReactiveResultHolder(transactionHolder, result));
+                return createResponse(id, result.keys());
+            });
+        });
     }
 
-    protected Result createResponse( String resultId, List<String> keys )
-    {
-        return Result.builder().data( Result.ResultBody.builder().id( resultId ).keys( keys ).build() ).build();
+    protected Result createResponse(String resultId, List<String> keys) {
+        return Result.builder()
+                .data(Result.ResultBody.builder().id(resultId).keys(keys).build())
+                .build();
     }
 
     @Setter
     @Getter
-    public static class TransactionRunBody
-    {
+    public static class TransactionRunBody {
         private String txId;
         private String cypher;
-        @JsonDeserialize( using = TestkitCypherParamDeserializer.class )
-        private Map<String,Object> params;
+
+        @JsonDeserialize(using = TestkitCypherParamDeserializer.class)
+        private Map<String, Object> params;
     }
 }

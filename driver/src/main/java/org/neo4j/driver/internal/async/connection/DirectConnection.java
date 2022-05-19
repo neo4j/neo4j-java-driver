@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.async.connection;
 
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
@@ -32,125 +31,105 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 /**
  * This is a connection used by {@link DirectConnectionProvider} to connect to a remote database.
  */
-public class DirectConnection implements Connection
-{
+public class DirectConnection implements Connection {
     private final Connection delegate;
     private final AccessMode mode;
     private final DatabaseName databaseName;
     private final String impersonatedUser;
 
-    public DirectConnection( Connection delegate, DatabaseName databaseName, AccessMode mode, String impersonatedUser )
-    {
+    public DirectConnection(Connection delegate, DatabaseName databaseName, AccessMode mode, String impersonatedUser) {
         this.delegate = delegate;
         this.mode = mode;
         this.databaseName = databaseName;
         this.impersonatedUser = impersonatedUser;
     }
 
-    public Connection connection()
-    {
+    public Connection connection() {
         return delegate;
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return delegate.isOpen();
     }
 
     @Override
-    public void enableAutoRead()
-    {
+    public void enableAutoRead() {
         delegate.enableAutoRead();
     }
 
     @Override
-    public void disableAutoRead()
-    {
+    public void disableAutoRead() {
         delegate.disableAutoRead();
     }
 
     @Override
-    public void write( Message message, ResponseHandler handler )
-    {
-        delegate.write( message, handler );
+    public void write(Message message, ResponseHandler handler) {
+        delegate.write(message, handler);
     }
 
     @Override
-    public void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
-    {
-        delegate.write( message1, handler1, message2, handler2 );
+    public void write(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2) {
+        delegate.write(message1, handler1, message2, handler2);
     }
 
     @Override
-    public void writeAndFlush( Message message, ResponseHandler handler )
-    {
-        delegate.writeAndFlush( message, handler );
+    public void writeAndFlush(Message message, ResponseHandler handler) {
+        delegate.writeAndFlush(message, handler);
     }
 
     @Override
-    public void writeAndFlush( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
-    {
-        delegate.writeAndFlush( message1, handler1, message2, handler2 );
+    public void writeAndFlush(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2) {
+        delegate.writeAndFlush(message1, handler1, message2, handler2);
     }
 
     @Override
-    public CompletionStage<Void> reset()
-    {
+    public CompletionStage<Void> reset() {
         return delegate.reset();
     }
 
     @Override
-    public CompletionStage<Void> release()
-    {
+    public CompletionStage<Void> release() {
         return delegate.release();
     }
 
     @Override
-    public void terminateAndRelease( String reason )
-    {
-        delegate.terminateAndRelease( reason );
+    public void terminateAndRelease(String reason) {
+        delegate.terminateAndRelease(reason);
     }
 
     @Override
-    public String serverAgent()
-    {
+    public String serverAgent() {
         return delegate.serverAgent();
     }
 
     @Override
-    public BoltServerAddress serverAddress()
-    {
+    public BoltServerAddress serverAddress() {
         return delegate.serverAddress();
     }
 
     @Override
-    public BoltProtocol protocol()
-    {
+    public BoltProtocol protocol() {
         return delegate.protocol();
     }
 
     @Override
-    public AccessMode mode()
-    {
+    public AccessMode mode() {
         return mode;
     }
 
     @Override
-    public DatabaseName databaseName()
-    {
+    public DatabaseName databaseName() {
         return this.databaseName;
     }
 
     @Override
-    public String impersonatedUser()
-    {
+    public String impersonatedUser() {
         return impersonatedUser;
     }
 
     @Override
-    public void flush()
-    {
+    public void flush() {
         delegate.flush();
     }
 }

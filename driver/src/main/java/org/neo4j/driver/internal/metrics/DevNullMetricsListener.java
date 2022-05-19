@@ -19,82 +19,55 @@
 package org.neo4j.driver.internal.metrics;
 
 import java.util.function.IntSupplier;
-
 import org.neo4j.driver.net.ServerAddress;
 
-public enum DevNullMetricsListener implements MetricsListener
-{
+public enum DevNullMetricsListener implements MetricsListener {
     INSTANCE;
 
     @Override
-    public void beforeCreating( String poolId, ListenerEvent<?> creatingEvent )
-    {
-    }
+    public void beforeCreating(String poolId, ListenerEvent<?> creatingEvent) {}
 
     @Override
-    public void afterCreated( String poolId, ListenerEvent<?> creatingEvent )
-    {
-    }
+    public void afterCreated(String poolId, ListenerEvent<?> creatingEvent) {}
 
     @Override
-    public void afterFailedToCreate( String poolId )
-    {
-    }
+    public void afterFailedToCreate(String poolId) {}
 
     @Override
-    public void afterClosed( String poolId )
-    {
-    }
+    public void afterClosed(String poolId) {}
 
     @Override
-    public void beforeAcquiringOrCreating( String poolId, ListenerEvent<?> acquireEvent )
-    {
-    }
+    public void beforeAcquiringOrCreating(String poolId, ListenerEvent<?> acquireEvent) {}
 
     @Override
-    public void afterAcquiringOrCreating( String poolId )
-    {
-    }
+    public void afterAcquiringOrCreating(String poolId) {}
 
     @Override
-    public void afterAcquiredOrCreated( String poolId, ListenerEvent<?> acquireEvent )
-    {
-    }
+    public void afterAcquiredOrCreated(String poolId, ListenerEvent<?> acquireEvent) {}
 
     @Override
-    public void afterTimedOutToAcquireOrCreate( String poolId )
-    {
-    }
+    public void afterTimedOutToAcquireOrCreate(String poolId) {}
 
     @Override
-    public void afterConnectionCreated( String poolId, ListenerEvent<?> inUseEvent )
-    {
-    }
+    public void afterConnectionCreated(String poolId, ListenerEvent<?> inUseEvent) {}
 
     @Override
-    public void afterConnectionReleased( String poolId, ListenerEvent<?> inUseEvent )
-    {
-    }
+    public void afterConnectionReleased(String poolId, ListenerEvent<?> inUseEvent) {}
 
     @Override
-    public ListenerEvent<?> createListenerEvent()
-    {
+    public ListenerEvent<?> createListenerEvent() {
         return DevNullListenerEvent.INSTANCE;
     }
 
     @Override
-    public void registerPoolMetrics( String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier )
-    {
-    }
+    public void registerPoolMetrics(
+            String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier) {}
 
     @Override
-    public void removePoolMetrics( String poolId )
-    {
-    }
+    public void removePoolMetrics(String poolId) {}
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "Driver metrics are not available if they are not enabled.";
     }
 }

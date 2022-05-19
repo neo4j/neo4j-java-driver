@@ -18,18 +18,16 @@
  */
 package org.neo4j.driver.internal.metrics;
 
+import static java.lang.String.format;
+
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntSupplier;
-
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.net.ServerAddress;
 
-import static java.lang.String.format;
-
-final class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, ConnectionPoolMetricsListener
-{
+final class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, ConnectionPoolMetricsListener {
     private final ServerAddress address;
     private final IntSupplier inUseSupplier;
     private final IntSupplier idleSupplier;
@@ -53,11 +51,11 @@ final class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Conn
     private final AtomicLong totalInUseCount = new AtomicLong();
     private final String id;
 
-    InternalConnectionPoolMetrics( String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier )
-    {
-        Objects.requireNonNull( address );
-        Objects.requireNonNull( inUseSupplier );
-        Objects.requireNonNull( idleSupplier );
+    InternalConnectionPoolMetrics(
+            String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
+        Objects.requireNonNull(address);
+        Objects.requireNonNull(inUseSupplier);
+        Objects.requireNonNull(idleSupplier);
 
         this.id = poolId;
         this.address = address;
@@ -66,176 +64,162 @@ final class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Conn
     }
 
     @Override
-    public void beforeCreating( ListenerEvent<?> connEvent )
-    {
+    public void beforeCreating(ListenerEvent<?> connEvent) {
         creating.incrementAndGet();
         connEvent.start();
     }
 
     @Override
-    public void afterFailedToCreate()
-    {
+    public void afterFailedToCreate() {
         failedToCreate.incrementAndGet();
         creating.decrementAndGet();
     }
 
     @Override
-    public void afterCreated( ListenerEvent<?> connEvent )
-    {
+    public void afterCreated(ListenerEvent<?> connEvent) {
         created.incrementAndGet();
         creating.decrementAndGet();
         long sample = ((TimeRecorderListenerEvent) connEvent).getSample();
 
-        totalConnectionTime.addAndGet( sample );
+        totalConnectionTime.addAndGet(sample);
     }
 
     @Override
-    public void afterClosed()
-    {
+    public void afterClosed() {
         closed.incrementAndGet();
     }
 
     @Override
-    public void beforeAcquiringOrCreating( ListenerEvent<?> acquireEvent )
-    {
+    public void beforeAcquiringOrCreating(ListenerEvent<?> acquireEvent) {
         acquireEvent.start();
         acquiring.incrementAndGet();
     }
 
     @Override
-    public void afterAcquiringOrCreating()
-    {
+    public void afterAcquiringOrCreating() {
         acquiring.decrementAndGet();
     }
 
     @Override
-    public void afterAcquiredOrCreated( ListenerEvent<?> acquireEvent )
-    {
+    public void afterAcquiredOrCreated(ListenerEvent<?> acquireEvent) {
         acquired.incrementAndGet();
         long sample = ((TimeRecorderListenerEvent) acquireEvent).getSample();
 
-        totalAcquisitionTime.addAndGet( sample );
+        totalAcquisitionTime.addAndGet(sample);
     }
 
     @Override
-    public void afterTimedOutToAcquireOrCreate()
-    {
+    public void afterTimedOutToAcquireOrCreate() {
         timedOutToAcquire.incrementAndGet();
     }
 
     @Override
-    public void acquired( ListenerEvent<?> inUseEvent )
-    {
+    public void acquired(ListenerEvent<?> inUseEvent) {
         inUseEvent.start();
     }
 
     @Override
-    public void released( ListenerEvent<?> inUseEvent )
-    {
+    public void released(ListenerEvent<?> inUseEvent) {
         totalInUseCount.incrementAndGet();
         long sample = ((TimeRecorderListenerEvent) inUseEvent).getSample();
 
-        totalInUseTime.addAndGet( sample );
+        totalInUseTime.addAndGet(sample);
     }
 
     @Override
-    public String id()
-    {
+    public String id() {
         return this.id;
     }
 
     @Override
-    public int inUse()
-    {
+    public int inUse() {
         return inUseSupplier.getAsInt();
     }
 
     @Override
-    public int idle()
-    {
+    public int idle() {
         return idleSupplier.getAsInt();
     }
 
     @Override
-    public int creating()
-    {
+    public int creating() {
         return creating.get();
     }
 
     @Override
-    public long created()
-    {
+    public long created() {
         return created.get();
     }
 
     @Override
-    public long failedToCreate()
-    {
+    public long failedToCreate() {
         return failedToCreate.get();
     }
 
     @Override
-    public long timedOutToAcquire()
-    {
+    public long timedOutToAcquire() {
         return timedOutToAcquire.get();
     }
 
     @Override
-    public long totalAcquisitionTime()
-    {
+    public long totalAcquisitionTime() {
         return totalAcquisitionTime.get();
     }
 
     @Override
-    public long totalConnectionTime()
-    {
+    public long totalConnectionTime() {
         return totalConnectionTime.get();
     }
 
     @Override
-    public long totalInUseTime()
-    {
+    public long totalInUseTime() {
         return totalInUseTime.get();
     }
 
     @Override
-    public long totalInUseCount()
-    {
+    public long totalInUseCount() {
         return totalInUseCount.get();
     }
 
     @Override
-    public long closed()
-    {
+    public long closed() {
         return closed.get();
     }
 
     @Override
-    public int acquiring()
-    {
+    public int acquiring() {
         return acquiring.get();
     }
 
     @Override
-    public long acquired()
-    {
+    public long acquired() {
         return this.acquired.get();
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s=[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, " +
-                       "timedOutToAcquire=%s, inUse=%s, idle=%s, " +
-                       "totalAcquisitionTime=%s, totalConnectionTime=%s, totalInUseTime=%s, totalInUseCount=%s]",
-                       id(), created(), closed(), creating(), failedToCreate(), acquiring(), acquired(),
-                       timedOutToAcquire(), inUse(), idle(),
-                       totalAcquisitionTime(), totalConnectionTime(), totalInUseTime(), totalInUseCount() );
+    public String toString() {
+        return format(
+                "%s=[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, "
+                        + "timedOutToAcquire=%s, inUse=%s, idle=%s, "
+                        + "totalAcquisitionTime=%s, totalConnectionTime=%s, totalInUseTime=%s, totalInUseCount=%s]",
+                id(),
+                created(),
+                closed(),
+                creating(),
+                failedToCreate(),
+                acquiring(),
+                acquired(),
+                timedOutToAcquire(),
+                inUse(),
+                idle(),
+                totalAcquisitionTime(),
+                totalConnectionTime(),
+                totalInUseTime(),
+                totalInUseCount());
     }
 
     // This method is for testing purposes only
-    public ServerAddress getAddress()
-    {
+    public ServerAddress getAddress() {
         return address;
     }
 }

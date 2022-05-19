@@ -18,74 +18,61 @@
  */
 package org.neo4j.driver.internal.async.inbound;
 
-import io.netty.buffer.ByteBuf;
-
-import org.neo4j.driver.internal.packstream.PackInput;
-
 import static java.util.Objects.requireNonNull;
 
-public class ByteBufInput implements PackInput
-{
+import io.netty.buffer.ByteBuf;
+import org.neo4j.driver.internal.packstream.PackInput;
+
+public class ByteBufInput implements PackInput {
     private ByteBuf buf;
 
-    public void start( ByteBuf newBuf )
-    {
+    public void start(ByteBuf newBuf) {
         assertNotStarted();
-        buf = requireNonNull( newBuf );
+        buf = requireNonNull(newBuf);
     }
 
-    public void stop()
-    {
+    public void stop() {
         buf = null;
     }
 
     @Override
-    public byte readByte()
-    {
+    public byte readByte() {
         return buf.readByte();
     }
 
     @Override
-    public short readShort()
-    {
+    public short readShort() {
         return buf.readShort();
     }
 
     @Override
-    public int readInt()
-    {
+    public int readInt() {
         return buf.readInt();
     }
 
     @Override
-    public long readLong()
-    {
+    public long readLong() {
         return buf.readLong();
     }
 
     @Override
-    public double readDouble()
-    {
+    public double readDouble() {
         return buf.readDouble();
     }
 
     @Override
-    public void readBytes( byte[] into, int offset, int toRead )
-    {
-        buf.readBytes( into, offset, toRead );
+    public void readBytes(byte[] into, int offset, int toRead) {
+        buf.readBytes(into, offset, toRead);
     }
 
     @Override
-    public byte peekByte()
-    {
-        return buf.getByte( buf.readerIndex() );
+    public byte peekByte() {
+        return buf.getByte(buf.readerIndex());
     }
 
-    private void assertNotStarted()
-    {
-        if ( buf != null )
-        {
-            throw new IllegalStateException( "Already started" );
+    private void assertNotStarted() {
+        if (buf != null) {
+            throw new IllegalStateException("Already started");
         }
     }
 }

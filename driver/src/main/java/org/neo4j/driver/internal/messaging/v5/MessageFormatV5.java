@@ -22,17 +22,14 @@ import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
-public class MessageFormatV5 implements MessageFormat
-{
+public class MessageFormatV5 implements MessageFormat {
     @Override
-    public Writer newWriter( PackOutput output )
-    {
-        return new MessageWriterV5( output );
+    public Writer newWriter(PackOutput output) {
+        return new MessageWriterV5(output);
     }
 
     @Override
-    public Reader newReader( PackInput input )
-    {
-        return new MessageReaderV5( input );
+    public Reader newReader(PackInput input) {
+        return new MessageReaderV5(input);
     }
 }

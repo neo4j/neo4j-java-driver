@@ -20,6 +20,9 @@ package org.neo4j.docs.driver;
 
 // tag::service-unavailable-import[]
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+// end::service-unavailable-import[]
+
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -28,42 +31,31 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-// end::service-unavailable-import[]
-
-public class ServiceUnavailableExample implements AutoCloseable
-{
+public class ServiceUnavailableExample implements AutoCloseable {
     protected final Driver driver;
 
-    public ServiceUnavailableExample( String uri, String user, String password )
-    {
+    public ServiceUnavailableExample(String uri, String user, String password) {
         Config config = Config.builder()
-                .withMaxTransactionRetryTime( 3, SECONDS )
-                .withLogging( Logging.none() )
+                .withMaxTransactionRetryTime(3, SECONDS)
+                .withLogging(Logging.none())
                 .build();
 
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         driver.close();
     }
 
     // tag::service-unavailable[]
-    public boolean addItem()
-    {
-        try ( Session session = driver.session() )
-        {
-            return session.writeTransaction( tx ->
-                                             {
-                                                 tx.run( "CREATE (a:Item)" ).consume();
-                                                 return true;
-                                             } );
-        }
-        catch ( ServiceUnavailableException ex )
-        {
+    public boolean addItem() {
+        try (Session session = driver.session()) {
+            return session.writeTransaction(tx -> {
+                tx.run("CREATE (a:Item)").consume();
+                return true;
+            });
+        } catch (ServiceUnavailableException ex) {
             return false;
         }
     }

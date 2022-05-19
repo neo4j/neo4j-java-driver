@@ -18,8 +18,11 @@
  */
 package org.neo4j.driver.internal.util;
 
-import java.util.HashMap;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.neo4j.driver.Values.value;
 
+import java.util.HashMap;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
@@ -27,39 +30,30 @@ import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import static org.neo4j.driver.Values.value;
-
-public class ValueFactory
-{
-    public static NodeValue emptyNodeValue()
-    {
-        return new NodeValue( new InternalNode( 1234, singletonList( "User" ), new HashMap<>() ) );
+public class ValueFactory {
+    public static NodeValue emptyNodeValue() {
+        return new NodeValue(new InternalNode(1234, singletonList("User"), new HashMap<>()));
     }
 
-    public static NodeValue filledNodeValue()
-    {
-        return new NodeValue( new InternalNode( 1234, singletonList( "User" ), singletonMap( "name", value( "Dodo" ) ) ) );
+    public static NodeValue filledNodeValue() {
+        return new NodeValue(new InternalNode(1234, singletonList("User"), singletonMap("name", value("Dodo"))));
     }
 
-    public static RelationshipValue emptyRelationshipValue()
-    {
-        return new RelationshipValue( new InternalRelationship( 1234, 1, 2, "KNOWS" ) );
+    public static RelationshipValue emptyRelationshipValue() {
+        return new RelationshipValue(new InternalRelationship(1234, 1, 2, "KNOWS"));
     }
 
-    public static RelationshipValue filledRelationshipValue()
-    {
-        return new RelationshipValue( new InternalRelationship( 1234, 1, 2, "KNOWS", singletonMap( "name", value( "Dodo" ) ) ) );
+    public static RelationshipValue filledRelationshipValue() {
+        return new RelationshipValue(
+                new InternalRelationship(1234, 1, 2, "KNOWS", singletonMap("name", value("Dodo"))));
     }
 
-    public static PathValue filledPathValue()
-    {
-        return new PathValue( new InternalPath( new InternalNode( 42L ), new InternalRelationship( 43L, 42L, 44L, "T" ), new InternalNode( 44L ) ) );
+    public static PathValue filledPathValue() {
+        return new PathValue(new InternalPath(
+                new InternalNode(42L), new InternalRelationship(43L, 42L, 44L, "T"), new InternalNode(44L)));
     }
 
-    public static PathValue emptyPathValue()
-    {
-        return new PathValue( new InternalPath( new InternalNode( 1 ) ) );
+    public static PathValue emptyPathValue() {
+        return new PathValue(new InternalPath(new InternalNode(1)));
     }
 }

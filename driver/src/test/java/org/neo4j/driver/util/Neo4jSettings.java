@@ -18,16 +18,15 @@
  */
 package org.neo4j.driver.util;
 
+import static org.neo4j.driver.internal.util.Iterables.map;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.neo4j.driver.internal.util.Iterables.map;
-
-public class Neo4jSettings
-{
+public class Neo4jSettings {
     public static final String DATA_DIR = "dbms.directories.data";
     public static final String IMPORT_DIR = "dbms.directories.import";
     // 5.0
@@ -44,7 +43,7 @@ public class Neo4jSettings
 
     public static final String DEFAULT_DATA_DIR = "data";
 
-    static final int TEST_JVM_ID = Integer.getInteger( "testJvmId", 0 );
+    static final int TEST_JVM_ID = Integer.getInteger("testJvmId", 0);
 
     private static final int DEFAULT_HTTP_PORT = 7000;
     private static final int DEFAULT_HTTPS_PORT = 8000;
@@ -59,88 +58,88 @@ public class Neo4jSettings
     private final Map<String, String> settings;
     private final Set<String> excludes;
 
-    public static final Neo4jSettings TEST_SETTINGS = new Neo4jSettings( map(
-            "dbms.connector.http.listen_address", ":" + CURRENT_HTTP_PORT,
-            "dbms.connector.https.listen_address", ":" + CURRENT_HTTPS_PORT,
-            "dbms.connector.bolt.listen_address", ":" + CURRENT_BOLT_PORT,
-            "dbms.windows_service_name", WINDOWS_SERVICE_NAME,
+    public static final Neo4jSettings TEST_SETTINGS = new Neo4jSettings(
+            map(
+                    "dbms.connector.http.listen_address",
+                    ":" + CURRENT_HTTP_PORT,
+                    "dbms.connector.https.listen_address",
+                    ":" + CURRENT_HTTPS_PORT,
+                    "dbms.connector.bolt.listen_address",
+                    ":" + CURRENT_BOLT_PORT,
+                    "dbms.windows_service_name",
+                    WINDOWS_SERVICE_NAME,
+                    DATA_DIR,
+                    DEFAULT_DATA_DIR,
+                    IMPORT_DIR,
+                    DEFAULT_IMPORT_DIR,
+                    BOLT_TLS_LEVEL,
+                    DEFAULT_BOLT_TLS_LEVEL,
+                    LISTEN_ADDR,
+                    IPV6_ENABLED_ADDR),
+            Collections.<String>emptySet());
 
-            DATA_DIR, DEFAULT_DATA_DIR,
-            IMPORT_DIR, DEFAULT_IMPORT_DIR,
-            BOLT_TLS_LEVEL, DEFAULT_BOLT_TLS_LEVEL,
-            LISTEN_ADDR, IPV6_ENABLED_ADDR ), Collections.<String>emptySet() );
-
-    public enum BoltTlsLevel
-    {
+    public enum BoltTlsLevel {
         OPTIONAL,
         REQUIRED,
         DISABLED
     }
 
-    private Neo4jSettings( Map<String, String> settings, Set<String> excludes )
-    {
+    private Neo4jSettings(Map<String, String> settings, Set<String> excludes) {
         this.settings = settings;
         this.excludes = excludes;
     }
 
-    public Map<String, String> propertiesMap()
-    {
+    public Map<String, String> propertiesMap() {
         return settings;
     }
 
-    public Neo4jSettings updateWith( String key, String value )
-    {
-        return updateWith( map(key, value), excludes );
+    public Neo4jSettings updateWith(String key, String value) {
+        return updateWith(map(key, value), excludes);
     }
 
-    private Neo4jSettings updateWith( Map<String,String> updates, Set<String> excludes )
-    {
-        HashMap<String,String> newSettings = new HashMap<>( settings );
-        for ( Map.Entry<String,String> entry : updates.entrySet() )
-        {
-            newSettings.put( entry.getKey(), entry.getValue() );
+    private Neo4jSettings updateWith(Map<String, String> updates, Set<String> excludes) {
+        HashMap<String, String> newSettings = new HashMap<>(settings);
+        for (Map.Entry<String, String> entry : updates.entrySet()) {
+            newSettings.put(entry.getKey(), entry.getValue());
         }
-        for ( String exclude : excludes )
-        {
-            newSettings.remove( exclude );
+        for (String exclude : excludes) {
+            newSettings.remove(exclude);
         }
-        return new Neo4jSettings( newSettings, excludes );
+        return new Neo4jSettings(newSettings, excludes);
     }
 
-    public Neo4jSettings without(String key)
-    {
-        Set<String> newExcludes = new HashSet<>( excludes );
-        newExcludes.add( key );
-        Map<String,String> newMap = new HashMap<>( this.settings );
-        newMap.remove( key );
-        Neo4jSettings newSettings = new Neo4jSettings( newMap, newExcludes );
+    public Neo4jSettings without(String key) {
+        Set<String> newExcludes = new HashSet<>(excludes);
+        newExcludes.add(key);
+        Map<String, String> newMap = new HashMap<>(this.settings);
+        newMap.remove(key);
+        Neo4jSettings newSettings = new Neo4jSettings(newMap, newExcludes);
         return newSettings;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        { return true; }
-        if ( o == null || getClass() != o.getClass() )
-        { return false; }
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         Neo4jSettings that = (Neo4jSettings) o;
 
-        if ( !settings.equals( that.settings ) )
-        { return false; }
-        return excludes.equals( that.excludes );
-
+        if (!settings.equals(that.settings)) {
+            return false;
+        }
+        return excludes.equals(that.excludes);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return settings.hashCode();
     }
 
-    public Set<String> excludes()
-    {
+    public Set<String> excludes() {
         return excludes;
     }
 }

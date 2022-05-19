@@ -25,20 +25,17 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 // end::kerberos-auth-import[]
 
-public class KerberosAuthExample implements AutoCloseable
-{
+public class KerberosAuthExample implements AutoCloseable {
     private final Driver driver;
 
     // tag::kerberos-auth[]
-    public KerberosAuthExample( String uri, String ticket )
-    {
-        driver = GraphDatabase.driver( uri, AuthTokens.kerberos( ticket ) );
+    public KerberosAuthExample(String uri, String ticket) {
+        driver = GraphDatabase.driver(uri, AuthTokens.kerberos(ticket));
     }
     // end::kerberos-auth[]
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         driver.close();
     }
 }

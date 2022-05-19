@@ -19,7 +19,6 @@
 package org.neo4j.driver;
 
 import java.util.List;
-
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.types.MapAccessorWithDefaultValue;
@@ -39,8 +38,7 @@ import org.neo4j.driver.util.Pair;
  * @since 1.0
  */
 @Immutable
-public interface Record extends MapAccessorWithDefaultValue
-{
+public interface Record extends MapAccessorWithDefaultValue {
     /**
      * Retrieve the keys of the underlying map
      *
@@ -64,7 +62,7 @@ public interface Record extends MapAccessorWithDefaultValue
      * @param key the give key
      * @return the index of the field as used by {@link #get(int)}
      */
-    int index( String key );
+    int index(String key);
 
     /**
      * Retrieve the value at the given field index
@@ -73,7 +71,7 @@ public interface Record extends MapAccessorWithDefaultValue
      * @return the value or a {@link org.neo4j.driver.internal.value.NullValue} if the index is out of bounds
      * @throws ClientException if record has not been initialized
      */
-    Value get( int index );
+    Value get(int index);
 
     /**
      * Retrieve all record fields

@@ -25,8 +25,7 @@ import org.neo4j.driver.util.Immutable;
  * @since 1.0
  */
 @Immutable
-public interface InputPosition
-{
+public interface InputPosition {
     /**
      * The character offset referred to by this position; offset numbers start at 0.
      *

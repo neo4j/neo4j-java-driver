@@ -21,11 +21,9 @@ package neo4j.org.testkit.backend.messages.responses;
 import lombok.Builder;
 
 @Builder
-public class RunTest implements TestkitResponse
-{
+public class RunTest implements TestkitResponse {
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "RunTest";
     }
 }

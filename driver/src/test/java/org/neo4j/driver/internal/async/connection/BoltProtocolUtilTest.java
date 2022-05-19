@@ -18,15 +18,6 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
-import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
-import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
-import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.BOLT_MAGIC_PREAMBLE;
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.handshakeBuf;
@@ -36,61 +27,65 @@ import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.writeE
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.writeMessageBoundary;
 import static org.neo4j.driver.util.TestUtil.assertByteBufContains;
 
-class BoltProtocolUtilTest
-{
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
+import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
+import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
+
+class BoltProtocolUtilTest {
     @Test
-    void shouldReturnHandshakeBuf()
-    {
+    void shouldReturnHandshakeBuf() {
         assertByteBufContains(
                 handshakeBuf(),
-                BOLT_MAGIC_PREAMBLE, BoltProtocolV5.VERSION.toInt(), (2 << 16) | BoltProtocolV44.VERSION.toInt(), BoltProtocolV41.VERSION.toInt(),
-                BoltProtocolV3.VERSION.toInt()
-        );
+                BOLT_MAGIC_PREAMBLE,
+                BoltProtocolV5.VERSION.toInt(),
+                (2 << 16) | BoltProtocolV44.VERSION.toInt(),
+                BoltProtocolV41.VERSION.toInt(),
+                BoltProtocolV3.VERSION.toInt());
     }
 
     @Test
-    void shouldReturnHandshakeString()
-    {
-        assertEquals( "[0x6060b017, 5, 132100, 260, 3]", handshakeString() );
+    void shouldReturnHandshakeString() {
+        assertEquals("[0x6060b017, 5, 132100, 260, 3]", handshakeString());
     }
 
     @Test
-    void shouldWriteMessageBoundary()
-    {
+    void shouldWriteMessageBoundary() {
         ByteBuf buf = Unpooled.buffer();
 
-        buf.writeInt( 1 );
-        buf.writeInt( 2 );
-        buf.writeInt( 3 );
-        writeMessageBoundary( buf );
+        buf.writeInt(1);
+        buf.writeInt(2);
+        buf.writeInt(3);
+        writeMessageBoundary(buf);
 
-        assertByteBufContains( buf, 1, 2, 3, (byte) 0, (byte) 0 );
+        assertByteBufContains(buf, 1, 2, 3, (byte) 0, (byte) 0);
     }
 
     @Test
-    void shouldWriteEmptyChunkHeader()
-    {
+    void shouldWriteEmptyChunkHeader() {
         ByteBuf buf = Unpooled.buffer();
 
-        writeEmptyChunkHeader( buf );
-        buf.writeInt( 1 );
-        buf.writeInt( 2 );
-        buf.writeInt( 3 );
+        writeEmptyChunkHeader(buf);
+        buf.writeInt(1);
+        buf.writeInt(2);
+        buf.writeInt(3);
 
-        assertByteBufContains( buf, (byte) 0, (byte) 0, 1, 2, 3 );
+        assertByteBufContains(buf, (byte) 0, (byte) 0, 1, 2, 3);
     }
 
     @Test
-    void shouldWriteChunkHeader()
-    {
+    void shouldWriteChunkHeader() {
         ByteBuf buf = Unpooled.buffer();
 
-        writeEmptyChunkHeader( buf );
-        buf.writeInt( 1 );
-        buf.writeInt( 2 );
-        buf.writeInt( 3 );
-        writeChunkHeader( buf, 0, 42 );
+        writeEmptyChunkHeader(buf);
+        buf.writeInt(1);
+        buf.writeInt(2);
+        buf.writeInt(3);
+        writeChunkHeader(buf, 0, 42);
 
-        assertByteBufContains( buf, (short) 42, 1, 2, 3 );
+        assertByteBufContains(buf, (short) 42, 1, 2, 3);
     }
 }

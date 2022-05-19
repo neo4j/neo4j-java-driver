@@ -18,21 +18,19 @@
  */
 package neo4j.org.testkit.backend.holder;
 
+import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-
-import java.util.concurrent.CompletableFuture;
-
 import org.neo4j.driver.SessionConfig;
 
 @RequiredArgsConstructor
 @Getter
-public abstract class AbstractSessionHolder<T>
-{
+public abstract class AbstractSessionHolder<T> {
     public final DriverHolder driverHolder;
     public final T session;
     public final SessionConfig config;
+
     @Setter
     public CompletableFuture<Void> txWorkFuture;
 }

@@ -18,15 +18,14 @@
  */
 package org.neo4j.driver.internal.messaging.request;
 
+import static java.util.Collections.unmodifiableMap;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.Message;
-
-import static java.util.Collections.unmodifiableMap;
 
 /**
  * From the application point of view it is not interesting to know about the role a member plays in the cluster. Instead, the application needs to know which
@@ -34,10 +33,9 @@ import static java.util.Collections.unmodifiableMap;
  * <p>
  * This message is used to fetch this routing information.
  */
-public class RouteMessage implements Message
-{
-    public final static byte SIGNATURE = 0x66;
-    private final Map<String,Value> routingContext;
+public class RouteMessage implements Message {
+    public static final byte SIGNATURE = 0x66;
+    private final Map<String, Value> routingContext;
     private final Set<Bookmark> bookmarks;
     private final String databaseName;
     private final String impersonatedUser;
@@ -50,66 +48,56 @@ public class RouteMessage implements Message
      * @param databaseName     The name of the database to get the routing table for.
      * @param impersonatedUser The name of the impersonated user to get the routing table for, should be {@code null} for non-impersonated requests
      */
-    public RouteMessage( Map<String,Value> routingContext, Set<Bookmark> bookmarks, String databaseName, String impersonatedUser )
-    {
-        this.routingContext = unmodifiableMap( routingContext );
+    public RouteMessage(
+            Map<String, Value> routingContext, Set<Bookmark> bookmarks, String databaseName, String impersonatedUser) {
+        this.routingContext = unmodifiableMap(routingContext);
         this.bookmarks = bookmarks;
         this.databaseName = databaseName;
         this.impersonatedUser = impersonatedUser;
     }
 
-    public Map<String,Value> getRoutingContext()
-    {
+    public Map<String, Value> getRoutingContext() {
         return routingContext;
     }
 
-    public Set<Bookmark> getBookmarks()
-    {
+    public Set<Bookmark> getBookmarks() {
         return bookmarks;
     }
 
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return databaseName;
     }
 
-    public String getImpersonatedUser()
-    {
+    public String getImpersonatedUser() {
         return impersonatedUser;
     }
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "ROUTE %s %s %s %s", routingContext, bookmarks, databaseName, impersonatedUser );
+    public String toString() {
+        return String.format("ROUTE %s %s %s %s", routingContext, bookmarks, databaseName, impersonatedUser);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         RouteMessage that = (RouteMessage) o;
-        return routingContext.equals( that.routingContext ) &&
-               Objects.equals( databaseName, that.databaseName ) &&
-               Objects.equals( impersonatedUser, that.impersonatedUser );
+        return routingContext.equals(that.routingContext)
+                && Objects.equals(databaseName, that.databaseName)
+                && Objects.equals(impersonatedUser, that.impersonatedUser);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( routingContext, databaseName, impersonatedUser );
+    public int hashCode() {
+        return Objects.hash(routingContext, databaseName, impersonatedUser);
     }
 }

@@ -18,35 +18,35 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.handler.ssl.SslHandler;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
-
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.Logging;
-
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAddress;
 
-public class NettyChannelInitializer extends ChannelInitializer<Channel>
-{
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.handler.ssl.SslHandler;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.Clock;
+
+public class NettyChannelInitializer extends ChannelInitializer<Channel> {
     private final BoltServerAddress address;
     private final SecurityPlan securityPlan;
     private final int connectTimeoutMillis;
     private final Clock clock;
     private final Logging logging;
 
-    public NettyChannelInitializer( BoltServerAddress address, SecurityPlan securityPlan, int connectTimeoutMillis,
-            Clock clock, Logging logging )
-    {
+    public NettyChannelInitializer(
+            BoltServerAddress address,
+            SecurityPlan securityPlan,
+            int connectTimeoutMillis,
+            Clock clock,
+            Logging logging) {
         this.address = address;
         this.securityPlan = securityPlan;
         this.connectTimeoutMillis = connectTimeoutMillis;
@@ -55,43 +55,37 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
     }
 
     @Override
-    protected void initChannel( Channel channel )
-    {
-        if ( securityPlan.requiresEncryption() )
-        {
+    protected void initChannel(Channel channel) {
+        if (securityPlan.requiresEncryption()) {
             SslHandler sslHandler = createSslHandler();
-            channel.pipeline().addFirst( sslHandler );
+            channel.pipeline().addFirst(sslHandler);
         }
 
-        updateChannelAttributes( channel );
+        updateChannelAttributes(channel);
     }
 
-    private SslHandler createSslHandler()
-    {
+    private SslHandler createSslHandler() {
         SSLEngine sslEngine = createSslEngine();
-        SslHandler sslHandler = new SslHandler( sslEngine );
-        sslHandler.setHandshakeTimeoutMillis( connectTimeoutMillis );
+        SslHandler sslHandler = new SslHandler(sslEngine);
+        sslHandler.setHandshakeTimeoutMillis(connectTimeoutMillis);
         return sslHandler;
     }
 
-    private SSLEngine createSslEngine()
-    {
+    private SSLEngine createSslEngine() {
         SSLContext sslContext = securityPlan.sslContext();
-        SSLEngine sslEngine = sslContext.createSSLEngine( address.host(), address.port() );
-        sslEngine.setUseClientMode( true );
-        if ( securityPlan.requiresHostnameVerification() )
-        {
+        SSLEngine sslEngine = sslContext.createSSLEngine(address.host(), address.port());
+        sslEngine.setUseClientMode(true);
+        if (securityPlan.requiresHostnameVerification()) {
             SSLParameters sslParameters = sslEngine.getSSLParameters();
-            sslParameters.setEndpointIdentificationAlgorithm( "HTTPS" );
-            sslEngine.setSSLParameters( sslParameters );
+            sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
+            sslEngine.setSSLParameters(sslParameters);
         }
         return sslEngine;
     }
 
-    private void updateChannelAttributes( Channel channel )
-    {
-        setServerAddress( channel, address );
-        setCreationTimestamp( channel, clock.millis() );
-        setMessageDispatcher( channel, new InboundMessageDispatcher( channel, logging ) );
+    private void updateChannelAttributes(Channel channel) {
+        setServerAddress(channel, address);
+        setCreationTimestamp(channel, clock.millis());
+        setMessageDispatcher(channel, new InboundMessageDispatcher(channel, logging));
     }
 }

@@ -18,24 +18,21 @@
  */
 package org.neo4j.driver.internal.async.outbound;
 
+import static io.netty.buffer.ByteBufUtil.hexDump;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageEncoder;
-
 import java.util.List;
-
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.async.connection.BoltProtocolUtil;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Logging;
 
-import static io.netty.buffer.ByteBufUtil.hexDump;
-
-public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
-{
+public class OutboundMessageHandler extends MessageToMessageEncoder<Message> {
     public static final String NAME = OutboundMessageHandler.class.getSimpleName();
     private final ChunkAwareByteBufOutput output;
     private final MessageFormat.Writer writer;
@@ -43,51 +40,43 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 
     private Logger log;
 
-    public OutboundMessageHandler( MessageFormat messageFormat, Logging logging )
-    {
+    public OutboundMessageHandler(MessageFormat messageFormat, Logging logging) {
         this.output = new ChunkAwareByteBufOutput();
-        this.writer = messageFormat.newWriter( output );
+        this.writer = messageFormat.newWriter(output);
         this.logging = logging;
     }
 
     @Override
-    public void handlerAdded( ChannelHandlerContext ctx )
-    {
-        log = new ChannelActivityLogger( ctx.channel(), logging, getClass() );
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        log = new ChannelActivityLogger(ctx.channel(), logging, getClass());
     }
 
     @Override
-    public void handlerRemoved( ChannelHandlerContext ctx )
-    {
+    public void handlerRemoved(ChannelHandlerContext ctx) {
         log = null;
     }
 
     @Override
-    protected void encode( ChannelHandlerContext ctx, Message msg, List<Object> out )
-    {
-        log.debug( "C: %s", msg );
+    protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
+        log.debug("C: %s", msg);
 
         ByteBuf messageBuf = ctx.alloc().ioBuffer();
-        output.start( messageBuf );
-        try
-        {
-            writer.write( msg );
+        output.start(messageBuf);
+        try {
+            writer.write(msg);
             output.stop();
-        }
-        catch ( Throwable error )
-        {
+        } catch (Throwable error) {
             output.stop();
             // release buffer because it will not get added to the out list and no other handler is going to handle it
             messageBuf.release();
-            throw new EncoderException( "Failed to write outbound message: " + msg, error );
+            throw new EncoderException("Failed to write outbound message: " + msg, error);
         }
 
-        if ( log.isTraceEnabled() )
-        {
-            log.trace( "C: %s", hexDump( messageBuf ) );
+        if (log.isTraceEnabled()) {
+            log.trace("C: %s", hexDump(messageBuf));
         }
 
-        BoltProtocolUtil.writeMessageBoundary( messageBuf );
-        out.add( messageBuf );
+        BoltProtocolUtil.writeMessageBoundary(messageBuf);
+        out.add(messageBuf);
     }
 }

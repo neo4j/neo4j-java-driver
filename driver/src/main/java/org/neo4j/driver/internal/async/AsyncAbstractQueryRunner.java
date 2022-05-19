@@ -18,41 +18,35 @@
  */
 package org.neo4j.driver.internal.async;
 
+import static org.neo4j.driver.internal.AbstractQueryRunner.parameters;
+
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-
-import org.neo4j.driver.Record;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.async.AsyncQueryRunner;
 import org.neo4j.driver.async.ResultCursor;
 
-import static org.neo4j.driver.internal.AbstractQueryRunner.parameters;
-
-public abstract class AsyncAbstractQueryRunner implements AsyncQueryRunner
-{
+public abstract class AsyncAbstractQueryRunner implements AsyncQueryRunner {
     @Override
-    public final CompletionStage<ResultCursor> runAsync(String query, Value parameters )
-    {
-        return runAsync( new Query(query, parameters ) );
+    public final CompletionStage<ResultCursor> runAsync(String query, Value parameters) {
+        return runAsync(new Query(query, parameters));
     }
 
     @Override
-    public final CompletionStage<ResultCursor> runAsync(String query, Map<String,Object> parameters)
-    {
-        return runAsync(query, parameters(parameters) );
+    public final CompletionStage<ResultCursor> runAsync(String query, Map<String, Object> parameters) {
+        return runAsync(query, parameters(parameters));
     }
 
     @Override
-    public final CompletionStage<ResultCursor> runAsync(String query, Record parameters)
-    {
-        return runAsync(query, parameters(parameters) );
+    public final CompletionStage<ResultCursor> runAsync(String query, Record parameters) {
+        return runAsync(query, parameters(parameters));
     }
 
     @Override
-    public final CompletionStage<ResultCursor> runAsync(String query)
-    {
-        return runAsync(query, Values.EmptyMap );
+    public final CompletionStage<ResultCursor> runAsync(String query) {
+        return runAsync(query, Values.EmptyMap);
     }
 }

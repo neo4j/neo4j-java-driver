@@ -18,6 +18,11 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -25,17 +30,10 @@ import neo4j.org.testkit.backend.messages.responses.FeatureList;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 @Setter
 @Getter
-public class GetFeatures implements TestkitRequest
-{
-    private static final Set<String> COMMON_FEATURES = new HashSet<>( Arrays.asList(
+public class GetFeatures implements TestkitRequest {
+    private static final Set<String> COMMON_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:4.1",
             "Feature:Bolt:4.2",
             "Feature:Bolt:4.3",
@@ -58,57 +56,51 @@ public class GetFeatures implements TestkitRequest
             "Feature:API:SSLConfig",
             "Detail:DefaultSecurityConfigValueEquality",
             "Detail:ThrowOnMissingId",
-            "Optimization:ImplicitDefaultArguments"
-    ) );
+            "Optimization:ImplicitDefaultArguments"));
 
-    private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(
+    private static final Set<String> SYNC_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:3.0",
             "Optimization:PullPipelining",
             "Feature:API:Result.List",
             "Feature:API:Result.Peek",
             "Optimization:ResultListFetchAll",
-            "Feature:API:Result.Single"
-    ) );
+            "Feature:API:Result.Single"));
 
-    private static final Set<String> ASYNC_FEATURES = new HashSet<>( Arrays.asList(
+    private static final Set<String> ASYNC_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:3.0",
             "Optimization:PullPipelining",
             "Feature:API:Result.List",
             "Feature:API:Result.Peek",
             "Optimization:ResultListFetchAll",
-            "Feature:API:Result.Single"
-    ) );
+            "Feature:API:Result.Single"));
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        Set<String> features = new HashSet<>( COMMON_FEATURES );
-        features.addAll( SYNC_FEATURES );
-        return createResponse( features );
+    public TestkitResponse process(TestkitState testkitState) {
+        Set<String> features = new HashSet<>(COMMON_FEATURES);
+        features.addAll(SYNC_FEATURES);
+        return createResponse(features);
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        Set<String> features = new HashSet<>( COMMON_FEATURES );
-        features.addAll( ASYNC_FEATURES );
-        return CompletableFuture.completedFuture( createResponse( features ) );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        Set<String> features = new HashSet<>(COMMON_FEATURES);
+        features.addAll(ASYNC_FEATURES);
+        return CompletableFuture.completedFuture(createResponse(features));
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return Mono.just( createResponse( COMMON_FEATURES ) );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return Mono.just(createResponse(COMMON_FEATURES));
     }
 
     @Override
-    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
-    {
-        return Mono.just( createResponse( COMMON_FEATURES ) );
+    public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
+        return Mono.just(createResponse(COMMON_FEATURES));
     }
 
-    private FeatureList createResponse( Set<String> features )
-    {
-        return FeatureList.builder().data( FeatureList.FeatureListBody.builder().features( features ).build() ).build();
+    private FeatureList createResponse(Set<String> features) {
+        return FeatureList.builder()
+                .data(FeatureList.FeatureListBody.builder().features(features).build())
+                .build();
     }
 }

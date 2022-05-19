@@ -19,21 +19,17 @@
 package org.neo4j.driver.internal.messaging.request;
 
 import java.util.Map;
-
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.Message;
 
-abstract class MessageWithMetadata implements Message
-{
-    private final Map<String,Value> metadata;
+abstract class MessageWithMetadata implements Message {
+    private final Map<String, Value> metadata;
 
-    public MessageWithMetadata( Map<String,Value> metadata )
-    {
+    public MessageWithMetadata(Map<String, Value> metadata) {
         this.metadata = metadata;
     }
 
-    public Map<String,Value> metadata()
-    {
+    public Map<String, Value> metadata() {
         return metadata;
     }
 }

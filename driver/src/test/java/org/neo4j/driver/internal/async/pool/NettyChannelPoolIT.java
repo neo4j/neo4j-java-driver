@@ -18,18 +18,28 @@
  */
 package org.neo4j.driver.internal.async.pool;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.util.TestUtil.await;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelHealthChecker;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeoutException;
-
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Value;
@@ -48,21 +58,8 @@ import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.Neo4jRunner;
 import org.neo4j.driver.util.ParallelizableIT;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.util.TestUtil.await;
-
 @ParallelizableIT
-class NettyChannelPoolIT
-{
+class NettyChannelPoolIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
@@ -71,132 +68,123 @@ class NettyChannelPoolIT
     private NettyChannelPool pool;
 
     @BeforeEach
-    void setUp()
-    {
-        bootstrap = BootstrapFactory.newBootstrap( 1 );
-        poolHandler = mock( NettyChannelTracker.class );
+    void setUp() {
+        bootstrap = BootstrapFactory.newBootstrap(1);
+        poolHandler = mock(NettyChannelTracker.class);
     }
 
     @AfterEach
-    void tearDown()
-    {
-        if ( pool != null )
-        {
+    void tearDown() {
+        if (pool != null) {
             pool.close();
         }
-        if ( bootstrap != null )
-        {
+        if (bootstrap != null) {
             bootstrap.config().group().shutdownGracefully().syncUninterruptibly();
         }
     }
 
     @Test
-    void shouldAcquireAndReleaseWithCorrectCredentials() throws Exception
-    {
-        pool = newPool( neo4j.authToken() );
+    void shouldAcquireAndReleaseWithCorrectCredentials() throws Exception {
+        pool = newPool(neo4j.authToken());
 
-        Channel channel = await( pool.acquire() );
-        assertNotNull( channel );
-        verify( poolHandler ).channelCreated( eq( channel ), any() );
-        verify( poolHandler, never() ).channelReleased( channel );
+        Channel channel = await(pool.acquire());
+        assertNotNull(channel);
+        verify(poolHandler).channelCreated(eq(channel), any());
+        verify(poolHandler, never()).channelReleased(channel);
 
-        await( pool.release( channel ) );
-        verify( poolHandler ).channelReleased( channel );
+        await(pool.release(channel));
+        verify(poolHandler).channelReleased(channel);
     }
 
     @Test
-    void shouldFailToAcquireWithWrongCredentials() throws Exception
-    {
-        pool = newPool( AuthTokens.basic( "wrong", "wrong" ) );
+    void shouldFailToAcquireWithWrongCredentials() throws Exception {
+        pool = newPool(AuthTokens.basic("wrong", "wrong"));
 
-        assertThrows( AuthenticationException.class, () -> await( pool.acquire() ) );
+        assertThrows(AuthenticationException.class, () -> await(pool.acquire()));
 
-        verify( poolHandler, never() ).channelCreated( any() );
-        verify( poolHandler, never() ).channelReleased( any() );
+        verify(poolHandler, never()).channelCreated(any());
+        verify(poolHandler, never()).channelReleased(any());
     }
 
     @Test
-    void shouldAllowAcquireAfterFailures() throws Exception
-    {
+    void shouldAllowAcquireAfterFailures() throws Exception {
         int maxConnections = 2;
 
-        Map<String,Value> authTokenMap = new HashMap<>();
-        authTokenMap.put( "scheme", value( "basic" ) );
-        authTokenMap.put( "principal", value( "neo4j" ) );
-        authTokenMap.put( "credentials", value( "wrong" ) );
-        InternalAuthToken authToken = new InternalAuthToken( authTokenMap );
+        Map<String, Value> authTokenMap = new HashMap<>();
+        authTokenMap.put("scheme", value("basic"));
+        authTokenMap.put("principal", value("neo4j"));
+        authTokenMap.put("credentials", value("wrong"));
+        InternalAuthToken authToken = new InternalAuthToken(authTokenMap);
 
-        pool = newPool( authToken, maxConnections );
+        pool = newPool(authToken, maxConnections);
 
-        for ( int i = 0; i < maxConnections; i++ )
-        {
-            AuthenticationException e = assertThrows( AuthenticationException.class, () -> acquire( pool ) );
+        for (int i = 0; i < maxConnections; i++) {
+            AuthenticationException e = assertThrows(AuthenticationException.class, () -> acquire(pool));
         }
 
-        authTokenMap.put( "credentials", value( Neo4jRunner.PASSWORD ) );
+        authTokenMap.put("credentials", value(Neo4jRunner.PASSWORD));
 
-        assertNotNull( acquire( pool ) );
+        assertNotNull(acquire(pool));
     }
 
     @Test
-    void shouldLimitNumberOfConcurrentConnections() throws Exception
-    {
+    void shouldLimitNumberOfConcurrentConnections() throws Exception {
         int maxConnections = 5;
-        pool = newPool( neo4j.authToken(), maxConnections );
+        pool = newPool(neo4j.authToken(), maxConnections);
 
-        for ( int i = 0; i < maxConnections; i++ )
-        {
-            assertNotNull( acquire( pool ) );
+        for (int i = 0; i < maxConnections; i++) {
+            assertNotNull(acquire(pool));
         }
 
-        TimeoutException e = assertThrows( TimeoutException.class, () -> acquire( pool ) );
-        assertEquals( e.getMessage(), "Acquire operation took longer then configured maximum time" );
+        TimeoutException e = assertThrows(TimeoutException.class, () -> acquire(pool));
+        assertEquals(e.getMessage(), "Acquire operation took longer then configured maximum time");
     }
 
     @Test
-    void shouldTrackActiveChannels() throws Exception
-    {
-        NettyChannelTracker tracker = new NettyChannelTracker( DevNullMetricsListener.INSTANCE, new ImmediateSchedulingEventExecutor(), DEV_NULL_LOGGING );
+    void shouldTrackActiveChannels() throws Exception {
+        NettyChannelTracker tracker = new NettyChannelTracker(
+                DevNullMetricsListener.INSTANCE, new ImmediateSchedulingEventExecutor(), DEV_NULL_LOGGING);
 
         poolHandler = tracker;
-        pool = newPool( neo4j.authToken() );
+        pool = newPool(neo4j.authToken());
 
-        Channel channel1 = acquire( pool );
-        Channel channel2 = acquire( pool );
-        Channel channel3 = acquire( pool );
-        assertEquals( 3, tracker.inUseChannelCount( neo4j.address() ) );
+        Channel channel1 = acquire(pool);
+        Channel channel2 = acquire(pool);
+        Channel channel3 = acquire(pool);
+        assertEquals(3, tracker.inUseChannelCount(neo4j.address()));
 
-        release( channel1 );
-        release( channel2 );
-        release( channel3 );
-        assertEquals( 0, tracker.inUseChannelCount( neo4j.address() ) );
+        release(channel1);
+        release(channel2);
+        release(channel3);
+        assertEquals(0, tracker.inUseChannelCount(neo4j.address()));
 
-        assertNotNull( acquire( pool ) );
-        assertNotNull( acquire( pool ) );
-        assertEquals( 2, tracker.inUseChannelCount( neo4j.address() ) );
+        assertNotNull(acquire(pool));
+        assertNotNull(acquire(pool));
+        assertEquals(2, tracker.inUseChannelCount(neo4j.address()));
     }
 
-    private NettyChannelPool newPool( AuthToken authToken )
-    {
-        return newPool( authToken, 100 );
+    private NettyChannelPool newPool(AuthToken authToken) {
+        return newPool(authToken, 100);
     }
 
-    private NettyChannelPool newPool( AuthToken authToken, int maxConnections )
-    {
-        ConnectionSettings settings = new ConnectionSettings( authToken, "test", 5_000 );
-        ChannelConnectorImpl connector = new ChannelConnectorImpl( settings, SecurityPlanImpl.insecure(), DEV_NULL_LOGGING,
-                                                                   new FakeClock(), RoutingContext.EMPTY, DefaultDomainNameResolver.getInstance() );
-        return new NettyChannelPool( neo4j.address(), connector, bootstrap, poolHandler, ChannelHealthChecker.ACTIVE,
-                1_000, maxConnections );
+    private NettyChannelPool newPool(AuthToken authToken, int maxConnections) {
+        ConnectionSettings settings = new ConnectionSettings(authToken, "test", 5_000);
+        ChannelConnectorImpl connector = new ChannelConnectorImpl(
+                settings,
+                SecurityPlanImpl.insecure(),
+                DEV_NULL_LOGGING,
+                new FakeClock(),
+                RoutingContext.EMPTY,
+                DefaultDomainNameResolver.getInstance());
+        return new NettyChannelPool(
+                neo4j.address(), connector, bootstrap, poolHandler, ChannelHealthChecker.ACTIVE, 1_000, maxConnections);
     }
 
-    private static Channel acquire( NettyChannelPool pool ) throws Exception
-    {
-        return await( pool.acquire() );
+    private static Channel acquire(NettyChannelPool pool) throws Exception {
+        return await(pool.acquire());
     }
 
-    private void release( Channel channel ) throws Exception
-    {
-        await( pool.release( channel ) );
+    private void release(Channel channel) throws Exception {
+        await(pool.release(channel));
     }
 }

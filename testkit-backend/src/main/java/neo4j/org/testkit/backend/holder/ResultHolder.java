@@ -20,21 +20,17 @@ package neo4j.org.testkit.backend.holder;
 
 import org.neo4j.driver.Result;
 
-public class ResultHolder extends AbstractResultHolder<SessionHolder,TransactionHolder,Result>
-{
-    public ResultHolder( SessionHolder sessionHolder, Result result )
-    {
-        super( sessionHolder, result );
+public class ResultHolder extends AbstractResultHolder<SessionHolder, TransactionHolder, Result> {
+    public ResultHolder(SessionHolder sessionHolder, Result result) {
+        super(sessionHolder, result);
     }
 
-    public ResultHolder( TransactionHolder transactionHolder, Result result )
-    {
-        super( transactionHolder, result );
+    public ResultHolder(TransactionHolder transactionHolder, Result result) {
+        super(transactionHolder, result);
     }
 
     @Override
-    protected SessionHolder getSessionHolder( TransactionHolder transactionHolder )
-    {
+    protected SessionHolder getSessionHolder(TransactionHolder transactionHolder) {
         return transactionHolder.getSessionHolder();
     }
 }

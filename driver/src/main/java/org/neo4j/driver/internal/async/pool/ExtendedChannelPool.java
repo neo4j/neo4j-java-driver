@@ -19,14 +19,12 @@
 package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
-
 import java.util.concurrent.CompletionStage;
 
-public interface ExtendedChannelPool
-{
+public interface ExtendedChannelPool {
     CompletionStage<Channel> acquire();
 
-    CompletionStage<Void> release( Channel channel );
+    CompletionStage<Void> release(Channel channel);
 
     boolean isClosed();
 

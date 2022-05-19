@@ -23,6 +23,4 @@ package org.neo4j.driver.exceptions;
  * <p>
  * This indicates whether an operation that resulted in retryable exception is worth retrying.
  */
-public interface RetryableException
-{
-}
+public interface RetryableException {}

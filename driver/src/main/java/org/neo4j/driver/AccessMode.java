@@ -27,8 +27,7 @@ package org.neo4j.driver;
  * While any {@link AccessMode} will be ignored while running transactions via a driver towards a single server.
  * As the single server serves both read and write operations at the same time.
  */
-public enum AccessMode
-{
+public enum AccessMode {
     /**
      * Use this for transactions that requires a read server in a cluster
      */

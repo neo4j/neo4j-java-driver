@@ -18,48 +18,41 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.jupiter.api.Test;
-
-import java.time.LocalDate;
-
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.exceptions.value.Uncoercible;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class DateValueTest
-{
+import java.time.LocalDate;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.exceptions.value.Uncoercible;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+
+class DateValueTest {
     @Test
-    void shouldHaveCorrectType()
-    {
+    void shouldHaveCorrectType() {
         LocalDate localDate = LocalDate.now();
-        DateValue dateValue = new DateValue( localDate );
-        assertEquals( InternalTypeSystem.TYPE_SYSTEM.DATE(), dateValue.type() );
+        DateValue dateValue = new DateValue(localDate);
+        assertEquals(InternalTypeSystem.TYPE_SYSTEM.DATE(), dateValue.type());
     }
 
     @Test
-    void shouldSupportAsObject()
-    {
+    void shouldSupportAsObject() {
         LocalDate localDate = LocalDate.now();
-        DateValue dateValue = new DateValue( localDate );
-        assertEquals( localDate, dateValue.asObject() );
+        DateValue dateValue = new DateValue(localDate);
+        assertEquals(localDate, dateValue.asObject());
     }
 
     @Test
-    void shouldSupportAsLocalDate()
-    {
+    void shouldSupportAsLocalDate() {
         LocalDate localDate = LocalDate.now();
-        DateValue dateValue = new DateValue( localDate );
-        assertEquals( localDate, dateValue.asLocalDate() );
+        DateValue dateValue = new DateValue(localDate);
+        assertEquals(localDate, dateValue.asLocalDate());
     }
 
     @Test
-    void shouldNotSupportAsLong()
-    {
+    void shouldNotSupportAsLong() {
         LocalDate localDate = LocalDate.now();
-        DateValue dateValue = new DateValue( localDate );
+        DateValue dateValue = new DateValue(localDate);
 
-        assertThrows( Uncoercible.class, dateValue::asLong );
+        assertThrows(Uncoercible.class, dateValue::asLong);
     }
 }

@@ -18,115 +18,106 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
 
 import java.util.Collections;
 import java.util.Map;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.mock;
-
-public class DelegatingTransactionContextTest
-{
+public class DelegatingTransactionContextTest {
     Transaction transaction;
     DelegatingTransactionContext context;
 
     @BeforeEach
-    void beforeEach()
-    {
-        transaction = mock( Transaction.class );
-        context = new DelegatingTransactionContext( transaction );
+    void beforeEach() {
+        transaction = mock(Transaction.class);
+        context = new DelegatingTransactionContext(transaction);
     }
 
     @Test
-    void shouldDelegateRunWithValueParams()
-    {
+    void shouldDelegateRunWithValueParams() {
         // GIVEN
         String query = "something";
-        Value params = mock( Value.class );
-        Result expected = mock( Result.class );
-        given( transaction.run( query, params ) ).willReturn( expected );
+        Value params = mock(Value.class);
+        Result expected = mock(Result.class);
+        given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        Result actual = context.run( query, params );
+        Result actual = context.run(query, params);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().run( query, params );
+        assertEquals(expected, actual);
+        then(transaction).should().run(query, params);
     }
 
     @Test
-    void shouldDelegateRunWithMapParams()
-    {
+    void shouldDelegateRunWithMapParams() {
         // GIVEN
         String query = "something";
-        Map<String,Object> params = Collections.emptyMap();
-        Result expected = mock( Result.class );
-        given( transaction.run( query, params ) ).willReturn( expected );
+        Map<String, Object> params = Collections.emptyMap();
+        Result expected = mock(Result.class);
+        given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        Result actual = context.run( query, params );
+        Result actual = context.run(query, params);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().run( query, params );
+        assertEquals(expected, actual);
+        then(transaction).should().run(query, params);
     }
 
     @Test
-    void shouldDelegateRunWithRecordParams()
-    {
+    void shouldDelegateRunWithRecordParams() {
         // GIVEN
         String query = "something";
-        Record params = mock( Record.class );
-        Result expected = mock( Result.class );
-        given( transaction.run( query, params ) ).willReturn( expected );
+        Record params = mock(Record.class);
+        Result expected = mock(Result.class);
+        given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        Result actual = context.run( query, params );
+        Result actual = context.run(query, params);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().run( query, params );
+        assertEquals(expected, actual);
+        then(transaction).should().run(query, params);
     }
 
     @Test
-    void shouldDelegateRun()
-    {
+    void shouldDelegateRun() {
         // GIVEN
         String query = "something";
-        Result expected = mock( Result.class );
-        given( transaction.run( query ) ).willReturn( expected );
+        Result expected = mock(Result.class);
+        given(transaction.run(query)).willReturn(expected);
 
         // WHEN
-        Result actual = context.run( query );
+        Result actual = context.run(query);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().run( query );
+        assertEquals(expected, actual);
+        then(transaction).should().run(query);
     }
 
     @Test
-    void shouldDelegateRunWithQueryType()
-    {
+    void shouldDelegateRunWithQueryType() {
         // GIVEN
-        Query query = mock( Query.class );
-        Result expected = mock( Result.class );
-        given( transaction.run( query ) ).willReturn( expected );
+        Query query = mock(Query.class);
+        Result expected = mock(Result.class);
+        given(transaction.run(query)).willReturn(expected);
 
         // WHEN
-        Result actual = context.run( query );
+        Result actual = context.run(query);
 
         // THEN
-        assertEquals( expected, actual );
-        then( transaction ).should().run( query );
+        assertEquals(expected, actual);
+        then(transaction).should().run(query);
     }
 }

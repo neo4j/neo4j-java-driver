@@ -18,63 +18,54 @@
  */
 package org.neo4j.driver.internal.async;
 
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.internal.FailableCursor;
 
-import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+public class ResultCursorsHolder {
+    private final List<CompletionStage<? extends FailableCursor>> cursorStages =
+            Collections.synchronizedList(new ArrayList<>());
 
-public class ResultCursorsHolder
-{
-    private final List<CompletionStage<? extends FailableCursor>> cursorStages = Collections.synchronizedList( new ArrayList<>() );
-
-    public void add( CompletionStage<? extends FailableCursor> cursorStage )
-    {
-        Objects.requireNonNull( cursorStage );
-        cursorStages.add( cursorStage );
+    public void add(CompletionStage<? extends FailableCursor> cursorStage) {
+        Objects.requireNonNull(cursorStage);
+        cursorStages.add(cursorStage);
     }
 
-    CompletionStage<Throwable> retrieveNotConsumedError()
-    {
+    CompletionStage<Throwable> retrieveNotConsumedError() {
         CompletableFuture<Throwable>[] failures = retrieveAllFailures();
 
-        return CompletableFuture.allOf( failures )
-                .thenApply( ignore -> findFirstFailure( failures ) );
+        return CompletableFuture.allOf(failures).thenApply(ignore -> findFirstFailure(failures));
     }
 
-    @SuppressWarnings( "unchecked" )
-    private CompletableFuture<Throwable>[] retrieveAllFailures()
-    {
+    @SuppressWarnings("unchecked")
+    private CompletableFuture<Throwable>[] retrieveAllFailures() {
         return cursorStages.stream()
-                .map( ResultCursorsHolder::retrieveFailure )
-                .map( CompletionStage::toCompletableFuture )
-                .toArray( CompletableFuture[]::new );
+                .map(ResultCursorsHolder::retrieveFailure)
+                .map(CompletionStage::toCompletableFuture)
+                .toArray(CompletableFuture[]::new);
     }
 
-    private static Throwable findFirstFailure( CompletableFuture<Throwable>[] completedFailureFutures )
-    {
+    private static Throwable findFirstFailure(CompletableFuture<Throwable>[] completedFailureFutures) {
         // all given futures should be completed, it is thus safe to get their values
 
-        for ( CompletableFuture<Throwable> failureFuture : completedFailureFutures )
-        {
-            Throwable failure = failureFuture.getNow( null ); // does not block
-            if ( failure != null )
-            {
+        for (CompletableFuture<Throwable> failureFuture : completedFailureFutures) {
+            Throwable failure = failureFuture.getNow(null); // does not block
+            if (failure != null) {
                 return failure;
             }
         }
         return null;
     }
 
-    private static CompletionStage<Throwable> retrieveFailure( CompletionStage<? extends FailableCursor> cursorStage )
-    {
+    private static CompletionStage<Throwable> retrieveFailure(CompletionStage<? extends FailableCursor> cursorStage) {
         return cursorStage
-                .exceptionally( cursor -> null )
-                .thenCompose( cursor -> cursor == null ? completedWithNull() : cursor.discardAllFailureAsync() );
+                .exceptionally(cursor -> null)
+                .thenCompose(cursor -> cursor == null ? completedWithNull() : cursor.discardAllFailureAsync());
     }
 }

@@ -18,16 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.function.Function;
-
-import org.neo4j.driver.Value;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,51 +26,54 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.NULL;
 import static org.neo4j.driver.Values.value;
 
-class InternalNodeTest
-{
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.function.Function;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+
+class InternalNodeTest {
     @Test
-    void extractValuesFromNode()
-    {
+    void extractValuesFromNode() {
         // GIVEN
         InternalNode node = createNode();
-        Function<Value,Integer> extractor = Value::asInt;
+        Function<Value, Integer> extractor = Value::asInt;
 
-        //WHEN
-        Iterable<Integer> values = node.values( extractor );
+        // WHEN
+        Iterable<Integer> values = node.values(extractor);
 
-        //THEN
+        // THEN
         Iterator<Integer> iterator = values.iterator();
-        assertThat( iterator.next(), equalTo( 1 ) );
-        assertThat( iterator.next(), equalTo( 2 ) );
-        assertFalse( iterator.hasNext() );
+        assertThat(iterator.next(), equalTo(1));
+        assertThat(iterator.next(), equalTo(2));
+        assertFalse(iterator.hasNext());
     }
 
     @Test
-    void accessUnknownKeyShouldBeNull()
-    {
+    void accessUnknownKeyShouldBeNull() {
         InternalNode node = createNode();
 
-        assertThat( node.get( "k1" ), equalTo( value( 1 ) ) );
-        assertThat( node.get( "k2" ), equalTo( value( 2 ) ) );
-        assertThat( node.get( "k3" ), equalTo( NULL ) );
+        assertThat(node.get("k1"), equalTo(value(1)));
+        assertThat(node.get("k2"), equalTo(value(2)));
+        assertThat(node.get("k3"), equalTo(NULL));
     }
 
     @Test
-    void shouldThrowOnIdWhenNumericIdUnavailable()
-    {
+    void shouldThrowOnIdWhenNumericIdUnavailable() {
         // GIVEN
-        InternalNode node = new InternalNode( -1, "value", Collections.emptyList(), Collections.emptyMap(), false );
+        InternalNode node = new InternalNode(-1, "value", Collections.emptyList(), Collections.emptyMap(), false);
 
         // WHEN & THEN
-        IllegalStateException e = assertThrows( IllegalStateException.class, node::id );
-        assertEquals( InternalEntity.INVALID_ID_ERROR, e.getMessage() );
+        IllegalStateException e = assertThrows(IllegalStateException.class, node::id);
+        assertEquals(InternalEntity.INVALID_ID_ERROR, e.getMessage());
     }
 
-    private InternalNode createNode()
-    {
-        Map<String,Value> props = new HashMap<>();
-        props.put( "k1", value( 1 ) );
-        props.put( "k2", value( 2 ) );
-        return new InternalNode( 42L, String.valueOf( 42L ), Collections.singletonList( "L" ), props, true );
+    private InternalNode createNode() {
+        Map<String, Value> props = new HashMap<>();
+        props.put("k1", value(1));
+        props.put("k2", value(2));
+        return new InternalNode(42L, String.valueOf(42L), Collections.singletonList("L"), props, true);
     }
 }

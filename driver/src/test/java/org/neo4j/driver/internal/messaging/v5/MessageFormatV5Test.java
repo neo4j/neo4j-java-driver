@@ -18,33 +18,29 @@
  */
 package org.neo4j.driver.internal.messaging.v5;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.packstream.PackInput;
-import org.neo4j.driver.internal.packstream.PackOutput;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.mock;
 
-public class MessageFormatV5Test
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.packstream.PackInput;
+import org.neo4j.driver.internal.packstream.PackOutput;
+
+public class MessageFormatV5Test {
     private static final MessageFormat format = BoltProtocolV5.INSTANCE.createMessageFormat();
 
     @Test
-    void shouldCreateCorrectWriter()
-    {
-        MessageFormat.Writer writer = format.newWriter( mock( PackOutput.class ) );
+    void shouldCreateCorrectWriter() {
+        MessageFormat.Writer writer = format.newWriter(mock(PackOutput.class));
 
-        assertThat( writer, instanceOf( MessageWriterV5.class ) );
+        assertThat(writer, instanceOf(MessageWriterV5.class));
     }
 
     @Test
-    void shouldCreateCorrectReader()
-    {
-        MessageFormat.Reader reader = format.newReader( mock( PackInput.class ) );
+    void shouldCreateCorrectReader() {
+        MessageFormat.Reader reader = format.newReader(mock(PackInput.class));
 
-        assertThat( reader, instanceOf( MessageReaderV5.class ) );
+        assertThat(reader, instanceOf(MessageReaderV5.class));
     }
 }

@@ -18,33 +18,29 @@
  */
 package org.neo4j.driver.util;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.util.Objects.requireNonNull;
-
-public class DaemonThreadFactory implements ThreadFactory
-{
+public class DaemonThreadFactory implements ThreadFactory {
     private final String namePrefix;
     private final AtomicInteger threadId;
 
-    public DaemonThreadFactory( String namePrefix )
-    {
-        this.namePrefix = requireNonNull( namePrefix );
+    public DaemonThreadFactory(String namePrefix) {
+        this.namePrefix = requireNonNull(namePrefix);
         this.threadId = new AtomicInteger();
     }
 
-    public static ThreadFactory daemon( String namePrefix )
-    {
-        return new DaemonThreadFactory( namePrefix );
+    public static ThreadFactory daemon(String namePrefix) {
+        return new DaemonThreadFactory(namePrefix);
     }
 
     @Override
-    public Thread newThread( Runnable runnable )
-    {
-        Thread thread = new Thread( runnable );
-        thread.setName( namePrefix + threadId.incrementAndGet() );
-        thread.setDaemon( true );
+    public Thread newThread(Runnable runnable) {
+        Thread thread = new Thread(runnable);
+        thread.setName(namePrefix + threadId.incrementAndGet());
+        thread.setDaemon(true);
         return thread;
     }
 }

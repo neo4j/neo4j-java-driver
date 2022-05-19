@@ -18,14 +18,6 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import org.neo4j.driver.internal.RoutingErrorHandler;
-import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,107 +31,99 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 
-class RoutingConnectionTest
-{
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
+
+class RoutingConnectionTest {
     @Test
-    void shouldWrapHandlersWhenWritingSingleMessage()
-    {
-        testHandlersWrappingWithSingleMessage( false );
+    void shouldWrapHandlersWhenWritingSingleMessage() {
+        testHandlersWrappingWithSingleMessage(false);
     }
 
     @Test
-    void shouldWrapHandlersWhenWritingAndFlushingSingleMessage()
-    {
-        testHandlersWrappingWithSingleMessage( true );
+    void shouldWrapHandlersWhenWritingAndFlushingSingleMessage() {
+        testHandlersWrappingWithSingleMessage(true);
     }
 
     @Test
-    void shouldWrapHandlersWhenWritingMultipleMessages()
-    {
-        testHandlersWrappingWithMultipleMessages( false );
+    void shouldWrapHandlersWhenWritingMultipleMessages() {
+        testHandlersWrappingWithMultipleMessages(false);
     }
 
     @Test
-    void shouldWrapHandlersWhenWritingAndFlushingMultipleMessages()
-    {
-        testHandlersWrappingWithMultipleMessages( true );
+    void shouldWrapHandlersWhenWritingAndFlushingMultipleMessages() {
+        testHandlersWrappingWithMultipleMessages(true);
     }
 
     @Test
-    void shouldReturnServerAgent()
-    {
+    void shouldReturnServerAgent() {
         // given
-        Connection connection = mock( Connection.class );
-        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
-        RoutingConnection routingConnection = new RoutingConnection( connection, defaultDatabase(), READ, null, errorHandler );
+        Connection connection = mock(Connection.class);
+        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
+        RoutingConnection routingConnection =
+                new RoutingConnection(connection, defaultDatabase(), READ, null, errorHandler);
         String agent = "Neo4j/4.2.5";
-        given( connection.serverAgent() ).willReturn( agent );
+        given(connection.serverAgent()).willReturn(agent);
 
         // when
         String actualAgent = routingConnection.serverAgent();
 
         // then
-        assertEquals( agent, actualAgent );
-        then( connection ).should().serverAgent();
+        assertEquals(agent, actualAgent);
+        then(connection).should().serverAgent();
     }
 
-    private static void testHandlersWrappingWithSingleMessage( boolean flush )
-    {
-        Connection connection = mock( Connection.class );
-        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
-        RoutingConnection routingConnection = new RoutingConnection( connection, defaultDatabase(), READ, null, errorHandler );
+    private static void testHandlersWrappingWithSingleMessage(boolean flush) {
+        Connection connection = mock(Connection.class);
+        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
+        RoutingConnection routingConnection =
+                new RoutingConnection(connection, defaultDatabase(), READ, null, errorHandler);
 
-        if ( flush )
-        {
-            routingConnection.writeAndFlush( PULL_ALL, mock( ResponseHandler.class ) );
-        }
-        else
-        {
-            routingConnection.write( PULL_ALL, mock( ResponseHandler.class ) );
+        if (flush) {
+            routingConnection.writeAndFlush(PULL_ALL, mock(ResponseHandler.class));
+        } else {
+            routingConnection.write(PULL_ALL, mock(ResponseHandler.class));
         }
 
-        ArgumentCaptor<ResponseHandler> handlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
+        ArgumentCaptor<ResponseHandler> handlerCaptor = ArgumentCaptor.forClass(ResponseHandler.class);
 
-        if ( flush )
-        {
-            verify( connection ).writeAndFlush( eq( PULL_ALL ), handlerCaptor.capture() );
-        }
-        else
-        {
-            verify( connection ).write( eq( PULL_ALL ), handlerCaptor.capture() );
+        if (flush) {
+            verify(connection).writeAndFlush(eq(PULL_ALL), handlerCaptor.capture());
+        } else {
+            verify(connection).write(eq(PULL_ALL), handlerCaptor.capture());
         }
 
-        assertThat( handlerCaptor.getValue(), instanceOf( RoutingResponseHandler.class ) );
+        assertThat(handlerCaptor.getValue(), instanceOf(RoutingResponseHandler.class));
     }
 
-    private static void testHandlersWrappingWithMultipleMessages( boolean flush )
-    {
-        Connection connection = mock( Connection.class );
-        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
-        RoutingConnection routingConnection = new RoutingConnection( connection, defaultDatabase(), READ, null, errorHandler );
+    private static void testHandlersWrappingWithMultipleMessages(boolean flush) {
+        Connection connection = mock(Connection.class);
+        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
+        RoutingConnection routingConnection =
+                new RoutingConnection(connection, defaultDatabase(), READ, null, errorHandler);
 
-        if ( flush )
-        {
-            routingConnection.writeAndFlush( PULL_ALL, mock( ResponseHandler.class ), DISCARD_ALL, mock( ResponseHandler.class ) );
-        }
-        else
-        {
-            routingConnection.write( PULL_ALL, mock( ResponseHandler.class ), DISCARD_ALL, mock( ResponseHandler.class ) );
+        if (flush) {
+            routingConnection.writeAndFlush(
+                    PULL_ALL, mock(ResponseHandler.class), DISCARD_ALL, mock(ResponseHandler.class));
+        } else {
+            routingConnection.write(PULL_ALL, mock(ResponseHandler.class), DISCARD_ALL, mock(ResponseHandler.class));
         }
 
-        ArgumentCaptor<ResponseHandler> handlerCaptor1 = ArgumentCaptor.forClass( ResponseHandler.class );
-        ArgumentCaptor<ResponseHandler> handlerCaptor2 = ArgumentCaptor.forClass( ResponseHandler.class );
+        ArgumentCaptor<ResponseHandler> handlerCaptor1 = ArgumentCaptor.forClass(ResponseHandler.class);
+        ArgumentCaptor<ResponseHandler> handlerCaptor2 = ArgumentCaptor.forClass(ResponseHandler.class);
 
-        if ( flush )
-        {
-            verify( connection ).writeAndFlush( eq( PULL_ALL ), handlerCaptor1.capture(), eq( DISCARD_ALL ), handlerCaptor2.capture() );
-        }
-        else
-        {
-            verify( connection ).write( eq( PULL_ALL ), handlerCaptor1.capture(), eq( DISCARD_ALL ), handlerCaptor2.capture() );
+        if (flush) {
+            verify(connection)
+                    .writeAndFlush(eq(PULL_ALL), handlerCaptor1.capture(), eq(DISCARD_ALL), handlerCaptor2.capture());
+        } else {
+            verify(connection).write(eq(PULL_ALL), handlerCaptor1.capture(), eq(DISCARD_ALL), handlerCaptor2.capture());
         }
 
-        assertThat( handlerCaptor1.getValue(), instanceOf( RoutingResponseHandler.class ) );
-        assertThat( handlerCaptor2.getValue(), instanceOf( RoutingResponseHandler.class ) );
+        assertThat(handlerCaptor1.getValue(), instanceOf(RoutingResponseHandler.class));
+        assertThat(handlerCaptor2.getValue(), instanceOf(RoutingResponseHandler.class));
     }
 }

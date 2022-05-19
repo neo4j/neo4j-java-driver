@@ -18,13 +18,15 @@
  */
 package org.neo4j.driver.internal;
 
-import io.netty.bootstrap.Bootstrap;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
+import io.netty.bootstrap.Bootstrap;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
@@ -35,51 +37,51 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-
-class CustomSecurityPlanTest
-{
+class CustomSecurityPlanTest {
     @Test
-    void testCustomSecurityPlanUsed()
-    {
+    void testCustomSecurityPlanUsed() {
         SecurityPlanCapturingDriverFactory driverFactory = new SecurityPlanCapturingDriverFactory();
 
-        SecurityPlan securityPlan = mock( SecurityPlan.class );
+        SecurityPlan securityPlan = mock(SecurityPlan.class);
 
-        driverFactory.newInstance( 
-                URI.create( "neo4j://somewhere:1234" ),
+        driverFactory.newInstance(
+                URI.create("neo4j://somewhere:1234"),
                 AuthTokens.none(),
                 RoutingSettings.DEFAULT,
                 RetrySettings.DEFAULT,
                 Config.defaultConfig(),
                 null,
-                securityPlan
-        );
+                securityPlan);
 
-        assertFalse( driverFactory.capturedSecurityPlans.isEmpty() );
-        assertTrue( driverFactory.capturedSecurityPlans.stream().allMatch( capturePlan -> capturePlan == securityPlan ) );
+        assertFalse(driverFactory.capturedSecurityPlans.isEmpty());
+        assertTrue(driverFactory.capturedSecurityPlans.stream().allMatch(capturePlan -> capturePlan == securityPlan));
     }
-    
-    private static class SecurityPlanCapturingDriverFactory extends DriverFactory
-    {
+
+    private static class SecurityPlanCapturingDriverFactory extends DriverFactory {
         List<SecurityPlan> capturedSecurityPlans = new ArrayList<>();
 
         @Override
-        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
-        {
-            capturedSecurityPlans.add( securityPlan );
-            return super.createDriver( securityPlan, sessionFactory, metricsProvider, config );
+        protected InternalDriver createDriver(
+                SecurityPlan securityPlan,
+                SessionFactory sessionFactory,
+                MetricsProvider metricsProvider,
+                Config config) {
+            capturedSecurityPlans.add(securityPlan);
+            return super.createDriver(securityPlan, sessionFactory, metricsProvider, config);
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                                                       MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup,
-                                                       RoutingContext routingContext )
-        {
-            capturedSecurityPlans.add( securityPlan );
-            return super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext );
+        protected ConnectionPool createConnectionPool(
+                AuthToken authToken,
+                SecurityPlan securityPlan,
+                Bootstrap bootstrap,
+                MetricsProvider metricsProvider,
+                Config config,
+                boolean ownsEventLoopGroup,
+                RoutingContext routingContext) {
+            capturedSecurityPlans.add(securityPlan);
+            return super.createConnectionPool(
+                    authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext);
         }
     }
 }

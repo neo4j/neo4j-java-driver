@@ -18,12 +18,14 @@
  */
 package org.neo4j.driver.internal.metrics;
 
+import static java.lang.String.format;
+import static java.util.Collections.unmodifiableCollection;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntSupplier;
-
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -31,119 +33,100 @@ import org.neo4j.driver.Metrics;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.net.ServerAddress;
 
-import static java.lang.String.format;
-import static java.util.Collections.unmodifiableCollection;
-
-final class InternalMetrics implements Metrics, MetricsListener
-{
-    private final Map<String,ConnectionPoolMetrics> connectionPoolMetrics;
+final class InternalMetrics implements Metrics, MetricsListener {
+    private final Map<String, ConnectionPoolMetrics> connectionPoolMetrics;
     private final Clock clock;
     private final Logger log;
 
-    InternalMetrics( Clock clock, Logging logging )
-    {
-        Objects.requireNonNull( clock );
+    InternalMetrics(Clock clock, Logging logging) {
+        Objects.requireNonNull(clock);
         this.connectionPoolMetrics = new ConcurrentHashMap<>();
         this.clock = clock;
-        this.log = logging.getLog( getClass() );
+        this.log = logging.getLog(getClass());
     }
 
     @Override
-    public void registerPoolMetrics( String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier )
-    {
-        this.connectionPoolMetrics.put( poolId, new InternalConnectionPoolMetrics( poolId, serverAddress, inUseSupplier, idleSupplier ) );
+    public void registerPoolMetrics(
+            String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
+        this.connectionPoolMetrics.put(
+                poolId, new InternalConnectionPoolMetrics(poolId, serverAddress, inUseSupplier, idleSupplier));
     }
 
     @Override
-    public void removePoolMetrics( String id )
-    {
-        this.connectionPoolMetrics.remove( id );
+    public void removePoolMetrics(String id) {
+        this.connectionPoolMetrics.remove(id);
     }
 
     @Override
-    public void beforeCreating( String poolId, ListenerEvent<?> creatingEvent )
-    {
-        poolMetrics( poolId ).beforeCreating( creatingEvent );
+    public void beforeCreating(String poolId, ListenerEvent<?> creatingEvent) {
+        poolMetrics(poolId).beforeCreating(creatingEvent);
     }
 
     @Override
-    public void afterCreated( String poolId, ListenerEvent<?> creatingEvent )
-    {
-        poolMetrics( poolId ).afterCreated( creatingEvent );
+    public void afterCreated(String poolId, ListenerEvent<?> creatingEvent) {
+        poolMetrics(poolId).afterCreated(creatingEvent);
     }
 
     @Override
-    public void afterFailedToCreate( String poolId )
-    {
-        poolMetrics( poolId ).afterFailedToCreate();
+    public void afterFailedToCreate(String poolId) {
+        poolMetrics(poolId).afterFailedToCreate();
     }
 
     @Override
-    public void afterClosed( String poolId )
-    {
-        poolMetrics( poolId ).afterClosed();
+    public void afterClosed(String poolId) {
+        poolMetrics(poolId).afterClosed();
     }
 
     @Override
-    public void beforeAcquiringOrCreating( String poolId, ListenerEvent<?> acquireEvent )
-    {
-        poolMetrics( poolId ).beforeAcquiringOrCreating( acquireEvent );
+    public void beforeAcquiringOrCreating(String poolId, ListenerEvent<?> acquireEvent) {
+        poolMetrics(poolId).beforeAcquiringOrCreating(acquireEvent);
     }
 
     @Override
-    public void afterAcquiringOrCreating( String poolId )
-    {
-        poolMetrics( poolId ).afterAcquiringOrCreating();
+    public void afterAcquiringOrCreating(String poolId) {
+        poolMetrics(poolId).afterAcquiringOrCreating();
     }
 
     @Override
-    public void afterAcquiredOrCreated( String poolId, ListenerEvent<?> acquireEvent )
-    {
-        poolMetrics( poolId ).afterAcquiredOrCreated( acquireEvent );
+    public void afterAcquiredOrCreated(String poolId, ListenerEvent<?> acquireEvent) {
+        poolMetrics(poolId).afterAcquiredOrCreated(acquireEvent);
     }
 
     @Override
-    public void afterConnectionCreated( String poolId, ListenerEvent<?> inUseEvent )
-    {
-        poolMetrics( poolId ).acquired( inUseEvent );
+    public void afterConnectionCreated(String poolId, ListenerEvent<?> inUseEvent) {
+        poolMetrics(poolId).acquired(inUseEvent);
     }
 
     @Override
-    public void afterConnectionReleased( String poolId, ListenerEvent<?> inUseEvent )
-    {
-        poolMetrics( poolId ).released( inUseEvent );
+    public void afterConnectionReleased(String poolId, ListenerEvent<?> inUseEvent) {
+        poolMetrics(poolId).released(inUseEvent);
     }
 
     @Override
-    public void afterTimedOutToAcquireOrCreate( String poolId )
-    {
-        poolMetrics( poolId ).afterTimedOutToAcquireOrCreate();
+    public void afterTimedOutToAcquireOrCreate(String poolId) {
+        poolMetrics(poolId).afterTimedOutToAcquireOrCreate();
     }
 
     @Override
-    public ListenerEvent<?> createListenerEvent()
-    {
-        return new TimeRecorderListenerEvent( clock );
+    public ListenerEvent<?> createListenerEvent() {
+        return new TimeRecorderListenerEvent(clock);
     }
 
     @Override
-    public Collection<ConnectionPoolMetrics> connectionPoolMetrics()
-    {
-        return unmodifiableCollection( this.connectionPoolMetrics.values() );
+    public Collection<ConnectionPoolMetrics> connectionPoolMetrics() {
+        return unmodifiableCollection(this.connectionPoolMetrics.values());
     }
 
     @Override
-    public String toString()
-    {
-        return format( "PoolMetrics=%s", connectionPoolMetrics );
+    public String toString() {
+        return format("PoolMetrics=%s", connectionPoolMetrics);
     }
 
-    private ConnectionPoolMetricsListener poolMetrics( String poolId )
-    {
-        InternalConnectionPoolMetrics poolMetrics = (InternalConnectionPoolMetrics) this.connectionPoolMetrics.get( poolId );
-        if ( poolMetrics == null )
-        {
-            log.warn( format( "Failed to find pool metrics with id `%s` in %s.", poolId, this.connectionPoolMetrics ) );
+    private ConnectionPoolMetricsListener poolMetrics(String poolId) {
+        InternalConnectionPoolMetrics poolMetrics =
+                (InternalConnectionPoolMetrics) this.connectionPoolMetrics.get(poolId);
+        if (poolMetrics == null) {
+            log.warn(format("Failed to find pool metrics with id `%s` in %s.", poolId, this.connectionPoolMetrics));
             return DevNullPoolMetricsListener.INSTANCE;
         }
         return poolMetrics;

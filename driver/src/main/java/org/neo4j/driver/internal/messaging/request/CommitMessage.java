@@ -20,25 +20,20 @@ package org.neo4j.driver.internal.messaging.request;
 
 import org.neo4j.driver.internal.messaging.Message;
 
-public class CommitMessage implements Message
-{
+public class CommitMessage implements Message {
     public static final byte SIGNATURE = 0x12;
 
     public static final Message COMMIT = new CommitMessage();
 
-    private CommitMessage()
-    {
-    }
+    private CommitMessage() {}
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "COMMIT";
     }
 }

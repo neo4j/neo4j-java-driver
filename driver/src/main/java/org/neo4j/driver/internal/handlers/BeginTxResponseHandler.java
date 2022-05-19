@@ -18,40 +18,34 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 
-import static java.util.Objects.requireNonNull;
-
-public class BeginTxResponseHandler implements ResponseHandler
-{
+public class BeginTxResponseHandler implements ResponseHandler {
     private final CompletableFuture<Void> beginTxFuture;
 
-    public BeginTxResponseHandler( CompletableFuture<Void> beginTxFuture )
-    {
-        this.beginTxFuture = requireNonNull( beginTxFuture );
+    public BeginTxResponseHandler(CompletableFuture<Void> beginTxFuture) {
+        this.beginTxFuture = requireNonNull(beginTxFuture);
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
-    {
-        beginTxFuture.complete( null );
+    public void onSuccess(Map<String, Value> metadata) {
+        beginTxFuture.complete(null);
     }
 
     @Override
-    public void onFailure( Throwable error )
-    {
-        beginTxFuture.completeExceptionally( error );
+    public void onFailure(Throwable error) {
+        beginTxFuture.completeExceptionally(error);
     }
 
     @Override
-    public void onRecord( Value[] fields )
-    {
+    public void onRecord(Value[] fields) {
         throw new UnsupportedOperationException(
-                "Transaction begin is not expected to receive records: " + Arrays.toString( fields ) );
+                "Transaction begin is not expected to receive records: " + Arrays.toString(fields));
     }
 }

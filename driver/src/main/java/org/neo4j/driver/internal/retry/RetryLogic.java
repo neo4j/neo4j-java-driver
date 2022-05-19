@@ -18,16 +18,14 @@
  */
 package org.neo4j.driver.internal.retry;
 
-import org.reactivestreams.Publisher;
-
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
+import org.reactivestreams.Publisher;
 
-public interface RetryLogic
-{
-    <T> T retry( Supplier<T> work );
+public interface RetryLogic {
+    <T> T retry(Supplier<T> work);
 
-    <T> CompletionStage<T> retryAsync( Supplier<CompletionStage<T>> work );
+    <T> CompletionStage<T> retryAsync(Supplier<CompletionStage<T>> work);
 
-    <T> Publisher<T> retryRx( Publisher<T> work );
+    <T> Publisher<T> retryRx(Publisher<T> work);
 }

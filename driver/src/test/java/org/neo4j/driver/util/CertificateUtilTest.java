@@ -18,7 +18,10 @@
  */
 package org.neo4j.driver.util;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
+import static org.neo4j.driver.util.CertificateUtil.generateSelfSignedCertificate;
 
 import java.io.File;
 import java.security.KeyStore;
@@ -26,43 +29,36 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.Enumeration;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.util.CertificateTool;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
-import static org.neo4j.driver.util.CertificateUtil.generateSelfSignedCertificate;
-
-public class CertificateUtilTest
-{
+public class CertificateUtilTest {
     @Test
-    void shouldLoadMultipleCertsIntoKeyStore() throws Throwable
-    {
+    void shouldLoadMultipleCertsIntoKeyStore() throws Throwable {
         // Given
-        File certFile = File.createTempFile( "3random", ".cer" );
+        File certFile = File.createTempFile("3random", ".cer");
         certFile.deleteOnExit();
 
         X509Certificate cert1 = generateSelfSignedCertificate();
         X509Certificate cert2 = generateSelfSignedCertificate();
         X509Certificate cert3 = generateSelfSignedCertificate();
 
-        saveX509Cert( new Certificate[] {cert1, cert2, cert3}, certFile );
+        saveX509Cert(new Certificate[] {cert1, cert2, cert3}, certFile);
 
-        KeyStore keyStore = KeyStore.getInstance( "JKS" );
-        keyStore.load( null, null );
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        keyStore.load(null, null);
 
         // When
-        CertificateTool.loadX509Cert( Collections.singletonList( certFile ), keyStore );
+        CertificateTool.loadX509Cert(Collections.singletonList(certFile), keyStore);
 
         // Then
         Enumeration<String> aliases = keyStore.aliases();
-        assertTrue( aliases.hasMoreElements() );
-        assertTrue( aliases.nextElement().startsWith( "neo4j.javadriver.trustedcert" ) );
-        assertTrue( aliases.hasMoreElements() );
-        assertTrue( aliases.nextElement().startsWith( "neo4j.javadriver.trustedcert" ) );
-        assertTrue( aliases.hasMoreElements() );
-        assertTrue( aliases.nextElement().startsWith( "neo4j.javadriver.trustedcert" ) );
-        assertFalse( aliases.hasMoreElements() );
+        assertTrue(aliases.hasMoreElements());
+        assertTrue(aliases.nextElement().startsWith("neo4j.javadriver.trustedcert"));
+        assertTrue(aliases.hasMoreElements());
+        assertTrue(aliases.nextElement().startsWith("neo4j.javadriver.trustedcert"));
+        assertTrue(aliases.hasMoreElements());
+        assertTrue(aliases.nextElement().startsWith("neo4j.javadriver.trustedcert"));
+        assertFalse(aliases.hasMoreElements());
     }
 }

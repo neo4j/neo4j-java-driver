@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.logging;
 
 import io.netty.channel.Channel;
-
 import org.neo4j.driver.Logging;
 
 /**
@@ -27,24 +26,18 @@ import org.neo4j.driver.Logging;
  * <p>
  * It keeps messages shorter in debug mode and provides more details in trace mode.
  */
-public class ChannelErrorLogger extends ChannelActivityLogger
-{
+public class ChannelErrorLogger extends ChannelActivityLogger {
     private static final String DEBUG_MESSAGE_FORMAT = "%s (%s)";
 
-    public ChannelErrorLogger( Channel channel, Logging logging )
-    {
-        super( channel, logging, ChannelErrorLogger.class );
+    public ChannelErrorLogger(Channel channel, Logging logging) {
+        super(channel, logging, ChannelErrorLogger.class);
     }
 
-    public void traceOrDebug( String message, Throwable error )
-    {
-        if ( isTraceEnabled() )
-        {
-            trace( message, error );
-        }
-        else
-        {
-            debug( String.format( DEBUG_MESSAGE_FORMAT, message, error.getClass() ) );
+    public void traceOrDebug(String message, Throwable error) {
+        if (isTraceEnabled()) {
+            trace(message, error);
+        } else {
+            debug(String.format(DEBUG_MESSAGE_FORMAT, message, error.getClass()));
         }
     }
 }

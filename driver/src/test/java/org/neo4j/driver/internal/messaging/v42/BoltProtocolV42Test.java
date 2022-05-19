@@ -18,22 +18,48 @@
  */
 package org.neo4j.driver.internal.messaging.v42;
 
+import static java.time.Duration.ofSeconds;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.driver.AccessMode.WRITE;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.DatabaseNameUtil.database;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
+import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.util.TestUtil.connectionMock;
+
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.ArgumentCaptor;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Bookmark;
@@ -70,475 +96,434 @@ import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
-import static java.time.Duration.ofSeconds;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.driver.AccessMode.WRITE;
-import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.DatabaseNameUtil.database;
-import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
-import static org.neo4j.driver.util.TestUtil.await;
-import static org.neo4j.driver.util.TestUtil.connectionMock;
-
-public final class BoltProtocolV42Test
-{
+public final class BoltProtocolV42Test {
     protected static final String QUERY_TEXT = "RETURN $x";
-    protected static final Map<String,Value> PARAMS = singletonMap( "x", value( 42 ) );
-    protected static final Query QUERY = new Query( QUERY_TEXT, value( PARAMS ) );
+    protected static final Map<String, Value> PARAMS = singletonMap("x", value(42));
+    protected static final Query QUERY = new Query(QUERY_TEXT, value(PARAMS));
 
     protected final BoltProtocol protocol = createProtocol();
     private final EmbeddedChannel channel = new EmbeddedChannel();
-    private final InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher( channel, Logging.none() );
+    private final InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher(channel, Logging.none());
 
     private final TransactionConfig txConfig = TransactionConfig.builder()
-                                                                .withTimeout( ofSeconds( 12 ) )
-                                                                .withMetadata( singletonMap( "key", value( 42 ) ) )
-                                                                .build();
+            .withTimeout(ofSeconds(12))
+            .withMetadata(singletonMap("key", value(42)))
+            .build();
 
-    protected BoltProtocol createProtocol()
-    {
+    protected BoltProtocol createProtocol() {
         return BoltProtocolV42.INSTANCE;
     }
 
     @BeforeEach
-    void beforeEach()
-    {
-        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
+    void beforeEach() {
+        ChannelAttributes.setMessageDispatcher(channel, messageDispatcher);
     }
 
     @AfterEach
-    void afterEach()
-    {
+    void afterEach() {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    void shouldCreateMessageFormat()
-    {
-        assertThat( protocol.createMessageFormat(), instanceOf( expectedMessageFormatType() ) );
+    void shouldCreateMessageFormat() {
+        assertThat(protocol.createMessageFormat(), instanceOf(expectedMessageFormatType()));
     }
 
     @Test
-    void shouldInitializeChannel()
-    {
+    void shouldInitializeChannel() {
         ChannelPromise promise = channel.newPromise();
 
-        protocol.initializeChannel( "MyDriver/0.0.1", dummyAuthToken(), RoutingContext.EMPTY, promise );
+        protocol.initializeChannel("MyDriver/0.0.1", dummyAuthToken(), RoutingContext.EMPTY, promise);
 
-        assertThat( channel.outboundMessages(), hasSize( 1 ) );
-        assertThat( channel.outboundMessages().poll(), instanceOf( HelloMessage.class ) );
-        assertEquals( 1, messageDispatcher.queuedHandlersCount() );
-        assertFalse( promise.isDone() );
+        assertThat(channel.outboundMessages(), hasSize(1));
+        assertThat(channel.outboundMessages().poll(), instanceOf(HelloMessage.class));
+        assertEquals(1, messageDispatcher.queuedHandlersCount());
+        assertFalse(promise.isDone());
 
-        Map<String,Value> metadata = new HashMap<>();
-        metadata.put( "server", value( "Neo4j/4.2.0" ) );
-        metadata.put( "connection_id", value( "bolt-42" ) );
+        Map<String, Value> metadata = new HashMap<>();
+        metadata.put("server", value("Neo4j/4.2.0"));
+        metadata.put("connection_id", value("bolt-42"));
 
-        messageDispatcher.handleSuccessMessage( metadata );
+        messageDispatcher.handleSuccessMessage(metadata);
 
-        assertTrue( promise.isDone() );
-        assertTrue( promise.isSuccess() );
+        assertTrue(promise.isDone());
+        assertTrue(promise.isSuccess());
     }
 
     @Test
-    void shouldPrepareToCloseChannel()
-    {
-        protocol.prepareToCloseChannel( channel );
+    void shouldPrepareToCloseChannel() {
+        protocol.prepareToCloseChannel(channel);
 
-        assertThat( channel.outboundMessages(), hasSize( 1 ) );
-        assertThat( channel.outboundMessages().poll(), instanceOf( GoodbyeMessage.class ) );
-        assertEquals( 1, messageDispatcher.queuedHandlersCount() );
+        assertThat(channel.outboundMessages(), hasSize(1));
+        assertThat(channel.outboundMessages().poll(), instanceOf(GoodbyeMessage.class));
+        assertEquals(1, messageDispatcher.queuedHandlersCount());
     }
 
     @Test
-    void shouldFailToInitializeChannelWhenErrorIsReceived()
-    {
+    void shouldFailToInitializeChannelWhenErrorIsReceived() {
         ChannelPromise promise = channel.newPromise();
 
-        protocol.initializeChannel( "MyDriver/2.2.1", dummyAuthToken(), RoutingContext.EMPTY, promise );
+        protocol.initializeChannel("MyDriver/2.2.1", dummyAuthToken(), RoutingContext.EMPTY, promise);
 
-        assertThat( channel.outboundMessages(), hasSize( 1 ) );
-        assertThat( channel.outboundMessages().poll(), instanceOf( HelloMessage.class ) );
-        assertEquals( 1, messageDispatcher.queuedHandlersCount() );
-        assertFalse( promise.isDone() );
+        assertThat(channel.outboundMessages(), hasSize(1));
+        assertThat(channel.outboundMessages().poll(), instanceOf(HelloMessage.class));
+        assertEquals(1, messageDispatcher.queuedHandlersCount());
+        assertFalse(promise.isDone());
 
-        messageDispatcher.handleFailureMessage( "Neo.TransientError.General.DatabaseUnavailable", "Error!" );
+        messageDispatcher.handleFailureMessage("Neo.TransientError.General.DatabaseUnavailable", "Error!");
 
-        assertTrue( promise.isDone() );
-        assertFalse( promise.isSuccess() );
+        assertTrue(promise.isDone());
+        assertFalse(promise.isSuccess());
     }
 
     @Test
-    void shouldBeginTransactionWithoutBookmark()
-    {
-        Connection connection = connectionMock( protocol );
+    void shouldBeginTransactionWithoutBookmark() {
+        Connection connection = connectionMock(protocol);
 
-        CompletionStage<Void> stage = protocol.beginTransaction( connection, Collections.emptySet(), TransactionConfig.empty() );
+        CompletionStage<Void> stage =
+                protocol.beginTransaction(connection, Collections.emptySet(), TransactionConfig.empty());
 
-        verify( connection )
-                .writeAndFlush( eq( new BeginMessage( Collections.emptySet(), TransactionConfig.empty(), defaultDatabase(), WRITE, null ) ),
-                                any( BeginTxResponseHandler.class ) );
-        assertNull( await( stage ) );
+        verify(connection)
+                .writeAndFlush(
+                        eq(new BeginMessage(
+                                Collections.emptySet(), TransactionConfig.empty(), defaultDatabase(), WRITE, null)),
+                        any(BeginTxResponseHandler.class));
+        assertNull(await(stage));
     }
 
     @Test
-    void shouldBeginTransactionWithBookmarks()
-    {
-        Connection connection = connectionMock( protocol );
-        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx100" ) );
+    void shouldBeginTransactionWithBookmarks() {
+        Connection connection = connectionMock(protocol);
+        Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx100"));
 
-        CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmarks, TransactionConfig.empty() );
+        CompletionStage<Void> stage = protocol.beginTransaction(connection, bookmarks, TransactionConfig.empty());
 
-        verify( connection )
-                .writeAndFlush( eq( new BeginMessage( bookmarks, TransactionConfig.empty(), defaultDatabase(), WRITE, null ) ),
-                                any( BeginTxResponseHandler.class ) );
-        assertNull( await( stage ) );
+        verify(connection)
+                .writeAndFlush(
+                        eq(new BeginMessage(bookmarks, TransactionConfig.empty(), defaultDatabase(), WRITE, null)),
+                        any(BeginTxResponseHandler.class));
+        assertNull(await(stage));
     }
 
     @Test
-    void shouldBeginTransactionWithConfig()
-    {
-        Connection connection = connectionMock( protocol );
+    void shouldBeginTransactionWithConfig() {
+        Connection connection = connectionMock(protocol);
 
-        CompletionStage<Void> stage = protocol.beginTransaction( connection, Collections.emptySet(), txConfig );
+        CompletionStage<Void> stage = protocol.beginTransaction(connection, Collections.emptySet(), txConfig);
 
-        verify( connection )
-                .writeAndFlush( eq( new BeginMessage( Collections.emptySet(), txConfig, defaultDatabase(), WRITE, null ) ),
-                                any( BeginTxResponseHandler.class ) );
-        assertNull( await( stage ) );
+        verify(connection)
+                .writeAndFlush(
+                        eq(new BeginMessage(Collections.emptySet(), txConfig, defaultDatabase(), WRITE, null)),
+                        any(BeginTxResponseHandler.class));
+        assertNull(await(stage));
     }
 
     @Test
-    void shouldBeginTransactionWithBookmarksAndConfig()
-    {
-        Connection connection = connectionMock( protocol );
-        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx4242" ) );
+    void shouldBeginTransactionWithBookmarksAndConfig() {
+        Connection connection = connectionMock(protocol);
+        Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx4242"));
 
-        CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmarks, txConfig );
+        CompletionStage<Void> stage = protocol.beginTransaction(connection, bookmarks, txConfig);
 
-        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmarks, txConfig, defaultDatabase(), WRITE, null ) ),
-                                            any( BeginTxResponseHandler.class ) );
-        assertNull( await( stage ) );
+        verify(connection)
+                .writeAndFlush(
+                        eq(new BeginMessage(bookmarks, txConfig, defaultDatabase(), WRITE, null)),
+                        any(BeginTxResponseHandler.class));
+        assertNull(await(stage));
     }
 
     @Test
-    void shouldCommitTransaction()
-    {
+    void shouldCommitTransaction() {
         String bookmarkString = "neo4j:bookmark:v1:tx4242";
 
-        Connection connection = connectionMock( protocol );
-        when( connection.protocol() ).thenReturn( protocol );
-        doAnswer( invocation ->
-                  {
-                      ResponseHandler commitHandler = invocation.getArgument( 1 );
-                      commitHandler.onSuccess( singletonMap( "bookmark", value( bookmarkString ) ) );
-                      return null;
-                  } ).when( connection ).writeAndFlush( eq( CommitMessage.COMMIT ), any() );
+        Connection connection = connectionMock(protocol);
+        when(connection.protocol()).thenReturn(protocol);
+        doAnswer(invocation -> {
+                    ResponseHandler commitHandler = invocation.getArgument(1);
+                    commitHandler.onSuccess(singletonMap("bookmark", value(bookmarkString)));
+                    return null;
+                })
+                .when(connection)
+                .writeAndFlush(eq(CommitMessage.COMMIT), any());
 
-        CompletionStage<Bookmark> stage = protocol.commitTransaction( connection );
+        CompletionStage<Bookmark> stage = protocol.commitTransaction(connection);
 
-        verify( connection ).writeAndFlush( eq( CommitMessage.COMMIT ), any( CommitTxResponseHandler.class ) );
-        assertEquals( InternalBookmark.parse( bookmarkString ), await( stage ) );
+        verify(connection).writeAndFlush(eq(CommitMessage.COMMIT), any(CommitTxResponseHandler.class));
+        assertEquals(InternalBookmark.parse(bookmarkString), await(stage));
     }
 
     @Test
-    void shouldRollbackTransaction()
-    {
-        Connection connection = connectionMock( protocol );
+    void shouldRollbackTransaction() {
+        Connection connection = connectionMock(protocol);
 
-        CompletionStage<Void> stage = protocol.rollbackTransaction( connection );
+        CompletionStage<Void> stage = protocol.rollbackTransaction(connection);
 
-        verify( connection ).writeAndFlush( eq( RollbackMessage.ROLLBACK ), any( RollbackTxResponseHandler.class ) );
-        assertNull( await( stage ) );
+        verify(connection).writeAndFlush(eq(RollbackMessage.ROLLBACK), any(RollbackTxResponseHandler.class));
+        assertNull(await(stage));
     }
 
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldRunInAutoCommitTransactionAndWaitForRunResponse( AccessMode mode ) throws Exception
-    {
-        testRunAndWaitForRunResponse( true, TransactionConfig.empty(), mode );
+    @EnumSource(AccessMode.class)
+    void shouldRunInAutoCommitTransactionAndWaitForRunResponse(AccessMode mode) throws Exception {
+        testRunAndWaitForRunResponse(true, TransactionConfig.empty(), mode);
     }
 
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldRunInAutoCommitWithConfigTransactionAndWaitForRunResponse( AccessMode mode ) throws Exception
-    {
-        testRunAndWaitForRunResponse( true, txConfig, mode );
+    @EnumSource(AccessMode.class)
+    void shouldRunInAutoCommitWithConfigTransactionAndWaitForRunResponse(AccessMode mode) throws Exception {
+        testRunAndWaitForRunResponse(true, txConfig, mode);
     }
 
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldRunInAutoCommitTransactionAndWaitForSuccessRunResponse( AccessMode mode ) throws Exception
-    {
-        testSuccessfulRunInAutoCommitTxWithWaitingForResponse( Collections.emptySet(), TransactionConfig.empty(), mode );
+    @EnumSource(AccessMode.class)
+    void shouldRunInAutoCommitTransactionAndWaitForSuccessRunResponse(AccessMode mode) throws Exception {
+        testSuccessfulRunInAutoCommitTxWithWaitingForResponse(Collections.emptySet(), TransactionConfig.empty(), mode);
     }
 
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldRunInAutoCommitTransactionWithBookmarkAndConfigAndWaitForSuccessRunResponse( AccessMode mode ) throws Exception
-    {
-        testSuccessfulRunInAutoCommitTxWithWaitingForResponse( Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx65" ) ), txConfig, mode );
+    @EnumSource(AccessMode.class)
+    void shouldRunInAutoCommitTransactionWithBookmarkAndConfigAndWaitForSuccessRunResponse(AccessMode mode)
+            throws Exception {
+        testSuccessfulRunInAutoCommitTxWithWaitingForResponse(
+                Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx65")), txConfig, mode);
     }
 
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldRunInAutoCommitTransactionAndWaitForFailureRunResponse( AccessMode mode ) throws Exception
-    {
-        testFailedRunInAutoCommitTxWithWaitingForResponse( Collections.emptySet(), TransactionConfig.empty(), mode );
+    @EnumSource(AccessMode.class)
+    void shouldRunInAutoCommitTransactionAndWaitForFailureRunResponse(AccessMode mode) throws Exception {
+        testFailedRunInAutoCommitTxWithWaitingForResponse(Collections.emptySet(), TransactionConfig.empty(), mode);
     }
 
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldRunInAutoCommitTransactionWithBookmarkAndConfigAndWaitForFailureRunResponse( AccessMode mode ) throws Exception
-    {
-        testFailedRunInAutoCommitTxWithWaitingForResponse( Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx163" ) ), txConfig, mode );
+    @EnumSource(AccessMode.class)
+    void shouldRunInAutoCommitTransactionWithBookmarkAndConfigAndWaitForFailureRunResponse(AccessMode mode)
+            throws Exception {
+        testFailedRunInAutoCommitTxWithWaitingForResponse(
+                Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx163")), txConfig, mode);
     }
 
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldRunInUnmanagedTransactionAndWaitForRunResponse( AccessMode mode ) throws Exception
-    {
-        testRunAndWaitForRunResponse( false, TransactionConfig.empty(), mode );
+    @EnumSource(AccessMode.class)
+    void shouldRunInUnmanagedTransactionAndWaitForRunResponse(AccessMode mode) throws Exception {
+        testRunAndWaitForRunResponse(false, TransactionConfig.empty(), mode);
     }
 
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldRunInUnmanagedTransactionAndWaitForSuccessRunResponse( AccessMode mode ) throws Exception
-    {
-        testRunInUnmanagedTransactionAndWaitForRunResponse( true, mode );
+    @EnumSource(AccessMode.class)
+    void shouldRunInUnmanagedTransactionAndWaitForSuccessRunResponse(AccessMode mode) throws Exception {
+        testRunInUnmanagedTransactionAndWaitForRunResponse(true, mode);
     }
 
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldRunInUnmanagedTransactionAndWaitForFailureRunResponse( AccessMode mode ) throws Exception
-    {
-        testRunInUnmanagedTransactionAndWaitForRunResponse( false, mode );
+    @EnumSource(AccessMode.class)
+    void shouldRunInUnmanagedTransactionAndWaitForFailureRunResponse(AccessMode mode) throws Exception {
+        testRunInUnmanagedTransactionAndWaitForRunResponse(false, mode);
     }
 
     @Test
-    void databaseNameInBeginTransaction()
-    {
-        testDatabaseNameSupport( false );
+    void databaseNameInBeginTransaction() {
+        testDatabaseNameSupport(false);
     }
 
     @Test
-    void databaseNameForAutoCommitTransactions()
-    {
-        testDatabaseNameSupport( true );
+    void databaseNameForAutoCommitTransactions() {
+        testDatabaseNameSupport(true);
     }
 
     @Test
-    void shouldSupportDatabaseNameInBeginTransaction()
-    {
-        CompletionStage<Void> txStage = protocol.beginTransaction( connectionMock( "foo", protocol ), Collections.emptySet(), TransactionConfig.empty() );
+    void shouldSupportDatabaseNameInBeginTransaction() {
+        CompletionStage<Void> txStage = protocol.beginTransaction(
+                connectionMock("foo", protocol), Collections.emptySet(), TransactionConfig.empty());
 
-        assertDoesNotThrow( () -> await( txStage ) );
+        assertDoesNotThrow(() -> await(txStage));
     }
 
     @Test
-    void shouldNotSupportDatabaseNameForAutoCommitTransactions()
-    {
-        assertDoesNotThrow(
-                () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ),
-                                                           new Query( "RETURN 1" ), BookmarksHolder.NO_OP, TransactionConfig.empty(), UNLIMITED_FETCH_SIZE ) );
+    void shouldNotSupportDatabaseNameForAutoCommitTransactions() {
+        assertDoesNotThrow(() -> protocol.runInAutoCommitTransaction(
+                connectionMock("foo", protocol),
+                new Query("RETURN 1"),
+                BookmarksHolder.NO_OP,
+                TransactionConfig.empty(),
+                UNLIMITED_FETCH_SIZE));
     }
 
-    private Class<? extends MessageFormat> expectedMessageFormatType()
-    {
+    private Class<? extends MessageFormat> expectedMessageFormatType() {
         return MessageFormatV4.class;
     }
 
-    private void testFailedRunInAutoCommitTxWithWaitingForResponse( Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode ) throws Exception
-    {
+    private void testFailedRunInAutoCommitTxWithWaitingForResponse(
+            Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) throws Exception {
         // Given
-        Connection connection = connectionMock( mode, protocol );
-        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( bookmarks );
+        Connection connection = connectionMock(mode, protocol);
+        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder(bookmarks);
 
-        CompletableFuture<AsyncResultCursor> cursorFuture =
-                protocol.runInAutoCommitTransaction( connection, QUERY, bookmarksHolder, config, UNLIMITED_FETCH_SIZE )
-                        .asyncResult()
-                        .toCompletableFuture();
+        CompletableFuture<AsyncResultCursor> cursorFuture = protocol.runInAutoCommitTransaction(
+                        connection, QUERY, bookmarksHolder, config, UNLIMITED_FETCH_SIZE)
+                .asyncResult()
+                .toCompletableFuture();
 
-        ResponseHandler runHandler = verifySessionRunInvoked( connection, bookmarks, config, mode, defaultDatabase() );
-        assertFalse( cursorFuture.isDone() );
+        ResponseHandler runHandler = verifySessionRunInvoked(connection, bookmarks, config, mode, defaultDatabase());
+        assertFalse(cursorFuture.isDone());
 
         // When I response to Run message with a failure
         Throwable error = new RuntimeException();
-        runHandler.onFailure( error );
+        runHandler.onFailure(error);
 
         // Then
-        assertEquals( bookmarks, bookmarksHolder.getBookmarks() );
-        Throwable actual = assertThrows( error.getClass(), () -> await( cursorFuture.get().mapSuccessfulRunCompletionAsync() ) );
-        assertSame( error, actual );
+        assertEquals(bookmarks, bookmarksHolder.getBookmarks());
+        Throwable actual =
+                assertThrows(error.getClass(), () -> await(cursorFuture.get().mapSuccessfulRunCompletionAsync()));
+        assertSame(error, actual);
     }
 
-    private void testSuccessfulRunInAutoCommitTxWithWaitingForResponse( Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode ) throws Exception
-    {
+    private void testSuccessfulRunInAutoCommitTxWithWaitingForResponse(
+            Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) throws Exception {
         // Given
-        Connection connection = connectionMock( mode, protocol );
-        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( bookmarks );
+        Connection connection = connectionMock(mode, protocol);
+        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder(bookmarks);
 
-        CompletableFuture<AsyncResultCursor> cursorFuture =
-                protocol.runInAutoCommitTransaction( connection, QUERY, bookmarksHolder, config, UNLIMITED_FETCH_SIZE )
-                        .asyncResult()
-                        .toCompletableFuture();
+        CompletableFuture<AsyncResultCursor> cursorFuture = protocol.runInAutoCommitTransaction(
+                        connection, QUERY, bookmarksHolder, config, UNLIMITED_FETCH_SIZE)
+                .asyncResult()
+                .toCompletableFuture();
 
-        ResponseHandler runHandler = verifySessionRunInvoked( connection, bookmarks, config, mode, defaultDatabase() );
-        assertFalse( cursorFuture.isDone() );
+        ResponseHandler runHandler = verifySessionRunInvoked(connection, bookmarks, config, mode, defaultDatabase());
+        assertFalse(cursorFuture.isDone());
 
         // When I response to the run message
-        runHandler.onSuccess( emptyMap() );
+        runHandler.onSuccess(emptyMap());
 
         // Then
-        assertEquals( bookmarks, bookmarksHolder.getBookmarks() );
-        assertTrue( cursorFuture.isDone() );
-        assertNotNull( cursorFuture.get() );
+        assertEquals(bookmarks, bookmarksHolder.getBookmarks());
+        assertTrue(cursorFuture.isDone());
+        assertNotNull(cursorFuture.get());
     }
 
-    private void testRunInUnmanagedTransactionAndWaitForRunResponse( boolean success, AccessMode mode ) throws Exception
-    {
+    private void testRunInUnmanagedTransactionAndWaitForRunResponse(boolean success, AccessMode mode) throws Exception {
         // Given
-        Connection connection = connectionMock( mode, protocol );
+        Connection connection = connectionMock(mode, protocol);
 
-        CompletableFuture<AsyncResultCursor> cursorFuture =
-                protocol.runInUnmanagedTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), UNLIMITED_FETCH_SIZE )
-                        .asyncResult()
-                        .toCompletableFuture();
+        CompletableFuture<AsyncResultCursor> cursorFuture = protocol.runInUnmanagedTransaction(
+                        connection, QUERY, mock(UnmanagedTransaction.class), UNLIMITED_FETCH_SIZE)
+                .asyncResult()
+                .toCompletableFuture();
 
-        ResponseHandler runHandler = verifyTxRunInvoked( connection );
-        assertFalse( cursorFuture.isDone() );
+        ResponseHandler runHandler = verifyTxRunInvoked(connection);
+        assertFalse(cursorFuture.isDone());
         Throwable error = new RuntimeException();
 
-        if ( success )
-        {
-            runHandler.onSuccess( emptyMap() );
-        }
-        else
-        {
+        if (success) {
+            runHandler.onSuccess(emptyMap());
+        } else {
             // When responded with a failure
-            runHandler.onFailure( error );
+            runHandler.onFailure(error);
         }
 
         // Then
-        assertTrue( cursorFuture.isDone() );
-        if ( success )
-        {
-            assertNotNull( await( cursorFuture.get().mapSuccessfulRunCompletionAsync() ) );
-        }
-        else
-        {
-            Throwable actual = assertThrows( error.getClass(), () -> await( cursorFuture.get().mapSuccessfulRunCompletionAsync() ) );
-            assertSame( error, actual );
+        assertTrue(cursorFuture.isDone());
+        if (success) {
+            assertNotNull(await(cursorFuture.get().mapSuccessfulRunCompletionAsync()));
+        } else {
+            Throwable actual = assertThrows(
+                    error.getClass(), () -> await(cursorFuture.get().mapSuccessfulRunCompletionAsync()));
+            assertSame(error, actual);
         }
     }
 
-    private void testRunAndWaitForRunResponse( boolean autoCommitTx, TransactionConfig config, AccessMode mode ) throws Exception
-    {
+    private void testRunAndWaitForRunResponse(boolean autoCommitTx, TransactionConfig config, AccessMode mode)
+            throws Exception {
         // Given
-        Connection connection = connectionMock( mode, protocol );
-        Set<Bookmark> initialBookmarks = Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx987" ) );
+        Connection connection = connectionMock(mode, protocol);
+        Set<Bookmark> initialBookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx987"));
 
         CompletionStage<AsyncResultCursor> cursorStage;
-        if ( autoCommitTx )
-        {
-            BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( initialBookmarks );
-            cursorStage = protocol.runInAutoCommitTransaction( connection, QUERY, bookmarksHolder, config, UNLIMITED_FETCH_SIZE )
-                                  .asyncResult();
-        }
-        else
-        {
-            cursorStage = protocol.runInUnmanagedTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), UNLIMITED_FETCH_SIZE )
-                                  .asyncResult();
+        if (autoCommitTx) {
+            BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder(initialBookmarks);
+            cursorStage = protocol.runInAutoCommitTransaction(
+                            connection, QUERY, bookmarksHolder, config, UNLIMITED_FETCH_SIZE)
+                    .asyncResult();
+        } else {
+            cursorStage = protocol.runInUnmanagedTransaction(
+                            connection, QUERY, mock(UnmanagedTransaction.class), UNLIMITED_FETCH_SIZE)
+                    .asyncResult();
         }
 
         // When & Then
         CompletableFuture<AsyncResultCursor> cursorFuture = cursorStage.toCompletableFuture();
-        assertFalse( cursorFuture.isDone() );
+        assertFalse(cursorFuture.isDone());
 
-        ResponseHandler runResponseHandler =
-                autoCommitTx ? verifySessionRunInvoked( connection, initialBookmarks, config, mode, defaultDatabase() ) : verifyTxRunInvoked( connection );
-        runResponseHandler.onSuccess( emptyMap() );
+        ResponseHandler runResponseHandler = autoCommitTx
+                ? verifySessionRunInvoked(connection, initialBookmarks, config, mode, defaultDatabase())
+                : verifyTxRunInvoked(connection);
+        runResponseHandler.onSuccess(emptyMap());
 
-        assertTrue( cursorFuture.isDone() );
-        assertNotNull( cursorFuture.get() );
+        assertTrue(cursorFuture.isDone());
+        assertNotNull(cursorFuture.get());
     }
 
-    private void testDatabaseNameSupport( boolean autoCommitTx )
-    {
-        Connection connection = connectionMock( "foo", protocol );
-        if ( autoCommitTx )
-        {
-            ResultCursorFactory factory =
-                    protocol.runInAutoCommitTransaction( connection, QUERY, BookmarksHolder.NO_OP, TransactionConfig.empty(), UNLIMITED_FETCH_SIZE );
+    private void testDatabaseNameSupport(boolean autoCommitTx) {
+        Connection connection = connectionMock("foo", protocol);
+        if (autoCommitTx) {
+            ResultCursorFactory factory = protocol.runInAutoCommitTransaction(
+                    connection, QUERY, BookmarksHolder.NO_OP, TransactionConfig.empty(), UNLIMITED_FETCH_SIZE);
             CompletionStage<AsyncResultCursor> resultStage = factory.asyncResult();
-            ResponseHandler runHandler =
-                    verifySessionRunInvoked( connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database( "foo" ) );
-            runHandler.onSuccess( emptyMap() );
-            await( resultStage );
-            verifySessionRunInvoked( connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database( "foo" ) );
+            ResponseHandler runHandler = verifySessionRunInvoked(
+                    connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));
+            runHandler.onSuccess(emptyMap());
+            await(resultStage);
+            verifySessionRunInvoked(
+                    connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));
+        } else {
+            CompletionStage<Void> txStage =
+                    protocol.beginTransaction(connection, Collections.emptySet(), TransactionConfig.empty());
+            await(txStage);
+            verifyBeginInvoked(
+                    connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));
         }
-        else
-        {
-            CompletionStage<Void> txStage = protocol.beginTransaction( connection, Collections.emptySet(), TransactionConfig.empty() );
-            await( txStage );
-            verifyBeginInvoked( connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database( "foo" ) );
-        }
     }
 
-    private ResponseHandler verifyTxRunInvoked( Connection connection )
-    {
-        return verifyRunInvoked( connection, RunWithMetadataMessage.unmanagedTxRunMessage( QUERY ) );
+    private ResponseHandler verifyTxRunInvoked(Connection connection) {
+        return verifyRunInvoked(connection, RunWithMetadataMessage.unmanagedTxRunMessage(QUERY));
     }
 
-    private ResponseHandler verifySessionRunInvoked( Connection connection, Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode,
-                                                     DatabaseName databaseName )
-    {
-        RunWithMetadataMessage runMessage = RunWithMetadataMessage.autoCommitTxRunMessage( QUERY, config, databaseName, mode, bookmarks, null );
-        return verifyRunInvoked( connection, runMessage );
+    private ResponseHandler verifySessionRunInvoked(
+            Connection connection,
+            Set<Bookmark> bookmarks,
+            TransactionConfig config,
+            AccessMode mode,
+            DatabaseName databaseName) {
+        RunWithMetadataMessage runMessage =
+                RunWithMetadataMessage.autoCommitTxRunMessage(QUERY, config, databaseName, mode, bookmarks, null);
+        return verifyRunInvoked(connection, runMessage);
     }
 
-    private ResponseHandler verifyRunInvoked( Connection connection, RunWithMetadataMessage runMessage )
-    {
-        ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
-        ArgumentCaptor<ResponseHandler> pullHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
+    private ResponseHandler verifyRunInvoked(Connection connection, RunWithMetadataMessage runMessage) {
+        ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass(ResponseHandler.class);
+        ArgumentCaptor<ResponseHandler> pullHandlerCaptor = ArgumentCaptor.forClass(ResponseHandler.class);
 
-        verify( connection ).write( eq( runMessage ), runHandlerCaptor.capture() );
-        verify( connection ).writeAndFlush( any( PullMessage.class ), pullHandlerCaptor.capture() );
+        verify(connection).write(eq(runMessage), runHandlerCaptor.capture());
+        verify(connection).writeAndFlush(any(PullMessage.class), pullHandlerCaptor.capture());
 
-        assertThat( runHandlerCaptor.getValue(), instanceOf( RunResponseHandler.class ) );
-        assertThat( pullHandlerCaptor.getValue(), instanceOf( PullAllResponseHandler.class ) );
+        assertThat(runHandlerCaptor.getValue(), instanceOf(RunResponseHandler.class));
+        assertThat(pullHandlerCaptor.getValue(), instanceOf(PullAllResponseHandler.class));
 
         return runHandlerCaptor.getValue();
     }
 
-    private void verifyBeginInvoked( Connection connection, Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode, DatabaseName databaseName )
-    {
-        ArgumentCaptor<ResponseHandler> beginHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
-        BeginMessage beginMessage = new BeginMessage( bookmarks, config, databaseName, mode, null );
-        verify( connection ).writeAndFlush( eq( beginMessage ), beginHandlerCaptor.capture() );
-        assertThat( beginHandlerCaptor.getValue(), instanceOf( BeginTxResponseHandler.class ) );
+    private void verifyBeginInvoked(
+            Connection connection,
+            Set<Bookmark> bookmarks,
+            TransactionConfig config,
+            AccessMode mode,
+            DatabaseName databaseName) {
+        ArgumentCaptor<ResponseHandler> beginHandlerCaptor = ArgumentCaptor.forClass(ResponseHandler.class);
+        BeginMessage beginMessage = new BeginMessage(bookmarks, config, databaseName, mode, null);
+        verify(connection).writeAndFlush(eq(beginMessage), beginHandlerCaptor.capture());
+        assertThat(beginHandlerCaptor.getValue(), instanceOf(BeginTxResponseHandler.class));
     }
 
-    private static InternalAuthToken dummyAuthToken()
-    {
-        return (InternalAuthToken) AuthTokens.basic( "hello", "world" );
+    private static InternalAuthToken dummyAuthToken() {
+        return (InternalAuthToken) AuthTokens.basic("hello", "world");
     }
 }

@@ -18,33 +18,31 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
-class ResetMessageEncoderTest
-{
+class ResetMessageEncoderTest {
     private final ResetMessageEncoder encoder = new ResetMessageEncoder();
-    private final ValuePacker packer = mock( ValuePacker.class );
+    private final ValuePacker packer = mock(ValuePacker.class);
 
     @Test
-    void shouldEncodeResetMessage() throws Exception
-    {
-        encoder.encode( ResetMessage.RESET, packer );
+    void shouldEncodeResetMessage() throws Exception {
+        encoder.encode(ResetMessage.RESET, packer);
 
-        verify( packer ).packStructHeader( 0, ResetMessage.SIGNATURE );
+        verify(packer).packStructHeader(0, ResetMessage.SIGNATURE);
     }
 
     @Test
-    void shouldFailToEncodeWrongMessage()
-    {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 2" ) ), packer ) );
+    void shouldFailToEncodeWrongMessage() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> encoder.encode(RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 2")), packer));
     }
 }

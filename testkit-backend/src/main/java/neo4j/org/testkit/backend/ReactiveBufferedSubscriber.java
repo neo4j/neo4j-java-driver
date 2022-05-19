@@ -18,6 +18,4 @@
  */
 package neo4j.org.testkit.backend;
 
-public class ReactiveBufferedSubscriber
-{
-}
+public class ReactiveBufferedSubscriber {}

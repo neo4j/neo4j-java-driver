@@ -24,8 +24,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
  * Represents a host and port. Host can either be an IP address or a DNS name.
  * Both IPv4 and IPv6 hosts are supported.
  */
-public interface ServerAddress
-{
+public interface ServerAddress {
     /**
      * Retrieve the host portion of this {@link ServerAddress}.
      *
@@ -47,8 +46,7 @@ public interface ServerAddress
      * @param port the port portion. Should be in range [0, 65535].
      * @return new server address with the specified host and port.
      */
-    static ServerAddress of( String host, int port )
-    {
-        return new BoltServerAddress( host, port );
+    static ServerAddress of(String host, int port) {
+        return new BoltServerAddress(host, port);
     }
 }

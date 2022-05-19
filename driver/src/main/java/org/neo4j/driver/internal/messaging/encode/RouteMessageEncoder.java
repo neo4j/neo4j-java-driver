@@ -18,30 +18,27 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
-import java.io.IOException;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
+import java.io.IOException;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.RouteMessage;
 
-import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
-
 /**
  * Encodes the ROUTE message to the stream
  */
-public class RouteMessageEncoder implements MessageEncoder
-{
+public class RouteMessageEncoder implements MessageEncoder {
     @Override
-    public void encode( Message message, ValuePacker packer ) throws IOException
-    {
-        checkArgument( message, RouteMessage.class );
+    public void encode(Message message, ValuePacker packer) throws IOException {
+        checkArgument(message, RouteMessage.class);
         RouteMessage routeMessage = (RouteMessage) message;
-        packer.packStructHeader( 3, message.signature() );
-        packer.pack( routeMessage.getRoutingContext() );
-        packer.pack( value( routeMessage.getBookmarks().stream().map( Bookmark::value ) ) );
-        packer.pack( routeMessage.getDatabaseName() );
+        packer.packStructHeader(3, message.signature());
+        packer.pack(routeMessage.getRoutingContext());
+        packer.pack(value(routeMessage.getBookmarks().stream().map(Bookmark::value)));
+        packer.pack(routeMessage.getDatabaseName());
     }
 }

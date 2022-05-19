@@ -18,116 +18,99 @@
  */
 package org.neo4j.driver.internal.cursor;
 
+import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
-import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
-
-public class DisposableAsyncResultCursor implements AsyncResultCursor
-{
+public class DisposableAsyncResultCursor implements AsyncResultCursor {
     private final AsyncResultCursor delegate;
     private boolean isDisposed;
 
-    public DisposableAsyncResultCursor( AsyncResultCursor delegate )
-    {
+    public DisposableAsyncResultCursor(AsyncResultCursor delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public List<String> keys()
-    {
+    public List<String> keys() {
         return delegate.keys();
     }
 
     @Override
-    public CompletionStage<ResultSummary> consumeAsync()
-    {
+    public CompletionStage<ResultSummary> consumeAsync() {
         isDisposed = true;
         return delegate.consumeAsync();
     }
 
     @Override
-    public CompletionStage<Record> nextAsync()
-    {
-        return assertNotDisposed().thenCompose( ignored -> delegate.nextAsync() );
+    public CompletionStage<Record> nextAsync() {
+        return assertNotDisposed().thenCompose(ignored -> delegate.nextAsync());
     }
 
     @Override
-    public CompletionStage<Record> peekAsync()
-    {
-        return assertNotDisposed().thenCompose( ignored -> delegate.peekAsync() );
+    public CompletionStage<Record> peekAsync() {
+        return assertNotDisposed().thenCompose(ignored -> delegate.peekAsync());
     }
 
     @Override
-    public CompletionStage<Record> singleAsync()
-    {
-        return assertNotDisposed().thenCompose( ignored -> delegate.singleAsync() );
+    public CompletionStage<Record> singleAsync() {
+        return assertNotDisposed().thenCompose(ignored -> delegate.singleAsync());
     }
 
     @Override
-    public CompletionStage<ResultSummary> forEachAsync( Consumer<Record> action )
-    {
-        return assertNotDisposed().thenCompose( ignored -> delegate.forEachAsync( action ) );
+    public CompletionStage<ResultSummary> forEachAsync(Consumer<Record> action) {
+        return assertNotDisposed().thenCompose(ignored -> delegate.forEachAsync(action));
     }
 
     @Override
-    public CompletionStage<List<Record>> listAsync()
-    {
-        return assertNotDisposed().thenCompose( ignored -> delegate.listAsync() );
+    public CompletionStage<List<Record>> listAsync() {
+        return assertNotDisposed().thenCompose(ignored -> delegate.listAsync());
     }
 
     @Override
-    public <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
-    {
-        return assertNotDisposed().thenCompose( ignored -> delegate.listAsync( mapFunction ) );
+    public <T> CompletionStage<List<T>> listAsync(Function<Record, T> mapFunction) {
+        return assertNotDisposed().thenCompose(ignored -> delegate.listAsync(mapFunction));
     }
 
     @Override
-    public CompletionStage<Boolean> isOpenAsync()
-    {
-        return CompletableFuture.completedFuture( !isDisposed() );
+    public CompletionStage<Boolean> isOpenAsync() {
+        return CompletableFuture.completedFuture(!isDisposed());
     }
 
     @Override
-    public CompletionStage<Throwable> discardAllFailureAsync()
-    {
+    public CompletionStage<Throwable> discardAllFailureAsync() {
         isDisposed = true;
         return delegate.discardAllFailureAsync();
     }
 
     @Override
-    public CompletionStage<Throwable> pullAllFailureAsync()
-    {
-        // This one does not dispose the result so that a user could still visit the buffered result after this method call.
+    public CompletionStage<Throwable> pullAllFailureAsync() {
+        // This one does not dispose the result so that a user could still visit the buffered result after this method
+        // call.
         // This also does not assert not disposed so that this method can be called after summary.
         return delegate.pullAllFailureAsync();
     }
 
-    private <T> CompletableFuture<T> assertNotDisposed()
-    {
-        if ( isDisposed )
-        {
-            return failedFuture( newResultConsumedError() );
+    private <T> CompletableFuture<T> assertNotDisposed() {
+        if (isDisposed) {
+            return failedFuture(newResultConsumedError());
         }
         return completedWithNull();
     }
 
-    boolean isDisposed()
-    {
+    boolean isDisposed() {
         return this.isDisposed;
     }
 
     @Override
-    public CompletableFuture<AsyncResultCursor> mapSuccessfulRunCompletionAsync()
-    {
-        return this.delegate.mapSuccessfulRunCompletionAsync().thenApply( ignored -> this );
+    public CompletableFuture<AsyncResultCursor> mapSuccessfulRunCompletionAsync() {
+        return this.delegate.mapSuccessfulRunCompletionAsync().thenApply(ignored -> this);
     }
 }

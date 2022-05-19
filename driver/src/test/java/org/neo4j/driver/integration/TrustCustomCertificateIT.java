@@ -18,12 +18,17 @@
  */
 package org.neo4j.driver.integration;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.Config.TrustStrategy.trustCustomCertificateSignedBy;
+import static org.neo4j.driver.util.CertificateUtil.createNewCertificateAndKey;
+import static org.neo4j.driver.util.CertificateUtil.createNewCertificateAndKeySignedBy;
 
 import java.io.File;
 import java.util.function.Supplier;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -35,62 +40,54 @@ import org.neo4j.driver.util.CertificateUtil.CertificateKeyPair;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.Config.TrustStrategy.trustCustomCertificateSignedBy;
-import static org.neo4j.driver.util.CertificateUtil.createNewCertificateAndKey;
-import static org.neo4j.driver.util.CertificateUtil.createNewCertificateAndKeySignedBy;
-
 @ParallelizableIT
-class TrustCustomCertificateIT
-{
+class TrustCustomCertificateIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new CertificateExtension();
 
     @Test
-    void shouldAcceptServerWithCertificateSignedByDriverCertificate() throws Throwable
-    {
+    void shouldAcceptServerWithCertificateSignedByDriverCertificate() throws Throwable {
         // Given root certificate
-        CertificateKeyPair<File,File> root = createNewCertificateAndKey();
+        CertificateKeyPair<File, File> root = createNewCertificateAndKey();
 
         // When
-        CertificateKeyPair<File,File> server = createNewCertificateAndKeySignedBy( root );
-        neo4j.updateEncryptionKeyAndCert( server.key(), server.cert() );
+        CertificateKeyPair<File, File> server = createNewCertificateAndKeySignedBy(root);
+        neo4j.updateEncryptionKeyAndCert(server.key(), server.cert());
 
         // Then
-        shouldBeAbleToRunCypher( () -> createDriverWithCustomCertificate( root.cert() ) );
+        shouldBeAbleToRunCypher(() -> createDriverWithCustomCertificate(root.cert()));
     }
 
     @Test
-    void shouldAcceptServerWithSameCertificate() throws Throwable
-    {
-        shouldBeAbleToRunCypher( () -> createDriverWithCustomCertificate( neo4j.tlsCertFile() ) );
+    void shouldAcceptServerWithSameCertificate() throws Throwable {
+        shouldBeAbleToRunCypher(() -> createDriverWithCustomCertificate(neo4j.tlsCertFile()));
     }
 
     @Test
-    void shouldRejectServerWithUntrustedCertificate() throws Throwable
-    {
+    void shouldRejectServerWithUntrustedCertificate() throws Throwable {
         // Given a driver with a (random) cert
-        CertificateKeyPair<File,File> certificateAndKey = createNewCertificateAndKey();
+        CertificateKeyPair<File, File> certificateAndKey = createNewCertificateAndKey();
 
         // When & Then
-        final Driver driver = createDriverWithCustomCertificate( certificateAndKey.cert() );
-        SecurityException error = assertThrows( SecurityException.class, driver::verifyConnectivity );
+        final Driver driver = createDriverWithCustomCertificate(certificateAndKey.cert());
+        SecurityException error = assertThrows(SecurityException.class, driver::verifyConnectivity);
     }
 
-    private void shouldBeAbleToRunCypher( Supplier<Driver> driverSupplier )
-    {
-        try ( Driver driver = driverSupplier.get(); Session session = driver.session() )
-        {
-            Result result = session.run( "RETURN 1 as n" );
-            assertThat( result.single().get( "n" ).asInt(), equalTo( 1 ) );
+    private void shouldBeAbleToRunCypher(Supplier<Driver> driverSupplier) {
+        try (Driver driver = driverSupplier.get();
+                Session session = driver.session()) {
+            Result result = session.run("RETURN 1 as n");
+            assertThat(result.single().get("n").asInt(), equalTo(1));
         }
     }
 
-    private Driver createDriverWithCustomCertificate( File cert )
-    {
-        return GraphDatabase.driver( neo4j.uri(), neo4j.authToken(),
-                Config.builder().withEncryption().withTrustStrategy( trustCustomCertificateSignedBy( cert ) ).build() );
+    private Driver createDriverWithCustomCertificate(File cert) {
+        return GraphDatabase.driver(
+                neo4j.uri(),
+                neo4j.authToken(),
+                Config.builder()
+                        .withEncryption()
+                        .withTrustStrategy(trustCustomCertificateSignedBy(cert))
+                        .build());
     }
 }

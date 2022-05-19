@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.security;
 
 import java.util.Map;
-
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Value;
 
@@ -27,43 +26,39 @@ import org.neo4j.driver.Value;
  * A simple common token for authentication schemes that easily convert to
  * an auth token map
  */
-public class InternalAuthToken implements AuthToken
-{
+public class InternalAuthToken implements AuthToken {
     public static final String SCHEME_KEY = "scheme";
     public static final String PRINCIPAL_KEY = "principal";
     public static final String CREDENTIALS_KEY = "credentials";
     public static final String REALM_KEY = "realm";
     public static final String PARAMETERS_KEY = "parameters";
 
-    private final Map<String,Value> content;
+    private final Map<String, Value> content;
 
-    public InternalAuthToken( Map<String,Value> content )
-    {
+    public InternalAuthToken(Map<String, Value> content) {
         this.content = content;
     }
 
-    public Map<String, Value> toMap()
-    {
+    public Map<String, Value> toMap() {
         return content;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        { return true; }
-        if ( o == null || getClass() != o.getClass() )
-        { return false; }
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         InternalAuthToken that = (InternalAuthToken) o;
 
-        return content != null ? content.equals( that.content ) : that.content == null;
-
+        return content != null ? content.equals(that.content) : that.content == null;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return content != null ? content.hashCode() : 0;
     }
 }

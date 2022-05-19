@@ -18,6 +18,7 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -25,51 +26,45 @@ import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletionStage;
-
 @Setter
 @Getter
-public class DriverClose implements TestkitRequest
-{
+public class DriverClose implements TestkitRequest {
     private DriverCloseBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        testkitState.getDriverHolder( data.getDriverId() ).getDriver().close();
+    public TestkitResponse process(TestkitState testkitState) {
+        testkitState.getDriverHolder(data.getDriverId()).getDriver().close();
         return createResponse();
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getDriverHolder( data.getDriverId() )
-                           .getDriver()
-                           .closeAsync()
-                           .thenApply( ignored -> createResponse() );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState
+                .getDriverHolder(data.getDriverId())
+                .getDriver()
+                .closeAsync()
+                .thenApply(ignored -> createResponse());
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return processReactive( testkitState );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return processReactive(testkitState);
     }
 
     @Override
-    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
-    {
-        return Mono.fromCompletionStage( processAsync( testkitState ) );
+    public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
+        return Mono.fromCompletionStage(processAsync(testkitState));
     }
 
-    private Driver createResponse()
-    {
-        return Driver.builder().data( Driver.DriverBody.builder().id( data.getDriverId() ).build() ).build();
+    private Driver createResponse() {
+        return Driver.builder()
+                .data(Driver.DriverBody.builder().id(data.getDriverId()).build())
+                .build();
     }
 
     @Setter
     @Getter
-    private static class DriverCloseBody
-    {
+    private static class DriverCloseBody {
         private String driverId;
     }
 }

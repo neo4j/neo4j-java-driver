@@ -20,27 +20,24 @@ package org.neo4j.docs.driver;
 
 // tag::transaction-function-import[]
 
-import org.neo4j.driver.Session;
-
 import static org.neo4j.driver.Values.parameters;
 // end::transaction-function-import[]
 
-public class TransactionFunctionExample extends BaseApplication
-{
-    public TransactionFunctionExample( String uri, String user, String password )
-    {
-        super( uri, user, password );
+import org.neo4j.driver.Session;
+
+public class TransactionFunctionExample extends BaseApplication {
+    public TransactionFunctionExample(String uri, String user, String password) {
+        super(uri, user, password);
     }
 
     // tag::transaction-function[]
-    public void addPerson( final String name )
-    {
-        try ( Session session = driver.session() )
-        {
-            session.writeTransaction( tx -> {
-                tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) ).consume();
+    public void addPerson(final String name) {
+        try (Session session = driver.session()) {
+            session.writeTransaction(tx -> {
+                tx.run("CREATE (a:Person {name: $name})", parameters("name", name))
+                        .consume();
                 return 1;
-            } );
+            });
         }
     }
     // end::transaction-function[]

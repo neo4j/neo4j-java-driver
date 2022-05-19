@@ -18,67 +18,63 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AbstractTransactionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
-import reactor.core.publisher.Mono;
-
-import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.async.AsyncTransaction;
+import reactor.core.publisher.Mono;
 
 @Setter
 @Getter
-public class TransactionClose implements TestkitRequest
-{
+public class TransactionClose implements TestkitRequest {
     private TransactionCloseBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        testkitState.getTransactionHolder( data.getTxId() ).getTransaction().close();
-        return createResponse( data.getTxId() );
+    public TestkitResponse process(TestkitState testkitState) {
+        testkitState.getTransactionHolder(data.getTxId()).getTransaction().close();
+        return createResponse(data.getTxId());
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncTransactionHolder( data.getTxId() )
-                           .thenApply( AbstractTransactionHolder::getTransaction )
-                           .thenCompose( AsyncTransaction::closeAsync )
-                           .thenApply( ignored -> createResponse( data.getTxId() ) );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState
+                .getAsyncTransactionHolder(data.getTxId())
+                .thenApply(AbstractTransactionHolder::getTransaction)
+                .thenCompose(AsyncTransaction::closeAsync)
+                .thenApply(ignored -> createResponse(data.getTxId()));
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return testkitState.getRxTransactionHolder( data.getTxId() )
-                           .map( AbstractTransactionHolder::getTransaction )
-                           .flatMap( tx -> Mono.fromDirect( tx.close() ) )
-                           .then( Mono.just( createResponse( data.getTxId() ) ) );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return testkitState
+                .getRxTransactionHolder(data.getTxId())
+                .map(AbstractTransactionHolder::getTransaction)
+                .flatMap(tx -> Mono.fromDirect(tx.close()))
+                .then(Mono.just(createResponse(data.getTxId())));
     }
 
     @Override
-    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
-    {
-        return testkitState.getReactiveTransactionHolder( data.getTxId() )
-                           .map( AbstractTransactionHolder::getTransaction )
-                           .flatMap( tx -> Mono.fromDirect( tx.close() ) )
-                           .then( Mono.just( createResponse( data.getTxId() ) ) );
+    public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
+        return testkitState
+                .getReactiveTransactionHolder(data.getTxId())
+                .map(AbstractTransactionHolder::getTransaction)
+                .flatMap(tx -> Mono.fromDirect(tx.close()))
+                .then(Mono.just(createResponse(data.getTxId())));
     }
 
-    private Transaction createResponse( String txId )
-    {
-        return Transaction.builder().data( Transaction.TransactionBody.builder().id( txId ).build() ).build();
+    private Transaction createResponse(String txId) {
+        return Transaction.builder()
+                .data(Transaction.TransactionBody.builder().id(txId).build())
+                .build();
     }
 
     @Setter
     @Getter
-    private static class TransactionCloseBody
-    {
+    private static class TransactionCloseBody {
         private String txId;
     }
 }

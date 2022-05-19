@@ -21,7 +21,6 @@ package org.neo4j.driver;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.util.Resource;
 
@@ -54,8 +53,7 @@ import org.neo4j.driver.util.Resource;
  *
  * @since 1.0 (Removed async API to {@link AsyncSession} in 4.0)
  */
-public interface Session extends Resource, QueryRunner
-{
+public interface Session extends Resource, QueryRunner {
     /**
      * Begin a new <em>unmanaged {@linkplain Transaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To
@@ -75,7 +73,7 @@ public interface Session extends Resource, QueryRunner
      * @param config configuration for the new transaction.
      * @return a new {@link Transaction}
      */
-    Transaction beginTransaction( TransactionConfig config );
+    Transaction beginTransaction(TransactionConfig config);
 
     /**
      * Execute a unit of work in a managed {@link AccessMode#READ read} transaction.
@@ -90,7 +88,7 @@ public interface Session extends Resource, QueryRunner
      * @deprecated superseded by {@link #executeRead(TransactionCallback)}.
      */
     @Deprecated
-    <T> T readTransaction( TransactionWork<T> work );
+    <T> T readTransaction(TransactionWork<T> work);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one
@@ -105,9 +103,8 @@ public interface Session extends Resource, QueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
-    default <T> T executeRead( TransactionCallback<T> callback )
-    {
-        return executeRead( callback, TransactionConfig.empty() );
+    default <T> T executeRead(TransactionCallback<T> callback) {
+        return executeRead(callback, TransactionConfig.empty());
     }
 
     /**
@@ -124,7 +121,7 @@ public interface Session extends Resource, QueryRunner
      * @deprecated superseded by {@link #executeRead(TransactionCallback, TransactionConfig)}.
      */
     @Deprecated
-    <T> T readTransaction( TransactionWork<T> work, TransactionConfig config );
+    <T> T readTransaction(TransactionWork<T> work, TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one
@@ -140,7 +137,7 @@ public interface Session extends Resource, QueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
-    <T> T executeRead( TransactionCallback<T> callback, TransactionConfig config );
+    <T> T executeRead(TransactionCallback<T> callback, TransactionConfig config);
 
     /**
      * Execute a unit of work in a managed {@link AccessMode#WRITE write} transaction.
@@ -155,7 +152,7 @@ public interface Session extends Resource, QueryRunner
      * @deprecated superseded by {@link #executeWrite(TransactionCallback)}.
      */
     @Deprecated
-    <T> T writeTransaction( TransactionWork<T> work );
+    <T> T writeTransaction(TransactionWork<T> work);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for
@@ -170,9 +167,8 @@ public interface Session extends Resource, QueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
-    default <T> T executeWrite( TransactionCallback<T> callback )
-    {
-        return executeWrite( callback, TransactionConfig.empty() );
+    default <T> T executeWrite(TransactionCallback<T> callback) {
+        return executeWrite(callback, TransactionConfig.empty());
     }
 
     /**
@@ -185,13 +181,11 @@ public interface Session extends Resource, QueryRunner
      *
      * @param contextConsumer the consumer representing the unit of work.
      */
-    default void executeWriteWithoutResult( Consumer<TransactionContext> contextConsumer )
-    {
-        executeWrite( tc ->
-                      {
-                          contextConsumer.accept( tc );
-                          return null;
-                      } );
+    default void executeWriteWithoutResult(Consumer<TransactionContext> contextConsumer) {
+        executeWrite(tc -> {
+            contextConsumer.accept(tc);
+            return null;
+        });
     }
 
     /**
@@ -208,7 +202,7 @@ public interface Session extends Resource, QueryRunner
      * @deprecated superseded by {@link #executeWrite(TransactionCallback, TransactionConfig)}.
      */
     @Deprecated
-    <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config );
+    <T> T writeTransaction(TransactionWork<T> work, TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.
@@ -223,7 +217,7 @@ public interface Session extends Resource, QueryRunner
      * @param <T>      the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
-    <T> T executeWrite( TransactionCallback<T> callback, TransactionConfig config );
+    <T> T executeWrite(TransactionCallback<T> callback, TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.
@@ -236,13 +230,13 @@ public interface Session extends Resource, QueryRunner
      * @param contextConsumer the consumer representing the unit of work.
      * @param config          the transaction configuration for the managed transaction.
      */
-    default void executeWriteWithoutResult( Consumer<TransactionContext> contextConsumer, TransactionConfig config )
-    {
-        executeWrite( tc ->
-                      {
-                          contextConsumer.accept( tc );
-                          return null;
-                      }, config );
+    default void executeWriteWithoutResult(Consumer<TransactionContext> contextConsumer, TransactionConfig config) {
+        executeWrite(
+                tc -> {
+                    contextConsumer.accept(tc);
+                    return null;
+                },
+                config);
     }
 
     /**
@@ -252,7 +246,7 @@ public interface Session extends Resource, QueryRunner
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    Result run( String query, TransactionConfig config );
+    Result run(String query, TransactionConfig config);
 
     /**
      * Run a query with parameters in a managed auto-commit transaction with the
@@ -290,7 +284,7 @@ public interface Session extends Resource, QueryRunner
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    Result run(String query, Map<String,Object> parameters, TransactionConfig config );
+    Result run(String query, Map<String, Object> parameters, TransactionConfig config);
 
     /**
      * Run a query in a managed auto-commit transaction with the specified
@@ -315,7 +309,7 @@ public interface Session extends Resource, QueryRunner
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    Result run(Query query, TransactionConfig config );
+    Result run(Query query, TransactionConfig config);
 
     /**
      * Return the last bookmark of this session.

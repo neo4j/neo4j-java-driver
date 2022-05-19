@@ -19,16 +19,14 @@
 package org.neo4j.driver.internal.spi;
 
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.internal.async.ConnectionContext;
 
 /**
  * Interface defines a layer used by the driver to obtain connections. It is meant to be the only component that
  * differs between "direct" and "routing" driver.
  */
-public interface ConnectionProvider
-{
-    CompletionStage<Connection> acquireConnection( ConnectionContext context );
+public interface ConnectionProvider {
+    CompletionStage<Connection> acquireConnection(ConnectionContext context);
 
     /**
      * The validation of connectivity will happen with the default database.

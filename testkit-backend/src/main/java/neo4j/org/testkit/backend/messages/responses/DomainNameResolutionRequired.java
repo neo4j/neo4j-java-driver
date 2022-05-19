@@ -23,26 +23,22 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class DomainNameResolutionRequired implements TestkitCallback
-{
+public class DomainNameResolutionRequired implements TestkitCallback {
     private DomainNameResolutionRequiredBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "DomainNameResolutionRequired";
     }
 
     @Override
-    public String getCallbackId()
-    {
+    public String getCallbackId() {
         return data.getId();
     }
 
     @Getter
     @Builder
-    public static class DomainNameResolutionRequiredBody
-    {
+    public static class DomainNameResolutionRequiredBody {
         private String id;
 
         private String name;

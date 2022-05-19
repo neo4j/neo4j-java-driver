@@ -18,18 +18,6 @@
  */
 package org.neo4j.driver;
 
-import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.InternalNode;
-import org.neo4j.driver.internal.InternalPath;
-import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.util.TestUtil;
-
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,126 +25,122 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.value;
 
-class TransactionConfigTest
-{
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.InternalNode;
+import org.neo4j.driver.internal.InternalPath;
+import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.util.TestUtil;
+
+class TransactionConfigTest {
     @Test
-    void emptyConfigShouldHaveNoTimeout()
-    {
-        assertNull( TransactionConfig.empty().timeout() );
+    void emptyConfigShouldHaveNoTimeout() {
+        assertNull(TransactionConfig.empty().timeout());
     }
 
     @Test
-    void emptyConfigShouldHaveNoMetadata()
-    {
-        assertEquals( emptyMap(), TransactionConfig.empty().metadata() );
+    void emptyConfigShouldHaveNoMetadata() {
+        assertEquals(emptyMap(), TransactionConfig.empty().metadata());
     }
 
     @Test
-    void shouldDisallowNegativeTimeout()
-    {
-        assertThrows( IllegalArgumentException.class, () -> TransactionConfig.builder().withTimeout( Duration.ofSeconds( -1 ) ) );
+    void shouldDisallowNegativeTimeout() {
+        assertThrows(IllegalArgumentException.class, () -> TransactionConfig.builder()
+                .withTimeout(Duration.ofSeconds(-1)));
     }
 
     @Test
-    void shouldDisallowNullMetadata()
-    {
-        assertThrows( NullPointerException.class, () -> TransactionConfig.builder().withMetadata( null ) );
+    void shouldDisallowNullMetadata() {
+        assertThrows(
+                NullPointerException.class, () -> TransactionConfig.builder().withMetadata(null));
     }
 
     @Test
-    void shouldDisallowMetadataWithIllegalValues()
-    {
-        assertThrows( ClientException.class,
-                () -> TransactionConfig.builder().withMetadata( singletonMap( "key", new InternalNode( 1 ) ) ) );
+    void shouldDisallowMetadataWithIllegalValues() {
+        assertThrows(ClientException.class, () -> TransactionConfig.builder()
+                .withMetadata(singletonMap("key", new InternalNode(1))));
 
-        assertThrows( ClientException.class,
-                      () -> TransactionConfig.builder().withMetadata(
-                              singletonMap( "key", new InternalRelationship( 1, 1, 1, "" ) ) ) );
+        assertThrows(ClientException.class, () -> TransactionConfig.builder()
+                .withMetadata(singletonMap("key", new InternalRelationship(1, 1, 1, ""))));
 
-        assertThrows( ClientException.class,
-                () -> TransactionConfig.builder().withMetadata( singletonMap( "key", new InternalPath( new InternalNode( 1 ) ) ) ) );
+        assertThrows(ClientException.class, () -> TransactionConfig.builder()
+                .withMetadata(singletonMap("key", new InternalPath(new InternalNode(1)))));
     }
 
     @Test
-    void shouldHaveTimeout()
-    {
+    void shouldHaveTimeout() {
+        TransactionConfig config =
+                TransactionConfig.builder().withTimeout(Duration.ofSeconds(3)).build();
+
+        assertEquals(Duration.ofSeconds(3), config.timeout());
+    }
+
+    @Test
+    void shouldAllowDefaultTimeout() {
         TransactionConfig config = TransactionConfig.builder()
-                                                    .withTimeout( Duration.ofSeconds( 3 ) )
-                                                    .build();
-
-        assertEquals( Duration.ofSeconds( 3 ), config.timeout() );
-    }
-
-    @Test
-    void shouldAllowDefaultTimeout()
-    {
-        TransactionConfig config = TransactionConfig.builder()
-                                                    .withTimeout( Duration.ofSeconds( 3 ) )
-                                                    .withDefaultTimeout()
-                                                    .build();
-
-        assertNull( config.timeout() );
-    }
-
-    @Test
-    void shouldAllowZeroTimeout()
-    {
-        TransactionConfig config = TransactionConfig.builder()
-                .withTimeout( Duration.ZERO )
+                .withTimeout(Duration.ofSeconds(3))
+                .withDefaultTimeout()
                 .build();
 
-        assertEquals( Duration.ZERO, config.timeout() );
+        assertNull(config.timeout());
     }
 
     @Test
-    void shouldHaveMetadata()
-    {
-        Map<String,Object> map = new HashMap<>();
-        map.put( "key1", "value1" );
-        map.put( "key2", true );
-        map.put( "key3", 42 );
+    void shouldAllowZeroTimeout() {
+        TransactionConfig config =
+                TransactionConfig.builder().withTimeout(Duration.ZERO).build();
 
-        TransactionConfig config = TransactionConfig.builder()
-                .withMetadata( map )
-                .build();
+        assertEquals(Duration.ZERO, config.timeout());
+    }
 
-        Map<String,Value> metadata = config.metadata();
+    @Test
+    void shouldHaveMetadata() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("key1", "value1");
+        map.put("key2", true);
+        map.put("key3", 42);
 
-        assertEquals( 3, metadata.size() );
-        assertEquals( value( "value1" ), metadata.get( "key1" ) );
-        assertEquals( value( true ), metadata.get( "key2" ) );
-        assertEquals( value( 42 ), metadata.get( "key3" ) );
+        TransactionConfig config = TransactionConfig.builder().withMetadata(map).build();
+
+        Map<String, Value> metadata = config.metadata();
+
+        assertEquals(3, metadata.size());
+        assertEquals(value("value1"), metadata.get("key1"));
+        assertEquals(value(true), metadata.get("key2"));
+        assertEquals(value(42), metadata.get("key3"));
     }
 
     @Test
     void shouldNotModifyMetadataAfterItIsSuppliedToBuilder() {
 
-        Map<String,Object> metadata = new HashMap<>();
-        metadata.put( "key1", "value1" );
-        metadata.put( "key2", true );
-        metadata.put( "key3", 42 );
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("key1", "value1");
+        metadata.put("key2", true);
+        metadata.put("key3", 42);
 
-        TransactionConfig.Builder builder = TransactionConfig.builder().withMetadata( metadata );
-        metadata.put( "key4", "what?" );
+        TransactionConfig.Builder builder = TransactionConfig.builder().withMetadata(metadata);
+        metadata.put("key4", "what?");
 
         TransactionConfig config = builder.build();
-        assertEquals( 3, config.metadata().size() );
+        assertEquals(3, config.metadata().size());
     }
 
     @Test
-    void shouldSerialize() throws Exception
-    {
-        Map<String,Object> metadata = new HashMap<>();
-        metadata.put( "key1", "value1" );
-        metadata.put( "key2", true );
-        metadata.put( "key3", 42 );
+    void shouldSerialize() throws Exception {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("key1", "value1");
+        metadata.put("key2", true);
+        metadata.put("key3", 42);
 
         TransactionConfig config = TransactionConfig.builder()
-                .withTimeout( Duration.ofMillis(12345L) )
-                .withMetadata( metadata )
+                .withTimeout(Duration.ofMillis(12345L))
+                .withMetadata(metadata)
                 .build();
 
-        TransactionConfig verify = TestUtil.serializeAndReadBack( config, TransactionConfig.class );
+        TransactionConfig verify = TestUtil.serializeAndReadBack(config, TransactionConfig.class);
 
         assertEquals(config.timeout(), verify.timeout());
         assertEquals(config.metadata(), verify.metadata());

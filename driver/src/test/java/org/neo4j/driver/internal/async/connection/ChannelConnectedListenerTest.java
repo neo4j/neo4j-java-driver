@@ -18,15 +18,6 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -36,51 +27,54 @@ import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.handsh
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.TestUtil.await;
 
-class ChannelConnectedListenerTest
-{
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.embedded.EmbeddedChannel;
+import java.io.IOException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+
+class ChannelConnectedListenerTest {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    void shouldFailPromiseWhenChannelConnectionFails()
-    {
+    void shouldFailPromiseWhenChannelConnectionFails() {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        ChannelConnectedListener listener = newListener( handshakeCompletedPromise );
+        ChannelConnectedListener listener = newListener(handshakeCompletedPromise);
 
         ChannelPromise channelConnectedPromise = channel.newPromise();
-        IOException cause = new IOException( "Unable to connect!" );
-        channelConnectedPromise.setFailure( cause );
+        IOException cause = new IOException("Unable to connect!");
+        channelConnectedPromise.setFailure(cause);
 
-        listener.operationComplete( channelConnectedPromise );
+        listener.operationComplete(channelConnectedPromise);
 
-        ServiceUnavailableException error = assertThrows( ServiceUnavailableException.class, () -> await( handshakeCompletedPromise ) );
-        assertEquals( cause, error.getCause() );
+        ServiceUnavailableException error =
+                assertThrows(ServiceUnavailableException.class, () -> await(handshakeCompletedPromise));
+        assertEquals(cause, error.getCause());
     }
 
     @Test
-    void shouldWriteHandshakeWhenChannelConnected()
-    {
+    void shouldWriteHandshakeWhenChannelConnected() {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        ChannelConnectedListener listener = newListener( handshakeCompletedPromise );
+        ChannelConnectedListener listener = newListener(handshakeCompletedPromise);
 
         ChannelPromise channelConnectedPromise = channel.newPromise();
         channelConnectedPromise.setSuccess();
 
-        listener.operationComplete( channelConnectedPromise );
+        listener.operationComplete(channelConnectedPromise);
 
-        assertNotNull( channel.pipeline().get( HandshakeHandler.class ) );
-        assertTrue( channel.finish() );
-        assertEquals( handshakeBuf(), channel.readOutbound() );
+        assertNotNull(channel.pipeline().get(HandshakeHandler.class));
+        assertTrue(channel.finish());
+        assertEquals(handshakeBuf(), channel.readOutbound());
     }
 
-    private static ChannelConnectedListener newListener( ChannelPromise handshakeCompletedPromise )
-    {
-        return new ChannelConnectedListener( LOCAL_DEFAULT, new ChannelPipelineBuilderImpl(),
-                handshakeCompletedPromise, DEV_NULL_LOGGING );
+    private static ChannelConnectedListener newListener(ChannelPromise handshakeCompletedPromise) {
+        return new ChannelConnectedListener(
+                LOCAL_DEFAULT, new ChannelPipelineBuilderImpl(), handshakeCompletedPromise, DEV_NULL_LOGGING);
     }
 }

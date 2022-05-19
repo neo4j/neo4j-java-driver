@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.internal.messaging;
 
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.protocolVersion;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
-
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -44,10 +44,7 @@ import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
 import org.neo4j.driver.internal.spi.Connection;
 
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.protocolVersion;
-
-public interface BoltProtocol
-{
+public interface BoltProtocol {
     /**
      * Instantiate {@link MessageFormat} used by this Bolt protocol verison.
      *
@@ -63,13 +60,17 @@ public interface BoltProtocol
      * @param routingContext the configured routing context
      * @param channelInitializedPromise the promise to be notified when initialization is completed.
      */
-    void initializeChannel( String userAgent, AuthToken authToken, RoutingContext routingContext, ChannelPromise channelInitializedPromise );
+    void initializeChannel(
+            String userAgent,
+            AuthToken authToken,
+            RoutingContext routingContext,
+            ChannelPromise channelInitializedPromise);
 
     /**
      * Prepare to close channel before it is closed.
      * @param channel the channel to close.
      */
-    void prepareToCloseChannel( Channel channel );
+    void prepareToCloseChannel(Channel channel);
 
     /**
      * Begin an unmanaged transaction.
@@ -79,7 +80,7 @@ public interface BoltProtocol
      * @param config     the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
      */
-    CompletionStage<Void> beginTransaction( Connection connection, Set<Bookmark> bookmarks, TransactionConfig config );
+    CompletionStage<Void> beginTransaction(Connection connection, Set<Bookmark> bookmarks, TransactionConfig config);
 
     /**
      * Commit the unmanaged transaction.
@@ -87,7 +88,7 @@ public interface BoltProtocol
      * @param connection the connection to use.
      * @return a completion stage completed with a bookmark when transaction is committed or completed exceptionally when there was a failure.
      */
-    CompletionStage<Bookmark> commitTransaction( Connection connection );
+    CompletionStage<Bookmark> commitTransaction(Connection connection);
 
     /**
      * Rollback the unmanaged transaction.
@@ -95,7 +96,7 @@ public interface BoltProtocol
      * @param connection the connection to use.
      * @return a completion stage completed when transaction is rolled back or completed exceptionally when there was a failure.
      */
-    CompletionStage<Void> rollbackTransaction( Connection connection );
+    CompletionStage<Void> rollbackTransaction(Connection connection);
 
     /**
      * Execute the given query in an auto-commit transaction, i.e. {@link Session#run(Query)}.
@@ -107,8 +108,12 @@ public interface BoltProtocol
      * @param fetchSize       the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    ResultCursorFactory runInAutoCommitTransaction( Connection connection, Query query, BookmarksHolder bookmarksHolder, TransactionConfig config,
-                                                    long fetchSize );
+    ResultCursorFactory runInAutoCommitTransaction(
+            Connection connection,
+            Query query,
+            BookmarksHolder bookmarksHolder,
+            TransactionConfig config,
+            long fetchSize);
 
     /**
      * Execute the given query in a running unmanaged transaction, i.e. {@link Transaction#run(Query)}.
@@ -119,7 +124,8 @@ public interface BoltProtocol
      * @param fetchSize  the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    ResultCursorFactory runInUnmanagedTransaction( Connection connection, Query query, UnmanagedTransaction tx, long fetchSize );
+    ResultCursorFactory runInUnmanagedTransaction(
+            Connection connection, Query query, UnmanagedTransaction tx, long fetchSize);
 
     /**
      * Returns the protocol version. It can be used for version specific error messages.
@@ -134,9 +140,8 @@ public interface BoltProtocol
      * @return the protocol.
      * @throws ClientException when unable to find protocol version for the given channel.
      */
-    static BoltProtocol forChannel( Channel channel )
-    {
-        return forVersion( protocolVersion( channel ) );
+    static BoltProtocol forChannel(Channel channel) {
+        return forVersion(protocolVersion(channel));
     }
 
     /**
@@ -146,36 +151,22 @@ public interface BoltProtocol
      * @return the protocol.
      * @throws ClientException when unable to find protocol with the given version.
      */
-    static BoltProtocol forVersion( BoltProtocolVersion version )
-    {
-        if ( BoltProtocolV3.VERSION.equals( version ) )
-        {
+    static BoltProtocol forVersion(BoltProtocolVersion version) {
+        if (BoltProtocolV3.VERSION.equals(version)) {
             return BoltProtocolV3.INSTANCE;
-        }
-        else if ( BoltProtocolV4.VERSION.equals( version ) )
-        {
+        } else if (BoltProtocolV4.VERSION.equals(version)) {
             return BoltProtocolV4.INSTANCE;
-        }
-        else if ( BoltProtocolV41.VERSION.equals( version ) )
-        {
+        } else if (BoltProtocolV41.VERSION.equals(version)) {
             return BoltProtocolV41.INSTANCE;
-        }
-        else if ( BoltProtocolV42.VERSION.equals( version ) )
-        {
+        } else if (BoltProtocolV42.VERSION.equals(version)) {
             return BoltProtocolV42.INSTANCE;
-        }
-        else if ( BoltProtocolV43.VERSION.equals( version ) )
-        {
+        } else if (BoltProtocolV43.VERSION.equals(version)) {
             return BoltProtocolV43.INSTANCE;
-        }
-        else if ( BoltProtocolV44.VERSION.equals( version ) )
-        {
+        } else if (BoltProtocolV44.VERSION.equals(version)) {
             return BoltProtocolV44.INSTANCE;
-        }
-        else if ( BoltProtocolV5.VERSION.equals( version ) )
-        {
+        } else if (BoltProtocolV5.VERSION.equals(version)) {
             return BoltProtocolV5.INSTANCE;
         }
-        throw new ClientException( "Unknown protocol version: " + version );
+        throw new ClientException("Unknown protocol version: " + version);
     }
 }

@@ -19,13 +19,10 @@
 package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
-
 import org.neo4j.driver.Value;
 
-public interface PullResponseCompletionListener
-{
-    void afterSuccess( Map<String,Value> metadata );
+public interface PullResponseCompletionListener {
+    void afterSuccess(Map<String, Value> metadata);
 
-    void afterFailure( Throwable error );
-
+    void afterFailure(Throwable error);
 }

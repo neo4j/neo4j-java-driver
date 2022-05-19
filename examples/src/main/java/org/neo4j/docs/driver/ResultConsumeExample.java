@@ -22,32 +22,26 @@ package org.neo4j.docs.driver;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 // end::result-consume-import[]
 
-public class ResultConsumeExample extends BaseApplication
-{
-    public ResultConsumeExample( String uri, String user, String password )
-    {
-        super( uri, user, password );
+public class ResultConsumeExample extends BaseApplication {
+    public ResultConsumeExample(String uri, String user, String password) {
+        super(uri, user, password);
     }
 
     // tag::result-consume[]
-    public List<String> getPeople()
-    {
-        try ( Session session = driver.session() )
-        {
-            return session.readTransaction( tx -> {
+    public List<String> getPeople() {
+        try (Session session = driver.session()) {
+            return session.readTransaction(tx -> {
                 List<String> names = new ArrayList<>();
-                Result result = tx.run( "MATCH (a:Person) RETURN a.name ORDER BY a.name" );
-                while ( result.hasNext() )
-                {
-                    names.add( result.next().get( 0 ).asString() );
+                Result result = tx.run("MATCH (a:Person) RETURN a.name ORDER BY a.name");
+                while (result.hasNext()) {
+                    names.add(result.next().get(0).asString());
                 }
                 return names;
-            } );
+            });
         }
     }
     // end::result-consume[]

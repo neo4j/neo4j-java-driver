@@ -18,14 +18,17 @@
  */
 package org.neo4j.driver.internal.async;
 
+import static java.util.Collections.emptyMap;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTerminationReason;
+import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -44,17 +47,11 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
 
-import static java.util.Collections.emptyMap;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTerminationReason;
-import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
-
 /**
  * This connection represents a simple network connection to a remote server. It wraps a channel obtained from a connection pool. The life cycle of this
  * connection start from the moment the channel is borrowed out of the pool and end at the time the connection is released back to the pool.
  */
-public class NetworkConnection implements Connection
-{
+public class NetworkConnection implements Connection {
     private final Logger log;
     private final Channel channel;
     private final InboundMessageDispatcher messageDispatcher;
@@ -65,287 +62,240 @@ public class NetworkConnection implements Connection
     private final CompletableFuture<Void> releaseFuture;
     private final Clock clock;
 
-    private final AtomicReference<Status> status = new AtomicReference<>( Status.OPEN );
+    private final AtomicReference<Status> status = new AtomicReference<>(Status.OPEN);
     private final MetricsListener metricsListener;
     private final ListenerEvent inUseEvent;
 
     private final Long connectionReadTimeout;
     private ChannelHandler connectionReadTimeoutHandler;
 
-    public NetworkConnection( Channel channel, ExtendedChannelPool channelPool, Clock clock, MetricsListener metricsListener, Logging logging )
-    {
-        this.log = logging.getLog( getClass() );
+    public NetworkConnection(
+            Channel channel,
+            ExtendedChannelPool channelPool,
+            Clock clock,
+            MetricsListener metricsListener,
+            Logging logging) {
+        this.log = logging.getLog(getClass());
         this.channel = channel;
-        this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );
-        this.serverAgent = ChannelAttributes.serverAgent( channel );
-        this.serverAddress = ChannelAttributes.serverAddress( channel );
-        this.protocol = BoltProtocol.forChannel( channel );
+        this.messageDispatcher = ChannelAttributes.messageDispatcher(channel);
+        this.serverAgent = ChannelAttributes.serverAgent(channel);
+        this.serverAddress = ChannelAttributes.serverAddress(channel);
+        this.protocol = BoltProtocol.forChannel(channel);
         this.channelPool = channelPool;
         this.releaseFuture = new CompletableFuture<>();
         this.clock = clock;
         this.metricsListener = metricsListener;
         this.inUseEvent = metricsListener.createListenerEvent();
-        this.connectionReadTimeout = ChannelAttributes.connectionReadTimeout( channel ).orElse( null );
-        metricsListener.afterConnectionCreated( poolId( this.channel ), this.inUseEvent );
+        this.connectionReadTimeout =
+                ChannelAttributes.connectionReadTimeout(channel).orElse(null);
+        metricsListener.afterConnectionCreated(poolId(this.channel), this.inUseEvent);
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return status.get() == Status.OPEN;
     }
 
     @Override
-    public void enableAutoRead()
-    {
-        if ( isOpen() )
-        {
-            setAutoRead( true );
+    public void enableAutoRead() {
+        if (isOpen()) {
+            setAutoRead(true);
         }
     }
 
     @Override
-    public void disableAutoRead()
-    {
-        if ( isOpen() )
-        {
-            setAutoRead( false );
+    public void disableAutoRead() {
+        if (isOpen()) {
+            setAutoRead(false);
         }
     }
 
     @Override
-    public void flush()
-    {
-        if ( verifyOpen( null, null ) )
-        {
+    public void flush() {
+        if (verifyOpen(null, null)) {
             flushInEventLoop();
         }
     }
 
     @Override
-    public void write( Message message, ResponseHandler handler )
-    {
-        if ( verifyOpen( handler, null ) )
-        {
-            writeMessageInEventLoop( message, handler, false );
+    public void write(Message message, ResponseHandler handler) {
+        if (verifyOpen(handler, null)) {
+            writeMessageInEventLoop(message, handler, false);
         }
     }
 
     @Override
-    public void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
-    {
-        if ( verifyOpen( handler1, handler2 ) )
-        {
-            writeMessagesInEventLoop( message1, handler1, message2, handler2, false );
+    public void write(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2) {
+        if (verifyOpen(handler1, handler2)) {
+            writeMessagesInEventLoop(message1, handler1, message2, handler2, false);
         }
     }
 
     @Override
-    public void writeAndFlush( Message message, ResponseHandler handler )
-    {
-        if ( verifyOpen( handler, null ) )
-        {
-            writeMessageInEventLoop( message, handler, true );
+    public void writeAndFlush(Message message, ResponseHandler handler) {
+        if (verifyOpen(handler, null)) {
+            writeMessageInEventLoop(message, handler, true);
         }
     }
 
     @Override
-    public void writeAndFlush( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
-    {
-        if ( verifyOpen( handler1, handler2 ) )
-        {
-            writeMessagesInEventLoop( message1, handler1, message2, handler2, true );
+    public void writeAndFlush(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2) {
+        if (verifyOpen(handler1, handler2)) {
+            writeMessagesInEventLoop(message1, handler1, message2, handler2, true);
         }
     }
 
     @Override
-    public CompletionStage<Void> reset()
-    {
+    public CompletionStage<Void> reset() {
         CompletableFuture<Void> result = new CompletableFuture<>();
-        ResetResponseHandler handler = new ResetResponseHandler( messageDispatcher, result );
-        writeResetMessageIfNeeded( handler, true );
+        ResetResponseHandler handler = new ResetResponseHandler(messageDispatcher, result);
+        writeResetMessageIfNeeded(handler, true);
         return result;
     }
 
     @Override
-    public CompletionStage<Void> release()
-    {
-        if ( status.compareAndSet( Status.OPEN, Status.RELEASED ) )
-        {
-            ChannelReleasingResetResponseHandler handler = new ChannelReleasingResetResponseHandler( channel,
-                    channelPool, messageDispatcher, clock, releaseFuture );
+    public CompletionStage<Void> release() {
+        if (status.compareAndSet(Status.OPEN, Status.RELEASED)) {
+            ChannelReleasingResetResponseHandler handler = new ChannelReleasingResetResponseHandler(
+                    channel, channelPool, messageDispatcher, clock, releaseFuture);
 
-            writeResetMessageIfNeeded( handler, false );
-            metricsListener.afterConnectionReleased( poolId( this.channel ), this.inUseEvent );
+            writeResetMessageIfNeeded(handler, false);
+            metricsListener.afterConnectionReleased(poolId(this.channel), this.inUseEvent);
         }
         return releaseFuture;
     }
 
     @Override
-    public void terminateAndRelease( String reason )
-    {
-        if ( status.compareAndSet( Status.OPEN, Status.TERMINATED ) )
-        {
-            setTerminationReason( channel, reason );
-            asCompletionStage( channel.close() )
-                    .exceptionally( throwable -> null )
-                    .thenCompose( ignored -> channelPool.release( channel ) )
-                    .whenComplete( ( ignored, throwable ) ->
-                                   {
-                                       releaseFuture.complete( null );
-                                       metricsListener.afterConnectionReleased( poolId( this.channel ), this.inUseEvent );
-                                   } );
+    public void terminateAndRelease(String reason) {
+        if (status.compareAndSet(Status.OPEN, Status.TERMINATED)) {
+            setTerminationReason(channel, reason);
+            asCompletionStage(channel.close())
+                    .exceptionally(throwable -> null)
+                    .thenCompose(ignored -> channelPool.release(channel))
+                    .whenComplete((ignored, throwable) -> {
+                        releaseFuture.complete(null);
+                        metricsListener.afterConnectionReleased(poolId(this.channel), this.inUseEvent);
+                    });
         }
     }
 
     @Override
-    public String serverAgent()
-    {
+    public String serverAgent() {
         return serverAgent;
     }
 
     @Override
-    public BoltServerAddress serverAddress()
-    {
+    public BoltServerAddress serverAddress() {
         return serverAddress;
     }
 
     @Override
-    public BoltProtocol protocol()
-    {
+    public BoltProtocol protocol() {
         return protocol;
     }
 
-    private void writeResetMessageIfNeeded( ResponseHandler resetHandler, boolean isSessionReset )
-    {
-        channel.eventLoop().execute( () ->
-        {
-            if ( isSessionReset && !isOpen() )
-            {
-                resetHandler.onSuccess( emptyMap() );
-            }
-            else
-            {
+    private void writeResetMessageIfNeeded(ResponseHandler resetHandler, boolean isSessionReset) {
+        channel.eventLoop().execute(() -> {
+            if (isSessionReset && !isOpen()) {
+                resetHandler.onSuccess(emptyMap());
+            } else {
                 // auto-read could've been disabled, re-enable it to automatically receive response for RESET
-                setAutoRead( true );
+                setAutoRead(true);
 
-                messageDispatcher.enqueue( resetHandler );
-                channel.writeAndFlush( ResetMessage.RESET ).addListener( future -> registerConnectionReadTimeout( channel ) );
+                messageDispatcher.enqueue(resetHandler);
+                channel.writeAndFlush(ResetMessage.RESET).addListener(future -> registerConnectionReadTimeout(channel));
             }
-        } );
+        });
     }
 
-    private void flushInEventLoop()
-    {
-        channel.eventLoop().execute(
-                () ->
-                {
-                    channel.flush();
-                    registerConnectionReadTimeout( channel );
-                } );
+    private void flushInEventLoop() {
+        channel.eventLoop().execute(() -> {
+            channel.flush();
+            registerConnectionReadTimeout(channel);
+        });
     }
 
-    private void writeMessageInEventLoop( Message message, ResponseHandler handler, boolean flush )
-    {
-        channel.eventLoop().execute( () ->
-        {
-            messageDispatcher.enqueue( handler );
+    private void writeMessageInEventLoop(Message message, ResponseHandler handler, boolean flush) {
+        channel.eventLoop().execute(() -> {
+            messageDispatcher.enqueue(handler);
 
-            if ( flush )
-            {
-                channel.writeAndFlush( message ).addListener( future -> registerConnectionReadTimeout( channel ) );
+            if (flush) {
+                channel.writeAndFlush(message).addListener(future -> registerConnectionReadTimeout(channel));
+            } else {
+                channel.write(message, channel.voidPromise());
             }
-            else
-            {
-                channel.write( message, channel.voidPromise() );
-            }
-        } );
+        });
     }
 
-    private void writeMessagesInEventLoop( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2, boolean flush )
-    {
-        channel.eventLoop().execute( () ->
-        {
-            messageDispatcher.enqueue( handler1 );
-            messageDispatcher.enqueue( handler2 );
+    private void writeMessagesInEventLoop(
+            Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2, boolean flush) {
+        channel.eventLoop().execute(() -> {
+            messageDispatcher.enqueue(handler1);
+            messageDispatcher.enqueue(handler2);
 
-            channel.write( message1, channel.voidPromise() );
+            channel.write(message1, channel.voidPromise());
 
-            if ( flush )
-            {
-                channel.writeAndFlush( message2 ).addListener( future -> registerConnectionReadTimeout( channel ) );
+            if (flush) {
+                channel.writeAndFlush(message2).addListener(future -> registerConnectionReadTimeout(channel));
+            } else {
+                channel.write(message2, channel.voidPromise());
             }
-            else
-            {
-                channel.write( message2, channel.voidPromise() );
-            }
-        } );
+        });
     }
 
-    private void setAutoRead( boolean value )
-    {
-        channel.config().setAutoRead( value );
+    private void setAutoRead(boolean value) {
+        channel.config().setAutoRead(value);
     }
 
-    private boolean verifyOpen( ResponseHandler handler1, ResponseHandler handler2 )
-    {
+    private boolean verifyOpen(ResponseHandler handler1, ResponseHandler handler2) {
         Status connectionStatus = this.status.get();
-        switch ( connectionStatus )
-        {
-        case OPEN:
-            return true;
-        case RELEASED:
-            Exception error = new IllegalStateException( "Connection has been released to the pool and can't be used" );
-            if ( handler1 != null )
-            {
-                handler1.onFailure( error );
-            }
-            if ( handler2 != null )
-            {
-                handler2.onFailure( error );
-            }
-            return false;
-        case TERMINATED:
-            Exception terminatedError = new IllegalStateException( "Connection has been terminated and can't be used" );
-            if ( handler1 != null )
-            {
-                handler1.onFailure( terminatedError );
-            }
-            if ( handler2 != null )
-            {
-                handler2.onFailure( terminatedError );
-            }
-            return false;
-        default:
-            throw new IllegalStateException( "Unknown status: " + connectionStatus );
+        switch (connectionStatus) {
+            case OPEN:
+                return true;
+            case RELEASED:
+                Exception error =
+                        new IllegalStateException("Connection has been released to the pool and can't be used");
+                if (handler1 != null) {
+                    handler1.onFailure(error);
+                }
+                if (handler2 != null) {
+                    handler2.onFailure(error);
+                }
+                return false;
+            case TERMINATED:
+                Exception terminatedError =
+                        new IllegalStateException("Connection has been terminated and can't be used");
+                if (handler1 != null) {
+                    handler1.onFailure(terminatedError);
+                }
+                if (handler2 != null) {
+                    handler2.onFailure(terminatedError);
+                }
+                return false;
+            default:
+                throw new IllegalStateException("Unknown status: " + connectionStatus);
         }
     }
 
-    private void registerConnectionReadTimeout( Channel channel )
-    {
-        if ( !channel.eventLoop().inEventLoop() )
-        {
-            throw new IllegalStateException( "This method may only be called in the EventLoop" );
+    private void registerConnectionReadTimeout(Channel channel) {
+        if (!channel.eventLoop().inEventLoop()) {
+            throw new IllegalStateException("This method may only be called in the EventLoop");
         }
 
-        if ( connectionReadTimeout != null && connectionReadTimeoutHandler == null )
-        {
-            connectionReadTimeoutHandler = new ConnectionReadTimeoutHandler( connectionReadTimeout, TimeUnit.SECONDS );
-            channel.pipeline().addFirst( connectionReadTimeoutHandler );
-            log.debug( "Added ConnectionReadTimeoutHandler" );
-            messageDispatcher.setBeforeLastHandlerHook(
-                    ( messageType ) ->
-                    {
-                        channel.pipeline().remove( connectionReadTimeoutHandler );
-                        connectionReadTimeoutHandler = null;
-                        messageDispatcher.setBeforeLastHandlerHook( null );
-                        log.debug( "Removed ConnectionReadTimeoutHandler" );
-                    } );
+        if (connectionReadTimeout != null && connectionReadTimeoutHandler == null) {
+            connectionReadTimeoutHandler = new ConnectionReadTimeoutHandler(connectionReadTimeout, TimeUnit.SECONDS);
+            channel.pipeline().addFirst(connectionReadTimeoutHandler);
+            log.debug("Added ConnectionReadTimeoutHandler");
+            messageDispatcher.setBeforeLastHandlerHook((messageType) -> {
+                channel.pipeline().remove(connectionReadTimeoutHandler);
+                connectionReadTimeoutHandler = null;
+                messageDispatcher.setBeforeLastHandlerHook(null);
+                log.debug("Removed ConnectionReadTimeoutHandler");
+            });
         }
     }
 
-    private enum Status
-    {
+    private enum Status {
         OPEN,
         RELEASED,
         TERMINATED

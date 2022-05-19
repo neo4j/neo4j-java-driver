@@ -20,37 +20,31 @@ package org.neo4j.driver.internal.cluster;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class RoutingSettings
-{
-    public static final long STALE_ROUTING_TABLE_PURGE_DELAY_MS = SECONDS.toMillis( 30 );
-    public static final RoutingSettings DEFAULT = new RoutingSettings( STALE_ROUTING_TABLE_PURGE_DELAY_MS );
+public class RoutingSettings {
+    public static final long STALE_ROUTING_TABLE_PURGE_DELAY_MS = SECONDS.toMillis(30);
+    public static final RoutingSettings DEFAULT = new RoutingSettings(STALE_ROUTING_TABLE_PURGE_DELAY_MS);
 
     private final RoutingContext routingContext;
     private final long routingTablePurgeDelayMs;
 
-    public RoutingSettings( long routingTablePurgeDelayMs )
-    {
-        this( routingTablePurgeDelayMs, RoutingContext.EMPTY );
+    public RoutingSettings(long routingTablePurgeDelayMs) {
+        this(routingTablePurgeDelayMs, RoutingContext.EMPTY);
     }
 
-    public RoutingSettings( long routingTablePurgeDelayMs, RoutingContext routingContext )
-    {
+    public RoutingSettings(long routingTablePurgeDelayMs, RoutingContext routingContext) {
         this.routingContext = routingContext;
         this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;
     }
 
-    public RoutingSettings withRoutingContext( RoutingContext newRoutingContext )
-    {
-        return new RoutingSettings( routingTablePurgeDelayMs, newRoutingContext );
+    public RoutingSettings withRoutingContext(RoutingContext newRoutingContext) {
+        return new RoutingSettings(routingTablePurgeDelayMs, newRoutingContext);
     }
 
-    public RoutingContext routingContext()
-    {
+    public RoutingContext routingContext() {
         return routingContext;
     }
 
-    public long routingTablePurgeDelayMs()
-    {
+    public long routingTablePurgeDelayMs() {
         return routingTablePurgeDelayMs;
     }
 }

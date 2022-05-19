@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.internal.messaging.response;
 
-import org.neo4j.driver.internal.messaging.Message;
-
 import static java.lang.String.format;
+
+import org.neo4j.driver.internal.messaging.Message;
 
 /**
  * FAILURE response message
@@ -28,64 +28,53 @@ import static java.lang.String.format;
  * Sent by the server to signal a failed operation.
  * Terminates response sequence.
  */
-public class FailureMessage implements Message
-{
-    public final static byte SIGNATURE = 0x7F;
+public class FailureMessage implements Message {
+    public static final byte SIGNATURE = 0x7F;
 
     private final String code;
     private final String message;
 
-    public FailureMessage( String code, String message )
-    {
+    public FailureMessage(String code, String message) {
         super();
         this.code = code;
         this.message = message;
     }
 
-    public String code()
-    {
+    public String code() {
         return code;
     }
 
-    public String message()
-    {
+    public String message() {
         return message;
     }
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public String toString()
-    {
-        return format( "FAILURE %s \"%s\"", code, message );
+    public String toString() {
+        return format("FAILURE %s \"%s\"", code, message);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         FailureMessage that = (FailureMessage) o;
 
-        return !(code != null ? !code.equals( that.code ) : that.code != null) &&
-               !(message != null ? !message.equals( that.message ) : that.message != null);
-
+        return !(code != null ? !code.equals(that.code) : that.code != null)
+                && !(message != null ? !message.equals(that.message) : that.message != null);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = code != null ? code.hashCode() : 0;
         result = 31 * result + (message != null ? message.hashCode() : 0);
         return result;

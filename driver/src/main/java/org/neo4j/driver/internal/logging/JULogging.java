@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.logging;
 
 import java.io.Serializable;
 import java.util.logging.Level;
-
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 
@@ -30,20 +29,17 @@ import org.neo4j.driver.Logging;
  *
  * @see Logging#javaUtilLogging(Level)
  */
-public class JULogging implements Logging, Serializable
-{
+public class JULogging implements Logging, Serializable {
     private static final long serialVersionUID = -1145576859241657833L;
 
     private final Level loggingLevel;
 
-    public JULogging( Level loggingLevel )
-    {
+    public JULogging(Level loggingLevel) {
         this.loggingLevel = loggingLevel;
     }
 
     @Override
-    public Logger getLog( String name )
-    {
-        return new JULogger( name, loggingLevel );
+    public Logger getLog(String name) {
+        return new JULogger(name, loggingLevel);
     }
 }

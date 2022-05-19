@@ -24,15 +24,12 @@ package org.neo4j.driver.exceptions;
  *
  * @since 1.1
  */
-public class SessionExpiredException extends Neo4jException implements RetryableException
-{
-    public SessionExpiredException( String message )
-    {
-        super( message );
+public class SessionExpiredException extends Neo4jException implements RetryableException {
+    public SessionExpiredException(String message) {
+        super(message);
     }
 
-    public SessionExpiredException( String message, Throwable throwable )
-    {
-        super( message, throwable );
+    public SessionExpiredException(String message, Throwable throwable) {
+        super(message, throwable);
     }
 }

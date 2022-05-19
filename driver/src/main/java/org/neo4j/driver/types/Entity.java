@@ -25,8 +25,7 @@ import org.neo4j.driver.util.Immutable;
  * @since 1.0
  */
 @Immutable
-public interface Entity extends MapAccessor
-{
+public interface Entity extends MapAccessor {
     /**
      * A unique id for this Entity. Ids are guaranteed to remain stable for the duration of the session they were found in, but may be re-used for other
      * entities after that. As such, if you want a public identity to use for your entities, attaching an explicit 'id' property or similar persistent and

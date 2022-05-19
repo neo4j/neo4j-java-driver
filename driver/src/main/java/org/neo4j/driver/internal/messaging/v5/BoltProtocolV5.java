@@ -23,20 +23,17 @@ import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 
-public class BoltProtocolV5 extends BoltProtocolV44
-{
-    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 5, 0 );
+public class BoltProtocolV5 extends BoltProtocolV44 {
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(5, 0);
     public static final BoltProtocol INSTANCE = new BoltProtocolV5();
 
     @Override
-    public MessageFormat createMessageFormat()
-    {
+    public MessageFormat createMessageFormat() {
         return new MessageFormatV5();
     }
 
     @Override
-    public BoltProtocolVersion version()
-    {
+    public BoltProtocolVersion version() {
         return VERSION;
     }
 }

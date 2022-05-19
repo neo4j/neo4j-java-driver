@@ -18,8 +18,7 @@
  */
 package org.neo4j.driver.util;
 
-public final class ProcessEnvConfigurator
-{
+public final class ProcessEnvConfigurator {
     /**
      * Name of environment variable used by the Neo4j database.
      */
@@ -34,18 +33,14 @@ public final class ProcessEnvConfigurator
      */
     private static final String BOLTKIT_LOCAL_PACKAGE = "NEOCTRL_LOCAL_PACKAGE";
 
-    private ProcessEnvConfigurator()
-    {
-    }
+    private ProcessEnvConfigurator() {}
 
-    public static void configure( ProcessBuilder processBuilder )
-    {
-        processBuilder.environment().put( JAVA_HOME, determineJavaHome() );
+    public static void configure(ProcessBuilder processBuilder) {
+        processBuilder.environment().put(JAVA_HOME, determineJavaHome());
 
         String localPackage = determineLocalPackage();
-        if ( localPackage != null )
-        {
-            processBuilder.environment().put( BOLTKIT_LOCAL_PACKAGE, localPackage );
+        if (localPackage != null) {
+            processBuilder.environment().put(BOLTKIT_LOCAL_PACKAGE, localPackage);
         }
     }
 
@@ -58,14 +53,12 @@ public final class ProcessEnvConfigurator
      *
      * @return path to the java home.
      */
-    private static String determineJavaHome()
-    {
-        return System.getenv().getOrDefault( NEO4J_JAVA, System.getProperties().getProperty( "java.home" ) );
+    private static String determineJavaHome() {
+        return System.getenv().getOrDefault(NEO4J_JAVA, System.getProperties().getProperty("java.home"));
     }
 
-    private static String determineLocalPackage()
-    {
-        String value = System.getenv().getOrDefault( BOLTKIT_LOCAL_PACKAGE, "" ).trim();
+    private static String determineLocalPackage() {
+        String value = System.getenv().getOrDefault(BOLTKIT_LOCAL_PACKAGE, "").trim();
         return value.isEmpty() ? null : value;
     }
 }

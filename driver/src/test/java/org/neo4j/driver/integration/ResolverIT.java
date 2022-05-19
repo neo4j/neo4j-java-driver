@@ -18,14 +18,6 @@
  */
 package org.neo4j.driver.integration;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.net.ServerAddress;
-import org.neo4j.driver.net.ServerAddressResolver;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,23 +26,28 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Logging.none;
 
-class ResolverIT
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.net.ServerAddressResolver;
+
+class ResolverIT {
     @Test
-    void shouldFailInitialDiscoveryWhenConfiguredResolverThrows()
-    {
-        ServerAddressResolver resolver = mock( ServerAddressResolver.class );
-        when( resolver.resolve( any( ServerAddress.class ) ) ).thenThrow( new RuntimeException( "Resolution failure!" ) );
+    void shouldFailInitialDiscoveryWhenConfiguredResolverThrows() {
+        ServerAddressResolver resolver = mock(ServerAddressResolver.class);
+        when(resolver.resolve(any(ServerAddress.class))).thenThrow(new RuntimeException("Resolution failure!"));
 
         Config config = Config.builder()
-                              .withoutEncryption()
-                              .withLogging( none() )
-                              .withResolver( resolver )
-                              .build();
-        final Driver driver = GraphDatabase.driver( "neo4j://my.server.com:9001", config );
+                .withoutEncryption()
+                .withLogging(none())
+                .withResolver(resolver)
+                .build();
+        final Driver driver = GraphDatabase.driver("neo4j://my.server.com:9001", config);
 
-        RuntimeException error = assertThrows( RuntimeException.class, driver::verifyConnectivity );
-        assertEquals( "Resolution failure!", error.getMessage() );
-        verify( resolver ).resolve( ServerAddress.of( "my.server.com", 9001 ) );
+        RuntimeException error = assertThrows(RuntimeException.class, driver::verifyConnectivity);
+        assertEquals("Resolution failure!", error.getMessage());
+        verify(resolver).resolve(ServerAddress.of("my.server.com", 9001));
     }
 }

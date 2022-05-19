@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class ConnectionPoolMetrics implements TestkitResponse
-{
+public class ConnectionPoolMetrics implements TestkitResponse {
     private final ConnectionPoolMetricsBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "ConnectionPoolMetrics";
     }
 
     @Getter
     @Builder
-    public static class ConnectionPoolMetricsBody
-    {
+    public static class ConnectionPoolMetricsBody {
         private int inUse;
         private int idle;
     }

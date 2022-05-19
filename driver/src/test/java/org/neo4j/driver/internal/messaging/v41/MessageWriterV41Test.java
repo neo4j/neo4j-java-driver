@@ -18,28 +18,6 @@
  */
 package org.neo4j.driver.internal.messaging.v41;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.Collections;
-import java.util.stream.Stream;
-
-import org.neo4j.driver.Query;
-import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.request.BeginMessage;
-import org.neo4j.driver.internal.messaging.request.DiscardMessage;
-import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.internal.messaging.request.PullMessage;
-import org.neo4j.driver.internal.packstream.PackOutput;
-import org.neo4j.driver.internal.security.InternalAuthToken;
-import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
-
 import static java.time.Duration.ofSeconds;
 import static java.util.Calendar.DECEMBER;
 import static java.util.Collections.emptyMap;
@@ -60,76 +38,135 @@ import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBA
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.unmanagedTxRunMessage;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.Collections;
+import java.util.stream.Stream;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.request.BeginMessage;
+import org.neo4j.driver.internal.messaging.request.DiscardMessage;
+import org.neo4j.driver.internal.messaging.request.HelloMessage;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
+import org.neo4j.driver.internal.packstream.PackOutput;
+import org.neo4j.driver.internal.security.InternalAuthToken;
+import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
+
 /**
  * The MessageWriter under tests is the one provided by the {@link BoltProtocolV41} and not an specific class implementation.
  * <p>
  * It's done on this way to make easy to replace the implementation and still getting the same behaviour.
  */
-class MessageWriterV41Test extends AbstractMessageWriterTestBase
-{
+class MessageWriterV41Test extends AbstractMessageWriterTestBase {
     @Override
-    protected MessageFormat.Writer newWriter( PackOutput output )
-    {
-        return BoltProtocolV41.INSTANCE.createMessageFormat().newWriter( output );
+    protected MessageFormat.Writer newWriter(PackOutput output) {
+        return BoltProtocolV41.INSTANCE.createMessageFormat().newWriter(output);
     }
 
     @Override
-    protected Stream<Message> supportedMessages()
-    {
+    protected Stream<Message> supportedMessages() {
         return Stream.of(
                 // Bolt V2 Data Types
-                unmanagedTxRunMessage( new Query( "RETURN $point", singletonMap( "point", point( 42, 12.99, -180.0 ) ) ) ),
-                unmanagedTxRunMessage( new Query( "RETURN $point", singletonMap( "point", point( 42, 0.51, 2.99, 100.123 ) ) ) ),
-                unmanagedTxRunMessage( new Query( "RETURN $date", singletonMap( "date", value( LocalDate.ofEpochDay( 2147483650L ) ) ) ) ),
-                unmanagedTxRunMessage( new Query( "RETURN $time", singletonMap( "time", value( OffsetTime.of( 4, 16, 20, 999, ZoneOffset.MIN ) ) ) ) ),
-                unmanagedTxRunMessage( new Query( "RETURN $time", singletonMap( "time", value( LocalTime.of( 12, 9, 18, 999_888 ) ) ) ) ),
+                unmanagedTxRunMessage(new Query("RETURN $point", singletonMap("point", point(42, 12.99, -180.0)))),
                 unmanagedTxRunMessage(
-                        new Query( "RETURN $dateTime", singletonMap( "dateTime", value( LocalDateTime.of( 2049, DECEMBER, 12, 17, 25, 49, 199 ) ) ) ) ),
-                unmanagedTxRunMessage( new Query( "RETURN $dateTime", singletonMap( "dateTime", value( ZonedDateTime.of( 2000, 1, 10, 12, 2, 49, 300, ZoneOffset
-                        .ofHoursMinutes( 9, 30 ) ) ) ) ) ),
-                unmanagedTxRunMessage( new Query( "RETURN $dateTime", singletonMap( "dateTime", value( ZonedDateTime.of( 2000, 1, 10, 12, 2, 49, 300, ZoneId.of(
-                        "Europe/Stockholm" ) ) ) ) ) ),
+                        new Query("RETURN $point", singletonMap("point", point(42, 0.51, 2.99, 100.123)))),
+                unmanagedTxRunMessage(
+                        new Query("RETURN $date", singletonMap("date", value(LocalDate.ofEpochDay(2147483650L))))),
+                unmanagedTxRunMessage(new Query(
+                        "RETURN $time", singletonMap("time", value(OffsetTime.of(4, 16, 20, 999, ZoneOffset.MIN))))),
+                unmanagedTxRunMessage(
+                        new Query("RETURN $time", singletonMap("time", value(LocalTime.of(12, 9, 18, 999_888))))),
+                unmanagedTxRunMessage(new Query(
+                        "RETURN $dateTime",
+                        singletonMap("dateTime", value(LocalDateTime.of(2049, DECEMBER, 12, 17, 25, 49, 199))))),
+                unmanagedTxRunMessage(new Query(
+                        "RETURN $dateTime",
+                        singletonMap(
+                                "dateTime",
+                                value(ZonedDateTime.of(
+                                        2000, 1, 10, 12, 2, 49, 300, ZoneOffset.ofHoursMinutes(9, 30)))))),
+                unmanagedTxRunMessage(new Query(
+                        "RETURN $dateTime",
+                        singletonMap(
+                                "dateTime",
+                                value(ZonedDateTime.of(2000, 1, 10, 12, 2, 49, 300, ZoneId.of("Europe/Stockholm")))))),
 
                 // New Bolt V4 messages
-                new PullMessage( 100, 200 ),
-                new DiscardMessage( 300, 400 ),
+                new PullMessage(100, 200),
+                new DiscardMessage(300, 400),
 
                 // Bolt V3 messages
-                new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap(), Collections.emptyMap() ),
+                new HelloMessage(
+                        "MyDriver/1.2.3",
+                        ((InternalAuthToken) basic("neo4j", "neo4j")).toMap(),
+                        Collections.emptyMap()),
                 GOODBYE,
-                new BeginMessage( Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ) ), ofSeconds( 5 ),
-                                  singletonMap( "key", value( 42 ) ), READ,
-                                  defaultDatabase(), null ),
-                new BeginMessage( Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ) ), ofSeconds( 5 ),
-                                  singletonMap( "key", value( 42 ) ), WRITE,
-                                  database( "foo" ), null ),
+                new BeginMessage(
+                        Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx123")),
+                        ofSeconds(5),
+                        singletonMap("key", value(42)),
+                        READ,
+                        defaultDatabase(),
+                        null),
+                new BeginMessage(
+                        Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx123")),
+                        ofSeconds(5),
+                        singletonMap("key", value(42)),
+                        WRITE,
+                        database("foo"),
+                        null),
                 COMMIT,
                 ROLLBACK,
-
                 RESET,
-                autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), READ,
-                                        Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ), null ),
-                autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), database( "foo" ), WRITE,
-                                        Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ), null ),
-                unmanagedTxRunMessage( new Query( "RETURN 1" ) ),
+                autoCommitTxRunMessage(
+                        new Query("RETURN 1"),
+                        ofSeconds(5),
+                        singletonMap("key", value(42)),
+                        defaultDatabase(),
+                        READ,
+                        Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx1")),
+                        null),
+                autoCommitTxRunMessage(
+                        new Query("RETURN 1"),
+                        ofSeconds(5),
+                        singletonMap("key", value(42)),
+                        database("foo"),
+                        WRITE,
+                        Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx1")),
+                        null),
+                unmanagedTxRunMessage(new Query("RETURN 1")),
 
                 // Bolt V3 messages with struct values
-                autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
-                                        defaultDatabase(), READ, Collections.emptySet(), null ),
-                autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
-                                        database( "foo" ),
-                                        WRITE, Collections.emptySet(), null ),
-                unmanagedTxRunMessage( new Query( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ) ) )
-        );
+                autoCommitTxRunMessage(
+                        new Query("RETURN $x", singletonMap("x", value(ZonedDateTime.now()))),
+                        ofSeconds(1),
+                        emptyMap(),
+                        defaultDatabase(),
+                        READ,
+                        Collections.emptySet(),
+                        null),
+                autoCommitTxRunMessage(
+                        new Query("RETURN $x", singletonMap("x", value(ZonedDateTime.now()))),
+                        ofSeconds(1),
+                        emptyMap(),
+                        database("foo"),
+                        WRITE,
+                        Collections.emptySet(),
+                        null),
+                unmanagedTxRunMessage(new Query("RETURN $x", singletonMap("x", point(42, 1, 2, 3)))));
     }
 
     @Override
-    protected Stream<Message> unsupportedMessages()
-    {
+    protected Stream<Message> unsupportedMessages() {
         return Stream.of(
                 // Bolt V1, V2 and V3 messages
-                PULL_ALL,
-                DISCARD_ALL
-        );
+                PULL_ALL, DISCARD_ALL);
     }
 }

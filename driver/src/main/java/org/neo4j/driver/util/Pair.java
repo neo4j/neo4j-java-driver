@@ -25,8 +25,7 @@ package org.neo4j.driver.util;
  * @since 1.0
  */
 @Immutable
-public interface Pair<K, V>
-{
+public interface Pair<K, V> {
     /**
      * @return the property key
      */

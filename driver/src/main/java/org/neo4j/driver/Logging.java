@@ -18,14 +18,13 @@
  */
 package org.neo4j.driver;
 
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
-
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.logging.Slf4jLogging;
-
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 /**
  * Accessor for {@link Logger} instances. Configured once for a driver instance using {@link Config.ConfigBuilder#withLogging(Logging)} builder method.
@@ -85,18 +84,16 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
  * @see Logger
  * @see Config.ConfigBuilder#withLogging(Logging)
  */
-public interface Logging
-{
+public interface Logging {
     /**
      * Obtain a {@link Logger} instance by class, its name will be the fully qualified name of the class.
      *
      * @param clazz class whose name should be used as the {@link Logger} name.
      * @return {@link Logger} instance
      */
-    default Logger getLog( Class<?> clazz )
-    {
+    default Logger getLog(Class<?> clazz) {
         String canonicalName = clazz.getCanonicalName();
-        return getLog( canonicalName != null ? canonicalName : clazz.getName() );
+        return getLog(canonicalName != null ? canonicalName : clazz.getName());
     }
 
     /**
@@ -105,7 +102,7 @@ public interface Logging
      * @param name name of a {@link Logger}
      * @return {@link Logger} instance
      */
-    Logger getLog( String name );
+    Logger getLog(String name);
 
     /**
      * Create logging implementation that uses SLF4J.
@@ -113,11 +110,9 @@ public interface Logging
      * @return new logging implementation.
      * @throws IllegalStateException if SLF4J is not available.
      */
-    static Logging slf4j()
-    {
+    static Logging slf4j() {
         RuntimeException unavailabilityError = Slf4jLogging.checkAvailability();
-        if ( unavailabilityError != null )
-        {
+        if (unavailabilityError != null) {
             throw unavailabilityError;
         }
         return new Slf4jLogging();
@@ -129,9 +124,8 @@ public interface Logging
      * @param level the log level.
      * @return new logging implementation.
      */
-    static Logging javaUtilLogging( Level level )
-    {
-        return new JULogging( level );
+    static Logging javaUtilLogging(Level level) {
+        return new JULogging(level);
     }
 
     /**
@@ -140,9 +134,8 @@ public interface Logging
      * @param level the log level.
      * @return new logging implementation.
      */
-    static Logging console( Level level )
-    {
-        return new ConsoleLogging( level );
+    static Logging console(Level level) {
+        return new ConsoleLogging(level);
     }
 
     /**
@@ -150,8 +143,7 @@ public interface Logging
      *
      * @return new logging implementation.
      */
-    static Logging none()
-    {
+    static Logging none() {
         return DEV_NULL_LOGGING;
     }
 }

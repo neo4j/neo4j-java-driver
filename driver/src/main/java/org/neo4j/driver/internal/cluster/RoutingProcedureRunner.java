@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.Connection;
@@ -28,8 +27,7 @@ import org.neo4j.driver.internal.spi.Connection;
 /**
  * Interface which defines the standard way to get the routing table
  */
-public interface RoutingProcedureRunner
-{
+public interface RoutingProcedureRunner {
     /**
      * Run the calls to the server
      *
@@ -39,5 +37,6 @@ public interface RoutingProcedureRunner
      * @param impersonatedUser The impersonated user, should be {@code null} for non-impersonated requests
      * @return The routing table
      */
-    CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Set<Bookmark> bookmarks, String impersonatedUser );
+    CompletionStage<RoutingProcedureResponse> run(
+            Connection connection, DatabaseName databaseName, Set<Bookmark> bookmarks, String impersonatedUser);
 }

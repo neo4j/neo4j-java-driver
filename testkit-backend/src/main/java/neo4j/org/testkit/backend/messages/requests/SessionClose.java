@@ -18,6 +18,7 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -25,54 +26,52 @@ import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletionStage;
-
 @Setter
 @Getter
-public class SessionClose implements TestkitRequest
-{
+public class SessionClose implements TestkitRequest {
     private SessionCloseBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        testkitState.getSessionHolder( data.getSessionId() ).getSession().close();
+    public TestkitResponse process(TestkitState testkitState) {
+        testkitState.getSessionHolder(data.getSessionId()).getSession().close();
         return createResponse();
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncSessionHolder( data.getSessionId() )
-                           .thenCompose( sessionHolder -> sessionHolder.getSession().closeAsync() )
-                           .thenApply( ignored -> createResponse() );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState
+                .getAsyncSessionHolder(data.getSessionId())
+                .thenCompose(sessionHolder -> sessionHolder.getSession().closeAsync())
+                .thenApply(ignored -> createResponse());
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return testkitState.getRxSessionHolder( data.getSessionId() )
-                           .flatMap( sessionHolder -> Mono.fromDirect( sessionHolder.getSession().close() ) )
-                           .then( Mono.just( createResponse() ) );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return testkitState
+                .getRxSessionHolder(data.getSessionId())
+                .flatMap(sessionHolder ->
+                        Mono.fromDirect(sessionHolder.getSession().close()))
+                .then(Mono.just(createResponse()));
     }
 
     @Override
-    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
-    {
-        return testkitState.getReactiveSessionHolder( data.getSessionId() )
-                           .flatMap( sessionHolder -> Mono.fromDirect( sessionHolder.getSession().close() ) )
-                           .then( Mono.just( createResponse() ) );
+    public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
+        return testkitState
+                .getReactiveSessionHolder(data.getSessionId())
+                .flatMap(sessionHolder ->
+                        Mono.fromDirect(sessionHolder.getSession().close()))
+                .then(Mono.just(createResponse()));
     }
 
-    private Session createResponse()
-    {
-        return Session.builder().data( Session.SessionBody.builder().id( data.getSessionId() ).build() ).build();
+    private Session createResponse() {
+        return Session.builder()
+                .data(Session.SessionBody.builder().id(data.getSessionId()).build())
+                .build();
     }
 
     @Setter
     @Getter
-    private static class SessionCloseBody
-    {
+    private static class SessionCloseBody {
         private String sessionId;
     }
 }

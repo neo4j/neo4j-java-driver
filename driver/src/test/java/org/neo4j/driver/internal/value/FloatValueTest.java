@@ -18,117 +18,105 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.value.LossyCoercion;
-import org.neo4j.driver.types.TypeSystem;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class FloatValueTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.value.LossyCoercion;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.types.TypeConstructor;
+import org.neo4j.driver.types.TypeSystem;
+
+class FloatValueTest {
     private TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
 
     @Test
-    void testZeroFloatValue()
-    {
+    void testZeroFloatValue() {
         // Given
-        FloatValue value = new FloatValue( 0 );
+        FloatValue value = new FloatValue(0);
 
         // Then
-        assertThat( value.asInt(), equalTo( 0 ) );
-        assertThat( value.asLong(), equalTo( 0L ) );
-        assertThat( value.asFloat(), equalTo( (float) 0.0 ) );
-        assertThat( value.asDouble(), equalTo( 0.0 ) );
+        assertThat(value.asInt(), equalTo(0));
+        assertThat(value.asLong(), equalTo(0L));
+        assertThat(value.asFloat(), equalTo((float) 0.0));
+        assertThat(value.asDouble(), equalTo(0.0));
     }
 
     @Test
-    void testNonZeroFloatValue()
-    {
+    void testNonZeroFloatValue() {
         // Given
-        FloatValue value = new FloatValue( 6.28 );
+        FloatValue value = new FloatValue(6.28);
 
         // Then
-        assertThat( value.asDouble(), equalTo( 6.28 ) );
+        assertThat(value.asDouble(), equalTo(6.28));
     }
 
     @Test
-    void testIsFloat()
-    {
+    void testIsFloat() {
         // Given
-        FloatValue value = new FloatValue( 6.28 );
+        FloatValue value = new FloatValue(6.28);
 
         // Then
-        assertThat( typeSystem.FLOAT().isTypeOf( value ), equalTo( true ) );
+        assertThat(typeSystem.FLOAT().isTypeOf(value), equalTo(true));
     }
 
     @Test
-    void testEquals()
-    {
+    void testEquals() {
         // Given
-        FloatValue firstValue = new FloatValue( 6.28 );
-        FloatValue secondValue = new FloatValue( 6.28 );
+        FloatValue firstValue = new FloatValue(6.28);
+        FloatValue secondValue = new FloatValue(6.28);
 
         // Then
-        assertThat( firstValue, equalTo( secondValue ) );
+        assertThat(firstValue, equalTo(secondValue));
     }
 
     @Test
-    void testHashCode()
-    {
+    void testHashCode() {
         // Given
-        FloatValue value = new FloatValue( 6.28 );
+        FloatValue value = new FloatValue(6.28);
 
         // Then
-        assertThat( value.hashCode(), notNullValue() );
+        assertThat(value.hashCode(), notNullValue());
     }
 
     @Test
-    void shouldNotBeNull()
-    {
-        Value value = new FloatValue( 6.28 );
-        assertFalse( value.isNull() );
+    void shouldNotBeNull() {
+        Value value = new FloatValue(6.28);
+        assertFalse(value.isNull());
     }
 
     @Test
-    void shouldTypeAsFloat()
-    {
-        InternalValue value = new FloatValue( 6.28 );
-        assertThat( value.typeConstructor(), equalTo( TypeConstructor.FLOAT ) );
+    void shouldTypeAsFloat() {
+        InternalValue value = new FloatValue(6.28);
+        assertThat(value.typeConstructor(), equalTo(TypeConstructor.FLOAT));
     }
 
     @Test
-    void shouldThrowIfFloatContainsDecimalWhenConverting()
-    {
-        FloatValue value = new FloatValue( 1.1 );
+    void shouldThrowIfFloatContainsDecimalWhenConverting() {
+        FloatValue value = new FloatValue(1.1);
 
-        assertThrows( LossyCoercion.class, value::asInt );
+        assertThrows(LossyCoercion.class, value::asInt);
     }
 
     @Test
-    void shouldThrowIfLargerThanIntegerMax()
-    {
-        FloatValue value1 = new FloatValue( Integer.MAX_VALUE );
-        FloatValue value2 = new FloatValue( Integer.MAX_VALUE + 1L);
+    void shouldThrowIfLargerThanIntegerMax() {
+        FloatValue value1 = new FloatValue(Integer.MAX_VALUE);
+        FloatValue value2 = new FloatValue(Integer.MAX_VALUE + 1L);
 
         assertThat(value1.asInt(), equalTo(Integer.MAX_VALUE));
-        assertThrows( LossyCoercion.class, value2::asInt );
+        assertThrows(LossyCoercion.class, value2::asInt);
     }
 
     @Test
-    void shouldThrowIfSmallerThanIntegerMin()
-    {
-        FloatValue value1 = new FloatValue( Integer.MIN_VALUE );
-        FloatValue value2 = new FloatValue( Integer.MIN_VALUE - 1L );
+    void shouldThrowIfSmallerThanIntegerMin() {
+        FloatValue value1 = new FloatValue(Integer.MIN_VALUE);
+        FloatValue value2 = new FloatValue(Integer.MIN_VALUE - 1L);
 
         assertThat(value1.asInt(), equalTo(Integer.MIN_VALUE));
-        assertThrows( LossyCoercion.class, value2::asInt );
+        assertThrows(LossyCoercion.class, value2::asInt);
     }
 }

@@ -19,53 +19,44 @@
 package org.neo4j.driver.internal;
 
 import java.util.Map;
-
-import org.neo4j.driver.Record;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.QueryRunner;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.MapValue;
 
-public abstract class AbstractQueryRunner implements QueryRunner
-{
+public abstract class AbstractQueryRunner implements QueryRunner {
     @Override
-    public final Result run(String query, Value parameters )
-    {
-        return run( new Query( query, parameters ) );
+    public final Result run(String query, Value parameters) {
+        return run(new Query(query, parameters));
     }
 
     @Override
-    public final Result run(String query, Map<String,Object> parameters)
-    {
-        return run(query, parameters(parameters) );
+    public final Result run(String query, Map<String, Object> parameters) {
+        return run(query, parameters(parameters));
     }
 
     @Override
-    public final Result run(String query, Record parameters)
-    {
-        return run(query, parameters(parameters) );
+    public final Result run(String query, Record parameters) {
+        return run(query, parameters(parameters));
     }
 
     @Override
-    public final Result run(String query)
-    {
-        return run(query, Values.EmptyMap );
+    public final Result run(String query) {
+        return run(query, Values.EmptyMap);
     }
 
-    public static Value parameters( Record record )
-    {
-        return record == null ? Values.EmptyMap : parameters( record.asMap() );
+    public static Value parameters(Record record) {
+        return record == null ? Values.EmptyMap : parameters(record.asMap());
     }
 
-    public static Value parameters( Map<String,Object> map )
-    {
-        if ( map == null || map.isEmpty() )
-        {
+    public static Value parameters(Map<String, Object> map) {
+        if (map == null || map.isEmpty()) {
             return Values.EmptyMap;
         }
-        return new MapValue( Extract.mapOfValues( map ) );
+        return new MapValue(Extract.mapOfValues(map));
     }
 }

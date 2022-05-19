@@ -21,23 +21,18 @@ package org.neo4j.driver.internal.async.connection;
 import io.netty.resolver.AddressResolver;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.util.concurrent.EventExecutor;
-
 import java.net.InetSocketAddress;
-
 import org.neo4j.driver.internal.DomainNameResolver;
 
-public class NettyDomainNameResolverGroup extends AddressResolverGroup<InetSocketAddress>
-{
+public class NettyDomainNameResolverGroup extends AddressResolverGroup<InetSocketAddress> {
     private final DomainNameResolver domainNameResolver;
 
-    public NettyDomainNameResolverGroup( DomainNameResolver domainNameResolver )
-    {
+    public NettyDomainNameResolverGroup(DomainNameResolver domainNameResolver) {
         this.domainNameResolver = domainNameResolver;
     }
 
     @Override
-    protected AddressResolver<InetSocketAddress> newResolver( EventExecutor executor ) throws Exception
-    {
-        return new NettyDomainNameResolver( executor, domainNameResolver ).asAddressResolver();
+    protected AddressResolver<InetSocketAddress> newResolver(EventExecutor executor) throws Exception {
+        return new NettyDomainNameResolver(executor, domainNameResolver).asAddressResolver();
     }
 }

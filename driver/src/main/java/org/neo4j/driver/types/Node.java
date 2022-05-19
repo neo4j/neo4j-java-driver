@@ -22,8 +22,7 @@ package org.neo4j.driver.types;
  * The <strong>Node</strong> interface describes the characteristics of a node from a Neo4j graph.
  * @since 1.0
  */
-public interface Node extends Entity
-{
+public interface Node extends Entity {
     /**
      * Return all labels.
      *
@@ -37,5 +36,5 @@ public interface Node extends Entity
      * @param label the label
      * @return {@code true} if this node has the label otherwise {@code false}
      */
-    boolean hasLabel( String label );
+    boolean hasLabel(String label);
 }

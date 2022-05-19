@@ -18,11 +18,13 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.InOrder;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.AccessMode.READ;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -32,7 +34,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InOrder;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
@@ -40,61 +46,49 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.AccessMode.READ;
-import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
-
-class BeginMessageEncoderTest
-{
+class BeginMessageEncoderTest {
     private final BeginMessageEncoder encoder = new BeginMessageEncoder();
-    private final ValuePacker packer = mock( ValuePacker.class );
+    private final ValuePacker packer = mock(ValuePacker.class);
 
     @ParameterizedTest
-    @MethodSource( "arguments" )
-    void shouldEncodeBeginMessage( AccessMode mode, String impersonatedUser ) throws Exception
-    {
-        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx42" ) );
+    @MethodSource("arguments")
+    void shouldEncodeBeginMessage(AccessMode mode, String impersonatedUser) throws Exception {
+        Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx42"));
 
-        Map<String,Value> txMetadata = new HashMap<>();
-        txMetadata.put( "hello", value( "world" ) );
-        txMetadata.put( "answer", value( 42 ) );
+        Map<String, Value> txMetadata = new HashMap<>();
+        txMetadata.put("hello", value("world"));
+        txMetadata.put("answer", value(42));
 
-        Duration txTimeout = Duration.ofSeconds( 1 );
+        Duration txTimeout = Duration.ofSeconds(1);
 
-        encoder.encode( new BeginMessage( bookmarks, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser ), packer );
+        encoder.encode(
+                new BeginMessage(bookmarks, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser), packer);
 
-        InOrder order = inOrder( packer );
-        order.verify( packer ).packStructHeader( 1, BeginMessage.SIGNATURE );
+        InOrder order = inOrder(packer);
+        order.verify(packer).packStructHeader(1, BeginMessage.SIGNATURE);
 
-        Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmarks.stream().map( Bookmark::value ).collect( Collectors.toSet() ) ) );
-        expectedMetadata.put( "tx_timeout", value( 1000 ) );
-        expectedMetadata.put( "tx_metadata", value( txMetadata ) );
-        if ( mode == READ )
-        {
-            expectedMetadata.put( "mode", value( "r" ) );
+        Map<String, Value> expectedMetadata = new HashMap<>();
+        expectedMetadata.put(
+                "bookmarks", value(bookmarks.stream().map(Bookmark::value).collect(Collectors.toSet())));
+        expectedMetadata.put("tx_timeout", value(1000));
+        expectedMetadata.put("tx_metadata", value(txMetadata));
+        if (mode == READ) {
+            expectedMetadata.put("mode", value("r"));
         }
-        if ( impersonatedUser != null )
-        {
-            expectedMetadata.put( "imp_user", value( impersonatedUser ) );
+        if (impersonatedUser != null) {
+            expectedMetadata.put("imp_user", value(impersonatedUser));
         }
 
-        order.verify( packer ).pack( expectedMetadata );
+        order.verify(packer).pack(expectedMetadata);
     }
 
-    private static Stream<Arguments> arguments()
-    {
-        return Arrays.stream( AccessMode.values() )
-                     .flatMap( accessMode -> Stream.of( Arguments.of( accessMode, "user" ), Arguments.of( accessMode, null ) ) );
+    private static Stream<Arguments> arguments() {
+        return Arrays.stream(AccessMode.values())
+                .flatMap(accessMode -> Stream.of(Arguments.of(accessMode, "user"), Arguments.of(accessMode, null)));
     }
 
     @Test
-    void shouldFailToEncodeWrongMessage()
-    {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( RESET, packer ) );
+    void shouldFailToEncodeWrongMessage() {
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(RESET, packer));
     }
 }

@@ -28,20 +28,17 @@ import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
  *
  * The version 4.3 use most of the 4.2 behaviours, but it extends it with new messages such as ROUTE
  */
-public class BoltProtocolV43 extends BoltProtocolV42
-{
-    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 3 );
+public class BoltProtocolV43 extends BoltProtocolV42 {
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(4, 3);
     public static final BoltProtocol INSTANCE = new BoltProtocolV43();
 
     @Override
-    public MessageFormat createMessageFormat()
-    {
+    public MessageFormat createMessageFormat() {
         return new MessageFormatV43();
     }
 
     @Override
-    public BoltProtocolVersion version()
-    {
+    public BoltProtocolVersion version() {
         return VERSION;
     }
 }

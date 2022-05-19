@@ -18,27 +18,22 @@
  */
 package neo4j.org.testkit.backend.messages.responses.serializer;
 
+import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.list;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import java.io.IOException;
-
 import org.neo4j.driver.Record;
 
-import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.list;
+public class TestkitRecordSerializer extends StdSerializer<org.neo4j.driver.Record> {
 
-public class TestkitRecordSerializer extends StdSerializer<org.neo4j.driver.Record>
-{
-
-    public TestkitRecordSerializer()
-    {
-        super( org.neo4j.driver.Record.class );
+    public TestkitRecordSerializer() {
+        super(org.neo4j.driver.Record.class);
     }
 
     @Override
-    public void serialize( Record record, JsonGenerator gen, SerializerProvider provider ) throws IOException
-    {
-        list( gen, record.values() );
+    public void serialize(Record record, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        list(gen, record.values());
     }
 }

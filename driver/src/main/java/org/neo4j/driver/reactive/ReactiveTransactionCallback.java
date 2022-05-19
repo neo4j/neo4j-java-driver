@@ -24,13 +24,12 @@ package org.neo4j.driver.reactive;
  * @param <T> the return type of this work.
  * @since 5.0
  */
-public interface ReactiveTransactionCallback<T>
-{
+public interface ReactiveTransactionCallback<T> {
     /**
      * Executes all given operations against the same transaction context.
      *
      * @param context the transaction context to use.
      * @return result object or {@code null} if none.
      */
-    T execute( ReactiveTransactionContext context );
+    T execute(ReactiveTransactionContext context);
 }

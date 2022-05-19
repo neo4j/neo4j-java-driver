@@ -18,26 +18,22 @@
  */
 package org.neo4j.driver.stress;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-public class BlockingWriteQueryUsingReadSessionWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C>
-{
-    public BlockingWriteQueryUsingReadSessionWithRetries( Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+public class BlockingWriteQueryUsingReadSessionWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C> {
+    public BlockingWriteQueryUsingReadSessionWithRetries(Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
     }
 
     @Override
-    public void execute( C context )
-    {
-        try ( Session session = newSession( AccessMode.READ, context ) )
-        {
-            assertThrows( ClientException.class, () -> session.readTransaction( tx -> tx.run( "CREATE ()" ) ) );
+    public void execute(C context) {
+        try (Session session = newSession(AccessMode.READ, context)) {
+            assertThrows(ClientException.class, () -> session.readTransaction(tx -> tx.run("CREATE ()")));
         }
     }
 }
