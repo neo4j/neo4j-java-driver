@@ -32,11 +32,17 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.Values.point;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -75,12 +81,14 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.InternalDriver;
+import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.types.Node;
+import org.neo4j.driver.types.Point;
 import org.neo4j.driver.util.DaemonThreadFactory;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -90,9 +98,17 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     private static final int ASYNC_BATCH_SIZE = Integer.getInteger("asyncBatchSize", 10);
     private static final int EXECUTION_TIME_SECONDS = Integer.getInteger("executionTimeSeconds", 20);
     private static final boolean DEBUG_LOGGING_ENABLED = Boolean.getBoolean("loggingEnabled");
+    private static final boolean EXTENDED_TYPES_ENABLED = Boolean.getBoolean("extendedTypesEnabled");
 
     private static final int BIG_DATA_TEST_NODE_COUNT = Integer.getInteger("bigDataTestNodeCount", 30_000);
     private static final int BIG_DATA_TEST_BATCH_SIZE = Integer.getInteger("bigDataTestBatchSize", 10_000);
+
+    private static final Point POINT = point(9157, 3, 7, 12).asPoint();
+    private static final LocalTime LOCAL_TIME = LocalTime.now();
+    private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.now();
+    private static final LocalDate DATE = LOCAL_DATE_TIME.toLocalDate();
+    private static final ZonedDateTime ZONED_DATE_TIME = ZonedDateTime.now();
+    private static final Duration DURATION = Duration.ofHours(300);
 
     private LoggerNameTrackingLogging logging;
     private ExecutorService executor;
@@ -640,6 +656,16 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         result.put("long-indices", nCopies(10, (long) nodeIndex));
         result.put("double-indices", nCopies(10, (double) nodeIndex));
         result.put("booleans", nCopies(10, nodeIndex % 2 == 0));
+
+        if (EXTENDED_TYPES_ENABLED) {
+            result.put("cartPoint", POINT);
+            result.put("localDateTime", LOCAL_DATE_TIME);
+            result.put("zonedDateTime", ZONED_DATE_TIME);
+            result.put("localTime", LOCAL_TIME);
+            result.put("date", DATE);
+            result.put("duration", DURATION);
+        }
+
         return result;
     }
 
@@ -650,6 +676,15 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         assertEquals(nCopies(10, (long) nodeIndex), node.get("long-indices").asList());
         assertEquals(nCopies(10, (double) nodeIndex), node.get("double-indices").asList());
         assertEquals(nCopies(10, nodeIndex % 2 == 0), node.get("booleans").asList());
+
+        if (EXTENDED_TYPES_ENABLED) {
+            assertEquals(POINT, node.get("cartPoint").asPoint());
+            assertEquals(LOCAL_DATE_TIME, node.get("localDateTime").asLocalDateTime());
+            assertEquals(ZONED_DATE_TIME, node.get("zonedDateTime").asZonedDateTime());
+            assertEquals(LOCAL_TIME, node.get("localTime").asLocalTime());
+            assertEquals(DATE, node.get("date").asLocalDate());
+            assertEquals(new InternalIsoDuration(DURATION), node.get("duration").asIsoDuration());
+        }
     }
 
     private static <T> CompletionStage<T> safeCloseSession(AsyncSession session, T result) {
