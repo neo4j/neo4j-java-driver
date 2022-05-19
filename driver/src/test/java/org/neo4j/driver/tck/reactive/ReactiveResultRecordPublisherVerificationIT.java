@@ -24,18 +24,19 @@ import org.reactivestreams.tck.TestEnvironment;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.ReactiveSession;
 
 import static org.neo4j.driver.Values.parameters;
 
 @Testcontainers( disabledWithoutDocker = true )
-public class RxResultRecordPublisherVerificationIT extends PublisherVerification<Record>
+public class ReactiveResultRecordPublisherVerificationIT extends PublisherVerification<Record>
 {
     private final Neo4jManager NEO4J = new Neo4jManager();
     private final static long MAX_NUMBER_OF_RECORDS = 30000;
@@ -48,7 +49,7 @@ public class RxResultRecordPublisherVerificationIT extends PublisherVerification
 
     private Driver driver;
 
-    public RxResultRecordPublisherVerificationIT()
+    public ReactiveResultRecordPublisherVerificationIT()
     {
         super( new TestEnvironment( TIMEOUT.toMillis(), TIMEOUT_FOR_NO_SIGNALS.toMillis() ),
                PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS.toMillis() );
@@ -77,16 +78,17 @@ public class RxResultRecordPublisherVerificationIT extends PublisherVerification
     @Override
     public Publisher<Record> createPublisher( long elements )
     {
-        RxSession session = driver.rxSession();
-        RxResult result = session.run( QUERY, parameters( "numberOfRecords", elements ) );
-        return result.records();
+        ReactiveSession session = driver.reactiveSession();
+        return Mono.fromDirect( session.run( QUERY, parameters( "numberOfRecords", elements ) ) )
+                   .flatMapMany( r -> Flux.from( r.records() ) );
     }
 
     @Override
     public Publisher<Record> createFailedPublisher()
     {
-        RxSession session = driver.rxSession();
-        RxResult result = session.run( "INVALID" );
-        return result.records();
+        ReactiveSession session = driver.reactiveSession();
+        // Please note that this publisher fails on run stage.
+        return Mono.fromDirect( session.run( "RETURN 5/0" ) )
+                   .flatMapMany( r -> Flux.from( r.records() ) );
     }
 }
