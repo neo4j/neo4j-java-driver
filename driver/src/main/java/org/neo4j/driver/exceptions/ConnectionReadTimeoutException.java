@@ -23,13 +23,11 @@ package org.neo4j.driver.exceptions;
  * hint. The server might provide this value to clients to let them know when a given connection may be considered broken if client does not get any
  * communication from the server within the specified timeout period. This results in the server being removed from the routing table.
  */
-public class ConnectionReadTimeoutException extends ServiceUnavailableException
-{
+public class ConnectionReadTimeoutException extends ServiceUnavailableException {
     public static final ConnectionReadTimeoutException INSTANCE = new ConnectionReadTimeoutException(
-            "Connection read timed out due to it taking longer than the server-supplied timeout value via configuration hint." );
+            "Connection read timed out due to it taking longer than the server-supplied timeout value via configuration hint.");
 
-    public ConnectionReadTimeoutException( String message )
-    {
-        super( message );
+    public ConnectionReadTimeoutException(String message) {
+        super(message);
     }
 }

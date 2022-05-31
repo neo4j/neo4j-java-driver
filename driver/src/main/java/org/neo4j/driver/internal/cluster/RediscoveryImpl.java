@@ -18,8 +18,14 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import io.netty.util.concurrent.EventExecutorGroup;
+import static java.lang.String.format;
+import static java.util.Collections.emptySet;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
+import io.netty.util.concurrent.EventExecutorGroup;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -30,7 +36,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -49,20 +54,14 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
 
-import static java.lang.String.format;
-import static java.util.Collections.emptySet;
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
-
-public class RediscoveryImpl implements Rediscovery
-{
-    private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery for database '%s'. No routing server available.";
+public class RediscoveryImpl implements Rediscovery {
+    private static final String NO_ROUTERS_AVAILABLE =
+            "Could not perform discovery for database '%s'. No routing server available.";
     private static final String RECOVERABLE_ROUTING_ERROR = "Failed to update routing table with server '%s'.";
-    private static final String RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER = "Received a recoverable discovery error with server '%s', " +
-                                                                          "will continue discovery with other routing servers if available. " +
-                                                                          "Complete failure is reported separately from this entry.";
+    private static final String RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER =
+            "Received a recoverable discovery error with server '%s', "
+                    + "will continue discovery with other routing servers if available. "
+                    + "Complete failure is reported separately from this entry.";
     private static final String INVALID_BOOKMARK_CODE = "Neo.ClientError.Transaction.InvalidBookmark";
     private static final String INVALID_BOOKMARK_MIXTURE_CODE = "Neo.ClientError.Transaction.InvalidBookmarkMixture";
 
@@ -74,16 +73,21 @@ public class RediscoveryImpl implements Rediscovery
     private final EventExecutorGroup eventExecutorGroup;
     private final DomainNameResolver domainNameResolver;
 
-    public RediscoveryImpl( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
-                            EventExecutorGroup eventExecutorGroup, ServerAddressResolver resolver, Logging logging, DomainNameResolver domainNameResolver )
-    {
+    public RediscoveryImpl(
+            BoltServerAddress initialRouter,
+            RoutingSettings settings,
+            ClusterCompositionProvider provider,
+            EventExecutorGroup eventExecutorGroup,
+            ServerAddressResolver resolver,
+            Logging logging,
+            DomainNameResolver domainNameResolver) {
         this.initialRouter = initialRouter;
         this.settings = settings;
-        this.log = logging.getLog( getClass() );
+        this.log = logging.getLog(getClass());
         this.provider = provider;
         this.resolver = resolver;
         this.eventExecutorGroup = eventExecutorGroup;
-        this.domainNameResolver = requireNonNull( domainNameResolver );
+        this.domainNameResolver = requireNonNull(domainNameResolver);
     }
 
     /**
@@ -95,295 +99,284 @@ public class RediscoveryImpl implements Rediscovery
      * @return new cluster composition and an optional set of resolved initial router addresses.
      */
     @Override
-    public CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool,
-                                                                                     Bookmark bookmark, String impersonatedUser )
-    {
+    public CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition(
+            RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark, String impersonatedUser) {
         CompletableFuture<ClusterCompositionLookupResult> result = new CompletableFuture<>();
         // if we failed discovery, we will chain all errors into this one.
-        ServiceUnavailableException baseError = new ServiceUnavailableException( String.format( NO_ROUTERS_AVAILABLE, routingTable.database().description() ) );
-        lookupClusterComposition( routingTable, connectionPool, 0, 0, result, bookmark, impersonatedUser, baseError );
+        ServiceUnavailableException baseError = new ServiceUnavailableException(
+                String.format(NO_ROUTERS_AVAILABLE, routingTable.database().description()));
+        lookupClusterComposition(routingTable, connectionPool, 0, 0, result, bookmark, impersonatedUser, baseError);
         return result;
     }
 
-    private void lookupClusterComposition( RoutingTable routingTable, ConnectionPool pool, int failures, long previousDelay,
-                                           CompletableFuture<ClusterCompositionLookupResult> result, Bookmark bookmark, String impersonatedUser,
-                                           Throwable baseError )
-    {
-        lookup( routingTable, pool, bookmark, impersonatedUser, baseError )
-                .whenComplete(
-                        ( compositionLookupResult, completionError ) ->
-                        {
-                            Throwable error = Futures.completionExceptionCause( completionError );
-                            if ( error != null )
-                            {
-                                result.completeExceptionally( error );
-                            }
-                            else if ( compositionLookupResult != null )
-                            {
-                                result.complete( compositionLookupResult );
-                            }
-                            else
-                            {
-                                int newFailures = failures + 1;
-                                if ( newFailures >= settings.maxRoutingFailures() )
-                                {
-                                    // now we throw our saved error out
-                                    result.completeExceptionally( baseError );
-                                }
-                                else
-                                {
-                                    long nextDelay = Math.max( settings.retryTimeoutDelay(), previousDelay * 2 );
-                                    log.info( "Unable to fetch new routing table, will try again in " + nextDelay + "ms" );
-                                    eventExecutorGroup.next().schedule(
-                                            () -> lookupClusterComposition( routingTable, pool, newFailures, nextDelay, result, bookmark, impersonatedUser,
-                                                                            baseError ),
-                                            nextDelay, TimeUnit.MILLISECONDS
-                                    );
-                                }
-                            }
-                        } );
+    private void lookupClusterComposition(
+            RoutingTable routingTable,
+            ConnectionPool pool,
+            int failures,
+            long previousDelay,
+            CompletableFuture<ClusterCompositionLookupResult> result,
+            Bookmark bookmark,
+            String impersonatedUser,
+            Throwable baseError) {
+        lookup(routingTable, pool, bookmark, impersonatedUser, baseError)
+                .whenComplete((compositionLookupResult, completionError) -> {
+                    Throwable error = Futures.completionExceptionCause(completionError);
+                    if (error != null) {
+                        result.completeExceptionally(error);
+                    } else if (compositionLookupResult != null) {
+                        result.complete(compositionLookupResult);
+                    } else {
+                        int newFailures = failures + 1;
+                        if (newFailures >= settings.maxRoutingFailures()) {
+                            // now we throw our saved error out
+                            result.completeExceptionally(baseError);
+                        } else {
+                            long nextDelay = Math.max(settings.retryTimeoutDelay(), previousDelay * 2);
+                            log.info("Unable to fetch new routing table, will try again in " + nextDelay + "ms");
+                            eventExecutorGroup
+                                    .next()
+                                    .schedule(
+                                            () -> lookupClusterComposition(
+                                                    routingTable,
+                                                    pool,
+                                                    newFailures,
+                                                    nextDelay,
+                                                    result,
+                                                    bookmark,
+                                                    impersonatedUser,
+                                                    baseError),
+                                            nextDelay,
+                                            TimeUnit.MILLISECONDS);
+                        }
+                    }
+                });
     }
 
-    private CompletionStage<ClusterCompositionLookupResult> lookup( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark,
-                                                                    String impersonatedUser, Throwable baseError )
-    {
+    private CompletionStage<ClusterCompositionLookupResult> lookup(
+            RoutingTable routingTable,
+            ConnectionPool connectionPool,
+            Bookmark bookmark,
+            String impersonatedUser,
+            Throwable baseError) {
         CompletionStage<ClusterCompositionLookupResult> compositionStage;
 
-        if ( routingTable.preferInitialRouter() )
-        {
-            compositionStage = lookupOnInitialRouterThenOnKnownRouters( routingTable, connectionPool, bookmark, impersonatedUser, baseError );
-        }
-        else
-        {
-            compositionStage = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connectionPool, bookmark, impersonatedUser, baseError );
+        if (routingTable.preferInitialRouter()) {
+            compositionStage = lookupOnInitialRouterThenOnKnownRouters(
+                    routingTable, connectionPool, bookmark, impersonatedUser, baseError);
+        } else {
+            compositionStage = lookupOnKnownRoutersThenOnInitialRouter(
+                    routingTable, connectionPool, bookmark, impersonatedUser, baseError);
         }
 
         return compositionStage;
     }
 
-    private CompletionStage<ClusterCompositionLookupResult> lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable, ConnectionPool connectionPool,
-                                                                                                     Bookmark bookmark, String impersonatedUser,
-                                                                                                     Throwable baseError )
-    {
+    private CompletionStage<ClusterCompositionLookupResult> lookupOnKnownRoutersThenOnInitialRouter(
+            RoutingTable routingTable,
+            ConnectionPool connectionPool,
+            Bookmark bookmark,
+            String impersonatedUser,
+            Throwable baseError) {
         Set<BoltServerAddress> seenServers = new HashSet<>();
-        return lookupOnKnownRouters( routingTable, connectionPool, seenServers, bookmark, impersonatedUser, baseError )
-                .thenCompose(
-                        compositionLookupResult ->
-                        {
-                            if ( compositionLookupResult != null )
-                            {
-                                return completedFuture(
-                                        compositionLookupResult );
-                            }
-                            return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmark, impersonatedUser, baseError );
-                        } );
+        return lookupOnKnownRouters(routingTable, connectionPool, seenServers, bookmark, impersonatedUser, baseError)
+                .thenCompose(compositionLookupResult -> {
+                    if (compositionLookupResult != null) {
+                        return completedFuture(compositionLookupResult);
+                    }
+                    return lookupOnInitialRouter(
+                            routingTable, connectionPool, seenServers, bookmark, impersonatedUser, baseError);
+                });
     }
 
-    private CompletionStage<ClusterCompositionLookupResult> lookupOnInitialRouterThenOnKnownRouters( RoutingTable routingTable, ConnectionPool connectionPool,
-                                                                                                     Bookmark bookmark, String impersonatedUser,
-                                                                                                     Throwable baseError )
-    {
+    private CompletionStage<ClusterCompositionLookupResult> lookupOnInitialRouterThenOnKnownRouters(
+            RoutingTable routingTable,
+            ConnectionPool connectionPool,
+            Bookmark bookmark,
+            String impersonatedUser,
+            Throwable baseError) {
         Set<BoltServerAddress> seenServers = emptySet();
-        return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmark, impersonatedUser, baseError )
-                .thenCompose(
-                        compositionLookupResult ->
-                        {
-                            if ( compositionLookupResult != null )
-                            {
-                                return completedFuture(
-                                        compositionLookupResult );
-                            }
-                            return lookupOnKnownRouters( routingTable, connectionPool, new HashSet<>(), bookmark, impersonatedUser, baseError );
-                        } );
+        return lookupOnInitialRouter(routingTable, connectionPool, seenServers, bookmark, impersonatedUser, baseError)
+                .thenCompose(compositionLookupResult -> {
+                    if (compositionLookupResult != null) {
+                        return completedFuture(compositionLookupResult);
+                    }
+                    return lookupOnKnownRouters(
+                            routingTable, connectionPool, new HashSet<>(), bookmark, impersonatedUser, baseError);
+                });
     }
 
-    private CompletionStage<ClusterCompositionLookupResult> lookupOnKnownRouters( RoutingTable routingTable, ConnectionPool connectionPool,
-                                                                                  Set<BoltServerAddress> seenServers, Bookmark bookmark,
-                                                                                  String impersonatedUser, Throwable baseError )
-    {
+    private CompletionStage<ClusterCompositionLookupResult> lookupOnKnownRouters(
+            RoutingTable routingTable,
+            ConnectionPool connectionPool,
+            Set<BoltServerAddress> seenServers,
+            Bookmark bookmark,
+            String impersonatedUser,
+            Throwable baseError) {
         CompletableFuture<ClusterComposition> result = completedWithNull();
-        for ( BoltServerAddress address : routingTable.routers() )
-        {
-            result = result
-                    .thenCompose(
-                            composition ->
-                            {
-                                if ( composition != null )
-                                {
-                                    return completedFuture( composition );
-                                }
-                                else
-                                {
-                                    return lookupOnRouter( address, true, routingTable, connectionPool, seenServers, bookmark, impersonatedUser, baseError );
-                                }
-                            } );
+        for (BoltServerAddress address : routingTable.routers()) {
+            result = result.thenCompose(composition -> {
+                if (composition != null) {
+                    return completedFuture(composition);
+                } else {
+                    return lookupOnRouter(
+                            address,
+                            true,
+                            routingTable,
+                            connectionPool,
+                            seenServers,
+                            bookmark,
+                            impersonatedUser,
+                            baseError);
+                }
+            });
         }
-        return result.thenApply( composition -> composition != null ? new ClusterCompositionLookupResult( composition ) : null );
+        return result.thenApply(
+                composition -> composition != null ? new ClusterCompositionLookupResult(composition) : null);
     }
 
-    private CompletionStage<ClusterCompositionLookupResult> lookupOnInitialRouter( RoutingTable routingTable, ConnectionPool connectionPool,
-                                                                                   Set<BoltServerAddress> seenServers, Bookmark bookmark,
-                                                                                   String impersonatedUser, Throwable baseError )
-    {
+    private CompletionStage<ClusterCompositionLookupResult> lookupOnInitialRouter(
+            RoutingTable routingTable,
+            ConnectionPool connectionPool,
+            Set<BoltServerAddress> seenServers,
+            Bookmark bookmark,
+            String impersonatedUser,
+            Throwable baseError) {
         List<BoltServerAddress> resolvedRouters;
-        try
-        {
+        try {
             resolvedRouters = resolve();
+        } catch (Throwable error) {
+            return failedFuture(error);
         }
-        catch ( Throwable error )
-        {
-            return failedFuture( error );
-        }
-        Set<BoltServerAddress> resolvedRouterSet = new HashSet<>( resolvedRouters );
-        resolvedRouters.removeAll( seenServers );
+        Set<BoltServerAddress> resolvedRouterSet = new HashSet<>(resolvedRouters);
+        resolvedRouters.removeAll(seenServers);
 
         CompletableFuture<ClusterComposition> result = completedWithNull();
-        for ( BoltServerAddress address : resolvedRouters )
-        {
-            result = result.thenCompose(
-                    composition ->
-                    {
-                        if ( composition != null )
-                        {
-                            return completedFuture( composition );
-                        }
-                        return lookupOnRouter( address, false, routingTable, connectionPool, null, bookmark, impersonatedUser, baseError );
-                    } );
+        for (BoltServerAddress address : resolvedRouters) {
+            result = result.thenCompose(composition -> {
+                if (composition != null) {
+                    return completedFuture(composition);
+                }
+                return lookupOnRouter(
+                        address, false, routingTable, connectionPool, null, bookmark, impersonatedUser, baseError);
+            });
         }
-        return result.thenApply( composition -> composition != null ? new ClusterCompositionLookupResult( composition, resolvedRouterSet ) : null );
+        return result.thenApply(composition ->
+                composition != null ? new ClusterCompositionLookupResult(composition, resolvedRouterSet) : null);
     }
 
-    private CompletionStage<ClusterComposition> lookupOnRouter( BoltServerAddress routerAddress, boolean resolveAddress, RoutingTable routingTable,
-                                                                ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, Bookmark bookmark,
-                                                                String impersonatedUser, Throwable baseError )
-    {
-        CompletableFuture<BoltServerAddress> addressFuture = CompletableFuture.completedFuture( routerAddress );
+    private CompletionStage<ClusterComposition> lookupOnRouter(
+            BoltServerAddress routerAddress,
+            boolean resolveAddress,
+            RoutingTable routingTable,
+            ConnectionPool connectionPool,
+            Set<BoltServerAddress> seenServers,
+            Bookmark bookmark,
+            String impersonatedUser,
+            Throwable baseError) {
+        CompletableFuture<BoltServerAddress> addressFuture = CompletableFuture.completedFuture(routerAddress);
 
         return addressFuture
-                .thenApply( address -> resolveAddress ? resolveByDomainNameOrThrowCompletionException( address, routingTable ) : address )
-                .thenApply( address -> addAndReturn( seenServers, address ) )
-                .thenCompose( connectionPool::acquire )
-                .thenApply( connection -> ImpersonationUtil.ensureImpersonationSupport( connection, impersonatedUser ) )
-                .thenCompose( connection -> provider.getClusterComposition( connection, routingTable.database(), bookmark, impersonatedUser ) )
-                .handle( ( response, error ) ->
-                         {
-                             Throwable cause = Futures.completionExceptionCause( error );
-                             if ( cause != null )
-                             {
-                                 return handleRoutingProcedureError( cause, routingTable, routerAddress, baseError );
-                             }
-                             else
-                             {
-                                 return response;
-                             }
-                         } );
+                .thenApply(address ->
+                        resolveAddress ? resolveByDomainNameOrThrowCompletionException(address, routingTable) : address)
+                .thenApply(address -> addAndReturn(seenServers, address))
+                .thenCompose(connectionPool::acquire)
+                .thenApply(connection -> ImpersonationUtil.ensureImpersonationSupport(connection, impersonatedUser))
+                .thenCompose(connection ->
+                        provider.getClusterComposition(connection, routingTable.database(), bookmark, impersonatedUser))
+                .handle((response, error) -> {
+                    Throwable cause = Futures.completionExceptionCause(error);
+                    if (cause != null) {
+                        return handleRoutingProcedureError(cause, routingTable, routerAddress, baseError);
+                    } else {
+                        return response;
+                    }
+                });
     }
 
-    private ClusterComposition handleRoutingProcedureError( Throwable error, RoutingTable routingTable,
-                                                            BoltServerAddress routerAddress, Throwable baseError )
-    {
-        if ( mustAbortDiscovery( error ) )
-        {
-            throw new CompletionException( error );
+    private ClusterComposition handleRoutingProcedureError(
+            Throwable error, RoutingTable routingTable, BoltServerAddress routerAddress, Throwable baseError) {
+        if (mustAbortDiscovery(error)) {
+            throw new CompletionException(error);
         }
 
         // Retriable error happened during discovery.
-        DiscoveryException discoveryError = new DiscoveryException( format( RECOVERABLE_ROUTING_ERROR, routerAddress ), error );
-        Futures.combineErrors( baseError, discoveryError ); // we record each failure here
-        String warningMessage = format( RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER, routerAddress );
-        log.warn( warningMessage );
-        log.debug( warningMessage, discoveryError );
-        routingTable.forget( routerAddress );
+        DiscoveryException discoveryError =
+                new DiscoveryException(format(RECOVERABLE_ROUTING_ERROR, routerAddress), error);
+        Futures.combineErrors(baseError, discoveryError); // we record each failure here
+        String warningMessage = format(RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER, routerAddress);
+        log.warn(warningMessage);
+        log.debug(warningMessage, discoveryError);
+        routingTable.forget(routerAddress);
         return null;
     }
 
-    private boolean mustAbortDiscovery( Throwable throwable )
-    {
+    private boolean mustAbortDiscovery(Throwable throwable) {
         boolean abort = false;
 
-        if ( !(throwable instanceof AuthorizationExpiredException) && throwable instanceof SecurityException )
-        {
+        if (!(throwable instanceof AuthorizationExpiredException) && throwable instanceof SecurityException) {
             abort = true;
-        }
-        else if ( throwable instanceof FatalDiscoveryException )
-        {
+        } else if (throwable instanceof FatalDiscoveryException) {
             abort = true;
-        }
-        else if ( throwable instanceof IllegalStateException && ConnectionPool.CONNECTION_POOL_CLOSED_ERROR_MESSAGE.equals( throwable.getMessage() ) )
-        {
+        } else if (throwable instanceof IllegalStateException
+                && ConnectionPool.CONNECTION_POOL_CLOSED_ERROR_MESSAGE.equals(throwable.getMessage())) {
             abort = true;
-        }
-        else if ( throwable instanceof ClientException )
-        {
+        } else if (throwable instanceof ClientException) {
             String code = ((ClientException) throwable).code();
-            abort = INVALID_BOOKMARK_CODE.equals( code ) || INVALID_BOOKMARK_MIXTURE_CODE.equals( code );
+            abort = INVALID_BOOKMARK_CODE.equals(code) || INVALID_BOOKMARK_MIXTURE_CODE.equals(code);
         }
 
         return abort;
     }
 
     @Override
-    public List<BoltServerAddress> resolve() throws UnknownHostException
-    {
+    public List<BoltServerAddress> resolve() throws UnknownHostException {
         List<BoltServerAddress> resolvedAddresses = new LinkedList<>();
         UnknownHostException exception = null;
-        for ( ServerAddress serverAddress : resolver.resolve( initialRouter ) )
-        {
-            try
-            {
-                resolveAllByDomainName( serverAddress ).unicastStream().forEach( resolvedAddresses::add );
-            }
-            catch ( UnknownHostException e )
-            {
-                if ( exception == null )
-                {
+        for (ServerAddress serverAddress : resolver.resolve(initialRouter)) {
+            try {
+                resolveAllByDomainName(serverAddress).unicastStream().forEach(resolvedAddresses::add);
+            } catch (UnknownHostException e) {
+                if (exception == null) {
                     exception = e;
-                }
-                else
-                {
-                    exception.addSuppressed( e );
+                } else {
+                    exception.addSuppressed(e);
                 }
             }
         }
 
         // give up only if there are no addresses to work with at all
-        if ( resolvedAddresses.isEmpty() && exception != null )
-        {
+        if (resolvedAddresses.isEmpty() && exception != null) {
             throw exception;
         }
 
         return resolvedAddresses;
     }
 
-    private <T> T addAndReturn( Collection<T> collection, T element )
-    {
-        if ( collection != null )
-        {
-            collection.add( element );
+    private <T> T addAndReturn(Collection<T> collection, T element) {
+        if (collection != null) {
+            collection.add(element);
         }
         return element;
     }
 
-    private BoltServerAddress resolveByDomainNameOrThrowCompletionException( BoltServerAddress address, RoutingTable routingTable )
-    {
-        try
-        {
-            ResolvedBoltServerAddress resolvedAddress = resolveAllByDomainName( address );
-            routingTable.replaceRouterIfPresent( address, resolvedAddress );
-            return resolvedAddress.unicastStream()
-                                  .findFirst()
-                                  .orElseThrow(
-                                          () -> new IllegalStateException(
-                                                  "Unexpected condition, the ResolvedBoltServerAddress must always have at least one unicast address" ) );
-        }
-        catch ( Throwable e )
-        {
-            throw new CompletionException( e );
+    private BoltServerAddress resolveByDomainNameOrThrowCompletionException(
+            BoltServerAddress address, RoutingTable routingTable) {
+        try {
+            ResolvedBoltServerAddress resolvedAddress = resolveAllByDomainName(address);
+            routingTable.replaceRouterIfPresent(address, resolvedAddress);
+            return resolvedAddress
+                    .unicastStream()
+                    .findFirst()
+                    .orElseThrow(
+                            () -> new IllegalStateException(
+                                    "Unexpected condition, the ResolvedBoltServerAddress must always have at least one unicast address"));
+        } catch (Throwable e) {
+            throw new CompletionException(e);
         }
     }
 
-    private ResolvedBoltServerAddress resolveAllByDomainName( ServerAddress address ) throws UnknownHostException
-    {
-        return new ResolvedBoltServerAddress( address.host(), address.port(), domainNameResolver.resolve( address.host() ) );
+    private ResolvedBoltServerAddress resolveAllByDomainName(ServerAddress address) throws UnknownHostException {
+        return new ResolvedBoltServerAddress(
+                address.host(), address.port(), domainNameResolver.resolve(address.host()));
     }
 }

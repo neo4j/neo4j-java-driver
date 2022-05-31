@@ -19,73 +19,63 @@
 package neo4j.org.testkit.backend.messages.responses.serializer;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 
-@AllArgsConstructor( access = AccessLevel.PRIVATE )
-public final class GenUtils
-{
-    public static void object( JsonGenerator gen, RunnableWithIOException runnable ) throws IOException
-    {
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+public final class GenUtils {
+    public static void object(JsonGenerator gen, RunnableWithIOException runnable) throws IOException {
         gen.writeStartObject();
         runnable.run();
         gen.writeEndObject();
     }
 
-    public static <T> void list( JsonGenerator gen, List<T> list ) throws IOException
-    {
+    public static <T> void list(JsonGenerator gen, List<T> list) throws IOException {
         gen.writeStartArray();
-        for ( T element : list )
-        {
-            gen.writeObject( element );
+        for (T element : list) {
+            gen.writeObject(element);
         }
         gen.writeEndArray();
     }
 
-    public static <T> void cypherObject( JsonGenerator gen, String name, T value ) throws IOException
-    {
-        cypherObject( gen, name, () -> gen.writeObjectField("value", value ) );
+    public static <T> void cypherObject(JsonGenerator gen, String name, T value) throws IOException {
+        cypherObject(gen, name, () -> gen.writeObjectField("value", value));
     }
 
-    public static <T> void cypherObject( JsonGenerator gen, String name, RunnableWithIOException runnable ) throws IOException
-    {
-        object( gen, () ->
-        {
-            gen.writeStringField( "name", name );
-            gen.writeFieldName( "data" );
-            object( gen, runnable );
-        } );
+    public static <T> void cypherObject(JsonGenerator gen, String name, RunnableWithIOException runnable)
+            throws IOException {
+        object(gen, () -> {
+            gen.writeStringField("name", name);
+            gen.writeFieldName("data");
+            object(gen, runnable);
+        });
     }
 
-    public static Class<?> cypherTypeToJavaType( String typeString )
-    {
-        switch ( typeString )
-        {
-        case "CypherBool":
-            return Boolean.class;
-        case "CypherInt":
-            return Integer.class;
-        case "CypherFloat":
-            return Double.class;
-        case "CypherString":
-            return String.class;
-        case "CypherList":
-            return List.class;
-        case "CypherMap":
-            return Map.class;
-        case "CypherNull":
-            return null;
-        default:
-            return null;
+    public static Class<?> cypherTypeToJavaType(String typeString) {
+        switch (typeString) {
+            case "CypherBool":
+                return Boolean.class;
+            case "CypherInt":
+                return Integer.class;
+            case "CypherFloat":
+                return Double.class;
+            case "CypherString":
+                return String.class;
+            case "CypherList":
+                return List.class;
+            case "CypherMap":
+                return Map.class;
+            case "CypherNull":
+                return null;
+            default:
+                return null;
         }
     }
 
-    interface RunnableWithIOException
-    {
+    interface RunnableWithIOException {
         void run() throws IOException;
     }
 }

@@ -18,17 +18,33 @@
  */
 package org.neo4j.driver.internal;
 
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.driver.Config.defaultConfig;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
+import static org.neo4j.driver.internal.util.Matchers.directDriver;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutorGroup;
+import java.net.URI;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.net.URI;
-import java.util.Optional;
-import java.util.stream.Stream;
-
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
@@ -55,274 +71,264 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Clock;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.driver.Config.defaultConfig;
-import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
-import static org.neo4j.driver.internal.util.Matchers.directDriver;
-
-class DriverFactoryTest
-{
-    private static Stream<String> testUris()
-    {
-        return Stream.of( "bolt://localhost:7687", "neo4j://localhost:7687" );
+class DriverFactoryTest {
+    private static Stream<String> testUris() {
+        return Stream.of("bolt://localhost:7687", "neo4j://localhost:7687");
     }
 
     @ParameterizedTest
-    @MethodSource( "testUris" )
-    void connectionPoolClosedWhenDriverCreationFails( String uri )
-    {
+    @MethodSource("testUris")
+    void connectionPoolClosedWhenDriverCreationFails(String uri) {
         ConnectionPool connectionPool = connectionPoolMock();
-        DriverFactory factory = new ThrowingDriverFactory( connectionPool );
+        DriverFactory factory = new ThrowingDriverFactory(connectionPool);
 
-        assertThrows( UnsupportedOperationException.class, () -> createDriver( uri, factory ) );
-        verify( connectionPool ).close();
+        assertThrows(UnsupportedOperationException.class, () -> createDriver(uri, factory));
+        verify(connectionPool).close();
     }
 
     @ParameterizedTest
-    @MethodSource( "testUris" )
-    void connectionPoolCloseExceptionIsSuppressedWhenDriverCreationFails( String uri )
-    {
+    @MethodSource("testUris")
+    void connectionPoolCloseExceptionIsSuppressedWhenDriverCreationFails(String uri) {
         ConnectionPool connectionPool = connectionPoolMock();
-        RuntimeException poolCloseError = new RuntimeException( "Pool close error" );
-        when( connectionPool.close() ).thenReturn( failedFuture( poolCloseError ) );
+        RuntimeException poolCloseError = new RuntimeException("Pool close error");
+        when(connectionPool.close()).thenReturn(failedFuture(poolCloseError));
 
-        DriverFactory factory = new ThrowingDriverFactory( connectionPool );
+        DriverFactory factory = new ThrowingDriverFactory(connectionPool);
 
-        UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, () -> createDriver( uri, factory ) );
-        assertArrayEquals( new Throwable[]{poolCloseError}, e.getSuppressed() );
-        verify( connectionPool ).close();
+        UnsupportedOperationException e =
+                assertThrows(UnsupportedOperationException.class, () -> createDriver(uri, factory));
+        assertArrayEquals(new Throwable[] {poolCloseError}, e.getSuppressed());
+        verify(connectionPool).close();
     }
 
     @ParameterizedTest
-    @MethodSource( "testUris" )
-    void usesStandardSessionFactoryWhenNothingConfigured( String uri )
-    {
+    @MethodSource("testUris")
+    void usesStandardSessionFactoryWhenNothingConfigured(String uri) {
         Config config = defaultConfig();
         SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
 
-        createDriver( uri, factory, config );
+        createDriver(uri, factory, config);
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
-        assertThat( capturedFactory.newInstance( SessionConfig.defaultConfig() ), instanceOf( NetworkSession.class ) );
+        assertThat(capturedFactory.newInstance(SessionConfig.defaultConfig()), instanceOf(NetworkSession.class));
     }
 
     @ParameterizedTest
-    @MethodSource( "testUris" )
-    void usesLeakLoggingSessionFactoryWhenConfigured( String uri )
-    {
+    @MethodSource("testUris")
+    void usesLeakLoggingSessionFactoryWhenConfigured(String uri) {
         Config config = Config.builder().withLeakedSessionsLogging().build();
         SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
 
-        createDriver( uri, factory, config );
+        createDriver(uri, factory, config);
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
-        assertThat( capturedFactory.newInstance( SessionConfig.defaultConfig() ), instanceOf( LeakLoggingNetworkSession.class ) );
+        assertThat(
+                capturedFactory.newInstance(SessionConfig.defaultConfig()),
+                instanceOf(LeakLoggingNetworkSession.class));
     }
 
     @ParameterizedTest
-    @MethodSource( "testUris" )
-    void shouldNotVerifyConnectivity( String uri )
-    {
-        SessionFactory sessionFactory = mock( SessionFactory.class );
-        when( sessionFactory.verifyConnectivity() ).thenReturn( completedWithNull() );
-        when( sessionFactory.close() ).thenReturn( completedWithNull() );
-        DriverFactoryWithSessions driverFactory = new DriverFactoryWithSessions( sessionFactory );
+    @MethodSource("testUris")
+    void shouldNotVerifyConnectivity(String uri) {
+        SessionFactory sessionFactory = mock(SessionFactory.class);
+        when(sessionFactory.verifyConnectivity()).thenReturn(completedWithNull());
+        when(sessionFactory.close()).thenReturn(completedWithNull());
+        DriverFactoryWithSessions driverFactory = new DriverFactoryWithSessions(sessionFactory);
 
-        try ( Driver driver = createDriver( uri, driverFactory ) )
-        {
-            assertNotNull( driver );
-            verify( sessionFactory, never() ).verifyConnectivity();
+        try (Driver driver = createDriver(uri, driverFactory)) {
+            assertNotNull(driver);
+            verify(sessionFactory, never()).verifyConnectivity();
         }
     }
 
     @Test
-    void shouldNotCreateDriverMetrics()
-    {
+    void shouldNotCreateDriverMetrics() {
         // Given
-        Config config = mock( Config.class );
-        when( config.isMetricsEnabled() ).thenReturn( false );
+        Config config = mock(Config.class);
+        when(config.isMetricsEnabled()).thenReturn(false);
         // When
-        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.SYSTEM);
         // Then
-        assertThat( provider, is(equalTo( DevNullMetricsProvider.INSTANCE ) ) );
+        assertThat(provider, is(equalTo(DevNullMetricsProvider.INSTANCE)));
     }
 
     @Test
-    void shouldCreateDriverMetricsIfMonitoringEnabled()
-    {
+    void shouldCreateDriverMetricsIfMonitoringEnabled() {
         // Given
-        Config config = mock( Config.class );
-        when( config.isMetricsEnabled() ).thenReturn( true );
-        when( config.logging() ).thenReturn( Logging.none() );
+        Config config = mock(Config.class);
+        when(config.isMetricsEnabled()).thenReturn(true);
+        when(config.logging()).thenReturn(Logging.none());
         // When
-        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.SYSTEM);
         // Then
-        assertThat( provider instanceof InternalMetricsProvider, is( true ) );
+        assertThat(provider instanceof InternalMetricsProvider, is(true));
     }
 
     @Test
-    void shouldCreateMicrometerDriverMetricsIfMonitoringEnabled()
-    {
+    void shouldCreateMicrometerDriverMetricsIfMonitoringEnabled() {
         // Given
-        Config config = mock( Config.class );
-        when( config.isMetricsEnabled() ).thenReturn( true );
-        when( config.metricsAdapter() ).thenReturn( MetricsAdapter.MICROMETER );
-        when( config.logging() ).thenReturn( Logging.none() );
+        Config config = mock(Config.class);
+        when(config.isMetricsEnabled()).thenReturn(true);
+        when(config.metricsAdapter()).thenReturn(MetricsAdapter.MICROMETER);
+        when(config.logging()).thenReturn(Logging.none());
         // When
-        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.SYSTEM);
         // Then
-        assertThat( provider instanceof MicrometerMetricsProvider, is( true ) );
+        assertThat(provider instanceof MicrometerMetricsProvider, is(true));
     }
 
     @ParameterizedTest
-    @MethodSource( "testUris" )
-    void shouldCreateAppropriateDriverType( String uri )
-    {
+    @MethodSource("testUris")
+    void shouldCreateAppropriateDriverType(String uri) {
         DriverFactory driverFactory = new DriverFactory();
-        Driver driver = createDriver( uri, driverFactory );
+        Driver driver = createDriver(uri, driverFactory);
 
-        if ( uri.startsWith( "bolt://" ) )
-        {
-            assertThat( driver, is( directDriver() ) );
-        }
-        else if ( uri.startsWith( "neo4j://" ) )
-        {
-            assertThat( driver, is( clusterDriver() ) );
-        }
-        else
-        {
-            fail( "Unexpected scheme provided in argument" );
+        if (uri.startsWith("bolt://")) {
+            assertThat(driver, is(directDriver()));
+        } else if (uri.startsWith("neo4j://")) {
+            assertThat(driver, is(clusterDriver()));
+        } else {
+            fail("Unexpected scheme provided in argument");
         }
     }
 
-    private Driver createDriver( String uri, DriverFactory driverFactory )
-    {
-        return createDriver( uri, driverFactory, defaultConfig() );
+    private Driver createDriver(String uri, DriverFactory driverFactory) {
+        return createDriver(uri, driverFactory, defaultConfig());
     }
 
-    private Driver createDriver( String uri, DriverFactory driverFactory, Config config )
-    {
+    private Driver createDriver(String uri, DriverFactory driverFactory, Config config) {
         AuthToken auth = AuthTokens.none();
-        return driverFactory.newInstance( URI.create( uri ), auth, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config, SecurityPlanImpl.insecure() );
+        return driverFactory.newInstance(
+                URI.create(uri),
+                auth,
+                RoutingSettings.DEFAULT,
+                RetrySettings.DEFAULT,
+                config,
+                SecurityPlanImpl.insecure());
     }
 
-    private static ConnectionPool connectionPoolMock()
-    {
-        ConnectionPool pool = mock( ConnectionPool.class );
-        Connection connection = mock( Connection.class );
-        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( completedFuture( connection ) );
-        when( pool.close() ).thenReturn( completedWithNull() );
+    private static ConnectionPool connectionPoolMock() {
+        ConnectionPool pool = mock(ConnectionPool.class);
+        Connection connection = mock(Connection.class);
+        when(pool.acquire(any(BoltServerAddress.class))).thenReturn(completedFuture(connection));
+        when(pool.close()).thenReturn(completedWithNull());
         return pool;
     }
 
-    private static class ThrowingDriverFactory extends DriverFactory
-    {
+    private static class ThrowingDriverFactory extends DriverFactory {
         final ConnectionPool connectionPool;
 
-        ThrowingDriverFactory( ConnectionPool connectionPool )
-        {
+        ThrowingDriverFactory(ConnectionPool connectionPool) {
             this.connectionPool = connectionPool;
         }
 
         @Override
-        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
-        {
-            throw new UnsupportedOperationException( "Can't create direct driver" );
+        protected InternalDriver createDriver(
+                SecurityPlan securityPlan,
+                SessionFactory sessionFactory,
+                MetricsProvider metricsProvider,
+                Config config) {
+            throw new UnsupportedOperationException("Can't create direct driver");
         }
 
         @Override
-        protected InternalDriver createRoutingDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
-                EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic, MetricsProvider metricsProvider, Config config )
-        {
-            throw new UnsupportedOperationException( "Can't create routing driver" );
+        protected InternalDriver createRoutingDriver(
+                SecurityPlan securityPlan,
+                BoltServerAddress address,
+                ConnectionPool connectionPool,
+                EventExecutorGroup eventExecutorGroup,
+                RoutingSettings routingSettings,
+                RetryLogic retryLogic,
+                MetricsProvider metricsProvider,
+                Config config) {
+            throw new UnsupportedOperationException("Can't create routing driver");
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                                                       MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup,
-                                                       RoutingContext routingContext )
-        {
+        protected ConnectionPool createConnectionPool(
+                AuthToken authToken,
+                SecurityPlan securityPlan,
+                Bootstrap bootstrap,
+                MetricsProvider metricsProvider,
+                Config config,
+                boolean ownsEventLoopGroup,
+                RoutingContext routingContext) {
             return connectionPool;
         }
     }
 
-    private static class SessionFactoryCapturingDriverFactory extends DriverFactory
-    {
+    private static class SessionFactoryCapturingDriverFactory extends DriverFactory {
         SessionFactory capturedSessionFactory;
 
         @Override
-        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
-        {
-            InternalDriver driver = mock( InternalDriver.class );
-            when( driver.verifyConnectivityAsync() ).thenReturn( completedWithNull() );
+        protected InternalDriver createDriver(
+                SecurityPlan securityPlan,
+                SessionFactory sessionFactory,
+                MetricsProvider metricsProvider,
+                Config config) {
+            InternalDriver driver = mock(InternalDriver.class);
+            when(driver.verifyConnectivityAsync()).thenReturn(completedWithNull());
             return driver;
         }
 
         @Override
-        protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool,
-                EventExecutorGroup eventExecutorGroup, Config config, RoutingSettings routingSettings )
-        {
+        protected LoadBalancer createLoadBalancer(
+                BoltServerAddress address,
+                ConnectionPool connectionPool,
+                EventExecutorGroup eventExecutorGroup,
+                Config config,
+                RoutingSettings routingSettings) {
             return null;
         }
 
         @Override
-        protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider,
-                RetryLogic retryLogic, Config config )
-        {
-            SessionFactory sessionFactory = super.createSessionFactory( connectionProvider, retryLogic, config );
+        protected SessionFactory createSessionFactory(
+                ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config) {
+            SessionFactory sessionFactory = super.createSessionFactory(connectionProvider, retryLogic, config);
             capturedSessionFactory = sessionFactory;
             return sessionFactory;
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
-        {
+        protected ConnectionPool createConnectionPool(
+                AuthToken authToken,
+                SecurityPlan securityPlan,
+                Bootstrap bootstrap,
+                MetricsProvider metricsProvider,
+                Config config,
+                boolean ownsEventLoopGroup,
+                RoutingContext routingContext) {
             return connectionPoolMock();
         }
     }
 
-    private static class DriverFactoryWithSessions extends DriverFactory
-    {
+    private static class DriverFactoryWithSessions extends DriverFactory {
         final SessionFactory sessionFactory;
 
-        DriverFactoryWithSessions( SessionFactory sessionFactory )
-        {
+        DriverFactoryWithSessions(SessionFactory sessionFactory) {
             this.sessionFactory = sessionFactory;
         }
 
         @Override
-        protected Bootstrap createBootstrap( int ignored )
-        {
-            return BootstrapFactory.newBootstrap( 1 );
+        protected Bootstrap createBootstrap(int ignored) {
+            return BootstrapFactory.newBootstrap(1);
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
-        {
+        protected ConnectionPool createConnectionPool(
+                AuthToken authToken,
+                SecurityPlan securityPlan,
+                Bootstrap bootstrap,
+                MetricsProvider metricsProvider,
+                Config config,
+                boolean ownsEventLoopGroup,
+                RoutingContext routingContext) {
             return connectionPoolMock();
         }
 
         @Override
-        protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider, RetryLogic retryLogic,
-                Config config )
-        {
+        protected SessionFactory createSessionFactory(
+                ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config) {
             return sessionFactory;
         }
     }

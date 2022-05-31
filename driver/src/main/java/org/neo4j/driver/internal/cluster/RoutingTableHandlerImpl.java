@@ -18,12 +18,13 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -32,10 +33,7 @@ import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Futures;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
-
-public class RoutingTableHandlerImpl implements RoutingTableHandler
-{
+public class RoutingTableHandlerImpl implements RoutingTableHandler {
     private final RoutingTable routingTable;
     private final DatabaseName databaseName;
     private final RoutingTableRegistry routingTableRegistry;
@@ -46,151 +44,135 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler
     private final long routingTablePurgeDelayMs;
     private final Set<BoltServerAddress> resolvedInitialRouters = new HashSet<>();
 
-    public RoutingTableHandlerImpl( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool,
-                                    RoutingTableRegistry routingTableRegistry,
-                                    Logging logging, long routingTablePurgeDelayMs )
-    {
+    public RoutingTableHandlerImpl(
+            RoutingTable routingTable,
+            Rediscovery rediscovery,
+            ConnectionPool connectionPool,
+            RoutingTableRegistry routingTableRegistry,
+            Logging logging,
+            long routingTablePurgeDelayMs) {
         this.routingTable = routingTable;
         this.databaseName = routingTable.database();
         this.rediscovery = rediscovery;
         this.connectionPool = connectionPool;
         this.routingTableRegistry = routingTableRegistry;
-        this.log = logging.getLog( getClass() );
+        this.log = logging.getLog(getClass());
         this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;
     }
 
     @Override
-    public void onConnectionFailure( BoltServerAddress address )
-    {
+    public void onConnectionFailure(BoltServerAddress address) {
         // remove server from the routing table, to prevent concurrent threads from making connections to this address
-        routingTable.forget( address );
+        routingTable.forget(address);
     }
 
     @Override
-    public void onWriteFailure( BoltServerAddress address )
-    {
-        routingTable.forgetWriter( address );
+    public void onWriteFailure(BoltServerAddress address) {
+        routingTable.forgetWriter(address);
     }
 
     @Override
-    public synchronized CompletionStage<RoutingTable> ensureRoutingTable( ConnectionContext context )
-    {
-        if ( refreshRoutingTableFuture != null )
-        {
+    public synchronized CompletionStage<RoutingTable> ensureRoutingTable(ConnectionContext context) {
+        if (refreshRoutingTableFuture != null) {
             // refresh is already happening concurrently, just use it's result
             return refreshRoutingTableFuture;
-        }
-        else if ( routingTable.isStaleFor( context.mode() ) )
-        {
+        } else if (routingTable.isStaleFor(context.mode())) {
             // existing routing table is not fresh and should be updated
-            log.debug( "Routing table for database '%s' is stale. %s", databaseName.description(), routingTable );
+            log.debug("Routing table for database '%s' is stale. %s", databaseName.description(), routingTable);
 
             CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
             refreshRoutingTableFuture = resultFuture;
 
-            rediscovery.lookupClusterComposition( routingTable, connectionPool, context.rediscoveryBookmark(), null )
-                       .whenComplete( ( composition, completionError ) ->
-                                      {
-                                          Throwable error = Futures.completionExceptionCause( completionError );
-                                          if ( error != null )
-                                          {
-                                              clusterCompositionLookupFailed( error );
-                                          }
-                                          else
-                                          {
-                                              freshClusterCompositionFetched( composition );
-                                          }
-                                      } );
+            rediscovery
+                    .lookupClusterComposition(routingTable, connectionPool, context.rediscoveryBookmark(), null)
+                    .whenComplete((composition, completionError) -> {
+                        Throwable error = Futures.completionExceptionCause(completionError);
+                        if (error != null) {
+                            clusterCompositionLookupFailed(error);
+                        } else {
+                            freshClusterCompositionFetched(composition);
+                        }
+                    });
 
             return resultFuture;
-        }
-        else
-        {
+        } else {
             // existing routing table is fresh, use it
-            return completedFuture( routingTable );
+            return completedFuture(routingTable);
         }
     }
 
     @Override
-    public synchronized CompletionStage<RoutingTable> updateRoutingTable( ClusterCompositionLookupResult compositionLookupResult )
-    {
-        if ( refreshRoutingTableFuture != null )
-        {
+    public synchronized CompletionStage<RoutingTable> updateRoutingTable(
+            ClusterCompositionLookupResult compositionLookupResult) {
+        if (refreshRoutingTableFuture != null) {
             // refresh is already happening concurrently, just use its result
             return refreshRoutingTableFuture;
-        }
-        else
-        {
-            if ( compositionLookupResult.getClusterComposition().expirationTimestamp() < routingTable.expirationTimestamp() )
-            {
-                return completedFuture( routingTable );
+        } else {
+            if (compositionLookupResult.getClusterComposition().expirationTimestamp()
+                    < routingTable.expirationTimestamp()) {
+                return completedFuture(routingTable);
             }
             CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
             refreshRoutingTableFuture = resultFuture;
-            freshClusterCompositionFetched( compositionLookupResult );
+            freshClusterCompositionFetched(compositionLookupResult);
             return resultFuture;
         }
     }
 
-    private synchronized void freshClusterCompositionFetched( ClusterCompositionLookupResult compositionLookupResult )
-    {
-        try
-        {
-            log.debug( "Fetched cluster composition for database '%s'. %s", databaseName.description(), compositionLookupResult.getClusterComposition() );
-            routingTable.update( compositionLookupResult.getClusterComposition() );
+    private synchronized void freshClusterCompositionFetched(ClusterCompositionLookupResult compositionLookupResult) {
+        try {
+            log.debug(
+                    "Fetched cluster composition for database '%s'. %s",
+                    databaseName.description(), compositionLookupResult.getClusterComposition());
+            routingTable.update(compositionLookupResult.getClusterComposition());
             routingTableRegistry.removeAged();
 
             Set<BoltServerAddress> addressesToRetain = new LinkedHashSet<>();
             routingTableRegistry.allServers().stream()
-                                .flatMap( BoltServerAddress::unicastStream )
-                                .forEach( addressesToRetain::add );
-            compositionLookupResult.getResolvedInitialRouters().ifPresent(
-                    addresses ->
-                    {
-                        resolvedInitialRouters.clear();
-                        resolvedInitialRouters.addAll( addresses );
-                    } );
-            addressesToRetain.addAll( resolvedInitialRouters );
-            connectionPool.retainAll( addressesToRetain );
+                    .flatMap(BoltServerAddress::unicastStream)
+                    .forEach(addressesToRetain::add);
+            compositionLookupResult.getResolvedInitialRouters().ifPresent(addresses -> {
+                resolvedInitialRouters.clear();
+                resolvedInitialRouters.addAll(addresses);
+            });
+            addressesToRetain.addAll(resolvedInitialRouters);
+            connectionPool.retainAll(addressesToRetain);
 
-            log.debug( "Updated routing table for database '%s'. %s", databaseName.description(), routingTable );
+            log.debug("Updated routing table for database '%s'. %s", databaseName.description(), routingTable);
 
             CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
             refreshRoutingTableFuture = null;
-            routingTableFuture.complete( routingTable );
-        }
-        catch ( Throwable error )
-        {
-            clusterCompositionLookupFailed( error );
+            routingTableFuture.complete(routingTable);
+        } catch (Throwable error) {
+            clusterCompositionLookupFailed(error);
         }
     }
 
-    private synchronized void clusterCompositionLookupFailed( Throwable error )
-    {
-        log.error( String.format( "Failed to update routing table for database '%s'. Current routing table: %s.", databaseName.description(), routingTable ),
-                   error );
-        routingTableRegistry.remove( databaseName );
+    private synchronized void clusterCompositionLookupFailed(Throwable error) {
+        log.error(
+                String.format(
+                        "Failed to update routing table for database '%s'. Current routing table: %s.",
+                        databaseName.description(), routingTable),
+                error);
+        routingTableRegistry.remove(databaseName);
         CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
         refreshRoutingTableFuture = null;
-        routingTableFuture.completeExceptionally( error );
+        routingTableFuture.completeExceptionally(error);
     }
 
     // This method cannot be synchronized as it will be visited by all routing table handler's threads concurrently
     @Override
-    public Set<BoltServerAddress> servers()
-    {
+    public Set<BoltServerAddress> servers() {
         return routingTable.servers();
     }
 
     // This method cannot be synchronized as it will be visited by all routing table handler's threads concurrently
     @Override
-    public boolean isRoutingTableAged()
-    {
-        return refreshRoutingTableFuture == null && routingTable.hasBeenStaleFor( routingTablePurgeDelayMs );
+    public boolean isRoutingTableAged() {
+        return refreshRoutingTableFuture == null && routingTable.hasBeenStaleFor(routingTablePurgeDelayMs);
     }
 
-    public RoutingTable routingTable()
-    {
+    public RoutingTable routingTable() {
         return routingTable;
     }
 }

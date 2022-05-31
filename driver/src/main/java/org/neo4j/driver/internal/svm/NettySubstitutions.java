@@ -23,16 +23,6 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.jdk.JDK11OrLater;
 import com.oracle.svm.core.jdk.JDK8OrEarlier;
-
-import java.security.PrivateKey;
-import java.security.Provider;
-import java.security.cert.X509Certificate;
-import java.util.Map;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.TrustManagerFactory;
-
 import io.netty.bootstrap.AbstractBootstrapConfig;
 import io.netty.bootstrap.ChannelFactory;
 import io.netty.buffer.ByteBufAllocator;
@@ -51,6 +41,14 @@ import io.netty.handler.ssl.SslProvider;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.JdkLoggerFactory;
+import java.security.PrivateKey;
+import java.security.Provider;
+import java.security.cert.X509Certificate;
+import java.util.Map;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.TrustManagerFactory;
 
 /**
  * This substitution avoid having loggers added to the build
@@ -59,7 +57,7 @@ import io.netty.util.internal.logging.JdkLoggerFactory;
 final class Target_io_netty_util_internal_logging_InternalLoggerFactory {
 
     @Substitute
-    private static InternalLoggerFactory newDefaultFactory( String name) {
+    private static InternalLoggerFactory newDefaultFactory(String name) {
         return JdkLoggerFactory.INSTANCE;
     }
 }
@@ -71,32 +69,46 @@ final class Target_io_netty_util_internal_logging_InternalLoggerFactory {
 final class Target_io_netty_handler_ssl_JdkSslServerContext {
 
     @Alias
-    Target_io_netty_handler_ssl_JdkSslServerContext( Provider provider,
-            X509Certificate[] trustCertCollection, TrustManagerFactory trustManagerFactory,
-            X509Certificate[] keyCertChain, PrivateKey key, String keyPassword,
-            KeyManagerFactory keyManagerFactory, Iterable<String> ciphers, CipherSuiteFilter cipherFilter,
-            ApplicationProtocolConfig apn, long sessionCacheSize, long sessionTimeout,
-            ClientAuth clientAuth, String[] protocols, boolean startTls,
+    Target_io_netty_handler_ssl_JdkSslServerContext(
+            Provider provider,
+            X509Certificate[] trustCertCollection,
+            TrustManagerFactory trustManagerFactory,
+            X509Certificate[] keyCertChain,
+            PrivateKey key,
+            String keyPassword,
+            KeyManagerFactory keyManagerFactory,
+            Iterable<String> ciphers,
+            CipherSuiteFilter cipherFilter,
+            ApplicationProtocolConfig apn,
+            long sessionCacheSize,
+            long sessionTimeout,
+            ClientAuth clientAuth,
+            String[] protocols,
+            boolean startTls,
             String keyStore)
-            throws SSLException
-    {
-    }
+            throws SSLException {}
 }
 
 @TargetClass(className = "io.netty.handler.ssl.JdkSslClientContext")
 final class Target_io_netty_handler_ssl_JdkSslClientContext {
 
     @Alias
-    Target_io_netty_handler_ssl_JdkSslClientContext( Provider sslContextProvider,
+    Target_io_netty_handler_ssl_JdkSslClientContext(
+            Provider sslContextProvider,
             X509Certificate[] trustCertCollection,
-            TrustManagerFactory trustManagerFactory, X509Certificate[] keyCertChain, PrivateKey key,
-            String keyPassword, KeyManagerFactory keyManagerFactory, Iterable<String> ciphers,
-            CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, String[] protocols,
-            long sessionCacheSize, long sessionTimeout, String keyStoreType)
-            throws SSLException
-    {
-
-    }
+            TrustManagerFactory trustManagerFactory,
+            X509Certificate[] keyCertChain,
+            PrivateKey key,
+            String keyPassword,
+            KeyManagerFactory keyManagerFactory,
+            Iterable<String> ciphers,
+            CipherSuiteFilter cipherFilter,
+            ApplicationProtocolConfig apn,
+            String[] protocols,
+            long sessionCacheSize,
+            long sessionTimeout,
+            String keyStoreType)
+            throws SSLException {}
 }
 
 @TargetClass(className = "io.netty.handler.ssl.SslHandler$SslEngineType")
@@ -106,36 +118,46 @@ final class Target_io_netty_handler_ssl_SslHandler$SslEngineType {
     public static Target_io_netty_handler_ssl_SslHandler$SslEngineType JDK;
 
     @Substitute
-    static Target_io_netty_handler_ssl_SslHandler$SslEngineType forEngine( SSLEngine engine) {
+    static Target_io_netty_handler_ssl_SslHandler$SslEngineType forEngine(SSLEngine engine) {
         return JDK;
     }
 }
 
-@TargetClass(className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper", onlyWith = JDK11OrLater.class)
+@TargetClass(
+        className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper",
+        onlyWith = JDK11OrLater.class)
 final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_AlpnWrapper {
     @Substitute
-    public SSLEngine wrapSslEngine(SSLEngine engine, ByteBufAllocator alloc,
-            JdkApplicationProtocolNegotiator applicationNegotiator, boolean isServer) {
-        return (SSLEngine) (Object) new Target_io_netty_handler_ssl_JdkAlpnSslEngine(engine, applicationNegotiator, isServer);
+    public SSLEngine wrapSslEngine(
+            SSLEngine engine,
+            ByteBufAllocator alloc,
+            JdkApplicationProtocolNegotiator applicationNegotiator,
+            boolean isServer) {
+        return (SSLEngine)
+                (Object) new Target_io_netty_handler_ssl_JdkAlpnSslEngine(engine, applicationNegotiator, isServer);
     }
-
 }
 
-@TargetClass(className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper", onlyWith = JDK8OrEarlier.class)
+@TargetClass(
+        className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper",
+        onlyWith = JDK8OrEarlier.class)
 final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_AlpnWrapperJava8 {
     @Substitute
-    public SSLEngine wrapSslEngine(SSLEngine engine, ByteBufAllocator alloc,
-            JdkApplicationProtocolNegotiator applicationNegotiator, boolean isServer) {
+    public SSLEngine wrapSslEngine(
+            SSLEngine engine,
+            ByteBufAllocator alloc,
+            JdkApplicationProtocolNegotiator applicationNegotiator,
+            boolean isServer) {
         if (Target_io_netty_handler_ssl_JettyAlpnSslEngine.isAvailable()) {
             return isServer
-                   ? (SSLEngine) (Object) Target_io_netty_handler_ssl_JettyAlpnSslEngine.newServerEngine(engine,
-                    applicationNegotiator)
-                   : (SSLEngine) (Object) Target_io_netty_handler_ssl_JettyAlpnSslEngine.newClientEngine(engine,
-                           applicationNegotiator);
+                    ? (SSLEngine) (Object) Target_io_netty_handler_ssl_JettyAlpnSslEngine.newServerEngine(
+                            engine, applicationNegotiator)
+                    : (SSLEngine) (Object) Target_io_netty_handler_ssl_JettyAlpnSslEngine.newClientEngine(
+                            engine, applicationNegotiator);
         }
-        throw new RuntimeException("Unable to wrap SSLEngine of type " + engine.getClass().getName());
+        throw new RuntimeException(
+                "Unable to wrap SSLEngine of type " + engine.getClass().getName());
     }
-
 }
 
 @TargetClass(className = "io.netty.handler.ssl.JettyAlpnSslEngine", onlyWith = JDK8OrEarlier.class)
@@ -146,16 +168,16 @@ final class Target_io_netty_handler_ssl_JettyAlpnSslEngine {
     }
 
     @Substitute
-    @SuppressWarnings( "deprecation" )
-    static Target_io_netty_handler_ssl_JettyAlpnSslEngine newClientEngine(SSLEngine engine,
-            JdkApplicationProtocolNegotiator applicationNegotiator) {
+    @SuppressWarnings("deprecation")
+    static Target_io_netty_handler_ssl_JettyAlpnSslEngine newClientEngine(
+            SSLEngine engine, JdkApplicationProtocolNegotiator applicationNegotiator) {
         return null;
     }
 
     @Substitute
-    @SuppressWarnings( "deprecation" )
-    static Target_io_netty_handler_ssl_JettyAlpnSslEngine newServerEngine(SSLEngine engine,
-            JdkApplicationProtocolNegotiator applicationNegotiator) {
+    @SuppressWarnings("deprecation")
+    static Target_io_netty_handler_ssl_JettyAlpnSslEngine newServerEngine(
+            SSLEngine engine, JdkApplicationProtocolNegotiator applicationNegotiator) {
         return null;
     }
 }
@@ -164,56 +186,100 @@ final class Target_io_netty_handler_ssl_JettyAlpnSslEngine {
 final class Target_io_netty_handler_ssl_JdkAlpnSslEngine {
 
     @Alias
-    @SuppressWarnings( "deprecation" )
-    Target_io_netty_handler_ssl_JdkAlpnSslEngine(final SSLEngine engine,
-            final JdkApplicationProtocolNegotiator applicationNegotiator, final boolean isServer) {
-
-    }
+    @SuppressWarnings("deprecation")
+    Target_io_netty_handler_ssl_JdkAlpnSslEngine(
+            final SSLEngine engine,
+            final JdkApplicationProtocolNegotiator applicationNegotiator,
+            final boolean isServer) {}
 }
 
 @TargetClass(className = "io.netty.handler.ssl.SslContext")
 final class Target_io_netty_handler_ssl_SslContext {
 
     @Substitute
-    static SslContext newServerContextInternal(SslProvider provider,
+    static SslContext newServerContextInternal(
+            SslProvider provider,
             Provider sslContextProvider,
-            X509Certificate[] trustCertCollection, TrustManagerFactory trustManagerFactory,
-            X509Certificate[] keyCertChain, PrivateKey key, String keyPassword, KeyManagerFactory keyManagerFactory,
-            Iterable<String> ciphers, CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn,
-            long sessionCacheSize, long sessionTimeout, ClientAuth clientAuth, String[] protocols, boolean startTls,
-            boolean enableOcsp, String keyStoreType, Map.Entry<SslContextOption<?>, Object>... ctxOptions)
-            throws SSLException
-    {
+            X509Certificate[] trustCertCollection,
+            TrustManagerFactory trustManagerFactory,
+            X509Certificate[] keyCertChain,
+            PrivateKey key,
+            String keyPassword,
+            KeyManagerFactory keyManagerFactory,
+            Iterable<String> ciphers,
+            CipherSuiteFilter cipherFilter,
+            ApplicationProtocolConfig apn,
+            long sessionCacheSize,
+            long sessionTimeout,
+            ClientAuth clientAuth,
+            String[] protocols,
+            boolean startTls,
+            boolean enableOcsp,
+            String keyStoreType,
+            Map.Entry<SslContextOption<?>, Object>... ctxOptions)
+            throws SSLException {
 
         if (enableOcsp) {
             throw new IllegalArgumentException("OCSP is not supported with this SslProvider: " + provider);
         }
         return (SslContext) (Object) new Target_io_netty_handler_ssl_JdkSslServerContext(
                 sslContextProvider,
-                trustCertCollection, trustManagerFactory, keyCertChain, key, keyPassword,
-                keyManagerFactory, ciphers, cipherFilter, apn, sessionCacheSize, sessionTimeout,
-                clientAuth, protocols, startTls, keyStoreType);
+                trustCertCollection,
+                trustManagerFactory,
+                keyCertChain,
+                key,
+                keyPassword,
+                keyManagerFactory,
+                ciphers,
+                cipherFilter,
+                apn,
+                sessionCacheSize,
+                sessionTimeout,
+                clientAuth,
+                protocols,
+                startTls,
+                keyStoreType);
     }
 
     @Substitute
     static SslContext newClientContextInternal(
             SslProvider provider,
             Provider sslContextProvider,
-            X509Certificate[] trustCert, TrustManagerFactory trustManagerFactory,
-            X509Certificate[] keyCertChain, PrivateKey key, String keyPassword, KeyManagerFactory keyManagerFactory,
-            Iterable<String> ciphers, CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, String[] protocols,
-            long sessionCacheSize, long sessionTimeout, boolean enableOcsp, String keyStoreType, Map.Entry<SslContextOption<?>, Object>... options) throws SSLException
-    {
+            X509Certificate[] trustCert,
+            TrustManagerFactory trustManagerFactory,
+            X509Certificate[] keyCertChain,
+            PrivateKey key,
+            String keyPassword,
+            KeyManagerFactory keyManagerFactory,
+            Iterable<String> ciphers,
+            CipherSuiteFilter cipherFilter,
+            ApplicationProtocolConfig apn,
+            String[] protocols,
+            long sessionCacheSize,
+            long sessionTimeout,
+            boolean enableOcsp,
+            String keyStoreType,
+            Map.Entry<SslContextOption<?>, Object>... options)
+            throws SSLException {
         if (enableOcsp) {
             throw new IllegalArgumentException("OCSP is not supported with this SslProvider: " + provider);
         }
         return (SslContext) (Object) new Target_io_netty_handler_ssl_JdkSslClientContext(
                 sslContextProvider,
-                trustCert, trustManagerFactory, keyCertChain, key, keyPassword,
-                keyManagerFactory, ciphers, cipherFilter, apn, protocols, sessionCacheSize,
-                sessionTimeout, keyStoreType);
+                trustCert,
+                trustManagerFactory,
+                keyCertChain,
+                key,
+                keyPassword,
+                keyManagerFactory,
+                ciphers,
+                cipherFilter,
+                apn,
+                protocols,
+                sessionCacheSize,
+                sessionTimeout,
+                keyStoreType);
     }
-
 }
 
 @TargetClass(className = "io.netty.handler.ssl.JdkDefaultApplicationProtocolNegotiator")
@@ -229,23 +295,29 @@ final class Target_io_netty_handler_ssl_JdkSslContext {
     @Substitute
     static JdkApplicationProtocolNegotiator toNegotiator(ApplicationProtocolConfig config, boolean isServer) {
         if (config == null) {
-            return (JdkApplicationProtocolNegotiator) (Object) Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
+            return (JdkApplicationProtocolNegotiator)
+                    (Object) Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
         }
 
         switch (config.protocol()) {
             case NONE:
-                return (JdkApplicationProtocolNegotiator) (Object) Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
+                return (JdkApplicationProtocolNegotiator)
+                        (Object) Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
             case ALPN:
                 if (isServer) {
                     // GRAAL RC9 bug: https://github.com/oracle/graal/issues/813
                     //                switch(config.selectorFailureBehavior()) {
                     //                case FATAL_ALERT:
-                    //                    return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
+                    //                    return new JdkAlpnApplicationProtocolNegotiator(true,
+                    // config.supportedProtocols());
                     //                case NO_ADVERTISE:
-                    //                    return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
+                    //                    return new JdkAlpnApplicationProtocolNegotiator(false,
+                    // config.supportedProtocols());
                     //                default:
-                    //                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
-                    //                    .append(config.selectorFailureBehavior()).append(" failure behavior").toString());
+                    //                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does
+                    // not support ")
+                    //                    .append(config.selectorFailureBehavior()).append(" failure
+                    // behavior").toString());
                     //                }
                     SelectorFailureBehavior behavior = config.selectorFailureBehavior();
                     if (behavior == SelectorFailureBehavior.FATAL_ALERT)
@@ -254,7 +326,9 @@ final class Target_io_netty_handler_ssl_JdkSslContext {
                         return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
                     else {
                         throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
-                                .append(config.selectorFailureBehavior()).append(" failure behavior").toString());
+                                .append(config.selectorFailureBehavior())
+                                .append(" failure behavior")
+                                .toString());
                     }
                 } else {
                     switch (config.selectedListenerFailureBehavior()) {
@@ -264,17 +338,18 @@ final class Target_io_netty_handler_ssl_JdkSslContext {
                             return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
                         default:
                             throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
-                                    .append(config.selectedListenerFailureBehavior()).append(" failure behavior")
+                                    .append(config.selectedListenerFailureBehavior())
+                                    .append(" failure behavior")
                                     .toString());
                     }
                 }
             default:
-                throw new UnsupportedOperationException(
-                        new StringBuilder("JDK provider does not support ").append(config.protocol()).append(" protocol")
-                                .toString());
+                throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
+                        .append(config.protocol())
+                        .append(" protocol")
+                        .toString());
         }
     }
-
 }
 
 /*
@@ -288,9 +363,7 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
     private ChannelFactory channelFactory;
 
     @Alias
-    void init(Channel channel) throws Exception
-    {
-    }
+    void init(Channel channel) throws Exception {}
 
     @Alias
     public AbstractBootstrapConfig config() {
@@ -303,7 +376,7 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
         try {
             channel = channelFactory.newChannel();
             init(channel);
-        } catch ( Throwable t) {
+        } catch (Throwable t) {
             // THE FIX IS HERE:
             t.printStackTrace();
             if (channel != null) {
@@ -333,9 +406,7 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
         //         because register(), bind(), and connect() are all bound to the same thread.
 
         return regFuture;
-
     }
 }
 
-class NettySubstitutions {
-}
+class NettySubstitutions {}

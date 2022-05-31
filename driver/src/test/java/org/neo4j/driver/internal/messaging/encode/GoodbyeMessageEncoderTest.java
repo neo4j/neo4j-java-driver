@@ -18,33 +18,29 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.request.GoodbyeMessage.GOODBYE;
 
-class GoodbyeMessageEncoderTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.messaging.ValuePacker;
+import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
+
+class GoodbyeMessageEncoderTest {
     private final GoodbyeMessageEncoder encoder = new GoodbyeMessageEncoder();
-    private final ValuePacker packer = mock( ValuePacker.class );
+    private final ValuePacker packer = mock(ValuePacker.class);
 
     @Test
-    void shouldEncodeGoodbyeMessage() throws Exception
-    {
-        encoder.encode( GOODBYE, packer );
+    void shouldEncodeGoodbyeMessage() throws Exception {
+        encoder.encode(GOODBYE, packer);
 
-        verify( packer ).packStructHeader( 0, GoodbyeMessage.SIGNATURE );
+        verify(packer).packStructHeader(0, GoodbyeMessage.SIGNATURE);
     }
 
     @Test
-    void shouldFailToEncodeWrongMessage()
-    {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( DISCARD_ALL, packer ) );
+    void shouldFailToEncodeWrongMessage() {
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(DISCARD_ALL, packer));
     }
 }

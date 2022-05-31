@@ -18,99 +18,83 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.exceptions.value.LossyCoercion;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
-public class FloatValue extends NumberValueAdapter<Double>
-{
+public class FloatValue extends NumberValueAdapter<Double> {
     private final double val;
 
-    public FloatValue( double val )
-    {
+    public FloatValue(double val) {
         this.val = val;
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.FLOAT();
     }
 
     @Override
-    public Double asNumber()
-    {
+    public Double asNumber() {
         return val;
     }
 
     @Override
-    public long asLong()
-    {
+    public long asLong() {
         long longVal = (long) val;
-        if ((double) longVal != val)
-        {
-            throw new LossyCoercion( type().name(), "Java long" );
+        if ((double) longVal != val) {
+            throw new LossyCoercion(type().name(), "Java long");
         }
 
         return longVal;
     }
 
     @Override
-    public int asInt()
-    {
+    public int asInt() {
         int intVal = (int) val;
-        if ((double) intVal != val)
-        {
-            throw new LossyCoercion( type().name(), "Java int" );
+        if ((double) intVal != val) {
+            throw new LossyCoercion(type().name(), "Java int");
         }
 
         return intVal;
     }
 
     @Override
-    public double asDouble()
-    {
+    public double asDouble() {
         return val;
     }
 
     @Override
-    public float asFloat()
-    {
+    public float asFloat() {
         float floatVal = (float) val;
-        if ((double) floatVal != val)
-        {
-            throw new LossyCoercion( type().name(), "Java float" );
+        if ((double) floatVal != val) {
+            throw new LossyCoercion(type().name(), "Java float");
         }
 
         return floatVal;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         FloatValue values = (FloatValue) o;
-        return Double.compare( values.val, val ) == 0;
+        return Double.compare(values.val, val) == 0;
     }
 
     @Override
-    public int hashCode()
-    {
-        long temp = Double.doubleToLongBits( val );
+    public int hashCode() {
+        long temp = Double.doubleToLongBits(val);
         return (int) (temp ^ (temp >>> 32));
     }
 
     @Override
-    public String toString()
-    {
-        return Double.toString( val );
+    public String toString() {
+        return Double.toString(val);
     }
 }

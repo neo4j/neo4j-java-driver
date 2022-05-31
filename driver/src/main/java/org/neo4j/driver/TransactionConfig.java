@@ -18,20 +18,19 @@
  */
 package org.neo4j.driver;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
+
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.internal.util.Extract;
-
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.unmodifiableMap;
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
 /**
  * Configuration object containing settings for transactions.
@@ -63,20 +62,18 @@ import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
  *
  * @see Session
  */
-public class TransactionConfig implements Serializable
-{
+public class TransactionConfig implements Serializable {
     private static final long serialVersionUID = -7954949878657177280L;
 
     private static final TransactionConfig EMPTY = builder().build();
 
     private final Duration timeout;
-    private final Map<String,Object> metadata;
+    private final Map<String, Object> metadata;
 
     // Values are not serializable, hence, we keep a transient volatile map of them around
     private transient volatile Map<String, Value> convertedMetadata;
 
-    private TransactionConfig( Builder builder )
-    {
+    private TransactionConfig(Builder builder) {
         this.timeout = builder.timeout;
         this.metadata = builder.metadata;
     }
@@ -86,8 +83,7 @@ public class TransactionConfig implements Serializable
      *
      * @return an empty configuration object.
      */
-    public static TransactionConfig empty()
-    {
+    public static TransactionConfig empty() {
         return EMPTY;
     }
 
@@ -96,8 +92,7 @@ public class TransactionConfig implements Serializable
      *
      * @return new builder.
      */
-    public static Builder builder()
-    {
+    public static Builder builder() {
         return new Builder();
     }
 
@@ -106,8 +101,7 @@ public class TransactionConfig implements Serializable
      *
      * @return timeout or {@code null} when it is not configured.
      */
-    public Duration timeout()
-    {
+    public Duration timeout() {
         return timeout;
     }
 
@@ -116,17 +110,13 @@ public class TransactionConfig implements Serializable
      *
      * @return metadata or empty map when it is not configured.
      */
-    public Map<String,Value> metadata()
-    {
-        Map<String,Value> result = this.convertedMetadata;
-        if ( result == null )
-        {
-            synchronized ( this )
-            {
+    public Map<String, Value> metadata() {
+        Map<String, Value> result = this.convertedMetadata;
+        if (result == null) {
+            synchronized (this) {
                 result = this.convertedMetadata;
-                if ( result == null )
-                {
-                    this.convertedMetadata = unmodifiableMap( Extract.mapOfValues( this.metadata ) );
+                if (result == null) {
+                    this.convertedMetadata = unmodifiableMap(Extract.mapOfValues(this.metadata));
                     result = this.convertedMetadata;
                 }
             }
@@ -139,53 +129,40 @@ public class TransactionConfig implements Serializable
      *
      * @return {@code true} when no values are configured, {@code false otherwise}.
      */
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return timeout == null && (metadata == null || metadata.isEmpty());
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         TransactionConfig that = (TransactionConfig) o;
-        return Objects.equals( timeout, that.timeout ) &&
-               Objects.equals( metadata, that.metadata );
+        return Objects.equals(timeout, that.timeout) && Objects.equals(metadata, that.metadata);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( timeout, metadata );
+    public int hashCode() {
+        return Objects.hash(timeout, metadata);
     }
 
     @Override
-    public String toString()
-    {
-        return "TransactionConfig{" +
-               "timeout=" + timeout +
-               ", metadata=" + metadata +
-               '}';
+    public String toString() {
+        return "TransactionConfig{" + "timeout=" + timeout + ", metadata=" + metadata + '}';
     }
 
     /**
      * Builder used to construct {@link TransactionConfig transaction configuration} objects.
      */
-    public static class Builder
-    {
+    public static class Builder {
         private Duration timeout;
-        private Map<String,Object> metadata = emptyMap();
+        private Map<String, Object> metadata = emptyMap();
 
-        private Builder()
-        {
-        }
+        private Builder() {}
 
         /**
          * Set the transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the database.
@@ -198,11 +175,10 @@ public class TransactionConfig implements Serializable
          * @param timeout the timeout.
          * @return this builder.
          */
-        public Builder withTimeout( Duration timeout )
-        {
-            requireNonNull( timeout, "Transaction timeout should not be null" );
-            checkArgument( !timeout.isZero(), "Transaction timeout should not be zero" );
-            checkArgument( !timeout.isNegative(), "Transaction timeout should not be negative" );
+        public Builder withTimeout(Duration timeout) {
+            requireNonNull(timeout, "Transaction timeout should not be null");
+            checkArgument(!timeout.isZero(), "Transaction timeout should not be zero");
+            checkArgument(!timeout.isNegative(), "Transaction timeout should not be negative");
 
             this.timeout = timeout;
             return this;
@@ -219,11 +195,11 @@ public class TransactionConfig implements Serializable
          * @param metadata the metadata.
          * @return this builder.
          */
-        public Builder withMetadata( Map<String,Object> metadata )
-        {
-            requireNonNull( metadata, "Transaction metadata should not be null" );
-            metadata.values().forEach( Extract::assertParameter ); // Just assert valid parameters but don't create a value map yet
-            this.metadata = new HashMap<>( metadata ); // Create a defensive copy
+        public Builder withMetadata(Map<String, Object> metadata) {
+            requireNonNull(metadata, "Transaction metadata should not be null");
+            metadata.values()
+                    .forEach(Extract::assertParameter); // Just assert valid parameters but don't create a value map yet
+            this.metadata = new HashMap<>(metadata); // Create a defensive copy
             return this;
         }
 
@@ -232,9 +208,8 @@ public class TransactionConfig implements Serializable
          *
          * @return new transaction configuration object.
          */
-        public TransactionConfig build()
-        {
-            return new TransactionConfig( this );
+        public TransactionConfig build() {
+            return new TransactionConfig(this);
         }
     }
 }

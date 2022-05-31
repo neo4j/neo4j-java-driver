@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.messaging.v4;
 
 import java.util.Map;
-
 import org.neo4j.driver.internal.messaging.AbstractMessageWriter;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.common.CommonValuePacker;
@@ -44,28 +43,25 @@ import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.util.Iterables;
 
-public class MessageWriterV4 extends AbstractMessageWriter
-{
-    public MessageWriterV4( PackOutput output )
-    {
-        super( new CommonValuePacker( output ), buildEncoders() );
+public class MessageWriterV4 extends AbstractMessageWriter {
+    public MessageWriterV4(PackOutput output) {
+        super(new CommonValuePacker(output), buildEncoders());
     }
 
-    private static Map<Byte,MessageEncoder> buildEncoders()
-    {
-        Map<Byte,MessageEncoder> result = Iterables.newHashMapWithSize( 9 );
-        result.put( HelloMessage.SIGNATURE, new HelloMessageEncoder() );
-        result.put( GoodbyeMessage.SIGNATURE, new GoodbyeMessageEncoder() );
-        result.put( RunWithMetadataMessage.SIGNATURE, new RunWithMetadataMessageEncoder() );
+    private static Map<Byte, MessageEncoder> buildEncoders() {
+        Map<Byte, MessageEncoder> result = Iterables.newHashMapWithSize(9);
+        result.put(HelloMessage.SIGNATURE, new HelloMessageEncoder());
+        result.put(GoodbyeMessage.SIGNATURE, new GoodbyeMessageEncoder());
+        result.put(RunWithMetadataMessage.SIGNATURE, new RunWithMetadataMessageEncoder());
 
-        result.put( DiscardMessage.SIGNATURE, new DiscardMessageEncoder() ); // new
-        result.put( PullMessage.SIGNATURE, new PullMessageEncoder() ); // new
+        result.put(DiscardMessage.SIGNATURE, new DiscardMessageEncoder()); // new
+        result.put(PullMessage.SIGNATURE, new PullMessageEncoder()); // new
 
-        result.put( BeginMessage.SIGNATURE, new BeginMessageEncoder() );
-        result.put( CommitMessage.SIGNATURE, new CommitMessageEncoder() );
-        result.put( RollbackMessage.SIGNATURE, new RollbackMessageEncoder() );
+        result.put(BeginMessage.SIGNATURE, new BeginMessageEncoder());
+        result.put(CommitMessage.SIGNATURE, new CommitMessageEncoder());
+        result.put(RollbackMessage.SIGNATURE, new RollbackMessageEncoder());
 
-        result.put( ResetMessage.SIGNATURE, new ResetMessageEncoder() );
+        result.put(ResetMessage.SIGNATURE, new ResetMessageEncoder());
         return result;
     }
 }

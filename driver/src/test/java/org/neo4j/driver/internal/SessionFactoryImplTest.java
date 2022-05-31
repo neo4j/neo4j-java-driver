@@ -18,8 +18,13 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
@@ -27,42 +32,39 @@ import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.SessionConfig.builder;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-
-class SessionFactoryImplTest
-{
+class SessionFactoryImplTest {
     @Test
-    void createsNetworkSessions()
-    {
-        Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
-        SessionFactory factory = newSessionFactory( config );
+    void createsNetworkSessions() {
+        Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
+        SessionFactory factory = newSessionFactory(config);
 
-        NetworkSession readSession = factory.newInstance( builder().withDefaultAccessMode( AccessMode.READ ).build() );
-        assertThat( readSession, instanceOf( NetworkSession.class ) );
+        NetworkSession readSession = factory.newInstance(
+                builder().withDefaultAccessMode(AccessMode.READ).build());
+        assertThat(readSession, instanceOf(NetworkSession.class));
 
-        NetworkSession writeSession = factory.newInstance( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
-        assertThat( writeSession, instanceOf( NetworkSession.class ) );
+        NetworkSession writeSession = factory.newInstance(
+                builder().withDefaultAccessMode(AccessMode.WRITE).build());
+        assertThat(writeSession, instanceOf(NetworkSession.class));
     }
 
     @Test
-    void createsLeakLoggingNetworkSessions()
-    {
-        Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).withLeakedSessionsLogging().build();
-        SessionFactory factory = newSessionFactory( config );
+    void createsLeakLoggingNetworkSessions() {
+        Config config = Config.builder()
+                .withLogging(DEV_NULL_LOGGING)
+                .withLeakedSessionsLogging()
+                .build();
+        SessionFactory factory = newSessionFactory(config);
 
-        NetworkSession readSession = factory.newInstance( builder().withDefaultAccessMode( AccessMode.READ ).build() );
-        assertThat( readSession, instanceOf( LeakLoggingNetworkSession.class ) );
+        NetworkSession readSession = factory.newInstance(
+                builder().withDefaultAccessMode(AccessMode.READ).build());
+        assertThat(readSession, instanceOf(LeakLoggingNetworkSession.class));
 
-        NetworkSession writeSession = factory.newInstance( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
-        assertThat( writeSession, instanceOf( LeakLoggingNetworkSession.class ) );
+        NetworkSession writeSession = factory.newInstance(
+                builder().withDefaultAccessMode(AccessMode.WRITE).build());
+        assertThat(writeSession, instanceOf(LeakLoggingNetworkSession.class));
     }
 
-    private static SessionFactory newSessionFactory( Config config )
-    {
-        return new SessionFactoryImpl( mock( ConnectionProvider.class ), new FixedRetryLogic( 0 ), config );
+    private static SessionFactory newSessionFactory(Config config) {
+        return new SessionFactoryImpl(mock(ConnectionProvider.class), new FixedRetryLogic(0), config);
     }
 }

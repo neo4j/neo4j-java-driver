@@ -18,24 +18,21 @@
  */
 package org.neo4j.driver.integration;
 
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static org.neo4j.driver.SessionConfig.builder;
 
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
-import static org.neo4j.driver.SessionConfig.builder;
-
 @ParallelizableIT
-public class NestedQueriesIT implements NestedQueries
-{
+public class NestedQueriesIT implements NestedQueries {
     @RegisterExtension
     static final DatabaseExtension server = new DatabaseExtension();
 
     @Override
-    public Session newSession( AccessMode mode )
-    {
-        return server.driver().session( builder().withDefaultAccessMode( mode ).build() );
+    public Session newSession(AccessMode mode) {
+        return server.driver().session(builder().withDefaultAccessMode(mode).build());
     }
 }

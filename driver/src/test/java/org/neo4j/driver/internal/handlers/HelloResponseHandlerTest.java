@@ -18,30 +18,6 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
-import org.neo4j.driver.exceptions.UntrustedServerException;
-import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
-import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
-import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
-import org.neo4j.driver.internal.util.ServerVersion;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,262 +32,256 @@ import static org.neo4j.driver.internal.async.outbound.OutboundMessageHandler.NA
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
-class HelloResponseHandlerTest
-{
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.embedded.EmbeddedChannel;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.exceptions.UntrustedServerException;
+import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
+import org.neo4j.driver.internal.util.ServerVersion;
+
+class HelloResponseHandlerTest {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
     @BeforeEach
-    void setUp()
-    {
-        setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
+    void setUp() {
+        setMessageDispatcher(channel, new InboundMessageDispatcher(channel, DEV_NULL_LOGGING));
         ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast( NAME, new OutboundMessageHandler( new MessageFormatV3(), DEV_NULL_LOGGING ) );
-        pipeline.addLast( new ChannelErrorHandler( DEV_NULL_LOGGING ) );
+        pipeline.addLast(NAME, new OutboundMessageHandler(new MessageFormatV3(), DEV_NULL_LOGGING));
+        pipeline.addLast(new ChannelErrorHandler(DEV_NULL_LOGGING));
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    void shouldSetServerVersionOnChannel()
-    {
+    void shouldSetServerVersionOnChannel() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV3.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV3.VERSION);
 
-        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-1" );
-        handler.onSuccess( metadata );
+        Map<String, Value> metadata = metadata(anyServerVersion(), "bolt-1");
+        handler.onSuccess(metadata);
 
-        assertTrue( channelPromise.isSuccess() );
-        assertEquals( anyServerVersion(), serverVersion( channel ) );
+        assertTrue(channelPromise.isSuccess());
+        assertEquals(anyServerVersion(), serverVersion(channel));
     }
 
     @Test
-    void shouldSetServerAgentOnChannel()
-    {
+    void shouldSetServerAgentOnChannel() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV3.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV3.VERSION);
 
         String agent = "Neo4j/4.2.5";
-        Map<String,Value> metadata = metadata( agent, "bolt-1" );
-        handler.onSuccess( metadata );
+        Map<String, Value> metadata = metadata(agent, "bolt-1");
+        handler.onSuccess(metadata);
 
-        assertTrue( channelPromise.isSuccess() );
-        assertEquals( agent, serverAgent( channel ) );
+        assertTrue(channelPromise.isSuccess());
+        assertEquals(agent, serverAgent(channel));
     }
 
     @Test
-    void shouldThrowWhenServerVersionNotReturned()
-    {
+    void shouldThrowWhenServerVersionNotReturned() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV3.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV3.VERSION);
 
-        Map<String,Value> metadata = metadata( null, "bolt-1" );
-        assertThrows( UntrustedServerException.class, () -> handler.onSuccess( metadata ) );
+        Map<String, Value> metadata = metadata(null, "bolt-1");
+        assertThrows(UntrustedServerException.class, () -> handler.onSuccess(metadata));
 
-        assertFalse( channelPromise.isSuccess() ); // initialization failed
-        assertTrue( channel.closeFuture().isDone() ); // channel was closed
+        assertFalse(channelPromise.isSuccess()); // initialization failed
+        assertTrue(channel.closeFuture().isDone()); // channel was closed
     }
 
     @Test
-    void shouldThrowWhenServerVersionIsNull()
-    {
+    void shouldThrowWhenServerVersionIsNull() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV3.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV3.VERSION);
 
-        Map<String,Value> metadata = metadata( Values.NULL, "bolt-x" );
-        assertThrows( UntrustedServerException.class, () -> handler.onSuccess( metadata ) );
+        Map<String, Value> metadata = metadata(Values.NULL, "bolt-x");
+        assertThrows(UntrustedServerException.class, () -> handler.onSuccess(metadata));
 
-        assertFalse( channelPromise.isSuccess() ); // initialization failed
-        assertTrue( channel.closeFuture().isDone() ); // channel was closed
+        assertFalse(channelPromise.isSuccess()); // initialization failed
+        assertTrue(channel.closeFuture().isDone()); // channel was closed
     }
 
     @Test
-    void shouldThrowWhenServerVersionCantBeParsed()
-    {
+    void shouldThrowWhenServerVersionCantBeParsed() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV3.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV3.VERSION);
 
-        Map<String,Value> metadata = metadata( "WrongServerVersion", "bolt-x" );
-        assertThrows( IllegalArgumentException.class, () -> handler.onSuccess( metadata ) );
+        Map<String, Value> metadata = metadata("WrongServerVersion", "bolt-x");
+        assertThrows(IllegalArgumentException.class, () -> handler.onSuccess(metadata));
 
-        assertFalse( channelPromise.isSuccess() ); // initialization failed
-        assertTrue( channel.closeFuture().isDone() ); // channel was closed
+        assertFalse(channelPromise.isSuccess()); // initialization failed
+        assertTrue(channel.closeFuture().isDone()); // channel was closed
     }
 
     @Test
-    void shouldUseProtocolVersionForServerVersionWhenConnectedWithBoltV4()
-    {
+    void shouldUseProtocolVersionForServerVersionWhenConnectedWithBoltV4() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV4.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV4.VERSION);
 
         // server used in metadata should be ignored
-        Map<String,Value> metadata = metadata( ServerVersion.vInDev, "bolt-1" );
-        handler.onSuccess( metadata );
+        Map<String, Value> metadata = metadata(ServerVersion.vInDev, "bolt-1");
+        handler.onSuccess(metadata);
 
-        assertTrue( channelPromise.isSuccess() );
-        assertEquals( ServerVersion.v4_0_0, serverVersion( channel ) );
+        assertTrue(channelPromise.isSuccess());
+        assertEquals(ServerVersion.v4_0_0, serverVersion(channel));
     }
 
     @Test
-    void shouldUseProtocolVersionForServerVersionWhenConnectedWithBoltV41()
-    {
+    void shouldUseProtocolVersionForServerVersionWhenConnectedWithBoltV41() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV41.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV41.VERSION);
 
         // server used in metadata should be ignored
-        Map<String,Value> metadata = metadata( ServerVersion.vInDev, "bolt-1" );
-        handler.onSuccess( metadata );
+        Map<String, Value> metadata = metadata(ServerVersion.vInDev, "bolt-1");
+        handler.onSuccess(metadata);
 
-        assertTrue( channelPromise.isSuccess() );
-        assertEquals( ServerVersion.v4_1_0, serverVersion( channel ) );
+        assertTrue(channelPromise.isSuccess());
+        assertEquals(ServerVersion.v4_1_0, serverVersion(channel));
     }
 
     @Test
-    void shouldSetConnectionIdOnChannel()
-    {
+    void shouldSetConnectionIdOnChannel() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV3.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV3.VERSION);
 
-        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-42" );
-        handler.onSuccess( metadata );
+        Map<String, Value> metadata = metadata(anyServerVersion(), "bolt-42");
+        handler.onSuccess(metadata);
 
-        assertTrue( channelPromise.isSuccess() );
-        assertEquals( "bolt-42", connectionId( channel ) );
+        assertTrue(channelPromise.isSuccess());
+        assertEquals("bolt-42", connectionId(channel));
     }
 
     @Test
-    void shouldThrowWhenConnectionIdNotReturned()
-    {
+    void shouldThrowWhenConnectionIdNotReturned() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV3.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV3.VERSION);
 
-        Map<String,Value> metadata = metadata( anyServerVersion(), null );
-        assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
+        Map<String, Value> metadata = metadata(anyServerVersion(), null);
+        assertThrows(IllegalStateException.class, () -> handler.onSuccess(metadata));
 
-        assertFalse( channelPromise.isSuccess() ); // initialization failed
-        assertTrue( channel.closeFuture().isDone() ); // channel was closed
+        assertFalse(channelPromise.isSuccess()); // initialization failed
+        assertTrue(channel.closeFuture().isDone()); // channel was closed
     }
 
     @Test
-    void shouldThrowWhenConnectionIdIsNull()
-    {
+    void shouldThrowWhenConnectionIdIsNull() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV3.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV3.VERSION);
 
-        Map<String,Value> metadata = metadata( anyServerVersion(), Values.NULL );
-        assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
+        Map<String, Value> metadata = metadata(anyServerVersion(), Values.NULL);
+        assertThrows(IllegalStateException.class, () -> handler.onSuccess(metadata));
 
-        assertFalse( channelPromise.isSuccess() ); // initialization failed
-        assertTrue( channel.closeFuture().isDone() ); // channel was closed
+        assertFalse(channelPromise.isSuccess()); // initialization failed
+        assertTrue(channel.closeFuture().isDone()); // channel was closed
     }
 
     @Test
-    void shouldCloseChannelOnFailure() throws Exception
-    {
+    void shouldCloseChannelOnFailure() throws Exception {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV3.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV3.VERSION);
 
-        RuntimeException error = new RuntimeException( "Hi!" );
-        handler.onFailure( error );
+        RuntimeException error = new RuntimeException("Hi!");
+        handler.onFailure(error);
 
         ChannelFuture channelCloseFuture = channel.closeFuture();
-        channelCloseFuture.await( 5, TimeUnit.SECONDS );
+        channelCloseFuture.await(5, TimeUnit.SECONDS);
 
-        assertTrue( channelCloseFuture.isSuccess() );
-        assertTrue( channelPromise.isDone() );
-        assertEquals( error, channelPromise.cause() );
+        assertTrue(channelCloseFuture.isSuccess());
+        assertTrue(channelPromise.isDone());
+        assertEquals(error, channelPromise.cause());
     }
 
     @Test
-    void shouldNotThrowWhenConfigurationHintsAreAbsent()
-    {
+    void shouldNotThrowWhenConfigurationHintsAreAbsent() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV41.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV41.VERSION);
 
-        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-x" );
-        handler.onSuccess( metadata );
+        Map<String, Value> metadata = metadata(anyServerVersion(), "bolt-x");
+        handler.onSuccess(metadata);
 
-        assertTrue( channelPromise.isSuccess() );
-        assertFalse( channel.closeFuture().isDone() );
+        assertTrue(channelPromise.isSuccess());
+        assertFalse(channel.closeFuture().isDone());
     }
 
     @Test
-    void shouldNotThrowWhenConfigurationHintsAreEmpty()
-    {
+    void shouldNotThrowWhenConfigurationHintsAreEmpty() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV41.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV41.VERSION);
 
-        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-x", value( new HashMap<>() ) );
-        handler.onSuccess( metadata );
+        Map<String, Value> metadata = metadata(anyServerVersion(), "bolt-x", value(new HashMap<>()));
+        handler.onSuccess(metadata);
 
-        assertTrue( channelPromise.isSuccess() );
-        assertFalse( channel.closeFuture().isDone() );
+        assertTrue(channelPromise.isSuccess());
+        assertFalse(channel.closeFuture().isDone());
     }
 
     @Test
-    void shouldNotThrowWhenConfigurationHintsAreNull()
-    {
+    void shouldNotThrowWhenConfigurationHintsAreNull() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV41.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV41.VERSION);
 
-        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-x", Values.NULL );
-        handler.onSuccess( metadata );
+        Map<String, Value> metadata = metadata(anyServerVersion(), "bolt-x", Values.NULL);
+        handler.onSuccess(metadata);
 
-        assertTrue( channelPromise.isSuccess() );
-        assertFalse( channel.closeFuture().isDone() );
+        assertTrue(channelPromise.isSuccess());
+        assertFalse(channel.closeFuture().isDone());
     }
 
     @Test
-    void shouldSetConnectionTimeoutHint()
-    {
+    void shouldSetConnectionTimeoutHint() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV41.VERSION );
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, BoltProtocolV41.VERSION);
 
         long timeout = 15L;
-        Map<String,Value> hints = new HashMap<>();
-        hints.put( HelloResponseHandler.CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY, value( timeout ) );
-        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-x", value( hints ) );
-        handler.onSuccess( metadata );
+        Map<String, Value> hints = new HashMap<>();
+        hints.put(HelloResponseHandler.CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY, value(timeout));
+        Map<String, Value> metadata = metadata(anyServerVersion(), "bolt-x", value(hints));
+        handler.onSuccess(metadata);
 
-        assertEquals( timeout, connectionReadTimeout( channel ).orElse( null ) );
-        assertTrue( channelPromise.isSuccess() );
-        assertFalse( channel.closeFuture().isDone() );
+        assertEquals(timeout, connectionReadTimeout(channel).orElse(null));
+        assertTrue(channelPromise.isSuccess());
+        assertFalse(channel.closeFuture().isDone());
     }
 
-    private static Map<String,Value> metadata( Object version, Object connectionId )
-    {
-        return metadata( version, connectionId, null );
+    private static Map<String, Value> metadata(Object version, Object connectionId) {
+        return metadata(version, connectionId, null);
     }
 
-    private static Map<String,Value> metadata( Object version, Object connectionId, Value hints )
-    {
-        Map<String,Value> result = new HashMap<>();
+    private static Map<String, Value> metadata(Object version, Object connectionId, Value hints) {
+        Map<String, Value> result = new HashMap<>();
 
-        if ( version == null )
-        {
-            result.put( "server", null );
-        }
-        else if ( version instanceof Value && ((Value) version).isNull() )
-        {
-            result.put( "server", Values.NULL );
-        }
-        else
-        {
-            result.put( "server", value( version.toString() ) );
+        if (version == null) {
+            result.put("server", null);
+        } else if (version instanceof Value && ((Value) version).isNull()) {
+            result.put("server", Values.NULL);
+        } else {
+            result.put("server", value(version.toString()));
         }
 
-        if ( connectionId == null )
-        {
-            result.put( "connection_id", null );
+        if (connectionId == null) {
+            result.put("connection_id", null);
+        } else {
+            result.put("connection_id", value(connectionId));
         }
-        else
-        {
-            result.put( "connection_id", value( connectionId ) );
-        }
-        result.put( HelloResponseHandler.CONFIGURATION_HINTS_KEY, hints );
+        result.put(HelloResponseHandler.CONFIGURATION_HINTS_KEY, hints);
 
         return result;
     }

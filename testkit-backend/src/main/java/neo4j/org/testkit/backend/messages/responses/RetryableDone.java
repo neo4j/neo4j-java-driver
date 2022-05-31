@@ -23,11 +23,9 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class RetryableDone implements TestkitResponse
-{
+public class RetryableDone implements TestkitResponse {
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "RetryableDone";
     }
 }

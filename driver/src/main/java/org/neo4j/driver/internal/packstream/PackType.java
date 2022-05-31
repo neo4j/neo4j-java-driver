@@ -18,8 +18,14 @@
  */
 package org.neo4j.driver.internal.packstream;
 
-public enum PackType
-{
-    NULL, BOOLEAN, INTEGER, FLOAT, BYTES,
-    STRING, LIST, MAP, STRUCT
+public enum PackType {
+    NULL,
+    BOOLEAN,
+    INTEGER,
+    FLOAT,
+    BYTES,
+    STRING,
+    LIST,
+    MAP,
+    STRUCT
 }

@@ -21,20 +21,18 @@ package org.neo4j.driver.internal.handlers;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.summary.ResultSummary;
 
-public interface PullAllResponseHandler extends ResponseHandler
-{
+public interface PullAllResponseHandler extends ResponseHandler {
     CompletionStage<ResultSummary> consumeAsync();
 
     CompletionStage<Record> nextAsync();
 
     CompletionStage<Record> peekAsync();
 
-    <T> CompletionStage<List<T>> listAsync( Function<Record, T> mapFunction );
+    <T> CompletionStage<List<T>> listAsync(Function<Record, T> mapFunction);
 
     CompletionStage<Throwable> pullAllFailureAsync();
 

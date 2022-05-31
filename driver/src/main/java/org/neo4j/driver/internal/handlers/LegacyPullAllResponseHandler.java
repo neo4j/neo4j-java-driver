@@ -18,6 +18,12 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +32,6 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -39,21 +44,14 @@ import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
-
 /**
  * This is the Pull All response handler that handles pull all messages in Bolt v3 and previous protocol versions.
  */
-public class LegacyPullAllResponseHandler implements PullAllResponseHandler
-{
+public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
     private static final Queue<Record> UNINITIALIZED_RECORDS = Iterables.emptyQueue();
 
-    static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger( "recordBufferLowWatermark", 300 );
-    static final int RECORD_BUFFER_HIGH_WATERMARK = Integer.getInteger( "recordBufferHighWatermark", 1000 );
+    static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger("recordBufferLowWatermark", 300);
+    static final int RECORD_BUFFER_HIGH_WATERMARK = Integer.getInteger("recordBufferHighWatermark", 1000);
 
     private final Query query;
     private final RunResponseHandler runResponseHandler;
@@ -73,68 +71,58 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
     private CompletableFuture<Record> recordFuture;
     private CompletableFuture<Throwable> failureFuture;
 
-    public LegacyPullAllResponseHandler(Query query, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
-                                        PullResponseCompletionListener completionListener )
-    {
+    public LegacyPullAllResponseHandler(
+            Query query,
+            RunResponseHandler runResponseHandler,
+            Connection connection,
+            MetadataExtractor metadataExtractor,
+            PullResponseCompletionListener completionListener) {
         this.query = requireNonNull(query);
-        this.runResponseHandler = requireNonNull( runResponseHandler );
-        this.metadataExtractor = requireNonNull( metadataExtractor );
-        this.connection = requireNonNull( connection );
-        this.completionListener = requireNonNull( completionListener );
+        this.runResponseHandler = requireNonNull(runResponseHandler);
+        this.metadataExtractor = requireNonNull(metadataExtractor);
+        this.connection = requireNonNull(connection);
+        this.completionListener = requireNonNull(completionListener);
     }
 
     @Override
-    public boolean canManageAutoRead()
-    {
+    public boolean canManageAutoRead() {
         return true;
     }
 
     @Override
-    public synchronized void onSuccess( Map<String,Value> metadata )
-    {
+    public synchronized void onSuccess(Map<String, Value> metadata) {
         finished = true;
         Neo4jException exception = null;
-        try
-        {
-            summary = extractResultSummary( metadata );
-        }
-        catch ( Neo4jException e )
-        {
+        try {
+            summary = extractResultSummary(metadata);
+        } catch (Neo4jException e) {
             exception = e;
         }
 
-        if ( exception == null )
-        {
-            completionListener.afterSuccess( metadata );
+        if (exception == null) {
+            completionListener.afterSuccess(metadata);
 
-            completeRecordFuture( null );
-            completeFailureFuture( null );
-        }
-        else
-        {
-            onFailure( exception );
+            completeRecordFuture(null);
+            completeFailureFuture(null);
+        } else {
+            onFailure(exception);
         }
     }
 
     @Override
-    public synchronized void onFailure( Throwable error )
-    {
+    public synchronized void onFailure(Throwable error) {
         finished = true;
-        summary = extractResultSummary( emptyMap() );
+        summary = extractResultSummary(emptyMap());
 
-        completionListener.afterFailure( error );
+        completionListener.afterFailure(error);
 
-        boolean failedRecordFuture = failRecordFuture( error );
-        if ( failedRecordFuture )
-        {
+        boolean failedRecordFuture = failRecordFuture(error);
+        if (failedRecordFuture) {
             // error propagated through the record future
-            completeFailureFuture( null );
-        }
-        else
-        {
-            boolean completedFailureFuture = completeFailureFuture( error );
-            if ( !completedFailureFuture )
-            {
+            completeFailureFuture(null);
+        } else {
+            boolean completedFailureFuture = completeFailureFuture(error);
+            if (!completedFailureFuture) {
                 // error has not been propagated to the user, remember it
                 failure = error;
             }
@@ -142,104 +130,77 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
     }
 
     @Override
-    public synchronized void onRecord( Value[] fields )
-    {
-        if ( ignoreRecords )
-        {
-            completeRecordFuture( null );
-        }
-        else
-        {
-            Record record = new InternalRecord( runResponseHandler.queryKeys(), fields );
-            enqueueRecord( record );
-            completeRecordFuture( record );
+    public synchronized void onRecord(Value[] fields) {
+        if (ignoreRecords) {
+            completeRecordFuture(null);
+        } else {
+            Record record = new InternalRecord(runResponseHandler.queryKeys(), fields);
+            enqueueRecord(record);
+            completeRecordFuture(record);
         }
     }
 
     @Override
-    public synchronized void disableAutoReadManagement()
-    {
+    public synchronized void disableAutoReadManagement() {
         autoReadManagementEnabled = false;
     }
 
-    public synchronized CompletionStage<Record> peekAsync()
-    {
+    public synchronized CompletionStage<Record> peekAsync() {
         Record record = records.peek();
-        if ( record == null )
-        {
-            if ( failure != null )
-            {
-                return failedFuture( extractFailure() );
+        if (record == null) {
+            if (failure != null) {
+                return failedFuture(extractFailure());
             }
 
-            if ( ignoreRecords || finished )
-            {
+            if (ignoreRecords || finished) {
                 return completedWithNull();
             }
 
-            if ( recordFuture == null )
-            {
+            if (recordFuture == null) {
                 recordFuture = new CompletableFuture<>();
             }
             return recordFuture;
-        }
-        else
-        {
-            return completedFuture( record );
+        } else {
+            return completedFuture(record);
         }
     }
 
-    public synchronized CompletionStage<Record> nextAsync()
-    {
-        return peekAsync().thenApply( ignore -> dequeueRecord() );
+    public synchronized CompletionStage<Record> nextAsync() {
+        return peekAsync().thenApply(ignore -> dequeueRecord());
     }
 
-    public synchronized CompletionStage<ResultSummary> consumeAsync()
-    {
+    public synchronized CompletionStage<ResultSummary> consumeAsync() {
         ignoreRecords = true;
         records.clear();
-        return pullAllFailureAsync().thenApply( error ->
-        {
-            if ( error != null )
-            {
-                throw Futures.asCompletionException( error );
+        return pullAllFailureAsync().thenApply(error -> {
+            if (error != null) {
+                throw Futures.asCompletionException(error);
             }
             return summary;
-        } );
+        });
     }
 
-    public synchronized <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
-    {
-        return pullAllFailureAsync().thenApply( error ->
-        {
-            if ( error != null )
-            {
-                throw Futures.asCompletionException( error );
+    public synchronized <T> CompletionStage<List<T>> listAsync(Function<Record, T> mapFunction) {
+        return pullAllFailureAsync().thenApply(error -> {
+            if (error != null) {
+                throw Futures.asCompletionException(error);
             }
-            return recordsAsList( mapFunction );
-        } );
+            return recordsAsList(mapFunction);
+        });
     }
 
     @Override
-    public void prePopulateRecords()
-    {
-        connection.writeAndFlush( PullAllMessage.PULL_ALL, this );
+    public void prePopulateRecords() {
+        connection.writeAndFlush(PullAllMessage.PULL_ALL, this);
     }
 
-    public synchronized CompletionStage<Throwable> pullAllFailureAsync()
-    {
-        if ( failure != null )
-        {
-            return completedFuture( extractFailure() );
-        }
-        else if ( finished )
-        {
+    public synchronized CompletionStage<Throwable> pullAllFailureAsync() {
+        if (failure != null) {
+            return completedFuture(extractFailure());
+        } else if (finished) {
             return completedWithNull();
-        }
-        else
-        {
-            if ( failureFuture == null )
-            {
+        } else {
+            if (failureFuture == null) {
                 // neither SUCCESS nor FAILURE message has arrived, register future to be notified when it arrives
                 // future will be completed with null on SUCCESS and completed with Throwable on FAILURE
                 // enable auto-read, otherwise we might not read SUCCESS/FAILURE if records are not consumed
@@ -250,21 +211,18 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
         }
     }
 
-    private void enqueueRecord( Record record )
-    {
-        if ( records == UNINITIALIZED_RECORDS )
-        {
+    private void enqueueRecord(Record record) {
+        if (records == UNINITIALIZED_RECORDS) {
             records = new ArrayDeque<>();
         }
 
-        records.add( record );
+        records.add(record);
 
         boolean shouldBufferAllRecords = failureFuture != null;
         // when failure is requested we have to buffer all remaining records and then return the error
         // do not disable auto-read in this case, otherwise records will not be consumed and trailing
         // SUCCESS or FAILURE message will not arrive as well, so callers will get stuck waiting for the error
-        if ( !shouldBufferAllRecords && records.size() > RECORD_BUFFER_HIGH_WATERMARK )
-        {
+        if (!shouldBufferAllRecords && records.size() > RECORD_BUFFER_HIGH_WATERMARK) {
             // more than high watermark records are already queued, tell connection to stop auto-reading from network
             // this is needed to deal with slow consumers, we do not want to buffer all records in memory if they are
             // fetched from network faster than consumed
@@ -272,12 +230,10 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
         }
     }
 
-    private Record dequeueRecord()
-    {
+    private Record dequeueRecord() {
         Record record = records.poll();
 
-        if ( records.size() < RECORD_BUFFER_LOW_WATERMARK )
-        {
+        if (records.size() < RECORD_BUFFER_LOW_WATERMARK) {
             // less than low watermark records are now available in the buffer, tell connection to pre-fetch more
             // and populate queue with new records from network
             enableAutoRead();
@@ -286,27 +242,22 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
         return record;
     }
 
-    private <T> List<T> recordsAsList( Function<Record,T> mapFunction )
-    {
-        if ( !finished )
-        {
-            throw new IllegalStateException( "Can't get records as list because SUCCESS or FAILURE did not arrive" );
+    private <T> List<T> recordsAsList(Function<Record, T> mapFunction) {
+        if (!finished) {
+            throw new IllegalStateException("Can't get records as list because SUCCESS or FAILURE did not arrive");
         }
 
-        List<T> result = new ArrayList<>( records.size() );
-        while ( !records.isEmpty() )
-        {
+        List<T> result = new ArrayList<>(records.size());
+        while (!records.isEmpty()) {
             Record record = records.poll();
-            result.add( mapFunction.apply( record ) );
+            result.add(mapFunction.apply(record));
         }
         return result;
     }
 
-    private Throwable extractFailure()
-    {
-        if ( failure == null )
-        {
-            throw new IllegalStateException( "Can't extract failure because it does not exist" );
+    private Throwable extractFailure() {
+        if (failure == null) {
+            throw new IllegalStateException("Can't extract failure because it does not exist");
         }
 
         Throwable error = failure;
@@ -314,58 +265,47 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
         return error;
     }
 
-    private void completeRecordFuture( Record record )
-    {
-        if ( recordFuture != null )
-        {
+    private void completeRecordFuture(Record record) {
+        if (recordFuture != null) {
             CompletableFuture<Record> future = recordFuture;
             recordFuture = null;
-            future.complete( record );
+            future.complete(record);
         }
     }
 
-    private boolean failRecordFuture( Throwable error )
-    {
-        if ( recordFuture != null )
-        {
+    private boolean failRecordFuture(Throwable error) {
+        if (recordFuture != null) {
             CompletableFuture<Record> future = recordFuture;
             recordFuture = null;
-            future.completeExceptionally( error );
+            future.completeExceptionally(error);
             return true;
         }
         return false;
     }
 
-    private boolean completeFailureFuture( Throwable error )
-    {
-        if ( failureFuture != null )
-        {
+    private boolean completeFailureFuture(Throwable error) {
+        if (failureFuture != null) {
             CompletableFuture<Throwable> future = failureFuture;
             failureFuture = null;
-            future.complete( error );
+            future.complete(error);
             return true;
         }
         return false;
     }
 
-    private ResultSummary extractResultSummary( Map<String,Value> metadata )
-    {
+    private ResultSummary extractResultSummary(Map<String, Value> metadata) {
         long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
-        return metadataExtractor.extractSummary( query, connection, resultAvailableAfter, metadata );
+        return metadataExtractor.extractSummary(query, connection, resultAvailableAfter, metadata);
     }
 
-    private void enableAutoRead()
-    {
-        if ( autoReadManagementEnabled )
-        {
+    private void enableAutoRead() {
+        if (autoReadManagementEnabled) {
             connection.enableAutoRead();
         }
     }
 
-    private void disableAutoRead()
-    {
-        if ( autoReadManagementEnabled )
-        {
+    private void disableAutoRead() {
+        if (autoReadManagementEnabled) {
             connection.disableAutoRead();
         }
     }

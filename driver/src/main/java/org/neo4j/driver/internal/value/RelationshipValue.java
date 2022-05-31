@@ -22,22 +22,18 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.Type;
 
-public class RelationshipValue extends EntityValueAdapter<Relationship>
-{
-    public RelationshipValue( Relationship adapted )
-    {
-        super( adapted );
+public class RelationshipValue extends EntityValueAdapter<Relationship> {
+    public RelationshipValue(Relationship adapted) {
+        super(adapted);
     }
 
     @Override
-    public Relationship asRelationship()
-    {
+    public Relationship asRelationship() {
         return asEntity();
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.RELATIONSHIP();
     }
 }

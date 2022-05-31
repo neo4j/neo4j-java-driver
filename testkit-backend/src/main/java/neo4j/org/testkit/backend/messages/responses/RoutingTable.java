@@ -18,27 +18,23 @@
  */
 package neo4j.org.testkit.backend.messages.responses;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.List;
-
 @Getter
 @Builder
-public class RoutingTable implements TestkitResponse
-{
+public class RoutingTable implements TestkitResponse {
     private RoutingTableBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "RoutingTable";
     }
 
     @Getter
     @Builder
-    public static class RoutingTableBody
-    {
+    public static class RoutingTableBody {
         private String database;
         private long ttl;
         private List<String> routers;

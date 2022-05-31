@@ -20,10 +20,9 @@ package org.neo4j.driver.internal.summary;
 
 import org.neo4j.driver.summary.SummaryCounters;
 
-public class InternalSummaryCounters implements SummaryCounters
-{
+public class InternalSummaryCounters implements SummaryCounters {
     public static final InternalSummaryCounters EMPTY_STATS =
-            new InternalSummaryCounters( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
+            new InternalSummaryCounters(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     private final int nodesCreated;
     private final int nodesDeleted;
     private final int relationshipsCreated;
@@ -38,13 +37,18 @@ public class InternalSummaryCounters implements SummaryCounters
     private final int systemUpdates;
 
     public InternalSummaryCounters(
-            int nodesCreated, int nodesDeleted,
-            int relationshipsCreated, int relationshipsDeleted,
+            int nodesCreated,
+            int nodesDeleted,
+            int relationshipsCreated,
+            int relationshipsDeleted,
             int propertiesSet,
-            int labelsAdded, int labelsRemoved,
-            int indexesAdded, int indexesRemoved,
-            int constraintsAdded, int constraintsRemoved, int systemUpdates )
-    {
+            int labelsAdded,
+            int labelsRemoved,
+            int indexesAdded,
+            int indexesRemoved,
+            int constraintsAdded,
+            int constraintsRemoved,
+            int systemUpdates) {
         this.nodesCreated = nodesCreated;
         this.nodesDeleted = nodesDeleted;
         this.relationshipsCreated = relationshipsCreated;
@@ -60,131 +64,112 @@ public class InternalSummaryCounters implements SummaryCounters
     }
 
     @Override
-    public boolean containsUpdates()
-    {
-        return
-             isPositive( nodesCreated )
-          || isPositive( nodesDeleted )
-          || isPositive( relationshipsCreated )
-          || isPositive( relationshipsDeleted )
-          || isPositive( propertiesSet )
-          || isPositive( labelsAdded )
-          || isPositive( labelsRemoved )
-          || isPositive( indexesAdded )
-          || isPositive( indexesRemoved )
-          || isPositive( constraintsAdded )
-          || isPositive( constraintsRemoved );
+    public boolean containsUpdates() {
+        return isPositive(nodesCreated)
+                || isPositive(nodesDeleted)
+                || isPositive(relationshipsCreated)
+                || isPositive(relationshipsDeleted)
+                || isPositive(propertiesSet)
+                || isPositive(labelsAdded)
+                || isPositive(labelsRemoved)
+                || isPositive(indexesAdded)
+                || isPositive(indexesRemoved)
+                || isPositive(constraintsAdded)
+                || isPositive(constraintsRemoved);
     }
 
     @Override
-    public int nodesCreated()
-    {
+    public int nodesCreated() {
         return nodesCreated;
     }
 
     @Override
-    public int nodesDeleted()
-    {
+    public int nodesDeleted() {
         return nodesDeleted;
     }
 
     @Override
-    public int relationshipsCreated()
-    {
+    public int relationshipsCreated() {
         return relationshipsCreated;
     }
 
     @Override
-    public int relationshipsDeleted()
-    {
+    public int relationshipsDeleted() {
         return relationshipsDeleted;
     }
 
     @Override
-    public int propertiesSet()
-    {
+    public int propertiesSet() {
         return propertiesSet;
     }
 
     @Override
-    public int labelsAdded()
-    {
+    public int labelsAdded() {
         return labelsAdded;
     }
 
     @Override
-    public int labelsRemoved()
-    {
+    public int labelsRemoved() {
         return labelsRemoved;
     }
 
     @Override
-    public int indexesAdded()
-    {
+    public int indexesAdded() {
         return indexesAdded;
     }
 
     @Override
-    public int indexesRemoved()
-    {
+    public int indexesRemoved() {
         return indexesRemoved;
     }
 
     @Override
-    public int constraintsAdded()
-    {
+    public int constraintsAdded() {
         return constraintsAdded;
     }
 
     @Override
-    public int constraintsRemoved()
-    {
+    public int constraintsRemoved() {
         return constraintsRemoved;
     }
 
     @Override
-    public boolean containsSystemUpdates()
-    {
-        return isPositive( systemUpdates );
+    public boolean containsSystemUpdates() {
+        return isPositive(systemUpdates);
     }
 
     @Override
-    public int systemUpdates()
-    {
+    public int systemUpdates() {
         return systemUpdates;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         InternalSummaryCounters that = (InternalSummaryCounters) o;
 
         return nodesCreated == that.nodesCreated
-            && nodesDeleted == that.nodesDeleted
-            && relationshipsCreated == that.relationshipsCreated
-            && relationshipsDeleted == that.relationshipsDeleted
-            && propertiesSet == that.propertiesSet
-            && labelsAdded == that.labelsAdded
-            && labelsRemoved == that.labelsRemoved
-            && indexesAdded == that.indexesAdded
-            && indexesRemoved == that.indexesRemoved
-            && constraintsAdded == that.constraintsAdded
-            && constraintsRemoved == that.constraintsRemoved
-            && systemUpdates == that.systemUpdates;
+                && nodesDeleted == that.nodesDeleted
+                && relationshipsCreated == that.relationshipsCreated
+                && relationshipsDeleted == that.relationshipsDeleted
+                && propertiesSet == that.propertiesSet
+                && labelsAdded == that.labelsAdded
+                && labelsRemoved == that.labelsRemoved
+                && indexesAdded == that.indexesAdded
+                && indexesRemoved == that.indexesRemoved
+                && constraintsAdded == that.constraintsAdded
+                && constraintsRemoved == that.constraintsRemoved
+                && systemUpdates == that.systemUpdates;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = nodesCreated;
         result = 31 * result + nodesDeleted;
         result = 31 * result + relationshipsCreated;
@@ -200,27 +185,24 @@ public class InternalSummaryCounters implements SummaryCounters
         return result;
     }
 
-    private boolean isPositive( int value )
-    {
+    private boolean isPositive(int value) {
         return value > 0;
     }
 
     @Override
-    public String toString()
-    {
-        return "InternalSummaryCounters{" +
-               "nodesCreated=" + nodesCreated +
-               ", nodesDeleted=" + nodesDeleted +
-               ", relationshipsCreated=" + relationshipsCreated +
-               ", relationshipsDeleted=" + relationshipsDeleted +
-               ", propertiesSet=" + propertiesSet +
-               ", labelsAdded=" + labelsAdded +
-               ", labelsRemoved=" + labelsRemoved +
-               ", indexesAdded=" + indexesAdded +
-               ", indexesRemoved=" + indexesRemoved +
-               ", constraintsAdded=" + constraintsAdded +
-               ", constraintsRemoved=" + constraintsRemoved +
-               ", systemUpdates=" + systemUpdates +
-               '}';
+    public String toString() {
+        return "InternalSummaryCounters{" + "nodesCreated="
+                + nodesCreated + ", nodesDeleted="
+                + nodesDeleted + ", relationshipsCreated="
+                + relationshipsCreated + ", relationshipsDeleted="
+                + relationshipsDeleted + ", propertiesSet="
+                + propertiesSet + ", labelsAdded="
+                + labelsAdded + ", labelsRemoved="
+                + labelsRemoved + ", indexesAdded="
+                + indexesAdded + ", indexesRemoved="
+                + indexesRemoved + ", constraintsAdded="
+                + constraintsAdded + ", constraintsRemoved="
+                + constraintsRemoved + ", systemUpdates="
+                + systemUpdates + '}';
     }
 }

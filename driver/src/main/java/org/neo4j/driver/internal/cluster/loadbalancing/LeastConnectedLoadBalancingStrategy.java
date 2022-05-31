@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import java.util.List;
-
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -30,75 +29,64 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
  * start index for iteration in a round-robin fashion. This is done to prevent choosing same first address over and over when all addresses have the same amount
  * of active connections.
  */
-public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrategy
-{
+public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrategy {
     private final RoundRobinArrayIndex readersIndex = new RoundRobinArrayIndex();
     private final RoundRobinArrayIndex writersIndex = new RoundRobinArrayIndex();
 
     private final ConnectionPool connectionPool;
     private final Logger log;
 
-    public LeastConnectedLoadBalancingStrategy( ConnectionPool connectionPool, Logging logging )
-    {
+    public LeastConnectedLoadBalancingStrategy(ConnectionPool connectionPool, Logging logging) {
         this.connectionPool = connectionPool;
-        this.log = logging.getLog( getClass() );
+        this.log = logging.getLog(getClass());
     }
 
     @Override
-    public BoltServerAddress selectReader( List<BoltServerAddress> knownReaders )
-    {
-        return select( knownReaders, readersIndex, "reader" );
+    public BoltServerAddress selectReader(List<BoltServerAddress> knownReaders) {
+        return select(knownReaders, readersIndex, "reader");
     }
 
     @Override
-    public BoltServerAddress selectWriter( List<BoltServerAddress> knownWriters )
-    {
-        return select( knownWriters, writersIndex, "writer" );
+    public BoltServerAddress selectWriter(List<BoltServerAddress> knownWriters) {
+        return select(knownWriters, writersIndex, "writer");
     }
 
-    private BoltServerAddress select( List<BoltServerAddress> addresses, RoundRobinArrayIndex addressesIndex,
-                                      String addressType )
-    {
+    private BoltServerAddress select(
+            List<BoltServerAddress> addresses, RoundRobinArrayIndex addressesIndex, String addressType) {
         int size = addresses.size();
-        if ( size == 0 )
-        {
-            log.trace( "Unable to select %s, no known addresses given", addressType );
+        if (size == 0) {
+            log.trace("Unable to select %s, no known addresses given", addressType);
             return null;
         }
 
         // choose start index for iteration in round-robin fashion
-        int startIndex = addressesIndex.next( size );
+        int startIndex = addressesIndex.next(size);
         int index = startIndex;
 
         BoltServerAddress leastConnectedAddress = null;
         int leastActiveConnections = Integer.MAX_VALUE;
 
         // iterate over the array to find the least connected address
-        do
-        {
-            BoltServerAddress address = addresses.get( index );
-            int activeConnections = connectionPool.inUseConnections( address );
+        do {
+            BoltServerAddress address = addresses.get(index);
+            int activeConnections = connectionPool.inUseConnections(address);
 
-            if ( activeConnections < leastActiveConnections )
-            {
+            if (activeConnections < leastActiveConnections) {
                 leastConnectedAddress = address;
                 leastActiveConnections = activeConnections;
             }
 
             // loop over to the start of the array when end is reached
-            if ( index == size - 1 )
-            {
+            if (index == size - 1) {
                 index = 0;
-            }
-            else
-            {
+            } else {
                 index++;
             }
-        }
-        while ( index != startIndex );
+        } while (index != startIndex);
 
-        log.trace( "Selected %s with address: '%s' and active connections: %s",
-                addressType, leastConnectedAddress, leastActiveConnections );
+        log.trace(
+                "Selected %s with address: '%s' and active connections: %s",
+                addressType, leastConnectedAddress, leastActiveConnections);
 
         return leastConnectedAddress;
     }

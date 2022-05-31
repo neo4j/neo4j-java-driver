@@ -18,114 +18,97 @@
  */
 package org.neo4j.docs.driver;
 
-import java.util.function.Function;
+import static org.neo4j.driver.Values.parameters;
 
+import java.util.function.Function;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 
-import static org.neo4j.driver.Values.parameters;
-
-public class ReadingValuesExample extends BaseApplication
-{
+public class ReadingValuesExample extends BaseApplication {
     private static final String nullFieldName = "fieldName";
     private static final String intFieldName = "fieldName";
 
-    public ReadingValuesExample( String uri, String user, String password )
-    {
-        super( uri, user, password );
+    public ReadingValuesExample(String uri, String user, String password) {
+        super(uri, user, password);
     }
 
-    public Boolean nullIsNull()
-    {
-        return echo( null, record ->
-        {
+    public Boolean nullIsNull() {
+        return echo(null, record -> {
             // tag::java-driver-reading-values-null[]
-            Value possibleNullValue = record.get( nullFieldName );
+            Value possibleNullValue = record.get(nullFieldName);
 
             // Checking if its null
             boolean wasNull = possibleNullValue.isNull(); // true
 
             // end::java-driver-reading-values-null[]
             return wasNull;
-        } );
+        });
     }
 
-    public String nullAsString()
-    {
-        return echo( null, record ->
-        {
-            Value possibleNullValue = record.get( nullFieldName );
+    public String nullAsString() {
+        return echo(null, record -> {
+            Value possibleNullValue = record.get(nullFieldName);
             // tag::java-driver-reading-values-null[]
             // Getting the null value as string
             String stringWithNullContent = possibleNullValue.asString(); // "null"
 
             // end::java-driver-reading-values-null[]
             return stringWithNullContent;
-        } );
+        });
     }
 
-    public Object nullAsObject()
-    {
-        return echo( null, record ->
-        {
-            Value possibleNullValue = record.get( nullFieldName );
+    public Object nullAsObject() {
+        return echo(null, record -> {
+            Value possibleNullValue = record.get(nullFieldName);
             // tag::java-driver-reading-values-null[]
             // Getting `null` as object
             Object nullObject = possibleNullValue.asObject(); // null
 
             // end::java-driver-reading-values-null[]
             return nullObject;
-        } );
+        });
     }
 
-    public float nullAsObjectFloatDefaultValue()
-    {
-        return echo( null, record ->
-        {
-            Value possibleNullValue = record.get( nullFieldName );
+    public float nullAsObjectFloatDefaultValue() {
+        return echo(null, record -> {
+            Value possibleNullValue = record.get(nullFieldName);
             // tag::java-driver-reading-values-null[]
             // Coercing value with a default value set
-            float floatValue = possibleNullValue.asFloat( 1.0f ); // 1.0f
+            float floatValue = possibleNullValue.asFloat(1.0f); // 1.0f
 
             // end::java-driver-reading-values-null[]
             return floatValue;
-        } );
+        });
     }
 
-    public void nullAsObjectFloat()
-    {
-        echo( null, record ->
-        {
-            Value possibleNullValue = record.get( nullFieldName );
+    public void nullAsObjectFloat() {
+        echo(null, record -> {
+            Value possibleNullValue = record.get(nullFieldName);
             // tag::java-driver-reading-values-null[]
             // Could not cast null to float
             float floatValue = possibleNullValue.asFloat(); // throws org.neo4j.driver.exceptions.value.Uncoercible
             // end::java-driver-reading-values-null[]
             return floatValue;
-        } );
+        });
     }
 
-    public Boolean integerFieldIsNull()
-    {
-        return echo( 4, record ->
-        {
+    public Boolean integerFieldIsNull() {
+        return echo(4, record -> {
             // tag::java-driver-reading-values-non-null[]
-            Value value = record.get( intFieldName );
+            Value value = record.get(intFieldName);
             // Checking if the value is null
             Boolean falseBoolean = value.isNull(); // false
 
             // end::java-driver-reading-values-non-null[]
             return falseBoolean;
-        } );
+        });
     }
 
-    public int integerAsInteger()
-    {
-        return echo( 4, record ->
-        {
-            Value value = record.get( intFieldName );
+    public int integerAsInteger() {
+        return echo(4, record -> {
+            Value value = record.get(intFieldName);
 
             // tag::java-driver-reading-values-non-null[]
             // Getting as int
@@ -133,14 +116,12 @@ public class ReadingValuesExample extends BaseApplication
 
             // end::java-driver-reading-values-non-null[]
             return intValue;
-        } );
+        });
     }
 
-    public long integerAsLong()
-    {
-        return echo( 4, record ->
-        {
-            Value value = record.get( intFieldName );
+    public long integerAsLong() {
+        return echo(4, record -> {
+            Value value = record.get(intFieldName);
 
             // tag::java-driver-reading-values-non-null[]
             // Getting value asLong is also possible for int values
@@ -148,33 +129,28 @@ public class ReadingValuesExample extends BaseApplication
 
             // end::java-driver-reading-values-non-null[]
             return longValue;
-        } );
+        });
     }
 
-    public void integerAsString()
-    {
-        echo( 4, record ->
-        {
-            Value value = record.get( intFieldName );
+    public void integerAsString() {
+        echo(4, record -> {
+            Value value = record.get(intFieldName);
 
             // tag::java-driver-reading-values-non-null[]
             // But it's not possible to get the int value as string
             String stringValue = value.asString(); // throws org.neo4j.driver.exceptions.value.Uncoercible
             // end::java-driver-reading-values-non-null[]
             return stringValue;
-        } );
+        });
     }
 
-    private <T, O> O echo( T value, Function<Record,O> transformation )
-    {
-        try ( Session session = driver.session() )
-        {
-            return session.readTransaction( tx ->
-                                            {
-                                                Result result = tx.run( "RETURN $in AS fieldName", parameters( "in", value ) );
-                                                Record record = result.next();
-                                                return transformation.apply( record );
-                                            } );
+    private <T, O> O echo(T value, Function<Record, O> transformation) {
+        try (Session session = driver.session()) {
+            return session.readTransaction(tx -> {
+                Result result = tx.run("RETURN $in AS fieldName", parameters("in", value));
+                Record record = result.next();
+                return transformation.apply(record);
+            });
         }
     }
 }

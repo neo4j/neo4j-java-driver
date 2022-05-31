@@ -18,8 +18,10 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.HashMap;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
 
+import java.util.HashMap;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -31,42 +33,34 @@ import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
 
-import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
-
-
 /**
  * This implementation of the {@link RoutingProcedureRunner} works with multi database versions of Neo4j calling
  * the procedure `dbms.routing.getRoutingTable`
  */
-public class MultiDatabasesRoutingProcedureRunner extends SingleDatabaseRoutingProcedureRunner
-{
+public class MultiDatabasesRoutingProcedureRunner extends SingleDatabaseRoutingProcedureRunner {
     static final String DATABASE_NAME = "database";
-    static final String MULTI_DB_GET_ROUTING_TABLE = String.format( "CALL dbms.routing.getRoutingTable($%s, $%s)", ROUTING_CONTEXT, DATABASE_NAME );
+    static final String MULTI_DB_GET_ROUTING_TABLE =
+            String.format("CALL dbms.routing.getRoutingTable($%s, $%s)", ROUTING_CONTEXT, DATABASE_NAME);
 
-    public MultiDatabasesRoutingProcedureRunner( RoutingContext context )
-    {
-        super( context );
+    public MultiDatabasesRoutingProcedureRunner(RoutingContext context) {
+        super(context);
     }
 
     @Override
-    BookmarkHolder bookmarkHolder( Bookmark bookmark )
-    {
-        return new ReadOnlyBookmarkHolder( bookmark );
+    BookmarkHolder bookmarkHolder(Bookmark bookmark) {
+        return new ReadOnlyBookmarkHolder(bookmark);
     }
 
     @Override
-    Query procedureQuery(ServerVersion serverVersion, DatabaseName databaseName )
-    {
-        HashMap<String,Value> map = new HashMap<>();
-        map.put( ROUTING_CONTEXT, value( context.toMap() ) );
-        map.put( DATABASE_NAME, value( (Object) databaseName.databaseName().orElse( null ) ) );
-        return new Query( MULTI_DB_GET_ROUTING_TABLE, value( map ) );
+    Query procedureQuery(ServerVersion serverVersion, DatabaseName databaseName) {
+        HashMap<String, Value> map = new HashMap<>();
+        map.put(ROUTING_CONTEXT, value(context.toMap()));
+        map.put(DATABASE_NAME, value((Object) databaseName.databaseName().orElse(null)));
+        return new Query(MULTI_DB_GET_ROUTING_TABLE, value(map));
     }
 
     @Override
-    DirectConnection connection( Connection connection )
-    {
-        return new DirectConnection( connection, systemDatabase(), AccessMode.READ, null );
+    DirectConnection connection(Connection connection) {
+        return new DirectConnection(connection, systemDatabase(), AccessMode.READ, null);
     }
 }

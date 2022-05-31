@@ -21,47 +21,37 @@ package org.neo4j.driver.internal;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class DatabaseNameUtil
-{
+public final class DatabaseNameUtil {
     static final String DEFAULT_DATABASE_NAME = null;
     public static final String SYSTEM_DATABASE_NAME = "system";
 
-    private static final DatabaseName DEFAULT_DATABASE = new DatabaseName()
-    {
+    private static final DatabaseName DEFAULT_DATABASE = new DatabaseName() {
         @Override
-        public Optional<String> databaseName()
-        {
+        public Optional<String> databaseName() {
             return Optional.empty();
         }
 
         @Override
-        public String description()
-        {
+        public String description() {
             return "<default database>";
         }
     };
-    private static final DatabaseName SYSTEM_DATABASE = new InternalDatabaseName( SYSTEM_DATABASE_NAME );
+    private static final DatabaseName SYSTEM_DATABASE = new InternalDatabaseName(SYSTEM_DATABASE_NAME);
 
-    public static DatabaseName defaultDatabase()
-    {
+    public static DatabaseName defaultDatabase() {
         return DEFAULT_DATABASE;
     }
 
-    public static DatabaseName systemDatabase()
-    {
+    public static DatabaseName systemDatabase() {
         return SYSTEM_DATABASE;
     }
 
-    public static DatabaseName database( String name )
-    {
-        if ( Objects.equals( name, DEFAULT_DATABASE_NAME ) )
-        {
+    public static DatabaseName database(String name) {
+        if (Objects.equals(name, DEFAULT_DATABASE_NAME)) {
             return defaultDatabase();
-        }
-        else if ( Objects.equals( name, SYSTEM_DATABASE_NAME ) )
-        {
+        } else if (Objects.equals(name, SYSTEM_DATABASE_NAME)) {
             return systemDatabase();
         }
-        return new InternalDatabaseName( name );
+        return new InternalDatabaseName(name);
     }
 }

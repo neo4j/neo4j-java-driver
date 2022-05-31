@@ -18,9 +18,16 @@
  */
 package org.neo4j.driver.internal.reactive.util;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -33,85 +40,65 @@ import org.neo4j.driver.internal.util.QueryKeys;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-public class ListBasedPullHandler extends BasicPullResponseHandler
-{
+public class ListBasedPullHandler extends BasicPullResponseHandler {
     private final List<Record> list;
     private final Throwable error;
     private int index = 0;
 
-    public ListBasedPullHandler()
-    {
-        this( emptyList(), null );
+    public ListBasedPullHandler() {
+        this(emptyList(), null);
     }
 
-    public ListBasedPullHandler( List<Record> list )
-    {
-        this( list, null );
+    public ListBasedPullHandler(List<Record> list) {
+        this(list, null);
     }
 
-    public ListBasedPullHandler( Throwable error )
-    {
-        this( emptyList(), error );
+    public ListBasedPullHandler(Throwable error) {
+        this(emptyList(), error);
     }
 
-    private ListBasedPullHandler( List<Record> list, Throwable error )
-    {
-        super( mock( Query.class ), mock( RunResponseHandler.class ), mock( Connection.class ), mock( MetadataExtractor.class ), mock(
-                PullResponseCompletionListener.class ) );
+    private ListBasedPullHandler(List<Record> list, Throwable error) {
+        super(
+                mock(Query.class),
+                mock(RunResponseHandler.class),
+                mock(Connection.class),
+                mock(MetadataExtractor.class),
+                mock(PullResponseCompletionListener.class));
         this.list = list;
         this.error = error;
-        when( super.metadataExtractor.extractSummary( any( Query.class ), any( Connection.class ), anyLong(), any( Map.class ) ) ).thenReturn(
-                mock( ResultSummary.class ) );
-        if ( list.size() > 1 )
-        {
-            Record record = list.get( 0 );
-            when( super.runResponseHandler.queryKeys() ).thenReturn( new QueryKeys( record.keys() ) );
+        when(super.metadataExtractor.extractSummary(any(Query.class), any(Connection.class), anyLong(), any(Map.class)))
+                .thenReturn(mock(ResultSummary.class));
+        if (list.size() > 1) {
+            Record record = list.get(0);
+            when(super.runResponseHandler.queryKeys()).thenReturn(new QueryKeys(record.keys()));
         }
     }
 
     @Override
-    public void request( long n )
-    {
-        super.request( n );
-        while ( index < list.size() && (n == -1 || n-- > 0) )
-        {
-            onRecord( list.get( index++ ).values().toArray( new Value[0] ) );
+    public void request(long n) {
+        super.request(n);
+        while (index < list.size() && (n == -1 || n-- > 0)) {
+            onRecord(list.get(index++).values().toArray(new Value[0]));
         }
 
-        if ( index == list.size() )
-        {
+        if (index == list.size()) {
             complete();
-        }
-        else
-        {
-            onSuccess( singletonMap( "has_more", BooleanValue.TRUE ) );
+        } else {
+            onSuccess(singletonMap("has_more", BooleanValue.TRUE));
         }
     }
 
     @Override
-    public void cancel()
-    {
+    public void cancel() {
         super.cancel();
         complete();
     }
 
-    private void complete()
-    {
-        if ( error != null )
-        {
-            onFailure( error );
-        }
-        else
-        {
-            onSuccess( emptyMap() );
+    private void complete() {
+        if (error != null) {
+            onFailure(error);
+        } else {
+            onSuccess(emptyMap());
         }
     }
 }

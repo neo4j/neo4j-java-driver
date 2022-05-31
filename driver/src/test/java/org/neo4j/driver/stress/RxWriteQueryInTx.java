@@ -18,76 +18,66 @@
  */
 package org.neo4j.driver.stress;
 
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.summary.ResultSummary;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery<C>
-{
+public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery<C> {
     private AbstractStressTestBase<C> stressTest;
 
-    public RxWriteQueryInTx( AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+    public RxWriteQueryInTx(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
         this.stressTest = stressTest;
     }
 
     @Override
-    public CompletionStage<Void> execute( C context )
-    {
+    public CompletionStage<Void> execute(C context) {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
 
-        Function<RxSession,Publisher<ResultSummary>> sessionToResultSummaryPublisher = ( RxSession session ) -> Flux.usingWhen(
-                Mono.from( session.beginTransaction() ),
-                tx -> tx.run( "CREATE ()" ).consume(),
-                RxTransaction::commit,
-                ( tx, error ) -> tx.rollback(),
-                RxTransaction::rollback
-        );
+        Function<RxSession, Publisher<ResultSummary>> sessionToResultSummaryPublisher =
+                (RxSession session) -> Flux.usingWhen(
+                        Mono.from(session.beginTransaction()),
+                        tx -> tx.run("CREATE ()").consume(),
+                        RxTransaction::commit,
+                        (tx, error) -> tx.rollback(),
+                        RxTransaction::rollback);
 
         AtomicInteger createdNodesNum = new AtomicInteger();
         Flux.usingWhen(
-                Mono.fromSupplier( driver::rxSession ),
-                sessionToResultSummaryPublisher,
-                session -> Mono.empty(),
-                ( session, error ) -> session.close(),
-                RxSession::close
-        ).subscribe(
-                resultSummary -> createdNodesNum.addAndGet( resultSummary.counters().nodesCreated() ),
-                error -> handleError( Futures.completionExceptionCause( error ), context, queryFinished ),
-                () ->
-                {
-                    assertEquals( 1, createdNodesNum.get() );
-                    context.nodeCreated();
-                    queryFinished.complete( null );
-                }
-        );
+                        Mono.fromSupplier(driver::rxSession),
+                        sessionToResultSummaryPublisher,
+                        session -> Mono.empty(),
+                        (session, error) -> session.close(),
+                        RxSession::close)
+                .subscribe(
+                        resultSummary -> createdNodesNum.addAndGet(
+                                resultSummary.counters().nodesCreated()),
+                        error -> handleError(Futures.completionExceptionCause(error), context, queryFinished),
+                        () -> {
+                            assertEquals(1, createdNodesNum.get());
+                            context.nodeCreated();
+                            queryFinished.complete(null);
+                        });
 
         return queryFinished;
     }
 
-    private void handleError( Throwable error, C context, CompletableFuture<Void> queryFinished )
-    {
-        if ( !stressTest.handleWriteFailure( error, context ) )
-        {
-            queryFinished.completeExceptionally( error );
-        }
-        else
-        {
-            queryFinished.complete( null );
+    private void handleError(Throwable error, C context, CompletableFuture<Void> queryFinished) {
+        if (!stressTest.handleWriteFailure(error, context)) {
+            queryFinished.completeExceptionally(error);
+        } else {
+            queryFinished.complete(null);
         }
     }
 }

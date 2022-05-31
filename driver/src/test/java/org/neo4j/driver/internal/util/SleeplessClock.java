@@ -18,28 +18,22 @@
  */
 package org.neo4j.driver.internal.util;
 
-public final class SleeplessClock implements Clock
-{
+public final class SleeplessClock implements Clock {
     private final Clock delegate;
 
-    public SleeplessClock()
-    {
-        this( Clock.SYSTEM );
+    public SleeplessClock() {
+        this(Clock.SYSTEM);
     }
 
-    public SleeplessClock( Clock delegate )
-    {
+    public SleeplessClock(Clock delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public long millis()
-    {
+    public long millis() {
         return delegate.millis();
     }
 
     @Override
-    public void sleep( long millis ) throws InterruptedException
-    {
-    }
+    public void sleep(long millis) throws InterruptedException {}
 }

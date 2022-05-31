@@ -23,10 +23,8 @@ package org.neo4j.driver.exceptions;
  * The error code provided can be used to determine further detail for the problem.
  * @since 1.0
  */
-public class TransientException extends Neo4jException
-{
-    public TransientException( String code, String message )
-    {
-        super( code, message );
+public class TransientException extends Neo4jException {
+    public TransientException(String code, String message) {
+        super(code, message);
     }
 }

@@ -21,8 +21,7 @@ package org.neo4j.driver.summary;
 /**
  * Provides basic information about where a {@link ResultSummary} is obtained from.
  */
-public interface DatabaseInfo
-{
+public interface DatabaseInfo {
     /**
      * The name of the database where a {@link ResultSummary} is obtained from.
      * Default to {@code null} if servers does not support multi-databases.

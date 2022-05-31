@@ -19,77 +19,63 @@
 package org.neo4j.driver.internal.value;
 
 import java.util.Objects;
-
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
-public class StringValue extends ValueAdapter
-{
+public class StringValue extends ValueAdapter {
     private final String val;
 
-    public StringValue( String val )
-    {
-        if ( val == null )
-        {
-            throw new IllegalArgumentException( "Cannot construct StringValue from null" );
+    public StringValue(String val) {
+        if (val == null) {
+            throw new IllegalArgumentException("Cannot construct StringValue from null");
         }
         this.val = val;
     }
 
     @Override
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return val.isEmpty();
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return val.length();
     }
 
     @Override
-    public String asObject()
-    {
+    public String asObject() {
         return asString();
     }
 
     @Override
-    public String asString()
-    {
+    public String asString() {
         return val;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "\"%s\"", val.replace( "\"", "\\\"" ) );
+    public String toString() {
+        return String.format("\"%s\"", val.replace("\"", "\\\""));
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.STRING();
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         StringValue that = (StringValue) o;
-        return Objects.equals( val, that.val );
+        return Objects.equals(val, that.val);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return val.hashCode();
     }
 }

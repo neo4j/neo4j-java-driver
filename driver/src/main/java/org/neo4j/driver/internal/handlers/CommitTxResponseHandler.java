@@ -18,50 +18,41 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
-import static java.util.Objects.requireNonNull;
-
-public class CommitTxResponseHandler implements ResponseHandler
-{
+public class CommitTxResponseHandler implements ResponseHandler {
     private final CompletableFuture<Bookmark> commitFuture;
 
-    public CommitTxResponseHandler( CompletableFuture<Bookmark> commitFuture )
-    {
-        this.commitFuture = requireNonNull( commitFuture );
+    public CommitTxResponseHandler(CompletableFuture<Bookmark> commitFuture) {
+        this.commitFuture = requireNonNull(commitFuture);
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
-    {
-        Value bookmarkValue = metadata.get( "bookmark" );
-        if ( bookmarkValue == null )
-        {
-            commitFuture.complete( null );
-        }
-        else
-        {
-            commitFuture.complete( InternalBookmark.parse( bookmarkValue.asString() ) );
+    public void onSuccess(Map<String, Value> metadata) {
+        Value bookmarkValue = metadata.get("bookmark");
+        if (bookmarkValue == null) {
+            commitFuture.complete(null);
+        } else {
+            commitFuture.complete(InternalBookmark.parse(bookmarkValue.asString()));
         }
     }
 
     @Override
-    public void onFailure( Throwable error )
-    {
-        commitFuture.completeExceptionally( error );
+    public void onFailure(Throwable error) {
+        commitFuture.completeExceptionally(error);
     }
 
     @Override
-    public void onRecord( Value[] fields )
-    {
+    public void onRecord(Value[] fields) {
         throw new UnsupportedOperationException(
-                "Transaction commit is not expected to receive records: " + Arrays.toString( fields ) );
+                "Transaction commit is not expected to receive records: " + Arrays.toString(fields));
     }
 }

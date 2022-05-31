@@ -18,14 +18,6 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-import java.util.List;
-
-import org.neo4j.driver.Value;
-import org.neo4j.driver.summary.Plan;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.neo4j.driver.Values.ofValue;
@@ -33,69 +25,65 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
 
-class InternalPlanTest
-{
+import java.util.Collections;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.summary.Plan;
+
+class InternalPlanTest {
     @Test
-    void shouldConvertFromEmptyMapValue()
-    {
+    void shouldConvertFromEmptyMapValue() {
         // Given
-        Value value = value( parameters( "operatorType", "X" ) );
+        Value value = value(parameters("operatorType", "X"));
 
         // When
-        Plan plan = InternalPlan.EXPLAIN_PLAN_FROM_VALUE.apply( value );
+        Plan plan = InternalPlan.EXPLAIN_PLAN_FROM_VALUE.apply(value);
 
         // Then
-        assertThat( plan.operatorType(), equalTo( "X") );
-        assertThat( plan.arguments(), equalTo( parameters().asMap( ofValue()) ) );
-        assertThat( plan.identifiers(), equalTo( Collections.emptyList() ) );
-        assertThat( plan.children(), equalTo( Collections.emptyList() ) );
+        assertThat(plan.operatorType(), equalTo("X"));
+        assertThat(plan.arguments(), equalTo(parameters().asMap(ofValue())));
+        assertThat(plan.identifiers(), equalTo(Collections.emptyList()));
+        assertThat(plan.children(), equalTo(Collections.emptyList()));
     }
 
     @Test
-    void shouldConvertFromSimpleMapValue()
-    {
+    void shouldConvertFromSimpleMapValue() {
         // Given
-        Value value = value( parameters(
-            "operatorType", "X",
-            "args", parameters( "a", 1 ),
-            "identifiers", values(),
-            "children", values()
-        ) );
-
-        // When
-        Plan plan = InternalPlan.EXPLAIN_PLAN_FROM_VALUE.apply( value );
-
-        // Then
-        assertThat( plan.operatorType(), equalTo( "X") );
-        assertThat( plan.arguments(), equalTo( parameters( "a", 1 ).asMap( ofValue()) ) );
-        assertThat( plan.identifiers(), equalTo( Collections.emptyList() ) );
-        assertThat( plan.children(), equalTo( Collections.emptyList() ) );
-    }
-
-    @Test
-    void shouldConvertFromNestedMapValue()
-    {
-        // Given
-        Value value = value( parameters(
+        Value value = value(parameters(
                 "operatorType", "X",
-                "args", parameters( "a", 1 ),
+                "args", parameters("a", 1),
                 "identifiers", values(),
-                "children", values(
-                    parameters(
-                        "operatorType", "Y"
-                    )
-                )
-        ) );
+                "children", values()));
 
         // When
-        Plan plan = InternalPlan.EXPLAIN_PLAN_FROM_VALUE.apply( value );
+        Plan plan = InternalPlan.EXPLAIN_PLAN_FROM_VALUE.apply(value);
 
         // Then
-        assertThat( plan.operatorType(), equalTo( "X") );
-        assertThat( plan.arguments(), equalTo( parameters( "a", 1 ).asMap( ofValue() ) ) );
-        assertThat( plan.identifiers(), equalTo( Collections.emptyList() ) );
+        assertThat(plan.operatorType(), equalTo("X"));
+        assertThat(plan.arguments(), equalTo(parameters("a", 1).asMap(ofValue())));
+        assertThat(plan.identifiers(), equalTo(Collections.emptyList()));
+        assertThat(plan.children(), equalTo(Collections.emptyList()));
+    }
+
+    @Test
+    void shouldConvertFromNestedMapValue() {
+        // Given
+        Value value = value(parameters(
+                "operatorType", "X",
+                "args", parameters("a", 1),
+                "identifiers", values(),
+                "children", values(parameters("operatorType", "Y"))));
+
+        // When
+        Plan plan = InternalPlan.EXPLAIN_PLAN_FROM_VALUE.apply(value);
+
+        // Then
+        assertThat(plan.operatorType(), equalTo("X"));
+        assertThat(plan.arguments(), equalTo(parameters("a", 1).asMap(ofValue())));
+        assertThat(plan.identifiers(), equalTo(Collections.emptyList()));
         List<? extends Plan> children = plan.children();
-        assertThat( children.size(), equalTo( 1 ) );
-        assertThat( children.get( 0 ).operatorType(), equalTo( "Y" ) );
+        assertThat(children.size(), equalTo(1));
+        assertThat(children.get(0).operatorType(), equalTo("Y"));
     }
 }

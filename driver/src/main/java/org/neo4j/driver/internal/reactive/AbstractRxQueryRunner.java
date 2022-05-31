@@ -18,39 +18,33 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import java.util.Map;
-
-import org.neo4j.driver.Query;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxQueryRunner;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Value;
-
 import static org.neo4j.driver.internal.AbstractQueryRunner.parameters;
 
-public abstract class AbstractRxQueryRunner implements RxQueryRunner
-{
+import java.util.Map;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.reactive.RxQueryRunner;
+import org.neo4j.driver.reactive.RxResult;
+
+public abstract class AbstractRxQueryRunner implements RxQueryRunner {
     @Override
-    public final RxResult run(String query, Value parameters )
-    {
-        return run( new Query( query, parameters ) );
+    public final RxResult run(String query, Value parameters) {
+        return run(new Query(query, parameters));
     }
 
     @Override
-    public final RxResult run(String query, Map<String,Object> parameters )
-    {
-        return run( query, parameters( parameters ) );
+    public final RxResult run(String query, Map<String, Object> parameters) {
+        return run(query, parameters(parameters));
     }
 
     @Override
-    public final RxResult run(String query, Record parameters )
-    {
-        return run( query, parameters( parameters ) );
+    public final RxResult run(String query, Record parameters) {
+        return run(query, parameters(parameters));
     }
 
     @Override
-    public final RxResult run(String query )
-    {
-        return run( new Query( query ) );
+    public final RxResult run(String query) {
+        return run(new Query(query));
     }
 }

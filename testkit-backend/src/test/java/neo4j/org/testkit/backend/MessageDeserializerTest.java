@@ -18,6 +18,10 @@
  */
 package neo4j.org.testkit.backend;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import neo4j.org.testkit.backend.channel.handler.TestkitRequestResponseMapperHandler;
@@ -27,59 +31,50 @@ import neo4j.org.testkit.backend.messages.requests.SessionRun;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-
-class MessageDeserializerTest
-{
+class MessageDeserializerTest {
     private static final ObjectMapper mapper = TestkitRequestResponseMapperHandler.newObjectMapper();
 
     @Test
-    void testDeserializeNewDriver() throws JsonProcessingException
-    {
+    void testDeserializeNewDriver() throws JsonProcessingException {
         Object message = mapper.readValue(
-                "{\"name\": \"NewDriver\", \"data\": {\"uri\": \"bolt://localhost:7687\", " +
-                "\"authorizationToken\": {\"name\": \"AuthorizationToken\", \"data\": {\"scheme\": \"basic\", \"principal\": \"neo4j\", " +
-                "\"credentials\": \"pass\", \"realm\": \"\", \"ticket\": \"\"}}, \"userAgent\": null}}",
-                TestkitRequest.class );
+                "{\"name\": \"NewDriver\", \"data\": {\"uri\": \"bolt://localhost:7687\", "
+                        + "\"authorizationToken\": {\"name\": \"AuthorizationToken\", \"data\": {\"scheme\": \"basic\", \"principal\": \"neo4j\", "
+                        + "\"credentials\": \"pass\", \"realm\": \"\", \"ticket\": \"\"}}, \"userAgent\": null}}",
+                TestkitRequest.class);
 
-        assertThat( message, instanceOf( NewDriver.class ) );
+        assertThat(message, instanceOf(NewDriver.class));
 
         NewDriver newDriver = (NewDriver) message;
-        assertThat( newDriver.getData().getUri(), equalTo( "bolt://localhost:7687" ) );
-        assertThat( newDriver.getData().getAuthorizationToken().getTokens().getScheme(), equalTo( "basic" ) );
-        assertThat( newDriver.getData().getAuthorizationToken().getTokens().getPrincipal(), equalTo( "neo4j" ) );
+        assertThat(newDriver.getData().getUri(), equalTo("bolt://localhost:7687"));
+        assertThat(newDriver.getData().getAuthorizationToken().getTokens().getScheme(), equalTo("basic"));
+        assertThat(newDriver.getData().getAuthorizationToken().getTokens().getPrincipal(), equalTo("neo4j"));
     }
 
     @Test
-    void testDeserializerNewSession() throws JsonProcessingException
-    {
+    void testDeserializerNewSession() throws JsonProcessingException {
         Object message = mapper.readValue(
-                "{\"name\": \"NewSession\", " +
-                "\"data\": {\"driverId\": \"0\", \"accessMode\": \"w\", \"bookmarks\": null, \"database\": null, \"fetchSize\": null}}",
-                TestkitRequest.class );
+                "{\"name\": \"NewSession\", "
+                        + "\"data\": {\"driverId\": \"0\", \"accessMode\": \"w\", \"bookmarks\": null, \"database\": null, \"fetchSize\": null}}",
+                TestkitRequest.class);
 
-        assertThat( message, instanceOf( NewSession.class ) );
+        assertThat(message, instanceOf(NewSession.class));
 
         NewSession sessionRequest = (NewSession) message;
-        assertThat( sessionRequest.getData().getDriverId(), equalTo( "0" ) );
-        assertThat( sessionRequest.getData().getAccessMode(), equalTo( "w" ) );
+        assertThat(sessionRequest.getData().getDriverId(), equalTo("0"));
+        assertThat(sessionRequest.getData().getAccessMode(), equalTo("w"));
     }
 
     @Test
-    void testDeserializerNewSessionRun() throws JsonProcessingException
-    {
+    void testDeserializerNewSessionRun() throws JsonProcessingException {
         Object message = mapper.readValue(
-                "{\"name\": \"SessionRun\", \"data\": {\"sessionId\": \"1\", \"cypher\": \"RETURN $x as y\", " +
-                "\"params\": {\"x\": {\"name\": \"CypherBool\", \"data\": {\"value\": true}}}, \"txMeta\": null, \"timeout\": null}}",
-                TestkitRequest.class );
+                "{\"name\": \"SessionRun\", \"data\": {\"sessionId\": \"1\", \"cypher\": \"RETURN $x as y\", "
+                        + "\"params\": {\"x\": {\"name\": \"CypherBool\", \"data\": {\"value\": true}}}, \"txMeta\": null, \"timeout\": null}}",
+                TestkitRequest.class);
 
-        assertThat( message, instanceOf( SessionRun.class ) );
+        assertThat(message, instanceOf(SessionRun.class));
 
         SessionRun sessionRun = (SessionRun) message;
-        assertThat( sessionRun.getData().getSessionId(), equalTo( "1" ) );
-        assertThat( sessionRun.getData().getCypher(), equalTo( "RETURN $x as y" ) );
+        assertThat(sessionRun.getData().getSessionId(), equalTo("1"));
+        assertThat(sessionRun.getData().getCypher(), equalTo("RETURN $x as y"));
     }
-
 }

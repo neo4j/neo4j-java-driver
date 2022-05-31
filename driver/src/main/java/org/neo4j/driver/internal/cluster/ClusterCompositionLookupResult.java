@@ -20,33 +20,28 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.Optional;
 import java.util.Set;
-
 import org.neo4j.driver.internal.BoltServerAddress;
 
-public class ClusterCompositionLookupResult
-{
+public class ClusterCompositionLookupResult {
     private final ClusterComposition composition;
 
     private final Set<BoltServerAddress> resolvedInitialRouters;
 
-    public ClusterCompositionLookupResult( ClusterComposition composition )
-    {
-        this( composition, null );
+    public ClusterCompositionLookupResult(ClusterComposition composition) {
+        this(composition, null);
     }
 
-    public ClusterCompositionLookupResult( ClusterComposition composition, Set<BoltServerAddress> resolvedInitialRouters )
-    {
+    public ClusterCompositionLookupResult(
+            ClusterComposition composition, Set<BoltServerAddress> resolvedInitialRouters) {
         this.composition = composition;
         this.resolvedInitialRouters = resolvedInitialRouters;
     }
 
-    public ClusterComposition getClusterComposition()
-    {
+    public ClusterComposition getClusterComposition() {
         return composition;
     }
 
-    public Optional<Set<BoltServerAddress>> getResolvedInitialRouters()
-    {
-        return Optional.ofNullable( resolvedInitialRouters );
+    public Optional<Set<BoltServerAddress>> getResolvedInitialRouters() {
+        return Optional.ofNullable(resolvedInitialRouters);
     }
 }

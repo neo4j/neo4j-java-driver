@@ -19,6 +19,7 @@
 package neo4j.org.testkit.backend.messages;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import java.util.List;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitListDeserializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitBookmarkSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitListValueSerializer;
@@ -28,9 +29,6 @@ import neo4j.org.testkit.backend.messages.responses.serializer.TestkitPathValueS
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitRecordSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitRelationshipValueSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitValueSerializer;
-
-import java.util.List;
-
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -40,19 +38,17 @@ import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 
-public class TestkitModule extends SimpleModule
-{
-    public TestkitModule()
-    {
-        this.addDeserializer( List.class, new TestkitListDeserializer() );
+public class TestkitModule extends SimpleModule {
+    public TestkitModule() {
+        this.addDeserializer(List.class, new TestkitListDeserializer());
 
-        this.addSerializer( Value.class, new TestkitValueSerializer() );
-        this.addSerializer( NodeValue.class, new TestkitNodeValueSerializer() );
-        this.addSerializer( ListValue.class, new TestkitListValueSerializer() );
-        this.addSerializer( Record.class, new TestkitRecordSerializer() );
-        this.addSerializer( MapValue.class, new TestkitMapValueSerializer() );
-        this.addSerializer( Bookmark.class, new TestkitBookmarkSerializer() );
-        this.addSerializer( PathValue.class, new TestkitPathValueSerializer() );
-        this.addSerializer( RelationshipValue.class, new TestkitRelationshipValueSerializer() );
+        this.addSerializer(Value.class, new TestkitValueSerializer());
+        this.addSerializer(NodeValue.class, new TestkitNodeValueSerializer());
+        this.addSerializer(ListValue.class, new TestkitListValueSerializer());
+        this.addSerializer(Record.class, new TestkitRecordSerializer());
+        this.addSerializer(MapValue.class, new TestkitMapValueSerializer());
+        this.addSerializer(Bookmark.class, new TestkitBookmarkSerializer());
+        this.addSerializer(PathValue.class, new TestkitPathValueSerializer());
+        this.addSerializer(RelationshipValue.class, new TestkitRelationshipValueSerializer());
     }
 }

@@ -22,22 +22,18 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Type;
 
-public class PointValue extends ObjectValueAdapter<Point>
-{
-    public PointValue( Point point )
-    {
-        super( point );
+public class PointValue extends ObjectValueAdapter<Point> {
+    public PointValue(Point point) {
+        super(point);
     }
 
     @Override
-    public Point asPoint()
-    {
+    public Point asPoint() {
         return asObject();
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.POINT();
     }
 }

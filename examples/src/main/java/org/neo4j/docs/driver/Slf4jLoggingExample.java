@@ -18,6 +18,8 @@
  */
 package org.neo4j.docs.driver;
 
+import static java.util.Collections.singletonMap;
+
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -25,32 +27,26 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Session;
 
-import static java.util.Collections.singletonMap;
-
-public class Slf4jLoggingExample implements AutoCloseable
-{
+public class Slf4jLoggingExample implements AutoCloseable {
     private final Driver driver;
 
-    public Slf4jLoggingExample( String uri, String user, String password )
-    {
-        Config config = Config.builder()
-                .withLogging( Logging.slf4j() )
-                .build();
+    public Slf4jLoggingExample(String uri, String user, String password) {
+        Config config = Config.builder().withLogging(Logging.slf4j()).build();
 
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
 
-    public Object runReturnQuery( Object value )
-    {
-        try ( Session session = driver.session() )
-        {
-            return session.run( "RETURN $x", singletonMap( "x", value ) ).single().get( 0 ).asObject();
+    public Object runReturnQuery(Object value) {
+        try (Session session = driver.session()) {
+            return session.run("RETURN $x", singletonMap("x", value))
+                    .single()
+                    .get(0)
+                    .asObject();
         }
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         driver.close();
     }
 }

@@ -23,8 +23,7 @@ import org.neo4j.driver.Metrics;
 /**
  * An adapter that collects driver metrics via {@link MetricsListener} and publishes them via {@link Metrics} instance.
  */
-public interface MetricsProvider
-{
+public interface MetricsProvider {
     /**
      * @return The actual metrics type to use
      */

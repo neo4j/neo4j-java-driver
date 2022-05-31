@@ -18,67 +18,58 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CompletableFuture;
-
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.Values.values;
 
-class ResetResponseHandlerTest
-{
+import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+
+class ResetResponseHandlerTest {
     @Test
-    void shouldCompleteFutureOnSuccess() throws Exception
-    {
+    void shouldCompleteFutureOnSuccess() throws Exception {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        ResetResponseHandler handler = newHandler( future );
+        ResetResponseHandler handler = newHandler(future);
 
-        assertFalse( future.isDone() );
+        assertFalse(future.isDone());
 
-        handler.onSuccess( emptyMap() );
+        handler.onSuccess(emptyMap());
 
-        assertTrue( future.isDone() );
-        assertNull( future.get() );
+        assertTrue(future.isDone());
+        assertNull(future.get());
     }
 
     @Test
-    void shouldCompleteFutureOnFailure() throws Exception
-    {
+    void shouldCompleteFutureOnFailure() throws Exception {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        ResetResponseHandler handler = newHandler( future );
+        ResetResponseHandler handler = newHandler(future);
 
-        assertFalse( future.isDone() );
+        assertFalse(future.isDone());
 
-        handler.onFailure( new RuntimeException() );
+        handler.onFailure(new RuntimeException());
 
-        assertTrue( future.isDone() );
-        assertNull( future.get() );
+        assertTrue(future.isDone());
+        assertNull(future.get());
     }
 
     @Test
-    void shouldThrowWhenOnRecord()
-    {
-        ResetResponseHandler handler = newHandler( new CompletableFuture<>() );
+    void shouldThrowWhenOnRecord() {
+        ResetResponseHandler handler = newHandler(new CompletableFuture<>());
 
-        assertThrows( UnsupportedOperationException.class, () -> handler.onRecord( values( 1, 2, 3 ) ) );
+        assertThrows(UnsupportedOperationException.class, () -> handler.onRecord(values(1, 2, 3)));
     }
 
-    private static ResetResponseHandler newHandler( CompletableFuture<Void> future )
-    {
-        return new ResetResponseHandler( mock( InboundMessageDispatcher.class ), future );
+    private static ResetResponseHandler newHandler(CompletableFuture<Void> future) {
+        return new ResetResponseHandler(mock(InboundMessageDispatcher.class), future);
     }
 
-    private static ResetResponseHandler newHandler( InboundMessageDispatcher messageDispatcher,
-            CompletableFuture<Void> future )
-    {
-        return new ResetResponseHandler( messageDispatcher, future );
+    private static ResetResponseHandler newHandler(
+            InboundMessageDispatcher messageDispatcher, CompletableFuture<Void> future) {
+        return new ResetResponseHandler(messageDispatcher, future);
     }
 }

@@ -18,27 +18,6 @@
  */
 package org.neo4j.driver;
 
-import io.netty.util.concurrent.EventExecutorGroup;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.InternalDriver;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.util.TestUtil;
-
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.containsString;
@@ -54,85 +33,88 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-class GraphDatabaseTest
-{
-    private static final Config INSECURE_CONFIG = Config.builder()
-                                                        .withoutEncryption()
-                                                        .withLogging( none() )
-                                                        .build();
+import io.netty.util.concurrent.EventExecutorGroup;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.InternalDriver;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.util.TestUtil;
+
+class GraphDatabaseTest {
+    private static final Config INSECURE_CONFIG =
+            Config.builder().withoutEncryption().withLogging(none()).build();
 
     @Test
-    void throwsWhenBoltSchemeUsedWithRoutingParams()
-    {
-        assertThrows( IllegalArgumentException.class, () -> GraphDatabase.driver( "bolt://localhost:7687/?policy=my_policy" ) );
+    void throwsWhenBoltSchemeUsedWithRoutingParams() {
+        assertThrows(
+                IllegalArgumentException.class, () -> GraphDatabase.driver("bolt://localhost:7687/?policy=my_policy"));
     }
 
     @Test
-    void shouldLogWhenUnableToCreateRoutingDriver()
-    {
-        Logging logging = mock( Logging.class );
-        Logger logger = mock( Logger.class );
-        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
-        InternalDriver driver = mock( InternalDriver.class );
-        doThrow( ServiceUnavailableException.class ).when( driver ).verifyConnectivity();
-        DriverFactory driverFactory = new MockSupplyingDriverFactory( Arrays.asList( driver, driver ) );
-        Config config = Config.builder()
-                              .withLogging( logging )
-                              .build();
+    void shouldLogWhenUnableToCreateRoutingDriver() {
+        Logging logging = mock(Logging.class);
+        Logger logger = mock(Logger.class);
+        when(logging.getLog(any(Class.class))).thenReturn(logger);
+        InternalDriver driver = mock(InternalDriver.class);
+        doThrow(ServiceUnavailableException.class).when(driver).verifyConnectivity();
+        DriverFactory driverFactory = new MockSupplyingDriverFactory(Arrays.asList(driver, driver));
+        Config config = Config.builder().withLogging(logging).build();
 
-        List<URI> routingUris = asList(
-                URI.create( "neo4j://localhost:9001" ),
-                URI.create( "neo4j://localhost:9002" ) );
+        List<URI> routingUris = asList(URI.create("neo4j://localhost:9001"), URI.create("neo4j://localhost:9002"));
 
-        assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.routingDriver( routingUris, AuthTokens.none(), config, driverFactory ) );
+        assertThrows(
+                ServiceUnavailableException.class,
+                () -> GraphDatabase.routingDriver(routingUris, AuthTokens.none(), config, driverFactory));
 
-        verify( logger ).warn( eq( "Unable to create routing driver for URI: neo4j://localhost:9001" ),
-                               any( Throwable.class ) );
+        verify(logger)
+                .warn(eq("Unable to create routing driver for URI: neo4j://localhost:9001"), any(Throwable.class));
 
-        verify( logger ).warn( eq( "Unable to create routing driver for URI: neo4j://localhost:9002" ),
-                               any( Throwable.class ) );
+        verify(logger)
+                .warn(eq("Unable to create routing driver for URI: neo4j://localhost:9002"), any(Throwable.class));
     }
 
     @Test
-    void shouldNotFailRoutingDriverWhenThereIsWorkingUri()
-    {
-        Logging logging = mock( Logging.class );
-        Logger logger = mock( Logger.class );
-        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
-        InternalDriver failingDriver = mock( InternalDriver.class );
-        doThrow( ServiceUnavailableException.class ).when( failingDriver ).verifyConnectivity();
-        InternalDriver workingDriver = mock( InternalDriver.class );
-        DriverFactory driverFactory = new MockSupplyingDriverFactory( Arrays.asList( failingDriver, workingDriver ) );
-        Config config = Config.builder()
-                              .withLogging( logging )
-                              .build();
+    void shouldNotFailRoutingDriverWhenThereIsWorkingUri() {
+        Logging logging = mock(Logging.class);
+        Logger logger = mock(Logger.class);
+        when(logging.getLog(any(Class.class))).thenReturn(logger);
+        InternalDriver failingDriver = mock(InternalDriver.class);
+        doThrow(ServiceUnavailableException.class).when(failingDriver).verifyConnectivity();
+        InternalDriver workingDriver = mock(InternalDriver.class);
+        DriverFactory driverFactory = new MockSupplyingDriverFactory(Arrays.asList(failingDriver, workingDriver));
+        Config config = Config.builder().withLogging(logging).build();
 
-        List<URI> routingUris = asList(
-                URI.create( "neo4j://localhost:9001" ),
-                URI.create( "neo4j://localhost:9002" ) );
+        List<URI> routingUris = asList(URI.create("neo4j://localhost:9001"), URI.create("neo4j://localhost:9002"));
 
-        Driver driver = GraphDatabase.routingDriver( routingUris, AuthTokens.none(), config, driverFactory );
+        Driver driver = GraphDatabase.routingDriver(routingUris, AuthTokens.none(), config, driverFactory);
 
-        verify( logger ).warn( eq( "Unable to create routing driver for URI: neo4j://localhost:9001" ),
-                               any( Throwable.class ) );
-        assertEquals( driver, workingDriver );
+        verify(logger)
+                .warn(eq("Unable to create routing driver for URI: neo4j://localhost:9001"), any(Throwable.class));
+        assertEquals(driver, workingDriver);
     }
 
     @Test
-    void shouldRespondToInterruptsWhenConnectingToUnresponsiveServer() throws Exception
-    {
-        try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
-        {
+    void shouldRespondToInterruptsWhenConnectingToUnresponsiveServer() throws Exception {
+        try (ServerSocket serverSocket = new ServerSocket(0)) {
             // setup other thread to interrupt current thread when it blocks
-            TestUtil.interruptWhenInWaitingState( Thread.currentThread() );
+            TestUtil.interruptWhenInWaitingState(Thread.currentThread());
 
-            final Driver driver = GraphDatabase.driver( "bolt://localhost:" + serverSocket.getLocalPort() );
-            try
-            {
-                assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
-            }
-            finally
-            {
+            final Driver driver = GraphDatabase.driver("bolt://localhost:" + serverSocket.getLocalPort());
+            try {
+                assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
+            } finally {
                 // clear interrupted flag
                 Thread.interrupted();
             }
@@ -140,89 +122,83 @@ class GraphDatabaseTest
     }
 
     @Test
-    void shouldPrintNiceErrorWhenConnectingToUnresponsiveServer() throws Exception
-    {
+    void shouldPrintNiceErrorWhenConnectingToUnresponsiveServer() throws Exception {
         int localPort = -1;
-        try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
-        {
+        try (ServerSocket serverSocket = new ServerSocket(0)) {
             localPort = serverSocket.getLocalPort();
         }
-        final Driver driver = GraphDatabase.driver( "bolt://localhost:" + localPort, INSECURE_CONFIG );
-        final ServiceUnavailableException error = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
-        assertThat( error.getMessage(), containsString( "Unable to connect to" ) );
+        final Driver driver = GraphDatabase.driver("bolt://localhost:" + localPort, INSECURE_CONFIG);
+        final ServiceUnavailableException error =
+                assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
+        assertThat(error.getMessage(), containsString("Unable to connect to"));
     }
 
     @Test
-    void shouldPrintNiceRoutingErrorWhenConnectingToUnresponsiveServer() throws Exception
-    {
+    void shouldPrintNiceRoutingErrorWhenConnectingToUnresponsiveServer() throws Exception {
         int localPort = -1;
-        try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
-        {
+        try (ServerSocket serverSocket = new ServerSocket(0)) {
             localPort = serverSocket.getLocalPort();
         }
-        final Driver driver = GraphDatabase.driver( "neo4j://localhost:" + localPort, INSECURE_CONFIG );
-        final ServiceUnavailableException error = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
+        final Driver driver = GraphDatabase.driver("neo4j://localhost:" + localPort, INSECURE_CONFIG);
+        final ServiceUnavailableException error =
+                assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
         error.printStackTrace();
-        assertThat( error.getMessage(), containsString( "Unable to connect to" ) );
+        assertThat(error.getMessage(), containsString("Unable to connect to"));
     }
 
     @Test
-    void shouldFailToCreateUnencryptedDriverWhenServerDoesNotRespond() throws IOException
-    {
-        testFailureWhenServerDoesNotRespond( false );
+    void shouldFailToCreateUnencryptedDriverWhenServerDoesNotRespond() throws IOException {
+        testFailureWhenServerDoesNotRespond(false);
     }
 
     @Test
-    void shouldFailToCreateEncryptedDriverWhenServerDoesNotRespond() throws IOException
-    {
-        testFailureWhenServerDoesNotRespond( true );
+    void shouldFailToCreateEncryptedDriverWhenServerDoesNotRespond() throws IOException {
+        testFailureWhenServerDoesNotRespond(true);
     }
 
-    private static void testFailureWhenServerDoesNotRespond( boolean encrypted ) throws IOException
-    {
-        try ( ServerSocket server = new ServerSocket( 0 ) ) // server that accepts connections but does not reply
+    private static void testFailureWhenServerDoesNotRespond(boolean encrypted) throws IOException {
+        try (ServerSocket server = new ServerSocket(0)) // server that accepts connections but does not reply
         {
             int connectionTimeoutMillis = 1_000;
-            Config config = createConfig( encrypted, connectionTimeoutMillis );
-            final Driver driver = GraphDatabase.driver( URI.create( "bolt://localhost:" + server.getLocalPort() ), config );
+            Config config = createConfig(encrypted, connectionTimeoutMillis);
+            final Driver driver = GraphDatabase.driver(URI.create("bolt://localhost:" + server.getLocalPort()), config);
 
-            ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
-            assertEquals( e.getMessage(), "Unable to establish connection in " + connectionTimeoutMillis + "ms" );
+            ServiceUnavailableException e = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
+            assertEquals(e.getMessage(), "Unable to establish connection in " + connectionTimeoutMillis + "ms");
         }
     }
 
-    private static Config createConfig( boolean encrypted, int timeoutMillis )
-    {
+    private static Config createConfig(boolean encrypted, int timeoutMillis) {
         Config.ConfigBuilder configBuilder = Config.builder()
-                .withConnectionTimeout( timeoutMillis, MILLISECONDS )
-                .withLogging( DEV_NULL_LOGGING );
+                .withConnectionTimeout(timeoutMillis, MILLISECONDS)
+                .withLogging(DEV_NULL_LOGGING);
 
-        if ( encrypted )
-        {
+        if (encrypted) {
             configBuilder.withEncryption();
-        }
-        else
-        {
+        } else {
             configBuilder.withoutEncryption();
         }
 
         return configBuilder.build();
     }
 
-    private static class MockSupplyingDriverFactory extends DriverFactory
-    {
+    private static class MockSupplyingDriverFactory extends DriverFactory {
         private final Iterator<InternalDriver> driverIterator;
 
-        private MockSupplyingDriverFactory( List<InternalDriver> drivers )
-        {
+        private MockSupplyingDriverFactory(List<InternalDriver> drivers) {
             driverIterator = drivers.iterator();
         }
 
         @Override
-        protected InternalDriver createRoutingDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
-                                                      EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic,
-                                                      MetricsProvider metricsProvider, Config config )
-        {
+        protected InternalDriver createRoutingDriver(
+                SecurityPlan securityPlan,
+                BoltServerAddress address,
+                ConnectionPool connectionPool,
+                EventExecutorGroup eventExecutorGroup,
+                RoutingSettings routingSettings,
+                RetryLogic retryLogic,
+                MetricsProvider metricsProvider,
+                Config config) {
             return driverIterator.next();
         }
     }

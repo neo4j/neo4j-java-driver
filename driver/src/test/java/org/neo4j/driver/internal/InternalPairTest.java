@@ -18,22 +18,19 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.Value;
-import org.neo4j.driver.util.Pair;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.neo4j.driver.Values.value;
 
-class InternalPairTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.util.Pair;
+
+class InternalPairTest {
     @Test
-    void testMethods()
-    {
-        Pair<String, Value> pair = InternalPair.of( "k", value( "v" ) );
-        assertThat( pair.key(), equalTo("k"));
-        assertThat( pair.value(), equalTo(value("v")));
+    void testMethods() {
+        Pair<String, Value> pair = InternalPair.of("k", value("v"));
+        assertThat(pair.key(), equalTo("k"));
+        assertThat(pair.value(), equalTo(value("v")));
     }
 }

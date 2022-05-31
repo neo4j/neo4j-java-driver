@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class DriverIsEncrypted implements TestkitResponse
-{
+public class DriverIsEncrypted implements TestkitResponse {
     private final DriverIsEncryptedBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "DriverIsEncrypted";
     }
 
     @Getter
     @Builder
-    public static class DriverIsEncryptedBody
-    {
+    public static class DriverIsEncryptedBody {
         private final boolean encrypted;
     }
 }

@@ -18,157 +18,136 @@
  */
 package org.neo4j.driver.integration;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.QueryRunner;
-import org.neo4j.driver.Transaction;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public interface NestedQueries
-{
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.QueryRunner;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Transaction;
+
+public interface NestedQueries {
     String OUTER_QUERY = "UNWIND range(1, 10000) AS x RETURN x";
     String INNER_QUERY = "UNWIND range(1, 10) AS y RETURN y";
     int EXPECTED_RECORDS = 10_000 * 10 + 10_000;
 
-    Session newSession( AccessMode mode );
+    Session newSession(AccessMode mode);
 
     @Test
-    default void shouldAllowNestedQueriesInTransactionConsumedAsIterators() throws Exception
-    {
-        try ( Session session = newSession( AccessMode.READ ); Transaction tx = session.beginTransaction() )
-        {
-            testNestedQueriesConsumedAsIterators( tx );
+    default void shouldAllowNestedQueriesInTransactionConsumedAsIterators() throws Exception {
+        try (Session session = newSession(AccessMode.READ);
+                Transaction tx = session.beginTransaction()) {
+            testNestedQueriesConsumedAsIterators(tx);
             tx.commit();
         }
     }
 
     @Test
-    default void shouldAllowNestedQueriesInTransactionConsumedAsLists() throws Exception
-    {
-        try ( Session session = newSession( AccessMode.READ ); Transaction tx = session.beginTransaction() )
-        {
-            testNestedQueriesConsumedAsLists( tx );
+    default void shouldAllowNestedQueriesInTransactionConsumedAsLists() throws Exception {
+        try (Session session = newSession(AccessMode.READ);
+                Transaction tx = session.beginTransaction()) {
+            testNestedQueriesConsumedAsLists(tx);
             tx.commit();
         }
     }
 
     @Test
-    default void shouldAllowNestedQueriesInTransactionConsumedAsIteratorAndList() throws Exception
-    {
-        try ( Session session = newSession( AccessMode.READ ); Transaction tx = session.beginTransaction() )
-        {
-            testNestedQueriesConsumedAsIteratorAndList( tx );
+    default void shouldAllowNestedQueriesInTransactionConsumedAsIteratorAndList() throws Exception {
+        try (Session session = newSession(AccessMode.READ);
+                Transaction tx = session.beginTransaction()) {
+            testNestedQueriesConsumedAsIteratorAndList(tx);
             tx.commit();
         }
     }
 
     @Test
-    default void shouldAllowNestedQueriesInSessionConsumedAsIterators() throws Exception
-    {
-        try ( Session session = newSession( AccessMode.READ ) )
-        {
-            testNestedQueriesConsumedAsIterators( session );
+    default void shouldAllowNestedQueriesInSessionConsumedAsIterators() throws Exception {
+        try (Session session = newSession(AccessMode.READ)) {
+            testNestedQueriesConsumedAsIterators(session);
         }
     }
 
     @Test
-    default void shouldAllowNestedQueriesInSessionConsumedAsLists() throws Exception
-    {
-        try ( Session session = newSession( AccessMode.READ ) )
-        {
-            testNestedQueriesConsumedAsLists( session );
+    default void shouldAllowNestedQueriesInSessionConsumedAsLists() throws Exception {
+        try (Session session = newSession(AccessMode.READ)) {
+            testNestedQueriesConsumedAsLists(session);
         }
     }
 
     @Test
-    default void shouldAllowNestedQueriesInSessionConsumedAsIteratorAndList() throws Exception
-    {
-        try ( Session session = newSession( AccessMode.READ ) )
-        {
-            testNestedQueriesConsumedAsIteratorAndList( session );
+    default void shouldAllowNestedQueriesInSessionConsumedAsIteratorAndList() throws Exception {
+        try (Session session = newSession(AccessMode.READ)) {
+            testNestedQueriesConsumedAsIteratorAndList(session);
         }
     }
 
-    default void testNestedQueriesConsumedAsIterators( QueryRunner queryRunner) throws Exception
-    {
+    default void testNestedQueriesConsumedAsIterators(QueryRunner queryRunner) throws Exception {
         int recordsSeen = 0;
 
-        Result result1 = queryRunner.run( OUTER_QUERY );
-        Thread.sleep( 1000 ); // allow some result records to arrive and be buffered
+        Result result1 = queryRunner.run(OUTER_QUERY);
+        Thread.sleep(1000); // allow some result records to arrive and be buffered
 
-        while ( result1.hasNext() )
-        {
+        while (result1.hasNext()) {
             Record record1 = result1.next();
-            assertFalse( record1.get( "x" ).isNull() );
+            assertFalse(record1.get("x").isNull());
             recordsSeen++;
 
-            Result result2 = queryRunner.run( INNER_QUERY );
-            while ( result2.hasNext() )
-            {
+            Result result2 = queryRunner.run(INNER_QUERY);
+            while (result2.hasNext()) {
                 Record record2 = result2.next();
-                assertFalse( record2.get( "y" ).isNull() );
+                assertFalse(record2.get("y").isNull());
                 recordsSeen++;
             }
         }
 
-        assertEquals( EXPECTED_RECORDS, recordsSeen );
+        assertEquals(EXPECTED_RECORDS, recordsSeen);
     }
 
-    default void testNestedQueriesConsumedAsLists( QueryRunner queryRunner) throws Exception
-    {
+    default void testNestedQueriesConsumedAsLists(QueryRunner queryRunner) throws Exception {
         int recordsSeen = 0;
 
-        Result result1 = queryRunner.run( OUTER_QUERY );
-        Thread.sleep( 1000 ); // allow some result records to arrive and be buffered
+        Result result1 = queryRunner.run(OUTER_QUERY);
+        Thread.sleep(1000); // allow some result records to arrive and be buffered
 
         List<Record> records1 = result1.list();
-        for ( Record record1 : records1 )
-        {
-            assertFalse( record1.get( "x" ).isNull() );
+        for (Record record1 : records1) {
+            assertFalse(record1.get("x").isNull());
             recordsSeen++;
 
-            Result result2 = queryRunner.run( "UNWIND range(1, 10) AS y RETURN y" );
+            Result result2 = queryRunner.run("UNWIND range(1, 10) AS y RETURN y");
             List<Record> records2 = result2.list();
-            for ( Record record2 : records2 )
-            {
-                assertFalse( record2.get( "y" ).isNull() );
+            for (Record record2 : records2) {
+                assertFalse(record2.get("y").isNull());
                 recordsSeen++;
             }
         }
 
-        assertEquals( EXPECTED_RECORDS, recordsSeen );
+        assertEquals(EXPECTED_RECORDS, recordsSeen);
     }
 
-    default void testNestedQueriesConsumedAsIteratorAndList( QueryRunner queryRunner) throws Exception
-    {
+    default void testNestedQueriesConsumedAsIteratorAndList(QueryRunner queryRunner) throws Exception {
         int recordsSeen = 0;
 
-        Result result1 = queryRunner.run( OUTER_QUERY );
-        Thread.sleep( 1000 ); // allow some result records to arrive and be buffered
+        Result result1 = queryRunner.run(OUTER_QUERY);
+        Thread.sleep(1000); // allow some result records to arrive and be buffered
 
-        while ( result1.hasNext() )
-        {
+        while (result1.hasNext()) {
             Record record1 = result1.next();
-            assertFalse( record1.get( "x" ).isNull() );
+            assertFalse(record1.get("x").isNull());
             recordsSeen++;
 
-            Result result2 = queryRunner.run( "UNWIND range(1, 10) AS y RETURN y" );
+            Result result2 = queryRunner.run("UNWIND range(1, 10) AS y RETURN y");
             List<Record> records2 = result2.list();
-            for ( Record record2 : records2 )
-            {
-                assertFalse( record2.get( "y" ).isNull() );
+            for (Record record2 : records2) {
+                assertFalse(record2.get("y").isNull());
                 recordsSeen++;
             }
         }
 
-        assertEquals( EXPECTED_RECORDS, recordsSeen );
+        assertEquals(EXPECTED_RECORDS, recordsSeen);
     }
 }

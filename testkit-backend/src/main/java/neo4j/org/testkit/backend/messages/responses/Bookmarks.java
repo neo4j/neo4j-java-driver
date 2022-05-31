@@ -20,25 +20,21 @@ package neo4j.org.testkit.backend.messages.responses;
 
 import lombok.Builder;
 import lombok.Getter;
-
 import org.neo4j.driver.Bookmark;
 
 @Getter
 @Builder
-public class Bookmarks implements TestkitResponse
-{
+public class Bookmarks implements TestkitResponse {
     BookmarksBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "Bookmarks";
     }
 
     @Getter
     @Builder
-    public static class BookmarksBody
-    {
+    public static class BookmarksBody {
         private Bookmark bookmarks;
     }
 }

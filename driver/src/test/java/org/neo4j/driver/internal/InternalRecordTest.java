@@ -18,20 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-
-import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.Value;
-import java.util.function.Function;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -41,189 +27,183 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.value;
 
-class InternalRecordTest
-{
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.function.Function;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.util.Extract;
+import org.neo4j.driver.internal.value.NullValue;
+
+class InternalRecordTest {
     @Test
-    void accessingUnknownKeyShouldBeNull()
-    {
+    void accessingUnknownKeyShouldBeNull() {
         InternalRecord record = createRecord();
 
-        assertThat( record.get( "k1" ), equalTo( value( 0 ) ) );
-        assertThat( record.get( "k2" ), equalTo( value( 1 ) ) );
-        assertThat( record.get( "k3" ), equalTo( NullValue.NULL ) );
+        assertThat(record.get("k1"), equalTo(value(0)));
+        assertThat(record.get("k2"), equalTo(value(1)));
+        assertThat(record.get("k3"), equalTo(NullValue.NULL));
     }
 
     @Test
-    void shouldHaveCorrectSize()
-    {
+    void shouldHaveCorrectSize() {
         InternalRecord record = createRecord();
-        assertThat( record.size(), equalTo( 2 ) );
+        assertThat(record.size(), equalTo(2));
     }
 
     @Test
-    void shouldHaveCorrectFieldIndices()
-    {
+    void shouldHaveCorrectFieldIndices() {
         InternalRecord record = createRecord();
-        assertThat( record.index( "k1" ), equalTo( 0 ) );
-        assertThat( record.index( "k2" ), equalTo( 1 ) );
+        assertThat(record.index("k1"), equalTo(0));
+        assertThat(record.index("k2"), equalTo(1));
     }
 
     @Test
-    void shouldThrowWhenAskingForIndexOfUnknownField()
-    {
+    void shouldThrowWhenAskingForIndexOfUnknownField() {
         InternalRecord record = createRecord();
-        assertThrows( NoSuchElementException.class, () -> record.index( "BATMAN" ) );
+        assertThrows(NoSuchElementException.class, () -> record.index("BATMAN"));
     }
 
     @Test
-    void accessingOutOfBoundsShouldBeNull()
-    {
+    void accessingOutOfBoundsShouldBeNull() {
         InternalRecord record = createRecord();
 
-        assertThat( record.get( 0 ), equalTo( value( 0 ) ) );
-        assertThat( record.get( 1 ), equalTo( value( 1 ) ) );
-        assertThat( record.get( 2 ), equalTo( NullValue.NULL ) );
-        assertThat( record.get( -37 ), equalTo( NullValue.NULL ) );
+        assertThat(record.get(0), equalTo(value(0)));
+        assertThat(record.get(1), equalTo(value(1)));
+        assertThat(record.get(2), equalTo(NullValue.NULL));
+        assertThat(record.get(-37), equalTo(NullValue.NULL));
     }
 
     @Test
-    void testContainsKey()
-    {
+    void testContainsKey() {
         InternalRecord record = createRecord();
 
-        assertTrue( record.containsKey( "k1" ) );
-        assertTrue( record.containsKey( "k2" ) );
-        assertFalse( record.containsKey( "k3" ) );
+        assertTrue(record.containsKey("k1"));
+        assertTrue(record.containsKey("k2"));
+        assertFalse(record.containsKey("k3"));
     }
 
     @Test
-    void testIndex()
-    {
+    void testIndex() {
         InternalRecord record = createRecord();
 
-        assertThat( record.index( "k1" ), equalTo( 0 ) );
-        assertThat( record.index( "k2" ), equalTo( 1 ) );
+        assertThat(record.index("k1"), equalTo(0));
+        assertThat(record.index("k2"), equalTo(1));
     }
 
     @Test
-    void testAsMap()
-    {
+    void testAsMap() {
         // GIVEN
         InternalRecord record = createRecord();
 
         // WHEN
-        Map<String,Object> map = record.asMap();
+        Map<String, Object> map = record.asMap();
 
         // THEN
-        assertThat( map.keySet(), containsInAnyOrder( "k1", "k2" ) );
-        assertThat( map.get( "k1" ), equalTo( 0L ) );
-        assertThat( map.get( "k2" ), equalTo( 1L ) );
+        assertThat(map.keySet(), containsInAnyOrder("k1", "k2"));
+        assertThat(map.get("k1"), equalTo(0L));
+        assertThat(map.get("k2"), equalTo(1L));
     }
 
     @Test
-    void testMapExtraction()
-    {
+    void testMapExtraction() {
         // GIVEN
         InternalRecord record = createRecord();
-        Function<Value,Integer> addOne = value -> value.asInt() + 1;
+        Function<Value, Integer> addOne = value -> value.asInt() + 1;
 
         // WHEN
-        Map<String,Integer> map = Extract.map( record, addOne );
+        Map<String, Integer> map = Extract.map(record, addOne);
 
         // THEN
-        assertThat( map.keySet(), contains( "k1", "k2" ) );
-        assertThat( map.get( "k1" ), equalTo( 1 ) );
-        assertThat( map.get( "k2" ), equalTo( 2 ) );
+        assertThat(map.keySet(), contains("k1", "k2"));
+        assertThat(map.get("k1"), equalTo(1));
+        assertThat(map.get("k2"), equalTo(2));
     }
 
     @Test
-    void mapExtractionShouldPreserveIterationOrder()
-    {
+    void mapExtractionShouldPreserveIterationOrder() {
         // GIVEN
-        List<String> keys = Arrays.asList( "k2", "k1" );
-        InternalRecord record =  new InternalRecord( keys, new Value[]{value( 0 ), value( 1 )} );
-        Function<Value,Integer> addOne = value -> value.asInt() + 1;
+        List<String> keys = Arrays.asList("k2", "k1");
+        InternalRecord record = new InternalRecord(keys, new Value[] {value(0), value(1)});
+        Function<Value, Integer> addOne = value -> value.asInt() + 1;
 
         // WHEN
-        Map<String,Integer> map = Extract.map( record, addOne );
+        Map<String, Integer> map = Extract.map(record, addOne);
 
         // THEN
-        assertThat( map.keySet(), contains( "k2", "k1" )  );
+        assertThat(map.keySet(), contains("k2", "k1"));
         Iterator<Integer> values = map.values().iterator();
-        assertThat( values.next(), equalTo( 1 ) );
-        assertThat( values.next(), equalTo( 2 ) );
+        assertThat(values.next(), equalTo(1));
+        assertThat(values.next(), equalTo(2));
     }
 
     @Test
-    void testToString()
-    {
+    void testToString() {
         InternalRecord record = createRecord();
 
-        assertThat( record.toString(), equalTo( "Record<{k1: 0, k2: 1}>" ) );
+        assertThat(record.toString(), equalTo("Record<{k1: 0, k2: 1}>"));
     }
 
     @Test
-    void shouldHaveMethodToGetKeys()
-    {
-        //GIVEN
-        List<String> keys = Arrays.asList( "k2", "k1" );
-        InternalRecord record =  new InternalRecord( keys, new Value[]{value( 0 ), value( 1 )} );
+    void shouldHaveMethodToGetKeys() {
+        // GIVEN
+        List<String> keys = Arrays.asList("k2", "k1");
+        InternalRecord record = new InternalRecord(keys, new Value[] {value(0), value(1)});
 
-        //WHEN
+        // WHEN
         List<String> appendedKeys = record.keys();
 
-        //THEN
-        assertThat( appendedKeys, equalTo( keys ) );
+        // THEN
+        assertThat(appendedKeys, equalTo(keys));
     }
 
     @Test
-    void emptyKeysShouldGiveEmptyList()
-    {
-        //GIVEN
+    void emptyKeysShouldGiveEmptyList() {
+        // GIVEN
         List<String> keys = Collections.emptyList();
-        InternalRecord record =  new InternalRecord( keys, new Value[]{} );
+        InternalRecord record = new InternalRecord(keys, new Value[] {});
 
-        //WHEN
+        // WHEN
         List<String> appendedKeys = record.keys();
 
-        //THEN
-        assertThat( appendedKeys, equalTo( keys ) );
+        // THEN
+        assertThat(appendedKeys, equalTo(keys));
     }
 
-
     @Test
-    void shouldHaveMethodToGetValues()
-    {
-        //GIVEN
-        List<String> keys = Arrays.asList( "k2", "k1" );
-        Value[] values = new Value[]{value( 0 ), value( 1 )};
-        InternalRecord record =  new InternalRecord( keys, values );
+    void shouldHaveMethodToGetValues() {
+        // GIVEN
+        List<String> keys = Arrays.asList("k2", "k1");
+        Value[] values = new Value[] {value(0), value(1)};
+        InternalRecord record = new InternalRecord(keys, values);
 
-        //WHEN
+        // WHEN
         List<Value> appendedValues = record.values();
 
-        //THEN
-        assertThat( appendedValues, equalTo( Arrays.asList( values ) ) );
+        // THEN
+        assertThat(appendedValues, equalTo(Arrays.asList(values)));
     }
 
     @Test
-    void emptyValuesShouldGiveEmptyList()
-    {
-        //GIVEN
+    void emptyValuesShouldGiveEmptyList() {
+        // GIVEN
         List<String> keys = Collections.emptyList();
-        Value[] values = new Value[]{};
-        InternalRecord record =  new InternalRecord( keys, values );
+        Value[] values = new Value[] {};
+        InternalRecord record = new InternalRecord(keys, values);
 
-        //WHEN
+        // WHEN
         List<Value> appendedValues = record.values();
 
-        //THEN
-        assertThat( appendedValues, equalTo( Arrays.asList( values ) ) );
+        // THEN
+        assertThat(appendedValues, equalTo(Arrays.asList(values)));
     }
 
-    private InternalRecord createRecord()
-    {
-        List<String> keys = Arrays.asList( "k1", "k2" );
-        return new InternalRecord( keys, new Value[]{value( 0 ), value( 1 )} );
+    private InternalRecord createRecord() {
+        List<String> keys = Arrays.asList("k1", "k2");
+        return new InternalRecord(keys, new Value[] {value(0), value(1)});
     }
 }

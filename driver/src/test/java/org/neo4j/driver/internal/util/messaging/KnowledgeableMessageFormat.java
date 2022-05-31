@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.util.messaging;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.neo4j.driver.internal.messaging.AbstractMessageWriter;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.common.CommonValuePacker;
@@ -49,154 +48,132 @@ import org.neo4j.driver.types.Relationship;
  * This class provides the missing server side packing methods to serialize Node, Relationship and Path. It also allows writing of server side messages like
  * SUCCESS, FAILURE, IGNORED and RECORD.
  */
-public class KnowledgeableMessageFormat extends MessageFormatV3
-{
+public class KnowledgeableMessageFormat extends MessageFormatV3 {
     @Override
-    public Writer newWriter( PackOutput output )
-    {
-        return new KnowledgeableMessageWriter( output );
+    public Writer newWriter(PackOutput output) {
+        return new KnowledgeableMessageWriter(output);
     }
 
-    private static class KnowledgeableMessageWriter extends AbstractMessageWriter
-    {
-        KnowledgeableMessageWriter( PackOutput output )
-        {
-            super( new KnowledgeableValuePacker( output ), buildEncoders() );
+    private static class KnowledgeableMessageWriter extends AbstractMessageWriter {
+        KnowledgeableMessageWriter(PackOutput output) {
+            super(new KnowledgeableValuePacker(output), buildEncoders());
         }
 
-        static Map<Byte,MessageEncoder> buildEncoders()
-        {
-            Map<Byte,MessageEncoder> result = Iterables.newHashMapWithSize( 10 );
+        static Map<Byte, MessageEncoder> buildEncoders() {
+            Map<Byte, MessageEncoder> result = Iterables.newHashMapWithSize(10);
             // request message encoders
-            result.put( DiscardAllMessage.SIGNATURE, new DiscardAllMessageEncoder() );
-            result.put( PullAllMessage.SIGNATURE, new PullAllMessageEncoder() );
-            result.put( ResetMessage.SIGNATURE, new ResetMessageEncoder() );
+            result.put(DiscardAllMessage.SIGNATURE, new DiscardAllMessageEncoder());
+            result.put(PullAllMessage.SIGNATURE, new PullAllMessageEncoder());
+            result.put(ResetMessage.SIGNATURE, new ResetMessageEncoder());
             // response message encoders
-            result.put( FailureMessage.SIGNATURE, new FailureMessageEncoder() );
-            result.put( IgnoredMessage.SIGNATURE, new IgnoredMessageEncoder() );
-            result.put( RecordMessage.SIGNATURE, new RecordMessageEncoder() );
-            result.put( SuccessMessage.SIGNATURE, new SuccessMessageEncoder() );
+            result.put(FailureMessage.SIGNATURE, new FailureMessageEncoder());
+            result.put(IgnoredMessage.SIGNATURE, new IgnoredMessageEncoder());
+            result.put(RecordMessage.SIGNATURE, new RecordMessageEncoder());
+            result.put(SuccessMessage.SIGNATURE, new SuccessMessageEncoder());
             return result;
         }
     }
 
-    private static class KnowledgeableValuePacker extends CommonValuePacker
-    {
-        KnowledgeableValuePacker( PackOutput output )
-        {
-            super( output );
+    private static class KnowledgeableValuePacker extends CommonValuePacker {
+        KnowledgeableValuePacker(PackOutput output) {
+            super(output);
         }
 
         @Override
-        protected void packInternalValue( InternalValue value ) throws IOException
-        {
+        protected void packInternalValue(InternalValue value) throws IOException {
             TypeConstructor typeConstructor = value.typeConstructor();
-            switch ( typeConstructor )
-            {
-            case NODE:
-                Node node = value.asNode();
-                packNode( node );
-                break;
+            switch (typeConstructor) {
+                case NODE:
+                    Node node = value.asNode();
+                    packNode(node);
+                    break;
 
-            case RELATIONSHIP:
-                Relationship rel = value.asRelationship();
-                packRelationship( rel );
-                break;
+                case RELATIONSHIP:
+                    Relationship rel = value.asRelationship();
+                    packRelationship(rel);
+                    break;
 
-            case PATH:
-                Path path = value.asPath();
-                packPath( path );
-                break;
-            default:
-                super.packInternalValue( value );
+                case PATH:
+                    Path path = value.asPath();
+                    packPath(path);
+                    break;
+                default:
+                    super.packInternalValue(value);
             }
         }
 
-        private void packPath( Path path ) throws IOException
-        {
-            packer.packStructHeader( 3, CommonValueUnpacker.PATH );
+        private void packPath(Path path) throws IOException {
+            packer.packStructHeader(3, CommonValueUnpacker.PATH);
 
             // Unique nodes
-            Map<Node,Integer> nodeIdx = Iterables.newLinkedHashMapWithSize( path.length() + 1 );
-            for ( Node node : path.nodes() )
-            {
-                if ( !nodeIdx.containsKey( node ) )
-                {
-                    nodeIdx.put( node, nodeIdx.size() );
+            Map<Node, Integer> nodeIdx = Iterables.newLinkedHashMapWithSize(path.length() + 1);
+            for (Node node : path.nodes()) {
+                if (!nodeIdx.containsKey(node)) {
+                    nodeIdx.put(node, nodeIdx.size());
                 }
             }
-            packer.packListHeader( nodeIdx.size() );
-            for ( Node node : nodeIdx.keySet() )
-            {
-                packNode( node );
+            packer.packListHeader(nodeIdx.size());
+            for (Node node : nodeIdx.keySet()) {
+                packNode(node);
             }
 
             // Unique rels
-            Map<Relationship,Integer> relIdx = Iterables.newLinkedHashMapWithSize( path.length() );
-            for ( Relationship rel : path.relationships() )
-            {
-                if ( !relIdx.containsKey( rel ) )
-                {
-                    relIdx.put( rel, relIdx.size() + 1 );
+            Map<Relationship, Integer> relIdx = Iterables.newLinkedHashMapWithSize(path.length());
+            for (Relationship rel : path.relationships()) {
+                if (!relIdx.containsKey(rel)) {
+                    relIdx.put(rel, relIdx.size() + 1);
                 }
             }
-            packer.packListHeader( relIdx.size() );
-            for ( Relationship rel : relIdx.keySet() )
-            {
-                packer.packStructHeader( 3, CommonValueUnpacker.UNBOUND_RELATIONSHIP );
-                packer.pack( rel.id() );
-                packer.pack( rel.type() );
-                packProperties( rel );
+            packer.packListHeader(relIdx.size());
+            for (Relationship rel : relIdx.keySet()) {
+                packer.packStructHeader(3, CommonValueUnpacker.UNBOUND_RELATIONSHIP);
+                packer.pack(rel.id());
+                packer.pack(rel.type());
+                packProperties(rel);
             }
 
             // Sequence
-            packer.packListHeader( path.length() * 2 );
-            for ( Path.Segment seg : path )
-            {
+            packer.packListHeader(path.length() * 2);
+            for (Path.Segment seg : path) {
                 Relationship rel = seg.relationship();
                 long relEndId = rel.endNodeId();
                 long segEndId = seg.end().id();
-                int size = relEndId == segEndId ? relIdx.get( rel ) : -relIdx.get( rel );
-                packer.pack( size );
-                packer.pack( nodeIdx.get( seg.end() ) );
+                int size = relEndId == segEndId ? relIdx.get(rel) : -relIdx.get(rel);
+                packer.pack(size);
+                packer.pack(nodeIdx.get(seg.end()));
             }
         }
 
-        private void packRelationship( Relationship rel ) throws IOException
-        {
-            packer.packStructHeader( 5, CommonValueUnpacker.RELATIONSHIP );
-            packer.pack( rel.id() );
-            packer.pack( rel.startNodeId() );
-            packer.pack( rel.endNodeId() );
+        private void packRelationship(Relationship rel) throws IOException {
+            packer.packStructHeader(5, CommonValueUnpacker.RELATIONSHIP);
+            packer.pack(rel.id());
+            packer.pack(rel.startNodeId());
+            packer.pack(rel.endNodeId());
 
-            packer.pack( rel.type() );
+            packer.pack(rel.type());
 
-            packProperties( rel );
+            packProperties(rel);
         }
 
-        private void packNode( Node node ) throws IOException
-        {
-            packer.packStructHeader( CommonValueUnpacker.NODE_FIELDS, CommonValueUnpacker.NODE );
-            packer.pack( node.id() );
+        private void packNode(Node node) throws IOException {
+            packer.packStructHeader(CommonValueUnpacker.NODE_FIELDS, CommonValueUnpacker.NODE);
+            packer.pack(node.id());
 
             Iterable<String> labels = node.labels();
-            packer.packListHeader( Iterables.count( labels ) );
-            for ( String label : labels )
-            {
-                packer.pack( label );
+            packer.packListHeader(Iterables.count(labels));
+            for (String label : labels) {
+                packer.pack(label);
             }
 
-            packProperties( node );
+            packProperties(node);
         }
 
-        private void packProperties( Entity entity ) throws IOException
-        {
+        private void packProperties(Entity entity) throws IOException {
             Iterable<String> keys = entity.keys();
-            packer.packMapHeader( entity.size() );
-            for ( String propKey : keys )
-            {
-                packer.pack( propKey );
-                packInternalValue( (InternalValue) entity.get( propKey ) );
+            packer.packMapHeader(entity.size());
+            for (String propKey : keys) {
+                packer.pack(propKey);
+                packInternalValue((InternalValue) entity.get(propKey));
             }
         }
     }

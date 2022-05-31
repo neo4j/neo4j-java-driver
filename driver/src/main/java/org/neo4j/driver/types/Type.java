@@ -28,8 +28,7 @@ import org.neo4j.driver.util.Immutable;
  */
 @Immutable
 @Experimental
-public interface Type
-{
+public interface Type {
     /**
      * @return the name of the Cypher type (as defined by Cypher)
      */
@@ -41,5 +40,5 @@ public interface Type
      * @param value the value
      * @return {@code true} if the value is a value of this type otherwise {@code false}
      */
-    boolean isTypeOf( Value value );
+    boolean isTypeOf(Value value);
 }

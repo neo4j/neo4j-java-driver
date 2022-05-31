@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.svm;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-
 import org.neo4j.driver.Config;
 import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.internal.DriverFactory;
@@ -30,9 +29,8 @@ import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.util.Clock;
 
-@TargetClass( DriverFactory.class )
-final class Target_org_neo4j_driver_internal_DriverFactory
-{
+@TargetClass(DriverFactory.class)
+final class Target_org_neo4j_driver_internal_DriverFactory {
 
     /**
      * Substitutes metrics adatper in such a way that it falls back to off when Micrometer is not available.
@@ -42,34 +40,27 @@ final class Target_org_neo4j_driver_internal_DriverFactory
      * @return A metrics provider, never null
      */
     @Substitute
-    protected static MetricsProvider getOrCreateMetricsProvider( Config config, Clock clock )
-    {
+    protected static MetricsProvider getOrCreateMetricsProvider(Config config, Clock clock) {
         MetricsAdapter metricsAdapter = config.metricsAdapter();
-        if ( metricsAdapter == null )
-        {
+        if (metricsAdapter == null) {
             metricsAdapter = config.isMetricsEnabled() ? MetricsAdapter.DEFAULT : MetricsAdapter.DEV_NULL;
         }
-        switch ( metricsAdapter )
-        {
-        case DEV_NULL:
-            return DevNullMetricsProvider.INSTANCE;
-        case DEFAULT:
-            return new InternalMetricsProvider( clock, config.logging() );
-        case MICROMETER:
-            try
-            {
-                @SuppressWarnings( "unused" ) Class<?> metricsClass = Class.forName( "io.micrometer.core.instrument.Metrics" );
-                return MicrometerMetricsProvider.forGlobalRegistry();
-            }
-            catch ( ClassNotFoundException e )
-            {
+        switch (metricsAdapter) {
+            case DEV_NULL:
                 return DevNullMetricsProvider.INSTANCE;
-            }
+            case DEFAULT:
+                return new InternalMetricsProvider(clock, config.logging());
+            case MICROMETER:
+                try {
+                    @SuppressWarnings("unused")
+                    Class<?> metricsClass = Class.forName("io.micrometer.core.instrument.Metrics");
+                    return MicrometerMetricsProvider.forGlobalRegistry();
+                } catch (ClassNotFoundException e) {
+                    return DevNullMetricsProvider.INSTANCE;
+                }
         }
-        throw new IllegalStateException( "Unknown or unsupported MetricsAdapter: " + metricsAdapter );
+        throw new IllegalStateException("Unknown or unsupported MetricsAdapter: " + metricsAdapter);
     }
 }
 
-class MicrometerSubstitutions
-{
-}
+class MicrometerSubstitutions {}

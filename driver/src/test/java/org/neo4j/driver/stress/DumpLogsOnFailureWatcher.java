@@ -18,37 +18,32 @@
  */
 package org.neo4j.driver.stress;
 
+import java.util.Optional;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 
-import java.util.Optional;
-
-public class DumpLogsOnFailureWatcher implements TestWatcher
-{
+public class DumpLogsOnFailureWatcher implements TestWatcher {
     @Override
-    public void testDisabled( ExtensionContext context, Optional<String> reason )
-    {
+    public void testDisabled(ExtensionContext context, Optional<String> reason) {
         // do nothing
     }
 
     @Override
-    public void testSuccessful( ExtensionContext context )
-    {
+    public void testSuccessful(ExtensionContext context) {
         // do nothing
     }
 
     @Override
-    public void testAborted( ExtensionContext context, Throwable cause )
-    {
+    public void testAborted(ExtensionContext context, Throwable cause) {
         // do nothing
     }
 
     @Override
-    public void testFailed( ExtensionContext context, Throwable cause )
-    {
-        if ( context.getTestInstance().isPresent() && context.getTestInstance().get() instanceof AbstractStressTestBase<?>)
-        {
-            AbstractStressTestBase<?> clusterTest = (AbstractStressTestBase<?>)  context.getTestInstance().get();
+    public void testFailed(ExtensionContext context, Throwable cause) {
+        if (context.getTestInstance().isPresent()
+                && context.getTestInstance().get() instanceof AbstractStressTestBase<?>) {
+            AbstractStressTestBase<?> clusterTest =
+                    (AbstractStressTestBase<?>) context.getTestInstance().get();
             clusterTest.dumpLogs();
         }
     }

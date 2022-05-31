@@ -21,10 +21,8 @@ package neo4j.org.testkit.backend.holder;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
 
-public class AsyncSessionHolder extends AbstractSessionHolder<AsyncSession>
-{
-    public AsyncSessionHolder( DriverHolder driverHolder, AsyncSession session, SessionConfig config )
-    {
-        super( driverHolder, session, config );
+public class AsyncSessionHolder extends AbstractSessionHolder<AsyncSession> {
+    public AsyncSessionHolder(DriverHolder driverHolder, AsyncSession session, SessionConfig config) {
+        super(driverHolder, session, config);
     }
 }

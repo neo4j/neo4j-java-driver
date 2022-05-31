@@ -19,7 +19,6 @@
 package org.neo4j.driver;
 
 import java.util.Map;
-
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.util.Resource;
 
@@ -52,8 +51,7 @@ import org.neo4j.driver.util.Resource;
  *
  * @since 1.0 (Removed async API to {@link AsyncSession} in 4.0)
  */
-public interface Session extends Resource, QueryRunner
-{
+public interface Session extends Resource, QueryRunner {
     /**
      * Begin a new <em>unmanaged {@linkplain Transaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To
@@ -73,7 +71,7 @@ public interface Session extends Resource, QueryRunner
      * @param config configuration for the new transaction.
      * @return a new {@link Transaction}
      */
-    Transaction beginTransaction( TransactionConfig config );
+    Transaction beginTransaction(TransactionConfig config);
 
     /**
      * Execute a unit of work in a managed {@link AccessMode#READ read} transaction.
@@ -88,7 +86,7 @@ public interface Session extends Resource, QueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
-    <T> T readTransaction( TransactionWork<T> work );
+    <T> T readTransaction(TransactionWork<T> work);
 
     /**
      * Execute a unit of work in a managed {@link AccessMode#READ read} transaction
@@ -105,7 +103,7 @@ public interface Session extends Resource, QueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
-    <T> T readTransaction( TransactionWork<T> work, TransactionConfig config );
+    <T> T readTransaction(TransactionWork<T> work, TransactionConfig config);
 
     /**
      * Execute a unit of work in a managed {@link AccessMode#WRITE write} transaction.
@@ -120,7 +118,7 @@ public interface Session extends Resource, QueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
-    <T> T writeTransaction( TransactionWork<T> work );
+    <T> T writeTransaction(TransactionWork<T> work);
 
     /**
      * Execute a unit of work in a managed {@link AccessMode#WRITE write} transaction
@@ -137,7 +135,7 @@ public interface Session extends Resource, QueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
-    <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config );
+    <T> T writeTransaction(TransactionWork<T> work, TransactionConfig config);
 
     /**
      * Run a query in a managed auto-commit transaction with the specified
@@ -147,7 +145,7 @@ public interface Session extends Resource, QueryRunner
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    Result run(String query, TransactionConfig config );
+    Result run(String query, TransactionConfig config);
 
     /**
      * Run a query with parameters in a managed auto-commit transaction with the
@@ -185,7 +183,7 @@ public interface Session extends Resource, QueryRunner
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    Result run(String query, Map<String,Object> parameters, TransactionConfig config );
+    Result run(String query, Map<String, Object> parameters, TransactionConfig config);
 
     /**
      * Run a query in a managed auto-commit transaction with the specified
@@ -210,7 +208,7 @@ public interface Session extends Resource, QueryRunner
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    Result run(Query query, TransactionConfig config );
+    Result run(Query query, TransactionConfig config);
 
     /**
      * Return the bookmark received following the last completed

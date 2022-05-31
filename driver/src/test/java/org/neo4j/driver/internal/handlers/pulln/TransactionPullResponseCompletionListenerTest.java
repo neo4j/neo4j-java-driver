@@ -18,9 +18,16 @@
  */
 package org.neo4j.driver.internal.handlers.pulln;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.Collections;
 import java.util.function.BiConsumer;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -30,77 +37,70 @@ import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-public class TransactionPullResponseCompletionListenerTest extends BasicPullResponseHandlerTestBase
-{
+public class TransactionPullResponseCompletionListenerTest extends BasicPullResponseHandlerTestBase {
     @Override
-    protected void shouldHandleSuccessWithSummary( BasicPullResponseHandler.State state )
-    {
+    protected void shouldHandleSuccessWithSummary(BasicPullResponseHandler.State state) {
         // Given
         Connection conn = mockConnection();
-        BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
-        BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
-        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, state );
+        BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
 
         // When
-        handler.onSuccess( Collections.emptyMap() );
+        handler.onSuccess(Collections.emptyMap());
 
         // Then
-        assertThat( handler.state(), equalTo( BasicPullResponseHandler.State.SUCCEEDED_STATE ));
-        verify( recordConsumer ).accept( null, null );
-        verify( summaryConsumer ).accept( any( ResultSummary.class ), eq( null ) );
+        assertThat(handler.state(), equalTo(BasicPullResponseHandler.State.SUCCEEDED_STATE));
+        verify(recordConsumer).accept(null, null);
+        verify(summaryConsumer).accept(any(ResultSummary.class), eq(null));
     }
 
     @Override
-    protected void shouldHandleFailure( BasicPullResponseHandler.State state )
-    {
+    protected void shouldHandleFailure(BasicPullResponseHandler.State state) {
         // Given
         Connection conn = mockConnection();
-        BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
-        BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
-        UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
-        when( tx.isOpen() ).thenReturn( true );
-        BasicPullResponseHandler handler = newTxResponseHandler( conn, recordConsumer, summaryConsumer, tx, state );
+        BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
+        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        when(tx.isOpen()).thenReturn(true);
+        BasicPullResponseHandler handler = newTxResponseHandler(conn, recordConsumer, summaryConsumer, tx, state);
 
         // When
-        RuntimeException error = new RuntimeException( "I am an error" );
-        handler.onFailure( error );
+        RuntimeException error = new RuntimeException("I am an error");
+        handler.onFailure(error);
 
         // Then
-        assertThat( handler.state(), equalTo( BasicPullResponseHandler.State.FAILURE_STATE ) );
-        verify( tx ).markTerminated( error );
-        verify( recordConsumer ).accept( null, error );
-        verify( summaryConsumer ).accept( any( ResultSummary.class ), eq( error ) );
+        assertThat(handler.state(), equalTo(BasicPullResponseHandler.State.FAILURE_STATE));
+        verify(tx).markTerminated(error);
+        verify(recordConsumer).accept(null, error);
+        verify(summaryConsumer).accept(any(ResultSummary.class), eq(error));
     }
 
     @Override
-    protected BasicPullResponseHandler newResponseHandlerWithStatus( Connection conn, BiConsumer<Record,Throwable> recordConsumer,
-                                                                     BiConsumer<ResultSummary,Throwable> summaryConsumer, BasicPullResponseHandler.State state )
-    {
-        UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
-        return newTxResponseHandler( conn, recordConsumer, summaryConsumer, tx, state );
+    protected BasicPullResponseHandler newResponseHandlerWithStatus(
+            Connection conn,
+            BiConsumer<Record, Throwable> recordConsumer,
+            BiConsumer<ResultSummary, Throwable> summaryConsumer,
+            BasicPullResponseHandler.State state) {
+        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        return newTxResponseHandler(conn, recordConsumer, summaryConsumer, tx, state);
     }
 
-    private static BasicPullResponseHandler newTxResponseHandler( Connection conn, BiConsumer<Record,Throwable> recordConsumer,
-                                                                  BiConsumer<ResultSummary,Throwable> summaryConsumer, UnmanagedTransaction tx,
-                                                                  BasicPullResponseHandler.State state )
-    {
-        RunResponseHandler runHandler = mock( RunResponseHandler.class );
-        TransactionPullResponseCompletionListener listener = new TransactionPullResponseCompletionListener( tx );
-        BasicPullResponseHandler handler =
-                new BasicPullResponseHandler( mock( Query.class ), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener );
+    private static BasicPullResponseHandler newTxResponseHandler(
+            Connection conn,
+            BiConsumer<Record, Throwable> recordConsumer,
+            BiConsumer<ResultSummary, Throwable> summaryConsumer,
+            UnmanagedTransaction tx,
+            BasicPullResponseHandler.State state) {
+        RunResponseHandler runHandler = mock(RunResponseHandler.class);
+        TransactionPullResponseCompletionListener listener = new TransactionPullResponseCompletionListener(tx);
+        BasicPullResponseHandler handler = new BasicPullResponseHandler(
+                mock(Query.class), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener);
 
-        handler.installRecordConsumer( recordConsumer );
-        handler.installSummaryConsumer( summaryConsumer );
+        handler.installRecordConsumer(recordConsumer);
+        handler.installSummaryConsumer(summaryConsumer);
 
-        handler.state( state );
+        handler.state(state);
         return handler;
     }
 }

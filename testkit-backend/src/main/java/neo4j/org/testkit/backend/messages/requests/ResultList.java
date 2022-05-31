@@ -18,6 +18,9 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -26,50 +29,43 @@ import neo4j.org.testkit.backend.messages.responses.RecordList;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
-
 @Setter
 @Getter
-public class ResultList implements TestkitRequest
-{
+public class ResultList implements TestkitRequest {
     private ResultListBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        return createResponse( testkitState.getResultHolder( data.getResultId() ).getResult().list() );
+    public TestkitResponse process(TestkitState testkitState) {
+        return createResponse(
+                testkitState.getResultHolder(data.getResultId()).getResult().list());
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncResultHolder( data.getResultId() )
-                           .thenCompose( resultCursorHolder -> resultCursorHolder.getResult().listAsync() )
-                           .thenApply( this::createResponse );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState
+                .getAsyncResultHolder(data.getResultId())
+                .thenCompose(
+                        resultCursorHolder -> resultCursorHolder.getResult().listAsync())
+                .thenApply(this::createResponse);
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        throw new UnsupportedOperationException( "Operation not supported" );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        throw new UnsupportedOperationException("Operation not supported");
     }
 
-    private RecordList createResponse( List<org.neo4j.driver.Record> records )
-    {
+    private RecordList createResponse(List<org.neo4j.driver.Record> records) {
         List<Record.RecordBody> mappedRecords = records.stream()
-                                                       .map( record -> Record.RecordBody.builder().values( record ).build() )
-                                                       .collect( Collectors.toList() );
+                .map(record -> Record.RecordBody.builder().values(record).build())
+                .collect(Collectors.toList());
         return RecordList.builder()
-                         .data( RecordList.RecordListBody.builder().records( mappedRecords ).build() )
-                         .build();
+                .data(RecordList.RecordListBody.builder().records(mappedRecords).build())
+                .build();
     }
 
     @Setter
     @Getter
-    public static class ResultListBody
-    {
+    public static class ResultListBody {
         private String resultId;
     }
 }

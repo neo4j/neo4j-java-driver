@@ -25,20 +25,17 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 // end::bearer-auth-import[]
 
-public class BearerAuthExample implements AutoCloseable
-{
+public class BearerAuthExample implements AutoCloseable {
     private final Driver driver;
 
     // tag::bearer-auth[]
-    public BearerAuthExample( String uri, String bearerToken )
-    {
-        driver = GraphDatabase.driver( uri, AuthTokens.bearer( bearerToken ) );
+    public BearerAuthExample(String uri, String bearerToken) {
+        driver = GraphDatabase.driver(uri, AuthTokens.bearer(bearerToken));
     }
     // end::bearer-auth[]
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         driver.close();
     }
 }

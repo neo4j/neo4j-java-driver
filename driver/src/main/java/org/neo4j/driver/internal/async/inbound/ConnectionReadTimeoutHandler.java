@@ -20,26 +20,20 @@ package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 
-public class ConnectionReadTimeoutHandler extends ReadTimeoutHandler
-{
+public class ConnectionReadTimeoutHandler extends ReadTimeoutHandler {
     private boolean triggered;
 
-    public ConnectionReadTimeoutHandler( long timeout, TimeUnit unit )
-    {
-        super( timeout, unit );
+    public ConnectionReadTimeoutHandler(long timeout, TimeUnit unit) {
+        super(timeout, unit);
     }
 
     @Override
-    protected void readTimedOut( ChannelHandlerContext ctx )
-    {
-        if ( !triggered )
-        {
-            ctx.fireExceptionCaught( ConnectionReadTimeoutException.INSTANCE );
+    protected void readTimedOut(ChannelHandlerContext ctx) {
+        if (!triggered) {
+            ctx.fireExceptionCaught(ConnectionReadTimeoutException.INSTANCE);
             ctx.close();
             triggered = true;
         }

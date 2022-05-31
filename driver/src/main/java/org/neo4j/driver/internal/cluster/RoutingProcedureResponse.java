@@ -19,57 +19,46 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 
-public class RoutingProcedureResponse
-{
+public class RoutingProcedureResponse {
     private final Query procedure;
     private final List<Record> records;
     private final Throwable error;
 
-    public RoutingProcedureResponse(Query procedure, List<Record> records )
-    {
-        this( procedure, records, null );
+    public RoutingProcedureResponse(Query procedure, List<Record> records) {
+        this(procedure, records, null);
     }
 
-    public RoutingProcedureResponse(Query procedure, Throwable error )
-    {
-        this( procedure, null, error );
+    public RoutingProcedureResponse(Query procedure, Throwable error) {
+        this(procedure, null, error);
     }
 
-    private RoutingProcedureResponse(Query procedure, List<Record> records, Throwable error )
-    {
+    private RoutingProcedureResponse(Query procedure, List<Record> records, Throwable error) {
         this.procedure = procedure;
         this.records = records;
         this.error = error;
     }
 
-    public boolean isSuccess()
-    {
+    public boolean isSuccess() {
         return records != null;
     }
 
-    public Query procedure()
-    {
+    public Query procedure() {
         return procedure;
     }
 
-    public List<Record> records()
-    {
-        if ( !isSuccess() )
-        {
-            throw new IllegalStateException( "Can't access records of a failed result", error );
+    public List<Record> records() {
+        if (!isSuccess()) {
+            throw new IllegalStateException("Can't access records of a failed result", error);
         }
         return records;
     }
 
-    public Throwable error()
-    {
-        if ( isSuccess() )
-        {
-            throw new IllegalStateException( "Can't access error of a succeeded result " + records );
+    public Throwable error() {
+        if (isSuccess()) {
+            throw new IllegalStateException("Can't access error of a succeeded result " + records);
         }
         return error;
     }

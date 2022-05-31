@@ -20,38 +20,36 @@ package org.neo4j.driver.internal.metrics;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
-
 import org.neo4j.driver.Config;
 import org.neo4j.driver.net.ServerAddress;
 
-public interface MetricsListener
-{
+public interface MetricsListener {
     /**
      * Before creating a netty channel.
      *
      * @param poolId        the id of the pool where the netty channel lives.
      * @param creatingEvent a connection listener event registered when a connection is creating.
      */
-    void beforeCreating( String poolId, ListenerEvent<?> creatingEvent );
+    void beforeCreating(String poolId, ListenerEvent<?> creatingEvent);
 
     /**
      * After a netty channel is created successfully.
      *
      * @param poolId the id of the pool where the netty channel lives.
      */
-    void afterCreated( String poolId, ListenerEvent<?> creatingEvent );
+    void afterCreated(String poolId, ListenerEvent<?> creatingEvent);
 
     /**
      * After a netty channel is created with a failure.
      * @param poolId the id of the pool where the netty channel lives.
      */
-    void afterFailedToCreate( String poolId );
+    void afterFailedToCreate(String poolId);
 
     /**
      * After a netty channel is closed successfully.
      * @param poolId the id of the pool where the netty channel lives.
      */
-    void afterClosed( String poolId );
+    void afterClosed(String poolId);
 
     /**
      * Before acquiring or creating a new netty channel from pool.
@@ -59,13 +57,13 @@ public interface MetricsListener
      * @param poolId       the id of the pool where the netty channel lives.
      * @param acquireEvent a pool listener event registered in pool for this acquire event.
      */
-    void beforeAcquiringOrCreating( String poolId, ListenerEvent<?> acquireEvent );
+    void beforeAcquiringOrCreating(String poolId, ListenerEvent<?> acquireEvent);
 
     /**
      * After acquiring or creating a new netty channel from pool regardless it is successful or not.
      * @param poolId the id of the pool where the netty channel lives.
      */
-    void afterAcquiringOrCreating( String poolId );
+    void afterAcquiringOrCreating(String poolId);
 
     /**
      * After acquiring or creating a new netty channel from pool successfully.
@@ -73,14 +71,14 @@ public interface MetricsListener
      * @param poolId       the id of the pool where the netty channel lives.
      * @param acquireEvent a pool listener event registered in pool for this acquire event.
      */
-    void afterAcquiredOrCreated( String poolId, ListenerEvent<?> acquireEvent );
+    void afterAcquiredOrCreated(String poolId, ListenerEvent<?> acquireEvent);
 
     /**
      * After we failed to acquire a connection from pool within maximum connection acquisition timeout set by
      * {@link Config.ConfigBuilder#withConnectionAcquisitionTimeout(long, TimeUnit)}.
      * @param poolId the id of the pool where the netty channel lives.
      */
-    void afterTimedOutToAcquireOrCreate( String poolId );
+    void afterTimedOutToAcquireOrCreate(String poolId);
 
     /**
      * After acquiring or creating a new netty channel from pool successfully.
@@ -88,7 +86,7 @@ public interface MetricsListener
      * @param poolId     the id of the pool where the netty channel lives.
      * @param inUseEvent a connection listener event fired from the newly created connection.
      */
-    void afterConnectionCreated( String poolId, ListenerEvent<?> inUseEvent );
+    void afterConnectionCreated(String poolId, ListenerEvent<?> inUseEvent);
 
     /**
      * After releasing a netty channel back to pool successfully.
@@ -96,11 +94,12 @@ public interface MetricsListener
      * @param poolId     the id of the pool where the netty channel lives.
      * @param inUseEvent a connection listener event fired from the connection being released.
      */
-    void afterConnectionReleased( String poolId, ListenerEvent<?> inUseEvent );
+    void afterConnectionReleased(String poolId, ListenerEvent<?> inUseEvent);
 
     ListenerEvent<?> createListenerEvent();
 
-    void registerPoolMetrics( String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier );
+    void registerPoolMetrics(
+            String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier);
 
-    void removePoolMetrics( String poolId );
+    void removePoolMetrics(String poolId);
 }

@@ -19,56 +19,47 @@
 package org.neo4j.driver.internal.util.messaging;
 
 import io.netty.channel.Channel;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.messaging.response.SuccessMessage;
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.Value;
 
-public class MemorizingInboundMessageDispatcher extends InboundMessageDispatcher
-{
+public class MemorizingInboundMessageDispatcher extends InboundMessageDispatcher {
     private final List<Message> messages = new CopyOnWriteArrayList<>();
 
-    public MemorizingInboundMessageDispatcher( Channel channel, Logging logging )
-    {
-        super( channel, logging );
+    public MemorizingInboundMessageDispatcher(Channel channel, Logging logging) {
+        super(channel, logging);
     }
 
-    public List<Message> messages()
-    {
-        return new ArrayList<>( messages );
-    }
-
-    @Override
-    public void handleSuccessMessage( Map<String,Value> meta )
-    {
-        messages.add( new SuccessMessage( meta ) );
+    public List<Message> messages() {
+        return new ArrayList<>(messages);
     }
 
     @Override
-    public void handleRecordMessage( Value[] fields )
-    {
-        messages.add( new RecordMessage( fields ) );
+    public void handleSuccessMessage(Map<String, Value> meta) {
+        messages.add(new SuccessMessage(meta));
     }
 
     @Override
-    public void handleFailureMessage( String code, String message )
-    {
-        messages.add( new FailureMessage( code, message ) );
+    public void handleRecordMessage(Value[] fields) {
+        messages.add(new RecordMessage(fields));
     }
 
     @Override
-    public void handleIgnoredMessage()
-    {
-        messages.add( IgnoredMessage.IGNORED );
+    public void handleFailureMessage(String code, String message) {
+        messages.add(new FailureMessage(code, message));
+    }
+
+    @Override
+    public void handleIgnoredMessage() {
+        messages.add(IgnoredMessage.IGNORED);
     }
 }

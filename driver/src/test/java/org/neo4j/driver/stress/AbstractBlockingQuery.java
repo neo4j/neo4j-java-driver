@@ -18,46 +18,39 @@
  */
 package org.neo4j.driver.stress;
 
+import static org.neo4j.driver.SessionConfig.builder;
+
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.TransientException;
 
-import static org.neo4j.driver.SessionConfig.builder;
-
-public abstract class AbstractBlockingQuery<C extends AbstractContext> implements BlockingCommand<C>
-{
+public abstract class AbstractBlockingQuery<C extends AbstractContext> implements BlockingCommand<C> {
     protected final Driver driver;
     protected final boolean useBookmark;
 
-    public AbstractBlockingQuery( Driver driver, boolean useBookmark )
-    {
+    public AbstractBlockingQuery(Driver driver, boolean useBookmark) {
         this.driver = driver;
         this.useBookmark = useBookmark;
     }
 
-    public Session newSession( AccessMode mode, C context )
-    {
-        if ( useBookmark )
-        {
-            return driver.session( builder().withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ).build() );
+    public Session newSession(AccessMode mode, C context) {
+        if (useBookmark) {
+            return driver.session(builder()
+                    .withDefaultAccessMode(mode)
+                    .withBookmarks(context.getBookmark())
+                    .build());
         }
-        return driver.session( builder().withDefaultAccessMode( mode ).build() );
+        return driver.session(builder().withDefaultAccessMode(mode).build());
     }
 
-    public Transaction beginTransaction( Session session, C context )
-    {
-        if ( useBookmark )
-        {
-            while ( true )
-            {
-                try
-                {
+    public Transaction beginTransaction(Session session, C context) {
+        if (useBookmark) {
+            while (true) {
+                try {
                     return session.beginTransaction();
-                }
-                catch ( TransientException e )
-                {
+                } catch (TransientException e) {
                     context.bookmarkFailed();
                 }
             }

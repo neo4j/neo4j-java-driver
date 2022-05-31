@@ -25,14 +25,12 @@ import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 /**
  * Bolt V4.2 is identical to V4.1
  */
-public class BoltProtocolV42 extends BoltProtocolV41
-{
-    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 2 );
+public class BoltProtocolV42 extends BoltProtocolV41 {
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(4, 2);
     public static final BoltProtocol INSTANCE = new BoltProtocolV42();
 
     @Override
-    public BoltProtocolVersion version()
-    {
+    public BoltProtocolVersion version() {
         return VERSION;
     }
 }

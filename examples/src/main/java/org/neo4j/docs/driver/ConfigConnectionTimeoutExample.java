@@ -20,32 +20,27 @@ package org.neo4j.docs.driver;
 
 // tag::config-connection-timeout-import[]
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+// end::config-connection-timeout-import[]
+
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-// end::config-connection-timeout-import[]
-
-public class ConfigConnectionTimeoutExample implements AutoCloseable
-{
+public class ConfigConnectionTimeoutExample implements AutoCloseable {
     private final Driver driver;
 
     // tag::config-connection-timeout[]
-    public ConfigConnectionTimeoutExample( String uri, String user, String password )
-    {
-        Config config = Config.builder()
-                .withConnectionTimeout( 15, SECONDS )
-                .build();
+    public ConfigConnectionTimeoutExample(String uri, String user, String password) {
+        Config config = Config.builder().withConnectionTimeout(15, SECONDS).build();
 
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
     // end::config-connection-timeout[]
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         driver.close();
     }
 }

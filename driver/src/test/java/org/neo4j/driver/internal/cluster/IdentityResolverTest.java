@@ -18,28 +18,24 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Set;
-
-import org.neo4j.driver.net.ServerAddress;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
 
-class IdentityResolverTest
-{
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.net.ServerAddress;
+
+class IdentityResolverTest {
     @Test
-    void shouldReturnGivenAddress()
-    {
-        ServerAddress address = mock( ServerAddress.class );
+    void shouldReturnGivenAddress() {
+        ServerAddress address = mock(ServerAddress.class);
 
-        Set<ServerAddress> resolved = IDENTITY_RESOLVER.resolve( address );
+        Set<ServerAddress> resolved = IDENTITY_RESOLVER.resolve(address);
 
-        assertThat( resolved.size(), equalTo( 1 ) );
-        assertThat( resolved.iterator().next(), is( address ) );
+        assertThat(resolved.size(), equalTo(1));
+        assertThat(resolved.iterator().next(), is(address));
     }
 }

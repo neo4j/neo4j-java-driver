@@ -18,16 +18,14 @@
  */
 package org.neo4j.driver.internal.handlers.pulln;
 
-public class FetchSizeUtil
-{
+public class FetchSizeUtil {
     public static final long UNLIMITED_FETCH_SIZE = -1;
     public static final long DEFAULT_FETCH_SIZE = 1000;
 
-    public static long assertValidFetchSize( long size )
-    {
-        if ( size <= 0 && size != UNLIMITED_FETCH_SIZE )
-        {
-            throw new IllegalArgumentException( String.format( "The record fetch size may not be 0 or negative. Illegal record fetch size: %s.", size ) );
+    public static long assertValidFetchSize(long size) {
+        if (size <= 0 && size != UNLIMITED_FETCH_SIZE) {
+            throw new IllegalArgumentException(String.format(
+                    "The record fetch size may not be 0 or negative. Illegal record fetch size: %s.", size));
         }
         return size;
     }

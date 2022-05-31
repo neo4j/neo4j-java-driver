@@ -21,9 +21,8 @@ package org.neo4j.driver.internal;
 /**
  * Interface used for tracking errors when connected to a cluster.
  */
-public interface RoutingErrorHandler
-{
-    void onConnectionFailure( BoltServerAddress address );
+public interface RoutingErrorHandler {
+    void onConnectionFailure(BoltServerAddress address);
 
-    void onWriteFailure( BoltServerAddress address );
+    void onWriteFailure(BoltServerAddress address);
 }

@@ -18,13 +18,17 @@
  */
 package org.neo4j.driver.internal;
 
+import static java.lang.String.format;
+import static org.neo4j.driver.Values.ofObject;
+import static org.neo4j.driver.Values.ofValue;
+import static org.neo4j.driver.internal.util.Format.formatPairs;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
@@ -33,160 +37,122 @@ import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.util.QueryKeys;
 import org.neo4j.driver.util.Pair;
 
-import static java.lang.String.format;
-import static org.neo4j.driver.Values.ofObject;
-import static org.neo4j.driver.Values.ofValue;
-import static org.neo4j.driver.internal.util.Format.formatPairs;
-
-public class InternalRecord extends InternalMapAccessorWithDefaultValue implements Record
-{
+public class InternalRecord extends InternalMapAccessorWithDefaultValue implements Record {
     private final QueryKeys queryKeys;
     private final Value[] values;
     private int hashCode = 0;
 
-    public InternalRecord( List<String> keys, Value[] values )
-    {
-        this.queryKeys = new QueryKeys( keys );
+    public InternalRecord(List<String> keys, Value[] values) {
+        this.queryKeys = new QueryKeys(keys);
         this.values = values;
     }
 
-    public InternalRecord( QueryKeys queryKeys, Value[] values )
-    {
+    public InternalRecord(QueryKeys queryKeys, Value[] values) {
         this.queryKeys = queryKeys;
         this.values = values;
     }
 
     @Override
-    public List<String> keys()
-    {
+    public List<String> keys() {
         return queryKeys.keys();
     }
 
     @Override
-    public List<Value> values()
-    {
-        return Arrays.asList( values );
+    public List<Value> values() {
+        return Arrays.asList(values);
     }
 
     @Override
-    public <T> Iterable<T> values( Function<Value,T> mapFunction )
-    {
-        return values().stream().map( mapFunction ).collect( Collectors.toList() );
+    public <T> Iterable<T> values(Function<Value, T> mapFunction) {
+        return values().stream().map(mapFunction).collect(Collectors.toList());
     }
 
     @Override
-    public List<Pair<String,Value>> fields()
-    {
-        return Extract.fields( this, ofValue() );
+    public List<Pair<String, Value>> fields() {
+        return Extract.fields(this, ofValue());
     }
 
     @Override
-    public int index( String key )
-    {
-        int result = queryKeys.indexOf( key );
-        if ( result == -1 )
-        {
-            throw new NoSuchElementException( "Unknown key: " + key );
-        }
-        else
-        {
+    public int index(String key) {
+        int result = queryKeys.indexOf(key);
+        if (result == -1) {
+            throw new NoSuchElementException("Unknown key: " + key);
+        } else {
             return result;
         }
     }
 
     @Override
-    public boolean containsKey( String key )
-    {
-        return queryKeys.contains( key );
+    public boolean containsKey(String key) {
+        return queryKeys.contains(key);
     }
 
     @Override
-    public Value get( String key )
-    {
-        int fieldIndex = queryKeys.indexOf( key );
+    public Value get(String key) {
+        int fieldIndex = queryKeys.indexOf(key);
 
-        if ( fieldIndex == -1 )
-        {
+        if (fieldIndex == -1) {
             return Values.NULL;
-        }
-        else
-        {
+        } else {
             return values[fieldIndex];
         }
     }
 
     @Override
-    public Value get( int index )
-    {
+    public Value get(int index) {
         return index >= 0 && index < values.length ? values[index] : Values.NULL;
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return values.length;
     }
 
     @Override
-    public Map<String, Object> asMap()
-    {
-        return Extract.map( this, ofObject() );
+    public Map<String, Object> asMap() {
+        return Extract.map(this, ofObject());
     }
 
     @Override
-    public <T> Map<String,T> asMap( Function<Value,T> mapper )
-    {
-        return Extract.map( this, mapper );
+    public <T> Map<String, T> asMap(Function<Value, T> mapper) {
+        return Extract.map(this, mapper);
     }
 
     @Override
-    public String toString()
-    {
-        return format( "Record<%s>", formatPairs( asMap( ofValue() ) ) );
+    public String toString() {
+        return format("Record<%s>", formatPairs(asMap(ofValue())));
     }
 
     @Override
-    public boolean equals( Object other )
-    {
-        if ( this == other )
-        {
+    public boolean equals(Object other) {
+        if (this == other) {
             return true;
-        }
-        else if ( other instanceof Record )
-        {
+        } else if (other instanceof Record) {
             Record otherRecord = (Record) other;
             int size = size();
-            if ( ! ( size == otherRecord.size() ) )
-            {
+            if (!(size == otherRecord.size())) {
                 return false;
             }
-            if ( !queryKeys.keys().equals( otherRecord.keys() ) )
-            {
+            if (!queryKeys.keys().equals(otherRecord.keys())) {
                 return false;
             }
-            for ( int i = 0; i < size; i++ )
-            {
-                Value value = get( i );
-                Value otherValue = otherRecord.get( i );
-                if ( ! value.equals( otherValue ) )
-                {
+            for (int i = 0; i < size; i++) {
+                Value value = get(i);
+                Value otherValue = otherRecord.get(i);
+                if (!value.equals(otherValue)) {
                     return false;
                 }
             }
             return true;
-        }
-        else
-        {
+        } else {
             return false;
         }
     }
 
     @Override
-    public int hashCode()
-    {
-        if ( hashCode == 0 )
-        {
-            hashCode = 31 * queryKeys.hashCode() + Arrays.hashCode( values );
+    public int hashCode() {
+        if (hashCode == 0) {
+            hashCode = 31 * queryKeys.hashCode() + Arrays.hashCode(values);
         }
         return hashCode;
     }

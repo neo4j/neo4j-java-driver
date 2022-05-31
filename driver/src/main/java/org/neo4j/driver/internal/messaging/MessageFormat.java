@@ -19,23 +19,19 @@
 package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
-
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
-public interface MessageFormat
-{
-    interface Writer
-    {
-        void write( Message msg ) throws IOException;
+public interface MessageFormat {
+    interface Writer {
+        void write(Message msg) throws IOException;
     }
 
-    interface Reader
-    {
-        void read( ResponseMessageHandler handler ) throws IOException;
+    interface Reader {
+        void read(ResponseMessageHandler handler) throws IOException;
     }
 
-    Writer newWriter( PackOutput output );
+    Writer newWriter(PackOutput output);
 
-    Reader newReader( PackInput input );
+    Reader newReader(PackInput input);
 }

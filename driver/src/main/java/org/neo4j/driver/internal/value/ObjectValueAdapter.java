@@ -18,53 +18,45 @@
  */
 package org.neo4j.driver.internal.value;
 
-import java.util.Objects;
-
 import static java.lang.String.format;
 
-public abstract class ObjectValueAdapter<V> extends ValueAdapter
-{
+import java.util.Objects;
+
+public abstract class ObjectValueAdapter<V> extends ValueAdapter {
     private final V adapted;
 
-    protected ObjectValueAdapter( V adapted )
-    {
-        if ( adapted == null )
-        {
-            throw new IllegalArgumentException( format( "Cannot construct %s from null", getClass().getSimpleName() ) );
+    protected ObjectValueAdapter(V adapted) {
+        if (adapted == null) {
+            throw new IllegalArgumentException(
+                    format("Cannot construct %s from null", getClass().getSimpleName()));
         }
         this.adapted = adapted;
     }
 
     @Override
-    public final V asObject()
-    {
+    public final V asObject() {
         return adapted;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         ObjectValueAdapter<?> that = (ObjectValueAdapter<?>) o;
-        return Objects.equals( adapted, that.adapted );
+        return Objects.equals(adapted, that.adapted);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return adapted.hashCode();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return adapted.toString();
     }
 }

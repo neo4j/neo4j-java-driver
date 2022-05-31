@@ -21,29 +21,23 @@ package neo4j.org.testkit.backend.messages.responses.serializer;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import java.io.IOException;
 import java.util.Set;
-
 import org.neo4j.driver.Bookmark;
 
-public class TestkitBookmarkSerializer extends StdSerializer<Bookmark>
-{
-    public TestkitBookmarkSerializer()
-    {
-        super( Bookmark.class );
+public class TestkitBookmarkSerializer extends StdSerializer<Bookmark> {
+    public TestkitBookmarkSerializer() {
+        super(Bookmark.class);
     }
 
     @Override
-    public void serialize( Bookmark value, JsonGenerator gen, SerializerProvider provider ) throws IOException
-    {
+    public void serialize(Bookmark value, JsonGenerator gen, SerializerProvider provider) throws IOException {
         gen.writeStartArray();
 
         Set<String> bookmarks = value.values();
 
-        for ( String bm : bookmarks )
-        {
-            gen.writeString( bm );
+        for (String bm : bookmarks) {
+            gen.writeString(bm);
         }
 
         gen.writeEndArray();

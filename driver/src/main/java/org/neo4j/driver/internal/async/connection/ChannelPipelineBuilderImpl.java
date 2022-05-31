@@ -19,29 +19,26 @@
 package org.neo4j.driver.internal.async.connection;
 
 import io.netty.channel.ChannelPipeline;
-
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
 import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
 import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.Logging;
 
-public class ChannelPipelineBuilderImpl implements ChannelPipelineBuilder
-{
+public class ChannelPipelineBuilderImpl implements ChannelPipelineBuilder {
     @Override
-    public void build( MessageFormat messageFormat, ChannelPipeline pipeline, Logging logging )
-    {
+    public void build(MessageFormat messageFormat, ChannelPipeline pipeline, Logging logging) {
         // inbound handlers
-        pipeline.addLast( new ChunkDecoder( logging ) );
-        pipeline.addLast( new MessageDecoder() );
-        pipeline.addLast( new InboundMessageHandler( messageFormat, logging ) );
+        pipeline.addLast(new ChunkDecoder(logging));
+        pipeline.addLast(new MessageDecoder());
+        pipeline.addLast(new InboundMessageHandler(messageFormat, logging));
 
         // outbound handlers
-        pipeline.addLast( OutboundMessageHandler.NAME, new OutboundMessageHandler( messageFormat, logging ) );
+        pipeline.addLast(OutboundMessageHandler.NAME, new OutboundMessageHandler(messageFormat, logging));
 
         // last one - error handler
-        pipeline.addLast( new ChannelErrorHandler( logging ) );
+        pipeline.addLast(new ChannelErrorHandler(logging));
     }
 }

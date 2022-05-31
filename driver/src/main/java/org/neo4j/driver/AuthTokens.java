@@ -18,11 +18,6 @@
  */
 package org.neo4j.driver;
 
-import java.util.Map;
-import java.util.Objects;
-
-import org.neo4j.driver.internal.security.InternalAuthToken;
-
 import static java.util.Collections.singletonMap;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.security.InternalAuthToken.CREDENTIALS_KEY;
@@ -32,6 +27,10 @@ import static org.neo4j.driver.internal.security.InternalAuthToken.REALM_KEY;
 import static org.neo4j.driver.internal.security.InternalAuthToken.SCHEME_KEY;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
+import java.util.Map;
+import java.util.Objects;
+import org.neo4j.driver.internal.security.InternalAuthToken;
+
 /**
  * This is a listing of the various methods of authentication supported by this
  * driver. The scheme used must be supported by the Neo4j Instance you are connecting
@@ -39,8 +38,7 @@ import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
  * @see GraphDatabase#driver(String, AuthToken)
  * @since 1.0
  */
-public class AuthTokens
-{
+public class AuthTokens {
     /**
      * The basic authentication scheme, using a username and a password.
      * @param username this is the "principal", identifying who this token represents
@@ -49,9 +47,8 @@ public class AuthTokens
      * @see GraphDatabase#driver(String, AuthToken)
      * @throws NullPointerException when either username or password is {@code null}
      */
-    public static AuthToken basic( String username, String password )
-    {
-        return basic( username, password, null );
+    public static AuthToken basic(String username, String password) {
+        return basic(username, password, null);
     }
 
     /**
@@ -63,20 +60,18 @@ public class AuthTokens
      * @see GraphDatabase#driver(String, AuthToken)
      * @throws NullPointerException when either username or password is {@code null}
      */
-    public static AuthToken basic( String username, String password, String realm )
-    {
-        Objects.requireNonNull( username, "Username can't be null" );
-        Objects.requireNonNull( password, "Password can't be null" );
+    public static AuthToken basic(String username, String password, String realm) {
+        Objects.requireNonNull(username, "Username can't be null");
+        Objects.requireNonNull(password, "Password can't be null");
 
-        Map<String,Value> map = newHashMapWithSize( 4 );
-        map.put( SCHEME_KEY, value( "basic" ) );
-        map.put( PRINCIPAL_KEY, value( username ) );
-        map.put( CREDENTIALS_KEY, value( password ) );
-        if ( realm != null )
-        {
-            map.put( REALM_KEY, value( realm ) );
+        Map<String, Value> map = newHashMapWithSize(4);
+        map.put(SCHEME_KEY, value("basic"));
+        map.put(PRINCIPAL_KEY, value(username));
+        map.put(CREDENTIALS_KEY, value(password));
+        if (realm != null) {
+            map.put(REALM_KEY, value(realm));
         }
-        return new InternalAuthToken( map );
+        return new InternalAuthToken(map);
     }
 
     /**
@@ -87,14 +82,13 @@ public class AuthTokens
      * @throws NullPointerException when token is {@code null}
      * @see GraphDatabase#driver(String, AuthToken)
      */
-    public static AuthToken bearer( String token )
-    {
-        Objects.requireNonNull( token, "Token can't be null" );
+    public static AuthToken bearer(String token) {
+        Objects.requireNonNull(token, "Token can't be null");
 
-        Map<String,Value> map = newHashMapWithSize( 2 );
-        map.put( SCHEME_KEY, value( "bearer" ) );
-        map.put( CREDENTIALS_KEY, value( token ) );
-        return new InternalAuthToken( map );
+        Map<String, Value> map = newHashMapWithSize(2);
+        map.put(SCHEME_KEY, value("bearer"));
+        map.put(CREDENTIALS_KEY, value(token));
+        return new InternalAuthToken(map);
     }
 
     /**
@@ -106,15 +100,14 @@ public class AuthTokens
      * @see GraphDatabase#driver(String, AuthToken)
      * @since 1.3
      */
-    public static AuthToken kerberos( String base64EncodedTicket )
-    {
-        Objects.requireNonNull( base64EncodedTicket, "Ticket can't be null" );
+    public static AuthToken kerberos(String base64EncodedTicket) {
+        Objects.requireNonNull(base64EncodedTicket, "Ticket can't be null");
 
-        Map<String,Value> map = newHashMapWithSize( 3 );
-        map.put( SCHEME_KEY, value( "kerberos" ) );
-        map.put( PRINCIPAL_KEY, value( "" ) ); // This empty string is required for backwards compatibility.
-        map.put( CREDENTIALS_KEY, value( base64EncodedTicket ) );
-        return new InternalAuthToken( map );
+        Map<String, Value> map = newHashMapWithSize(3);
+        map.put(SCHEME_KEY, value("kerberos"));
+        map.put(PRINCIPAL_KEY, value("")); // This empty string is required for backwards compatibility.
+        map.put(CREDENTIALS_KEY, value(base64EncodedTicket));
+        return new InternalAuthToken(map);
     }
 
     /**
@@ -127,9 +120,8 @@ public class AuthTokens
      * @see GraphDatabase#driver(String, AuthToken)
      * @throws NullPointerException when either principal, credentials or scheme is {@code null}
      */
-    public static AuthToken custom( String principal, String credentials, String realm, String scheme)
-    {
-        return custom( principal, credentials, realm, scheme, null );
+    public static AuthToken custom(String principal, String credentials, String realm, String scheme) {
+        return custom(principal, credentials, realm, scheme, null);
     }
 
     /**
@@ -143,25 +135,23 @@ public class AuthTokens
      * @see GraphDatabase#driver(String, AuthToken)
      * @throws NullPointerException when either principal, credentials or scheme is {@code null}
      */
-    public static AuthToken custom( String principal, String credentials, String realm, String scheme, Map<String, Object> parameters)
-    {
-        Objects.requireNonNull( principal, "Principal can't be null" );
-        Objects.requireNonNull( credentials, "Credentials can't be null" );
-        Objects.requireNonNull( scheme, "Scheme can't be null" );
+    public static AuthToken custom(
+            String principal, String credentials, String realm, String scheme, Map<String, Object> parameters) {
+        Objects.requireNonNull(principal, "Principal can't be null");
+        Objects.requireNonNull(credentials, "Credentials can't be null");
+        Objects.requireNonNull(scheme, "Scheme can't be null");
 
-        Map<String,Value> map = newHashMapWithSize( 5 );
-        map.put( SCHEME_KEY, value( scheme ) );
-        map.put( PRINCIPAL_KEY, value( principal ) );
-        map.put( CREDENTIALS_KEY, value( credentials ) );
-        if ( realm != null )
-        {
-            map.put( REALM_KEY, value( realm ) );
+        Map<String, Value> map = newHashMapWithSize(5);
+        map.put(SCHEME_KEY, value(scheme));
+        map.put(PRINCIPAL_KEY, value(principal));
+        map.put(CREDENTIALS_KEY, value(credentials));
+        if (realm != null) {
+            map.put(REALM_KEY, value(realm));
         }
-        if ( parameters != null )
-        {
-            map.put( PARAMETERS_KEY, value( parameters ) );
+        if (parameters != null) {
+            map.put(PARAMETERS_KEY, value(parameters));
         }
-        return new InternalAuthToken( map );
+        return new InternalAuthToken(map);
     }
 
     /**
@@ -170,8 +160,7 @@ public class AuthTokens
      * @return an authentication token that can be used to connect to Neo4j instances with auth disabled
      * @see GraphDatabase#driver(String, AuthToken)
      */
-    public static AuthToken none()
-    {
-        return new InternalAuthToken( singletonMap( SCHEME_KEY, value( "none" ) ) );
+    public static AuthToken none() {
+        return new InternalAuthToken(singletonMap(SCHEME_KEY, value("none")));
     }
 }

@@ -18,23 +18,6 @@
  */
 package org.neo4j.driver.internal.cursor;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
-
-import org.neo4j.driver.exceptions.ResultConsumedException;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
-import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.summary.ResultSummary;
-
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,169 +36,173 @@ import static org.neo4j.driver.internal.messaging.v3.BoltProtocolV3.METADATA_EXT
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-class RxResultCursorImplTest
-{
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.neo4j.driver.exceptions.ResultConsumedException;
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
+import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.summary.ResultSummary;
+
+class RxResultCursorImplTest {
     @Test
-    void shouldInstallSummaryConsumerWithoutReportingError()
-    {
+    void shouldInstallSummaryConsumerWithoutReportingError() {
         // Given
-        RuntimeException error = new RuntimeException( "Hi" );
-        RunResponseHandler runHandler = newRunResponseHandler( error );
-        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
+        RuntimeException error = new RuntimeException("Hi");
+        RunResponseHandler runHandler = newRunResponseHandler(error);
+        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
 
         // When
-        new RxResultCursorImpl( error, runHandler, pullHandler );
+        new RxResultCursorImpl(error, runHandler, pullHandler);
 
         // Then
-        verify( pullHandler ).installSummaryConsumer( any( BiConsumer.class ) );
-        verifyNoMoreInteractions( pullHandler );
+        verify(pullHandler).installSummaryConsumer(any(BiConsumer.class));
+        verifyNoMoreInteractions(pullHandler);
     }
 
     @Test
-    void shouldReturnQueryKeys()
-    {
+    void shouldReturnQueryKeys() {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
-        List<String> expected = asList( "key1", "key2", "key3" );
-        runHandler.onSuccess( Collections.singletonMap( "fields", value( expected ) ) );
+        List<String> expected = asList("key1", "key2", "key3");
+        runHandler.onSuccess(Collections.singletonMap("fields", value(expected)));
 
-        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
+        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
 
         // When
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
         List<String> actual = cursor.keys();
 
         // Then
-        assertEquals( expected, actual );
+        assertEquals(expected, actual);
     }
 
     @Test
-    void shouldSupportReturnQueryKeysMultipleTimes()
-    {
+    void shouldSupportReturnQueryKeysMultipleTimes() {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
-        List<String> expected = asList( "key1", "key2", "key3" );
-        runHandler.onSuccess( Collections.singletonMap( "fields", value( expected ) ) );
+        List<String> expected = asList("key1", "key2", "key3");
+        runHandler.onSuccess(Collections.singletonMap("fields", value(expected)));
 
-        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
+        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
 
         // When
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // Then
         List<String> actual = cursor.keys();
-        assertEquals( expected, actual );
+        assertEquals(expected, actual);
 
         // Many times
         actual = cursor.keys();
-        assertEquals( expected, actual );
+        assertEquals(expected, actual);
 
         actual = cursor.keys();
-        assertEquals( expected, actual );
+        assertEquals(expected, actual);
     }
 
     @Test
-    void shouldPull()
-    {
+    void shouldPull() {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
-        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
-        cursor.request( 100 );
+        cursor.request(100);
 
         // Then
-        verify( pullHandler ).request( 100 );
+        verify(pullHandler).request(100);
     }
 
     @Test
-    void shouldPullUnboundedOnLongMax()
-    {
+    void shouldPullUnboundedOnLongMax() {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
-        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
-        cursor.request( Long.MAX_VALUE );
+        cursor.request(Long.MAX_VALUE);
 
         // Then
-        verify( pullHandler ).request( -1 );
+        verify(pullHandler).request(-1);
     }
 
     @Test
-    void shouldCancel()
-    {
+    void shouldCancel() {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
-        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
         cursor.cancel();
 
         // Then
-        verify( pullHandler ).cancel();
+        verify(pullHandler).cancel();
     }
 
     @Test
-    void shouldInstallRecordConsumerAndReportError()
-    {
+    void shouldInstallRecordConsumerAndReportError() {
         // Given
-        RuntimeException error = new RuntimeException( "Hi" );
-        BiConsumer recordConsumer = mock( BiConsumer.class );
+        RuntimeException error = new RuntimeException("Hi");
+        BiConsumer recordConsumer = mock(BiConsumer.class);
 
         // When
-        RunResponseHandler runHandler = newRunResponseHandler( error );
+        RunResponseHandler runHandler = newRunResponseHandler(error);
         PullResponseHandler pullHandler = new ListBasedPullHandler();
-        RxResultCursor cursor = new RxResultCursorImpl( error, runHandler, pullHandler );
-        cursor.installRecordConsumer( recordConsumer );
+        RxResultCursor cursor = new RxResultCursorImpl(error, runHandler, pullHandler);
+        cursor.installRecordConsumer(recordConsumer);
 
         // Then
-        verify( recordConsumer ).accept( null, error );
-        verifyNoMoreInteractions( recordConsumer );
+        verify(recordConsumer).accept(null, error);
+        verifyNoMoreInteractions(recordConsumer);
     }
 
     @Test
-    void shouldReturnSummaryFuture()
-    {
+    void shouldReturnSummaryFuture() {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
         PullResponseHandler pullHandler = new ListBasedPullHandler();
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
-        cursor.installRecordConsumer( DISCARD_RECORD_CONSUMER );
-        cursor.request( 10 );
+        cursor.installRecordConsumer(DISCARD_RECORD_CONSUMER);
+        cursor.request(10);
         cursor.summaryAsync();
 
         // Then
-        assertTrue( cursor.isDone() );
+        assertTrue(cursor.isDone());
     }
 
     @Test
-    void shouldNotAllowToInstallRecordConsumerAfterSummary()
-    {
+    void shouldNotAllowToInstallRecordConsumerAfterSummary() {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
         PullResponseHandler pullHandler = new ListBasedPullHandler();
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
         cursor.summaryAsync();
 
         // Then
-        assertThrows( ResultConsumedException.class, () -> cursor.installRecordConsumer( null ) );
+        assertThrows(ResultConsumedException.class, () -> cursor.installRecordConsumer(null));
     }
 
     @Test
-    void shouldAllowToCallSummaryMultipleTimes()
-    {
+    void shouldAllowToCallSummaryMultipleTimes() {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
         PullResponseHandler pullHandler = new ListBasedPullHandler();
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
         cursor.summaryAsync();
@@ -226,99 +213,98 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldOnlyInstallRecordConsumerOnce()
-    {
+    void shouldOnlyInstallRecordConsumerOnce() {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
-        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
-        cursor.installRecordConsumer( DISCARD_RECORD_CONSUMER ); // any consumer
-        cursor.installRecordConsumer( DISCARD_RECORD_CONSUMER ); // any consumer
+        cursor.installRecordConsumer(DISCARD_RECORD_CONSUMER); // any consumer
+        cursor.installRecordConsumer(DISCARD_RECORD_CONSUMER); // any consumer
 
         // Then
-        verify( pullHandler ).installRecordConsumer( any() );
+        verify(pullHandler).installRecordConsumer(any());
     }
 
     @Test
-    void shouldCancelIfNotPulled()
-    {
+    void shouldCancelIfNotPulled() {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
-        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
         cursor.summaryAsync();
 
         // Then
-        verify( pullHandler ).installRecordConsumer( DISCARD_RECORD_CONSUMER );
-        verify( pullHandler ).cancel();
-        assertFalse( cursor.isDone() );
+        verify(pullHandler).installRecordConsumer(DISCARD_RECORD_CONSUMER);
+        verify(pullHandler).cancel();
+        assertFalse(cursor.isDone());
     }
 
     @Test
-    void shouldPropagateSummaryErrorViaSummaryStageWhenItIsRetrievedExternally() throws ExecutionException, InterruptedException
-    {
+    void shouldPropagateSummaryErrorViaSummaryStageWhenItIsRetrievedExternally()
+            throws ExecutionException, InterruptedException {
         // Given
-        RunResponseHandler runHandler = mock( RunResponseHandler.class );
-        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
-        @SuppressWarnings( "unchecked" )
-        ArgumentCaptor<BiConsumer<ResultSummary,Throwable>> summaryConsumerCaptor = ArgumentCaptor.forClass( BiConsumer.class );
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
-        verify( pullHandler, times( 1 ) ).installSummaryConsumer( summaryConsumerCaptor.capture() );
-        BiConsumer<ResultSummary,Throwable> summaryConsumer = summaryConsumerCaptor.getValue();
-        RuntimeException exception = mock( RuntimeException.class );
+        RunResponseHandler runHandler = mock(RunResponseHandler.class);
+        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<BiConsumer<ResultSummary, Throwable>> summaryConsumerCaptor =
+                ArgumentCaptor.forClass(BiConsumer.class);
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
+        verify(pullHandler, times(1)).installSummaryConsumer(summaryConsumerCaptor.capture());
+        BiConsumer<ResultSummary, Throwable> summaryConsumer = summaryConsumerCaptor.getValue();
+        RuntimeException exception = mock(RuntimeException.class);
 
         // When
         CompletionStage<ResultSummary> summaryStage = cursor.summaryAsync();
         CompletionStage<Throwable> discardStage = cursor.discardAllFailureAsync();
-        summaryConsumer.accept( null, exception );
+        summaryConsumer.accept(null, exception);
 
         // Then
-        verify( pullHandler ).installRecordConsumer( DISCARD_RECORD_CONSUMER );
-        verify( pullHandler ).cancel();
-        ExecutionException actualException = assertThrows( ExecutionException.class, () -> summaryStage.toCompletableFuture().get() );
-        assertSame( exception, actualException.getCause() );
-        assertNull( discardStage.toCompletableFuture().get() );
+        verify(pullHandler).installRecordConsumer(DISCARD_RECORD_CONSUMER);
+        verify(pullHandler).cancel();
+        ExecutionException actualException = assertThrows(
+                ExecutionException.class,
+                () -> summaryStage.toCompletableFuture().get());
+        assertSame(exception, actualException.getCause());
+        assertNull(discardStage.toCompletableFuture().get());
     }
 
     @Test
-    void shouldPropagateSummaryErrorViaDiscardStageWhenSummaryStageIsNotRetrievedExternally() throws ExecutionException, InterruptedException
-    {
+    void shouldPropagateSummaryErrorViaDiscardStageWhenSummaryStageIsNotRetrievedExternally()
+            throws ExecutionException, InterruptedException {
         // Given
-        RunResponseHandler runHandler = mock( RunResponseHandler.class );
-        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
-        @SuppressWarnings( "unchecked" )
-        ArgumentCaptor<BiConsumer<ResultSummary,Throwable>> summaryConsumerCaptor = ArgumentCaptor.forClass( BiConsumer.class );
-        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
-        verify( pullHandler, times( 1 ) ).installSummaryConsumer( summaryConsumerCaptor.capture() );
-        BiConsumer<ResultSummary,Throwable> summaryConsumer = summaryConsumerCaptor.getValue();
-        RuntimeException exception = mock( RuntimeException.class );
+        RunResponseHandler runHandler = mock(RunResponseHandler.class);
+        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<BiConsumer<ResultSummary, Throwable>> summaryConsumerCaptor =
+                ArgumentCaptor.forClass(BiConsumer.class);
+        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
+        verify(pullHandler, times(1)).installSummaryConsumer(summaryConsumerCaptor.capture());
+        BiConsumer<ResultSummary, Throwable> summaryConsumer = summaryConsumerCaptor.getValue();
+        RuntimeException exception = mock(RuntimeException.class);
 
         // When
         CompletionStage<Throwable> discardStage = cursor.discardAllFailureAsync();
-        summaryConsumer.accept( null, exception );
+        summaryConsumer.accept(null, exception);
 
         // Then
-        verify( pullHandler ).installRecordConsumer( DISCARD_RECORD_CONSUMER );
-        verify( pullHandler ).cancel();
-        assertSame( exception, discardStage.toCompletableFuture().get().getCause() );
+        verify(pullHandler).installRecordConsumer(DISCARD_RECORD_CONSUMER);
+        verify(pullHandler).cancel();
+        assertSame(exception, discardStage.toCompletableFuture().get().getCause());
     }
 
-    private static RunResponseHandler newRunResponseHandler( CompletableFuture<Void> runFuture )
-    {
-        return new RunResponseHandler( runFuture, METADATA_EXTRACTOR, mock( Connection.class ), null );
+    private static RunResponseHandler newRunResponseHandler(CompletableFuture<Void> runFuture) {
+        return new RunResponseHandler(runFuture, METADATA_EXTRACTOR, mock(Connection.class), null);
     }
 
-    private static RunResponseHandler newRunResponseHandler( Throwable error )
-    {
-        return newRunResponseHandler( failedFuture( error ) );
+    private static RunResponseHandler newRunResponseHandler(Throwable error) {
+        return newRunResponseHandler(failedFuture(error));
     }
 
-    private static RunResponseHandler newRunResponseHandler()
-    {
-        return newRunResponseHandler( completedWithNull() );
+    private static RunResponseHandler newRunResponseHandler() {
+        return newRunResponseHandler(completedWithNull());
     }
 }

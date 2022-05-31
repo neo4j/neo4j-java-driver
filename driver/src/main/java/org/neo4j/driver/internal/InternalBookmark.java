@@ -18,69 +18,56 @@
  */
 package org.neo4j.driver.internal;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.util.Iterables;
 
-import static java.util.Objects.requireNonNull;
-
-public final class InternalBookmark implements Bookmark, Serializable
-{
+public final class InternalBookmark implements Bookmark, Serializable {
     private static final long serialVersionUID = 8196096018245038950L;
 
-    private static final InternalBookmark EMPTY = new InternalBookmark( Collections.emptySet() );
+    private static final InternalBookmark EMPTY = new InternalBookmark(Collections.emptySet());
 
     private final Set<String> values;
 
-    private InternalBookmark( Set<String> values )
-    {
-        requireNonNull( values );
+    private InternalBookmark(Set<String> values) {
+        requireNonNull(values);
         this.values = values;
     }
 
-    public static Bookmark empty()
-    {
+    public static Bookmark empty() {
         return EMPTY;
     }
 
-    public static Bookmark from( Iterable<Bookmark> bookmarks )
-    {
-        if ( bookmarks == null )
-        {
+    public static Bookmark from(Iterable<Bookmark> bookmarks) {
+        if (bookmarks == null) {
             return empty();
         }
 
-        int size = Iterables.count( bookmarks );
-        if ( size == 0 )
-        {
+        int size = Iterables.count(bookmarks);
+        if (size == 0) {
             return empty();
-        }
-        else if ( size == 1 )
-        {
-            return from( bookmarks.iterator().next() );
+        } else if (size == 1) {
+            return from(bookmarks.iterator().next());
         }
 
         Set<String> newValues = new HashSet<>();
-        for ( Bookmark value : bookmarks )
-        {
-            if ( value == null )
-            {
+        for (Bookmark value : bookmarks) {
+            if (value == null) {
                 continue; // skip any null bookmark value
             }
-            newValues.addAll( value.values() );
+            newValues.addAll(value.values());
         }
-        return new InternalBookmark( newValues );
+        return new InternalBookmark(newValues);
     }
 
-    private static Bookmark from( Bookmark bookmark )
-    {
-        if ( bookmark == null )
-        {
+    private static Bookmark from(Bookmark bookmark) {
+        if (bookmark == null) {
             return empty();
         }
         // it is safe to return the given bookmark as bookmarks values can not be modified once it is created.
@@ -90,63 +77,52 @@ public final class InternalBookmark implements Bookmark, Serializable
     /**
      * Used to extract bookmark from metadata from server.
      */
-    public static Bookmark parse( String value )
-    {
-        if ( value == null )
-        {
+    public static Bookmark parse(String value) {
+        if (value == null) {
             return empty();
         }
-        return new InternalBookmark( Collections.singleton( value ) );
+        return new InternalBookmark(Collections.singleton(value));
     }
 
     /**
      * Used to reconstruct bookmark from values.
      */
-    public static Bookmark parse( Set<String> values )
-    {
-        if ( values == null )
-        {
+    public static Bookmark parse(Set<String> values) {
+        if (values == null) {
             return empty();
         }
-        return new InternalBookmark( values );
+        return new InternalBookmark(values);
     }
 
     @Override
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return values.isEmpty();
     }
 
     @Override
-    public Set<String> values()
-    {
-        return Collections.unmodifiableSet( values );
+    public Set<String> values() {
+        return Collections.unmodifiableSet(values);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         InternalBookmark bookmark = (InternalBookmark) o;
-        return Objects.equals( values, bookmark.values );
+        return Objects.equals(values, bookmark.values);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( values );
+    public int hashCode() {
+        return Objects.hash(values);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "Bookmark{values=" + values + "}";
     }
 }

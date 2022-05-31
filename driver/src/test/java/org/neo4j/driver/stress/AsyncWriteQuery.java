@@ -18,57 +18,47 @@
  */
 package org.neo4j.driver.stress;
 
-import java.util.concurrent.CompletionStage;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class AsyncWriteQuery<C extends AbstractContext> extends AbstractAsyncQuery<C>
-{
+public class AsyncWriteQuery<C extends AbstractContext> extends AbstractAsyncQuery<C> {
     private AbstractStressTestBase<C> stressTest;
 
-    public AsyncWriteQuery( AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+    public AsyncWriteQuery(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
         this.stressTest = stressTest;
     }
 
     @Override
-    public CompletionStage<Void> execute( C context )
-    {
-        AsyncSession session = newSession( AccessMode.WRITE, context );
+    public CompletionStage<Void> execute(C context) {
+        AsyncSession session = newSession(AccessMode.WRITE, context);
 
-        return session.runAsync( "CREATE ()" )
-                .thenCompose( ResultCursor::consumeAsync )
-                .handle( ( summary, error ) ->
-                {
+        return session.runAsync("CREATE ()")
+                .thenCompose(ResultCursor::consumeAsync)
+                .handle((summary, error) -> {
                     session.closeAsync();
 
-                    if ( error != null )
-                    {
-                        handleError( Futures.completionExceptionCause( error ), context );
-                    }
-                    else
-                    {
-                        context.setBookmark( session.lastBookmark() );
-                        assertEquals( 1, summary.counters().nodesCreated() );
+                    if (error != null) {
+                        handleError(Futures.completionExceptionCause(error), context);
+                    } else {
+                        context.setBookmark(session.lastBookmark());
+                        assertEquals(1, summary.counters().nodesCreated());
                         context.nodeCreated();
                     }
 
                     return null;
-                } );
+                });
     }
 
-    private void handleError( Throwable error, C context )
-    {
-        if ( !stressTest.handleWriteFailure( error, context ) )
-        {
-            throw new RuntimeException( error );
+    private void handleError(Throwable error, C context) {
+        if (!stressTest.handleWriteFailure(error, context)) {
+            throw new RuntimeException(error);
         }
     }
 }

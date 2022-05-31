@@ -20,9 +20,7 @@ package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 /**
@@ -30,29 +28,24 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
  * It should only be used when connection is established and removed from the pipeline afterwards.
  * Otherwise it will make long running queries fail.
  */
-public class ConnectTimeoutHandler extends ReadTimeoutHandler
-{
+public class ConnectTimeoutHandler extends ReadTimeoutHandler {
     private final long timeoutMillis;
     private boolean triggered;
 
-    public ConnectTimeoutHandler( long timeoutMillis )
-    {
-        super( timeoutMillis, TimeUnit.MILLISECONDS );
+    public ConnectTimeoutHandler(long timeoutMillis) {
+        super(timeoutMillis, TimeUnit.MILLISECONDS);
         this.timeoutMillis = timeoutMillis;
     }
 
     @Override
-    protected void readTimedOut( ChannelHandlerContext ctx )
-    {
-        if ( !triggered )
-        {
+    protected void readTimedOut(ChannelHandlerContext ctx) {
+        if (!triggered) {
             triggered = true;
-            ctx.fireExceptionCaught( unableToConnectError() );
+            ctx.fireExceptionCaught(unableToConnectError());
         }
     }
 
-    private ServiceUnavailableException unableToConnectError()
-    {
-        return new ServiceUnavailableException( "Unable to establish connection in " + timeoutMillis + "ms" );
+    private ServiceUnavailableException unableToConnectError() {
+        return new ServiceUnavailableException("Unable to establish connection in " + timeoutMillis + "ms");
     }
 }

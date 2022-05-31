@@ -18,19 +18,6 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.ImmediateEventExecutor;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CompletableFuture;
-
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.FakeClock;
-
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -43,66 +30,68 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.lastUsedTimestamp;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
-class ChannelReleasingResetResponseHandlerTest
-{
+import io.netty.channel.embedded.EmbeddedChannel;
+import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.FakeClock;
+
+class ChannelReleasingResetResponseHandlerTest {
     private final EmbeddedChannel channel = new EmbeddedChannel();
-    private final InboundMessageDispatcher messageDispatcher = mock( InboundMessageDispatcher.class );
+    private final InboundMessageDispatcher messageDispatcher = mock(InboundMessageDispatcher.class);
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    void shouldReleaseChannelOnSuccess()
-    {
+    void shouldReleaseChannelOnSuccess() {
         ExtendedChannelPool pool = newChannelPoolMock();
         FakeClock clock = new FakeClock();
-        clock.progress( 5 );
+        clock.progress(5);
         CompletableFuture<Void> releaseFuture = new CompletableFuture<>();
-        ChannelReleasingResetResponseHandler handler = newHandler( pool, clock, releaseFuture );
+        ChannelReleasingResetResponseHandler handler = newHandler(pool, clock, releaseFuture);
 
-        handler.onSuccess( emptyMap() );
+        handler.onSuccess(emptyMap());
 
-        verifyLastUsedTimestamp( 5 );
-        verify( pool ).release( eq( channel ) );
-        assertTrue( releaseFuture.isDone() );
-        assertFalse( releaseFuture.isCompletedExceptionally() );
+        verifyLastUsedTimestamp(5);
+        verify(pool).release(eq(channel));
+        assertTrue(releaseFuture.isDone());
+        assertFalse(releaseFuture.isCompletedExceptionally());
     }
 
     @Test
-    void shouldCloseAndReleaseChannelOnFailure()
-    {
+    void shouldCloseAndReleaseChannelOnFailure() {
         ExtendedChannelPool pool = newChannelPoolMock();
         FakeClock clock = new FakeClock();
-        clock.progress( 100 );
+        clock.progress(100);
         CompletableFuture<Void> releaseFuture = new CompletableFuture<>();
-        ChannelReleasingResetResponseHandler handler = newHandler( pool, clock, releaseFuture );
+        ChannelReleasingResetResponseHandler handler = newHandler(pool, clock, releaseFuture);
 
-        handler.onFailure( new RuntimeException() );
+        handler.onFailure(new RuntimeException());
 
-        assertTrue( channel.closeFuture().isDone() );
-        verify( pool ).release( eq( channel ) );
-        assertTrue( releaseFuture.isDone() );
-        assertFalse( releaseFuture.isCompletedExceptionally() );
+        assertTrue(channel.closeFuture().isDone());
+        verify(pool).release(eq(channel));
+        assertTrue(releaseFuture.isDone());
+        assertFalse(releaseFuture.isCompletedExceptionally());
     }
 
-    private void verifyLastUsedTimestamp( int expectedValue )
-    {
-        assertEquals( expectedValue, lastUsedTimestamp( channel ).intValue() );
+    private void verifyLastUsedTimestamp(int expectedValue) {
+        assertEquals(expectedValue, lastUsedTimestamp(channel).intValue());
     }
 
-    private ChannelReleasingResetResponseHandler newHandler( ExtendedChannelPool pool, Clock clock,
-            CompletableFuture<Void> releaseFuture )
-    {
-        return new ChannelReleasingResetResponseHandler( channel, pool, messageDispatcher, clock, releaseFuture );
+    private ChannelReleasingResetResponseHandler newHandler(
+            ExtendedChannelPool pool, Clock clock, CompletableFuture<Void> releaseFuture) {
+        return new ChannelReleasingResetResponseHandler(channel, pool, messageDispatcher, clock, releaseFuture);
     }
 
-    private static ExtendedChannelPool newChannelPoolMock()
-    {
-        ExtendedChannelPool pool = mock( ExtendedChannelPool.class );
-        when( pool.release( any() ) ).thenReturn( completedWithNull() );
+    private static ExtendedChannelPool newChannelPoolMock() {
+        ExtendedChannelPool pool = mock(ExtendedChannelPool.class);
+        when(pool.release(any())).thenReturn(completedWithNull());
         return pool;
     }
 }

@@ -19,57 +19,48 @@
 package org.neo4j.driver.internal.util.io;
 
 import io.netty.buffer.ByteBuf;
-
 import org.neo4j.driver.internal.packstream.PackOutput;
 
-public class ByteBufOutput implements PackOutput
-{
+public class ByteBufOutput implements PackOutput {
     private final ByteBuf buf;
 
-    public ByteBufOutput( ByteBuf buf )
-    {
+    public ByteBufOutput(ByteBuf buf) {
         this.buf = buf;
     }
 
     @Override
-    public PackOutput writeByte( byte value )
-    {
-        buf.writeByte( value );
+    public PackOutput writeByte(byte value) {
+        buf.writeByte(value);
         return this;
     }
 
     @Override
-    public PackOutput writeBytes( byte[] data )
-    {
-        buf.writeBytes( data );
+    public PackOutput writeBytes(byte[] data) {
+        buf.writeBytes(data);
         return this;
     }
 
     @Override
-    public PackOutput writeShort( short value )
-    {
-        buf.writeShort( value );
+    public PackOutput writeShort(short value) {
+        buf.writeShort(value);
         return this;
     }
 
     @Override
-    public PackOutput writeInt( int value )
-    {
-        buf.writeInt( value );
+    public PackOutput writeInt(int value) {
+        buf.writeInt(value);
         return this;
     }
 
     @Override
-    public PackOutput writeLong( long value )
-    {
-        buf.writeLong( value );
+    public PackOutput writeLong(long value) {
+        buf.writeLong(value);
         return this;
     }
 
     @Override
-    public PackOutput writeDouble( double value )
-    {
-        buf.writeDouble( value );
+    public PackOutput writeDouble(double value) {
+        buf.writeDouble(value);
         return this;
     }
 }

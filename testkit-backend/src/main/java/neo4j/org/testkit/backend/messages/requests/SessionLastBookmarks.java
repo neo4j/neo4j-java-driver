@@ -18,57 +18,53 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.Bookmarks;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import reactor.core.publisher.Mono;
-
-import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.Bookmark;
+import reactor.core.publisher.Mono;
 
 @Setter
 @Getter
-public class SessionLastBookmarks implements TestkitRequest
-{
+public class SessionLastBookmarks implements TestkitRequest {
     private SessionLastBookmarksBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        SessionHolder sessionHolder = testkitState.getSessionHolder( data.getSessionId() );
+    public TestkitResponse process(TestkitState testkitState) {
+        SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         Bookmark bookmark = sessionHolder.getSession().lastBookmark();
-        return createResponse( bookmark );
+        return createResponse(bookmark);
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncSessionHolder( data.getSessionId() )
-                           .thenApply( sessionHolder -> sessionHolder.getSession().lastBookmark() )
-                           .thenApply( this::createResponse );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState
+                .getAsyncSessionHolder(data.getSessionId())
+                .thenApply(sessionHolder -> sessionHolder.getSession().lastBookmark())
+                .thenApply(this::createResponse);
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return testkitState.getRxSessionHolder( data.getSessionId() )
-                           .map( sessionHolder -> sessionHolder.getSession().lastBookmark() )
-                           .map( this::createResponse );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return testkitState
+                .getRxSessionHolder(data.getSessionId())
+                .map(sessionHolder -> sessionHolder.getSession().lastBookmark())
+                .map(this::createResponse);
     }
 
-    private Bookmarks createResponse( Bookmark bookmark )
-    {
-        return Bookmarks.builder().data( Bookmarks.BookmarksBody.builder().bookmarks( bookmark ).build() ).build();
+    private Bookmarks createResponse(Bookmark bookmark) {
+        return Bookmarks.builder()
+                .data(Bookmarks.BookmarksBody.builder().bookmarks(bookmark).build())
+                .build();
     }
 
     @Setter
     @Getter
-    public static class SessionLastBookmarksBody
-    {
+    public static class SessionLastBookmarksBody {
         private String sessionId;
     }
 }

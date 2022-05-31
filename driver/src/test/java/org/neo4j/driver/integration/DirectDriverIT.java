@@ -18,14 +18,17 @@
  */
 package org.neo4j.driver.integration;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
+
+import java.net.URI;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.net.URI;
-
-import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
@@ -34,81 +37,67 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
-
 @ParallelizableIT
-class DirectDriverIT
-{
+class DirectDriverIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private Driver driver;
 
     @AfterEach
-    void closeDriver()
-    {
-        if ( driver != null )
-        {
+    void closeDriver() {
+        if (driver != null) {
             driver.close();
         }
     }
 
     @Test
-    void shouldAllowIPv6Address()
-    {
+    void shouldAllowIPv6Address() {
         // Given
-        URI uri = URI.create( "bolt://[::1]:" + neo4j.boltPort() );
-        BoltServerAddress address = new BoltServerAddress( uri );
+        URI uri = URI.create("bolt://[::1]:" + neo4j.boltPort());
+        BoltServerAddress address = new BoltServerAddress(uri);
 
         // When
-        driver = GraphDatabase.driver( uri, neo4j.authToken() );
+        driver = GraphDatabase.driver(uri, neo4j.authToken());
 
         // Then
-        assertThat( driver, is( directDriverWithAddress( address ) ) );
+        assertThat(driver, is(directDriverWithAddress(address)));
     }
 
     @Test
-    void shouldRejectInvalidAddress()
-    {
+    void shouldRejectInvalidAddress() {
         // Given
-        URI uri = URI.create( "*" );
+        URI uri = URI.create("*");
 
         // When & Then
-        IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> GraphDatabase.driver( uri, neo4j.authToken() ) );
-        assertThat( e.getMessage(), equalTo( "Scheme must not be null" ) );
+        IllegalArgumentException e =
+                assertThrows(IllegalArgumentException.class, () -> GraphDatabase.driver(uri, neo4j.authToken()));
+        assertThat(e.getMessage(), equalTo("Scheme must not be null"));
     }
 
     @Test
-    void shouldRegisterSingleServer()
-    {
+    void shouldRegisterSingleServer() {
         // Given
         URI uri = neo4j.uri();
-        BoltServerAddress address = new BoltServerAddress( uri );
+        BoltServerAddress address = new BoltServerAddress(uri);
 
         // When
-        driver = GraphDatabase.driver( uri, neo4j.authToken() );
+        driver = GraphDatabase.driver(uri, neo4j.authToken());
 
         // Then
-        assertThat( driver, is( directDriverWithAddress( address ) ) );
+        assertThat(driver, is(directDriverWithAddress(address)));
     }
 
     @Test
-    void shouldConnectIPv6Uri()
-    {
+    void shouldConnectIPv6Uri() {
         // Given
-        try ( Driver driver = GraphDatabase.driver( "bolt://[::1]:" + neo4j.boltPort(), neo4j.authToken() );
-              Session session = driver.session() )
-        {
+        try (Driver driver = GraphDatabase.driver("bolt://[::1]:" + neo4j.boltPort(), neo4j.authToken());
+                Session session = driver.session()) {
             // When
-            Result result = session.run( "RETURN 1" );
+            Result result = session.run("RETURN 1");
 
             // Then
-            assertThat( result.single().get( 0 ).asInt(), CoreMatchers.equalTo( 1 ) );
+            assertThat(result.single().get(0).asInt(), CoreMatchers.equalTo(1));
         }
     }
 }

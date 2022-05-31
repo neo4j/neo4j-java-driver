@@ -18,13 +18,16 @@
  */
 package org.neo4j.driver.integration.async;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.util.TestUtil.await;
+
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.util.List;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
@@ -33,94 +36,78 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.util.TestUtil.await;
-
 @ParallelizableIT
-class AsyncSessionServerRestartIT
-{
+class AsyncSessionServerRestartIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private AsyncSession session;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         session = neo4j.driver().asyncSession();
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         session.closeAsync();
     }
 
     @Test
-    void shouldFailWhenServerIsRestarted()
-    {
+    void shouldFailWhenServerIsRestarted() {
         int queryCount = 10_000;
 
-        String query = "UNWIND range(1, 100) AS x " +
-                       "CREATE (n1:Node {value: x})-[r:LINKED {value: x}]->(n2:Node {value: x}) " +
-                       "DETACH DELETE n1, n2 " +
-                       "RETURN x";
+        String query = "UNWIND range(1, 100) AS x "
+                + "CREATE (n1:Node {value: x})-[r:LINKED {value: x}]->(n2:Node {value: x}) "
+                + "DETACH DELETE n1, n2 "
+                + "RETURN x";
 
-        assertThrows( ServiceUnavailableException.class, () ->
-        {
-            for ( int i = 0; i < queryCount; i++ )
-            {
-                ResultCursor cursor = await( session.runAsync( query ) );
+        assertThrows(ServiceUnavailableException.class, () -> {
+            for (int i = 0; i < queryCount; i++) {
+                ResultCursor cursor = await(session.runAsync(query));
 
-                if ( i == 0 )
-                {
+                if (i == 0) {
                     neo4j.stopDb();
                 }
 
-                List<Record> records = await( cursor.listAsync() );
-                assertEquals( 100, records.size() );
+                List<Record> records = await(cursor.listAsync());
+                assertEquals(100, records.size());
             }
-        } );
+        });
         neo4j.startDb();
     }
 
     @Test
-    void shouldRunAfterRunFailureToAcquireConnection()
-    {
+    void shouldRunAfterRunFailureToAcquireConnection() {
         neo4j.stopDb();
 
-        assertThrows( ServiceUnavailableException.class, () ->
-        {
-            ResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
-            await( cursor.nextAsync() );
-        } );
+        assertThrows(ServiceUnavailableException.class, () -> {
+            ResultCursor cursor = await(session.runAsync("RETURN 42"));
+            await(cursor.nextAsync());
+        });
 
         neo4j.startDb();
 
-        ResultCursor cursor2 = await( session.runAsync( "RETURN 42" ) );
-        Record record = await( cursor2.singleAsync() );
-        assertEquals( 42, record.get( 0 ).asInt() );
+        ResultCursor cursor2 = await(session.runAsync("RETURN 42"));
+        Record record = await(cursor2.singleAsync());
+        assertEquals(42, record.get(0).asInt());
     }
 
     @Test
-    void shouldBeginTxAfterRunFailureToAcquireConnection()
-    {
+    void shouldBeginTxAfterRunFailureToAcquireConnection() {
         neo4j.stopDb();
 
-        assertThrows( ServiceUnavailableException.class, () ->
-        {
-            ResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
-            await( cursor.consumeAsync() );
-        } );
+        assertThrows(ServiceUnavailableException.class, () -> {
+            ResultCursor cursor = await(session.runAsync("RETURN 42"));
+            await(cursor.consumeAsync());
+        });
 
         neo4j.startDb();
 
-        AsyncTransaction tx = await( session.beginTransactionAsync() );
-        ResultCursor cursor2 = await( tx.runAsync( "RETURN 42" ) );
-        Record record = await( cursor2.singleAsync() );
-        assertEquals( 42, record.get( 0 ).asInt() );
-        assertNull( await( tx.rollbackAsync() ) );
+        AsyncTransaction tx = await(session.beginTransactionAsync());
+        ResultCursor cursor2 = await(tx.runAsync("RETURN 42"));
+        Record record = await(cursor2.singleAsync());
+        assertEquals(42, record.get(0).asInt());
+        assertNull(await(tx.rollbackAsync()));
     }
 }

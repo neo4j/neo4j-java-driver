@@ -18,43 +18,42 @@
  */
 package org.neo4j.driver.util.cc;
 
-import java.nio.file.Path;
-
 import static org.neo4j.driver.util.cc.CommandLineUtil.executeCommand;
 
-final class ClusterControl
-{
-    private ClusterControl()
-    {
+import java.nio.file.Path;
+
+final class ClusterControl {
+    private ClusterControl() {}
+
+    static void installCluster(String neo4jVersion, int cores, int readReplicas, String password, int port, Path path) {
+        executeCommand(
+                "neoctrl-cluster",
+                "install",
+                "--cores",
+                String.valueOf(cores),
+                "--read-replicas",
+                String.valueOf(readReplicas),
+                "--password",
+                password,
+                "--initial-port",
+                String.valueOf(port),
+                neo4jVersion,
+                path.toString());
     }
 
-    static void installCluster( String neo4jVersion, int cores, int readReplicas, String password, int port,
-            Path path )
-    {
-        executeCommand( "neoctrl-cluster", "install",
-                "--cores", String.valueOf( cores ), "--read-replicas", String.valueOf( readReplicas ),
-                "--password", password, "--initial-port", String.valueOf( port ),
-                neo4jVersion, path.toString() );
+    static String startCluster(Path path) {
+        return executeCommand("neoctrl-cluster", "start", path.toString());
     }
 
-    static String startCluster( Path path )
-    {
-        return executeCommand( "neoctrl-cluster", "start", path.toString() );
+    static String startClusterMember(Path path) {
+        return executeCommand("neoctrl-start", path.toString());
     }
 
-    static String startClusterMember( Path path )
-    {
-        return executeCommand( "neoctrl-start", path.toString() );
+    static void stopCluster(Path path) {
+        executeCommand("neoctrl-cluster", "stop", path.toString());
     }
 
-    static void stopCluster( Path path )
-    {
-        executeCommand( "neoctrl-cluster", "stop", path.toString() );
+    static void killCluster(Path path) {
+        executeCommand("neoctrl-cluster", "stop", "--kill", path.toString());
     }
-
-    static void killCluster( Path path )
-    {
-        executeCommand( "neoctrl-cluster", "stop", "--kill", path.toString() );
-    }
-
 }

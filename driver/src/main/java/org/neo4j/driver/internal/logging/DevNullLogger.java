@@ -20,58 +20,39 @@ package org.neo4j.driver.internal.logging;
 
 import org.neo4j.driver.Logger;
 
-public class DevNullLogger implements Logger
-{
+public class DevNullLogger implements Logger {
     public static final Logger DEV_NULL_LOGGER = new DevNullLogger();
 
-    private DevNullLogger()
-    {
-    }
+    private DevNullLogger() {}
 
     @Override
-    public void error( String message, Throwable cause )
-    {
-    }
+    public void error(String message, Throwable cause) {}
 
     @Override
-    public void info( String message, Object... params )
-    {
-    }
+    public void info(String message, Object... params) {}
 
     @Override
-    public void warn( String message, Object... params )
-    {
-    }
+    public void warn(String message, Object... params) {}
 
     @Override
-    public void warn( String message, Throwable cause )
-    {
-    }
+    public void warn(String message, Throwable cause) {}
 
     @Override
-    public void debug( String message, Object... params )
-    {
-    }
+    public void debug(String message, Object... params) {}
 
     @Override
-    public void debug( String message, Throwable throwable )
-    {
-    }
+    public void debug(String message, Throwable throwable) {}
 
     @Override
-    public void trace( String message, Object... params )
-    {
-    }
+    public void trace(String message, Object... params) {}
 
     @Override
-    public boolean isTraceEnabled()
-    {
+    public boolean isTraceEnabled() {
         return false;
     }
 
     @Override
-    public boolean isDebugEnabled()
-    {
+    public boolean isDebugEnabled() {
         return false;
     }
 }

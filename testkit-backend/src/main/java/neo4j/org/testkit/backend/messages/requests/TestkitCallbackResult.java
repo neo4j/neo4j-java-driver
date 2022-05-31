@@ -18,39 +18,34 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 /**
  * This request is sent by Testkit in response to previously sent {@link TestkitCallback}.
  */
-public interface TestkitCallbackResult extends TestkitRequest
-{
+public interface TestkitCallbackResult extends TestkitRequest {
     String getCallbackId();
 
     @Override
-    default TestkitResponse process( TestkitState testkitState )
-    {
-        testkitState.getCallbackIdToFuture().get( getCallbackId() ).complete( this );
+    default TestkitResponse process(TestkitState testkitState) {
+        testkitState.getCallbackIdToFuture().get(getCallbackId()).complete(this);
         return null;
     }
 
     @Override
-    default CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        testkitState.getCallbackIdToFuture().get( getCallbackId() ).complete( this );
-        return CompletableFuture.completedFuture( null );
+    default CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        testkitState.getCallbackIdToFuture().get(getCallbackId()).complete(this);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    default Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        testkitState.getCallbackIdToFuture().get( getCallbackId() ).complete( this );
+    default Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        testkitState.getCallbackIdToFuture().get(getCallbackId()).complete(this);
         return Mono.empty();
     }
 }

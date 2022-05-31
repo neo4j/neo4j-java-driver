@@ -18,100 +18,87 @@
  */
 package org.neo4j.driver.internal;
 
+import static java.util.Objects.requireNonNull;
+
 import java.net.URI;
 import java.util.Objects;
 import java.util.stream.Stream;
-
 import org.neo4j.driver.net.ServerAddress;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Holds a host and port pair that denotes a Bolt server address.
  */
-public class BoltServerAddress implements ServerAddress
-{
+public class BoltServerAddress implements ServerAddress {
     public static final int DEFAULT_PORT = 7687;
-    public static final BoltServerAddress LOCAL_DEFAULT = new BoltServerAddress( "localhost", DEFAULT_PORT );
+    public static final BoltServerAddress LOCAL_DEFAULT = new BoltServerAddress("localhost", DEFAULT_PORT);
 
     protected final String host; // Host or IP address.
-    private final String connectionHost; // Either is equal to the host or is explicitly provided on creation and is expected to be a resolved IP address.
+    private final String
+            connectionHost; // Either is equal to the host or is explicitly provided on creation and is expected to be a
+    // resolved IP address.
     protected final int port;
     private final String stringValue;
 
-    public BoltServerAddress( String address )
-    {
-        this( uriFrom( address ) );
+    public BoltServerAddress(String address) {
+        this(uriFrom(address));
     }
 
-    public BoltServerAddress( URI uri )
-    {
-        this( hostFrom( uri ), portFrom( uri ) );
+    public BoltServerAddress(URI uri) {
+        this(hostFrom(uri), portFrom(uri));
     }
 
-    public BoltServerAddress( String host, int port )
-    {
-        this( host, host, port );
+    public BoltServerAddress(String host, int port) {
+        this(host, host, port);
     }
 
-    public BoltServerAddress( String host, String connectionHost, int port )
-    {
-        this.host = requireNonNull( host, "host" );
-        this.connectionHost = requireNonNull( connectionHost, "connectionHost" );
-        this.port = requireValidPort( port );
-        this.stringValue = host.equals( connectionHost )
-                           ? String.format( "%s:%d", host, port )
-                           : String.format( "%s(%s):%d", host, connectionHost, port );
+    public BoltServerAddress(String host, String connectionHost, int port) {
+        this.host = requireNonNull(host, "host");
+        this.connectionHost = requireNonNull(connectionHost, "connectionHost");
+        this.port = requireValidPort(port);
+        this.stringValue = host.equals(connectionHost)
+                ? String.format("%s:%d", host, port)
+                : String.format("%s(%s):%d", host, connectionHost, port);
     }
 
-    public static BoltServerAddress from( ServerAddress address )
-    {
+    public static BoltServerAddress from(ServerAddress address) {
         return address instanceof BoltServerAddress
-               ? (BoltServerAddress) address
-               : new BoltServerAddress( address.host(), address.port() );
+                ? (BoltServerAddress) address
+                : new BoltServerAddress(address.host(), address.port());
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         BoltServerAddress address = (BoltServerAddress) o;
-        return port == address.port && host.equals( address.host ) && connectionHost.equals( address.connectionHost );
+        return port == address.port && host.equals(address.host) && connectionHost.equals(address.connectionHost);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( host, connectionHost, port );
+    public int hashCode() {
+        return Objects.hash(host, connectionHost, port);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return stringValue;
     }
 
     @Override
-    public String host()
-    {
+    public String host() {
         return host;
     }
 
     @Override
-    public int port()
-    {
+    public int port() {
         return port;
     }
 
-    public String connectionHost()
-    {
+    public String connectionHost() {
         return connectionHost;
     }
 
@@ -122,63 +109,50 @@ public class BoltServerAddress implements ServerAddress
      *
      * @return stream of unicast addresses.
      */
-    public Stream<BoltServerAddress> unicastStream()
-    {
-        return Stream.of( this );
+    public Stream<BoltServerAddress> unicastStream() {
+        return Stream.of(this);
     }
 
-    private static String hostFrom( URI uri )
-    {
+    private static String hostFrom(URI uri) {
         String host = uri.getHost();
-        if ( host == null )
-        {
-            throw invalidAddressFormat( uri );
+        if (host == null) {
+            throw invalidAddressFormat(uri);
         }
         return host;
     }
 
-    private static int portFrom( URI uri )
-    {
+    private static int portFrom(URI uri) {
         int port = uri.getPort();
         return port == -1 ? DEFAULT_PORT : port;
     }
 
-    private static URI uriFrom( String address )
-    {
+    private static URI uriFrom(String address) {
         String scheme;
         String hostPort;
 
-        String[] schemeSplit = address.split( "://" );
-        if ( schemeSplit.length == 1 )
-        {
+        String[] schemeSplit = address.split("://");
+        if (schemeSplit.length == 1) {
             // URI can't parse addresses without scheme, prepend fake "bolt://" to reuse the parsing facility
             scheme = "bolt://";
-            hostPort = hostPortFrom( schemeSplit[0] );
-        }
-        else if ( schemeSplit.length == 2 )
-        {
+            hostPort = hostPortFrom(schemeSplit[0]);
+        } else if (schemeSplit.length == 2) {
             scheme = schemeSplit[0] + "://";
-            hostPort = hostPortFrom( schemeSplit[1] );
-        }
-        else
-        {
-            throw invalidAddressFormat( address );
+            hostPort = hostPortFrom(schemeSplit[1]);
+        } else {
+            throw invalidAddressFormat(address);
         }
 
-        return URI.create( scheme + hostPort );
+        return URI.create(scheme + hostPort);
     }
 
-    private static String hostPortFrom( String address )
-    {
-        if ( address.startsWith( "[" ) )
-        {
+    private static String hostPortFrom(String address) {
+        if (address.startsWith("[")) {
             // expected to be an IPv6 address like [::1] or [::1]:7687
             return address;
         }
 
-        boolean containsSingleColon = address.indexOf( ":" ) == address.lastIndexOf( ":" );
-        if ( containsSingleColon )
-        {
+        boolean containsSingleColon = address.indexOf(":") == address.lastIndexOf(":");
+        if (containsSingleColon) {
             // expected to be an IPv4 address with or without port like 127.0.0.1 or 127.0.0.1:7687
             return address;
         }
@@ -188,22 +162,18 @@ public class BoltServerAddress implements ServerAddress
         return "[" + address + "]";
     }
 
-    private static RuntimeException invalidAddressFormat( URI uri )
-    {
-        return invalidAddressFormat( uri.toString() );
+    private static RuntimeException invalidAddressFormat(URI uri) {
+        return invalidAddressFormat(uri.toString());
     }
 
-    private static RuntimeException invalidAddressFormat( String address )
-    {
-        return new IllegalArgumentException( "Invalid address format `" + address + "`" );
+    private static RuntimeException invalidAddressFormat(String address) {
+        return new IllegalArgumentException("Invalid address format `" + address + "`");
     }
 
-    private static int requireValidPort( int port )
-    {
-        if ( port >= 0 && port <= 65_535 )
-        {
+    private static int requireValidPort(int port) {
+        if (port >= 0 && port <= 65_535) {
             return port;
         }
-        throw new IllegalArgumentException( "Illegal port: " + port );
+        throw new IllegalArgumentException("Illegal port: " + port);
     }
 }

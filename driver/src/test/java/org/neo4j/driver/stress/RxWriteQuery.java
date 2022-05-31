@@ -18,56 +18,49 @@
  */
 package org.neo4j.driver.stress;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxSession;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
-public class RxWriteQuery<C extends AbstractContext> extends AbstractRxQuery<C>
-{
+public class RxWriteQuery<C extends AbstractContext> extends AbstractRxQuery<C> {
     private AbstractStressTestBase<C> stressTest;
 
-    public RxWriteQuery( AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+    public RxWriteQuery(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
         this.stressTest = stressTest;
     }
 
     @Override
-    public CompletionStage<Void> execute( C context )
-    {
+    public CompletionStage<Void> execute(C context) {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.WRITE, context ) ),
-                session -> Flux.from( session.run( "CREATE ()" ).consume() )
-                        .doOnComplete( () -> context.setBookmark( session.lastBookmark() ) ),
-                RxSession::close )
-                .subscribe( summary -> {
-                    assertEquals( 1, summary.counters().nodesCreated() );
-                    context.nodeCreated();
-                    queryFinished.complete( null );
-                }, error -> handleError( Futures.completionExceptionCause( error ), context, queryFinished ) );
+        Flux.usingWhen(
+                        Mono.fromSupplier(() -> newSession(AccessMode.WRITE, context)),
+                        session -> Flux.from(session.run("CREATE ()").consume())
+                                .doOnComplete(() -> context.setBookmark(session.lastBookmark())),
+                        RxSession::close)
+                .subscribe(
+                        summary -> {
+                            assertEquals(1, summary.counters().nodesCreated());
+                            context.nodeCreated();
+                            queryFinished.complete(null);
+                        },
+                        error -> handleError(Futures.completionExceptionCause(error), context, queryFinished));
 
         return queryFinished;
     }
 
-    private void handleError( Throwable error, C context, CompletableFuture<Void> queryFinished )
-    {
-        if ( !stressTest.handleWriteFailure( error, context ) )
-        {
-            queryFinished.completeExceptionally( error );
-        }
-        else
-        {
-            queryFinished.complete( null );
+    private void handleError(Throwable error, C context, CompletableFuture<Void> queryFinished) {
+        if (!stressTest.handleWriteFailure(error, context)) {
+            queryFinished.completeExceptionally(error);
+        } else {
+            queryFinished.complete(null);
         }
     }
 }

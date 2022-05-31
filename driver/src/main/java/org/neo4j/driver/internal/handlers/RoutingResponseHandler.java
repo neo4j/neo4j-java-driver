@@ -18,9 +18,10 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import static java.lang.String.format;
+
 import java.util.Map;
 import java.util.Objects;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -32,18 +33,17 @@ import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 
-import static java.lang.String.format;
-
-public class RoutingResponseHandler implements ResponseHandler
-{
+public class RoutingResponseHandler implements ResponseHandler {
     private final ResponseHandler delegate;
     private final BoltServerAddress address;
     private final AccessMode accessMode;
     private final RoutingErrorHandler errorHandler;
 
-    public RoutingResponseHandler( ResponseHandler delegate, BoltServerAddress address, AccessMode accessMode,
-            RoutingErrorHandler errorHandler )
-    {
+    public RoutingResponseHandler(
+            ResponseHandler delegate,
+            BoltServerAddress address,
+            AccessMode accessMode,
+            RoutingErrorHandler errorHandler) {
         this.delegate = delegate;
         this.address = address;
         this.accessMode = accessMode;
@@ -51,98 +51,78 @@ public class RoutingResponseHandler implements ResponseHandler
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
-    {
-        delegate.onSuccess( metadata );
+    public void onSuccess(Map<String, Value> metadata) {
+        delegate.onSuccess(metadata);
     }
 
     @Override
-    public void onFailure( Throwable error )
-    {
-        Throwable newError = handledError( error );
-        delegate.onFailure( newError );
+    public void onFailure(Throwable error) {
+        Throwable newError = handledError(error);
+        delegate.onFailure(newError);
     }
 
     @Override
-    public void onRecord( Value[] fields )
-    {
-        delegate.onRecord( fields );
+    public void onRecord(Value[] fields) {
+        delegate.onRecord(fields);
     }
 
     @Override
-    public boolean canManageAutoRead()
-    {
+    public boolean canManageAutoRead() {
         return delegate.canManageAutoRead();
     }
 
     @Override
-    public void disableAutoReadManagement()
-    {
+    public void disableAutoReadManagement() {
         delegate.disableAutoReadManagement();
     }
 
-    private Throwable handledError( Throwable receivedError )
-    {
-        Throwable error = Futures.completionExceptionCause( receivedError );
+    private Throwable handledError(Throwable receivedError) {
+        Throwable error = Futures.completionExceptionCause(receivedError);
 
-        if ( error instanceof ServiceUnavailableException )
-        {
-            return handledServiceUnavailableException( ((ServiceUnavailableException) error) );
-        }
-        else if ( error instanceof ClientException )
-        {
-            return handledClientException( ((ClientException) error) );
-        }
-        else if ( error instanceof TransientException )
-        {
-            return handledTransientException( ((TransientException) error) );
-        }
-        else
-        {
+        if (error instanceof ServiceUnavailableException) {
+            return handledServiceUnavailableException(((ServiceUnavailableException) error));
+        } else if (error instanceof ClientException) {
+            return handledClientException(((ClientException) error));
+        } else if (error instanceof TransientException) {
+            return handledTransientException(((TransientException) error));
+        } else {
             return error;
         }
     }
 
-    private Throwable handledServiceUnavailableException( ServiceUnavailableException e )
-    {
-        errorHandler.onConnectionFailure( address );
-        return new SessionExpiredException( format( "Server at %s is no longer available", address ), e );
+    private Throwable handledServiceUnavailableException(ServiceUnavailableException e) {
+        errorHandler.onConnectionFailure(address);
+        return new SessionExpiredException(format("Server at %s is no longer available", address), e);
     }
 
-    private Throwable handledTransientException( TransientException e )
-    {
+    private Throwable handledTransientException(TransientException e) {
         String errorCode = e.code();
-        if ( Objects.equals( errorCode, "Neo.TransientError.General.DatabaseUnavailable" ) )
-        {
-            errorHandler.onConnectionFailure( address );
+        if (Objects.equals(errorCode, "Neo.TransientError.General.DatabaseUnavailable")) {
+            errorHandler.onConnectionFailure(address);
         }
         return e;
     }
 
-    private Throwable handledClientException( ClientException e )
-    {
-        if ( isFailureToWrite( e ) )
-        {
+    private Throwable handledClientException(ClientException e) {
+        if (isFailureToWrite(e)) {
             // The server is unaware of the session mode, so we have to implement this logic in the driver.
             // In the future, we might be able to move this logic to the server.
-            switch ( accessMode )
-            {
-            case READ:
-                return new ClientException( "Write queries cannot be performed in READ access mode." );
-            case WRITE:
-                errorHandler.onWriteFailure( address );
-                return new SessionExpiredException( format( "Server at %s no longer accepts writes", address ) );
-            default:
-                throw new IllegalArgumentException( accessMode + " not supported." );
+            switch (accessMode) {
+                case READ:
+                    return new ClientException("Write queries cannot be performed in READ access mode.");
+                case WRITE:
+                    errorHandler.onWriteFailure(address);
+                    return new SessionExpiredException(format("Server at %s no longer accepts writes", address));
+                default:
+                    throw new IllegalArgumentException(accessMode + " not supported.");
             }
         }
         return e;
     }
 
-    private static boolean isFailureToWrite( ClientException e )
-    {
+    private static boolean isFailureToWrite(ClientException e) {
         String errorCode = e.code();
-        return Objects.equals( errorCode, "Neo.ClientError.Cluster.NotALeader" ) ||
-               Objects.equals( errorCode, "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase" );
+        return Objects.equals(errorCode, "Neo.ClientError.Cluster.NotALeader")
+                || Objects.equals(errorCode, "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
     }
 }

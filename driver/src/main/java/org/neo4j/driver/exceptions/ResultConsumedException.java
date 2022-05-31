@@ -25,10 +25,8 @@ import org.neo4j.driver.QueryRunner;
  * the resources have already been consumed or
  * the {@link QueryRunner} where the resources are created has already been closed.
  */
-public class ResultConsumedException extends ClientException
-{
-    public ResultConsumedException( String message )
-    {
-        super( message );
+public class ResultConsumedException extends ClientException {
+    public ResultConsumedException(String message) {
+        super(message);
     }
 }

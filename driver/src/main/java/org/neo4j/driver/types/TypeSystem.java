@@ -27,8 +27,7 @@ import org.neo4j.driver.util.Immutable;
  */
 @Immutable
 @Experimental
-public interface TypeSystem
-{
+public interface TypeSystem {
     Type ANY();
 
     Type BOOLEAN();

@@ -20,58 +20,47 @@ package org.neo4j.docs.driver;
 
 // tag::result-retain-import[]
 
-import java.util.List;
+import static org.neo4j.driver.Values.parameters;
+// end::result-retain-import[]
 
+import java.util.List;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
 
-import static org.neo4j.driver.Values.parameters;
-// end::result-retain-import[]
-
-public class ResultRetainExample extends BaseApplication
-{
-    public ResultRetainExample( String uri, String user, String password )
-    {
-        super( uri, user, password );
+public class ResultRetainExample extends BaseApplication {
+    public ResultRetainExample(String uri, String user, String password) {
+        super(uri, user, password);
     }
 
     // tag::result-retain[]
-    public int addEmployees( final String companyName )
-    {
-        try ( Session session = driver.session() )
-        {
+    public int addEmployees(final String companyName) {
+        try (Session session = driver.session()) {
             int employees = 0;
-            List<Record> persons = session.readTransaction( new TransactionWork<List<Record>>()
-            {
+            List<Record> persons = session.readTransaction(new TransactionWork<List<Record>>() {
                 @Override
-                public List<Record> execute( Transaction tx )
-                {
-                    return matchPersonNodes( tx );
+                public List<Record> execute(Transaction tx) {
+                    return matchPersonNodes(tx);
                 }
-            } );
-            for ( final Record person : persons )
-            {
-                employees += session.writeTransaction( tx ->
-                                                       {
-                                                           Result result = tx.run( "MATCH (emp:Person {name: $person_name}) " +
-                                                                                   "MERGE (com:Company {name: $company_name}) " +
-                                                                                   "MERGE (emp)-[:WORKS_FOR]->(com)",
-                                                                                   parameters( "person_name", person.get( "name" ).asString(), "company_name",
-                                                                                               companyName ) );
-                                                           result.consume();
-                                                           return 1;
-                                                       } );
+            });
+            for (final Record person : persons) {
+                employees += session.writeTransaction(tx -> {
+                    Result result = tx.run(
+                            "MATCH (emp:Person {name: $person_name}) " + "MERGE (com:Company {name: $company_name}) "
+                                    + "MERGE (emp)-[:WORKS_FOR]->(com)",
+                            parameters("person_name", person.get("name").asString(), "company_name", companyName));
+                    result.consume();
+                    return 1;
+                });
             }
             return employees;
         }
     }
 
-    private static List<Record> matchPersonNodes( Transaction tx )
-    {
-        return tx.run( "MATCH (a:Person) RETURN a.name AS name" ).list();
+    private static List<Record> matchPersonNodes(Transaction tx) {
+        return tx.run("MATCH (a:Person) RETURN a.name AS name").list();
     }
 
     // end::result-retain[]

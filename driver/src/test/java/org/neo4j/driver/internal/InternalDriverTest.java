@@ -18,19 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CompletableFuture;
-
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Metrics;
-import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
-import org.neo4j.driver.internal.util.Clock;
-
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,103 +31,105 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.util.TestUtil.await;
 
-class InternalDriverTest
-{
-    @Test
-    void shouldCloseSessionFactory()
-    {
-        SessionFactory sessionFactory = sessionFactoryMock();
-        InternalDriver driver = newDriver( sessionFactory );
+import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Metrics;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
+import org.neo4j.driver.internal.util.Clock;
 
-        assertNull( await( driver.closeAsync() ) );
-        verify( sessionFactory ).close();
+class InternalDriverTest {
+    @Test
+    void shouldCloseSessionFactory() {
+        SessionFactory sessionFactory = sessionFactoryMock();
+        InternalDriver driver = newDriver(sessionFactory);
+
+        assertNull(await(driver.closeAsync()));
+        verify(sessionFactory).close();
     }
 
     @Test
-    void shouldNotCloseSessionFactoryMultipleTimes()
-    {
+    void shouldNotCloseSessionFactoryMultipleTimes() {
         SessionFactory sessionFactory = sessionFactoryMock();
-        InternalDriver driver = newDriver( sessionFactory );
+        InternalDriver driver = newDriver(sessionFactory);
 
-        assertNull( await( driver.closeAsync() ) );
-        assertNull( await( driver.closeAsync() ) );
-        assertNull( await( driver.closeAsync() ) );
+        assertNull(await(driver.closeAsync()));
+        assertNull(await(driver.closeAsync()));
+        assertNull(await(driver.closeAsync()));
 
-        verify( sessionFactory ).close();
+        verify(sessionFactory).close();
     }
 
     @Test
-    void shouldVerifyConnectivity()
-    {
+    void shouldVerifyConnectivity() {
         SessionFactory sessionFactory = sessionFactoryMock();
         CompletableFuture<Void> connectivityStage = completedWithNull();
-        when( sessionFactory.verifyConnectivity() ).thenReturn( connectivityStage );
+        when(sessionFactory.verifyConnectivity()).thenReturn(connectivityStage);
 
-        InternalDriver driver = newDriver( sessionFactory );
+        InternalDriver driver = newDriver(sessionFactory);
 
-        assertEquals( connectivityStage, driver.verifyConnectivityAsync() );
+        assertEquals(connectivityStage, driver.verifyConnectivityAsync());
     }
 
     @Test
-    void shouldThrowWhenUnableToVerifyConnectivity()
-    {
-        SessionFactory sessionFactory = mock( SessionFactory.class );
-        ServiceUnavailableException error = new ServiceUnavailableException( "Hello" );
-        when( sessionFactory.verifyConnectivity() ).thenReturn( failedFuture( error ) );
-        InternalDriver driver = newDriver( sessionFactory );
+    void shouldThrowWhenUnableToVerifyConnectivity() {
+        SessionFactory sessionFactory = mock(SessionFactory.class);
+        ServiceUnavailableException error = new ServiceUnavailableException("Hello");
+        when(sessionFactory.verifyConnectivity()).thenReturn(failedFuture(error));
+        InternalDriver driver = newDriver(sessionFactory);
 
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( driver.verifyConnectivityAsync() ) );
-        assertEquals( e.getMessage(), "Hello" );
+        ServiceUnavailableException e =
+                assertThrows(ServiceUnavailableException.class, () -> await(driver.verifyConnectivityAsync()));
+        assertEquals(e.getMessage(), "Hello");
     }
 
     @Test
-    void shouldThrowClientExceptionIfMetricsNotEnabled() throws Throwable
-    {
+    void shouldThrowClientExceptionIfMetricsNotEnabled() throws Throwable {
         // Given
-        InternalDriver driver = newDriver( false );
+        InternalDriver driver = newDriver(false);
 
         // When
-        ClientException error = assertThrows( ClientException.class, driver::metrics );
+        ClientException error = assertThrows(ClientException.class, driver::metrics);
 
         // Then
-        assertTrue( error.getMessage().contains( "Driver metrics are not enabled." ) );
+        assertTrue(error.getMessage().contains("Driver metrics are not enabled."));
     }
 
     @Test
-    void shouldReturnMetricsIfMetricsEnabled()
-    {
+    void shouldReturnMetricsIfMetricsEnabled() {
         // Given
-        InternalDriver driver = newDriver( true );
+        InternalDriver driver = newDriver(true);
 
         // When
         Metrics metrics = driver.metrics();
 
         // Then we shall have no problem to get the metrics
-        assertNotNull( metrics );
+        assertNotNull(metrics);
     }
 
-    private static InternalDriver newDriver( SessionFactory sessionFactory )
-    {
-        return new InternalDriver( SecurityPlanImpl.insecure(), sessionFactory, DevNullMetricsProvider.INSTANCE, DEV_NULL_LOGGING );
+    private static InternalDriver newDriver(SessionFactory sessionFactory) {
+        return new InternalDriver(
+                SecurityPlanImpl.insecure(), sessionFactory, DevNullMetricsProvider.INSTANCE, DEV_NULL_LOGGING);
     }
 
-    private static SessionFactory sessionFactoryMock()
-    {
-        SessionFactory sessionFactory = mock( SessionFactory.class );
-        when( sessionFactory.close() ).thenReturn( completedWithNull() );
+    private static SessionFactory sessionFactoryMock() {
+        SessionFactory sessionFactory = mock(SessionFactory.class);
+        when(sessionFactory.close()).thenReturn(completedWithNull());
         return sessionFactory;
     }
 
-    private static InternalDriver newDriver( boolean isMetricsEnabled )
-    {
+    private static InternalDriver newDriver(boolean isMetricsEnabled) {
         SessionFactory sessionFactory = sessionFactoryMock();
         Config config = Config.defaultConfig();
-        if ( isMetricsEnabled )
-        {
+        if (isMetricsEnabled) {
             config = Config.builder().withDriverMetrics().build();
         }
 
-        MetricsProvider metricsProvider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
-        return new InternalDriver( SecurityPlanImpl.insecure(), sessionFactory, metricsProvider, DEV_NULL_LOGGING );
+        MetricsProvider metricsProvider = DriverFactory.getOrCreateMetricsProvider(config, Clock.SYSTEM);
+        return new InternalDriver(SecurityPlanImpl.insecure(), sessionFactory, metricsProvider, DEV_NULL_LOGGING);
     }
 }

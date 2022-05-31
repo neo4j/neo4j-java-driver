@@ -18,10 +18,6 @@
  */
 package org.neo4j.driver.internal.util;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Queue;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -29,48 +25,44 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class IterablesTest
-{
+import java.util.Queue;
+import org.junit.jupiter.api.Test;
+
+class IterablesTest {
     @Test
-    void shouldCreateHashMapWithExpectedSize()
-    {
-        assertNotNull( Iterables.newHashMapWithSize( 42 ) );
+    void shouldCreateHashMapWithExpectedSize() {
+        assertNotNull(Iterables.newHashMapWithSize(42));
     }
 
     @Test
-    void shouldCreateLinkedHashMapWithExpectedSize()
-    {
-        assertNotNull( Iterables.newLinkedHashMapWithSize( 42 ) );
+    void shouldCreateLinkedHashMapWithExpectedSize() {
+        assertNotNull(Iterables.newLinkedHashMapWithSize(42));
     }
 
     @Test
-    void shouldThrowWhenNegativeHashMapSizeGiven()
-    {
-        assertThrows( IllegalArgumentException.class, () -> Iterables.newHashMapWithSize( -42 ) );
+    void shouldThrowWhenNegativeHashMapSizeGiven() {
+        assertThrows(IllegalArgumentException.class, () -> Iterables.newHashMapWithSize(-42));
     }
 
     @Test
-    void shouldThrowWhenNegativeLinkedHashMapSizeGiven()
-    {
-        assertThrows( IllegalArgumentException.class, () -> Iterables.newLinkedHashMapWithSize( -42 ) );
+    void shouldThrowWhenNegativeLinkedHashMapSizeGiven() {
+        assertThrows(IllegalArgumentException.class, () -> Iterables.newLinkedHashMapWithSize(-42));
     }
 
     @Test
-    void shouldReturnEmptyQueue()
-    {
+    void shouldReturnEmptyQueue() {
         Queue<Object> queue = Iterables.emptyQueue();
-        assertEquals( 0, queue.size() );
-        assertTrue( queue.isEmpty() );
-        assertNull( queue.peek() );
-        assertNull( queue.poll() );
+        assertEquals(0, queue.size());
+        assertTrue(queue.isEmpty());
+        assertNull(queue.peek());
+        assertNull(queue.poll());
 
-        assertThrows( UnsupportedOperationException.class, () -> queue.add( "Hello" ) );
-        assertThrows( UnsupportedOperationException.class, () -> queue.offer( "World" ) );
+        assertThrows(UnsupportedOperationException.class, () -> queue.add("Hello"));
+        assertThrows(UnsupportedOperationException.class, () -> queue.offer("World"));
     }
 
     @Test
-    void shouldReturnSameEmptyQueue()
-    {
-        assertSame( Iterables.emptyQueue(), Iterables.emptyQueue() );
+    void shouldReturnSameEmptyQueue() {
+        assertSame(Iterables.emptyQueue(), Iterables.emptyQueue());
     }
 }

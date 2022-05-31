@@ -18,9 +18,11 @@
  */
 package org.neo4j.driver.integration;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.SessionConfig.builder;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -28,48 +30,43 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.SessionConfig.builder;
-
 @ParallelizableIT
-class DriverCloseIT
-{
+class DriverCloseIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
-    void isEncryptedThrowsForClosedDriver()
-    {
+    void isEncryptedThrowsForClosedDriver() {
         Driver driver = createDriver();
 
         driver.close();
 
-        assertThrows( IllegalStateException.class, driver::isEncrypted );
+        assertThrows(IllegalStateException.class, driver::isEncrypted);
     }
 
     @Test
-    void sessionThrowsForClosedDriver()
-    {
+    void sessionThrowsForClosedDriver() {
         Driver driver = createDriver();
 
         driver.close();
 
-        assertThrows( IllegalStateException.class, driver::session );
+        assertThrows(IllegalStateException.class, driver::session);
     }
 
     @Test
-    void sessionWithModeThrowsForClosedDriver()
-    {
+    void sessionWithModeThrowsForClosedDriver() {
         Driver driver = createDriver();
 
         driver.close();
 
-        assertThrows( IllegalStateException.class, () -> driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) );
+        assertThrows(
+                IllegalStateException.class,
+                () -> driver.session(
+                        builder().withDefaultAccessMode(AccessMode.WRITE).build()));
     }
 
     @Test
-    void closeClosedDriver()
-    {
+    void closeClosedDriver() {
         Driver driver = createDriver();
 
         driver.close();
@@ -78,18 +75,16 @@ class DriverCloseIT
     }
 
     @Test
-    void useSessionAfterDriverIsClosed()
-    {
+    void useSessionAfterDriverIsClosed() {
         Driver driver = createDriver();
         Session session = driver.session();
 
         driver.close();
 
-        assertThrows( IllegalStateException.class, () -> session.run( "CREATE ()" ) );
+        assertThrows(IllegalStateException.class, () -> session.run("CREATE ()"));
     }
 
-    private static Driver createDriver()
-    {
-        return GraphDatabase.driver( neo4j.uri(), neo4j.authToken() );
+    private static Driver createDriver() {
+        return GraphDatabase.driver(neo4j.uri(), neo4j.authToken());
     }
 }

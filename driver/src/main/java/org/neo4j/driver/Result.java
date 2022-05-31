@@ -22,11 +22,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.Resource;
-
 
 /**
  * The result of running a Cypher query, conceptually a stream of {@link Record records}.
@@ -53,8 +51,7 @@ import org.neo4j.driver.util.Resource;
  *
  * @since 1.0
  */
-public interface Result extends Iterator<Record>
-{
+public interface Result extends Iterator<Record> {
     /**
      * Retrieve the keys of the records this result contains.
      *
@@ -66,7 +63,8 @@ public interface Result extends Iterator<Record>
      * Test if there is another record we can navigate to in this result.
      * @return true if {@link #next()} will return another record
      */
-    @Override boolean hasNext();
+    @Override
+    boolean hasNext();
 
     /**
      * Navigate to and retrieve the next {@link Record} in this result.
@@ -74,7 +72,8 @@ public interface Result extends Iterator<Record>
      * @throws NoSuchRecordException if there is no record left in the stream
      * @return the next record
      */
-    @Override Record next();
+    @Override
+    Record next();
 
     /**
      * Return the first record in the result, failing if there is not exactly
@@ -136,7 +135,7 @@ public interface Result extends Iterator<Record>
      * @param <T> the type of result list elements
      * @return list of all mapped remaining immutable records
      */
-    <T> List<T> list( Function<Record, T> mapFunction );
+    <T> List<T> list(Function<Record, T> mapFunction);
 
     /**
      * Return the result summary.

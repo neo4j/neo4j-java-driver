@@ -21,22 +21,17 @@ package org.neo4j.driver.internal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-public class DefaultDomainNameResolver implements DomainNameResolver
-{
+public class DefaultDomainNameResolver implements DomainNameResolver {
     private static final DefaultDomainNameResolver INSTANCE = new DefaultDomainNameResolver();
 
-    public static DefaultDomainNameResolver getInstance()
-    {
+    public static DefaultDomainNameResolver getInstance() {
         return INSTANCE;
     }
 
-    private DefaultDomainNameResolver()
-    {
-    }
+    private DefaultDomainNameResolver() {}
 
     @Override
-    public InetAddress[] resolve( String name ) throws UnknownHostException
-    {
-        return InetAddress.getAllByName( name );
+    public InetAddress[] resolve(String name) throws UnknownHostException {
+        return InetAddress.getAllByName(name);
     }
 }

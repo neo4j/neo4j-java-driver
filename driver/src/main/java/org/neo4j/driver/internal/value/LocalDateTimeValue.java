@@ -19,26 +19,21 @@
 package org.neo4j.driver.internal.value;
 
 import java.time.LocalDateTime;
-
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
-public class LocalDateTimeValue extends ObjectValueAdapter<LocalDateTime>
-{
-    public LocalDateTimeValue( LocalDateTime localDateTime )
-    {
-        super( localDateTime );
+public class LocalDateTimeValue extends ObjectValueAdapter<LocalDateTime> {
+    public LocalDateTimeValue(LocalDateTime localDateTime) {
+        super(localDateTime);
     }
 
     @Override
-    public LocalDateTime asLocalDateTime()
-    {
+    public LocalDateTime asLocalDateTime() {
         return asObject();
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.LOCAL_DATE_TIME();
     }
 }

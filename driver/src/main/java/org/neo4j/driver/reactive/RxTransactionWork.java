@@ -26,13 +26,12 @@ package org.neo4j.driver.reactive;
  * @param <T> the return type of this work.
  * @since 4.0
  */
-public interface RxTransactionWork<T>
-{
+public interface RxTransactionWork<T> {
     /**
      * Executes all given operations against the same transaction.
      *
      * @param tx the transaction to use.
      * @return some result object or {@code null} if none.
      */
-    T execute( RxTransaction tx );
+    T execute(RxTransaction tx);
 }

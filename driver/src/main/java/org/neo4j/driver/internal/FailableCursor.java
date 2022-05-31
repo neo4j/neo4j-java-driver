@@ -20,8 +20,7 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 
-public interface FailableCursor
-{
+public interface FailableCursor {
     /**
      * Discarding all unconsumed records and returning failure if there is any pull errors.
      */

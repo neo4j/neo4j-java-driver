@@ -26,26 +26,22 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
 // end::basic-auth-import[]
 
-public class BasicAuthExample implements AutoCloseable
-{
+public class BasicAuthExample implements AutoCloseable {
     private final Driver driver;
 
     // tag::basic-auth[]
-    public BasicAuthExample( String uri, String user, String password )
-    {
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ) );
+    public BasicAuthExample(String uri, String user, String password) {
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
     }
     // end::basic-auth[]
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         driver.close();
     }
 
-    public boolean canConnect()
-    {
-        Result result = driver.session().run( "RETURN 1" );
-        return result.single().get( 0 ).asInt() == 1;
+    public boolean canConnect() {
+        Result result = driver.session().run("RETURN 1");
+        return result.single().get(0).asInt() == 1;
     }
 }

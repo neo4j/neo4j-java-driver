@@ -18,52 +18,43 @@
  */
 package org.neo4j.driver.stress;
 
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Transaction;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BlockingWriteQueryInTx<C extends AbstractContext> extends AbstractBlockingQuery<C>
-{
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Transaction;
+
+public class BlockingWriteQueryInTx<C extends AbstractContext> extends AbstractBlockingQuery<C> {
     private AbstractStressTestBase<C> stressTest;
 
-    public BlockingWriteQueryInTx( AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+    public BlockingWriteQueryInTx(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
         this.stressTest = stressTest;
     }
 
     @Override
-    public void execute( C context )
-    {
+    public void execute(C context) {
         Result result = null;
         Throwable txError = null;
 
-        try ( Session session = newSession( AccessMode.WRITE, context ) )
-        {
-            try ( Transaction tx = beginTransaction( session, context ) )
-            {
-                result = tx.run( "CREATE ()" );
+        try (Session session = newSession(AccessMode.WRITE, context)) {
+            try (Transaction tx = beginTransaction(session, context)) {
+                result = tx.run("CREATE ()");
                 tx.commit();
             }
 
-            context.setBookmark( session.lastBookmark() );
-        }
-        catch ( Throwable error )
-        {
+            context.setBookmark(session.lastBookmark());
+        } catch (Throwable error) {
             txError = error;
-            if ( !stressTest.handleWriteFailure( error, context ) )
-            {
+            if (!stressTest.handleWriteFailure(error, context)) {
                 throw error;
             }
         }
 
-        if ( txError == null && result != null )
-        {
-            assertEquals( 1, result.consume().counters().nodesCreated() );
+        if (txError == null && result != null) {
+            assertEquals(1, result.consume().counters().nodesCreated());
             context.nodeCreated();
         }
     }

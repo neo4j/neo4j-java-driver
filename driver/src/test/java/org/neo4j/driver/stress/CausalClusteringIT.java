@@ -18,11 +18,12 @@
  */
 package org.neo4j.driver.stress;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static org.neo4j.driver.Logging.none;
+import static org.neo4j.driver.SessionConfig.builder;
 
 import java.net.URI;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -31,48 +32,37 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.integration.NestedQueries;
 import org.neo4j.driver.util.cc.ClusterExtension;
 
-import static org.neo4j.driver.Logging.none;
-import static org.neo4j.driver.SessionConfig.builder;
-
-public class CausalClusteringIT implements NestedQueries
-{
+public class CausalClusteringIT implements NestedQueries {
     @RegisterExtension
     static final ClusterExtension clusterRule = new ClusterExtension();
 
     private Driver driver;
 
     @Override
-    public Session newSession( AccessMode mode )
-    {
-        if ( driver == null )
-        {
-            driver = createDriver( clusterRule.getCluster().getRoutingUri() );
+    public Session newSession(AccessMode mode) {
+        if (driver == null) {
+            driver = createDriver(clusterRule.getCluster().getRoutingUri());
         }
 
-        return driver.session( builder().withDefaultAccessMode( mode ).build() );
+        return driver.session(builder().withDefaultAccessMode(mode).build());
     }
 
     @AfterEach
-    void tearDown()
-    {
-        if ( driver != null )
-        {
+    void tearDown() {
+        if (driver != null) {
             driver.close();
         }
     }
 
-    private Driver createDriver( URI boltUri )
-    {
-        return createDriver( boltUri, configWithoutLogging() );
+    private Driver createDriver(URI boltUri) {
+        return createDriver(boltUri, configWithoutLogging());
     }
 
-    private Driver createDriver( URI boltUri, Config config )
-    {
-        return GraphDatabase.driver( boltUri, clusterRule.getDefaultAuthToken(), config );
+    private Driver createDriver(URI boltUri, Config config) {
+        return GraphDatabase.driver(boltUri, clusterRule.getDefaultAuthToken(), config);
     }
 
-    private static Config configWithoutLogging()
-    {
-        return Config.builder().withLogging( none() ).build();
+    private static Config configWithoutLogging() {
+        return Config.builder().withLogging(none()).build();
     }
 }

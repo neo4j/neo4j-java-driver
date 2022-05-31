@@ -18,6 +18,7 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -25,47 +26,40 @@ import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletionStage;
-
 @Setter
 @Getter
-public class VerifyConnectivity implements TestkitRequest
-{
+public class VerifyConnectivity implements TestkitRequest {
     private VerifyConnectivityBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
+    public TestkitResponse process(TestkitState testkitState) {
         String id = data.getDriverId();
-        testkitState.getDriverHolder( id ).getDriver().verifyConnectivity();
-        return createResponse( id );
+        testkitState.getDriverHolder(id).getDriver().verifyConnectivity();
+        return createResponse(id);
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
         String id = data.getDriverId();
-        return testkitState.getDriverHolder( id )
-                           .getDriver()
-                           .verifyConnectivityAsync()
-                           .thenApply( ignored -> createResponse( id ) );
+        return testkitState
+                .getDriverHolder(id)
+                .getDriver()
+                .verifyConnectivityAsync()
+                .thenApply(ignored -> createResponse(id));
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return Mono.fromCompletionStage( processAsync( testkitState ) );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return Mono.fromCompletionStage(processAsync(testkitState));
     }
 
-    private Driver createResponse( String id )
-    {
-        return Driver.builder().data( Driver.DriverBody.builder().id( id ).build() ).build();
+    private Driver createResponse(String id) {
+        return Driver.builder().data(Driver.DriverBody.builder().id(id).build()).build();
     }
 
     @Setter
     @Getter
-    public static class VerifyConnectivityBody
-    {
+    public static class VerifyConnectivityBody {
         private String driverId;
     }
 }

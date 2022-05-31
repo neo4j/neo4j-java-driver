@@ -18,81 +18,72 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.types.TypeSystem;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-class StringValueTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.types.TypeConstructor;
+import org.neo4j.driver.types.TypeSystem;
+
+class StringValueTest {
     private TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
 
     @Test
-    void testStringValue()
-    {
+    void testStringValue() {
         // Given
-        StringValue value = new StringValue( "Spongebob" );
+        StringValue value = new StringValue("Spongebob");
 
         // Then
-        assertThat( value.asString(), equalTo( "Spongebob" ) );
+        assertThat(value.asString(), equalTo("Spongebob"));
     }
 
     @Test
-    void testIsString()
-    {
+    void testIsString() {
         // Given
-        StringValue value = new StringValue( "Spongebob" );
+        StringValue value = new StringValue("Spongebob");
 
         // Then
-        assertThat( typeSystem.STRING().isTypeOf( value ), equalTo( true ) );
+        assertThat(typeSystem.STRING().isTypeOf(value), equalTo(true));
     }
 
     @Test
-    void testEquals()
-    {
+    void testEquals() {
         // Given
-        StringValue firstValue = new StringValue( "Spongebob" );
-        StringValue secondValue = new StringValue( "Spongebob" );
+        StringValue firstValue = new StringValue("Spongebob");
+        StringValue secondValue = new StringValue("Spongebob");
 
         // Then
-        assertThat( firstValue, equalTo( secondValue ) );
+        assertThat(firstValue, equalTo(secondValue));
     }
 
     @Test
-    void testHashCode()
-    {
+    void testHashCode() {
         // Given
-        StringValue value = new StringValue( "Spongebob" );
+        StringValue value = new StringValue("Spongebob");
 
         // Then
-        assertThat( value.hashCode(), notNullValue() );
+        assertThat(value.hashCode(), notNullValue());
     }
 
     @Test
-    void shouldNotBeNull()
-    {
-        Value value = new StringValue( "Spongebob" );
-        assertFalse( value.isNull() );
+    void shouldNotBeNull() {
+        Value value = new StringValue("Spongebob");
+        assertFalse(value.isNull());
     }
 
     @Test
-    void shouldTypeAsString()
-    {
-        InternalValue value = new StringValue( "Spongebob" );
-        assertThat( value.typeConstructor(), equalTo( TypeConstructor.STRING ) );
+    void shouldTypeAsString() {
+        InternalValue value = new StringValue("Spongebob");
+        assertThat(value.typeConstructor(), equalTo(TypeConstructor.STRING));
     }
 
     @Test
-    void shouldHaveStringType()
-    {
-        InternalValue value = new StringValue( "Spongebob" );
-        assertThat( value.type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.STRING() ) );
+    void shouldHaveStringType() {
+        InternalValue value = new StringValue("Spongebob");
+        assertThat(value.type(), equalTo(InternalTypeSystem.TYPE_SYSTEM.STRING()));
     }
 }

@@ -24,7 +24,6 @@ import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
  * This is a special type of {@link TestkitResponse} that is typically sent during driver action processing to request some action or data from Testkit, which
  * must respond with {@link TestkitCallbackResult}.
  */
-public interface TestkitCallback extends TestkitResponse
-{
+public interface TestkitCallback extends TestkitResponse {
     String getCallbackId();
 }

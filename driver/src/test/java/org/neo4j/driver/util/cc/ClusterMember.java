@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.util.cc;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.InetAddress;
@@ -26,13 +28,9 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Scanner;
-
 import org.neo4j.driver.internal.BoltServerAddress;
 
-import static java.util.Objects.requireNonNull;
-
-public class ClusterMember
-{
+public class ClusterMember {
     public static final String SIMPLE_SCHEME = "bolt://";
     public static final String ROUTING_SCHEME = "neo4j://";
 
@@ -40,83 +38,63 @@ public class ClusterMember
     private final BoltServerAddress boltAddress;
     private final Path path;
 
-    public ClusterMember( URI boltUri, Path path )
-    {
-        this.boltUri = requireNonNull( boltUri );
-        this.boltAddress = newBoltServerAddress( boltUri );
-        this.path = requireNonNull( path );
+    public ClusterMember(URI boltUri, Path path) {
+        this.boltUri = requireNonNull(boltUri);
+        this.boltAddress = newBoltServerAddress(boltUri);
+        this.path = requireNonNull(path);
     }
 
-    public URI getBoltUri()
-    {
+    public URI getBoltUri() {
         return boltUri;
     }
 
-    public URI getRoutingUri()
-    {
-        return URI.create( boltUri.toString().replace( SIMPLE_SCHEME, ROUTING_SCHEME ) );
+    public URI getRoutingUri() {
+        return URI.create(boltUri.toString().replace(SIMPLE_SCHEME, ROUTING_SCHEME));
     }
 
-    public BoltServerAddress getBoltAddress()
-    {
+    public BoltServerAddress getBoltAddress() {
         return boltAddress;
     }
 
-    public Path getPath()
-    {
+    public Path getPath() {
         return path;
     }
 
-    public void dumpDebugLog() throws FileNotFoundException
-    {
-        Scanner input = new Scanner( new File( path.toAbsolutePath().toString() + "/logs/debug.log" ));
+    public void dumpDebugLog() throws FileNotFoundException {
+        Scanner input = new Scanner(new File(path.toAbsolutePath().toString() + "/logs/debug.log"));
 
-        while (input.hasNextLine())
-        {
+        while (input.hasNextLine()) {
             System.out.println(input.nextLine());
         }
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         ClusterMember that = (ClusterMember) o;
-        return Objects.equals( boltAddress, that.boltAddress );
+        return Objects.equals(boltAddress, that.boltAddress);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( boltAddress );
+    public int hashCode() {
+        return Objects.hash(boltAddress);
     }
 
     @Override
-    public String toString()
-    {
-        return "ClusterMember{" +
-               "boltUri=" + boltUri +
-               ", boltAddress=" + boltAddress +
-               ", path=" + path +
-               '}';
+    public String toString() {
+        return "ClusterMember{" + "boltUri=" + boltUri + ", boltAddress=" + boltAddress + ", path=" + path + '}';
     }
 
-    private static BoltServerAddress newBoltServerAddress( URI uri )
-    {
-        try
-        {
-            return new BoltServerAddress( InetAddress.getByName( uri.getHost() ).getHostAddress(), uri.getPort() );
-        }
-        catch ( UnknownHostException e )
-        {
-            throw new RuntimeException( e );
+    private static BoltServerAddress newBoltServerAddress(URI uri) {
+        try {
+            return new BoltServerAddress(InetAddress.getByName(uri.getHost()).getHostAddress(), uri.getPort());
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
         }
     }
 }

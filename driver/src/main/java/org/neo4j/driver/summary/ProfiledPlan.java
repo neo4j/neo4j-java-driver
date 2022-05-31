@@ -25,8 +25,7 @@ import java.util.List;
  * step of the plan incurred on the database.
  * @since 1.0
  */
-public interface ProfiledPlan extends Plan
-{
+public interface ProfiledPlan extends Plan {
     /**
      * @return the number of times this part of the plan touched the underlying data stores
      */

@@ -21,45 +21,41 @@ package org.neo4j.docs.driver;
 import io.reactivex.Flowable;
 // tag::rx-autocommit-transaction-import[]
 import io.reactivex.Observable;
+import java.util.Collections;
+import java.util.Map;
+import org.neo4j.driver.reactive.RxSession;
+// end::rx-autocommit-transaction-import[]
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Collections;
-import java.util.Map;
-
-import org.neo4j.driver.reactive.RxSession;
-// end::rx-autocommit-transaction-import[]
-
-public class RxAutocommitTransactionExample extends BaseApplication
-{
-    public RxAutocommitTransactionExample( String uri, String user, String password )
-    {
-        super( uri, user, password );
+public class RxAutocommitTransactionExample extends BaseApplication {
+    public RxAutocommitTransactionExample(String uri, String user, String password) {
+        super(uri, user, password);
     }
 
     // tag::rx-autocommit-transaction[]
-    public Flux<String> readProductTitles()
-    {
+    public Flux<String> readProductTitles() {
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
-        Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
+        Map<String, Object> parameters = Collections.singletonMap("id", 0);
 
-        return Flux.usingWhen( Mono.fromSupplier( driver::rxSession ),
-                session -> Flux.from( session.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() ),
-                RxSession::close );
+        return Flux.usingWhen(
+                Mono.fromSupplier(driver::rxSession),
+                session -> Flux.from(session.run(query, parameters).records())
+                        .map(record -> record.get(0).asString()),
+                RxSession::close);
     }
     // end::rx-autocommit-transaction[]
 
     // tag::RxJava-autocommit-transaction[]
-    public Flowable<String> readProductTitlesRxJava()
-    {
+    public Flowable<String> readProductTitlesRxJava() {
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
-        Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
+        Map<String, Object> parameters = Collections.singletonMap("id", 0);
 
         return Flowable.using(
                 driver::rxSession,
-                session -> Flowable.fromPublisher( session.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() ),
-                session -> Observable.fromPublisher(session.close()).subscribe()
-        );
+                session -> Flowable.fromPublisher(session.run(query, parameters).records())
+                        .map(record -> record.get(0).asString()),
+                session -> Observable.fromPublisher(session.close()).subscribe());
     }
     // end::RxJava-autocommit-transaction[]
 }

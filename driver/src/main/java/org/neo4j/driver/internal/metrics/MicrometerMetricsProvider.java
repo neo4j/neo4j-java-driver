@@ -19,40 +19,33 @@
 package org.neo4j.driver.internal.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
-
 import org.neo4j.driver.Metrics;
 
 /**
  * An adapter to bridge between driver metrics and Micrometer {@link MeterRegistry meter registry}.
  */
-public final class MicrometerMetricsProvider implements MetricsProvider
-{
+public final class MicrometerMetricsProvider implements MetricsProvider {
     private final MicrometerMetrics metrics;
 
-    public static MetricsProvider forGlobalRegistry()
-    {
-        return of( io.micrometer.core.instrument.Metrics.globalRegistry );
+    public static MetricsProvider forGlobalRegistry() {
+        return of(io.micrometer.core.instrument.Metrics.globalRegistry);
     }
 
-    public static MetricsProvider of( MeterRegistry meterRegistry )
-    {
-        return new MicrometerMetricsProvider( meterRegistry );
+    public static MetricsProvider of(MeterRegistry meterRegistry) {
+        return new MicrometerMetricsProvider(meterRegistry);
     }
 
-    private MicrometerMetricsProvider( MeterRegistry meterRegistry )
-    {
-        this.metrics = new MicrometerMetrics( meterRegistry );
+    private MicrometerMetricsProvider(MeterRegistry meterRegistry) {
+        this.metrics = new MicrometerMetrics(meterRegistry);
     }
 
     @Override
-    public Metrics metrics()
-    {
+    public Metrics metrics() {
         return this.metrics;
     }
 
     @Override
-    public MetricsListener metricsListener()
-    {
+    public MetricsListener metricsListener() {
         return this.metrics;
     }
 }

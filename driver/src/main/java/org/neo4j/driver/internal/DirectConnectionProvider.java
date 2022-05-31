@@ -18,9 +18,11 @@
  */
 package org.neo4j.driver.internal;
 
+import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
@@ -28,57 +30,49 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
 
-import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
-
 /**
  * Simple {@link ConnectionProvider connection provider} that obtains connections form the given pool only for the given address.
  */
-public class DirectConnectionProvider implements ConnectionProvider
-{
+public class DirectConnectionProvider implements ConnectionProvider {
     private final BoltServerAddress address;
     private final ConnectionPool connectionPool;
 
-    DirectConnectionProvider( BoltServerAddress address, ConnectionPool connectionPool )
-    {
+    DirectConnectionProvider(BoltServerAddress address, ConnectionPool connectionPool) {
         this.address = address;
         this.connectionPool = connectionPool;
     }
 
     @Override
-    public CompletionStage<Connection> acquireConnection( ConnectionContext context )
-    {
+    public CompletionStage<Connection> acquireConnection(ConnectionContext context) {
         CompletableFuture<DatabaseName> databaseNameFuture = context.databaseNameFuture();
-        databaseNameFuture.complete( DatabaseNameUtil.defaultDatabase() );
-        return acquireConnection().thenApply(
-                connection -> new DirectConnection( connection,
-                                                    Futures.joinNowOrElseThrow( databaseNameFuture, PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER ),
-                                                    context.mode(), context.impersonatedUser() ) );
+        databaseNameFuture.complete(DatabaseNameUtil.defaultDatabase());
+        return acquireConnection()
+                .thenApply(connection -> new DirectConnection(
+                        connection,
+                        Futures.joinNowOrElseThrow(databaseNameFuture, PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER),
+                        context.mode(),
+                        context.impersonatedUser()));
     }
 
     @Override
-    public CompletionStage<Void> verifyConnectivity()
-    {
-        return acquireConnection().thenCompose( Connection::release );
+    public CompletionStage<Void> verifyConnectivity() {
+        return acquireConnection().thenCompose(Connection::release);
     }
 
     @Override
-    public CompletionStage<Void> close()
-    {
+    public CompletionStage<Void> close() {
         return connectionPool.close();
     }
 
     @Override
-    public CompletionStage<Boolean> supportsMultiDb()
-    {
-        return acquireConnection().thenCompose( conn -> {
-            boolean supportsMultiDatabase = supportsMultiDatabase( conn );
-            return conn.release().thenApply( ignored -> supportsMultiDatabase );
-        } );
+    public CompletionStage<Boolean> supportsMultiDb() {
+        return acquireConnection().thenCompose(conn -> {
+            boolean supportsMultiDatabase = supportsMultiDatabase(conn);
+            return conn.release().thenApply(ignored -> supportsMultiDatabase);
+        });
     }
 
-    public BoltServerAddress getAddress()
-    {
+    public BoltServerAddress getAddress() {
         return address;
     }
 
@@ -86,8 +80,7 @@ public class DirectConnectionProvider implements ConnectionProvider
      * Used only for grabbing a connection with the server after hello message.
      * This connection cannot be directly used for running any queries as it is missing necessary connection context
      */
-    private CompletionStage<Connection> acquireConnection()
-    {
-        return connectionPool.acquire( address );
+    private CompletionStage<Connection> acquireConnection() {
+        return connectionPool.acquire(address);
     }
 }

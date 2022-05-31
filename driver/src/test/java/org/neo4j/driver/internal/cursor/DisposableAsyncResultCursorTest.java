@@ -18,13 +18,6 @@
  */
 package org.neo4j.driver.internal.cursor;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CompletableFuture;
-
-import org.neo4j.driver.internal.util.Futures;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -36,93 +29,89 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.util.TestUtil.await;
 
-class DisposableAsyncResultCursorTest
-{
+import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.util.Futures;
+
+class DisposableAsyncResultCursorTest {
     DisposableAsyncResultCursor cursor;
 
     AsyncResultCursor delegate;
 
     @BeforeEach
-    void beforeEach()
-    {
-        delegate = mock( AsyncResultCursor.class );
+    void beforeEach() {
+        delegate = mock(AsyncResultCursor.class);
 
-        when( delegate.consumeAsync() ).thenReturn( Futures.completedWithNull() );
-        when( delegate.discardAllFailureAsync() ).thenReturn( Futures.completedWithNull() );
-        when( delegate.peekAsync() ).thenReturn( Futures.completedWithNull() );
-        when( delegate.nextAsync() ).thenReturn( Futures.completedWithNull() );
-        when( delegate.singleAsync() ).thenReturn( Futures.completedWithNull() );
-        when( delegate.forEachAsync( any() ) ).thenReturn( Futures.completedWithNull() );
-        when( delegate.listAsync() ).thenReturn( Futures.completedWithNull() );
-        when( delegate.listAsync( any() ) ).thenReturn( Futures.completedWithNull() );
-        when( delegate.pullAllFailureAsync() ).thenReturn( Futures.completedWithNull() );
-        when( delegate.mapSuccessfulRunCompletionAsync() ).thenReturn( CompletableFuture.completedFuture( delegate ) );
+        when(delegate.consumeAsync()).thenReturn(Futures.completedWithNull());
+        when(delegate.discardAllFailureAsync()).thenReturn(Futures.completedWithNull());
+        when(delegate.peekAsync()).thenReturn(Futures.completedWithNull());
+        when(delegate.nextAsync()).thenReturn(Futures.completedWithNull());
+        when(delegate.singleAsync()).thenReturn(Futures.completedWithNull());
+        when(delegate.forEachAsync(any())).thenReturn(Futures.completedWithNull());
+        when(delegate.listAsync()).thenReturn(Futures.completedWithNull());
+        when(delegate.listAsync(any())).thenReturn(Futures.completedWithNull());
+        when(delegate.pullAllFailureAsync()).thenReturn(Futures.completedWithNull());
+        when(delegate.mapSuccessfulRunCompletionAsync()).thenReturn(CompletableFuture.completedFuture(delegate));
 
-        cursor = new DisposableAsyncResultCursor( delegate );
+        cursor = new DisposableAsyncResultCursor(delegate);
     }
 
     @Test
-    void summaryShouldDisposeCursor()
-    {
+    void summaryShouldDisposeCursor() {
         // When
-        await( cursor.consumeAsync() );
+        await(cursor.consumeAsync());
 
         // Then
-        assertTrue( cursor.isDisposed() );
+        assertTrue(cursor.isDisposed());
     }
 
     @Test
-    void consumeShouldDisposeCursor()
-    {
+    void consumeShouldDisposeCursor() {
         // When
-        await( cursor.discardAllFailureAsync() );
+        await(cursor.discardAllFailureAsync());
 
         // Then
-        assertTrue( cursor.isDisposed() );
+        assertTrue(cursor.isDisposed());
     }
 
     @Test
-    void shouldNotDisposeCursor()
-    {
+    void shouldNotDisposeCursor() {
         // When
         cursor.keys();
-        await( cursor.peekAsync() );
-        await( cursor.nextAsync() );
-        await( cursor.singleAsync() );
-        await( cursor.forEachAsync( record ->
-                                    {
-                                    } ) );
-        await( cursor.listAsync() );
-        await( cursor.listAsync( record -> record ) );
-        await( cursor.pullAllFailureAsync() );
+        await(cursor.peekAsync());
+        await(cursor.nextAsync());
+        await(cursor.singleAsync());
+        await(cursor.forEachAsync(record -> {}));
+        await(cursor.listAsync());
+        await(cursor.listAsync(record -> record));
+        await(cursor.pullAllFailureAsync());
 
         // Then
-        assertFalse( cursor.isDisposed() );
+        assertFalse(cursor.isDisposed());
     }
 
     @Test
-    void shouldReturnItselfOnMapSuccessfulRunCompletionAsync()
-    {
+    void shouldReturnItselfOnMapSuccessfulRunCompletionAsync() {
         // When
-        AsyncResultCursor actual = await( cursor.mapSuccessfulRunCompletionAsync() );
+        AsyncResultCursor actual = await(cursor.mapSuccessfulRunCompletionAsync());
 
         // Then
-        then( delegate ).should().mapSuccessfulRunCompletionAsync();
-        assertSame( cursor, actual );
+        then(delegate).should().mapSuccessfulRunCompletionAsync();
+        assertSame(cursor, actual);
     }
 
     @Test
-    void shouldFailOnMapSuccessfulRunCompletionAsyncFailure()
-    {
+    void shouldFailOnMapSuccessfulRunCompletionAsyncFailure() {
         // Given
-        Throwable error = mock( Throwable.class );
-        given( delegate.mapSuccessfulRunCompletionAsync() ).willReturn( Futures.failedFuture( error ) );
+        Throwable error = mock(Throwable.class);
+        given(delegate.mapSuccessfulRunCompletionAsync()).willReturn(Futures.failedFuture(error));
 
         // When
-        Throwable actual = assertThrows( Throwable.class, () -> await( cursor.mapSuccessfulRunCompletionAsync() ) );
+        Throwable actual = assertThrows(Throwable.class, () -> await(cursor.mapSuccessfulRunCompletionAsync()));
 
         // Then
-        then( delegate ).should().mapSuccessfulRunCompletionAsync();
-        assertSame( error, actual );
+        then(delegate).should().mapSuccessfulRunCompletionAsync();
+        assertSame(error, actual);
     }
 }

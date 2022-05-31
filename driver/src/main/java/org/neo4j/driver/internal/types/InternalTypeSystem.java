@@ -18,10 +18,6 @@
  */
 package org.neo4j.driver.internal.types;
 
-import org.neo4j.driver.Value;
-import org.neo4j.driver.types.Type;
-import org.neo4j.driver.types.TypeSystem;
-
 import static org.neo4j.driver.internal.types.TypeConstructor.ANY;
 import static org.neo4j.driver.internal.types.TypeConstructor.BOOLEAN;
 import static org.neo4j.driver.internal.types.TypeConstructor.BYTES;
@@ -43,163 +39,143 @@ import static org.neo4j.driver.internal.types.TypeConstructor.RELATIONSHIP;
 import static org.neo4j.driver.internal.types.TypeConstructor.STRING;
 import static org.neo4j.driver.internal.types.TypeConstructor.TIME;
 
+import org.neo4j.driver.Value;
+import org.neo4j.driver.types.Type;
+import org.neo4j.driver.types.TypeSystem;
+
 /**
  * Utility class for determining and working with the Cypher types of values
  *
  * @see Value
  * @see Type
  */
-public class InternalTypeSystem implements TypeSystem
-{
+public class InternalTypeSystem implements TypeSystem {
     public static InternalTypeSystem TYPE_SYSTEM = new InternalTypeSystem();
 
-    private final TypeRepresentation anyType = constructType( ANY );
-    private final TypeRepresentation booleanType = constructType( BOOLEAN );
-    private final TypeRepresentation bytesType = constructType( BYTES );
-    private final TypeRepresentation stringType = constructType( STRING );
-    private final TypeRepresentation numberType = constructType( NUMBER );
-    private final TypeRepresentation integerType = constructType( INTEGER );
-    private final TypeRepresentation floatType = constructType( FLOAT );
-    private final TypeRepresentation listType = constructType( LIST );
-    private final TypeRepresentation mapType = constructType( MAP );
-    private final TypeRepresentation nodeType = constructType( NODE );
-    private final TypeRepresentation relationshipType = constructType( RELATIONSHIP );
-    private final TypeRepresentation pathType = constructType( PATH );
-    private final TypeRepresentation pointType = constructType( POINT );
-    private final TypeRepresentation dateType = constructType( DATE );
-    private final TypeRepresentation timeType = constructType( TIME );
-    private final TypeRepresentation localTimeType = constructType( LOCAL_TIME );
-    private final TypeRepresentation localDateTimeType = constructType( LOCAL_DATE_TIME );
-    private final TypeRepresentation dateTimeType = constructType( DATE_TIME );
-    private final TypeRepresentation durationType = constructType( DURATION );
-    private final TypeRepresentation nullType = constructType( NULL );
+    private final TypeRepresentation anyType = constructType(ANY);
+    private final TypeRepresentation booleanType = constructType(BOOLEAN);
+    private final TypeRepresentation bytesType = constructType(BYTES);
+    private final TypeRepresentation stringType = constructType(STRING);
+    private final TypeRepresentation numberType = constructType(NUMBER);
+    private final TypeRepresentation integerType = constructType(INTEGER);
+    private final TypeRepresentation floatType = constructType(FLOAT);
+    private final TypeRepresentation listType = constructType(LIST);
+    private final TypeRepresentation mapType = constructType(MAP);
+    private final TypeRepresentation nodeType = constructType(NODE);
+    private final TypeRepresentation relationshipType = constructType(RELATIONSHIP);
+    private final TypeRepresentation pathType = constructType(PATH);
+    private final TypeRepresentation pointType = constructType(POINT);
+    private final TypeRepresentation dateType = constructType(DATE);
+    private final TypeRepresentation timeType = constructType(TIME);
+    private final TypeRepresentation localTimeType = constructType(LOCAL_TIME);
+    private final TypeRepresentation localDateTimeType = constructType(LOCAL_DATE_TIME);
+    private final TypeRepresentation dateTimeType = constructType(DATE_TIME);
+    private final TypeRepresentation durationType = constructType(DURATION);
+    private final TypeRepresentation nullType = constructType(NULL);
 
-    private InternalTypeSystem()
-    {
-    }
+    private InternalTypeSystem() {}
 
     @Override
-    public Type ANY()
-    {
+    public Type ANY() {
         return anyType;
     }
 
     @Override
-    public Type BOOLEAN()
-    {
+    public Type BOOLEAN() {
         return booleanType;
     }
 
     @Override
-    public Type BYTES()
-    {
+    public Type BYTES() {
         return bytesType;
     }
 
     @Override
-    public Type STRING()
-    {
+    public Type STRING() {
         return stringType;
     }
 
     @Override
-    public Type NUMBER()
-    {
+    public Type NUMBER() {
         return numberType;
     }
 
     @Override
-    public Type INTEGER()
-    {
+    public Type INTEGER() {
         return integerType;
     }
 
     @Override
-    public Type FLOAT()
-    {
+    public Type FLOAT() {
         return floatType;
     }
 
     @Override
-    public Type LIST()
-    {
+    public Type LIST() {
         return listType;
     }
 
     @Override
-    public Type MAP()
-    {
+    public Type MAP() {
         return mapType;
     }
 
     @Override
-    public Type NODE()
-    {
+    public Type NODE() {
         return nodeType;
     }
 
     @Override
-    public Type RELATIONSHIP()
-    {
+    public Type RELATIONSHIP() {
         return relationshipType;
     }
 
     @Override
-    public Type PATH()
-    {
+    public Type PATH() {
         return pathType;
     }
 
     @Override
-    public Type POINT()
-    {
+    public Type POINT() {
         return pointType;
     }
 
     @Override
-    public Type DATE()
-    {
+    public Type DATE() {
         return dateType;
     }
 
     @Override
-    public Type TIME()
-    {
+    public Type TIME() {
         return timeType;
     }
 
     @Override
-    public Type LOCAL_TIME()
-    {
+    public Type LOCAL_TIME() {
         return localTimeType;
     }
 
     @Override
-    public Type LOCAL_DATE_TIME()
-    {
+    public Type LOCAL_DATE_TIME() {
         return localDateTimeType;
     }
 
     @Override
-    public Type DATE_TIME()
-    {
+    public Type DATE_TIME() {
         return dateTimeType;
     }
 
     @Override
-    public Type DURATION()
-    {
+    public Type DURATION() {
         return durationType;
     }
 
     @Override
-    public Type NULL()
-    {
+    public Type NULL() {
         return nullType;
     }
 
-    private TypeRepresentation constructType( TypeConstructor tyCon )
-    {
-        return new TypeRepresentation( tyCon );
+    private TypeRepresentation constructType(TypeConstructor tyCon) {
+        return new TypeRepresentation(tyCon);
     }
 }

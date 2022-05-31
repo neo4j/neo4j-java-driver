@@ -18,8 +18,9 @@
  */
 package org.neo4j.driver.internal.spi;
 
-import java.util.concurrent.CompletionStage;
+import static java.lang.String.format;
 
+import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
@@ -27,29 +28,26 @@ import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.util.ServerVersion;
 
-import static java.lang.String.format;
-
-public interface Connection
-{
+public interface Connection {
     boolean isOpen();
 
     void enableAutoRead();
 
     void disableAutoRead();
 
-    void write( Message message, ResponseHandler handler );
+    void write(Message message, ResponseHandler handler);
 
-    void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 );
+    void write(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2);
 
-    void writeAndFlush( Message message, ResponseHandler handler );
+    void writeAndFlush(Message message, ResponseHandler handler);
 
-    void writeAndFlush( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 );
+    void writeAndFlush(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2);
 
     CompletionStage<Void> reset();
 
     CompletionStage<Void> release();
 
-    void terminateAndRelease( String reason );
+    void terminateAndRelease(String reason);
 
     String serverAgent();
 
@@ -59,19 +57,16 @@ public interface Connection
 
     BoltProtocol protocol();
 
-    default AccessMode mode()
-    {
-        throw new UnsupportedOperationException( format( "%s does not support access mode.", getClass() ) );
+    default AccessMode mode() {
+        throw new UnsupportedOperationException(format("%s does not support access mode.", getClass()));
     }
 
-    default DatabaseName databaseName()
-    {
-        throw new UnsupportedOperationException( format( "%s does not support database name.", getClass() ) );
+    default DatabaseName databaseName() {
+        throw new UnsupportedOperationException(format("%s does not support database name.", getClass()));
     }
 
-    default String impersonatedUser()
-    {
-        throw new UnsupportedOperationException( format( "%s does not support impersonated user.", getClass() ) );
+    default String impersonatedUser() {
+        throw new UnsupportedOperationException(format("%s does not support impersonated user.", getClass()));
     }
 
     void flush();

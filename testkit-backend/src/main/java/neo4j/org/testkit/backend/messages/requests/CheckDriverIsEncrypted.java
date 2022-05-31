@@ -18,6 +18,8 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -26,45 +28,38 @@ import neo4j.org.testkit.backend.messages.responses.DriverIsEncrypted;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 @Setter
 @Getter
-public class CheckDriverIsEncrypted implements TestkitRequest
-{
+public class CheckDriverIsEncrypted implements TestkitRequest {
     private CheckDriverIsEncryptedBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        return createResponse( testkitState );
+    public TestkitResponse process(TestkitState testkitState) {
+        return createResponse(testkitState);
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return CompletableFuture.completedFuture( createResponse( testkitState ) );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return CompletableFuture.completedFuture(createResponse(testkitState));
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return Mono.just( createResponse( testkitState ) );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return Mono.just(createResponse(testkitState));
     }
 
-    private DriverIsEncrypted createResponse( TestkitState testkitState )
-    {
-        DriverHolder driverHolder = testkitState.getDriverHolder( data.getDriverId() );
+    private DriverIsEncrypted createResponse(TestkitState testkitState) {
+        DriverHolder driverHolder = testkitState.getDriverHolder(data.getDriverId());
         return DriverIsEncrypted.builder()
-                                .data( DriverIsEncrypted.DriverIsEncryptedBody.builder().encrypted( driverHolder.getDriver().isEncrypted() ).build() )
-                                .build();
+                .data(DriverIsEncrypted.DriverIsEncryptedBody.builder()
+                        .encrypted(driverHolder.getDriver().isEncrypted())
+                        .build())
+                .build();
     }
 
     @Setter
     @Getter
-    public static class CheckDriverIsEncryptedBody
-    {
+    public static class CheckDriverIsEncryptedBody {
         private String driverId;
     }
 }

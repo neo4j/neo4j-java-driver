@@ -18,6 +18,7 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -25,77 +26,55 @@ import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletionStage;
-
 @Setter
 @Getter
-public class RetryableNegative implements TestkitRequest
-{
+public class RetryableNegative implements TestkitRequest {
     private RetryableNegativeBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        SessionHolder sessionHolder = testkitState.getSessionHolder( data.sessionId );
+    public TestkitResponse process(TestkitState testkitState) {
+        SessionHolder sessionHolder = testkitState.getSessionHolder(data.sessionId);
         Throwable throwable;
-        if ( !"".equals( data.getErrorId() ) )
-        {
-            throwable = testkitState.getErrors().get( data.getErrorId() );
+        if (!"".equals(data.getErrorId())) {
+            throwable = testkitState.getErrors().get(data.getErrorId());
+        } else {
+            throwable = new RuntimeException("Error from client in retryable tx");
         }
-        else
-        {
-            throwable = new RuntimeException( "Error from client in retryable tx" );
-        }
-        sessionHolder.getTxWorkFuture().completeExceptionally( throwable );
+        sessionHolder.getTxWorkFuture().completeExceptionally(throwable);
         return null;
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncSessionHolder( data.getSessionId() )
-                           .thenApply(
-                                   sessionHolder ->
-                                   {
-                                       Throwable throwable;
-                                       if ( !"".equals( data.getErrorId() ) )
-                                       {
-                                           throwable = testkitState.getErrors().get( data.getErrorId() );
-                                       }
-                                       else
-                                       {
-                                           throwable = new RuntimeException( "Error from client in retryable tx" );
-                                       }
-                                       sessionHolder.getTxWorkFuture().completeExceptionally( throwable );
-                                       return null;
-                                   } );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState.getAsyncSessionHolder(data.getSessionId()).thenApply(sessionHolder -> {
+            Throwable throwable;
+            if (!"".equals(data.getErrorId())) {
+                throwable = testkitState.getErrors().get(data.getErrorId());
+            } else {
+                throwable = new RuntimeException("Error from client in retryable tx");
+            }
+            sessionHolder.getTxWorkFuture().completeExceptionally(throwable);
+            return null;
+        });
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return testkitState.getRxSessionHolder( data.getSessionId() )
-                           .mapNotNull(
-                                   sessionHolder ->
-                                   {
-                                       Throwable throwable;
-                                       if ( !"".equals( data.getErrorId() ) )
-                                       {
-                                           throwable = testkitState.getErrors().get( data.getErrorId() );
-                                       }
-                                       else
-                                       {
-                                           throwable = new RuntimeException( "Error from client in retryable tx" );
-                                       }
-                                       sessionHolder.getTxWorkFuture().completeExceptionally( throwable );
-                                       return null;
-                                   } );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return testkitState.getRxSessionHolder(data.getSessionId()).mapNotNull(sessionHolder -> {
+            Throwable throwable;
+            if (!"".equals(data.getErrorId())) {
+                throwable = testkitState.getErrors().get(data.getErrorId());
+            } else {
+                throwable = new RuntimeException("Error from client in retryable tx");
+            }
+            sessionHolder.getTxWorkFuture().completeExceptionally(throwable);
+            return null;
+        });
     }
 
     @Setter
     @Getter
-    public static class RetryableNegativeBody
-    {
+    public static class RetryableNegativeBody {
         private String sessionId;
         private String errorId;
     }

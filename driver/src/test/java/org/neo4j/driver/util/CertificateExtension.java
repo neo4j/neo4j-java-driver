@@ -18,51 +18,46 @@
  */
 package org.neo4j.driver.util;
 
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import static org.neo4j.driver.util.Neo4jRunner.debug;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
-import static org.neo4j.driver.util.Neo4jRunner.debug;
-
-public class CertificateExtension extends DatabaseExtension implements AfterEachCallback
-{
+public class CertificateExtension extends DatabaseExtension implements AfterEachCallback {
     private Path originalKeyFile;
     private Path originalCertFile;
 
     @Override
-    public void beforeEach( ExtensionContext context ) throws Exception
-    {
-        super.beforeEach( context );
+    public void beforeEach(ExtensionContext context) throws Exception {
+        super.beforeEach(context);
 
-        originalKeyFile = Files.createTempFile( "key-file-", "" );
-        originalCertFile = Files.createTempFile( "cert-file-", "" );
+        originalKeyFile = Files.createTempFile("key-file-", "");
+        originalCertFile = Files.createTempFile("cert-file-", "");
 
-        Files.copy( tlsKeyFile().toPath(), originalKeyFile, StandardCopyOption.REPLACE_EXISTING );
-        Files.copy( tlsCertFile().toPath(), originalCertFile, StandardCopyOption.REPLACE_EXISTING );
+        Files.copy(tlsKeyFile().toPath(), originalKeyFile, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(tlsCertFile().toPath(), originalCertFile, StandardCopyOption.REPLACE_EXISTING);
     }
 
     @Override
-    public void afterEach( ExtensionContext context ) throws Exception
-    {
+    public void afterEach(ExtensionContext context) throws Exception {
         // if the key and cert file changed, then we restore the file and restart the server.
-        if ( !smallFileContentEquals( tlsKeyFile().toPath(), originalKeyFile ) || !smallFileContentEquals( tlsCertFile().toPath(), originalCertFile ) )
-        {
-            debug( "Restoring original key and certificate file after certificate test." );
-            updateEncryptionKeyAndCert( originalKeyFile.toFile(), originalCertFile.toFile() );
+        if (!smallFileContentEquals(tlsKeyFile().toPath(), originalKeyFile)
+                || !smallFileContentEquals(tlsCertFile().toPath(), originalCertFile)) {
+            debug("Restoring original key and certificate file after certificate test.");
+            updateEncryptionKeyAndCert(originalKeyFile.toFile(), originalCertFile.toFile());
         }
-        Files.deleteIfExists( originalKeyFile );
-        Files.deleteIfExists( originalCertFile );
+        Files.deleteIfExists(originalKeyFile);
+        Files.deleteIfExists(originalCertFile);
     }
 
-    private boolean smallFileContentEquals( Path path, Path pathAnother ) throws IOException
-    {
-        byte[] fileContent = Files.readAllBytes( path );
-        byte[] fileContentAnother = Files.readAllBytes( pathAnother );
-        return Arrays.equals( fileContent, fileContentAnother );
+    private boolean smallFileContentEquals(Path path, Path pathAnother) throws IOException {
+        byte[] fileContent = Files.readAllBytes(path);
+        byte[] fileContentAnother = Files.readAllBytes(pathAnother);
+        return Arrays.equals(fileContent, fileContentAnother);
     }
 }

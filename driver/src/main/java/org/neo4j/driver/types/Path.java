@@ -40,8 +40,7 @@ import org.neo4j.driver.util.Immutable;
  * @since 1.0
  */
 @Immutable
-public interface Path extends Iterable<Path.Segment>
-{
+public interface Path extends Iterable<Path.Segment> {
     /**
      * A segment combines a relationship in a path with a start and end node that describe the traversal direction
      * for that relationship. This exists because the relationship has a direction between the two nodes that is
@@ -52,8 +51,7 @@ public interface Path extends Iterable<Path.Segment>
      * Segment 2: (n2)<-[r2]-(n3)
      * }
      */
-    interface Segment
-    {
+    interface Segment {
         /** @return the relationship underlying this path segment */
         Relationship relationship();
 
@@ -83,13 +81,13 @@ public interface Path extends Iterable<Path.Segment>
      * @param node the node to check for
      * @return true if the specified node is contained in this path
      */
-    boolean contains( Node node );
+    boolean contains(Node node);
 
     /**
      * @param relationship the relationship to check for
      * @return true if the specified relationship is contained in this path
      */
-    boolean contains( Relationship relationship );
+    boolean contains(Relationship relationship);
 
     /**
      * Create an iterable over the nodes in this path, nodes will appear in the same order as they appear

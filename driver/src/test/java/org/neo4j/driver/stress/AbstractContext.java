@@ -20,65 +20,53 @@ package org.neo4j.driver.stress;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.summary.ResultSummary;
 
-public abstract class AbstractContext
-{
+public abstract class AbstractContext {
     private volatile boolean stopped;
     private volatile Bookmark bookmark;
     private final AtomicLong readNodesCount = new AtomicLong();
     private final AtomicLong createdNodesCount = new AtomicLong();
     private final AtomicInteger bookmarkFailures = new AtomicInteger();
 
-    public final boolean isStopped()
-    {
+    public final boolean isStopped() {
         return stopped;
     }
 
-    public final void stop()
-    {
+    public final void stop() {
         this.stopped = true;
     }
 
-    public final Bookmark getBookmark()
-    {
+    public final Bookmark getBookmark() {
         return bookmark;
     }
 
-    public final void setBookmark( Bookmark bookmark )
-    {
+    public final void setBookmark(Bookmark bookmark) {
         this.bookmark = bookmark;
     }
 
-    public final void nodeCreated()
-    {
+    public final void nodeCreated() {
         createdNodesCount.incrementAndGet();
     }
 
-    public final long getCreatedNodesCount()
-    {
+    public final long getCreatedNodesCount() {
         return createdNodesCount.get();
     }
 
-    public final void readCompleted( ResultSummary summary )
-    {
+    public final void readCompleted(ResultSummary summary) {
         readNodesCount.incrementAndGet();
     }
 
-    public long getReadNodesCount()
-    {
+    public long getReadNodesCount() {
         return readNodesCount.get();
     }
 
-    public final void bookmarkFailed()
-    {
+    public final void bookmarkFailed() {
         bookmarkFailures.incrementAndGet();
     }
 
-    public final int getBookmarkFailures()
-    {
+    public final int getBookmarkFailures() {
         return bookmarkFailures.get();
     }
 }

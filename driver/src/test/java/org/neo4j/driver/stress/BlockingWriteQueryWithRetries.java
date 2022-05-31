@@ -18,36 +18,31 @@
  */
 package org.neo4j.driver.stress;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class BlockingWriteQueryWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C>
-{
+public class BlockingWriteQueryWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C> {
     private final AbstractStressTestBase<C> stressTest;
 
-    public BlockingWriteQueryWithRetries( AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+    public BlockingWriteQueryWithRetries(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
         this.stressTest = stressTest;
     }
 
     @Override
-    public void execute( C context )
-    {
-        try ( Session session = newSession( AccessMode.WRITE, context ) )
-        {
-            ResultSummary resultSummary = session.writeTransaction( tx -> tx.run( "CREATE ()" ).consume() );
-            assertEquals( 1, resultSummary.counters().nodesCreated() );
+    public void execute(C context) {
+        try (Session session = newSession(AccessMode.WRITE, context)) {
+            ResultSummary resultSummary =
+                    session.writeTransaction(tx -> tx.run("CREATE ()").consume());
+            assertEquals(1, resultSummary.counters().nodesCreated());
             context.nodeCreated();
-            context.setBookmark( session.lastBookmark() );
-        }
-        catch ( RuntimeException error )
-        {
-            stressTest.handleWriteFailure( error, context );
+            context.setBookmark(session.lastBookmark());
+        } catch (RuntimeException error) {
+            stressTest.handleWriteFailure(error, context);
             throw error;
         }
     }

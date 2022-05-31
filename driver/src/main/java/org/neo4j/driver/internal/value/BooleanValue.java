@@ -21,18 +21,15 @@ package org.neo4j.driver.internal.value;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
-public abstract class BooleanValue extends ValueAdapter
-{
-    private BooleanValue()
-    {
-        //do nothing
+public abstract class BooleanValue extends ValueAdapter {
+    private BooleanValue() {
+        // do nothing
     }
 
     public static BooleanValue TRUE = new TrueValue();
     public static BooleanValue FALSE = new FalseValue();
 
-    public static BooleanValue fromBoolean( boolean value )
-    {
+    public static BooleanValue fromBoolean(boolean value) {
         return value ? TRUE : FALSE;
     }
 
@@ -40,14 +37,12 @@ public abstract class BooleanValue extends ValueAdapter
     public abstract Boolean asObject();
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.BOOLEAN();
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         Boolean value = asBoolean() ? Boolean.TRUE : Boolean.FALSE;
         return value.hashCode();
     }
@@ -55,79 +50,66 @@ public abstract class BooleanValue extends ValueAdapter
     private static class TrueValue extends BooleanValue {
 
         @Override
-        public Boolean asObject()
-        {
+        public Boolean asObject() {
             return Boolean.TRUE;
         }
 
         @Override
-        public boolean asBoolean()
-        {
+        public boolean asBoolean() {
             return true;
         }
 
         @Override
-        public boolean isTrue()
-        {
+        public boolean isTrue() {
             return true;
         }
 
         @Override
-        public boolean isFalse()
-        {
+        public boolean isFalse() {
             return false;
         }
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         @Override
-        public boolean equals( Object obj )
-        {
+        public boolean equals(Object obj) {
             return obj == TRUE;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "TRUE";
         }
     }
 
-    private static class FalseValue extends BooleanValue
-    {
+    private static class FalseValue extends BooleanValue {
         @Override
-        public Boolean asObject()
-        {
+        public Boolean asObject() {
             return Boolean.FALSE;
         }
 
         @Override
-        public boolean asBoolean()
-        {
+        public boolean asBoolean() {
             return false;
         }
 
         @Override
-        public boolean isTrue()
-        {
+        public boolean isTrue() {
             return false;
         }
 
         @Override
-        public boolean isFalse()
-        {
+        public boolean isFalse() {
             return true;
         }
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         @Override
-        public boolean equals( Object obj )
-        {
+        public boolean equals(Object obj) {
             return obj == FALSE;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "FALSE";
         }
     }

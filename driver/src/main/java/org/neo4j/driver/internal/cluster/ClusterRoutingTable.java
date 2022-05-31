@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,18 +31,12 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.util.Clock;
 
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
-
-public class ClusterRoutingTable implements RoutingTable
-{
+public class ClusterRoutingTable implements RoutingTable {
     private static final int MIN_ROUTERS = 1;
 
     private final ReadWriteLock tableLock = new ReentrantReadWriteLock();
@@ -52,176 +50,157 @@ public class ClusterRoutingTable implements RoutingTable
     private List<BoltServerAddress> writers = Collections.emptyList();
     private List<BoltServerAddress> routers = Collections.emptyList();
 
-    public ClusterRoutingTable( DatabaseName ofDatabase, Clock clock, BoltServerAddress... routingAddresses )
-    {
-        this( ofDatabase, clock );
-        routers = Collections.unmodifiableList( asList( routingAddresses ) );
+    public ClusterRoutingTable(DatabaseName ofDatabase, Clock clock, BoltServerAddress... routingAddresses) {
+        this(ofDatabase, clock);
+        routers = Collections.unmodifiableList(asList(routingAddresses));
     }
 
-    private ClusterRoutingTable( DatabaseName ofDatabase, Clock clock )
-    {
+    private ClusterRoutingTable(DatabaseName ofDatabase, Clock clock) {
         this.databaseName = ofDatabase;
         this.clock = clock;
         this.expirationTimestamp = clock.millis() - 1;
     }
 
     @Override
-    public boolean isStaleFor( AccessMode mode )
-    {
-        return executeWithLock( tableLock.readLock(), () ->
-                expirationTimestamp < clock.millis() ||
-                routers.size() < MIN_ROUTERS ||
-                mode == AccessMode.READ && readers.size() == 0 ||
-                mode == AccessMode.WRITE && writers.size() == 0 );
+    public boolean isStaleFor(AccessMode mode) {
+        return executeWithLock(
+                tableLock.readLock(),
+                () -> expirationTimestamp < clock.millis()
+                        || routers.size() < MIN_ROUTERS
+                        || mode == AccessMode.READ && readers.size() == 0
+                        || mode == AccessMode.WRITE && writers.size() == 0);
     }
 
     @Override
-    public boolean hasBeenStaleFor( long extraTime )
-    {
-        long totalTime = executeWithLock( tableLock.readLock(), () -> expirationTimestamp ) + extraTime;
-        if ( totalTime < 0 )
-        {
+    public boolean hasBeenStaleFor(long extraTime) {
+        long totalTime = executeWithLock(tableLock.readLock(), () -> expirationTimestamp) + extraTime;
+        if (totalTime < 0) {
             totalTime = Long.MAX_VALUE;
         }
         return totalTime < clock.millis();
     }
 
     @Override
-    public void update( ClusterComposition cluster )
-    {
-        executeWithLock( tableLock.writeLock(), () ->
-        {
+    public void update(ClusterComposition cluster) {
+        executeWithLock(tableLock.writeLock(), () -> {
             expirationTimestamp = cluster.expirationTimestamp();
-            readers = newWithReusedAddresses( readers, disused, cluster.readers() );
-            writers = newWithReusedAddresses( writers, disused, cluster.writers() );
-            routers = newWithReusedAddresses( routers, disused, cluster.routers() );
+            readers = newWithReusedAddresses(readers, disused, cluster.readers());
+            writers = newWithReusedAddresses(writers, disused, cluster.writers());
+            routers = newWithReusedAddresses(routers, disused, cluster.routers());
             disused.clear();
             preferInitialRouter = !cluster.hasWriters();
-        } );
+        });
     }
 
     @Override
-    public void forget( BoltServerAddress address )
-    {
-        executeWithLock( tableLock.writeLock(), () ->
-        {
-            routers = newWithoutAddressIfPresent( routers, address );
-            readers = newWithoutAddressIfPresent( readers, address );
-            writers = newWithoutAddressIfPresent( writers, address );
-            disused.add( address );
-        } );
+    public void forget(BoltServerAddress address) {
+        executeWithLock(tableLock.writeLock(), () -> {
+            routers = newWithoutAddressIfPresent(routers, address);
+            readers = newWithoutAddressIfPresent(readers, address);
+            writers = newWithoutAddressIfPresent(writers, address);
+            disused.add(address);
+        });
     }
 
     @Override
-    public List<BoltServerAddress> readers()
-    {
-        return executeWithLock( tableLock.readLock(), () -> readers );
+    public List<BoltServerAddress> readers() {
+        return executeWithLock(tableLock.readLock(), () -> readers);
     }
 
     @Override
-    public List<BoltServerAddress> writers()
-    {
-        return executeWithLock( tableLock.readLock(), () -> writers );
+    public List<BoltServerAddress> writers() {
+        return executeWithLock(tableLock.readLock(), () -> writers);
     }
 
     @Override
-    public List<BoltServerAddress> routers()
-    {
-        return executeWithLock( tableLock.readLock(), () -> routers );
+    public List<BoltServerAddress> routers() {
+        return executeWithLock(tableLock.readLock(), () -> routers);
     }
 
     @Override
-    public Set<BoltServerAddress> servers()
-    {
-        return executeWithLock( tableLock.readLock(), () ->
-        {
+    public Set<BoltServerAddress> servers() {
+        return executeWithLock(tableLock.readLock(), () -> {
             Set<BoltServerAddress> servers = new HashSet<>();
-            servers.addAll( readers );
-            servers.addAll( writers );
-            servers.addAll( routers );
-            servers.addAll( disused );
+            servers.addAll(readers);
+            servers.addAll(writers);
+            servers.addAll(routers);
+            servers.addAll(disused);
             return servers;
-        } );
+        });
     }
 
     @Override
-    public DatabaseName database()
-    {
+    public DatabaseName database() {
         return databaseName;
     }
 
     @Override
-    public void forgetWriter( BoltServerAddress toRemove )
-    {
-        executeWithLock( tableLock.writeLock(), () ->
-        {
-            writers = newWithoutAddressIfPresent( writers, toRemove );
-            disused.add( toRemove );
-        } );
+    public void forgetWriter(BoltServerAddress toRemove) {
+        executeWithLock(tableLock.writeLock(), () -> {
+            writers = newWithoutAddressIfPresent(writers, toRemove);
+            disused.add(toRemove);
+        });
     }
 
     @Override
-    public void replaceRouterIfPresent( BoltServerAddress oldRouter, BoltServerAddress newRouter )
-    {
-        executeWithLock( tableLock.writeLock(), () -> routers = newWithAddressReplacedIfPresent( routers, oldRouter, newRouter ) );
+    public void replaceRouterIfPresent(BoltServerAddress oldRouter, BoltServerAddress newRouter) {
+        executeWithLock(
+                tableLock.writeLock(), () -> routers = newWithAddressReplacedIfPresent(routers, oldRouter, newRouter));
     }
 
     @Override
-    public boolean preferInitialRouter()
-    {
-        return executeWithLock( tableLock.readLock(), () -> preferInitialRouter );
+    public boolean preferInitialRouter() {
+        return executeWithLock(tableLock.readLock(), () -> preferInitialRouter);
     }
 
     @Override
-    public long expirationTimestamp()
-    {
-        return executeWithLock( tableLock.readLock(), () -> expirationTimestamp );
+    public long expirationTimestamp() {
+        return executeWithLock(tableLock.readLock(), () -> expirationTimestamp);
     }
 
     @Override
-    public String toString()
-    {
-        return executeWithLock( tableLock.readLock(), () ->
-                format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s, database '%s'",
-                        expirationTimestamp, clock.millis(), routers, writers, readers, databaseName.description() ) );
+    public String toString() {
+        return executeWithLock(
+                tableLock.readLock(),
+                () -> format(
+                        "Ttl %s, currentTime %s, routers %s, writers %s, readers %s, database '%s'",
+                        expirationTimestamp, clock.millis(), routers, writers, readers, databaseName.description()));
     }
 
-    private List<BoltServerAddress> newWithoutAddressIfPresent( List<BoltServerAddress> addresses, BoltServerAddress addressToSkip )
-    {
-        List<BoltServerAddress> newList = new ArrayList<>( addresses.size() );
-        for ( BoltServerAddress address : addresses )
-        {
-            if ( !address.equals( addressToSkip ) )
-            {
-                newList.add( address );
+    private List<BoltServerAddress> newWithoutAddressIfPresent(
+            List<BoltServerAddress> addresses, BoltServerAddress addressToSkip) {
+        List<BoltServerAddress> newList = new ArrayList<>(addresses.size());
+        for (BoltServerAddress address : addresses) {
+            if (!address.equals(addressToSkip)) {
+                newList.add(address);
             }
         }
-        return Collections.unmodifiableList( newList );
+        return Collections.unmodifiableList(newList);
     }
 
-    private List<BoltServerAddress> newWithAddressReplacedIfPresent( List<BoltServerAddress> addresses, BoltServerAddress oldAddress,
-                                                                     BoltServerAddress newAddress )
-    {
-        List<BoltServerAddress> newList = new ArrayList<>( addresses.size() );
-        for ( BoltServerAddress address : addresses )
-        {
-            newList.add( address.equals( oldAddress ) ? newAddress : address );
+    private List<BoltServerAddress> newWithAddressReplacedIfPresent(
+            List<BoltServerAddress> addresses, BoltServerAddress oldAddress, BoltServerAddress newAddress) {
+        List<BoltServerAddress> newList = new ArrayList<>(addresses.size());
+        for (BoltServerAddress address : addresses) {
+            newList.add(address.equals(oldAddress) ? newAddress : address);
         }
-        return Collections.unmodifiableList( newList );
+        return Collections.unmodifiableList(newList);
     }
 
-    private List<BoltServerAddress> newWithReusedAddresses( List<BoltServerAddress> currentAddresses, Set<BoltServerAddress> disusedAddresses,
-                                                            Set<BoltServerAddress> newAddresses )
-    {
-        List<BoltServerAddress> newList = Stream.concat( currentAddresses.stream(), disusedAddresses.stream() )
-                                                .filter( address -> newAddresses.remove( toBoltServerAddress( address ) ) )
-                                                .collect( Collectors.toCollection( () -> new ArrayList<>( newAddresses.size() ) ) );
-        newList.addAll( newAddresses );
-        return Collections.unmodifiableList( newList );
+    private List<BoltServerAddress> newWithReusedAddresses(
+            List<BoltServerAddress> currentAddresses,
+            Set<BoltServerAddress> disusedAddresses,
+            Set<BoltServerAddress> newAddresses) {
+        List<BoltServerAddress> newList = Stream.concat(currentAddresses.stream(), disusedAddresses.stream())
+                .filter(address -> newAddresses.remove(toBoltServerAddress(address)))
+                .collect(Collectors.toCollection(() -> new ArrayList<>(newAddresses.size())));
+        newList.addAll(newAddresses);
+        return Collections.unmodifiableList(newList);
     }
 
-    private BoltServerAddress toBoltServerAddress( BoltServerAddress address )
-    {
-        return BoltServerAddress.class.equals( address.getClass() ) ? address : new BoltServerAddress( address.host(), address.port() );
+    private BoltServerAddress toBoltServerAddress(BoltServerAddress address) {
+        return BoltServerAddress.class.equals(address.getClass())
+                ? address
+                : new BoltServerAddress(address.host(), address.port());
     }
 }

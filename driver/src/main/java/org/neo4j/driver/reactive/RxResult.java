@@ -18,16 +18,14 @@
  */
 package org.neo4j.driver.reactive;
 
-import org.neo4j.driver.Query;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-
 import java.util.List;
-
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 /**
  * A reactive result provides a reactive way to execute query on the server and receives records back.
@@ -41,8 +39,7 @@ import org.neo4j.driver.summary.ResultSummary;
  * @see Subscription
  * @since 4.0
  */
-public interface RxResult
-{
+public interface RxResult {
     /**
      * Returns a cold publisher of keys.
      * This publisher always publishes one item - a list of keys. The list could be empty which indicates no keys in the result.

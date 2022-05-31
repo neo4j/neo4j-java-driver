@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class Record implements TestkitResponse
-{
+public class Record implements TestkitResponse {
     private RecordBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "Record";
     }
 
     @Getter
     @Builder
-    public static class RecordBody
-    {
+    public static class RecordBody {
         private org.neo4j.driver.Record values;
     }
 }

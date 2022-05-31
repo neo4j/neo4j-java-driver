@@ -19,7 +19,6 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.reactive.RxSession;
@@ -62,8 +61,7 @@ import org.neo4j.driver.util.Experimental;
  *
  * @since 1.0 (Modified and Added {@link AsyncSession} and {@link RxSession} since 2.0)
  */
-public interface Driver extends AutoCloseable
-{
+public interface Driver extends AutoCloseable {
     /**
      * Return a flag to indicate whether or not encryption is used for this driver.
      *
@@ -87,7 +85,7 @@ public interface Driver extends AutoCloseable
      * @return a new {@link Session} object.
      * @see SessionConfig
      */
-    Session session( SessionConfig sessionConfig );
+    Session session(SessionConfig sessionConfig);
 
     /**
      * Create a new general purpose {@link RxSession} with default {@link SessionConfig session configuration}.
@@ -106,7 +104,7 @@ public interface Driver extends AutoCloseable
      * @param sessionConfig used to customize the session.
      * @return a new {@link RxSession} object.
      */
-    RxSession rxSession( SessionConfig sessionConfig );
+    RxSession rxSession(SessionConfig sessionConfig);
 
     /**
      * Create a new general purpose {@link AsyncSession} with default {@link SessionConfig session configuration}.
@@ -126,7 +124,7 @@ public interface Driver extends AutoCloseable
      * @param sessionConfig used to customize the session.
      * @return a new {@link AsyncSession} object.
      */
-    AsyncSession asyncSession( SessionConfig sessionConfig );
+    AsyncSession asyncSession(SessionConfig sessionConfig);
 
     /**
      * Close all the resources assigned to this driver, including open connections and IO threads.

@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver;
 
+import static java.lang.String.format;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+
 import java.io.File;
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -28,7 +31,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-
 import org.neo4j.driver.internal.RevocationStrategy;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
@@ -38,9 +40,6 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
-
-import static java.lang.String.format;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 /**
  * A configuration class to config driver properties.
@@ -70,14 +69,14 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
  * @since 1.0
  */
 @Immutable
-public class Config implements Serializable
-{
+public class Config implements Serializable {
     private static final long serialVersionUID = -4496545746399601108L;
 
     private static final Config EMPTY = builder().build();
 
     /** User defined logging */
     private final Logging logging;
+
     private final boolean logLeakedSessions;
 
     private final int maxConnectionPoolSize;
@@ -101,8 +100,7 @@ public class Config implements Serializable
     private final String userAgent;
     private final MetricsAdapter metricsAdapter;
 
-    private Config( ConfigBuilder builder )
-    {
+    private Config(ConfigBuilder builder) {
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
 
@@ -130,8 +128,7 @@ public class Config implements Serializable
      * Logging provider
      * @return the Logging provider to use
      */
-    public Logging logging()
-    {
+    public Logging logging() {
         return logging;
     }
 
@@ -140,8 +137,7 @@ public class Config implements Serializable
      *
      * @return {@code true} if enabled, {@code false} otherwise.
      */
-    public boolean logLeakedSessions()
-    {
+    public boolean logLeakedSessions() {
         return logLeakedSessions;
     }
 
@@ -151,8 +147,7 @@ public class Config implements Serializable
      *
      * @return idle time in milliseconds
      */
-    public long idleTimeBeforeConnectionTest()
-    {
+    public long idleTimeBeforeConnectionTest() {
         return idleTimeBeforeConnectionTest;
     }
 
@@ -161,42 +156,36 @@ public class Config implements Serializable
      *
      * @return maximum lifetime in milliseconds
      */
-    public long maxConnectionLifetimeMillis()
-    {
+    public long maxConnectionLifetimeMillis() {
         return maxConnectionLifetimeMillis;
     }
 
     /**
      * @return the configured connection timeout value in milliseconds.
      */
-    public int connectionTimeoutMillis()
-    {
+    public int connectionTimeoutMillis() {
         return connectionTimeoutMillis;
     }
 
-    public int maxConnectionPoolSize()
-    {
+    public int maxConnectionPoolSize() {
         return maxConnectionPoolSize;
     }
 
-    public long connectionAcquisitionTimeoutMillis()
-    {
+    public long connectionAcquisitionTimeoutMillis() {
         return connectionAcquisitionTimeoutMillis;
     }
 
     /**
      * @return indicator for encrypted communication.
      */
-    public boolean encrypted()
-    {
+    public boolean encrypted() {
         return securitySettings.encrypted();
     }
 
     /**
      * @return the strategy to use to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
      */
-    public TrustStrategy trustStrategy()
-    {
+    public TrustStrategy trustStrategy() {
         return securitySettings.trustStrategy();
     }
 
@@ -205,8 +194,7 @@ public class Config implements Serializable
      *
      * @return the resolver to use.
      */
-    public ServerAddressResolver resolver()
-    {
+    public ServerAddressResolver resolver() {
         return resolver;
     }
 
@@ -215,85 +203,75 @@ public class Config implements Serializable
      *
      * @return a new {@link ConfigBuilder} instance.
      */
-    public static ConfigBuilder builder()
-    {
+    public static ConfigBuilder builder() {
         return new ConfigBuilder();
     }
 
     /**
      * @return A config with all default settings
      */
-    public static Config defaultConfig()
-    {
+    public static Config defaultConfig() {
         return EMPTY;
     }
 
     /**
      * @return the security setting to use when creating connections.
      */
-    SecuritySettings securitySettings()
-    {
+    SecuritySettings securitySettings() {
         return securitySettings;
     }
 
-    RoutingSettings routingSettings()
-    {
-        return new RoutingSettings( routingFailureLimit, routingRetryDelayMillis, routingTablePurgeDelayMillis );
+    RoutingSettings routingSettings() {
+        return new RoutingSettings(routingFailureLimit, routingRetryDelayMillis, routingTablePurgeDelayMillis);
     }
 
-    RetrySettings retrySettings()
-    {
+    RetrySettings retrySettings() {
         return retrySettings;
     }
 
-    public long fetchSize()
-    {
+    public long fetchSize() {
         return fetchSize;
     }
 
-    public int eventLoopThreads()
-    {
+    public int eventLoopThreads() {
         return eventLoopThreads;
     }
 
     /**
      * @return if the metrics is enabled or not on this driver.
      */
-    public boolean isMetricsEnabled()
-    {
+    public boolean isMetricsEnabled() {
         return this.metricsAdapter != MetricsAdapter.DEV_NULL;
     }
 
-    public MetricsAdapter metricsAdapter()
-    {
+    public MetricsAdapter metricsAdapter() {
         return this.metricsAdapter;
     }
 
     /**
      * @return the user_agent configured for this driver
      */
-    public String userAgent()
-    {
+    public String userAgent() {
         return userAgent;
     }
 
     /**
      * Used to build new config instances
      */
-    public static class ConfigBuilder
-    {
+    public static class ConfigBuilder {
         private Logging logging = DEV_NULL_LOGGING;
         private boolean logLeakedSessions;
         private int maxConnectionPoolSize = PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private long maxConnectionLifetimeMillis = PoolSettings.DEFAULT_MAX_CONNECTION_LIFETIME;
         private long connectionAcquisitionTimeoutMillis = PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
-        private String userAgent = format( "neo4j-java/%s", driverVersion() );
-        private final SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder = new SecuritySettings.SecuritySettingsBuilder();
+        private String userAgent = format("neo4j-java/%s", driverVersion());
+        private final SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder =
+                new SecuritySettings.SecuritySettingsBuilder();
         private int routingFailureLimit = RoutingSettings.DEFAULT.maxRoutingFailures();
         private long routingRetryDelayMillis = RoutingSettings.DEFAULT.retryTimeoutDelay();
         private long routingTablePurgeDelayMillis = RoutingSettings.DEFAULT.routingTablePurgeDelayMs();
-        private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 30 );
+        private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis(30);
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
         private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
@@ -313,8 +291,7 @@ public class Config implements Serializable
          * @return this builder
          * @see Logging
          */
-        public ConfigBuilder withLogging( Logging logging )
-        {
+        public ConfigBuilder withLogging(Logging logging) {
             this.logging = logging;
             return this;
         }
@@ -334,8 +311,7 @@ public class Config implements Serializable
          *
          * @return this builder
          */
-        public ConfigBuilder withLeakedSessionsLogging()
-        {
+        public ConfigBuilder withLeakedSessionsLogging() {
             this.logLeakedSessions = true;
             return this;
         }
@@ -363,9 +339,8 @@ public class Config implements Serializable
          * @param unit the unit in which the duration is given
          * @return this builder
          */
-        public ConfigBuilder withConnectionLivenessCheckTimeout( long value, TimeUnit unit )
-        {
-            this.idleTimeBeforeConnectionTest = unit.toMillis( value );
+        public ConfigBuilder withConnectionLivenessCheckTimeout(long value, TimeUnit unit) {
+            this.idleTimeBeforeConnectionTest = unit.toMillis(value);
             return this;
         }
 
@@ -389,9 +364,8 @@ public class Config implements Serializable
          * @param unit the unit in which the duration is given
          * @return this builder
          */
-        public ConfigBuilder withMaxConnectionLifetime( long value, TimeUnit unit )
-        {
-            this.maxConnectionLifetimeMillis = unit.toMillis( value );
+        public ConfigBuilder withMaxConnectionLifetime(long value, TimeUnit unit) {
+            this.maxConnectionLifetimeMillis = unit.toMillis(value);
             return this;
         }
 
@@ -411,18 +385,12 @@ public class Config implements Serializable
          * @return this builder
          * @see #withConnectionAcquisitionTimeout(long, TimeUnit)
          */
-        public ConfigBuilder withMaxConnectionPoolSize( int value )
-        {
-            if ( value == 0 )
-            {
-                throw new IllegalArgumentException( "Zero value is not supported" );
-            }
-            else if ( value < 0 )
-            {
+        public ConfigBuilder withMaxConnectionPoolSize(int value) {
+            if (value == 0) {
+                throw new IllegalArgumentException("Zero value is not supported");
+            } else if (value < 0) {
                 this.maxConnectionPoolSize = Integer.MAX_VALUE;
-            }
-            else
-            {
+            } else {
                 this.maxConnectionPoolSize = value;
             }
             return this;
@@ -443,15 +411,11 @@ public class Config implements Serializable
          * @return this builder
          * @see #withMaxConnectionPoolSize(int)
          */
-        public ConfigBuilder withConnectionAcquisitionTimeout( long value, TimeUnit unit )
-        {
-            long valueInMillis = unit.toMillis( value );
-            if ( value >= 0 )
-            {
+        public ConfigBuilder withConnectionAcquisitionTimeout(long value, TimeUnit unit) {
+            long valueInMillis = unit.toMillis(value);
+            if (value >= 0) {
                 this.connectionAcquisitionTimeoutMillis = valueInMillis;
-            }
-            else
-            {
+            } else {
                 this.connectionAcquisitionTimeoutMillis = -1;
             }
             return this;
@@ -461,8 +425,7 @@ public class Config implements Serializable
          * Set to use encrypted traffic.
          * @return this builder
          */
-        public ConfigBuilder withEncryption()
-        {
+        public ConfigBuilder withEncryption() {
             securitySettingsBuilder.withEncryption();
             return this;
         }
@@ -471,8 +434,7 @@ public class Config implements Serializable
          * Set to use unencrypted traffic.
          * @return this builder
          */
-        public ConfigBuilder withoutEncryption()
-        {
+        public ConfigBuilder withoutEncryption() {
             securitySettingsBuilder.withoutEncryption();
             return this;
         }
@@ -491,9 +453,8 @@ public class Config implements Serializable
          * @param trustStrategy TLS authentication strategy
          * @return this builder
          */
-        public ConfigBuilder withTrustStrategy( TrustStrategy trustStrategy )
-        {
-            securitySettingsBuilder.withTrustStrategy( trustStrategy );
+        public ConfigBuilder withTrustStrategy(TrustStrategy trustStrategy) {
+            securitySettingsBuilder.withTrustStrategy(trustStrategy);
             return this;
         }
 
@@ -523,12 +484,10 @@ public class Config implements Serializable
          * <b>Method will be removed in the next major release.</b>
          */
         @Deprecated
-        public ConfigBuilder withRoutingFailureLimit( int routingFailureLimit )
-        {
-            if ( routingFailureLimit < 1 )
-            {
+        public ConfigBuilder withRoutingFailureLimit(int routingFailureLimit) {
+            if (routingFailureLimit < 1) {
                 throw new IllegalArgumentException(
-                        "The failure limit may not be smaller than 1, but was: " + routingFailureLimit );
+                        "The failure limit may not be smaller than 1, but was: " + routingFailureLimit);
             }
             this.routingFailureLimit = routingFailureLimit;
             return this;
@@ -565,13 +524,11 @@ public class Config implements Serializable
          * <b>Method will be removed in the next major release.</b>
          */
         @Deprecated
-        public ConfigBuilder withRoutingRetryDelay( long delay, TimeUnit unit )
-        {
-            long routingRetryDelayMillis = unit.toMillis( delay );
-            if ( routingRetryDelayMillis < 0 )
-            {
-                throw new IllegalArgumentException( String.format(
-                        "The retry delay may not be smaller than 0, but was %d %s.", delay, unit ) );
+        public ConfigBuilder withRoutingRetryDelay(long delay, TimeUnit unit) {
+            long routingRetryDelayMillis = unit.toMillis(delay);
+            if (routingRetryDelayMillis < 0) {
+                throw new IllegalArgumentException(
+                        String.format("The retry delay may not be smaller than 0, but was %d %s.", delay, unit));
             }
             this.routingRetryDelayMillis = routingRetryDelayMillis;
             return this;
@@ -594,13 +551,11 @@ public class Config implements Serializable
          *         the unit in which the duration is given
          * @return this builder
          */
-        public ConfigBuilder withRoutingTablePurgeDelay( long delay, TimeUnit unit )
-        {
-            long routingTablePurgeDelayMillis = unit.toMillis( delay );
-            if ( routingTablePurgeDelayMillis < 0 )
-            {
-                throw new IllegalArgumentException( String.format(
-                        "The routing table purge delay may not be smaller than 0, but was %d %s.", delay, unit ) );
+        public ConfigBuilder withRoutingTablePurgeDelay(long delay, TimeUnit unit) {
+            long routingTablePurgeDelayMillis = unit.toMillis(delay);
+            if (routingTablePurgeDelayMillis < 0) {
+                throw new IllegalArgumentException(String.format(
+                        "The routing table purge delay may not be smaller than 0, but was %d %s.", delay, unit));
             }
             this.routingTablePurgeDelayMillis = routingTablePurgeDelayMillis;
             return this;
@@ -621,9 +576,8 @@ public class Config implements Serializable
          * @param size the default record fetch size when pulling records in batches using Bolt V4.
          * @return this builder
          */
-        public ConfigBuilder withFetchSize( long size )
-        {
-            this.fetchSize = FetchSizeUtil.assertValidFetchSize( size );
+        public ConfigBuilder withFetchSize(long size) {
+            this.fetchSize = FetchSizeUtil.assertValidFetchSize(size);
             return this;
         }
 
@@ -644,20 +598,17 @@ public class Config implements Serializable
          * @throws IllegalArgumentException when given value is negative or does not fit in {@code int} when
          * converted to milliseconds.
          */
-        public ConfigBuilder withConnectionTimeout( long value, TimeUnit unit )
-        {
-            long connectionTimeoutMillis = unit.toMillis( value );
-            if ( connectionTimeoutMillis < 0 )
-            {
-                throw new IllegalArgumentException( String.format(
-                        "The connection timeout may not be smaller than 0, but was %d %s.", value, unit ) );
+        public ConfigBuilder withConnectionTimeout(long value, TimeUnit unit) {
+            long connectionTimeoutMillis = unit.toMillis(value);
+            if (connectionTimeoutMillis < 0) {
+                throw new IllegalArgumentException(
+                        String.format("The connection timeout may not be smaller than 0, but was %d %s.", value, unit));
             }
             int connectionTimeoutMillisInt = (int) connectionTimeoutMillis;
-            if ( connectionTimeoutMillisInt != connectionTimeoutMillis )
-            {
-                throw new IllegalArgumentException( String.format(
+            if (connectionTimeoutMillisInt != connectionTimeoutMillis) {
+                throw new IllegalArgumentException(String.format(
                         "The connection timeout must represent int value when converted to milliseconds %d.",
-                        connectionTimeoutMillis ) );
+                        connectionTimeoutMillis));
             }
             this.connectionTimeoutMillis = connectionTimeoutMillisInt;
             return this;
@@ -677,15 +628,13 @@ public class Config implements Serializable
          * @return this builder
          * @throws IllegalArgumentException when given value is negative
          */
-        public ConfigBuilder withMaxTransactionRetryTime( long value, TimeUnit unit )
-        {
-            long maxRetryTimeMs = unit.toMillis( value );
-            if ( maxRetryTimeMs < 0 )
-            {
-                throw new IllegalArgumentException( String.format(
-                        "The max retry time may not be smaller than 0, but was %d %s.", value, unit ) );
+        public ConfigBuilder withMaxTransactionRetryTime(long value, TimeUnit unit) {
+            long maxRetryTimeMs = unit.toMillis(value);
+            if (maxRetryTimeMs < 0) {
+                throw new IllegalArgumentException(
+                        String.format("The max retry time may not be smaller than 0, but was %d %s.", value, unit));
             }
-            this.retrySettings = new RetrySettings( maxRetryTimeMs );
+            this.retrySettings = new RetrySettings(maxRetryTimeMs);
             return this;
         }
 
@@ -702,9 +651,8 @@ public class Config implements Serializable
          * @return this builder.
          * @throws NullPointerException when the given resolver is {@code null}.
          */
-        public ConfigBuilder withResolver( ServerAddressResolver resolver )
-        {
-            this.resolver = Objects.requireNonNull( resolver, "resolver" );
+        public ConfigBuilder withResolver(ServerAddressResolver resolver) {
+            this.resolver = Objects.requireNonNull(resolver, "resolver");
             return this;
         }
 
@@ -713,29 +661,23 @@ public class Config implements Serializable
          *
          * @return this builder.
          */
-        public ConfigBuilder withDriverMetrics()
-        {
-            return withMetricsEnabled( true );
+        public ConfigBuilder withDriverMetrics() {
+            return withMetricsEnabled(true);
         }
 
         /**
          * Disable driver metrics. When disabled, driver metrics cannot be accessed via {@link Driver#metrics()}.
          * @return this builder.
          */
-        public ConfigBuilder withoutDriverMetrics()
-        {
-            return withMetricsEnabled( false );
+        public ConfigBuilder withoutDriverMetrics() {
+            return withMetricsEnabled(false);
         }
 
-        private ConfigBuilder withMetricsEnabled( boolean enabled )
-        {
-            if ( !enabled )
-            {
-                withMetricsAdapter( MetricsAdapter.DEV_NULL );
-            }
-            else if ( this.metricsAdapter == null || this.metricsAdapter == MetricsAdapter.DEV_NULL )
-            {
-                withMetricsAdapter( MetricsAdapter.DEFAULT );
+        private ConfigBuilder withMetricsEnabled(boolean enabled) {
+            if (!enabled) {
+                withMetricsAdapter(MetricsAdapter.DEV_NULL);
+            } else if (this.metricsAdapter == null || this.metricsAdapter == MetricsAdapter.DEV_NULL) {
+                withMetricsAdapter(MetricsAdapter.DEFAULT);
             }
             return this;
         }
@@ -751,9 +693,8 @@ public class Config implements Serializable
          * @return this builder.
          */
         @Experimental
-        public ConfigBuilder withMetricsAdapter( MetricsAdapter metricsAdapter )
-        {
-            this.metricsAdapter = Objects.requireNonNull( metricsAdapter, "metricsAdapter" );
+        public ConfigBuilder withMetricsAdapter(MetricsAdapter metricsAdapter) {
+            this.metricsAdapter = Objects.requireNonNull(metricsAdapter, "metricsAdapter");
             return this;
         }
 
@@ -764,11 +705,10 @@ public class Config implements Serializable
          * @return this builder.
          * @throws IllegalArgumentException if the value of the size is set to a number that is less than 1.
          */
-        public ConfigBuilder withEventLoopThreads( int size )
-        {
-            if ( size < 1 )
-            {
-                throw new IllegalArgumentException( String.format( "The event loop thread may not be smaller than 1, but was %d.", size ) );
+        public ConfigBuilder withEventLoopThreads(int size) {
+            if (size < 1) {
+                throw new IllegalArgumentException(
+                        String.format("The event loop thread may not be smaller than 1, but was %d.", size));
             }
             this.eventLoopThreads = size;
             return this;
@@ -779,11 +719,9 @@ public class Config implements Serializable
          * @param userAgent the string to configure user_agent.
          * @return this builder.
          */
-        public ConfigBuilder withUserAgent( String userAgent )
-        {
-            if ( userAgent == null || userAgent.isEmpty() )
-            {
-                throw new IllegalArgumentException( "The user_agent string must not be empty" );
+        public ConfigBuilder withUserAgent(String userAgent) {
+            if (userAgent == null || userAgent.isEmpty()) {
+                throw new IllegalArgumentException("The user_agent string must not be empty");
             }
             this.userAgent = userAgent;
             return this;
@@ -792,14 +730,12 @@ public class Config implements Serializable
         /**
          * Extracts the driver version from the driver jar MANIFEST.MF file.
          */
-        private static String driverVersion()
-        {
+        private static String driverVersion() {
             // "Session" is arbitrary - the only thing that matters is that the class we use here is in the
             // 'org.neo4j.driver' package, because that is where the jar manifest specifies the version.
             // This is done as part of the build, adding a MANIFEST.MF file to the generated jarfile.
             Package pkg = Session.class.getPackage();
-            if ( pkg != null && pkg.getImplementationVersion() != null )
-            {
+            if (pkg != null && pkg.getImplementationVersion() != null) {
                 return pkg.getImplementationVersion();
             }
 
@@ -813,24 +749,21 @@ public class Config implements Serializable
          *
          * @return a new {@link Config} instance.
          */
-        public Config build()
-        {
-            return new Config( this );
+        public Config build() {
+            return new Config(this);
         }
     }
 
     /**
      * Control how the driver determines if it can trust the encryption certificates provided by the Neo4j instance it is connected to.
      */
-    public static class TrustStrategy implements Serializable
-    {
+    public static class TrustStrategy implements Serializable {
         private static final long serialVersionUID = -1631888096243987740L;
 
         /**
          * The trust strategy that the driver supports
          */
-        public enum Strategy
-        {
+        public enum Strategy {
             TRUST_ALL_CERTIFICATES,
             TRUST_CUSTOM_CA_SIGNED_CERTIFICATES,
             TRUST_SYSTEM_CA_SIGNED_CERTIFICATES
@@ -841,16 +774,14 @@ public class Config implements Serializable
         private boolean hostnameVerificationEnabled = true;
         private RevocationStrategy revocationStrategy = RevocationStrategy.NO_CHECKS;
 
-        private TrustStrategy( Strategy strategy )
-        {
-            this( strategy, Collections.emptyList() );
+        private TrustStrategy(Strategy strategy) {
+            this(strategy, Collections.emptyList());
         }
 
-        private TrustStrategy( Strategy strategy, List<File> certFiles )
-        {
-            Objects.requireNonNull( certFiles, "certFiles can't be null" );
+        private TrustStrategy(Strategy strategy, List<File> certFiles) {
+            Objects.requireNonNull(certFiles, "certFiles can't be null");
             this.strategy = strategy;
-            this.certFiles = Collections.unmodifiableList( new ArrayList<>( certFiles ) );
+            this.certFiles = Collections.unmodifiableList(new ArrayList<>(certFiles));
         }
 
         /**
@@ -858,8 +789,7 @@ public class Config implements Serializable
          *
          * @return the strategy we should use
          */
-        public Strategy strategy()
-        {
+        public Strategy strategy() {
             return strategy;
         }
 
@@ -870,9 +800,8 @@ public class Config implements Serializable
          * @deprecated superseded by {@link TrustStrategy#certFiles()}
          */
         @Deprecated
-        public File certFile()
-        {
-            return certFiles.isEmpty() ? null : certFiles.get( 0 );
+        public File certFile() {
+            return certFiles.isEmpty() ? null : certFiles.get(0);
         }
 
         /**
@@ -880,8 +809,7 @@ public class Config implements Serializable
          *
          * @return configured certificate files or empty list if trust strategy does not require certificates.
          */
-        public List<File> certFiles()
-        {
+        public List<File> certFiles() {
             return certFiles;
         }
 
@@ -890,8 +818,7 @@ public class Config implements Serializable
          *
          * @return {@code true} if hostname verification has been enabled via {@link #withHostnameVerification()}, {@code false} otherwise.
          */
-        public boolean isHostnameVerificationEnabled()
-        {
+        public boolean isHostnameVerificationEnabled() {
             return hostnameVerificationEnabled;
         }
 
@@ -900,8 +827,7 @@ public class Config implements Serializable
          *
          * @return the current trust strategy.
          */
-        public TrustStrategy withHostnameVerification()
-        {
+        public TrustStrategy withHostnameVerification() {
             hostnameVerificationEnabled = true;
             return this;
         }
@@ -911,8 +837,7 @@ public class Config implements Serializable
          *
          * @return the current trust strategy.
          */
-        public TrustStrategy withoutHostnameVerification()
-        {
+        public TrustStrategy withoutHostnameVerification() {
             hostnameVerificationEnabled = false;
             return this;
         }
@@ -927,14 +852,12 @@ public class Config implements Serializable
          * @param certFiles the trusted certificate files, it must not be {@code null} or empty
          * @return an authentication config
          */
-        public static TrustStrategy trustCustomCertificateSignedBy( File... certFiles )
-        {
-            Objects.requireNonNull( certFiles, "certFiles can't be null" );
-            if ( certFiles.length == 0 )
-            {
-                throw new IllegalArgumentException( "certFiles can't be empty" );
+        public static TrustStrategy trustCustomCertificateSignedBy(File... certFiles) {
+            Objects.requireNonNull(certFiles, "certFiles can't be null");
+            if (certFiles.length == 0) {
+                throw new IllegalArgumentException("certFiles can't be empty");
             }
-            return new TrustStrategy( Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES, Arrays.asList( certFiles ) );
+            return new TrustStrategy(Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES, Arrays.asList(certFiles));
         }
 
         /**
@@ -942,9 +865,8 @@ public class Config implements Serializable
          *
          * @return an authentication config
          */
-        public static TrustStrategy trustSystemCertificates()
-        {
-            return new TrustStrategy( Strategy.TRUST_SYSTEM_CA_SIGNED_CERTIFICATES );
+        public static TrustStrategy trustSystemCertificates() {
+            return new TrustStrategy(Strategy.TRUST_SYSTEM_CA_SIGNED_CERTIFICATES);
         }
 
         /**
@@ -953,17 +875,15 @@ public class Config implements Serializable
          * @return an authentication config
          * @since 1.1
          */
-        public static TrustStrategy trustAllCertificates()
-        {
-            return new TrustStrategy( Strategy.TRUST_ALL_CERTIFICATES );
+        public static TrustStrategy trustAllCertificates() {
+            return new TrustStrategy(Strategy.TRUST_ALL_CERTIFICATES);
         }
 
         /**
          * The revocation strategy used for verifying certificates.
          * @return this {@link TrustStrategy}'s revocation strategy
          */
-        public RevocationStrategy revocationStrategy()
-        {
+        public RevocationStrategy revocationStrategy() {
             return revocationStrategy;
         }
 
@@ -972,8 +892,7 @@ public class Config implements Serializable
          * option that is configured by default.
          * @return the current trust strategy
          */
-        public TrustStrategy withoutCertificateRevocationChecks()
-        {
+        public TrustStrategy withoutCertificateRevocationChecks() {
             this.revocationStrategy = RevocationStrategy.NO_CHECKS;
             return this;
         }
@@ -985,8 +904,7 @@ public class Config implements Serializable
          * OCSP stapling.
          * @return the current trust strategy
          */
-        public TrustStrategy withVerifyIfPresentRevocationChecks()
-        {
+        public TrustStrategy withVerifyIfPresentRevocationChecks() {
             this.revocationStrategy = RevocationStrategy.VERIFY_IF_PRESENT;
             return this;
         }
@@ -1000,8 +918,7 @@ public class Config implements Serializable
          * the certificate's configured OCSP responder URL.
          * @return the current trust strategy
          */
-        public TrustStrategy withStrictRevocationChecks()
-        {
+        public TrustStrategy withStrictRevocationChecks() {
             this.revocationStrategy = RevocationStrategy.STRICT;
             return this;
         }

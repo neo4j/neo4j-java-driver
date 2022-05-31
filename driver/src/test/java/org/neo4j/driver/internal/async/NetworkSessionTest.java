@@ -18,25 +18,6 @@
  */
 package org.neo4j.driver.internal.async;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
-
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Query;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.request.PullMessage;
-import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
-
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -70,413 +51,403 @@ import static org.neo4j.driver.util.TestUtil.verifyRollbackTx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 import static org.neo4j.driver.util.TestUtil.verifyRunRx;
 
-class NetworkSessionTest
-{
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
+import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
+
+class NetworkSessionTest {
     private Connection connection;
     private ConnectionProvider connectionProvider;
     private NetworkSession session;
 
     @BeforeEach
-    void setUp()
-    {
-        connection = connectionMock( BoltProtocolV4.INSTANCE );
-        connectionProvider = mock( ConnectionProvider.class );
-        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
-                .thenReturn( completedFuture( connection ) );
-        session = newSession( connectionProvider );
+    void setUp() {
+        connection = connectionMock(BoltProtocolV4.INSTANCE);
+        connectionProvider = mock(ConnectionProvider.class);
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
+                .thenReturn(completedFuture(connection));
+        session = newSession(connectionProvider);
     }
 
     @Test
-    void shouldFlushOnRunAsync()
-    {
-        setupSuccessfulRunAndPull( connection );
-        await( session.runAsync( new Query( "RETURN 1" ), TransactionConfig.empty() ) );
+    void shouldFlushOnRunAsync() {
+        setupSuccessfulRunAndPull(connection);
+        await(session.runAsync(new Query("RETURN 1"), TransactionConfig.empty()));
 
-        verifyRunAndPull( connection, "RETURN 1" );
+        verifyRunAndPull(connection, "RETURN 1");
     }
 
     @Test
-    void shouldFlushOnRunRx()
-    {
-        setupSuccessfulRunRx( connection );
-        await( session.runRx( new Query( "RETURN 1" ), TransactionConfig.empty() ) );
+    void shouldFlushOnRunRx() {
+        setupSuccessfulRunRx(connection);
+        await(session.runRx(new Query("RETURN 1"), TransactionConfig.empty()));
 
-        verifyRunRx( connection, "RETURN 1" );
+        verifyRunRx(connection, "RETURN 1");
     }
 
     @Test
-    void shouldNotAllowNewTxWhileOneIsRunning()
-    {
+    void shouldNotAllowNewTxWhileOneIsRunning() {
         // Given
-        beginTransaction( session );
+        beginTransaction(session);
 
         // Expect
-        assertThrows( ClientException.class, () -> beginTransaction( session ) );
+        assertThrows(ClientException.class, () -> beginTransaction(session));
     }
 
     @Test
-    void shouldBeAbleToOpenTxAfterPreviousIsClosed()
-    {
+    void shouldBeAbleToOpenTxAfterPreviousIsClosed() {
         // Given
-        await( beginTransaction( session ).closeAsync() );
+        await(beginTransaction(session).closeAsync());
 
         // When
-        UnmanagedTransaction tx = beginTransaction( session );
+        UnmanagedTransaction tx = beginTransaction(session);
 
         // Then we should've gotten a transaction object back
-        assertNotNull( tx );
-        verifyRollbackTx( connection );
+        assertNotNull(tx);
+        verifyRollbackTx(connection);
     }
 
     @Test
-    void shouldNotBeAbleToUseSessionWhileOngoingTransaction()
-    {
+    void shouldNotBeAbleToUseSessionWhileOngoingTransaction() {
         // Given
-        beginTransaction( session );
+        beginTransaction(session);
 
         // Expect
-        assertThrows( ClientException.class, () -> run( session, "RETURN 1" ) );
+        assertThrows(ClientException.class, () -> run(session, "RETURN 1"));
     }
 
     @Test
-    void shouldBeAbleToUseSessionAgainWhenTransactionIsClosed()
-    {
+    void shouldBeAbleToUseSessionAgainWhenTransactionIsClosed() {
         // Given
-        await( beginTransaction( session ).closeAsync() );
+        await(beginTransaction(session).closeAsync());
         String query = "RETURN 1";
-        setupSuccessfulRunAndPull( connection, query );
+        setupSuccessfulRunAndPull(connection, query);
 
         // When
-        run( session, query );
+        run(session, query);
 
         // Then
-        verifyRunAndPull( connection, query );
+        verifyRunAndPull(connection, query);
     }
 
     @Test
-    void shouldNotCloseAlreadyClosedSession()
-    {
-        beginTransaction( session );
+    void shouldNotCloseAlreadyClosedSession() {
+        beginTransaction(session);
 
-        close( session );
-        close( session );
-        close( session );
+        close(session);
+        close(session);
+        close(session);
 
-        verifyRollbackTx( connection );
+        verifyRollbackTx(connection);
     }
 
     @Test
-    void runThrowsWhenSessionIsClosed()
-    {
-        close( session );
+    void runThrowsWhenSessionIsClosed() {
+        close(session);
 
-        Exception e = assertThrows( Exception.class, () -> run( session, "CREATE ()" ) );
-        assertThat( e, instanceOf( ClientException.class ) );
-        assertThat( e.getMessage(), containsString( "session is already closed" ) );
+        Exception e = assertThrows(Exception.class, () -> run(session, "CREATE ()"));
+        assertThat(e, instanceOf(ClientException.class));
+        assertThat(e.getMessage(), containsString("session is already closed"));
     }
 
     @Test
-    void acquiresNewConnectionForRun()
-    {
+    void acquiresNewConnectionForRun() {
         String query = "RETURN 1";
-        setupSuccessfulRunAndPull( connection, query );
+        setupSuccessfulRunAndPull(connection, query);
 
-        run( session, query );
+        run(session, query);
 
-        verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
+        verify(connectionProvider).acquireConnection(any(ConnectionContext.class));
     }
 
     @Test
-    void releasesOpenConnectionUsedForRunWhenSessionIsClosed()
-    {
+    void releasesOpenConnectionUsedForRunWhenSessionIsClosed() {
         String query = "RETURN 1";
-        setupSuccessfulRunAndPull( connection, query );
+        setupSuccessfulRunAndPull(connection, query);
 
-        run( session, query );
+        run(session, query);
 
-        close( session );
+        close(session);
 
-        InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).write( any( RunWithMetadataMessage.class ), any() );
-        inOrder.verify( connection ).writeAndFlush( any( PullMessage.class ), any() );
-        inOrder.verify( connection, atLeastOnce() ).release();
+        InOrder inOrder = inOrder(connection);
+        inOrder.verify(connection).write(any(RunWithMetadataMessage.class), any());
+        inOrder.verify(connection).writeAndFlush(any(PullMessage.class), any());
+        inOrder.verify(connection, atLeastOnce()).release();
     }
 
-    @SuppressWarnings( "deprecation" )
+    @SuppressWarnings("deprecation")
     @Test
-    void resetDoesNothingWhenNoTransactionAndNoConnection()
-    {
-        await( session.resetAsync() );
+    void resetDoesNothingWhenNoTransactionAndNoConnection() {
+        await(session.resetAsync());
 
-        verify( connectionProvider, never() ).acquireConnection( any( ConnectionContext.class ) );
-    }
-
-    @Test
-    void closeWithoutConnection()
-    {
-        NetworkSession session = newSession( connectionProvider );
-
-        close( session );
-
-        verify( connectionProvider, never() ).acquireConnection( any( ConnectionContext.class ) );
+        verify(connectionProvider, never()).acquireConnection(any(ConnectionContext.class));
     }
 
     @Test
-    void acquiresNewConnectionForBeginTx()
-    {
-        UnmanagedTransaction tx = beginTransaction( session );
+    void closeWithoutConnection() {
+        NetworkSession session = newSession(connectionProvider);
 
-        assertNotNull( tx );
-        verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
+        close(session);
+
+        verify(connectionProvider, never()).acquireConnection(any(ConnectionContext.class));
     }
 
     @Test
-    void updatesBookmarkWhenTxIsClosed()
-    {
-        Bookmark bookmarkAfterCommit = InternalBookmark.parse( "TheBookmark" );
+    void acquiresNewConnectionForBeginTx() {
+        UnmanagedTransaction tx = beginTransaction(session);
 
-        BoltProtocol protocol = spy( BoltProtocolV4.INSTANCE );
-        doReturn( completedFuture( bookmarkAfterCommit ) ).when( protocol ).commitTransaction( any( Connection.class ) );
+        assertNotNull(tx);
+        verify(connectionProvider).acquireConnection(any(ConnectionContext.class));
+    }
 
-        when( connection.protocol() ).thenReturn( protocol );
+    @Test
+    void updatesBookmarkWhenTxIsClosed() {
+        Bookmark bookmarkAfterCommit = InternalBookmark.parse("TheBookmark");
 
-        UnmanagedTransaction tx = beginTransaction( session );
-        assertThat( session.lastBookmark(), instanceOf( InternalBookmark.class ) );
+        BoltProtocol protocol = spy(BoltProtocolV4.INSTANCE);
+        doReturn(completedFuture(bookmarkAfterCommit)).when(protocol).commitTransaction(any(Connection.class));
+
+        when(connection.protocol()).thenReturn(protocol);
+
+        UnmanagedTransaction tx = beginTransaction(session);
+        assertThat(session.lastBookmark(), instanceOf(InternalBookmark.class));
         Bookmark bookmark = (InternalBookmark) session.lastBookmark();
-        assertTrue( bookmark.isEmpty() );
+        assertTrue(bookmark.isEmpty());
 
-        await( tx.commitAsync() );
-        assertEquals( bookmarkAfterCommit, session.lastBookmark() );
+        await(tx.commitAsync());
+        assertEquals(bookmarkAfterCommit, session.lastBookmark());
     }
 
     @Test
-    void releasesConnectionWhenTxIsClosed()
-    {
+    void releasesConnectionWhenTxIsClosed() {
         String query = "RETURN 42";
-        setupSuccessfulRunAndPull( connection, query );
+        setupSuccessfulRunAndPull(connection, query);
 
-        UnmanagedTransaction tx = beginTransaction( session );
-        await( tx.runAsync( new Query( query ) ) );
+        UnmanagedTransaction tx = beginTransaction(session);
+        await(tx.runAsync(new Query(query)));
 
-        verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
-        verifyRunAndPull( connection, query );
+        verify(connectionProvider).acquireConnection(any(ConnectionContext.class));
+        verifyRunAndPull(connection, query);
 
-        await( tx.closeAsync() );
-        verify( connection ).release();
+        await(tx.closeAsync());
+        verify(connection).release();
     }
 
     @Test
-    void bookmarkIsPropagatedFromSession()
-    {
-        Bookmark bookmark = InternalBookmark.parse( "Bookmarks" );
-        NetworkSession session = newSession( connectionProvider, bookmark );
+    void bookmarkIsPropagatedFromSession() {
+        Bookmark bookmark = InternalBookmark.parse("Bookmarks");
+        NetworkSession session = newSession(connectionProvider, bookmark);
 
-        UnmanagedTransaction tx = beginTransaction( session );
-        assertNotNull( tx );
-        verifyBeginTx( connection );
+        UnmanagedTransaction tx = beginTransaction(session);
+        assertNotNull(tx);
+        verifyBeginTx(connection);
     }
 
     @Test
-    void bookmarkIsPropagatedBetweenTransactions()
-    {
-        Bookmark bookmark1 = InternalBookmark.parse( "Bookmark1" );
-        Bookmark bookmark2 = InternalBookmark.parse( "Bookmark2" );
+    void bookmarkIsPropagatedBetweenTransactions() {
+        Bookmark bookmark1 = InternalBookmark.parse("Bookmark1");
+        Bookmark bookmark2 = InternalBookmark.parse("Bookmark2");
 
-        NetworkSession session = newSession( connectionProvider );
+        NetworkSession session = newSession(connectionProvider);
 
-        BoltProtocol protocol = spy( BoltProtocolV4.INSTANCE );
-        doReturn( completedFuture( bookmark1 ), completedFuture( bookmark2 ) ).when( protocol ).commitTransaction( any( Connection.class ) );
+        BoltProtocol protocol = spy(BoltProtocolV4.INSTANCE);
+        doReturn(completedFuture(bookmark1), completedFuture(bookmark2))
+                .when(protocol)
+                .commitTransaction(any(Connection.class));
 
-        when( connection.protocol() ).thenReturn( protocol );
+        when(connection.protocol()).thenReturn(protocol);
 
-        UnmanagedTransaction tx1 = beginTransaction( session );
-        await( tx1.commitAsync() );
-        assertEquals( bookmark1, session.lastBookmark() );
+        UnmanagedTransaction tx1 = beginTransaction(session);
+        await(tx1.commitAsync());
+        assertEquals(bookmark1, session.lastBookmark());
 
-        UnmanagedTransaction tx2 = beginTransaction( session );
-        verifyBeginTx( connection, 2 );
-        await( tx2.commitAsync() );
+        UnmanagedTransaction tx2 = beginTransaction(session);
+        verifyBeginTx(connection, 2);
+        await(tx2.commitAsync());
 
-        assertEquals( bookmark2, session.lastBookmark() );
+        assertEquals(bookmark2, session.lastBookmark());
     }
 
     @Test
-    void accessModeUsedToAcquireReadConnections()
-    {
-        accessModeUsedToAcquireConnections( READ );
+    void accessModeUsedToAcquireReadConnections() {
+        accessModeUsedToAcquireConnections(READ);
     }
 
     @Test
-    void accessModeUsedToAcquireWriteConnections()
-    {
-        accessModeUsedToAcquireConnections( WRITE );
+    void accessModeUsedToAcquireWriteConnections() {
+        accessModeUsedToAcquireConnections(WRITE);
     }
 
-    private void accessModeUsedToAcquireConnections( AccessMode mode )
-    {
-        NetworkSession session2 = newSession( connectionProvider, mode );
-        beginTransaction( session2 );
-        ArgumentCaptor<ConnectionContext> argument = ArgumentCaptor.forClass( ConnectionContext.class );
-        verify( connectionProvider ).acquireConnection( argument.capture() );
-        assertEquals( mode, argument.getValue().mode() );
-    }
-
-    @Test
-    void testPassingNoBookmarkShouldRetainBookmark()
-    {
-        NetworkSession session = newSession( connectionProvider, InternalBookmark.parse( "X" ) );
-        beginTransaction( session );
-        assertThat( session.lastBookmark(), equalTo( InternalBookmark.parse( "X" ) ) );
+    private void accessModeUsedToAcquireConnections(AccessMode mode) {
+        NetworkSession session2 = newSession(connectionProvider, mode);
+        beginTransaction(session2);
+        ArgumentCaptor<ConnectionContext> argument = ArgumentCaptor.forClass(ConnectionContext.class);
+        verify(connectionProvider).acquireConnection(argument.capture());
+        assertEquals(mode, argument.getValue().mode());
     }
 
     @Test
-    void connectionShouldBeResetAfterSessionReset()
-    {
+    void testPassingNoBookmarkShouldRetainBookmark() {
+        NetworkSession session = newSession(connectionProvider, InternalBookmark.parse("X"));
+        beginTransaction(session);
+        assertThat(session.lastBookmark(), equalTo(InternalBookmark.parse("X")));
+    }
+
+    @Test
+    void connectionShouldBeResetAfterSessionReset() {
         String query = "RETURN 1";
-        setupSuccessfulRunAndPull( connection, query );
+        setupSuccessfulRunAndPull(connection, query);
 
-        run( session, query );
+        run(session, query);
 
-        InOrder connectionInOrder = inOrder( connection );
-        connectionInOrder.verify( connection, never() ).reset();
-        connectionInOrder.verify( connection ).release();
+        InOrder connectionInOrder = inOrder(connection);
+        connectionInOrder.verify(connection, never()).reset();
+        connectionInOrder.verify(connection).release();
 
-        await( session.resetAsync() );
-        connectionInOrder.verify( connection ).reset();
-        connectionInOrder.verify( connection, never() ).release();
+        await(session.resetAsync());
+        connectionInOrder.verify(connection).reset();
+        connectionInOrder.verify(connection, never()).release();
     }
 
     @Test
-    void shouldHaveEmptyLastBookmarkInitially()
-    {
-        assertThat( session.lastBookmark(), instanceOf( InternalBookmark.class ) );
+    void shouldHaveEmptyLastBookmarkInitially() {
+        assertThat(session.lastBookmark(), instanceOf(InternalBookmark.class));
         Bookmark bookmark = (InternalBookmark) session.lastBookmark();
-        assertTrue( bookmark.isEmpty() );
+        assertTrue(bookmark.isEmpty());
     }
 
     @Test
-    void shouldDoNothingWhenClosingWithoutAcquiredConnection()
-    {
-        RuntimeException error = new RuntimeException( "Hi" );
-        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) ).thenReturn( failedFuture( error ) );
+    void shouldDoNothingWhenClosingWithoutAcquiredConnection() {
+        RuntimeException error = new RuntimeException("Hi");
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenReturn(failedFuture(error));
 
-        Exception e = assertThrows( Exception.class, () -> run( session, "RETURN 1" ) );
-        assertEquals( error, e );
+        Exception e = assertThrows(Exception.class, () -> run(session, "RETURN 1"));
+        assertEquals(error, e);
 
-        close( session );
+        close(session);
     }
 
     @Test
-    void shouldRunAfterRunFailure()
-    {
-        RuntimeException error = new RuntimeException( "Hi" );
-        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
-                .thenReturn( failedFuture( error ) ).thenReturn( completedFuture( connection ) );
+    void shouldRunAfterRunFailure() {
+        RuntimeException error = new RuntimeException("Hi");
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
+                .thenReturn(failedFuture(error))
+                .thenReturn(completedFuture(connection));
 
-        Exception e = assertThrows( Exception.class, () -> run( session, "RETURN 1" ) );
+        Exception e = assertThrows(Exception.class, () -> run(session, "RETURN 1"));
 
-        assertEquals( error, e );
+        assertEquals(error, e);
 
         String query = "RETURN 2";
-        setupSuccessfulRunAndPull( connection, query );
+        setupSuccessfulRunAndPull(connection, query);
 
-        run( session, query );
+        run(session, query);
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
-        verifyRunAndPull( connection, query );
+        verify(connectionProvider, times(2)).acquireConnection(any(ConnectionContext.class));
+        verifyRunAndPull(connection, query);
     }
 
     @Test
-    void shouldRunAfterBeginTxFailureOnBookmark()
-    {
-        RuntimeException error = new RuntimeException( "Hi" );
-        Connection connection1 = connectionMock( BoltProtocolV4.INSTANCE );
-        setupFailingBegin( connection1, error );
-        Connection connection2 = connectionMock( BoltProtocolV4.INSTANCE );
+    void shouldRunAfterBeginTxFailureOnBookmark() {
+        RuntimeException error = new RuntimeException("Hi");
+        Connection connection1 = connectionMock(BoltProtocolV4.INSTANCE);
+        setupFailingBegin(connection1, error);
+        Connection connection2 = connectionMock(BoltProtocolV4.INSTANCE);
 
-        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
-                .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
+                .thenReturn(completedFuture(connection1))
+                .thenReturn(completedFuture(connection2));
 
-        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
-        NetworkSession session = newSession( connectionProvider, bookmark );
+        Bookmark bookmark = InternalBookmark.parse("neo4j:bookmark:v1:tx42");
+        NetworkSession session = newSession(connectionProvider, bookmark);
 
-        Exception e = assertThrows( Exception.class, () -> beginTransaction( session ) );
-        assertEquals( error, e );
+        Exception e = assertThrows(Exception.class, () -> beginTransaction(session));
+        assertEquals(error, e);
         String query = "RETURN 2";
-        setupSuccessfulRunAndPull( connection2, query );
+        setupSuccessfulRunAndPull(connection2, query);
 
-        run( session, query );
+        run(session, query);
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
-        verifyBeginTx( connection1 );
-        verifyRunAndPull( connection2, "RETURN 2" );
+        verify(connectionProvider, times(2)).acquireConnection(any(ConnectionContext.class));
+        verifyBeginTx(connection1);
+        verifyRunAndPull(connection2, "RETURN 2");
     }
 
     @Test
-    void shouldBeginTxAfterBeginTxFailureOnBookmark()
-    {
-        RuntimeException error = new RuntimeException( "Hi" );
-        Connection connection1 = connectionMock( BoltProtocolV4.INSTANCE );
-        setupFailingBegin( connection1, error );
-        Connection connection2 = connectionMock( BoltProtocolV4.INSTANCE );
+    void shouldBeginTxAfterBeginTxFailureOnBookmark() {
+        RuntimeException error = new RuntimeException("Hi");
+        Connection connection1 = connectionMock(BoltProtocolV4.INSTANCE);
+        setupFailingBegin(connection1, error);
+        Connection connection2 = connectionMock(BoltProtocolV4.INSTANCE);
 
-        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
-                .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
+                .thenReturn(completedFuture(connection1))
+                .thenReturn(completedFuture(connection2));
 
-        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
-        NetworkSession session = newSession( connectionProvider, bookmark );
+        Bookmark bookmark = InternalBookmark.parse("neo4j:bookmark:v1:tx42");
+        NetworkSession session = newSession(connectionProvider, bookmark);
 
-        Exception e = assertThrows( Exception.class, () -> beginTransaction( session ) );
-        assertEquals( error, e );
+        Exception e = assertThrows(Exception.class, () -> beginTransaction(session));
+        assertEquals(error, e);
 
-        beginTransaction( session );
+        beginTransaction(session);
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
-        verifyBeginTx( connection1 );
-        verifyBeginTx( connection2 );
+        verify(connectionProvider, times(2)).acquireConnection(any(ConnectionContext.class));
+        verifyBeginTx(connection1);
+        verifyBeginTx(connection2);
     }
 
     @Test
-    void shouldBeginTxAfterRunFailureToAcquireConnection()
-    {
-        RuntimeException error = new RuntimeException( "Hi" );
-        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
-                .thenReturn( failedFuture( error ) ).thenReturn( completedFuture( connection ) );
+    void shouldBeginTxAfterRunFailureToAcquireConnection() {
+        RuntimeException error = new RuntimeException("Hi");
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
+                .thenReturn(failedFuture(error))
+                .thenReturn(completedFuture(connection));
 
-        Exception e = assertThrows( Exception.class, () -> run( session, "RETURN 1" ) );
-        assertEquals( error, e );
+        Exception e = assertThrows(Exception.class, () -> run(session, "RETURN 1"));
+        assertEquals(error, e);
 
-        beginTransaction( session );
+        beginTransaction(session);
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
-        verifyBeginTx( connection );
+        verify(connectionProvider, times(2)).acquireConnection(any(ConnectionContext.class));
+        verifyBeginTx(connection);
     }
 
     @Test
-    void shouldMarkTransactionAsTerminatedAndThenResetConnectionOnReset()
-    {
-        UnmanagedTransaction tx = beginTransaction( session );
+    void shouldMarkTransactionAsTerminatedAndThenResetConnectionOnReset() {
+        UnmanagedTransaction tx = beginTransaction(session);
 
-        assertTrue( tx.isOpen() );
-        verify( connection, never() ).reset();
+        assertTrue(tx.isOpen());
+        verify(connection, never()).reset();
 
-        await( session.resetAsync() );
+        await(session.resetAsync());
 
-        verify( connection ).reset();
+        verify(connection).reset();
     }
 
-    private static ResultCursor run(NetworkSession session, String query )
-    {
-        return await( session.runAsync( new Query( query ), TransactionConfig.empty() ) );
+    private static ResultCursor run(NetworkSession session, String query) {
+        return await(session.runAsync(new Query(query), TransactionConfig.empty()));
     }
 
-    private static UnmanagedTransaction beginTransaction(NetworkSession session )
-    {
-        return await( session.beginTransactionAsync( TransactionConfig.empty() ) );
+    private static UnmanagedTransaction beginTransaction(NetworkSession session) {
+        return await(session.beginTransactionAsync(TransactionConfig.empty()));
     }
 
-    private static void close( NetworkSession session )
-    {
-        await( session.closeAsync() );
+    private static void close(NetworkSession session) {
+        await(session.closeAsync());
     }
 }

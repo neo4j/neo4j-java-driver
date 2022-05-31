@@ -18,65 +18,56 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.Mono;
+import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
+import static reactor.core.publisher.FluxSink.OverflowStrategy.IGNORE;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.summary.ResultSummary;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Mono;
 
-import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
-import static reactor.core.publisher.FluxSink.OverflowStrategy.IGNORE;
-
-public class InternalRxResult implements RxResult
-{
+public class InternalRxResult implements RxResult {
     private Supplier<CompletionStage<RxResultCursor>> cursorFutureSupplier;
     private volatile CompletionStage<RxResultCursor> cursorFuture;
 
-    public InternalRxResult(Supplier<CompletionStage<RxResultCursor>> cursorFuture )
-    {
+    public InternalRxResult(Supplier<CompletionStage<RxResultCursor>> cursorFuture) {
         this.cursorFutureSupplier = cursorFuture;
     }
 
     @Override
-    public Publisher<List<String>> keys()
-    {
-        return Mono.defer( () -> Mono.fromCompletionStage( getCursorFuture() ).map( RxResultCursor::keys )
-                .onErrorMap( Futures::completionExceptionCause ) );
+    public Publisher<List<String>> keys() {
+        return Mono.defer(() -> Mono.fromCompletionStage(getCursorFuture())
+                .map(RxResultCursor::keys)
+                .onErrorMap(Futures::completionExceptionCause));
     }
 
     @Override
-    public Publisher<Record> records()
-    {
-        return Flux.create( sink -> getCursorFuture().whenComplete( ( cursor, completionError ) -> {
-            if( cursor != null )
-            {
-                if( cursor.isDone() )
-                {
-                    sink.error( newResultConsumedError() );
-                }
-                else
-                {
-                    cursor.installRecordConsumer( createRecordConsumer( sink ) );
-                    sink.onCancel( cursor::cancel );
-                    sink.onRequest( cursor::request );
-                }
-            }
-            else
-            {
-                Throwable error = Futures.completionExceptionCause( completionError );
-                sink.error( error );
-            }
-        } ), IGNORE );
+    public Publisher<Record> records() {
+        return Flux.create(
+                sink -> getCursorFuture().whenComplete((cursor, completionError) -> {
+                    if (cursor != null) {
+                        if (cursor.isDone()) {
+                            sink.error(newResultConsumedError());
+                        } else {
+                            cursor.installRecordConsumer(createRecordConsumer(sink));
+                            sink.onCancel(cursor::cancel);
+                            sink.onRequest(cursor::request);
+                        }
+                    } else {
+                        Throwable error = Futures.completionExceptionCause(completionError);
+                        sink.error(error);
+                    }
+                }),
+                IGNORE);
     }
 
     /**
@@ -87,38 +78,28 @@ public class InternalRxResult implements RxResult
      * @param sink the subscriber
      * @return a record consumer.
      */
-    private BiConsumer<Record,Throwable> createRecordConsumer( FluxSink<Record> sink )
-    {
-        return ( r, e ) -> {
-            if ( r != null )
-            {
-                sink.next( r );
-            }
-            else if ( e != null )
-            {
-                sink.error( e );
-            }
-            else
-            {
+    private BiConsumer<Record, Throwable> createRecordConsumer(FluxSink<Record> sink) {
+        return (r, e) -> {
+            if (r != null) {
+                sink.next(r);
+            } else if (e != null) {
+                sink.error(e);
+            } else {
                 sink.complete();
             }
         };
     }
 
-    private CompletionStage<RxResultCursor> getCursorFuture()
-    {
-        if ( cursorFuture != null )
-        {
+    private CompletionStage<RxResultCursor> getCursorFuture() {
+        if (cursorFuture != null) {
             return cursorFuture;
         }
         return initCursorFuture();
     }
 
-    synchronized CompletionStage<RxResultCursor> initCursorFuture()
-    {
+    synchronized CompletionStage<RxResultCursor> initCursorFuture() {
         // A quick path to return
-        if ( cursorFuture != null )
-        {
+        if (cursorFuture != null) {
             return cursorFuture;
         }
 
@@ -129,34 +110,26 @@ public class InternalRxResult implements RxResult
     }
 
     @Override
-    public Publisher<ResultSummary> consume()
-    {
-        return Mono.create( sink -> getCursorFuture().whenComplete( ( cursor, completionError ) -> {
-            if ( cursor != null )
-            {
-                cursor.summaryAsync().whenComplete( ( summary, summaryCompletionError ) -> {
-                    Throwable error = Futures.completionExceptionCause( summaryCompletionError );
-                    if ( summary != null )
-                    {
-                        sink.success( summary );
+    public Publisher<ResultSummary> consume() {
+        return Mono.create(sink -> getCursorFuture().whenComplete((cursor, completionError) -> {
+            if (cursor != null) {
+                cursor.summaryAsync().whenComplete((summary, summaryCompletionError) -> {
+                    Throwable error = Futures.completionExceptionCause(summaryCompletionError);
+                    if (summary != null) {
+                        sink.success(summary);
+                    } else {
+                        sink.error(error);
                     }
-                    else
-                    {
-                        sink.error( error );
-                    }
-                } );
+                });
+            } else {
+                Throwable error = Futures.completionExceptionCause(completionError);
+                sink.error(error);
             }
-            else
-            {
-                Throwable error = Futures.completionExceptionCause( completionError );
-                sink.error( error );
-            }
-        } ) );
+        }));
     }
 
     // For testing purpose
-    Supplier<CompletionStage<RxResultCursor>> cursorFutureSupplier()
-    {
+    Supplier<CompletionStage<RxResultCursor>> cursorFutureSupplier() {
         return this.cursorFutureSupplier;
     }
 }

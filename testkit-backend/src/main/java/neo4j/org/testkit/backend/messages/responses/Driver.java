@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class Driver implements TestkitResponse
-{
+public class Driver implements TestkitResponse {
     private final DriverBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "Driver";
     }
 
     @Getter
     @Builder
-    public static class DriverBody
-    {
+    public static class DriverBody {
         private final String id;
     }
 }

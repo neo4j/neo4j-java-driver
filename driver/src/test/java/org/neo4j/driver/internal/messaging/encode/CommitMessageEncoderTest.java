@@ -18,33 +18,29 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.request.CommitMessage;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.messaging.request.CommitMessage.COMMIT;
 import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
 
-class CommitMessageEncoderTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.messaging.ValuePacker;
+import org.neo4j.driver.internal.messaging.request.CommitMessage;
+
+class CommitMessageEncoderTest {
     private final CommitMessageEncoder encoder = new CommitMessageEncoder();
-    private final ValuePacker packer = mock( ValuePacker.class );
+    private final ValuePacker packer = mock(ValuePacker.class);
 
     @Test
-    void shouldEncodeCommitMessage() throws Exception
-    {
-        encoder.encode( COMMIT, packer );
+    void shouldEncodeCommitMessage() throws Exception {
+        encoder.encode(COMMIT, packer);
 
-        verify( packer ).packStructHeader( 0, CommitMessage.SIGNATURE );
+        verify(packer).packStructHeader(0, CommitMessage.SIGNATURE);
     }
 
     @Test
-    void shouldFailToEncodeWrongMessage()
-    {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( DISCARD_ALL, packer ) );
+    void shouldFailToEncodeWrongMessage() {
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(DISCARD_ALL, packer));
     }
 }

@@ -25,25 +25,21 @@ import static org.neo4j.driver.internal.util.MetadataExtractor.ABSENT_QUERY_ID;
  * <p>
  * Sent by clients to pull the entirety of the remaining stream down.
  */
-public class PullMessage extends AbstractStreamingMessage
-{
+public class PullMessage extends AbstractStreamingMessage {
     public static final byte SIGNATURE = 0x3F;
-    public static final PullMessage PULL_ALL = new PullMessage( STREAM_LIMIT_UNLIMITED, ABSENT_QUERY_ID );
+    public static final PullMessage PULL_ALL = new PullMessage(STREAM_LIMIT_UNLIMITED, ABSENT_QUERY_ID);
 
-    public PullMessage( long n, long id )
-    {
-        super( n, id );
+    public PullMessage(long n, long id) {
+        super(n, id);
     }
 
     @Override
-    protected String name()
-    {
+    protected String name() {
         return "PULL";
     }
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 }

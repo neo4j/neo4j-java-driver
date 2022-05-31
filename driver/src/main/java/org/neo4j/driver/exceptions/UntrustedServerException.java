@@ -21,10 +21,8 @@ package org.neo4j.driver.exceptions;
 /**
  * Thrown if the remote server cannot be verified as Neo4j.
  */
-public class UntrustedServerException extends RuntimeException
-{
-    public UntrustedServerException(String message)
-    {
+public class UntrustedServerException extends RuntimeException {
+    public UntrustedServerException(String message) {
         super(message);
     }
 }
