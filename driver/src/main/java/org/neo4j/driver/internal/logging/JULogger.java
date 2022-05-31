@@ -19,83 +19,68 @@
 package org.neo4j.driver.internal.logging;
 
 import java.util.logging.Level;
-
 import org.neo4j.driver.Logger;
 
-public class JULogger implements Logger
-{
+public class JULogger implements Logger {
     private final java.util.logging.Logger delegate;
     private final boolean debugEnabled;
     private final boolean traceEnabled;
 
-    public JULogger( String name, Level loggingLevel )
-    {
-        delegate = java.util.logging.Logger.getLogger( name );
-        delegate.setLevel( loggingLevel );
-        debugEnabled = delegate.isLoggable( Level.FINE );
-        traceEnabled = delegate.isLoggable( Level.FINEST );
+    public JULogger(String name, Level loggingLevel) {
+        delegate = java.util.logging.Logger.getLogger(name);
+        delegate.setLevel(loggingLevel);
+        debugEnabled = delegate.isLoggable(Level.FINE);
+        traceEnabled = delegate.isLoggable(Level.FINEST);
     }
 
     @Override
-    public void error( String message, Throwable cause )
-    {
-        delegate.log( Level.SEVERE, message, cause );
+    public void error(String message, Throwable cause) {
+        delegate.log(Level.SEVERE, message, cause);
     }
 
     @Override
-    public void info( String format, Object... params )
-    {
-        delegate.log( Level.INFO, String.format( format, params ) );
+    public void info(String format, Object... params) {
+        delegate.log(Level.INFO, String.format(format, params));
     }
 
     @Override
-    public void warn( String format, Object... params )
-    {
-        delegate.log( Level.WARNING, String.format( format, params ) );
+    public void warn(String format, Object... params) {
+        delegate.log(Level.WARNING, String.format(format, params));
     }
 
     @Override
-    public void warn( String message, Throwable cause )
-    {
-        delegate.log( Level.WARNING, message, cause );
+    public void warn(String message, Throwable cause) {
+        delegate.log(Level.WARNING, message, cause);
     }
 
     @Override
-    public void debug( String format, Object... params )
-    {
-        if ( debugEnabled )
-        {
-            delegate.log( Level.FINE, String.format( format, params ) );
+    public void debug(String format, Object... params) {
+        if (debugEnabled) {
+            delegate.log(Level.FINE, String.format(format, params));
         }
     }
 
     @Override
-    public void debug( String message, Throwable throwable )
-    {
-        if ( debugEnabled )
-        {
-            delegate.log( Level.FINE, message, throwable );
+    public void debug(String message, Throwable throwable) {
+        if (debugEnabled) {
+            delegate.log(Level.FINE, message, throwable);
         }
     }
 
     @Override
-    public void trace( String format, Object... params )
-    {
-        if ( traceEnabled )
-        {
-            delegate.log( Level.FINEST, String.format( format, params ) );
+    public void trace(String format, Object... params) {
+        if (traceEnabled) {
+            delegate.log(Level.FINEST, String.format(format, params));
         }
     }
 
     @Override
-    public boolean isTraceEnabled()
-    {
+    public boolean isTraceEnabled() {
         return traceEnabled;
     }
 
     @Override
-    public boolean isDebugEnabled()
-    {
+    public boolean isDebugEnabled() {
         return debugEnabled;
     }
 }

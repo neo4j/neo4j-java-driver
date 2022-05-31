@@ -20,23 +20,19 @@ package org.neo4j.driver.internal.util;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
-
 import java.util.List;
 
-public class ThrowingMessageEncoder<T> extends MessageToMessageEncoder<T>
-{
+public class ThrowingMessageEncoder<T> extends MessageToMessageEncoder<T> {
     private final RuntimeException error;
 
-    private ThrowingMessageEncoder( Class<T> messageType, RuntimeException error )
-    {
-        super( messageType );
+    private ThrowingMessageEncoder(Class<T> messageType, RuntimeException error) {
+        super(messageType);
         this.error = error;
     }
 
     @Override
-    protected void encode( ChannelHandlerContext ctx, T msg, List<Object> out )
-    {
-        ctx.pipeline().remove( this );
+    protected void encode(ChannelHandlerContext ctx, T msg, List<Object> out) {
+        ctx.pipeline().remove(this);
         throw error;
     }
 }

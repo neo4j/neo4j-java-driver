@@ -22,24 +22,19 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 
-public final class BootstrapFactory
-{
-    private BootstrapFactory()
-    {
+public final class BootstrapFactory {
+    private BootstrapFactory() {}
+
+    public static Bootstrap newBootstrap(int threadCount) {
+        return newBootstrap(EventLoopGroupFactory.newEventLoopGroup(threadCount));
     }
 
-    public static Bootstrap newBootstrap( int threadCount )
-    {
-        return newBootstrap( EventLoopGroupFactory.newEventLoopGroup( threadCount ) );
-    }
-
-    public static Bootstrap newBootstrap( EventLoopGroup eventLoopGroup )
-    {
+    public static Bootstrap newBootstrap(EventLoopGroup eventLoopGroup) {
         Bootstrap bootstrap = new Bootstrap();
-        bootstrap.group( eventLoopGroup );
-        bootstrap.channel( EventLoopGroupFactory.channelClass() );
-        bootstrap.option( ChannelOption.SO_KEEPALIVE, true );
-        bootstrap.option( ChannelOption.SO_REUSEADDR, true );
+        bootstrap.group(eventLoopGroup);
+        bootstrap.channel(EventLoopGroupFactory.channelClass());
+        bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
+        bootstrap.option(ChannelOption.SO_REUSEADDR, true);
         return bootstrap;
     }
 }

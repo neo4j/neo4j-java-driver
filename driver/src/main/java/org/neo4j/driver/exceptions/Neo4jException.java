@@ -23,30 +23,25 @@ package org.neo4j.driver.exceptions;
  *
  * @since 1.0
  */
-public abstract class Neo4jException extends RuntimeException
-{
+public abstract class Neo4jException extends RuntimeException {
     private static final long serialVersionUID = -80579062276712566L;
 
     private final String code;
 
-    public Neo4jException( String message )
-    {
-        this( "N/A", message );
+    public Neo4jException(String message) {
+        this("N/A", message);
     }
 
-    public Neo4jException( String message, Throwable cause )
-    {
-        this( "N/A", message, cause );
+    public Neo4jException(String message, Throwable cause) {
+        this("N/A", message, cause);
     }
 
-    public Neo4jException( String code, String message )
-    {
-        this( code, message, null );
+    public Neo4jException(String code, String message) {
+        this(code, message, null);
     }
 
-    public Neo4jException( String code, String message, Throwable cause )
-    {
-        super( message, cause );
+    public Neo4jException(String code, String message, Throwable cause) {
+        super(message, cause);
         this.code = code;
     }
 
@@ -57,8 +52,7 @@ public abstract class Neo4jException extends RuntimeException
      * @return the Neo4j Status Code for this exception, or 'N/A' if none is available
      */
     @Deprecated
-    public String neo4jErrorCode()
-    {
+    public String neo4jErrorCode() {
         return code;
     }
 
@@ -68,9 +62,7 @@ public abstract class Neo4jException extends RuntimeException
      *
      * @return textual code, such as "Neo.ClientError.Procedure.ProcedureNotFound"
      */
-    public String code()
-    {
+    public String code() {
         return code;
     }
-
 }

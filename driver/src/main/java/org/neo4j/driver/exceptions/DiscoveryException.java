@@ -26,10 +26,8 @@ package org.neo4j.driver.exceptions;
  *
  * If you see this error in your logs, it is safe to ignore if your cluster is temporarily changing structure during that time.
  */
-public class DiscoveryException extends Neo4jException
-{
-    public DiscoveryException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class DiscoveryException extends Neo4jException {
+    public DiscoveryException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

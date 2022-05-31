@@ -18,102 +18,85 @@
  */
 package org.neo4j.driver.util;
 
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Scanner;
+import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
-class FileToolsTest
-{
+class FileToolsTest {
     @Test
-    void shouldBeAbleToCreateTemporaryFile() throws Throwable
-    {
+    void shouldBeAbleToCreateTemporaryFile() throws Throwable {
         // Given
-        File file = FileTools.tempFile( "test" );
+        File file = FileTools.tempFile("test");
 
         // Then
-        try
-        {
-            assertThat( file.exists(), equalTo( true ) );
-        }
-        finally
-        {
-            assertThat( FileTools.deleteFile( file ), equalTo( true ) );
+        try {
+            assertThat(file.exists(), equalTo(true));
+        } finally {
+            assertThat(FileTools.deleteFile(file), equalTo(true));
         }
     }
 
     @Test
-    void shouldAddPropertyAtBottom() throws IOException
-    {
+    void shouldAddPropertyAtBottom() throws IOException {
         // Given
         File propertyFile = createPropertyFile();
 
         // When
-        FileTools.updateProperty( propertyFile, "cat.name", "mimi" );
+        FileTools.updateProperty(propertyFile, "cat.name", "mimi");
 
         // Then
-        try( Scanner in = new Scanner( propertyFile ) )
-        {
-            assertEquals( "#Wow wow", in.nextLine() );
-            assertEquals( "Meow meow", in.nextLine() );
-            assertEquals( "color=black", in.nextLine() );
-            assertEquals( "cat.age=3", in.nextLine() );
-            assertEquals( "cat.name=mimi", in.nextLine() );
+        try (Scanner in = new Scanner(propertyFile)) {
+            assertEquals("#Wow wow", in.nextLine());
+            assertEquals("Meow meow", in.nextLine());
+            assertEquals("color=black", in.nextLine());
+            assertEquals("cat.age=3", in.nextLine());
+            assertEquals("cat.name=mimi", in.nextLine());
 
-            assertFalse( in.hasNextLine() );
-        }
-        finally
-        {
-            assertThat( FileTools.deleteFile( propertyFile ), equalTo( true ) );
+            assertFalse(in.hasNextLine());
+        } finally {
+            assertThat(FileTools.deleteFile(propertyFile), equalTo(true));
         }
     }
 
     @Test
-    void shouldResetPropertyAtTheSameLine() throws IOException
-    {
+    void shouldResetPropertyAtTheSameLine() throws IOException {
         // Given
         File propertyFile = createPropertyFile();
 
         // When
-        FileTools.updateProperty( propertyFile, "color", "white" );
+        FileTools.updateProperty(propertyFile, "color", "white");
 
         // Then
-        try( Scanner in = new Scanner( propertyFile ) )
-        {
-            assertEquals( "#Wow wow", in.nextLine() );
-            assertEquals( "Meow meow", in.nextLine() );
-            assertEquals( "color=white", in.nextLine() );
-            assertEquals( "cat.age=3", in.nextLine() );
+        try (Scanner in = new Scanner(propertyFile)) {
+            assertEquals("#Wow wow", in.nextLine());
+            assertEquals("Meow meow", in.nextLine());
+            assertEquals("color=white", in.nextLine());
+            assertEquals("cat.age=3", in.nextLine());
 
-            assertFalse( in.hasNextLine() );
-        }
-        finally
-        {
-            assertThat( FileTools.deleteFile( propertyFile ), equalTo( true ) );
+            assertFalse(in.hasNextLine());
+        } finally {
+            assertThat(FileTools.deleteFile(propertyFile), equalTo(true));
         }
     }
 
+    private File createPropertyFile() throws FileNotFoundException {
+        File propFile = new File("Cat");
+        PrintWriter out = new PrintWriter(propFile);
 
-    private File createPropertyFile() throws FileNotFoundException
-    {
-        File propFile = new File( "Cat" );
-        PrintWriter out = new PrintWriter( propFile );
-
-        out.println( "#Wow wow" );
-        out.println( "Meow meow" );
-        out.println( "color=black" );
-        out.println( "cat.age=3" );
+        out.println("#Wow wow");
+        out.println("Meow meow");
+        out.println("color=black");
+        out.println("cat.age=3");
 
         out.close();
         return propFile;
     }
-
 }

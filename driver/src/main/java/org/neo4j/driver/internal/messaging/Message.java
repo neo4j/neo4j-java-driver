@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.messaging;
 /**
  * Base class for all protocol messages.
  */
-public interface Message
-{
+public interface Message {
     byte signature();
 }

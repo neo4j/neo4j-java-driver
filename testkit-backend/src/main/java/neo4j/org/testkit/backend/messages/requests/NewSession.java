@@ -18,6 +18,13 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -27,90 +34,77 @@ import neo4j.org.testkit.backend.holder.RxSessionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.InternalBookmark;
+import reactor.core.publisher.Mono;
 
 @Setter
 @Getter
-public class NewSession implements TestkitRequest
-{
+public class NewSession implements TestkitRequest {
     private NewSessionBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        return createSessionStateAndResponse( testkitState, this::createSessionState, testkitState::addSessionHolder );
+    public TestkitResponse process(TestkitState testkitState) {
+        return createSessionStateAndResponse(testkitState, this::createSessionState, testkitState::addSessionHolder);
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return CompletableFuture.completedFuture(
-                createSessionStateAndResponse( testkitState, this::createAsyncSessionState, testkitState::addAsyncSessionHolder ) );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return CompletableFuture.completedFuture(createSessionStateAndResponse(
+                testkitState, this::createAsyncSessionState, testkitState::addAsyncSessionHolder));
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return Mono.just( createSessionStateAndResponse( testkitState, this::createRxSessionState, testkitState::addRxSessionHolder ) );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return Mono.just(createSessionStateAndResponse(
+                testkitState, this::createRxSessionState, testkitState::addRxSessionHolder));
     }
 
-    protected <T> TestkitResponse createSessionStateAndResponse( TestkitState testkitState, BiFunction<DriverHolder,SessionConfig,T> sessionStateProducer,
-                                                                 Function<T,String> addSessionHolder )
-    {
-        DriverHolder driverHolder = testkitState.getDriverHolder( data.getDriverId() );
-        AccessMode formattedAccessMode = data.getAccessMode().equals( "r" ) ? AccessMode.READ : AccessMode.WRITE;
-        SessionConfig.Builder builder = SessionConfig.builder()
-                                                     .withDefaultAccessMode( formattedAccessMode );
+    protected <T> TestkitResponse createSessionStateAndResponse(
+            TestkitState testkitState,
+            BiFunction<DriverHolder, SessionConfig, T> sessionStateProducer,
+            Function<T, String> addSessionHolder) {
+        DriverHolder driverHolder = testkitState.getDriverHolder(data.getDriverId());
+        AccessMode formattedAccessMode = data.getAccessMode().equals("r") ? AccessMode.READ : AccessMode.WRITE;
+        SessionConfig.Builder builder = SessionConfig.builder().withDefaultAccessMode(formattedAccessMode);
 
-        Optional.ofNullable( data.bookmarks )
-                .map( bookmarks -> bookmarks.stream().map( InternalBookmark::parse ).collect( Collectors.toList() ) )
-                .ifPresent( builder::withBookmarks );
+        Optional.ofNullable(data.bookmarks)
+                .map(bookmarks ->
+                        bookmarks.stream().map(InternalBookmark::parse).collect(Collectors.toList()))
+                .ifPresent(builder::withBookmarks);
 
-        Optional.ofNullable( data.database ).ifPresent( builder::withDatabase );
-        Optional.ofNullable( data.impersonatedUser ).ifPresent( builder::withImpersonatedUser );
+        Optional.ofNullable(data.database).ifPresent(builder::withDatabase);
+        Optional.ofNullable(data.impersonatedUser).ifPresent(builder::withImpersonatedUser);
 
-        if ( data.getFetchSize() != 0 )
-        {
-            builder.withFetchSize( data.getFetchSize() );
+        if (data.getFetchSize() != 0) {
+            builder.withFetchSize(data.getFetchSize());
         }
 
-        T sessionStateHolder = sessionStateProducer.apply( driverHolder, builder.build() );
-        String newId = addSessionHolder.apply( sessionStateHolder );
+        T sessionStateHolder = sessionStateProducer.apply(driverHolder, builder.build());
+        String newId = addSessionHolder.apply(sessionStateHolder);
 
-        return Session.builder().data( Session.SessionBody.builder().id( newId ).build() ).build();
+        return Session.builder()
+                .data(Session.SessionBody.builder().id(newId).build())
+                .build();
     }
 
-    private SessionHolder createSessionState( DriverHolder driverHolder, SessionConfig sessionConfig )
-    {
-        return new SessionHolder( driverHolder, driverHolder.getDriver().session( sessionConfig ), sessionConfig );
+    private SessionHolder createSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
+        return new SessionHolder(driverHolder, driverHolder.getDriver().session(sessionConfig), sessionConfig);
     }
 
-    private AsyncSessionHolder createAsyncSessionState( DriverHolder driverHolder, SessionConfig sessionConfig )
-    {
-        return new AsyncSessionHolder( driverHolder, driverHolder.getDriver().asyncSession( sessionConfig ), sessionConfig );
+    private AsyncSessionHolder createAsyncSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
+        return new AsyncSessionHolder(
+                driverHolder, driverHolder.getDriver().asyncSession(sessionConfig), sessionConfig);
     }
 
-    private RxSessionHolder createRxSessionState( DriverHolder driverHolder, SessionConfig sessionConfig )
-    {
-        return new RxSessionHolder( driverHolder, driverHolder.getDriver().rxSession( sessionConfig ), sessionConfig );
+    private RxSessionHolder createRxSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
+        return new RxSessionHolder(driverHolder, driverHolder.getDriver().rxSession(sessionConfig), sessionConfig);
     }
 
     @Setter
     @Getter
-    public static class NewSessionBody
-    {
+    public static class NewSessionBody {
         private String driverId;
         private String accessMode;
         private List<String> bookmarks;

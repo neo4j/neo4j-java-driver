@@ -27,12 +27,10 @@ import java.util.NoSuchElementException;
  *
  * @since 1.0
  */
-public class NoSuchRecordException extends NoSuchElementException
-{
+public class NoSuchRecordException extends NoSuchElementException {
     private static final long serialVersionUID = 9091962868264042491L;
 
-    public NoSuchRecordException( String message )
-    {
-        super( message );
+    public NoSuchRecordException(String message) {
+        super(message);
     }
 }

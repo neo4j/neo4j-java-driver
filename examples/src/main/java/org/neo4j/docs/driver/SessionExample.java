@@ -20,24 +20,20 @@ package org.neo4j.docs.driver;
 
 // tag::session-import[]
 
-import org.neo4j.driver.Session;
-
 import static org.neo4j.driver.Values.parameters;
 // end::session-import[]
 
-public class SessionExample extends BaseApplication
-{
-    public SessionExample( String uri, String user, String password )
-    {
-        super( uri, user, password );
+import org.neo4j.driver.Session;
+
+public class SessionExample extends BaseApplication {
+    public SessionExample(String uri, String user, String password) {
+        super(uri, user, password);
     }
 
     // tag::session[]
-    public void addPerson(String name)
-    {
-        try ( Session session = driver.session() )
-        {
-            session.run("CREATE (a:Person {name: $name})", parameters( "name", name ) );
+    public void addPerson(String name) {
+        try (Session session = driver.session()) {
+            session.run("CREATE (a:Person {name: $name})", parameters("name", name));
         }
     }
     // end::session[]

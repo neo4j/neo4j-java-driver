@@ -18,89 +18,77 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.DriverHolder;
 import neo4j.org.testkit.backend.messages.responses.ConnectionPoolMetrics;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import reactor.core.publisher.Mono;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.net.ServerAddress;
+import reactor.core.publisher.Mono;
 
 @Getter
 @Setter
-public class GetConnectionPoolMetrics implements TestkitRequest
-{
+public class GetConnectionPoolMetrics implements TestkitRequest {
     private GetConnectionPoolMetricsBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        return getConnectionPoolMetrics( testkitState );
+    public TestkitResponse process(TestkitState testkitState) {
+        return getConnectionPoolMetrics(testkitState);
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return CompletableFuture.completedFuture( getConnectionPoolMetrics( testkitState ) );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return CompletableFuture.completedFuture(getConnectionPoolMetrics(testkitState));
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return Mono.just( getConnectionPoolMetrics( testkitState ) );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return Mono.just(getConnectionPoolMetrics(testkitState));
     }
 
-    private ConnectionPoolMetrics getConnectionPoolMetrics( TestkitState testkitState )
-    {
-        DriverHolder driverHolder = testkitState.getDriverHolder( data.getDriverId() );
+    private ConnectionPoolMetrics getConnectionPoolMetrics(TestkitState testkitState) {
+        DriverHolder driverHolder = testkitState.getDriverHolder(data.getDriverId());
         Metrics metrics = driverHolder.getDriver().metrics();
-        org.neo4j.driver.ConnectionPoolMetrics poolMetrics =
-                metrics.connectionPoolMetrics().stream()
-                       .filter( pm ->
-                                {
-                                    // Brute forcing the access via reflections avoid having the InternalConnectionPoolMetrics a public class
-                                    ServerAddress poolAddress;
-                                    try
-                                    {
-                                        Method m = pm.getClass().getDeclaredMethod("getAddress");
-                                        m.setAccessible( true );
-                                        poolAddress = (ServerAddress) m.invoke( pm );
-                                    }
-                                    catch ( NoSuchMethodException | IllegalAccessException | InvocationTargetException e )
-                                    {
-                                        return false;
-                                    }
-                                    ServerAddress address = new BoltServerAddress( data.getAddress() );
-                                    return address.host().equals( poolAddress.host() ) && address.port() == poolAddress.port();
-                                } )
-                       .findFirst()
-                       .orElseThrow( () -> new IllegalArgumentException( String.format( "Pool metrics for %s are not available", data.getAddress() ) ) );
-        return createResponse( poolMetrics );
+        org.neo4j.driver.ConnectionPoolMetrics poolMetrics = metrics.connectionPoolMetrics().stream()
+                .filter(pm -> {
+                    // Brute forcing the access via reflections avoid having the InternalConnectionPoolMetrics a public
+                    // class
+                    ServerAddress poolAddress;
+                    try {
+                        Method m = pm.getClass().getDeclaredMethod("getAddress");
+                        m.setAccessible(true);
+                        poolAddress = (ServerAddress) m.invoke(pm);
+                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                        return false;
+                    }
+                    ServerAddress address = new BoltServerAddress(data.getAddress());
+                    return address.host().equals(poolAddress.host()) && address.port() == poolAddress.port();
+                })
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("Pool metrics for %s are not available", data.getAddress())));
+        return createResponse(poolMetrics);
     }
 
-    private ConnectionPoolMetrics createResponse( org.neo4j.driver.ConnectionPoolMetrics poolMetrics )
-    {
+    private ConnectionPoolMetrics createResponse(org.neo4j.driver.ConnectionPoolMetrics poolMetrics) {
         return ConnectionPoolMetrics.builder()
-                                    .data( ConnectionPoolMetrics.ConnectionPoolMetricsBody.builder()
-                                                                                          .inUse( poolMetrics.inUse() )
-                                                                                          .idle( poolMetrics.idle() )
-                                                                                          .build() )
-                                    .build();
+                .data(ConnectionPoolMetrics.ConnectionPoolMetricsBody.builder()
+                        .inUse(poolMetrics.inUse())
+                        .idle(poolMetrics.idle())
+                        .build())
+                .build();
     }
 
     @Setter
     @Getter
-    public static class GetConnectionPoolMetricsBody
-    {
+    public static class GetConnectionPoolMetricsBody {
         private String driverId;
         private String address;
     }

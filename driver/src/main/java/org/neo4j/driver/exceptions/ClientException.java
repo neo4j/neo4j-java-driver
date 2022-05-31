@@ -23,20 +23,16 @@ package org.neo4j.driver.exceptions;
  * The error code provided can be used to determine further detail for the problem.
  * @since 1.0
  */
-public class ClientException extends Neo4jException
-{
-    public ClientException( String message )
-    {
-        super( message );
+public class ClientException extends Neo4jException {
+    public ClientException(String message) {
+        super(message);
     }
 
-    public ClientException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public ClientException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public ClientException( String code, String message )
-    {
-        super( code, message );
+    public ClientException(String code, String message) {
+        super(code, message);
     }
 }

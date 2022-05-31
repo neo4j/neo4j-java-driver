@@ -37,8 +37,7 @@ import java.util.List;
 /**
  * A tool used to save, load certs, etc.
  */
-public final class CertificateTool
-{
+public final class CertificateTool {
     private static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
     private static final String END_CERT = "-----END CERTIFICATE-----";
 
@@ -48,17 +47,15 @@ public final class CertificateTool
      * @param certFile
      * @throws IOException
      */
-    public static void saveX509Cert( String certStr, File certFile ) throws IOException
-    {
-        try ( BufferedWriter writer = new BufferedWriter( new FileWriter( certFile ) ) )
-        {
-            writer.write( BEGIN_CERT );
+    public static void saveX509Cert(String certStr, File certFile) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(certFile))) {
+            writer.write(BEGIN_CERT);
             writer.newLine();
 
-            writer.write( certStr );
+            writer.write(certStr);
             writer.newLine();
 
-            writer.write( END_CERT );
+            writer.write(END_CERT);
             writer.newLine();
         }
     }
@@ -71,9 +68,8 @@ public final class CertificateTool
      * @throws GeneralSecurityException
      * @throws IOException
      */
-    public static void saveX509Cert( Certificate cert, File certFile ) throws GeneralSecurityException, IOException
-    {
-        saveX509Cert( new Certificate[]{cert}, certFile );
+    public static void saveX509Cert(Certificate cert, File certFile) throws GeneralSecurityException, IOException {
+        saveX509Cert(new Certificate[] {cert}, certFile);
     }
 
     /**
@@ -84,21 +80,19 @@ public final class CertificateTool
      * @throws GeneralSecurityException
      * @throws IOException
      */
-    public static void saveX509Cert( Certificate[] certs, File certFile ) throws GeneralSecurityException, IOException
-    {
-        try ( BufferedWriter writer = new BufferedWriter( new FileWriter( certFile ) ) )
-        {
-            for ( Certificate cert : certs )
-            {
-                String certStr = Base64.getEncoder().encodeToString( cert.getEncoded() ).replaceAll( "(.{64})", "$1\n" );
+    public static void saveX509Cert(Certificate[] certs, File certFile) throws GeneralSecurityException, IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(certFile))) {
+            for (Certificate cert : certs) {
+                String certStr =
+                        Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n");
 
-                writer.write( BEGIN_CERT );
+                writer.write(BEGIN_CERT);
                 writer.newLine();
 
-                writer.write( certStr );
+                writer.write(certStr);
                 writer.newLine();
 
-                writer.write( END_CERT );
+                writer.write(END_CERT);
                 writer.newLine();
             }
         }
@@ -112,44 +106,39 @@ public final class CertificateTool
      * @throws GeneralSecurityException
      * @throws IOException
      */
-    public static void loadX509Cert( List<File> certFiles, KeyStore keyStore ) throws GeneralSecurityException, IOException
-    {
+    public static void loadX509Cert(List<File> certFiles, KeyStore keyStore)
+            throws GeneralSecurityException, IOException {
         int certCount = 0; // The files might contain multiple certs
-        for ( File certFile : certFiles )
-        {
-            try ( BufferedInputStream inputStream = new BufferedInputStream( new FileInputStream( certFile ) ) )
-            {
-                CertificateFactory certFactory = CertificateFactory.getInstance( "X.509" );
+        for (File certFile : certFiles) {
+            try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(certFile))) {
+                CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 
-                while ( inputStream.available() > 0 )
-                {
-                    try
-                    {
-                        Certificate cert = certFactory.generateCertificate( inputStream );
+                while (inputStream.available() > 0) {
+                    try {
+                        Certificate cert = certFactory.generateCertificate(inputStream);
                         certCount++;
-                        loadX509Cert( cert, "neo4j.javadriver.trustedcert." + certCount, keyStore );
-                    }
-                    catch ( CertificateException e )
-                    {
-                        if ( e.getCause() != null && e.getCause().getMessage().equals( "Empty input" ) )
-                        {
-                            // This happens if there is whitespace at the end of the certificate - we load one cert, and then try and load a
+                        loadX509Cert(cert, "neo4j.javadriver.trustedcert." + certCount, keyStore);
+                    } catch (CertificateException e) {
+                        if (e.getCause() != null && e.getCause().getMessage().equals("Empty input")) {
+                            // This happens if there is whitespace at the end of the certificate - we load one cert, and
+                            // then try and load a
                             // second cert, at which point we fail
                             return;
                         }
-                        throw new IOException( "Failed to load certificate from `" + certFile.getAbsolutePath() + "`: " + certCount + " : " + e.getMessage(),
-                                               e );
+                        throw new IOException(
+                                "Failed to load certificate from `" + certFile.getAbsolutePath() + "`: " + certCount
+                                        + " : " + e.getMessage(),
+                                e);
                     }
                 }
             }
         }
     }
 
-    public static void loadX509Cert( X509Certificate[] certificates, KeyStore keyStore ) throws GeneralSecurityException, IOException
-    {
-        for ( int i = 0; i < certificates.length; i++ )
-        {
-            loadX509Cert( certificates[i], "neo4j.javadriver.trustedcert." + i, keyStore );
+    public static void loadX509Cert(X509Certificate[] certificates, KeyStore keyStore)
+            throws GeneralSecurityException, IOException {
+        for (int i = 0; i < certificates.length; i++) {
+            loadX509Cert(certificates[i], "neo4j.javadriver.trustedcert." + i, keyStore);
         }
     }
 
@@ -160,9 +149,8 @@ public final class CertificateTool
      * @param cert
      * @param keyStore
      */
-    public static void loadX509Cert( Certificate cert, String certAlias, KeyStore keyStore ) throws KeyStoreException
-    {
-        keyStore.setCertificateEntry( certAlias, cert );
+    public static void loadX509Cert(Certificate cert, String certAlias, KeyStore keyStore) throws KeyStoreException {
+        keyStore.setCertificateEntry(certAlias, cert);
     }
 
     /**
@@ -170,16 +158,10 @@ public final class CertificateTool
      * @param cert encoded cert string
      * @return
      */
-    public static String X509CertToString( String cert )
-    {
-        String cert64CharPerLine = cert.replaceAll( "(.{64})", "$1\n" );
-        return BEGIN_CERT + "\n" + cert64CharPerLine + "\n"+ END_CERT + "\n";
+    public static String X509CertToString(String cert) {
+        String cert64CharPerLine = cert.replaceAll("(.{64})", "$1\n");
+        return BEGIN_CERT + "\n" + cert64CharPerLine + "\n" + END_CERT + "\n";
     }
 
-    private CertificateTool()
-    {
-    }
+    private CertificateTool() {}
 }
-
-
-

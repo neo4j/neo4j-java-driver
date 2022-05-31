@@ -18,39 +18,34 @@
  */
 package neo4j.org.testkit.backend.messages.responses.serializer;
 
+import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherObject;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import java.io.IOException;
 import java.util.function.Function;
-
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Relationship;
 
-import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherObject;
-
-public class TestkitRelationshipValueSerializer extends StdSerializer<RelationshipValue>
-{
-    public TestkitRelationshipValueSerializer()
-    {
-        super( RelationshipValue.class );
+public class TestkitRelationshipValueSerializer extends StdSerializer<RelationshipValue> {
+    public TestkitRelationshipValueSerializer() {
+        super(RelationshipValue.class);
     }
 
     @Override
-    public void serialize( RelationshipValue relationshipValue, JsonGenerator gen, SerializerProvider provider ) throws IOException
-    {
-        cypherObject( gen, "Relationship", () ->
-        {
+    public void serialize(RelationshipValue relationshipValue, JsonGenerator gen, SerializerProvider provider)
+            throws IOException {
+        cypherObject(gen, "Relationship", () -> {
             Relationship relationship = relationshipValue.asRelationship();
-            gen.writeObjectField( "id", new IntegerValue( relationship.id() ) );
-            gen.writeObjectField( "startNodeId", new IntegerValue( relationship.startNodeId() ) );
-            gen.writeObjectField( "endNodeId", new IntegerValue( relationship.endNodeId() ) );
-            gen.writeObjectField( "type", new StringValue( relationship.type() ) );
-            gen.writeObjectField( "props", new MapValue( relationship.asMap( Function.identity() ) ) );
-        } );
+            gen.writeObjectField("id", new IntegerValue(relationship.id()));
+            gen.writeObjectField("startNodeId", new IntegerValue(relationship.startNodeId()));
+            gen.writeObjectField("endNodeId", new IntegerValue(relationship.endNodeId()));
+            gen.writeObjectField("type", new StringValue(relationship.type()));
+            gen.writeObjectField("props", new MapValue(relationship.asMap(Function.identity())));
+        });
     }
 }

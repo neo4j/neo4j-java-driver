@@ -18,8 +18,10 @@
  */
 package org.neo4j.driver.internal.messaging.v41;
 
-import java.util.concurrent.CompletableFuture;
+import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV4AutoPullHandler;
+import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV4BasicPullHandler;
 
+import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
@@ -37,42 +39,40 @@ import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v4.MessageFormatV4;
 import org.neo4j.driver.internal.spi.Connection;
 
-import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV4AutoPullHandler;
-import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV4BasicPullHandler;
-
-public class BoltProtocolV41 extends BoltProtocolV4
-{
-    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 1 );
+public class BoltProtocolV41 extends BoltProtocolV4 {
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(4, 1);
     public static final BoltProtocol INSTANCE = new BoltProtocolV41();
 
     @Override
-    public MessageFormat createMessageFormat()
-    {
+    public MessageFormat createMessageFormat() {
         return new MessageFormatV4();
     }
 
     @Override
-    protected ResultCursorFactory buildResultCursorFactory( Connection connection, Query query, BookmarkHolder bookmarkHolder,
-                                                            UnmanagedTransaction tx, RunWithMetadataMessage runMessage, long fetchSize )
-    {
+    protected ResultCursorFactory buildResultCursorFactory(
+            Connection connection,
+            Query query,
+            BookmarkHolder bookmarkHolder,
+            UnmanagedTransaction tx,
+            RunWithMetadataMessage runMessage,
+            long fetchSize) {
         CompletableFuture<Void> runFuture = new CompletableFuture<>();
-        RunResponseHandler runHandler = new RunResponseHandler( runFuture, METADATA_EXTRACTOR, connection, tx );
+        RunResponseHandler runHandler = new RunResponseHandler(runFuture, METADATA_EXTRACTOR, connection, tx);
 
-        PullAllResponseHandler pullAllHandler = newBoltV4AutoPullHandler( query, runHandler, connection, bookmarkHolder, tx, fetchSize );
-        PullResponseHandler pullHandler = newBoltV4BasicPullHandler( query, runHandler, connection, bookmarkHolder, tx );
+        PullAllResponseHandler pullAllHandler =
+                newBoltV4AutoPullHandler(query, runHandler, connection, bookmarkHolder, tx, fetchSize);
+        PullResponseHandler pullHandler = newBoltV4BasicPullHandler(query, runHandler, connection, bookmarkHolder, tx);
 
-        return new ResultCursorFactoryImpl( connection, runMessage, runHandler, runFuture, pullHandler, pullAllHandler );
+        return new ResultCursorFactoryImpl(connection, runMessage, runHandler, runFuture, pullHandler, pullAllHandler);
     }
 
     @Override
-    protected void verifyDatabaseNameBeforeTransaction( DatabaseName databaseName )
-    {
+    protected void verifyDatabaseNameBeforeTransaction(DatabaseName databaseName) {
         // Bolt V4.1 accepts database name
     }
 
     @Override
-    public BoltProtocolVersion version()
-    {
+    public BoltProtocolVersion version() {
         return VERSION;
     }
 }

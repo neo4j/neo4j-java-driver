@@ -18,31 +18,27 @@
  */
 package org.neo4j.driver.stress;
 
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Result;
-
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 
-public class BlockingFailingQuery<C extends AbstractContext> extends AbstractBlockingQuery<C>
-{
-    public BlockingFailingQuery( Driver driver )
-    {
-        super( driver, false );
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+
+public class BlockingFailingQuery<C extends AbstractContext> extends AbstractBlockingQuery<C> {
+    public BlockingFailingQuery(Driver driver) {
+        super(driver, false);
     }
 
     @Override
-    public void execute( C context )
-    {
-        try ( Session session = newSession( AccessMode.READ, context ) )
-        {
-            Result result = session.run( "UNWIND [10, 5, 0] AS x RETURN 10 / x" );
-            Exception e = assertThrows( Exception.class, result::consume );
-            assertThat( e, is( arithmeticError() ) );
+    public void execute(C context) {
+        try (Session session = newSession(AccessMode.READ, context)) {
+            Result result = session.run("UNWIND [10, 5, 0] AS x RETURN 10 / x");
+            Exception e = assertThrows(Exception.class, result::consume);
+            assertThat(e, is(arithmeticError()));
         }
     }
 }

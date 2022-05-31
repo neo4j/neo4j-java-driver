@@ -21,21 +21,18 @@ package org.neo4j.driver.internal.metrics;
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.exceptions.ClientException;
 
-public enum DevNullMetricsProvider implements MetricsProvider
-{
+public enum DevNullMetricsProvider implements MetricsProvider {
     INSTANCE;
 
     @Override
-    public Metrics metrics()
-    {
+    public Metrics metrics() {
         // To outside users, we forbid access to the metrics API
         throw new ClientException(
-                "Driver metrics are not enabled. You need to enable driver metrics in driver configuration in order to access them." );
+                "Driver metrics are not enabled. You need to enable driver metrics in driver configuration in order to access them.");
     }
 
     @Override
-    public MetricsListener metricsListener()
-    {
+    public MetricsListener metricsListener() {
         // Internally we can still register callbacks to this empty metrics listener.
         return DevNullMetricsListener.INSTANCE;
     }

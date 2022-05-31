@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.internal.security;
 
+import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
+import static org.neo4j.driver.internal.RevocationStrategy.requiresRevocationChecking;
+import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
+
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -37,132 +41,112 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-
 import org.neo4j.driver.internal.RevocationStrategy;
-
-import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
-import static org.neo4j.driver.internal.RevocationStrategy.requiresRevocationChecking;
-import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
 /**
  * A SecurityPlan consists of encryption and trust details.
  */
-public class SecurityPlanImpl implements SecurityPlan
-{
-    public static SecurityPlan forAllCertificates( boolean requiresHostnameVerification, RevocationStrategy revocationStrategy ) throws GeneralSecurityException
-    {
-        SSLContext sslContext = SSLContext.getInstance( "TLS" );
-        sslContext.init( new KeyManager[0], new TrustManager[]{new TrustAllTrustManager()}, null );
+public class SecurityPlanImpl implements SecurityPlan {
+    public static SecurityPlan forAllCertificates(
+            boolean requiresHostnameVerification, RevocationStrategy revocationStrategy)
+            throws GeneralSecurityException {
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(new KeyManager[0], new TrustManager[] {new TrustAllTrustManager()}, null);
 
-        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, revocationStrategy );
+        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationStrategy);
     }
 
-    public static SecurityPlan forCustomCASignedCertificates( List<File> certFiles, boolean requiresHostnameVerification,
-                                                              RevocationStrategy revocationStrategy )
-            throws GeneralSecurityException, IOException
-    {
-        SSLContext sslContext = configureSSLContext( certFiles, revocationStrategy );
-        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, revocationStrategy );
+    public static SecurityPlan forCustomCASignedCertificates(
+            List<File> certFiles, boolean requiresHostnameVerification, RevocationStrategy revocationStrategy)
+            throws GeneralSecurityException, IOException {
+        SSLContext sslContext = configureSSLContext(certFiles, revocationStrategy);
+        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationStrategy);
     }
 
-    public static SecurityPlan forSystemCASignedCertificates( boolean requiresHostnameVerification, RevocationStrategy revocationStrategy )
-            throws GeneralSecurityException, IOException
-    {
-        SSLContext sslContext = configureSSLContext( Collections.emptyList(), revocationStrategy );
-        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, revocationStrategy );
+    public static SecurityPlan forSystemCASignedCertificates(
+            boolean requiresHostnameVerification, RevocationStrategy revocationStrategy)
+            throws GeneralSecurityException, IOException {
+        SSLContext sslContext = configureSSLContext(Collections.emptyList(), revocationStrategy);
+        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationStrategy);
     }
 
-    private static SSLContext configureSSLContext( List<File> customCertFiles, RevocationStrategy revocationStrategy )
-            throws GeneralSecurityException, IOException
-    {
-        KeyStore trustedKeyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
-        trustedKeyStore.load( null, null );
+    private static SSLContext configureSSLContext(List<File> customCertFiles, RevocationStrategy revocationStrategy)
+            throws GeneralSecurityException, IOException {
+        KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        trustedKeyStore.load(null, null);
 
-        if ( !customCertFiles.isEmpty() )
-        {
+        if (!customCertFiles.isEmpty()) {
             // Certificate files are specified, so we will load the certificates in the file
-            loadX509Cert( customCertFiles, trustedKeyStore );
-        }
-        else
-        {
-            loadSystemCertificates( trustedKeyStore );
+            loadX509Cert(customCertFiles, trustedKeyStore);
+        } else {
+            loadSystemCertificates(trustedKeyStore);
         }
 
-        PKIXBuilderParameters pkixBuilderParameters = configurePKIXBuilderParameters( trustedKeyStore, revocationStrategy );
+        PKIXBuilderParameters pkixBuilderParameters =
+                configurePKIXBuilderParameters(trustedKeyStore, revocationStrategy);
 
-        SSLContext sslContext = SSLContext.getInstance( "TLS" );
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        TrustManagerFactory trustManagerFactory =
+                TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 
-        if ( pkixBuilderParameters == null )
-        {
-            trustManagerFactory.init( trustedKeyStore );
+        if (pkixBuilderParameters == null) {
+            trustManagerFactory.init(trustedKeyStore);
+        } else {
+            trustManagerFactory.init(new CertPathTrustManagerParameters(pkixBuilderParameters));
         }
-        else
-        {
-            trustManagerFactory.init( new CertPathTrustManagerParameters( pkixBuilderParameters ) );
-        }
 
-        sslContext.init( new KeyManager[0], trustManagerFactory.getTrustManagers(), null );
+        sslContext.init(new KeyManager[0], trustManagerFactory.getTrustManagers(), null);
 
         return sslContext;
     }
 
-    private static PKIXBuilderParameters configurePKIXBuilderParameters( KeyStore trustedKeyStore, RevocationStrategy revocationStrategy ) throws InvalidAlgorithmParameterException, KeyStoreException
-    {
+    private static PKIXBuilderParameters configurePKIXBuilderParameters(
+            KeyStore trustedKeyStore, RevocationStrategy revocationStrategy)
+            throws InvalidAlgorithmParameterException, KeyStoreException {
         PKIXBuilderParameters pkixBuilderParameters = null;
 
-        if ( requiresRevocationChecking( revocationStrategy ) )
-        {
+        if (requiresRevocationChecking(revocationStrategy)) {
             // Configure certificate revocation checking (X509CertSelector() selects all certificates)
-            pkixBuilderParameters = new PKIXBuilderParameters( trustedKeyStore, new X509CertSelector() );
+            pkixBuilderParameters = new PKIXBuilderParameters(trustedKeyStore, new X509CertSelector());
 
             // sets checking of stapled ocsp response
-            pkixBuilderParameters.setRevocationEnabled( true );
+            pkixBuilderParameters.setRevocationEnabled(true);
 
             // enables status_request extension in client hello
-            System.setProperty( "jdk.tls.client.enableStatusRequestExtension", "true" );
+            System.setProperty("jdk.tls.client.enableStatusRequestExtension", "true");
 
-            if ( revocationStrategy.equals( VERIFY_IF_PRESENT ) )
-            {
+            if (revocationStrategy.equals(VERIFY_IF_PRESENT)) {
                 // enables soft-fail behaviour if no stapled response found.
-                Security.setProperty( "ocsp.enable", "true" );
+                Security.setProperty("ocsp.enable", "true");
             }
         }
         return pkixBuilderParameters;
     }
 
-    private static void loadSystemCertificates( KeyStore trustedKeyStore ) throws GeneralSecurityException, IOException
-    {
+    private static void loadSystemCertificates(KeyStore trustedKeyStore) throws GeneralSecurityException, IOException {
         // To customize the PKIXParameters we need to get hold of the default KeyStore, no other elegant way available
-        TrustManagerFactory tempFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-        tempFactory.init( (KeyStore) null );
+        TrustManagerFactory tempFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tempFactory.init((KeyStore) null);
 
         // Get hold of the default trust manager
         X509TrustManager x509TrustManager = null;
-        for ( TrustManager trustManager : tempFactory.getTrustManagers() )
-        {
-            if ( trustManager instanceof X509TrustManager )
-            {
+        for (TrustManager trustManager : tempFactory.getTrustManagers()) {
+            if (trustManager instanceof X509TrustManager) {
                 x509TrustManager = (X509TrustManager) trustManager;
                 break;
             }
         }
 
-        if ( x509TrustManager == null )
-        {
-            throw new CertificateException( "No system certificates found" );
-        }
-        else
-        {
+        if (x509TrustManager == null) {
+            throw new CertificateException("No system certificates found");
+        } else {
             // load system default certificates into KeyStore
-            loadX509Cert( x509TrustManager.getAcceptedIssuers(), trustedKeyStore );
+            loadX509Cert(x509TrustManager.getAcceptedIssuers(), trustedKeyStore);
         }
     }
 
-    public static SecurityPlan insecure()
-    {
-        return new SecurityPlanImpl( false, null, false,
-                                     RevocationStrategy.NO_CHECKS );
+    public static SecurityPlan insecure() {
+        return new SecurityPlanImpl(false, null, false, RevocationStrategy.NO_CHECKS);
     }
 
     private final boolean requiresEncryption;
@@ -170,8 +154,11 @@ public class SecurityPlanImpl implements SecurityPlan
     private final boolean requiresHostnameVerification;
     private final RevocationStrategy revocationStrategy;
 
-    private SecurityPlanImpl( boolean requiresEncryption, SSLContext sslContext, boolean requiresHostnameVerification, RevocationStrategy revocationStrategy )
-    {
+    private SecurityPlanImpl(
+            boolean requiresEncryption,
+            SSLContext sslContext,
+            boolean requiresHostnameVerification,
+            RevocationStrategy revocationStrategy) {
         this.requiresEncryption = requiresEncryption;
         this.sslContext = sslContext;
         this.requiresHostnameVerification = requiresHostnameVerification;
@@ -179,43 +166,35 @@ public class SecurityPlanImpl implements SecurityPlan
     }
 
     @Override
-    public boolean requiresEncryption()
-    {
+    public boolean requiresEncryption() {
         return requiresEncryption;
     }
 
     @Override
-    public SSLContext sslContext()
-    {
+    public SSLContext sslContext() {
         return sslContext;
     }
 
     @Override
-    public boolean requiresHostnameVerification()
-    {
+    public boolean requiresHostnameVerification() {
         return requiresHostnameVerification;
     }
 
     @Override
-    public RevocationStrategy revocationStrategy()
-    {
+    public RevocationStrategy revocationStrategy() {
         return revocationStrategy;
     }
 
-    private static class TrustAllTrustManager implements X509TrustManager
-    {
-        public void checkClientTrusted( X509Certificate[] chain, String authType ) throws CertificateException
-        {
-            throw new CertificateException( "All client connections to this client are forbidden." );
+    private static class TrustAllTrustManager implements X509TrustManager {
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            throw new CertificateException("All client connections to this client are forbidden.");
         }
 
-        public void checkServerTrusted( X509Certificate[] chain, String authType ) throws CertificateException
-        {
+        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
             // all fine, pass through
         }
 
-        public X509Certificate[] getAcceptedIssuers()
-        {
+        public X509Certificate[] getAcceptedIssuers() {
             return new X509Certificate[0];
         }
     }

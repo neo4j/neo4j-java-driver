@@ -18,18 +18,6 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelPromise;
-
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Supplier;
-
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionReadTimeout;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAgent;
@@ -38,8 +26,17 @@ import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServe
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractServer;
 import static org.neo4j.driver.internal.util.ServerVersion.fromBoltProtocolVersion;
 
-public class HelloResponseHandler implements ResponseHandler
-{
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelPromise;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.spi.ResponseHandler;
+
+public class HelloResponseHandler implements ResponseHandler {
     private static final String CONNECTION_ID_METADATA_KEY = "connection_id";
     public static final String CONFIGURATION_HINTS_KEY = "hints";
     public static final String CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY = "connection.recv_timeout_seconds";
@@ -48,87 +45,71 @@ public class HelloResponseHandler implements ResponseHandler
     private final Channel channel;
     private final BoltProtocolVersion protocolVersion;
 
-    public HelloResponseHandler( ChannelPromise connectionInitializedPromise, BoltProtocolVersion protocolVersion )
-    {
+    public HelloResponseHandler(ChannelPromise connectionInitializedPromise, BoltProtocolVersion protocolVersion) {
         this.connectionInitializedPromise = connectionInitializedPromise;
         this.channel = connectionInitializedPromise.channel();
         this.protocolVersion = protocolVersion;
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
-    {
-        try
-        {
-            Value serverValue = extractServer( metadata );
-            setServerAgent( channel, serverValue.asString() );
+    public void onSuccess(Map<String, Value> metadata) {
+        try {
+            Value serverValue = extractServer(metadata);
+            setServerAgent(channel, serverValue.asString());
 
             // From Server V4 extracting server from metadata in the success message is unreliable
             // so we fix the Server version against the Bolt Protocol version for Server V4 and above.
-            if ( BoltProtocolV3.VERSION.equals( protocolVersion ) )
-            {
-                setServerVersion( channel, extractNeo4jServerVersion( metadata ) );
-            }
-            else
-            {
-                setServerVersion( channel, fromBoltProtocolVersion( protocolVersion ) );
+            if (BoltProtocolV3.VERSION.equals(protocolVersion)) {
+                setServerVersion(channel, extractNeo4jServerVersion(metadata));
+            } else {
+                setServerVersion(channel, fromBoltProtocolVersion(protocolVersion));
             }
 
-            String connectionId = extractConnectionId( metadata );
-            setConnectionId( channel, connectionId );
+            String connectionId = extractConnectionId(metadata);
+            setConnectionId(channel, connectionId);
 
-            processConfigurationHints( metadata );
+            processConfigurationHints(metadata);
 
             connectionInitializedPromise.setSuccess();
-        }
-        catch ( Throwable error )
-        {
-            onFailure( error );
+        } catch (Throwable error) {
+            onFailure(error);
             throw error;
         }
     }
 
     @Override
-    public void onFailure( Throwable error )
-    {
-        channel.close().addListener( future -> connectionInitializedPromise.setFailure( error ) );
+    public void onFailure(Throwable error) {
+        channel.close().addListener(future -> connectionInitializedPromise.setFailure(error));
     }
 
     @Override
-    public void onRecord( Value[] fields )
-    {
+    public void onRecord(Value[] fields) {
         throw new UnsupportedOperationException();
     }
 
-    private static String extractConnectionId( Map<String,Value> metadata )
-    {
-        Value value = metadata.get( CONNECTION_ID_METADATA_KEY );
-        if ( value == null || value.isNull() )
-        {
-            throw new IllegalStateException( "Unable to extract " + CONNECTION_ID_METADATA_KEY + " from a response to HELLO message. " +
-                                             "Received metadata: " + metadata );
+    private static String extractConnectionId(Map<String, Value> metadata) {
+        Value value = metadata.get(CONNECTION_ID_METADATA_KEY);
+        if (value == null || value.isNull()) {
+            throw new IllegalStateException("Unable to extract " + CONNECTION_ID_METADATA_KEY
+                    + " from a response to HELLO message. " + "Received metadata: " + metadata);
         }
         return value.asString();
     }
 
-    private void processConfigurationHints( Map<String,Value> metadata )
-    {
-        Value configurationHints = metadata.get( CONFIGURATION_HINTS_KEY );
-        if ( configurationHints != null )
-        {
-            getFromSupplierOrEmptyOnException( () -> configurationHints.get( CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY ).asLong() )
-                    .ifPresent( timeout -> setConnectionReadTimeout( channel, timeout ) );
+    private void processConfigurationHints(Map<String, Value> metadata) {
+        Value configurationHints = metadata.get(CONFIGURATION_HINTS_KEY);
+        if (configurationHints != null) {
+            getFromSupplierOrEmptyOnException(() -> configurationHints
+                            .get(CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY)
+                            .asLong())
+                    .ifPresent(timeout -> setConnectionReadTimeout(channel, timeout));
         }
     }
 
-    private static <T> Optional<T> getFromSupplierOrEmptyOnException( Supplier<T> supplier )
-    {
-        try
-        {
-            return Optional.of( supplier.get() );
-        }
-        catch ( Exception e )
-        {
+    private static <T> Optional<T> getFromSupplierOrEmptyOnException(Supplier<T> supplier) {
+        try {
+            return Optional.of(supplier.get());
+        } catch (Exception e) {
             return Optional.empty();
         }
     }

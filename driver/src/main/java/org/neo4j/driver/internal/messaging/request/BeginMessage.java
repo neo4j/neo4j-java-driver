@@ -18,63 +18,63 @@
  */
 package org.neo4j.driver.internal.messaging.request;
 
+import static org.neo4j.driver.internal.messaging.request.TransactionMetadataBuilder.buildMetadata;
+
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
 
-import static org.neo4j.driver.internal.messaging.request.TransactionMetadataBuilder.buildMetadata;
-
-public class BeginMessage extends MessageWithMetadata
-{
+public class BeginMessage extends MessageWithMetadata {
     public static final byte SIGNATURE = 0x11;
 
-    public BeginMessage( Bookmark bookmark, TransactionConfig config, DatabaseName databaseName, AccessMode mode, String impersonatedUser )
-    {
-        this( bookmark, config.timeout(), config.metadata(), mode, databaseName, impersonatedUser );
+    public BeginMessage(
+            Bookmark bookmark,
+            TransactionConfig config,
+            DatabaseName databaseName,
+            AccessMode mode,
+            String impersonatedUser) {
+        this(bookmark, config.timeout(), config.metadata(), mode, databaseName, impersonatedUser);
     }
 
-    public BeginMessage( Bookmark bookmark, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, DatabaseName databaseName,
-                         String impersonatedUser )
-    {
-        super( buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmark, impersonatedUser ) );
+    public BeginMessage(
+            Bookmark bookmark,
+            Duration txTimeout,
+            Map<String, Value> txMetadata,
+            AccessMode mode,
+            DatabaseName databaseName,
+            String impersonatedUser) {
+        super(buildMetadata(txTimeout, txMetadata, databaseName, mode, bookmark, impersonatedUser));
     }
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         BeginMessage that = (BeginMessage) o;
-        return Objects.equals( metadata(), that.metadata() );
+        return Objects.equals(metadata(), that.metadata());
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( metadata() );
+    public int hashCode() {
+        return Objects.hash(metadata());
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "BEGIN " + metadata();
     }
 }

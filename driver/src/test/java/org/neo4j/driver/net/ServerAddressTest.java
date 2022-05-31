@@ -18,31 +18,27 @@
  */
 package org.neo4j.driver.net;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class ServerAddressTest
-{
+import org.junit.jupiter.api.Test;
+
+class ServerAddressTest {
     @Test
-    void shouldCreateAddress()
-    {
-        ServerAddress address = ServerAddress.of( "my.database.com", 8897 );
-        assertEquals( "my.database.com", address.host() );
-        assertEquals( 8897, address.port() );
+    void shouldCreateAddress() {
+        ServerAddress address = ServerAddress.of("my.database.com", 8897);
+        assertEquals("my.database.com", address.host());
+        assertEquals(8897, address.port());
     }
 
     @Test
-    void shouldFailToCreateAddressWithInvalidHost()
-    {
-        assertThrows( NullPointerException.class, () -> ServerAddress.of( null, 9999 ) );
+    void shouldFailToCreateAddressWithInvalidHost() {
+        assertThrows(NullPointerException.class, () -> ServerAddress.of(null, 9999));
     }
 
     @Test
-    void shouldFailToCreateAddressWithInvalidPort()
-    {
-        assertThrows( IllegalArgumentException.class, () -> ServerAddress.of( "hello.graphs.com", -42 ) );
-        assertThrows( IllegalArgumentException.class, () -> ServerAddress.of( "hello.graphs.com", 66_000 ) );
+    void shouldFailToCreateAddressWithInvalidPort() {
+        assertThrows(IllegalArgumentException.class, () -> ServerAddress.of("hello.graphs.com", -42));
+        assertThrows(IllegalArgumentException.class, () -> ServerAddress.of("hello.graphs.com", 66_000));
     }
 }

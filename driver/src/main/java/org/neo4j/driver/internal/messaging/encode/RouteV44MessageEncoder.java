@@ -18,46 +18,41 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
-
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.RouteMessage;
 
-import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
-
 /**
  * Encodes the ROUTE message to the stream
  */
-public class RouteV44MessageEncoder implements MessageEncoder
-{
+public class RouteV44MessageEncoder implements MessageEncoder {
     @Override
-    public void encode( Message message, ValuePacker packer ) throws IOException
-    {
-        checkArgument( message, RouteMessage.class );
+    public void encode(Message message, ValuePacker packer) throws IOException {
+        checkArgument(message, RouteMessage.class);
         RouteMessage routeMessage = (RouteMessage) message;
-        packer.packStructHeader( 3, message.signature() );
-        packer.pack( routeMessage.getRoutingContext() );
-        packer.pack( routeMessage.getBookmark().isPresent() ? value( routeMessage.getBookmark().get().values() ) : value( Collections.emptyList() ) );
+        packer.packStructHeader(3, message.signature());
+        packer.pack(routeMessage.getRoutingContext());
+        packer.pack(
+                routeMessage.getBookmark().isPresent()
+                        ? value(routeMessage.getBookmark().get().values())
+                        : value(Collections.emptyList()));
 
-        Map<String,Value> params;
-        if ( routeMessage.getImpersonatedUser() != null && routeMessage.getDatabaseName() == null )
-        {
-            params = Collections.singletonMap( "imp_user", value( routeMessage.getImpersonatedUser() ) );
-        }
-        else if ( routeMessage.getDatabaseName() != null )
-        {
-            params = Collections.singletonMap( "db", value( routeMessage.getDatabaseName() ) );
-        }
-        else
-        {
+        Map<String, Value> params;
+        if (routeMessage.getImpersonatedUser() != null && routeMessage.getDatabaseName() == null) {
+            params = Collections.singletonMap("imp_user", value(routeMessage.getImpersonatedUser()));
+        } else if (routeMessage.getDatabaseName() != null) {
+            params = Collections.singletonMap("db", value(routeMessage.getDatabaseName()));
+        } else {
             params = Collections.emptyMap();
         }
-        packer.pack( params );
+        packer.pack(params);
     }
 }

@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.internal.util;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
+
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -28,108 +31,74 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
+public final class Futures {
+    private static final CompletableFuture<?> COMPLETED_WITH_NULL = completedFuture(null);
 
-public final class Futures
-{
-    private static final CompletableFuture<?> COMPLETED_WITH_NULL = completedFuture( null );
+    private Futures() {}
 
-    private Futures()
-    {
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public static <T> CompletableFuture<T> completedWithNull()
-    {
+    @SuppressWarnings("unchecked")
+    public static <T> CompletableFuture<T> completedWithNull() {
         return (CompletableFuture) COMPLETED_WITH_NULL;
     }
 
-    public static <T> CompletableFuture<T> completeWithNullIfNoError( CompletableFuture<T> future, Throwable error )
-    {
-        if ( error != null )
-        {
-            future.completeExceptionally( error );
-        }
-        else
-        {
-            future.complete( null );
+    public static <T> CompletableFuture<T> completeWithNullIfNoError(CompletableFuture<T> future, Throwable error) {
+        if (error != null) {
+            future.completeExceptionally(error);
+        } else {
+            future.complete(null);
         }
         return future;
     }
 
-    public static <T> CompletionStage<T> asCompletionStage( io.netty.util.concurrent.Future<T> future )
-    {
+    public static <T> CompletionStage<T> asCompletionStage(io.netty.util.concurrent.Future<T> future) {
         CompletableFuture<T> result = new CompletableFuture<>();
-        return asCompletionStage( future, result );
+        return asCompletionStage(future, result);
     }
 
-    public static <T> CompletionStage<T> asCompletionStage( io.netty.util.concurrent.Future<T> future, CompletableFuture<T> result )
-    {
-        if ( future.isCancelled() )
-        {
-            result.cancel( true );
-        }
-        else if ( future.isSuccess() )
-        {
-            result.complete( future.getNow() );
-        }
-        else if ( future.cause() != null )
-        {
-            result.completeExceptionally( future.cause() );
-        }
-        else
-        {
-            future.addListener( ignore ->
-            {
-                if ( future.isCancelled() )
-                {
-                    result.cancel( true );
+    public static <T> CompletionStage<T> asCompletionStage(
+            io.netty.util.concurrent.Future<T> future, CompletableFuture<T> result) {
+        if (future.isCancelled()) {
+            result.cancel(true);
+        } else if (future.isSuccess()) {
+            result.complete(future.getNow());
+        } else if (future.cause() != null) {
+            result.completeExceptionally(future.cause());
+        } else {
+            future.addListener(ignore -> {
+                if (future.isCancelled()) {
+                    result.cancel(true);
+                } else if (future.isSuccess()) {
+                    result.complete(future.getNow());
+                } else {
+                    result.completeExceptionally(future.cause());
                 }
-                else if ( future.isSuccess() )
-                {
-                    result.complete( future.getNow() );
-                }
-                else
-                {
-                    result.completeExceptionally( future.cause() );
-                }
-            } );
+            });
         }
         return result;
     }
 
-    public static <T> CompletableFuture<T> failedFuture( Throwable error )
-    {
+    public static <T> CompletableFuture<T> failedFuture(Throwable error) {
         CompletableFuture<T> result = new CompletableFuture<>();
-        result.completeExceptionally( error );
+        result.completeExceptionally(error);
         return result;
     }
 
-    public static <V> V blockingGet( CompletionStage<V> stage )
-    {
-        return blockingGet( stage, Futures::noOpInterruptHandler );
+    public static <V> V blockingGet(CompletionStage<V> stage) {
+        return blockingGet(stage, Futures::noOpInterruptHandler);
     }
 
-    public static <V> V blockingGet( CompletionStage<V> stage, Runnable interruptHandler )
-    {
+    public static <V> V blockingGet(CompletionStage<V> stage, Runnable interruptHandler) {
         EventLoopGroupFactory.assertNotInEventLoopThread();
 
         Future<V> future = stage.toCompletableFuture();
         boolean interrupted = false;
-        try
-        {
-            while ( true )
-            {
-                try
-                {
+        try {
+            while (true) {
+                try {
                     return future.get();
-                }
-                catch ( InterruptedException e )
-                {
+                } catch (InterruptedException e) {
                     // this thread was interrupted while waiting
                     // computation denoted by the future might still be running
 
@@ -137,36 +106,27 @@ public final class Futures
 
                     // run the interrupt handler and ignore if it throws
                     // need to wait for IO thread to actually finish, can't simply re-rethrow
-                    safeRun( interruptHandler );
-                }
-                catch ( ExecutionException e )
-                {
-                    ErrorUtil.rethrowAsyncException( e );
+                    safeRun(interruptHandler);
+                } catch (ExecutionException e) {
+                    ErrorUtil.rethrowAsyncException(e);
                 }
             }
-        }
-        finally
-        {
-            if ( interrupted )
-            {
+        } finally {
+            if (interrupted) {
                 Thread.currentThread().interrupt();
             }
         }
     }
 
-    public static <T> T getNow( CompletionStage<T> stage )
-    {
-        return stage.toCompletableFuture().getNow( null );
+    public static <T> T getNow(CompletionStage<T> stage) {
+        return stage.toCompletableFuture().getNow(null);
     }
 
-    public static <T> T joinNowOrElseThrow( CompletableFuture<T> future, Supplier<? extends RuntimeException> exceptionSupplier )
-    {
-        if ( future.isDone() )
-        {
+    public static <T> T joinNowOrElseThrow(
+            CompletableFuture<T> future, Supplier<? extends RuntimeException> exceptionSupplier) {
+        if (future.isDone()) {
             return future.join();
-        }
-        else
-        {
+        } else {
             throw exceptionSupplier.get();
         }
     }
@@ -180,10 +140,8 @@ public final class Futures
      * @param error the exception to get cause for.
      * @return cause of the given exception if it is a {@link CompletionException}, given exception otherwise.
      */
-    public static Throwable completionExceptionCause( Throwable error )
-    {
-        if ( error instanceof CompletionException )
-        {
+    public static Throwable completionExceptionCause(Throwable error) {
+        if (error instanceof CompletionException) {
             return error.getCause();
         }
         return error;
@@ -195,13 +153,11 @@ public final class Futures
      * @param error the exception to convert.
      * @return given exception wrapped with {@link CompletionException} if it's not one already.
      */
-    public static CompletionException asCompletionException( Throwable error )
-    {
-        if ( error instanceof CompletionException )
-        {
+    public static CompletionException asCompletionException(Throwable error) {
+        if (error instanceof CompletionException) {
             return ((CompletionException) error);
         }
-        return new CompletionException( error );
+        return new CompletionException(error);
     }
 
     /**
@@ -212,25 +168,17 @@ public final class Futures
      * @param error2 the second error or {@code null}.
      * @return {@code null} if both errors are null, {@link CompletionException} otherwise.
      */
-    public static CompletionException combineErrors( Throwable error1, Throwable error2 )
-    {
-        if ( error1 != null && error2 != null )
-        {
-            Throwable cause1 = completionExceptionCause( error1 );
-            Throwable cause2 = completionExceptionCause( error2 );
-            addSuppressed( cause1, cause2 );
-            return asCompletionException( cause1 );
-        }
-        else if ( error1 != null )
-        {
-            return asCompletionException( error1 );
-        }
-        else if ( error2 != null )
-        {
-            return asCompletionException( error2 );
-        }
-        else
-        {
+    public static CompletionException combineErrors(Throwable error1, Throwable error2) {
+        if (error1 != null && error2 != null) {
+            Throwable cause1 = completionExceptionCause(error1);
+            Throwable cause2 = completionExceptionCause(error2);
+            addSuppressed(cause1, cause2);
+            return asCompletionException(cause1);
+        } else if (error1 != null) {
+            return asCompletionException(error1);
+        } else if (error2 != null) {
+            return asCompletionException(error2);
+        } else {
             return null;
         }
     }
@@ -244,70 +192,55 @@ public final class Futures
      * @param <T> type
      * @return a new completed future with the same completed value if the given future completes successfully, otherwise continues with the onErrorAction.
      */
-    @SuppressWarnings( "ThrowableNotThrown" )
-    public static <T> CompletableFuture<T> onErrorContinue( CompletableFuture<T> future, Throwable errorRecorder,
-            Function<Throwable,? extends CompletionStage<T>> onErrorAction )
-    {
-        Objects.requireNonNull( future );
-        return future.handle( ( value, error ) -> {
-            if ( error != null )
-            {
-                // record error
-                Futures.combineErrors( errorRecorder, error );
-                return new CompletionResult<T>( null, error );
-            }
-            return new CompletionResult<>( value, null );
-        } ).thenCompose( result -> {
-            if ( result.value != null )
-            {
-                return completedFuture( result.value );
-            }
-            else
-            {
-                return onErrorAction.apply( result.error );
-            }
-        } );
+    @SuppressWarnings("ThrowableNotThrown")
+    public static <T> CompletableFuture<T> onErrorContinue(
+            CompletableFuture<T> future,
+            Throwable errorRecorder,
+            Function<Throwable, ? extends CompletionStage<T>> onErrorAction) {
+        Objects.requireNonNull(future);
+        return future.handle((value, error) -> {
+                    if (error != null) {
+                        // record error
+                        Futures.combineErrors(errorRecorder, error);
+                        return new CompletionResult<T>(null, error);
+                    }
+                    return new CompletionResult<>(value, null);
+                })
+                .thenCompose(result -> {
+                    if (result.value != null) {
+                        return completedFuture(result.value);
+                    } else {
+                        return onErrorAction.apply(result.error);
+                    }
+                });
     }
 
-    public static <T> BiConsumer<T,Throwable> futureCompletingConsumer( CompletableFuture<T> future )
-    {
-        return ( value, throwable ) ->
-        {
-            if ( throwable != null )
-            {
-                future.completeExceptionally( throwable );
-            }
-            else
-            {
-                future.complete( value );
+    public static <T> BiConsumer<T, Throwable> futureCompletingConsumer(CompletableFuture<T> future) {
+        return (value, throwable) -> {
+            if (throwable != null) {
+                future.completeExceptionally(throwable);
+            } else {
+                future.complete(value);
             }
         };
     }
 
-    private static class CompletionResult<T>
-    {
+    private static class CompletionResult<T> {
         T value;
         Throwable error;
 
-        CompletionResult( T value, Throwable error )
-        {
+        CompletionResult(T value, Throwable error) {
             this.value = value;
             this.error = error;
         }
     }
 
-    private static void safeRun( Runnable runnable )
-    {
-        try
-        {
+    private static void safeRun(Runnable runnable) {
+        try {
             runnable.run();
-        }
-        catch ( Throwable ignore )
-        {
+        } catch (Throwable ignore) {
         }
     }
 
-    private static void noOpInterruptHandler()
-    {
-    }
+    private static void noOpInterruptHandler() {}
 }

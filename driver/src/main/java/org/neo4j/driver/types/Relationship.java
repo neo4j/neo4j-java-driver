@@ -22,8 +22,7 @@ package org.neo4j.driver.types;
  * The <strong>Relationship</strong> interface describes the characteristics of a relationship from a Neo4j graph.
  * @since 1.0
  */
-public interface Relationship extends Entity
-{
+public interface Relationship extends Entity {
     /**
      * Id of the node where this relationship starts.
      * @return the node id
@@ -49,5 +48,5 @@ public interface Relationship extends Entity
      * @param relationshipType the give relationship type
      * @return {@code true} if this relationship has the given relationship type otherwise {@code false}
      */
-    boolean hasType( String relationshipType );
+    boolean hasType(String relationshipType);
 }

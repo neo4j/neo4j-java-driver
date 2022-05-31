@@ -19,12 +19,11 @@
 package org.neo4j.driver.types;
 
 import java.util.Map;
-
-import org.neo4j.driver.internal.value.NullValue;
+import java.util.function.Function;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
-import java.util.function.Function;
+import org.neo4j.driver.internal.value.NullValue;
 
 /**
  * Access the keys, properties and values of an underlying unordered map by key
@@ -33,8 +32,7 @@ import java.util.function.Function;
  * for changing the underlying map.
  * @since 1.0
  */
-public interface MapAccessor
-{
+public interface MapAccessor {
     /**
      * Retrieve the keys of the underlying map
      *
@@ -48,7 +46,7 @@ public interface MapAccessor
      * @param key the key
      * @return {@code true} if this map keys contains the given key otherwise {@code false}
      */
-    boolean containsKey( String key );
+    boolean containsKey(String key);
 
     /**
      * Retrieve the value of the property with the given key
@@ -57,7 +55,7 @@ public interface MapAccessor
      * @return the property's value or a {@link NullValue} if no such key exists
      * @throws ClientException if record has not been initialized
      */
-    Value get( String key );
+    Value get(String key);
 
     /**
      * Retrieve the number of entries in this map
@@ -81,7 +79,7 @@ public interface MapAccessor
      * @param <T> the target type of mapping
      * @return the result of mapping all values in unspecified order
      */
-    <T> Iterable<T> values( Function<Value, T> mapFunction );
+    <T> Iterable<T> values(Function<Value, T> mapFunction);
 
     /**
      * Return the underlying map as a map of string keys and values converted using
@@ -100,5 +98,5 @@ public interface MapAccessor
      * @see Values for a long list of built-in conversion functions
      * @return the value as a map from string keys to values of type T obtained from mapping he original map values, if possible
      */
-    <T> Map<String, T> asMap( Function<Value, T> mapFunction );
+    <T> Map<String, T> asMap(Function<Value, T> mapFunction);
 }

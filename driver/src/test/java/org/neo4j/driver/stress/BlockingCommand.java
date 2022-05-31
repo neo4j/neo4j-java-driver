@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.stress;
 
-public interface BlockingCommand<C extends AbstractContext>
-{
-    void execute( C context );
+public interface BlockingCommand<C extends AbstractContext> {
+    void execute(C context);
 }

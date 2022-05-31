@@ -18,56 +18,48 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.Value;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.Values.value;
 
-class MapValueTest
-{
+import java.util.HashMap;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+
+class MapValueTest {
     @Test
-    void shouldHaveSensibleToString()
-    {
+    void shouldHaveSensibleToString() {
         MapValue mapValue = mapValue();
-        assertThat( mapValue.toString(), equalTo( "{k1: \"v1\", k2: 42}" ) );
+        assertThat(mapValue.toString(), equalTo("{k1: \"v1\", k2: 42}"));
     }
 
     @Test
-    void shouldHaveCorrectPropertyCount()
-    {
+    void shouldHaveCorrectPropertyCount() {
         MapValue mapValue = mapValue();
-        assertThat( mapValue.size(), equalTo( 2 ) );
+        assertThat(mapValue.size(), equalTo(2));
     }
 
     @Test
-    void shouldHaveCorrectType()
-    {
+    void shouldHaveCorrectType() {
 
         MapValue map = mapValue();
 
-        assertThat(map.type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.MAP() ));
+        assertThat(map.type(), equalTo(InternalTypeSystem.TYPE_SYSTEM.MAP()));
     }
 
     @Test
-    void shouldNotBeNull()
-    {
+    void shouldNotBeNull() {
         MapValue map = mapValue();
 
-       assertFalse(map.isNull());
+        assertFalse(map.isNull());
     }
 
-    private MapValue mapValue()
-    {
-        HashMap<String,Value> map =  new HashMap<>();
-        map.put( "k1", value( "v1" ) );
-        map.put( "k2", value( 42 ) );
-        return new MapValue( map );
+    private MapValue mapValue() {
+        HashMap<String, Value> map = new HashMap<>();
+        map.put("k1", value("v1"));
+        map.put("k2", value(42));
+        return new MapValue(map);
     }
 }

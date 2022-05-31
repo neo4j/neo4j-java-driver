@@ -23,20 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class Session implements TestkitResponse
-{
+public class Session implements TestkitResponse {
     private SessionBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "Session";
     }
 
     @Getter
     @Builder
-    public static class SessionBody
-    {
+    public static class SessionBody {
         private String id;
     }
 }

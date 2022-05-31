@@ -23,22 +23,19 @@ import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_5_0;
 import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
 
-public enum Neo4jFeature
-{
-    SPATIAL_TYPES( v3_4_0 ),
-    TEMPORAL_TYPES( v3_4_0 ),
-    BOLT_V3( v3_5_0 ),
-    BOLT_V4( v4_0_0 );
+public enum Neo4jFeature {
+    SPATIAL_TYPES(v3_4_0),
+    TEMPORAL_TYPES(v3_4_0),
+    BOLT_V3(v3_5_0),
+    BOLT_V4(v4_0_0);
 
     private final ServerVersion availableFromVersion;
 
-    Neo4jFeature( ServerVersion availableFromVersion )
-    {
-        this.availableFromVersion = requireNonNull( availableFromVersion );
+    Neo4jFeature(ServerVersion availableFromVersion) {
+        this.availableFromVersion = requireNonNull(availableFromVersion);
     }
 
-    public boolean availableIn( ServerVersion version )
-    {
-        return version.greaterThanOrEqual( availableFromVersion );
+    public boolean availableIn(ServerVersion version) {
+        return version.greaterThanOrEqual(availableFromVersion);
     }
 }

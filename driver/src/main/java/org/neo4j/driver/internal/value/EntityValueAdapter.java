@@ -19,51 +19,42 @@
 package org.neo4j.driver.internal.value;
 
 import java.util.Map;
-
+import java.util.function.Function;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.types.Entity;
-import java.util.function.Function;
 
-public abstract class EntityValueAdapter<V extends Entity> extends ObjectValueAdapter<V>
-{
-    protected EntityValueAdapter( V adapted )
-    {
-        super( adapted );
+public abstract class EntityValueAdapter<V extends Entity> extends ObjectValueAdapter<V> {
+    protected EntityValueAdapter(V adapted) {
+        super(adapted);
     }
 
     @Override
-    public V asEntity()
-    {
+    public V asEntity() {
         return asObject();
     }
 
     @Override
-    public Map<String,Object> asMap()
-    {
+    public Map<String, Object> asMap() {
         return asEntity().asMap();
     }
 
     @Override
-    public <T> Map<String,T> asMap( Function<Value,T> mapFunction )
-    {
-        return asEntity().asMap( mapFunction );
+    public <T> Map<String, T> asMap(Function<Value, T> mapFunction) {
+        return asEntity().asMap(mapFunction);
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return asEntity().size();
     }
 
     @Override
-    public Iterable<String> keys()
-    {
+    public Iterable<String> keys() {
         return asEntity().keys();
     }
 
     @Override
-    public Value get( String key )
-    {
-        return asEntity().get( key );
+    public Value get(String key) {
+        return asEntity().get(key);
     }
 }

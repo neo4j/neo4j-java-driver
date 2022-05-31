@@ -21,10 +21,8 @@ package org.neo4j.driver.exceptions;
 /**
  * This exception indicates a user is nesting new transaction with an on-going transaction (unmanaged and/or auto-commit).
  */
-public class TransactionNestingException extends ClientException
-{
-    public TransactionNestingException( String message )
-    {
-        super( message );
+public class TransactionNestingException extends ClientException {
+    public TransactionNestingException(String message) {
+        super(message);
     }
 }

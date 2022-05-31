@@ -18,80 +18,66 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.exceptions.value.LossyCoercion;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
-public class IntegerValue extends NumberValueAdapter<Long>
-{
+public class IntegerValue extends NumberValueAdapter<Long> {
     private final long val;
 
-    public IntegerValue( long val )
-    {
+    public IntegerValue(long val) {
         this.val = val;
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.INTEGER();
     }
 
     @Override
-    public Long asNumber()
-    {
+    public Long asNumber() {
         return val;
     }
 
     @Override
-    public long asLong()
-    {
+    public long asLong() {
         return val;
     }
 
     @Override
-    public int asInt()
-    {
-        if (val > Integer.MAX_VALUE || val < Integer.MIN_VALUE)
-        {
-            throw new LossyCoercion( type().name(), "Java int" );
+    public int asInt() {
+        if (val > Integer.MAX_VALUE || val < Integer.MIN_VALUE) {
+            throw new LossyCoercion(type().name(), "Java int");
         }
         return (int) val;
     }
 
     @Override
-    public double asDouble()
-    {
+    public double asDouble() {
         double doubleVal = (double) val;
-        if ( (long) doubleVal != val)
-        {
-            throw new LossyCoercion( type().name(), "Java double" );
+        if ((long) doubleVal != val) {
+            throw new LossyCoercion(type().name(), "Java double");
         }
 
         return (double) val;
     }
 
     @Override
-    public float asFloat()
-    {
+    public float asFloat() {
         return (float) val;
     }
 
     @Override
-    public String toString()
-    {
-        return Long.toString( val );
+    public String toString() {
+        return Long.toString(val);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
@@ -100,8 +86,7 @@ public class IntegerValue extends NumberValueAdapter<Long>
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return (int) (val ^ (val >>> 32));
     }
 }

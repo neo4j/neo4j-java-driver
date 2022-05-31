@@ -19,7 +19,6 @@
 package org.neo4j.driver.reactive;
 
 import java.util.Map;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -31,8 +30,7 @@ import org.neo4j.driver.Values;
  * @see RxTransaction
  * @since 4.0
  */
-public interface RxQueryRunner
-{
+public interface RxQueryRunner {
     /**
      * Register running of a query and return a reactive result stream.
      * The query is not executed when the reactive result is returned.
@@ -54,7 +52,7 @@ public interface RxQueryRunner
      * @param parameters input parameters, should be a map Value, see {@link Values#parameters(Object...)}.
      * @return a reactive result.
      */
-    RxResult run(String query, Value parameters );
+    RxResult run(String query, Value parameters);
 
     /**
      * Register running of a query and return a reactive result stream.
@@ -74,7 +72,7 @@ public interface RxQueryRunner
      * @param parameters input data for the query
      * @return a reactive result.
      */
-    RxResult run(String query, Map<String,Object> parameters );
+    RxResult run(String query, Map<String, Object> parameters);
 
     /**
      * Register running of a query and return a reactive result stream.
@@ -93,7 +91,7 @@ public interface RxQueryRunner
      * @param parameters input data for the query
      * @return a reactive result.
      */
-    RxResult run(String query, Record parameters );
+    RxResult run(String query, Record parameters);
 
     /**
      * Register running of a query and return a reactive result stream.
@@ -103,7 +101,7 @@ public interface RxQueryRunner
      * @param query text of a Neo4j query
      * @return a reactive result.
      */
-    RxResult run(String query );
+    RxResult run(String query);
 
     /**
      * Register running of a query and return a reactive result stream.

@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.logging;
 
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
@@ -28,11 +30,8 @@ import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
-
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 /**
  * Internal implementation of the console logging.
@@ -40,70 +39,59 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
  *
  * @see Logging#console(Level)
  */
-public class ConsoleLogging implements Logging, Serializable
-{
+public class ConsoleLogging implements Logging, Serializable {
     private static final long serialVersionUID = 9205935204074879150L;
 
     private final Level level;
 
-    public ConsoleLogging( Level level )
-    {
-        this.level = Objects.requireNonNull( level );
+    public ConsoleLogging(Level level) {
+        this.level = Objects.requireNonNull(level);
     }
 
     @Override
-    public Logger getLog( String name )
-    {
-        return new ConsoleLogger( name, level );
+    public Logger getLog(String name) {
+        return new ConsoleLogger(name, level);
     }
 
-    public static class ConsoleLogger extends JULogger
-    {
+    public static class ConsoleLogger extends JULogger {
         private final ConsoleHandler handler;
 
-        public ConsoleLogger( String name, Level level )
-        {
-            super( name, level );
-            java.util.logging.Logger logger = java.util.logging.Logger.getLogger( name );
+        public ConsoleLogger(String name, Level level) {
+            super(name, level);
+            java.util.logging.Logger logger = java.util.logging.Logger.getLogger(name);
 
-            logger.setUseParentHandlers( false );
+            logger.setUseParentHandlers(false);
             // remove all other logging handlers
             Handler[] handlers = logger.getHandlers();
-            for ( Handler handlerToRemove : handlers )
-            {
-                logger.removeHandler( handlerToRemove );
+            for (Handler handlerToRemove : handlers) {
+                logger.removeHandler(handlerToRemove);
             }
 
             handler = new ConsoleHandler();
-            handler.setFormatter( new ConsoleFormatter() );
-            handler.setLevel( level );
-            logger.addHandler( handler );
-            logger.setLevel( level );
+            handler.setFormatter(new ConsoleFormatter());
+            handler.setLevel(level);
+            logger.addHandler(handler);
+            logger.setLevel(level);
         }
     }
 
-    private static class ConsoleFormatter extends Formatter
-    {
+    private static class ConsoleFormatter extends Formatter {
         @Override
-        public String format( LogRecord record )
-        {
-            return LocalDateTime.now().format( ISO_LOCAL_DATE_TIME ) + " " +
-                   record.getLevel() + " " +
-                   record.getLoggerName() + " - " +
-                   formatMessage( record ) +
-                   formatThrowable( record.getThrown() ) +
-                   "\n";
+        public String format(LogRecord record) {
+            return LocalDateTime.now().format(ISO_LOCAL_DATE_TIME) + " " + record.getLevel()
+                    + " " + record.getLoggerName()
+                    + " - " + formatMessage(record)
+                    + formatThrowable(record.getThrown())
+                    + "\n";
         }
 
-        private String formatThrowable( Throwable throwable )
-        {
+        private String formatThrowable(Throwable throwable) {
             String throwableString = "";
-            if ( throwable != null )
-            {
+            if (throwable != null) {
                 StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter( sw );
+                PrintWriter pw = new PrintWriter(sw);
                 pw.println();
-                throwable.printStackTrace( pw );
+                throwable.printStackTrace(pw);
                 pw.close();
                 throwableString = sw.toString();
             }

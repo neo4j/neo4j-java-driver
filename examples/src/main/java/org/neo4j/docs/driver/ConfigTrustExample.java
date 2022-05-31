@@ -26,24 +26,21 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 // end::config-trust-import[]
 
-public class ConfigTrustExample implements AutoCloseable
-{
+public class ConfigTrustExample implements AutoCloseable {
     private final Driver driver;
 
     // tag::config-trust[]
-    public ConfigTrustExample( String uri, String user, String password )
-    {
+    public ConfigTrustExample(String uri, String user, String password) {
         Config config = Config.builder()
-                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates() )
+                .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
                 .build();
 
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
     // end::config-trust[]
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         driver.close();
     }
 }

@@ -33,7 +33,5 @@ import java.lang.annotation.Target;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Target( { ElementType.TYPE } )
-public @interface Immutable
-{
-}
+@Target({ElementType.TYPE})
+public @interface Immutable {}

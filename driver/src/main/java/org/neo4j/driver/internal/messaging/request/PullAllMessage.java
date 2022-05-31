@@ -25,25 +25,20 @@ import org.neo4j.driver.internal.messaging.Message;
  * <p>
  * Sent by clients to pull the entirety of the remaining stream down.
  */
-public class PullAllMessage implements Message
-{
+public class PullAllMessage implements Message {
     public static final byte SIGNATURE = 0x3F;
 
     public static final PullAllMessage PULL_ALL = new PullAllMessage();
 
-    private PullAllMessage()
-    {
-    }
+    private PullAllMessage() {}
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "PULL_ALL";
     }
 }

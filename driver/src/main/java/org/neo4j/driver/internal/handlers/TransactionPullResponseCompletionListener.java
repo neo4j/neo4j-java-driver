@@ -18,33 +18,27 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import java.util.Map;
+import static java.util.Objects.requireNonNull;
 
+import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 
-import static java.util.Objects.requireNonNull;
-
-public class TransactionPullResponseCompletionListener implements PullResponseCompletionListener
-{
+public class TransactionPullResponseCompletionListener implements PullResponseCompletionListener {
     private final UnmanagedTransaction tx;
 
-    public TransactionPullResponseCompletionListener( UnmanagedTransaction tx )
-    {
-        this.tx = requireNonNull( tx );
+    public TransactionPullResponseCompletionListener(UnmanagedTransaction tx) {
+        this.tx = requireNonNull(tx);
     }
 
     @Override
-    public void afterSuccess( Map<String,Value> metadata )
-    {
-    }
+    public void afterSuccess(Map<String, Value> metadata) {}
 
     @Override
-    public void afterFailure( Throwable error )
-    {
+    public void afterFailure(Throwable error) {
         // always mark transaction as terminated because every error is "acknowledged" with a RESET message
         // so database forgets about the transaction after the first error
         // such transaction should not attempt to commit and can be considered as rolled back
-        tx.markTerminated( error );
+        tx.markTerminated(error);
     }
 }

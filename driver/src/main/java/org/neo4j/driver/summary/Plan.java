@@ -20,7 +20,6 @@ package org.neo4j.driver.summary;
 
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.driver.Value;
 import org.neo4j.driver.util.Immutable;
 
@@ -38,8 +37,7 @@ import org.neo4j.driver.util.Immutable;
  * @since 1.0
  */
 @Immutable
-public interface Plan
-{
+public interface Plan {
     /**
      * @return the operation this plan is performing.
      */
@@ -51,7 +49,7 @@ public interface Plan
      *
      * @return the arguments for the {@link #operatorType() operator} used.
      */
-    Map<String,Value> arguments();
+    Map<String, Value> arguments();
 
     /**
      * Identifiers used by this part of the plan. These can be both identifiers introduce by you, or automatically

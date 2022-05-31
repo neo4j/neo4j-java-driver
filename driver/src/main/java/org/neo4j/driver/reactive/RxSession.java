@@ -18,17 +18,15 @@
  */
 package org.neo4j.driver.reactive;
 
-import org.neo4j.driver.Query;
-import org.reactivestreams.Publisher;
-
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.Bookmark;
+import org.reactivestreams.Publisher;
 
 /**
  * A reactive session is the same as {@link Session} except it provides a reactive API.
@@ -38,8 +36,7 @@ import org.neo4j.driver.Bookmark;
  * @see Publisher
  * @since 4.0
  */
-public interface RxSession extends RxQueryRunner
-{
+public interface RxSession extends RxQueryRunner {
     /**
      * Begin a new <em>unmanaged {@linkplain RxTransaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To
@@ -62,11 +59,11 @@ public interface RxSession extends RxQueryRunner
      * @param config configuration for the new transaction.
      * @return a new {@link RxTransaction}
      */
-    Publisher<RxTransaction> beginTransaction( TransactionConfig config );
+    Publisher<RxTransaction> beginTransaction(TransactionConfig config);
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#READ read} reactive transaction.
-     <p>
+     * <p>
      * Transaction will automatically be committed unless given unit of work fails or
      * {@link RxTransaction#commit() transaction commit} fails.
      * It will also not be committed if explicitly rolled back via {@link RxTransaction#rollback()}.
@@ -83,12 +80,12 @@ public interface RxSession extends RxQueryRunner
      * publisher can be completed exceptionally if given work or commit fails.
      *
      */
-    <T> Publisher<T> readTransaction( RxTransactionWork<? extends Publisher<T>> work );
+    <T> Publisher<T> readTransaction(RxTransactionWork<? extends Publisher<T>> work);
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#READ read} reactive transaction with
      * the specified {@link TransactionConfig configuration}.
-     <p>
+     * <p>
      * Transaction will automatically be committed unless given unit of work fails or
      * {@link RxTransaction#commit() transaction commit} fails.
      * It will also not be committed if explicitly rolled back via {@link RxTransaction#rollback()}.
@@ -106,11 +103,11 @@ public interface RxSession extends RxQueryRunner
      * publisher can be completed exceptionally if given work or commit fails.
      *
      */
-    <T> Publisher<T> readTransaction( RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config );
+    <T> Publisher<T> readTransaction(RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config);
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#WRITE write} reactive transaction.
-     <p>
+     * <p>
      * Transaction will automatically be committed unless given unit of work fails or
      * {@link RxTransaction#commit() transaction commit} fails.
      * It will also not be committed if explicitly rolled back via {@link RxTransaction#rollback()}.
@@ -127,12 +124,12 @@ public interface RxSession extends RxQueryRunner
      * publisher can be completed exceptionally if given work or commit fails.
      *
      */
-    <T> Publisher<T> writeTransaction( RxTransactionWork<? extends Publisher<T>> work );
+    <T> Publisher<T> writeTransaction(RxTransactionWork<? extends Publisher<T>> work);
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#WRITE write} reactive transaction with
      * the specified {@link TransactionConfig configuration}.
-     <p>
+     * <p>
      * Transaction will automatically be committed unless given unit of work fails or
      * {@link RxTransaction#commit() transaction commit} fails.
      * It will also not be committed if explicitly rolled back via {@link RxTransaction#rollback()}.
@@ -150,7 +147,7 @@ public interface RxSession extends RxQueryRunner
      * publisher can be completed exceptionally if given work or commit fails.
      *
      */
-    <T> Publisher<T> writeTransaction( RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config );
+    <T> Publisher<T> writeTransaction(RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config);
 
     /**
      * Run a query with parameters in an auto-commit transaction with specified {@link TransactionConfig} and return a reactive result stream.
@@ -161,7 +158,7 @@ public interface RxSession extends RxQueryRunner
      * @param config configuration for the new transaction.
      * @return a reactive result.
      */
-    RxResult run(String query, TransactionConfig config );
+    RxResult run(String query, TransactionConfig config);
 
     /**
      * Run a query with parameters in an auto-commit transaction with specified {@link TransactionConfig} and return a reactive result stream.
@@ -199,7 +196,7 @@ public interface RxSession extends RxQueryRunner
      * @param config configuration for the new transaction.
      * @return a reactive result.
      */
-    RxResult run(String query, Map<String,Object> parameters, TransactionConfig config );
+    RxResult run(String query, Map<String, Object> parameters, TransactionConfig config);
 
     /**
      * Run a query in an auto-commit transaction with specified {@link TransactionConfig configuration} and return a reactive result stream.
@@ -225,7 +222,7 @@ public interface RxSession extends RxQueryRunner
      * @param config configuration for the new transaction.
      * @return a reactive result.
      */
-    RxResult run(Query query, TransactionConfig config );
+    RxResult run(Query query, TransactionConfig config);
 
     /**
      * Return the bookmark received following the last completed query within this session.

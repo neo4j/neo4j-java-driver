@@ -23,7 +23,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -80,8 +79,7 @@ import org.neo4j.driver.Values;
  * @see AsyncTransaction
  * @since 4.0
  */
-public interface AsyncQueryRunner
-{
+public interface AsyncQueryRunner {
     /**
      * Run a query asynchronously and return a {@link CompletionStage} with a
      * result cursor.
@@ -114,7 +112,7 @@ public interface AsyncQueryRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<ResultCursor> runAsync(String query, Value parameters );
+    CompletionStage<ResultCursor> runAsync(String query, Value parameters);
 
     /**
      * Run a query asynchronously and return a {@link CompletionStage} with a
@@ -148,7 +146,7 @@ public interface AsyncQueryRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<ResultCursor> runAsync(String query, Map<String,Object> parameters );
+    CompletionStage<ResultCursor> runAsync(String query, Map<String, Object> parameters);
 
     /**
      * Run a query asynchronously and return a {@link CompletionStage} with a
@@ -170,7 +168,7 @@ public interface AsyncQueryRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<ResultCursor> runAsync(String query, Record parameters );
+    CompletionStage<ResultCursor> runAsync(String query, Record parameters);
 
     /**
      * Run a query asynchronously and return a {@link CompletionStage} with a
@@ -183,7 +181,7 @@ public interface AsyncQueryRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<ResultCursor> runAsync(String query );
+    CompletionStage<ResultCursor> runAsync(String query);
 
     /**
      * Run a query asynchronously and return a {@link CompletionStage} with a

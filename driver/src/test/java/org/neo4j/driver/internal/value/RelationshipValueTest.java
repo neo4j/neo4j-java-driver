@@ -18,11 +18,6 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.Value;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,33 +25,32 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledRelationshipValue;
 
-class RelationshipValueTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.types.TypeConstructor;
+
+class RelationshipValueTest {
     @Test
-    void shouldHaveSensibleToString()
-    {
-        assertEquals( "relationship<1234>", emptyRelationshipValue().toString() );
-        assertEquals( "relationship<1234>", filledRelationshipValue().toString() );
+    void shouldHaveSensibleToString() {
+        assertEquals("relationship<1234>", emptyRelationshipValue().toString());
+        assertEquals("relationship<1234>", filledRelationshipValue().toString());
     }
 
     @Test
-    void shouldHaveCorrectPropertyCount()
-    {
-        assertEquals( 0, emptyRelationshipValue().size()) ;
-        assertEquals( 1, filledRelationshipValue().size()) ;
+    void shouldHaveCorrectPropertyCount() {
+        assertEquals(0, emptyRelationshipValue().size());
+        assertEquals(1, filledRelationshipValue().size());
     }
 
     @Test
-    void shouldNotBeNull()
-    {
+    void shouldNotBeNull() {
         Value value = emptyRelationshipValue();
-        assertFalse( value.isNull() );
+        assertFalse(value.isNull());
     }
 
     @Test
-    void shouldTypeAsRelationship()
-    {
+    void shouldTypeAsRelationship() {
         InternalValue value = emptyRelationshipValue();
-        assertThat( value.typeConstructor(), equalTo( TypeConstructor.RELATIONSHIP ) );
+        assertThat(value.typeConstructor(), equalTo(TypeConstructor.RELATIONSHIP));
     }
 }

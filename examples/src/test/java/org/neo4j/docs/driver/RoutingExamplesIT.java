@@ -18,31 +18,26 @@
  */
 package org.neo4j.docs.driver;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.util.cc.ClusterExtension;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class RoutingExamplesIT
-{
+class RoutingExamplesIT {
     @RegisterExtension
     static final ClusterExtension neo4j = new ClusterExtension();
 
     @Test
-    void testShouldRunConfigCustomResolverExample() throws Exception
-    {
+    void testShouldRunConfigCustomResolverExample() throws Exception {
         // Given
         URI uri = neo4j.getCluster().getRoutingUri();
-        try ( ConfigCustomResolverExample example = new ConfigCustomResolverExample( "neo4j://x.example.com", neo4j.getDefaultAuthToken(),
-                                                                                     ServerAddress.of( uri.getHost(), uri.getPort() ) ) )
-        {
+        try (ConfigCustomResolverExample example = new ConfigCustomResolverExample(
+                "neo4j://x.example.com", neo4j.getDefaultAuthToken(), ServerAddress.of(uri.getHost(), uri.getPort()))) {
             // Then
-            assertTrue( example.canConnect() );
+            assertTrue(example.canConnect());
         }
     }
 }

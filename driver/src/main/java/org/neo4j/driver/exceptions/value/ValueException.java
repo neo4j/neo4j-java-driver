@@ -24,12 +24,10 @@ import org.neo4j.driver.exceptions.ClientException;
  * A <em>ValueException</em> indicates that the client has carried out an operation on values incorrectly.
  * @since 1.0
  */
-public class ValueException extends ClientException
-{
+public class ValueException extends ClientException {
     private static final long serialVersionUID = -1269336313727174998L;
 
-    public ValueException( String message )
-    {
-        super( message );
+    public ValueException(String message) {
+        super(message);
     }
 }

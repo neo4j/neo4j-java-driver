@@ -19,21 +19,19 @@
 package org.neo4j.driver.internal.summary;
 
 import java.util.Objects;
-
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.summary.ServerInfo;
 
-public class InternalServerInfo implements ServerInfo
-{
+public class InternalServerInfo implements ServerInfo {
     private final String agent;
     private final String address;
     private final String version;
     private final String protocolVersion;
 
-    public InternalServerInfo( String agent, BoltServerAddress address, ServerVersion version, BoltProtocolVersion protocolVersion )
-    {
+    public InternalServerInfo(
+            String agent, BoltServerAddress address, ServerVersion version, BoltProtocolVersion protocolVersion) {
         this.agent = agent;
         this.address = address.toString();
         this.version = version.toString();
@@ -41,53 +39,44 @@ public class InternalServerInfo implements ServerInfo
     }
 
     @Override
-    public String agent()
-    {
+    public String agent() {
         return agent;
     }
 
     @Override
-    public String address()
-    {
+    public String address() {
         return address;
     }
 
     @Override
-    public String version()
-    {
+    public String version() {
         return version;
     }
 
     @Override
-    public String protocolVersion()
-    {
+    public String protocolVersion() {
         return protocolVersion;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         InternalServerInfo that = (InternalServerInfo) o;
-        return Objects.equals( address, that.address ) && Objects.equals( version, that.version );
+        return Objects.equals(address, that.address) && Objects.equals(version, that.version);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( address, version );
+    public int hashCode() {
+        return Objects.hash(address, version);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "InternalServerInfo{" + "address='" + address + '\'' + ", version='" + version + '\'' + '}';
     }
 }

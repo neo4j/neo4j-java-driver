@@ -20,74 +20,62 @@ package org.neo4j.driver.internal;
 
 import java.util.Collections;
 import java.util.Map;
-
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.types.Relationship;
-import org.neo4j.driver.Value;
 
 /**
  * {@link Relationship} implementation that directly contains type and properties.
  */
-public class InternalRelationship extends InternalEntity implements Relationship
-{
+public class InternalRelationship extends InternalEntity implements Relationship {
     private long start;
     private long end;
     private final String type;
 
-    public InternalRelationship( long id, long start, long end, String type )
-    {
-        this( id, start, end, type, Collections.<String,Value>emptyMap() );
+    public InternalRelationship(long id, long start, long end, String type) {
+        this(id, start, end, type, Collections.<String, Value>emptyMap());
     }
 
-    public InternalRelationship( long id, long start, long end, String type,
-                                 Map<String, Value> properties )
-    {
-        super( id, properties );
+    public InternalRelationship(long id, long start, long end, String type, Map<String, Value> properties) {
+        super(id, properties);
         this.start = start;
         this.end = end;
         this.type = type;
     }
 
     @Override
-    public boolean hasType( String relationshipType )
-    {
-        return type().equals( relationshipType );
+    public boolean hasType(String relationshipType) {
+        return type().equals(relationshipType);
     }
 
     /** Modify the start/end identities of this relationship */
-    public void setStartAndEnd( long start, long end )
-    {
+    public void setStartAndEnd(long start, long end) {
         this.start = start;
         this.end = end;
     }
 
     @Override
-    public long startNodeId()
-    {
+    public long startNodeId() {
         return start;
     }
 
     @Override
-    public long endNodeId()
-    {
+    public long endNodeId() {
         return end;
     }
 
     @Override
-    public String type()
-    {
+    public String type() {
         return type;
     }
 
     @Override
-    public Value asValue()
-    {
-        return new RelationshipValue( this );
+    public Value asValue() {
+        return new RelationshipValue(this);
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "relationship<%s>", id() );
+    public String toString() {
+        return String.format("relationship<%s>", id());
     }
 }

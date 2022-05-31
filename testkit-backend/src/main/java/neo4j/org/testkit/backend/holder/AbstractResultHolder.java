@@ -18,40 +18,35 @@
  */
 package neo4j.org.testkit.backend.holder;
 
+import java.util.Optional;
 import lombok.Getter;
 
-import java.util.Optional;
-
-public abstract class AbstractResultHolder<T1, T2 extends AbstractTransactionHolder<?,?>, T3>
-{
+public abstract class AbstractResultHolder<T1, T2 extends AbstractTransactionHolder<?, ?>, T3> {
     private final T1 sessionHolder;
     private final T2 transactionHolder;
+
     @Getter
     private final T3 result;
 
-    public AbstractResultHolder( T1 sessionHolder, T3 result )
-    {
+    public AbstractResultHolder(T1 sessionHolder, T3 result) {
         this.sessionHolder = sessionHolder;
         this.transactionHolder = null;
         this.result = result;
     }
 
-    public AbstractResultHolder( T2 transactionHolder, T3 result )
-    {
+    public AbstractResultHolder(T2 transactionHolder, T3 result) {
         this.sessionHolder = null;
         this.transactionHolder = transactionHolder;
         this.result = result;
     }
 
-    public T1 getSessionHolder()
-    {
-        return transactionHolder != null ? getSessionHolder( transactionHolder ) : sessionHolder;
+    public T1 getSessionHolder() {
+        return transactionHolder != null ? getSessionHolder(transactionHolder) : sessionHolder;
     }
 
-    public Optional<T2> getTransactionHolder()
-    {
-        return Optional.ofNullable( transactionHolder );
+    public Optional<T2> getTransactionHolder() {
+        return Optional.ofNullable(transactionHolder);
     }
 
-    protected abstract T1 getSessionHolder( T2 transactionHolder );
+    protected abstract T1 getSessionHolder(T2 transactionHolder);
 }

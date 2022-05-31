@@ -18,8 +18,9 @@
  */
 package org.neo4j.driver;
 
-import java.net.URI;
+import static org.neo4j.driver.internal.Scheme.NEO4J_URI_SCHEME;
 
+import java.net.URI;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.SecuritySettings;
@@ -27,24 +28,20 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
-import static org.neo4j.driver.internal.Scheme.NEO4J_URI_SCHEME;
-
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
  * @see Driver
  * @since 1.0
  */
-public class GraphDatabase
-{
+public class GraphDatabase {
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
      *
      * @param uri the URL to a Neo4j instance
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( String uri )
-    {
-        return driver( uri, Config.defaultConfig() );
+    public static Driver driver(String uri) {
+        return driver(uri, Config.defaultConfig());
     }
 
     /**
@@ -53,9 +50,8 @@ public class GraphDatabase
      * @param uri the URL to a Neo4j instance
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( URI uri )
-    {
-        return driver( uri, Config.defaultConfig() );
+    public static Driver driver(URI uri) {
+        return driver(uri, Config.defaultConfig());
     }
 
     /**
@@ -65,9 +61,8 @@ public class GraphDatabase
      * @param config user defined configuration
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( URI uri, Config config )
-    {
-        return driver( uri, AuthTokens.none(), config );
+    public static Driver driver(URI uri, Config config) {
+        return driver(uri, AuthTokens.none(), config);
     }
 
     /**
@@ -77,9 +72,8 @@ public class GraphDatabase
      * @param config user defined configuration
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( String uri, Config config )
-    {
-        return driver( URI.create( uri ), config );
+    public static Driver driver(String uri, Config config) {
+        return driver(URI.create(uri), config);
     }
 
     /**
@@ -89,9 +83,8 @@ public class GraphDatabase
      * @param authToken authentication to use, see {@link AuthTokens}
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( String uri, AuthToken authToken )
-    {
-        return driver( uri, authToken, Config.defaultConfig() );
+    public static Driver driver(String uri, AuthToken authToken) {
+        return driver(uri, authToken, Config.defaultConfig());
     }
 
     /**
@@ -101,9 +94,8 @@ public class GraphDatabase
      * @param authToken authentication to use, see {@link AuthTokens}
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( URI uri, AuthToken authToken )
-    {
-        return driver( uri, authToken, Config.defaultConfig() );
+    public static Driver driver(URI uri, AuthToken authToken) {
+        return driver(uri, authToken, Config.defaultConfig());
     }
 
     /**
@@ -114,9 +106,8 @@ public class GraphDatabase
      * @param config user defined configuration
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( String uri, AuthToken authToken, Config config )
-    {
-        return driver( URI.create( uri ), authToken, config );
+    public static Driver driver(String uri, AuthToken authToken, Config config) {
+        return driver(URI.create(uri), authToken, config);
     }
 
     /**
@@ -127,19 +118,17 @@ public class GraphDatabase
      * @param config    user defined configuration
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( URI uri, AuthToken authToken, Config config )
-    {
-        return driver( uri, authToken, config, new DriverFactory() );
+    public static Driver driver(URI uri, AuthToken authToken, Config config) {
+        return driver(uri, authToken, config, new DriverFactory());
     }
 
-    static Driver driver( URI uri, AuthToken authToken, Config config, DriverFactory driverFactory )
-    {
-        config = getOrDefault( config );
+    static Driver driver(URI uri, AuthToken authToken, Config config, DriverFactory driverFactory) {
+        config = getOrDefault(config);
         RoutingSettings routingSettings = config.routingSettings();
         RetrySettings retrySettings = config.retrySettings();
         SecuritySettings securitySettings = config.securitySettings();
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( uri.getScheme() );
-        return driverFactory.newInstance( uri, authToken, routingSettings, retrySettings, config, securityPlan );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan(uri.getScheme());
+        return driverFactory.newInstance(uri, authToken, routingSettings, retrySettings, config, securityPlan);
     }
 
     /**
@@ -153,72 +142,56 @@ public class GraphDatabase
      * @param config user defined configuration
      * @return a new driver instance
      */
-    public static Driver routingDriver( Iterable<URI> routingUris, AuthToken authToken, Config config )
-    {
-        return routingDriver( routingUris, authToken, config, new DriverFactory() );
+    public static Driver routingDriver(Iterable<URI> routingUris, AuthToken authToken, Config config) {
+        return routingDriver(routingUris, authToken, config, new DriverFactory());
     }
 
-    static Driver routingDriver( Iterable<URI> routingUris, AuthToken authToken, Config config, DriverFactory driverFactory )
-    {
-        assertRoutingUris( routingUris );
-        Logger log = createLogger( config );
+    static Driver routingDriver(
+            Iterable<URI> routingUris, AuthToken authToken, Config config, DriverFactory driverFactory) {
+        assertRoutingUris(routingUris);
+        Logger log = createLogger(config);
 
-        for ( URI uri : routingUris )
-        {
-            final Driver driver = driver( uri, authToken, config, driverFactory );
-            try
-            {
+        for (URI uri : routingUris) {
+            final Driver driver = driver(uri, authToken, config, driverFactory);
+            try {
                 driver.verifyConnectivity();
                 return driver;
-            }
-            catch ( ServiceUnavailableException e )
-            {
-                log.warn( "Unable to create routing driver for URI: " + uri, e );
-                closeDriver( driver, uri, log );
-            }
-            catch ( Throwable e )
-            {
+            } catch (ServiceUnavailableException e) {
+                log.warn("Unable to create routing driver for URI: " + uri, e);
+                closeDriver(driver, uri, log);
+            } catch (Throwable e) {
                 // for any other errors, we first close the driver and then rethrow the original error out.
-                closeDriver( driver, uri, log );
+                closeDriver(driver, uri, log);
                 throw e;
             }
         }
 
-        throw new ServiceUnavailableException( "Failed to discover an available server" );
+        throw new ServiceUnavailableException("Failed to discover an available server");
     }
 
-    private static void closeDriver( Driver driver, URI uri, Logger log )
-    {
-        try
-        {
+    private static void closeDriver(Driver driver, URI uri, Logger log) {
+        try {
             driver.close();
-        }
-        catch ( Throwable closeError )
-        {
-            log.warn( "Unable to close driver towards URI: " + uri, closeError );
+        } catch (Throwable closeError) {
+            log.warn("Unable to close driver towards URI: " + uri, closeError);
         }
     }
 
-    private static void assertRoutingUris( Iterable<URI> uris )
-    {
-        for ( URI uri : uris )
-        {
-            if ( !NEO4J_URI_SCHEME.equals( uri.getScheme() ) )
-            {
+    private static void assertRoutingUris(Iterable<URI> uris) {
+        for (URI uri : uris) {
+            if (!NEO4J_URI_SCHEME.equals(uri.getScheme())) {
                 throw new IllegalArgumentException(
-                        "Illegal URI scheme, expected '" + NEO4J_URI_SCHEME + "' in '" + uri + "'" );
+                        "Illegal URI scheme, expected '" + NEO4J_URI_SCHEME + "' in '" + uri + "'");
             }
         }
     }
 
-    private static Logger createLogger( Config config )
-    {
-        Logging logging = getOrDefault( config ).logging();
-        return logging.getLog( GraphDatabase.class );
+    private static Logger createLogger(Config config) {
+        Logging logging = getOrDefault(config).logging();
+        return logging.getLog(GraphDatabase.class);
     }
 
-    private static Config getOrDefault( Config config )
-    {
+    private static Config getOrDefault(Config config) {
         return config != null ? config : Config.defaultConfig();
     }
 }

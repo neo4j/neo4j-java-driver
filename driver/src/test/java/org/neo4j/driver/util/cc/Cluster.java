@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.util.cc;
 
+import static java.util.Collections.emptySet;
+import static java.util.Collections.unmodifiableSet;
+import static org.neo4j.driver.util.TestUtil.sleep;
+
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -26,19 +30,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.util.TestUtil;
 import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.unmodifiableSet;
-import static org.neo4j.driver.util.TestUtil.sleep;
-
-public class Cluster implements AutoCloseable
-{
+public class Cluster implements AutoCloseable {
     private static final String ADMIN_USER = "neo4j";
     private static final int STARTUP_TIMEOUT_SECONDS = 120;
     private static final int ONLINE_MEMBERS_CHECK_SLEEP_MS = 500;
@@ -48,334 +46,265 @@ public class Cluster implements AutoCloseable
     private final Set<ClusterMember> offlineMembers;
     private final ClusterDrivers clusterDrivers;
 
-    public Cluster( Path path, String password )
-    {
-        this( path, emptySet(), new ClusterDrivers( ADMIN_USER, password ) );
+    public Cluster(Path path, String password) {
+        this(path, emptySet(), new ClusterDrivers(ADMIN_USER, password));
     }
 
-    private Cluster( Path path, Set<ClusterMember> members, ClusterDrivers clusterDrivers )
-    {
+    private Cluster(Path path, Set<ClusterMember> members, ClusterDrivers clusterDrivers) {
         this.path = path;
         this.members = members;
         this.offlineMembers = new HashSet<>();
         this.clusterDrivers = clusterDrivers;
     }
 
-    Cluster withMembers( Set<ClusterMember> newMembers ) throws ClusterUnavailableException
-    {
-        waitForMembersToBeOnline( newMembers, clusterDrivers );
-        return new Cluster( path, newMembers, clusterDrivers );
+    Cluster withMembers(Set<ClusterMember> newMembers) throws ClusterUnavailableException {
+        waitForMembersToBeOnline(newMembers, clusterDrivers);
+        return new Cluster(path, newMembers, clusterDrivers);
     }
 
-    public URI getRoutingUri()
-    {
-        return randomOf( cores() ).getRoutingUri();
+    public URI getRoutingUri() {
+        return randomOf(cores()).getRoutingUri();
     }
 
-    public Path getPath()
-    {
+    public Path getPath() {
         return path;
     }
 
-    public void deleteData()
-    {
+    public void deleteData() {
         // execute write query to remove all nodes and retrieve bookmark
-        Driver driverToLeader = clusterDrivers.getDriver( leader() );
-        Bookmark bookmark = TestUtil.cleanDb( driverToLeader );
-        if ( bookmark == null )
-        {
-            throw new IllegalStateException( "Cleanup of the database did not produce a bookmark" );
+        Driver driverToLeader = clusterDrivers.getDriver(leader());
+        Bookmark bookmark = TestUtil.cleanDb(driverToLeader);
+        if (bookmark == null) {
+            throw new IllegalStateException("Cleanup of the database did not produce a bookmark");
         }
 
         // ensure that every cluster member is up-to-date and contains no nodes
-        for ( ClusterMember member : members )
-        {
-            Driver driver = clusterDrivers.getDriver( member );
-            long nodeCount = TestUtil.countNodes( driver, bookmark );
-            if ( nodeCount != 0 )
-            {
-                throw new IllegalStateException( "Not all nodes have been deleted. " + nodeCount + " still there somehow" );
+        for (ClusterMember member : members) {
+            Driver driver = clusterDrivers.getDriver(member);
+            long nodeCount = TestUtil.countNodes(driver, bookmark);
+            if (nodeCount != 0) {
+                throw new IllegalStateException(
+                        "Not all nodes have been deleted. " + nodeCount + " still there somehow");
             }
         }
     }
 
-    public Set<ClusterMember> members()
-    {
-        return unmodifiableSet( members );
+    public Set<ClusterMember> members() {
+        return unmodifiableSet(members);
     }
 
-    public ClusterMember leader()
-    {
-        Set<ClusterMember> leaders = membersWithRole( ClusterMemberRole.LEADER );
-        if ( leaders.size() != 1 )
-        {
-            throw new IllegalStateException( "Single leader expected. " + leaders );
+    public ClusterMember leader() {
+        Set<ClusterMember> leaders = membersWithRole(ClusterMemberRole.LEADER);
+        if (leaders.size() != 1) {
+            throw new IllegalStateException("Single leader expected. " + leaders);
         }
         return leaders.iterator().next();
     }
 
-    public ClusterMember anyFollower()
-    {
-        return randomOf( followers() );
+    public ClusterMember anyFollower() {
+        return randomOf(followers());
     }
 
-    public Set<ClusterMember> followers()
-    {
-        return membersWithRole( ClusterMemberRole.FOLLOWER );
+    public Set<ClusterMember> followers() {
+        return membersWithRole(ClusterMemberRole.FOLLOWER);
     }
 
-    public ClusterMember anyReadReplica()
-    {
-        return randomOf( readReplicas() );
+    public ClusterMember anyReadReplica() {
+        return randomOf(readReplicas());
     }
 
-    public Set<ClusterMember> cores()
-    {
-        Set<ClusterMember> readReplicas = membersWithRole( ClusterMemberRole.READ_REPLICA );
-        Set<ClusterMember> cores = new HashSet<>( members );
-        cores.removeAll( readReplicas );
+    public Set<ClusterMember> cores() {
+        Set<ClusterMember> readReplicas = membersWithRole(ClusterMemberRole.READ_REPLICA);
+        Set<ClusterMember> cores = new HashSet<>(members);
+        cores.removeAll(readReplicas);
         return cores;
     }
 
-    public Set<ClusterMember> readReplicas()
-    {
-        return membersWithRole( ClusterMemberRole.READ_REPLICA );
+    public Set<ClusterMember> readReplicas() {
+        return membersWithRole(ClusterMemberRole.READ_REPLICA);
     }
 
-    public void start( ClusterMember member )
-    {
-        startNoWait( member );
+    public void start(ClusterMember member) {
+        startNoWait(member);
         waitForMembersToBeOnline();
     }
 
-    public Driver getDirectDriver( ClusterMember member )
-    {
-        return clusterDrivers.getDriver( member );
+    public Driver getDirectDriver(ClusterMember member) {
+        return clusterDrivers.getDriver(member);
     }
 
-    public void dumpClusterDebugLog()
-    {
-        for ( ClusterMember member : members )
-        {
+    public void dumpClusterDebugLog() {
+        for (ClusterMember member : members) {
 
-            System.out.println( "Debug log for: " + member.getPath().toString() );
-            try
-            {
+            System.out.println("Debug log for: " + member.getPath().toString());
+            try {
                 member.dumpDebugLog();
-            }
-            catch ( FileNotFoundException e )
-            {
-                System.out.println("Unable to find debug log file for: " + member.getPath().toString());
+            } catch (FileNotFoundException e) {
+                System.out.println(
+                        "Unable to find debug log file for: " + member.getPath().toString());
                 e.printStackTrace();
             }
         }
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         clusterDrivers.close();
     }
 
     @Override
-    public String toString()
-    {
-        return "Cluster{" +
-               "path=" + path +
-               ", members=" + members +
-               "}";
+    public String toString() {
+        return "Cluster{" + "path=" + path + ", members=" + members + "}";
     }
 
-    private void addOfflineMember( ClusterMember member )
-    {
-        if ( !offlineMembers.remove( member ) )
-        {
-            throw new IllegalArgumentException( "Cluster member is not offline: " + member );
+    private void addOfflineMember(ClusterMember member) {
+        if (!offlineMembers.remove(member)) {
+            throw new IllegalArgumentException("Cluster member is not offline: " + member);
         }
-        members.add( member );
+        members.add(member);
     }
 
-    private void startNoWait( ClusterMember member )
-    {
-        addOfflineMember( member );
-        SharedCluster.start( member );
+    private void startNoWait(ClusterMember member) {
+        addOfflineMember(member);
+        SharedCluster.start(member);
     }
 
-    private Set<ClusterMember> membersWithRole( ClusterMemberRole role )
-    {
+    private Set<ClusterMember> membersWithRole(ClusterMemberRole role) {
         Set<ClusterMember> membersWithRole = new HashSet<>();
         int retryCount = 0;
 
-        while ( membersWithRole.isEmpty() && retryCount < 10 )
-        {
-            Driver driver = driverToAnyCore( members, clusterDrivers );
+        while (membersWithRole.isEmpty() && retryCount < 10) {
+            Driver driver = driverToAnyCore(members, clusterDrivers);
             final ClusterMemberRoleDiscovery discovery = clusterDrivers.getDiscovery();
-            final Map<BoltServerAddress,ClusterMemberRole> clusterOverview = discovery.findClusterOverview( driver );
-            for ( BoltServerAddress boltAddress : clusterOverview.keySet() )
-            {
-                if ( role == clusterOverview.get( boltAddress ) )
-                {
-                    ClusterMember member = findByBoltAddress( boltAddress, members );
-                    if ( member == null )
-                    {
-                        throw new IllegalStateException( "Unknown cluster member: '" + boltAddress + "'\n" + this );
+            final Map<BoltServerAddress, ClusterMemberRole> clusterOverview = discovery.findClusterOverview(driver);
+            for (BoltServerAddress boltAddress : clusterOverview.keySet()) {
+                if (role == clusterOverview.get(boltAddress)) {
+                    ClusterMember member = findByBoltAddress(boltAddress, members);
+                    if (member == null) {
+                        throw new IllegalStateException("Unknown cluster member: '" + boltAddress + "'\n" + this);
                     }
-                    membersWithRole.add( member );
+                    membersWithRole.add(member);
                 }
             }
             retryCount++;
 
-            if ( !membersWithRole.isEmpty() )
-            {
+            if (!membersWithRole.isEmpty()) {
                 break;
-            }
-            else
-            {
-                try
-                {
+            } else {
+                try {
                     // give some time for cluster to stabilise
-                    Thread.sleep( 2000 );
-                }
-                catch ( InterruptedException ignored )
-                {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ignored) {
                 }
             }
         }
 
-        if ( membersWithRole.isEmpty() )
-        {
-            throw new IllegalStateException( "No cluster members with role '" + role + " " + this );
+        if (membersWithRole.isEmpty()) {
+            throw new IllegalStateException("No cluster members with role '" + role + " " + this);
         }
 
         return membersWithRole;
     }
 
-    private void waitForMembersToBeOnline()
-    {
-        try
-        {
-            waitForMembersToBeOnline( members, clusterDrivers );
-        }
-        catch ( ClusterUnavailableException e )
-        {
-            throw new RuntimeException( e );
+    private void waitForMembersToBeOnline() {
+        try {
+            waitForMembersToBeOnline(members, clusterDrivers);
+        } catch (ClusterUnavailableException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private static void waitForMembersToBeOnline( Set<ClusterMember> members, ClusterDrivers clusterDrivers )
-            throws ClusterUnavailableException
-    {
-        if ( members.isEmpty() )
-        {
-            throw new IllegalArgumentException( "No members to wait for" );
+    private static void waitForMembersToBeOnline(Set<ClusterMember> members, ClusterDrivers clusterDrivers)
+            throws ClusterUnavailableException {
+        if (members.isEmpty()) {
+            throw new IllegalArgumentException("No members to wait for");
         }
 
-        Set<BoltServerAddress> expectedOnlineAddresses = extractBoltAddresses( members );
+        Set<BoltServerAddress> expectedOnlineAddresses = extractBoltAddresses(members);
         Set<BoltServerAddress> actualOnlineAddresses = emptySet();
 
-        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( STARTUP_TIMEOUT_SECONDS );
+        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(STARTUP_TIMEOUT_SECONDS);
         Throwable error = null;
 
-        while ( !expectedOnlineAddresses.equals( actualOnlineAddresses ) )
-        {
-            sleep( ONLINE_MEMBERS_CHECK_SLEEP_MS );
-            assertDeadlineNotReached( deadline, expectedOnlineAddresses, actualOnlineAddresses, error );
+        while (!expectedOnlineAddresses.equals(actualOnlineAddresses)) {
+            sleep(ONLINE_MEMBERS_CHECK_SLEEP_MS);
+            assertDeadlineNotReached(deadline, expectedOnlineAddresses, actualOnlineAddresses, error);
 
-            Driver driver = driverToAnyCore( members, clusterDrivers );
+            Driver driver = driverToAnyCore(members, clusterDrivers);
             final ClusterMemberRoleDiscovery discovery = clusterDrivers.getDiscovery();
-            try
-            {
-                final Map<BoltServerAddress,ClusterMemberRole> clusterOverview = discovery.findClusterOverview( driver );
+            try {
+                final Map<BoltServerAddress, ClusterMemberRole> clusterOverview = discovery.findClusterOverview(driver);
                 actualOnlineAddresses = clusterOverview.keySet();
-            }
-            catch ( Throwable t )
-            {
+            } catch (Throwable t) {
                 t.printStackTrace();
 
-                if ( error == null )
-                {
+                if (error == null) {
                     error = t;
-                }
-                else
-                {
-                    error.addSuppressed( t );
+                } else {
+                    error.addSuppressed(t);
                 }
             }
         }
     }
 
-    private static Driver driverToAnyCore( Set<ClusterMember> members, ClusterDrivers clusterDrivers )
-    {
-        if ( members.isEmpty() )
-        {
-            throw new IllegalArgumentException( "No members, can't create driver" );
+    private static Driver driverToAnyCore(Set<ClusterMember> members, ClusterDrivers clusterDrivers) {
+        if (members.isEmpty()) {
+            throw new IllegalArgumentException("No members, can't create driver");
         }
 
-        for ( ClusterMember member : members )
-        {
-            Driver driver = clusterDrivers.getDriver( member );
+        for (ClusterMember member : members) {
+            Driver driver = clusterDrivers.getDriver(member);
             final ClusterMemberRoleDiscovery discovery = clusterDrivers.getDiscovery();
-            if ( discovery.isCoreMember( driver ) )
-            {
+            if (discovery.isCoreMember(driver)) {
                 return driver;
             }
         }
 
-        throw new IllegalStateException( "No core members found among: " + members );
+        throw new IllegalStateException("No core members found among: " + members);
     }
 
-    private static void assertDeadlineNotReached( long deadline, Set<?> expectedAddresses, Set<?> actualAddresses,
-            Throwable error ) throws ClusterUnavailableException
-    {
-        if ( System.currentTimeMillis() > deadline )
-        {
+    private static void assertDeadlineNotReached(
+            long deadline, Set<?> expectedAddresses, Set<?> actualAddresses, Throwable error)
+            throws ClusterUnavailableException {
+        if (System.currentTimeMillis() > deadline) {
             String baseMessage = "Cluster did not become available in " + STARTUP_TIMEOUT_SECONDS + " seconds.\n";
             String errorMessage = error == null ? "" : "There were errors checking cluster members.\n";
             String expectedAddressesMessage = "Expected online addresses: " + expectedAddresses + "\n";
             String actualAddressesMessage = "Actual last seen online addresses: " + actualAddresses + "\n";
             String message = baseMessage + errorMessage + expectedAddressesMessage + actualAddressesMessage;
 
-            ClusterUnavailableException clusterUnavailable = new ClusterUnavailableException( message );
+            ClusterUnavailableException clusterUnavailable = new ClusterUnavailableException(message);
 
-            if ( error != null )
-            {
-                clusterUnavailable.addSuppressed( error );
+            if (error != null) {
+                clusterUnavailable.addSuppressed(error);
             }
 
             throw clusterUnavailable;
         }
     }
 
-    private static Set<BoltServerAddress> extractBoltAddresses( Set<ClusterMember> members )
-    {
+    private static Set<BoltServerAddress> extractBoltAddresses(Set<ClusterMember> members) {
         Set<BoltServerAddress> addresses = new HashSet<>();
-        for ( ClusterMember member : members )
-        {
-            addresses.add( member.getBoltAddress() );
+        for (ClusterMember member : members) {
+            addresses.add(member.getBoltAddress());
         }
         return addresses;
     }
 
-    private static ClusterMember findByBoltAddress( BoltServerAddress boltAddress, Set<ClusterMember> members )
-    {
-        for ( ClusterMember member : members )
-        {
-            if ( member.getBoltAddress().equals( boltAddress ) )
-            {
+    private static ClusterMember findByBoltAddress(BoltServerAddress boltAddress, Set<ClusterMember> members) {
+        for (ClusterMember member : members) {
+            if (member.getBoltAddress().equals(boltAddress)) {
                 return member;
             }
         }
         return null;
     }
 
-    private static ClusterMember randomOf( Set<ClusterMember> members )
-    {
-        int randomIndex = ThreadLocalRandom.current().nextInt( members.size() );
+    private static ClusterMember randomOf(Set<ClusterMember> members) {
+        int randomIndex = ThreadLocalRandom.current().nextInt(members.size());
         int currentIndex = 0;
-        for ( ClusterMember member : members )
-        {
-            if ( currentIndex == randomIndex )
-            {
+        for (ClusterMember member : members) {
+            if (currentIndex == randomIndex) {
                 return member;
             }
             currentIndex++;

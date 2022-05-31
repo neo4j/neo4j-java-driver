@@ -22,28 +22,21 @@ package org.neo4j.docs.driver;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.async.AsyncSession;
 // end::async-result-consume-import[]
 
-public class AsyncResultConsumeExample extends BaseApplication
-{
-    public AsyncResultConsumeExample( String uri, String user, String password )
-    {
-        super( uri, user, password );
+public class AsyncResultConsumeExample extends BaseApplication {
+    public AsyncResultConsumeExample(String uri, String user, String password) {
+        super(uri, user, password);
     }
 
     // tag::async-result-consume[]
-    public CompletionStage<List<String>> getPeople()
-    {
+    public CompletionStage<List<String>> getPeople() {
 
         String query = "MATCH (a:Person) RETURN a.name ORDER BY a.name";
         AsyncSession session = driver.asyncSession();
-        return session.readTransactionAsync( tx ->
-                tx.runAsync( query )
-                        .thenCompose( cursor -> cursor.listAsync( record ->
-                                record.get( 0 ).asString() ) )
-        );
+        return session.readTransactionAsync(tx -> tx.runAsync(query)
+                .thenCompose(cursor -> cursor.listAsync(record -> record.get(0).asString())));
     }
     // end::async-result-consume[]
 }

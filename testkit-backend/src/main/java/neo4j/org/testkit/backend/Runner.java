@@ -30,49 +30,37 @@ import neo4j.org.testkit.backend.channel.handler.TestkitMessageOutboundHandler;
 import neo4j.org.testkit.backend.channel.handler.TestkitRequestProcessorHandler;
 import neo4j.org.testkit.backend.channel.handler.TestkitRequestResponseMapperHandler;
 
-public class Runner
-{
-    public static void main( String[] args ) throws InterruptedException
-    {
+public class Runner {
+    public static void main(String[] args) throws InterruptedException {
         TestkitRequestProcessorHandler.BackendMode backendMode;
         String modeArg = args.length > 0 ? args[0] : null;
-        if ( "async".equals( modeArg ) )
-        {
+        if ("async".equals(modeArg)) {
             backendMode = TestkitRequestProcessorHandler.BackendMode.ASYNC;
-        }
-        else if ( "reactive".equals( modeArg ) )
-        {
+        } else if ("reactive".equals(modeArg)) {
             backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE;
-        }
-        else
-        {
+        } else {
             backendMode = TestkitRequestProcessorHandler.BackendMode.SYNC;
         }
 
         EventLoopGroup group = new NioEventLoopGroup();
-        try
-
-        {
+        try {
             ServerBootstrap bootstrap = new ServerBootstrap();
-            bootstrap.group( group )
-                     .channel( NioServerSocketChannel.class )
-                     .localAddress( 9876 )
-                     .childHandler( new ChannelInitializer<SocketChannel>()
-                     {
-                         @Override
-                         protected void initChannel( SocketChannel channel )
-                         {
-                             channel.pipeline().addLast( new TestkitMessageInboundHandler() );
-                             channel.pipeline().addLast( new TestkitMessageOutboundHandler() );
-                             channel.pipeline().addLast( new TestkitRequestResponseMapperHandler() );
-                             channel.pipeline().addLast( new TestkitRequestProcessorHandler( backendMode ) );
-                         }
-                     } );
+            bootstrap
+                    .group(group)
+                    .channel(NioServerSocketChannel.class)
+                    .localAddress(9876)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel channel) {
+                            channel.pipeline().addLast(new TestkitMessageInboundHandler());
+                            channel.pipeline().addLast(new TestkitMessageOutboundHandler());
+                            channel.pipeline().addLast(new TestkitRequestResponseMapperHandler());
+                            channel.pipeline().addLast(new TestkitRequestProcessorHandler(backendMode));
+                        }
+                    });
             ChannelFuture server = bootstrap.bind().sync();
             server.channel().closeFuture().sync();
-        }
-        finally
-        {
+        } finally {
             group.shutdownGracefully().sync();
         }
     }

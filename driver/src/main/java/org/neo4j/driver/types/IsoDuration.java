@@ -19,7 +19,6 @@
 package org.neo4j.driver.types;
 
 import java.time.temporal.TemporalAmount;
-
 import org.neo4j.driver.Values;
 import org.neo4j.driver.util.Immutable;
 
@@ -29,8 +28,7 @@ import org.neo4j.driver.util.Immutable;
  * Value that represents a duration can be created using {@link Values#isoDuration(long, long, long, int)} method.
  */
 @Immutable
-public interface IsoDuration extends TemporalAmount
-{
+public interface IsoDuration extends TemporalAmount {
     /**
      * Retrieve amount of months in this duration.
      *

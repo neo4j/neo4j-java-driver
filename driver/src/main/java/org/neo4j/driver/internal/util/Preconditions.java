@@ -18,11 +18,8 @@
  */
 package org.neo4j.driver.internal.util;
 
-public final class Preconditions
-{
-    private Preconditions()
-    {
-    }
+public final class Preconditions {
+    private Preconditions() {}
 
     /**
      * Assert that given expression is true.
@@ -31,11 +28,9 @@ public final class Preconditions
      * @param message the message.
      * @throws IllegalArgumentException if given value is {@code false}.
      */
-    public static void checkArgument( boolean expression, String message )
-    {
-        if ( !expression )
-        {
-            throw new IllegalArgumentException( message );
+    public static void checkArgument(boolean expression, String message) {
+        if (!expression) {
+            throw new IllegalArgumentException(message);
         }
     }
 
@@ -46,11 +41,10 @@ public final class Preconditions
      * @param expectedClass the expected type.
      * @throws IllegalArgumentException if argument is not of expected type.
      */
-    public static void checkArgument( Object argument, Class<?> expectedClass )
-    {
-        if ( !expectedClass.isInstance( argument ) )
-        {
-            throw new IllegalArgumentException( "Argument expected to be of type: " + expectedClass.getName() + " but was: " + argument );
+    public static void checkArgument(Object argument, Class<?> expectedClass) {
+        if (!expectedClass.isInstance(argument)) {
+            throw new IllegalArgumentException(
+                    "Argument expected to be of type: " + expectedClass.getName() + " but was: " + argument);
         }
     }
 }

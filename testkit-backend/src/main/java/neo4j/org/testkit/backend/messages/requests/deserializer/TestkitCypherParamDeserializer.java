@@ -18,92 +18,74 @@
  */
 package neo4j.org.testkit.backend.messages.requests.deserializer;
 
+import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherTypeToJavaType;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherTypeToJavaType;
-
-public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String,Object>>
-{
-    public TestkitCypherParamDeserializer()
-    {
-        super( Map.class );
+public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String, Object>> {
+    public TestkitCypherParamDeserializer() {
+        super(Map.class);
     }
 
-    public TestkitCypherParamDeserializer( Class<Map> typeClass )
-    {
-        super( typeClass );
+    public TestkitCypherParamDeserializer(Class<Map> typeClass) {
+        super(typeClass);
     }
 
     @Override
-    public Map<String,Object> deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JsonProcessingException
-    {
-        Map<String,Object> result = new HashMap<>();
+    public Map<String, Object> deserialize(JsonParser p, DeserializationContext ctxt)
+            throws IOException, JsonProcessingException {
+        Map<String, Object> result = new HashMap<>();
 
         String key;
-        if ( p.isExpectedStartObjectToken() )
-        {
+        if (p.isExpectedStartObjectToken()) {
             key = p.nextFieldName();
-        }
-        else
-        {
+        } else {
             JsonToken t = p.getCurrentToken();
-            if ( t == JsonToken.END_OBJECT )
-            {
+            if (t == JsonToken.END_OBJECT) {
                 return Collections.emptyMap();
             }
-            if ( t != JsonToken.FIELD_NAME )
-            {
-                ctxt.reportWrongTokenException( this, JsonToken.FIELD_NAME, null );
+            if (t != JsonToken.FIELD_NAME) {
+                ctxt.reportWrongTokenException(this, JsonToken.FIELD_NAME, null);
             }
             key = p.getCurrentName();
         }
 
-        for ( ; key != null; key = p.nextFieldName() )
-        {
+        for (; key != null; key = p.nextFieldName()) {
             String paramType = null;
 
-            if ( p.nextToken() == JsonToken.START_OBJECT )
-            {
+            if (p.nextToken() == JsonToken.START_OBJECT) {
                 String fieldName = p.nextFieldName();
-                if ( fieldName.equals( "name" ) )
-                {
+                if (fieldName.equals("name")) {
                     paramType = p.nextTextValue();
-                    Class<?> mapValueType = cypherTypeToJavaType( paramType );
+                    Class<?> mapValueType = cypherTypeToJavaType(paramType);
                     p.nextFieldName(); // next is data which we can drop
                     p.nextToken();
                     p.nextToken();
                     p.nextToken();
-                    if ( mapValueType == null )
-                    {
-                        result.put( key, null );
-                    } else
-                    {
-                        if ( paramType.equals( "CypherMap" ) ) // special recursive case for maps
+                    if (mapValueType == null) {
+                        result.put(key, null);
+                    } else {
+                        if (paramType.equals("CypherMap")) // special recursive case for maps
                         {
-                            result.put( key, deserialize( p, ctxt ) );
-                        }
-                        else
-                        {
-                            result.put( key, p.readValueAs( mapValueType ) );
+                            result.put(key, deserialize(p, ctxt));
+                        } else {
+                            result.put(key, p.readValueAs(mapValueType));
                         }
                     }
-
                 }
             }
-            p.nextToken(); //close value
+            p.nextToken(); // close value
             p.nextToken(); // close map
         }
 
         return result;
     }
 }
-

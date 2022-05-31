@@ -24,7 +24,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Records;
 import org.neo4j.driver.Result;
@@ -61,8 +60,7 @@ import org.neo4j.driver.summary.ResultSummary;
  *
  * @since 1.5
  */
-public interface ResultCursor
-{
+public interface ResultCursor {
     /**
      * Retrieve the keys of the records this result cursor contains.
      *
@@ -117,7 +115,7 @@ public interface ResultCursor
      * @return a {@link CompletionStage} completed with a summary for the whole query result. Stage can also be
      * completed exceptionally if query execution or provided function fails.
      */
-    CompletionStage<ResultSummary> forEachAsync( Consumer<Record> action );
+    CompletionStage<ResultSummary> forEachAsync(Consumer<Record> action);
 
     /**
      * Asynchronously retrieve and store the entire result stream.
@@ -153,5 +151,5 @@ public interface ResultCursor
      * @return a {@link CompletionStage} completed with a list of all remaining immutable records. Stage can also be
      * completed exceptionally if query execution or provided function fails.
      */
-    <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction );
+    <T> CompletionStage<List<T>> listAsync(Function<Record, T> mapFunction);
 }

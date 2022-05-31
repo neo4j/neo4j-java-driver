@@ -18,8 +18,9 @@
  */
 package org.neo4j.driver.stress;
 
-import java.util.concurrent.CompletionStage;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
@@ -29,44 +30,35 @@ import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Node;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsyncQuery<C>
-{
-    public AsyncReadQueryInTx( Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsyncQuery<C> {
+    public AsyncReadQueryInTx(Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
     }
 
     @Override
-    public CompletionStage<Void> execute( C ctx )
-    {
-        AsyncSession session = newSession( AccessMode.READ, ctx );
+    public CompletionStage<Void> execute(C ctx) {
+        AsyncSession session = newSession(AccessMode.READ, ctx);
 
         CompletionStage<Void> txCommitted = session.beginTransactionAsync()
-                .thenCompose( tx -> tx.runAsync( "MATCH (n) RETURN n LIMIT 1" )
-                        .thenCompose( cursor -> cursor.nextAsync()
-                                .thenCompose( record -> processRecordAndGetSummary( record, cursor )
-                                        .thenCompose( summary -> processSummaryAndCommit( summary, tx, ctx ) ) ) ) );
+                .thenCompose(tx -> tx.runAsync("MATCH (n) RETURN n LIMIT 1").thenCompose(cursor -> cursor.nextAsync()
+                        .thenCompose(record -> processRecordAndGetSummary(record, cursor)
+                                .thenCompose(summary -> processSummaryAndCommit(summary, tx, ctx)))));
 
-        txCommitted.whenComplete( ( ignore, error ) -> session.closeAsync() );
+        txCommitted.whenComplete((ignore, error) -> session.closeAsync());
 
         return txCommitted;
     }
 
-    private CompletionStage<ResultSummary> processRecordAndGetSummary( Record record, ResultCursor cursor )
-    {
-        if ( record != null )
-        {
-            Node node = record.get( 0 ).asNode();
-            assertNotNull( node );
+    private CompletionStage<ResultSummary> processRecordAndGetSummary(Record record, ResultCursor cursor) {
+        if (record != null) {
+            Node node = record.get(0).asNode();
+            assertNotNull(node);
         }
         return cursor.consumeAsync();
     }
 
-    private CompletionStage<Void> processSummaryAndCommit( ResultSummary summary, AsyncTransaction tx, C context )
-    {
-        context.readCompleted( summary );
+    private CompletionStage<Void> processSummaryAndCommit(ResultSummary summary, AsyncTransaction tx, C context) {
+        context.readCompleted(summary);
         return tx.commitAsync();
     }
 }

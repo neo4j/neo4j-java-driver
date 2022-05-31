@@ -18,46 +18,39 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
+import static java.util.Objects.requireNonNull;
+
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromise;
-
-import java.util.Map;
-
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.Value;
 
-import static java.util.Objects.requireNonNull;
-
-public class HandshakeCompletedListener implements ChannelFutureListener
-{
+public class HandshakeCompletedListener implements ChannelFutureListener {
     private final String userAgent;
     private final AuthToken authToken;
     private final RoutingContext routingContext;
     private final ChannelPromise connectionInitializedPromise;
 
-    public HandshakeCompletedListener( String userAgent, AuthToken authToken,
-                                       RoutingContext routingContext, ChannelPromise connectionInitializedPromise )
-    {
-        this.userAgent = requireNonNull( userAgent );
-        this.authToken = requireNonNull( authToken );
+    public HandshakeCompletedListener(
+            String userAgent,
+            AuthToken authToken,
+            RoutingContext routingContext,
+            ChannelPromise connectionInitializedPromise) {
+        this.userAgent = requireNonNull(userAgent);
+        this.authToken = requireNonNull(authToken);
         this.routingContext = routingContext;
-        this.connectionInitializedPromise = requireNonNull( connectionInitializedPromise );
+        this.connectionInitializedPromise = requireNonNull(connectionInitializedPromise);
     }
 
     @Override
-    public void operationComplete( ChannelFuture future )
-    {
-        if ( future.isSuccess() )
-        {
-            BoltProtocol protocol = BoltProtocol.forChannel( future.channel() );
-            protocol.initializeChannel( userAgent, authToken, routingContext, connectionInitializedPromise );
-        }
-        else
-        {
-            connectionInitializedPromise.setFailure( future.cause() );
+    public void operationComplete(ChannelFuture future) {
+        if (future.isSuccess()) {
+            BoltProtocol protocol = BoltProtocol.forChannel(future.channel());
+            protocol.initializeChannel(userAgent, authToken, routingContext, connectionInitializedPromise);
+        } else {
+            connectionInitializedPromise.setFailure(future.cause());
         }
     }
 }

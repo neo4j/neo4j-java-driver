@@ -18,10 +18,15 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -31,7 +36,10 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -43,115 +51,108 @@ import org.neo4j.driver.internal.messaging.request.RouteMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.util.TestUtil;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+class RouteMessageRoutingProcedureRunnerTest {
 
-class RouteMessageRoutingProcedureRunnerTest
-{
-
-    private static Stream<Arguments> shouldRequestRoutingTableForAllValidInputScenarios()
-    {
+    private static Stream<Arguments> shouldRequestRoutingTableForAllValidInputScenarios() {
         return Stream.of(
-                Arguments.arguments( RoutingContext.EMPTY, DatabaseNameUtil.defaultDatabase() ),
-                Arguments.arguments( RoutingContext.EMPTY, DatabaseNameUtil.systemDatabase() ),
-                Arguments.arguments( RoutingContext.EMPTY, DatabaseNameUtil.database( "neo4j" ) ),
-                Arguments.arguments( new RoutingContext( URI.create( "localhost:17601" ) ), DatabaseNameUtil.defaultDatabase() ),
-                Arguments.arguments( new RoutingContext( URI.create( "localhost:17602" ) ), DatabaseNameUtil.systemDatabase() ),
-                Arguments.arguments( new RoutingContext( URI.create( "localhost:17603" ) ), DatabaseNameUtil.database( "neo4j" ) )
-        );
+                Arguments.arguments(RoutingContext.EMPTY, DatabaseNameUtil.defaultDatabase()),
+                Arguments.arguments(RoutingContext.EMPTY, DatabaseNameUtil.systemDatabase()),
+                Arguments.arguments(RoutingContext.EMPTY, DatabaseNameUtil.database("neo4j")),
+                Arguments.arguments(
+                        new RoutingContext(URI.create("localhost:17601")), DatabaseNameUtil.defaultDatabase()),
+                Arguments.arguments(
+                        new RoutingContext(URI.create("localhost:17602")), DatabaseNameUtil.systemDatabase()),
+                Arguments.arguments(
+                        new RoutingContext(URI.create("localhost:17603")), DatabaseNameUtil.database("neo4j")));
     }
 
     @ParameterizedTest
     @MethodSource
-    void shouldRequestRoutingTableForAllValidInputScenarios( RoutingContext routingContext, DatabaseName databaseName )
-    {
-        Map<String,Value> routingTable = getRoutingTable();
-        CompletableFuture<Map<String,Value>> completableFuture = CompletableFuture.completedFuture( routingTable );
-        RouteMessageRoutingProcedureRunner runner = new RouteMessageRoutingProcedureRunner( routingContext, () -> completableFuture );
-        Connection connection = mock( Connection.class );
-        CompletableFuture<Void> releaseConnectionFuture = CompletableFuture.completedFuture( null );
-        doReturn( releaseConnectionFuture ).when( connection ).release();
+    void shouldRequestRoutingTableForAllValidInputScenarios(RoutingContext routingContext, DatabaseName databaseName) {
+        Map<String, Value> routingTable = getRoutingTable();
+        CompletableFuture<Map<String, Value>> completableFuture = CompletableFuture.completedFuture(routingTable);
+        RouteMessageRoutingProcedureRunner runner =
+                new RouteMessageRoutingProcedureRunner(routingContext, () -> completableFuture);
+        Connection connection = mock(Connection.class);
+        CompletableFuture<Void> releaseConnectionFuture = CompletableFuture.completedFuture(null);
+        doReturn(releaseConnectionFuture).when(connection).release();
 
-        RoutingProcedureResponse response = TestUtil.await( runner.run( connection, databaseName, null, null ) );
+        RoutingProcedureResponse response = TestUtil.await(runner.run(connection, databaseName, null, null));
 
-        assertNotNull( response );
-        assertTrue( response.isSuccess() );
-        assertNotNull( response.procedure() );
-        assertEquals( 1, response.records().size() );
-        assertNotNull( response.records().get( 0 ) );
+        assertNotNull(response);
+        assertTrue(response.isSuccess());
+        assertNotNull(response.procedure());
+        assertEquals(1, response.records().size());
+        assertNotNull(response.records().get(0));
 
-        Record record = response.records().get( 0 );
-        assertEquals( routingTable.get( "ttl" ), record.get( "ttl" ) );
-        assertEquals( routingTable.get( "servers" ), record.get( "servers" ) );
+        Record record = response.records().get(0);
+        assertEquals(routingTable.get("ttl"), record.get("ttl"));
+        assertEquals(routingTable.get("servers"), record.get("servers"));
 
-        verifyMessageWasWrittenAndFlushed( connection, completableFuture, routingContext, null, databaseName );
-        verify( connection ).release();
+        verifyMessageWasWrittenAndFlushed(connection, completableFuture, routingContext, null, databaseName);
+        verify(connection).release();
     }
 
     @Test
-    void shouldReturnFailureWhenSomethingHappensGettingTheRoutingTable()
-    {
-        Throwable reason = new RuntimeException( "Some error" );
-        CompletableFuture<Map<String,Value>> completableFuture = new CompletableFuture<>();
-        completableFuture.completeExceptionally( reason );
-        RouteMessageRoutingProcedureRunner runner = new RouteMessageRoutingProcedureRunner( RoutingContext.EMPTY, () -> completableFuture );
-        Connection connection = mock( Connection.class );
-        CompletableFuture<Void> releaseConnectionFuture = CompletableFuture.completedFuture( null );
-        doReturn( releaseConnectionFuture ).when( connection ).release();
+    void shouldReturnFailureWhenSomethingHappensGettingTheRoutingTable() {
+        Throwable reason = new RuntimeException("Some error");
+        CompletableFuture<Map<String, Value>> completableFuture = new CompletableFuture<>();
+        completableFuture.completeExceptionally(reason);
+        RouteMessageRoutingProcedureRunner runner =
+                new RouteMessageRoutingProcedureRunner(RoutingContext.EMPTY, () -> completableFuture);
+        Connection connection = mock(Connection.class);
+        CompletableFuture<Void> releaseConnectionFuture = CompletableFuture.completedFuture(null);
+        doReturn(releaseConnectionFuture).when(connection).release();
 
-        RoutingProcedureResponse response = TestUtil.await( runner.run( connection, DatabaseNameUtil.defaultDatabase(), null, null ) );
+        RoutingProcedureResponse response =
+                TestUtil.await(runner.run(connection, DatabaseNameUtil.defaultDatabase(), null, null));
 
-        assertNotNull( response );
-        assertFalse( response.isSuccess() );
-        assertNotNull( response.procedure() );
-        assertEquals( reason, response.error() );
-        assertThrows( IllegalStateException.class, () -> response.records().size() );
+        assertNotNull(response);
+        assertFalse(response.isSuccess());
+        assertNotNull(response.procedure());
+        assertEquals(reason, response.error());
+        assertThrows(IllegalStateException.class, () -> response.records().size());
 
-        verifyMessageWasWrittenAndFlushed( connection, completableFuture, RoutingContext.EMPTY, null, DatabaseNameUtil.defaultDatabase() );
-        verify( connection ).release();
+        verifyMessageWasWrittenAndFlushed(
+                connection, completableFuture, RoutingContext.EMPTY, null, DatabaseNameUtil.defaultDatabase());
+        verify(connection).release();
     }
 
-    private void verifyMessageWasWrittenAndFlushed( Connection connection, CompletableFuture<Map<String,Value>> completableFuture,
-                                                    RoutingContext routingContext, Bookmark bookmark, DatabaseName databaseName )
-    {
-        Map<String,Value> context = routingContext.toMap()
-                                                  .entrySet()
-                                                  .stream()
-                                                  .collect( Collectors.toMap( Map.Entry::getKey, entry -> Values.value( entry.getValue() ) ) );
+    private void verifyMessageWasWrittenAndFlushed(
+            Connection connection,
+            CompletableFuture<Map<String, Value>> completableFuture,
+            RoutingContext routingContext,
+            Bookmark bookmark,
+            DatabaseName databaseName) {
+        Map<String, Value> context = routingContext.toMap().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> Values.value(entry.getValue())));
 
-        verify( connection ).writeAndFlush( eq( new RouteMessage( context, bookmark, databaseName.databaseName().orElse( null ), null ) ),
-                                            eq( new RouteMessageResponseHandler( completableFuture ) ) );
+        verify(connection)
+                .writeAndFlush(
+                        eq(new RouteMessage(
+                                context, bookmark, databaseName.databaseName().orElse(null), null)),
+                        eq(new RouteMessageResponseHandler(completableFuture)));
     }
 
-    private Map<String,Value> getRoutingTable()
-    {
-        Map<String,Value> routingTable = new HashMap<>();
-        routingTable.put( "ttl", Values.value( 300 ) );
-        routingTable.put( "servers", Values.value( getServers() ) );
+    private Map<String, Value> getRoutingTable() {
+        Map<String, Value> routingTable = new HashMap<>();
+        routingTable.put("ttl", Values.value(300));
+        routingTable.put("servers", Values.value(getServers()));
         return routingTable;
     }
 
-    private List<Map<String,Value>> getServers()
-    {
-        List<Map<String,Value>> servers = new ArrayList<>();
-        servers.add( getServer( "WRITE", "localhost:17601" ) );
-        servers.add( getServer( "READ", "localhost:17601", "localhost:17602", "localhost:17603" ) );
-        servers.add( getServer( "ROUTE", "localhost:17601", "localhost:17602", "localhost:17603" ) );
+    private List<Map<String, Value>> getServers() {
+        List<Map<String, Value>> servers = new ArrayList<>();
+        servers.add(getServer("WRITE", "localhost:17601"));
+        servers.add(getServer("READ", "localhost:17601", "localhost:17602", "localhost:17603"));
+        servers.add(getServer("ROUTE", "localhost:17601", "localhost:17602", "localhost:17603"));
         return servers;
     }
 
-    private Map<String,Value> getServer( String role, String... addresses )
-    {
-        Map<String,Value> server = new HashMap<>();
-        server.put( "role", Values.value( role ) );
-        server.put( "addresses", Values.value( addresses ) );
+    private Map<String, Value> getServer(String role, String... addresses) {
+        Map<String, Value> server = new HashMap<>();
+        server.put("role", Values.value(role));
+        server.put("addresses", Values.value(addresses));
         return server;
     }
 }

@@ -23,31 +23,25 @@ import org.neo4j.driver.Bookmark;
 /**
  * @since 2.0
  */
-public class DefaultBookmarkHolder implements BookmarkHolder
-{
+public class DefaultBookmarkHolder implements BookmarkHolder {
     private volatile Bookmark bookmark;
 
-    public DefaultBookmarkHolder()
-    {
-        this( InternalBookmark.empty() );
+    public DefaultBookmarkHolder() {
+        this(InternalBookmark.empty());
     }
 
-    public DefaultBookmarkHolder( Bookmark bookmark )
-    {
+    public DefaultBookmarkHolder(Bookmark bookmark) {
         this.bookmark = bookmark;
     }
 
     @Override
-    public Bookmark getBookmark()
-    {
+    public Bookmark getBookmark() {
         return bookmark;
     }
 
     @Override
-    public void setBookmark( Bookmark bookmark )
-    {
-        if ( bookmark != null && !bookmark.isEmpty() )
-        {
+    public void setBookmark(Bookmark bookmark) {
+        if (bookmark != null && !bookmark.isEmpty()) {
             this.bookmark = bookmark;
         }
     }

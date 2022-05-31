@@ -18,62 +18,51 @@
  */
 package org.neo4j.driver.internal.messaging.request;
 
+import static org.neo4j.driver.internal.util.MetadataExtractor.ABSENT_QUERY_ID;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.messaging.Message;
 
-import static org.neo4j.driver.internal.util.MetadataExtractor.ABSENT_QUERY_ID;
-
-public abstract class AbstractStreamingMessage implements Message
-{
-    private final Map<String,Value> metadata = new HashMap<>();
+public abstract class AbstractStreamingMessage implements Message {
+    private final Map<String, Value> metadata = new HashMap<>();
     public static final long STREAM_LIMIT_UNLIMITED = -1;
 
-    AbstractStreamingMessage( long n, long id )
-    {
-        this.metadata.put( "n", Values.value( n ) );
-        if ( id != ABSENT_QUERY_ID )
-        {
-            this.metadata.put( "qid", Values.value( id ) );
+    AbstractStreamingMessage(long n, long id) {
+        this.metadata.put("n", Values.value(n));
+        if (id != ABSENT_QUERY_ID) {
+            this.metadata.put("qid", Values.value(id));
         }
     }
 
-    public Map<String,Value> metadata()
-    {
+    public Map<String, Value> metadata() {
         return metadata;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         AbstractStreamingMessage that = (AbstractStreamingMessage) o;
-        return Objects.equals( metadata, that.metadata );
+        return Objects.equals(metadata, that.metadata);
     }
 
     protected abstract String name();
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( metadata );
+    public int hashCode() {
+        return Objects.hash(metadata);
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "%s %s", name(), metadata );
+    public String toString() {
+        return String.format("%s %s", name(), metadata);
     }
-
 }

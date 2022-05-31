@@ -18,57 +18,50 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
-import org.neo4j.driver.Value;
-import java.util.function.Function;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.Values.NULL;
 import static org.neo4j.driver.Values.value;
 
-class InternalRelationshipTest
-{
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.function.Function;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+
+class InternalRelationshipTest {
     @Test
-    void extractValuesFromNode()
-    {
+    void extractValuesFromNode() {
         // GIVEN
         InternalRelationship relationship = createRelationship();
-        Function<Value,Integer> extractor = Value::asInt;
+        Function<Value, Integer> extractor = Value::asInt;
 
-        //WHEN
-        Iterable<Integer> values = relationship.values( extractor );
+        // WHEN
+        Iterable<Integer> values = relationship.values(extractor);
 
-        //THEN
+        // THEN
         Iterator<Integer> iterator = values.iterator();
-        assertThat( iterator.next(), equalTo( 1 ) );
-        assertThat( iterator.next(), equalTo( 2 ) );
-        assertFalse( iterator.hasNext() );
+        assertThat(iterator.next(), equalTo(1));
+        assertThat(iterator.next(), equalTo(2));
+        assertFalse(iterator.hasNext());
     }
 
     @Test
-    void accessUnknownKeyShouldBeNull()
-    {
+    void accessUnknownKeyShouldBeNull() {
         InternalRelationship relationship = createRelationship();
 
-        assertThat( relationship.get( "k1" ), equalTo( value( 1 ) ) );
-        assertThat( relationship.get( "k2" ), equalTo( value( 2 ) ) );
-        assertThat( relationship.get( "k3" ), equalTo( NULL ) );
+        assertThat(relationship.get("k1"), equalTo(value(1)));
+        assertThat(relationship.get("k2"), equalTo(value(2)));
+        assertThat(relationship.get("k3"), equalTo(NULL));
     }
 
-    private InternalRelationship createRelationship()
-    {
-        Map<String,Value> props = new HashMap<>();
-        props.put( "k1", value( 1 ) );
-        props.put( "k2", value( 2 ) );
+    private InternalRelationship createRelationship() {
+        Map<String, Value> props = new HashMap<>();
+        props.put("k1", value(1));
+        props.put("k2", value(2));
 
-        return new InternalRelationship(1L, 0L, 1L, "T", props );
+        return new InternalRelationship(1L, 0L, 1L, "T", props);
     }
-
 }

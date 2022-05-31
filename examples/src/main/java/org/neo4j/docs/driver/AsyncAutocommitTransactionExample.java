@@ -22,33 +22,29 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.async.AsyncSession;
 // end::async-autocommit-transaction-import[]
-public class AsyncAutocommitTransactionExample extends BaseApplication
-{
-    public AsyncAutocommitTransactionExample( String uri, String user, String password )
-    {
-        super( uri, user, password );
+
+public class AsyncAutocommitTransactionExample extends BaseApplication {
+    public AsyncAutocommitTransactionExample(String uri, String user, String password) {
+        super(uri, user, password);
     }
 
     // tag::async-autocommit-transaction[]
-    public CompletionStage<List<String>> readProductTitles()
-    {
+    public CompletionStage<List<String>> readProductTitles() {
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
-        Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
+        Map<String, Object> parameters = Collections.singletonMap("id", 0);
 
         AsyncSession session = driver.asyncSession();
 
-        return session.runAsync( query, parameters )
-                .thenCompose( cursor -> cursor.listAsync( record -> record.get( 0 ).asString() ) )
-                .exceptionally( error ->
-                {
+        return session.runAsync(query, parameters)
+                .thenCompose(cursor -> cursor.listAsync(record -> record.get(0).asString()))
+                .exceptionally(error -> {
                     // query execution failed, print error and fallback to empty list of titles
                     error.printStackTrace();
                     return Collections.emptyList();
-                } )
-                .thenCompose( titles -> session.closeAsync().thenApply( ignore -> titles ) );
+                })
+                .thenCompose(titles -> session.closeAsync().thenApply(ignore -> titles));
     }
     // end::async-autocommit-transaction[]
 }

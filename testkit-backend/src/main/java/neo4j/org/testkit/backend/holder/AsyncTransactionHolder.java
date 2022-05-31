@@ -20,10 +20,8 @@ package neo4j.org.testkit.backend.holder;
 
 import org.neo4j.driver.async.AsyncTransaction;
 
-public class AsyncTransactionHolder extends AbstractTransactionHolder<AsyncSessionHolder,AsyncTransaction>
-{
-    public AsyncTransactionHolder( AsyncSessionHolder sessionHolder, AsyncTransaction transaction )
-    {
-        super( sessionHolder, transaction );
+public class AsyncTransactionHolder extends AbstractTransactionHolder<AsyncSessionHolder, AsyncTransaction> {
+    public AsyncTransactionHolder(AsyncSessionHolder sessionHolder, AsyncTransaction transaction) {
+        super(sessionHolder, transaction);
     }
 }

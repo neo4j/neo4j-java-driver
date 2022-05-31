@@ -22,53 +22,45 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public abstract class Format
-{
-    private Format()
-    {
+public abstract class Format {
+    private Format() {
         throw new UnsupportedOperationException();
     }
 
     // formats map using ':' as key-value separator instead of default '='
-    public static <V> String formatPairs( Map<String,V> entries )
-    {
-        Iterator<Entry<String,V>> iterator = entries.entrySet().iterator();
-        switch ( entries.size() ) {
+    public static <V> String formatPairs(Map<String, V> entries) {
+        Iterator<Entry<String, V>> iterator = entries.entrySet().iterator();
+        switch (entries.size()) {
             case 0:
                 return "{}";
 
-            case 1:
-            {
-                return String.format( "{%s}", keyValueString( iterator.next() ) );
+            case 1: {
+                return String.format("{%s}", keyValueString(iterator.next()));
             }
 
-            default:
-            {
+            default: {
                 StringBuilder builder = new StringBuilder();
-                builder.append( "{" );
-                builder.append( keyValueString( iterator.next() ) );
-                while ( iterator.hasNext() )
-                {
-                    builder.append( ',' );
-                    builder.append( ' ' );
-                    builder.append( keyValueString( iterator.next() ) );
+                builder.append("{");
+                builder.append(keyValueString(iterator.next()));
+                while (iterator.hasNext()) {
+                    builder.append(',');
+                    builder.append(' ');
+                    builder.append(keyValueString(iterator.next()));
                 }
-                builder.append( "}" );
+                builder.append("}");
                 return builder.toString();
             }
         }
     }
 
-    private static <V> String keyValueString( Entry<String,V> entry )
-    {
-        return String.format( "%s: %s", entry.getKey(), String.valueOf( entry.getValue() ) );
+    private static <V> String keyValueString(Entry<String, V> entry) {
+        return String.format("%s: %s", entry.getKey(), String.valueOf(entry.getValue()));
     }
 
     /**
      * Returns the submitted value if it is not null or an empty string if it is.
      */
-    public static String valueOrEmpty( String value )
-    {
+    public static String valueOrEmpty(String value) {
         return value != null ? value : "";
     }
 }

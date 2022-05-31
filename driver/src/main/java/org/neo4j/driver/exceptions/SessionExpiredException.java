@@ -24,15 +24,12 @@ package org.neo4j.driver.exceptions;
  * and all actions taken on the expired session must be replayed.
  * @since 1.1
  */
-public class SessionExpiredException extends Neo4jException
-{
-    public SessionExpiredException( String message)
-    {
-        super( message );
+public class SessionExpiredException extends Neo4jException {
+    public SessionExpiredException(String message) {
+        super(message);
     }
 
-    public SessionExpiredException( String message, Throwable throwable )
-    {
-        super( message, throwable );
+    public SessionExpiredException(String message, Throwable throwable) {
+        super(message, throwable);
     }
 }

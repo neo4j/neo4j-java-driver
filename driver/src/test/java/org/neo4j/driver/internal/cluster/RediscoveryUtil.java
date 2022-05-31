@@ -18,23 +18,20 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import static org.neo4j.driver.internal.DatabaseNameUtil.database;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
+
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.ImmutableConnectionContext;
 
-import static org.neo4j.driver.internal.DatabaseNameUtil.database;
-import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-
-public class RediscoveryUtil
-{
-    public static ConnectionContext contextWithDatabase( String databaseName )
-    {
-        return new ImmutableConnectionContext( database( databaseName ), InternalBookmark.empty(), AccessMode.WRITE );
+public class RediscoveryUtil {
+    public static ConnectionContext contextWithDatabase(String databaseName) {
+        return new ImmutableConnectionContext(database(databaseName), InternalBookmark.empty(), AccessMode.WRITE);
     }
 
-    public static ConnectionContext contextWithMode( AccessMode mode )
-    {
-        return new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode );
+    public static ConnectionContext contextWithMode(AccessMode mode) {
+        return new ImmutableConnectionContext(defaultDatabase(), InternalBookmark.empty(), mode);
     }
 }

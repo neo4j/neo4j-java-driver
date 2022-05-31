@@ -59,8 +59,7 @@ import java.util.Map;
  * @see Transaction
  * @since 1.0
  */
-public interface QueryRunner extends AutoCloseable
-{
+public interface QueryRunner extends AutoCloseable {
     /**
      * Run a query and return a result stream.
      * <p>
@@ -89,7 +88,7 @@ public interface QueryRunner extends AutoCloseable
      * @param parameters input parameters, should be a map Value, see {@link Values#parameters(Object...)}.
      * @return a stream of result values and associated metadata
      */
-    Result run(String query, Value parameters );
+    Result run(String query, Value parameters);
 
     /**
      * Run a query and return a result stream.
@@ -119,7 +118,7 @@ public interface QueryRunner extends AutoCloseable
      * @param parameters input data for the query
      * @return a stream of result values and associated metadata
      */
-    Result run(String query, Map<String,Object> parameters );
+    Result run(String query, Map<String, Object> parameters);
 
     /**
      * Run a query and return a result stream.
@@ -136,7 +135,7 @@ public interface QueryRunner extends AutoCloseable
      * @param parameters input data for the query
      * @return a stream of result values and associated metadata
      */
-    Result run(String query, Record parameters );
+    Result run(String query, Record parameters);
 
     /**
      * Run a query and return a result stream.
@@ -144,7 +143,7 @@ public interface QueryRunner extends AutoCloseable
      * @param query text of a Neo4j query
      * @return a stream of result values and associated metadata
      */
-    Result run(String query );
+    Result run(String query);
 
     /**
      * Run a query and return a result stream.

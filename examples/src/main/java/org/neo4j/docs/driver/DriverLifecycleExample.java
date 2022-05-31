@@ -26,18 +26,15 @@ import org.neo4j.driver.GraphDatabase;
 // end::driver-lifecycle-import[]
 
 // tag::driver-lifecycle[]
-public class DriverLifecycleExample implements AutoCloseable
-{
+public class DriverLifecycleExample implements AutoCloseable {
     private final Driver driver;
 
-    public DriverLifecycleExample( String uri, String user, String password )
-    {
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ) );
+    public DriverLifecycleExample(String uri, String user, String password) {
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
     }
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         driver.close();
     }
 }

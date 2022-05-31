@@ -21,12 +21,10 @@ package org.neo4j.driver.internal.summary;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
 import org.neo4j.driver.Value;
 import org.neo4j.driver.summary.ProfiledPlan;
 
-public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements ProfiledPlan
-{
+public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements ProfiledPlan {
     private final long dbHits;
     private final long records;
     private final long pageCacheHits;
@@ -34,10 +32,18 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
     private final double pageCacheHitRatio;
     private final long time;
 
-    protected InternalProfiledPlan( String operatorType, Map<String,Value> arguments, List<String> identifiers, List<ProfiledPlan> children, long dbHits,
-            long records, long pageCacheHits, long pageCacheMisses, double pageCacheHitRatio, long time )
-    {
-        super( operatorType, arguments, identifiers, children );
+    protected InternalProfiledPlan(
+            String operatorType,
+            Map<String, Value> arguments,
+            List<String> identifiers,
+            List<ProfiledPlan> children,
+            long dbHits,
+            long records,
+            long pageCacheHits,
+            long pageCacheMisses,
+            double pageCacheHitRatio,
+            long time) {
+        super(operatorType, arguments, identifiers, children);
         this.dbHits = dbHits;
         this.records = records;
         this.pageCacheHits = pageCacheHits;
@@ -47,62 +53,64 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
     }
 
     @Override
-    public long dbHits()
-    {
+    public long dbHits() {
         return dbHits;
     }
 
     @Override
-    public long records()
-    {
+    public long records() {
         return records;
     }
 
     @Override
-    public boolean hasPageCacheStats()
-    {
+    public boolean hasPageCacheStats() {
         return pageCacheHits > 0 || pageCacheMisses > 0 || pageCacheHitRatio > 0;
     }
 
     @Override
-    public long pageCacheHits()
-    {
+    public long pageCacheHits() {
         return pageCacheHits;
     }
 
     @Override
-    public long pageCacheMisses()
-    {
+    public long pageCacheMisses() {
         return pageCacheMisses;
     }
 
     @Override
-    public double pageCacheHitRatio()
-    {
+    public double pageCacheHitRatio() {
         return pageCacheHitRatio;
     }
 
     @Override
-    public long time()
-    {
+    public long time() {
         return time;
     }
 
-    public static final PlanCreator<ProfiledPlan> PROFILED_PLAN = new PlanCreator<ProfiledPlan>()
-    {
+    public static final PlanCreator<ProfiledPlan> PROFILED_PLAN = new PlanCreator<ProfiledPlan>() {
         @Override
-        public ProfiledPlan create( String operatorType, Map<String,Value> arguments, List<String> identifiers, List<ProfiledPlan> children,
-                Value originalPlanValue )
-        {
-            return new InternalProfiledPlan( operatorType, arguments, identifiers, children, originalPlanValue.get( "dbHits" ).asLong( 0 ),
-                    originalPlanValue.get( "rows" ).asLong( 0 ), originalPlanValue.get( "pageCacheHits" ).asLong( 0 ),
-                    originalPlanValue.get( "pageCacheMisses" ).asLong( 0 ), originalPlanValue.get( "pageCacheHitRatio" ).asDouble( 0 ),
-                    originalPlanValue.get( "time" ).asLong( 0 ) );
+        public ProfiledPlan create(
+                String operatorType,
+                Map<String, Value> arguments,
+                List<String> identifiers,
+                List<ProfiledPlan> children,
+                Value originalPlanValue) {
+            return new InternalProfiledPlan(
+                    operatorType,
+                    arguments,
+                    identifiers,
+                    children,
+                    originalPlanValue.get("dbHits").asLong(0),
+                    originalPlanValue.get("rows").asLong(0),
+                    originalPlanValue.get("pageCacheHits").asLong(0),
+                    originalPlanValue.get("pageCacheMisses").asLong(0),
+                    originalPlanValue.get("pageCacheHitRatio").asDouble(0),
+                    originalPlanValue.get("time").asLong(0));
         }
     };
 
     /**
      * Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` query
      */
-    public static final Function<Value,ProfiledPlan> PROFILED_PLAN_FROM_VALUE = new Converter<>( PROFILED_PLAN );
+    public static final Function<Value, ProfiledPlan> PROFILED_PLAN_FROM_VALUE = new Converter<>(PROFILED_PLAN);
 }

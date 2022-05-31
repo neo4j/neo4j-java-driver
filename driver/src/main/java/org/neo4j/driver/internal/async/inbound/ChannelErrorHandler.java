@@ -18,12 +18,14 @@
  */
 package org.neo4j.driver.internal.async.inbound;
 
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.terminationReason;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.CodecException;
-
 import java.io.IOException;
-
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -31,12 +33,7 @@ import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.logging.ChannelErrorLogger;
 import org.neo4j.driver.internal.util.ErrorUtil;
 
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.terminationReason;
-
-public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
-{
+public class ChannelErrorHandler extends ChannelInboundHandlerAdapter {
     private final Logging logging;
 
     private InboundMessageDispatcher messageDispatcher;
@@ -44,92 +41,73 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
     private ChannelErrorLogger errorLog;
     private boolean failed;
 
-    public ChannelErrorHandler( Logging logging )
-    {
+    public ChannelErrorHandler(Logging logging) {
         this.logging = logging;
     }
 
     @Override
-    public void handlerAdded( ChannelHandlerContext ctx )
-    {
-        messageDispatcher = requireNonNull( messageDispatcher( ctx.channel() ) );
-        log = new ChannelActivityLogger( ctx.channel(), logging, getClass() );
-        errorLog = new ChannelErrorLogger( ctx.channel(), logging );
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        messageDispatcher = requireNonNull(messageDispatcher(ctx.channel()));
+        log = new ChannelActivityLogger(ctx.channel(), logging, getClass());
+        errorLog = new ChannelErrorLogger(ctx.channel(), logging);
     }
 
     @Override
-    public void handlerRemoved( ChannelHandlerContext ctx )
-    {
+    public void handlerRemoved(ChannelHandlerContext ctx) {
         messageDispatcher = null;
         log = null;
         failed = false;
     }
 
     @Override
-    public void channelInactive( ChannelHandlerContext ctx )
-    {
-        log.debug( "Channel is inactive" );
+    public void channelInactive(ChannelHandlerContext ctx) {
+        log.debug("Channel is inactive");
 
-        String terminationReason = terminationReason( ctx.channel() );
-        Throwable error = ErrorUtil.newConnectionTerminatedError( terminationReason );
+        String terminationReason = terminationReason(ctx.channel());
+        Throwable error = ErrorUtil.newConnectionTerminatedError(terminationReason);
 
-        if ( !failed )
-        {
+        if (!failed) {
             // channel became inactive not because of a fatal exception that came from exceptionCaught
             // it is most likely inactive because actual network connection broke or was explicitly closed by the driver
 
-            messageDispatcher.handleChannelInactive( error );
+            messageDispatcher.handleChannelInactive(error);
             ctx.channel().close();
-        }
-        else
-        {
-            fail( error );
+        } else {
+            fail(error);
         }
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, Throwable error )
-    {
-        if ( failed )
-        {
-            errorLog.traceOrDebug( "Another fatal error occurred in the pipeline", error );
-        }
-        else
-        {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable error) {
+        if (failed) {
+            errorLog.traceOrDebug("Another fatal error occurred in the pipeline", error);
+        } else {
             failed = true;
-            logUnexpectedErrorWarning( error );
-            fail( error );
+            logUnexpectedErrorWarning(error);
+            fail(error);
         }
     }
 
-    private void logUnexpectedErrorWarning( Throwable error )
-    {
-        if ( !(error instanceof ConnectionReadTimeoutException) )
-        {
-            errorLog.traceOrDebug( "Fatal error occurred in the pipeline", error );
+    private void logUnexpectedErrorWarning(Throwable error) {
+        if (!(error instanceof ConnectionReadTimeoutException)) {
+            errorLog.traceOrDebug("Fatal error occurred in the pipeline", error);
         }
     }
 
-    private void fail( Throwable error )
-    {
-        Throwable cause = transformError( error );
-        messageDispatcher.handleChannelError( cause );
+    private void fail(Throwable error) {
+        Throwable cause = transformError(error);
+        messageDispatcher.handleChannelError(cause);
     }
 
-    private static Throwable transformError( Throwable error )
-    {
-        if ( error instanceof CodecException && error.getCause() != null )
-        {
+    private static Throwable transformError(Throwable error) {
+        if (error instanceof CodecException && error.getCause() != null) {
             // unwrap the CodecException if it has a cause
             error = error.getCause();
         }
 
-        if ( error instanceof IOException )
-        {
-            return new ServiceUnavailableException( "Connection to the database failed", error );
-        }
-        else
-        {
+        if (error instanceof IOException) {
+            return new ServiceUnavailableException("Connection to the database failed", error);
+        } else {
             return error;
         }
     }

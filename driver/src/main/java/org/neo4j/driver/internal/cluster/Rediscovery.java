@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.cluster;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -29,8 +28,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 /**
  * Provides cluster composition lookup capabilities and initial router address resolution.
  */
-public interface Rediscovery
-{
+public interface Rediscovery {
     /**
      * Fetches cluster composition using the provided routing table.
      * <p>
@@ -42,8 +40,8 @@ public interface Rediscovery
      * @param impersonatedUser the impersonated user for cluster composition lookup, should be {@code null} for non-impersonated requests
      * @return cluster composition lookup result
      */
-    CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark,
-                                                                              String impersonatedUser );
+    CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition(
+            RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark, String impersonatedUser);
 
     List<BoltServerAddress> resolve() throws UnknownHostException;
 }

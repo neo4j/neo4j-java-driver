@@ -18,58 +18,48 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
-public final class NullValue extends ValueAdapter
-{
+public final class NullValue extends ValueAdapter {
     public static final Value NULL = new NullValue();
 
-    private NullValue()
-    {
-    }
+    private NullValue() {}
 
     @Override
-    public boolean isNull()
-    {
+    public boolean isNull() {
         return true;
     }
 
     @Override
-    public Object asObject()
-    {
+    public Object asObject() {
         return null;
     }
 
     @Override
-    public String asString()
-    {
+    public String asString() {
         return "null";
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.NULL();
     }
 
     @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     @Override
-    public boolean equals( Object obj )
-    {
+    public boolean equals(Object obj) {
         return obj == NULL;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return 0;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "NULL";
     }
 }

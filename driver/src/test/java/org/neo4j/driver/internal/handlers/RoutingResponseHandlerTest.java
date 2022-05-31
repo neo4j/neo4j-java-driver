@@ -18,19 +18,6 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.concurrent.CompletionException;
-
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.RoutingErrorHandler;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,155 +26,150 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 
-class RoutingResponseHandlerTest
-{
+import java.util.concurrent.CompletionException;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.SessionExpiredException;
+import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.spi.ResponseHandler;
+
+class RoutingResponseHandlerTest {
     @Test
-    void shouldUnwrapCompletionException()
-    {
-        RuntimeException error = new RuntimeException( "Hi" );
-        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
+    void shouldUnwrapCompletionException() {
+        RuntimeException error = new RuntimeException("Hi");
+        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
 
-        Throwable handledError = handle( new CompletionException( error ), errorHandler );
+        Throwable handledError = handle(new CompletionException(error), errorHandler);
 
-        assertEquals( error, handledError );
-        verifyNoInteractions( errorHandler );
+        assertEquals(error, handledError);
+        verifyNoInteractions(errorHandler);
     }
 
     @Test
-    void shouldHandleServiceUnavailableException()
-    {
-        ServiceUnavailableException error = new ServiceUnavailableException( "Hi" );
-        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
+    void shouldHandleServiceUnavailableException() {
+        ServiceUnavailableException error = new ServiceUnavailableException("Hi");
+        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
 
-        Throwable handledError = handle( error, errorHandler );
+        Throwable handledError = handle(error, errorHandler);
 
-        assertThat( handledError, instanceOf( SessionExpiredException.class ) );
-        verify( errorHandler ).onConnectionFailure( LOCAL_DEFAULT );
+        assertThat(handledError, instanceOf(SessionExpiredException.class));
+        verify(errorHandler).onConnectionFailure(LOCAL_DEFAULT);
     }
 
     @Test
-    void shouldHandleDatabaseUnavailableError()
-    {
-        TransientException error = new TransientException( "Neo.TransientError.General.DatabaseUnavailable", "Hi" );
-        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
+    void shouldHandleDatabaseUnavailableError() {
+        TransientException error = new TransientException("Neo.TransientError.General.DatabaseUnavailable", "Hi");
+        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
 
-        Throwable handledError = handle( error, errorHandler );
+        Throwable handledError = handle(error, errorHandler);
 
-        assertEquals( error, handledError );
-        verify( errorHandler ).onConnectionFailure( LOCAL_DEFAULT );
+        assertEquals(error, handledError);
+        verify(errorHandler).onConnectionFailure(LOCAL_DEFAULT);
     }
 
     @Test
-    void shouldHandleTransientException()
-    {
-        TransientException error = new TransientException( "Neo.TransientError.Transaction.DeadlockDetected", "Hi" );
-        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
+    void shouldHandleTransientException() {
+        TransientException error = new TransientException("Neo.TransientError.Transaction.DeadlockDetected", "Hi");
+        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
 
-        Throwable handledError = handle( error, errorHandler );
+        Throwable handledError = handle(error, errorHandler);
 
-        assertEquals( error, handledError );
-        verifyNoInteractions( errorHandler );
+        assertEquals(error, handledError);
+        verifyNoInteractions(errorHandler);
     }
 
     @Test
-    void shouldHandleNotALeaderErrorWithReadAccessMode()
-    {
-        testWriteFailureWithReadAccessMode( "Neo.ClientError.Cluster.NotALeader" );
+    void shouldHandleNotALeaderErrorWithReadAccessMode() {
+        testWriteFailureWithReadAccessMode("Neo.ClientError.Cluster.NotALeader");
     }
 
     @Test
-    void shouldHandleNotALeaderErrorWithWriteAccessMode()
-    {
-        testWriteFailureWithWriteAccessMode( "Neo.ClientError.Cluster.NotALeader" );
+    void shouldHandleNotALeaderErrorWithWriteAccessMode() {
+        testWriteFailureWithWriteAccessMode("Neo.ClientError.Cluster.NotALeader");
     }
 
     @Test
-    void shouldHandleForbiddenOnReadOnlyDatabaseErrorWithReadAccessMode()
-    {
-        testWriteFailureWithReadAccessMode( "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase" );
+    void shouldHandleForbiddenOnReadOnlyDatabaseErrorWithReadAccessMode() {
+        testWriteFailureWithReadAccessMode("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
     }
 
     @Test
-    void shouldHandleForbiddenOnReadOnlyDatabaseErrorWithWriteAccessMode()
-    {
-        testWriteFailureWithWriteAccessMode( "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase" );
+    void shouldHandleForbiddenOnReadOnlyDatabaseErrorWithWriteAccessMode() {
+        testWriteFailureWithWriteAccessMode("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
     }
 
     @Test
-    void shouldHandleClientException()
-    {
-        ClientException error = new ClientException( "Neo.ClientError.Request.Invalid", "Hi" );
-        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
+    void shouldHandleClientException() {
+        ClientException error = new ClientException("Neo.ClientError.Request.Invalid", "Hi");
+        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
 
-        Throwable handledError = handle( error, errorHandler, AccessMode.READ );
+        Throwable handledError = handle(error, errorHandler, AccessMode.READ);
 
-        assertEquals( error, handledError );
-        verifyNoInteractions( errorHandler );
+        assertEquals(error, handledError);
+        verifyNoInteractions(errorHandler);
     }
 
     @Test
-    public void shouldDelegateCanManageAutoRead()
-    {
-        ResponseHandler responseHandler = mock( ResponseHandler.class );
+    public void shouldDelegateCanManageAutoRead() {
+        ResponseHandler responseHandler = mock(ResponseHandler.class);
         RoutingResponseHandler routingResponseHandler =
-                new RoutingResponseHandler( responseHandler, LOCAL_DEFAULT, AccessMode.READ, null );
+                new RoutingResponseHandler(responseHandler, LOCAL_DEFAULT, AccessMode.READ, null);
 
         routingResponseHandler.canManageAutoRead();
 
-        verify( responseHandler ).canManageAutoRead();
+        verify(responseHandler).canManageAutoRead();
     }
 
     @Test
-    public void shouldDelegateDisableAutoReadManagement()
-    {
-        ResponseHandler responseHandler = mock( ResponseHandler.class );
+    public void shouldDelegateDisableAutoReadManagement() {
+        ResponseHandler responseHandler = mock(ResponseHandler.class);
         RoutingResponseHandler routingResponseHandler =
-                new RoutingResponseHandler( responseHandler, LOCAL_DEFAULT, AccessMode.READ, null );
+                new RoutingResponseHandler(responseHandler, LOCAL_DEFAULT, AccessMode.READ, null);
 
         routingResponseHandler.disableAutoReadManagement();
 
-        verify( responseHandler ).disableAutoReadManagement();
+        verify(responseHandler).disableAutoReadManagement();
     }
 
-    private void testWriteFailureWithReadAccessMode( String code )
-    {
-        ClientException error = new ClientException( code, "Hi" );
-        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
+    private void testWriteFailureWithReadAccessMode(String code) {
+        ClientException error = new ClientException(code, "Hi");
+        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
 
-        Throwable handledError = handle( error, errorHandler, AccessMode.READ );
+        Throwable handledError = handle(error, errorHandler, AccessMode.READ);
 
-        assertThat( handledError, instanceOf( ClientException.class ) );
-        assertEquals( "Write queries cannot be performed in READ access mode.", handledError.getMessage() );
-        verifyNoInteractions( errorHandler );
+        assertThat(handledError, instanceOf(ClientException.class));
+        assertEquals("Write queries cannot be performed in READ access mode.", handledError.getMessage());
+        verifyNoInteractions(errorHandler);
     }
 
-    private void testWriteFailureWithWriteAccessMode( String code )
-    {
-        ClientException error = new ClientException( code, "Hi" );
-        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
+    private void testWriteFailureWithWriteAccessMode(String code) {
+        ClientException error = new ClientException(code, "Hi");
+        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
 
-        Throwable handledError = handle( error, errorHandler, AccessMode.WRITE );
+        Throwable handledError = handle(error, errorHandler, AccessMode.WRITE);
 
-        assertThat( handledError, instanceOf( SessionExpiredException.class ) );
-        assertEquals( "Server at " + LOCAL_DEFAULT + " no longer accepts writes", handledError.getMessage() );
-        verify( errorHandler ).onWriteFailure( LOCAL_DEFAULT );
+        assertThat(handledError, instanceOf(SessionExpiredException.class));
+        assertEquals("Server at " + LOCAL_DEFAULT + " no longer accepts writes", handledError.getMessage());
+        verify(errorHandler).onWriteFailure(LOCAL_DEFAULT);
     }
 
-    private static Throwable handle( Throwable error, RoutingErrorHandler errorHandler )
-    {
-        return handle( error, errorHandler, AccessMode.READ );
+    private static Throwable handle(Throwable error, RoutingErrorHandler errorHandler) {
+        return handle(error, errorHandler, AccessMode.READ);
     }
 
-    private static Throwable handle( Throwable error, RoutingErrorHandler errorHandler, AccessMode accessMode )
-    {
-        ResponseHandler responseHandler = mock( ResponseHandler.class );
+    private static Throwable handle(Throwable error, RoutingErrorHandler errorHandler, AccessMode accessMode) {
+        ResponseHandler responseHandler = mock(ResponseHandler.class);
         RoutingResponseHandler routingResponseHandler =
-                new RoutingResponseHandler( responseHandler, LOCAL_DEFAULT, accessMode, errorHandler );
+                new RoutingResponseHandler(responseHandler, LOCAL_DEFAULT, accessMode, errorHandler);
 
-        routingResponseHandler.onFailure( error );
+        routingResponseHandler.onFailure(error);
 
-        ArgumentCaptor<Throwable> handledErrorCaptor = ArgumentCaptor.forClass( Throwable.class );
-        verify( responseHandler ).onFailure( handledErrorCaptor.capture() );
+        ArgumentCaptor<Throwable> handledErrorCaptor = ArgumentCaptor.forClass(Throwable.class);
+        verify(responseHandler).onFailure(handledErrorCaptor.capture());
         return handledErrorCaptor.getValue();
     }
 }

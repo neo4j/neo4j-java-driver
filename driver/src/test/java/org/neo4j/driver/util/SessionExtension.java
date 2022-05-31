@@ -18,152 +18,128 @@
  */
 package org.neo4j.driver.util;
 
+import java.util.Map;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-
-import java.util.Map;
-
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.Bookmark;
 
 /**
  * A little utility for integration testing, this provides tests with a session they can work with.
  * If you want more direct control, have a look at {@link DatabaseExtension} instead.
  */
-public class SessionExtension extends DatabaseExtension implements Session, BeforeEachCallback, AfterEachCallback
-{
+public class SessionExtension extends DatabaseExtension implements Session, BeforeEachCallback, AfterEachCallback {
     private Session realSession;
 
     @Override
-    public void beforeEach( ExtensionContext context ) throws Exception
-    {
-        super.beforeEach( context );
+    public void beforeEach(ExtensionContext context) throws Exception {
+        super.beforeEach(context);
         realSession = driver().session();
     }
 
     @Override
-    public void afterEach( ExtensionContext context )
-    {
-        if ( realSession != null )
-        {
+    public void afterEach(ExtensionContext context) {
+        if (realSession != null) {
             realSession.close();
         }
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return realSession.isOpen();
     }
 
     @Override
-    public void close()
-    {
-        throw new UnsupportedOperationException( "Disallowed on this test session" );
+    public void close() {
+        throw new UnsupportedOperationException("Disallowed on this test session");
     }
 
     @Override
-    public Transaction beginTransaction()
-    {
+    public Transaction beginTransaction() {
         return realSession.beginTransaction();
     }
 
     @Override
-    public Transaction beginTransaction( TransactionConfig config )
-    {
-        return realSession.beginTransaction( config );
+    public Transaction beginTransaction(TransactionConfig config) {
+        return realSession.beginTransaction(config);
     }
 
     @Override
-    public <T> T readTransaction( TransactionWork<T> work )
-    {
-        return realSession.readTransaction( work );
+    public <T> T readTransaction(TransactionWork<T> work) {
+        return realSession.readTransaction(work);
     }
 
     @Override
-    public <T> T readTransaction( TransactionWork<T> work, TransactionConfig config )
-    {
-        return realSession.readTransaction( work, config );
+    public <T> T readTransaction(TransactionWork<T> work, TransactionConfig config) {
+        return realSession.readTransaction(work, config);
     }
 
     @Override
-    public <T> T writeTransaction( TransactionWork<T> work )
-    {
-        return realSession.writeTransaction( work );
+    public <T> T writeTransaction(TransactionWork<T> work) {
+        return realSession.writeTransaction(work);
     }
 
     @Override
-    public <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config )
-    {
-        return realSession.writeTransaction( work, config );
+    public <T> T writeTransaction(TransactionWork<T> work, TransactionConfig config) {
+        return realSession.writeTransaction(work, config);
     }
 
     @Override
-    public Bookmark lastBookmark()
-    {
+    public Bookmark lastBookmark() {
         return realSession.lastBookmark();
     }
 
     @Deprecated
     @Override
-    public void reset()
-    {
+    public void reset() {
         realSession.reset();
     }
 
     @Override
-    public Result run(String query, Map<String,Object> parameters)
-    {
+    public Result run(String query, Map<String, Object> parameters) {
         return realSession.run(query, parameters);
     }
 
     @Override
-    public Result run(String query, Value parameters )
-    {
-        return realSession.run(query, parameters );
+    public Result run(String query, Value parameters) {
+        return realSession.run(query, parameters);
     }
 
     @Override
-    public Result run(String query, Record parameters )
-    {
-        return realSession.run(query, parameters );
+    public Result run(String query, Record parameters) {
+        return realSession.run(query, parameters);
     }
 
     @Override
-    public Result run(String query)
-    {
+    public Result run(String query) {
         return realSession.run(query);
     }
 
     @Override
-    public Result run(Query query)
-    {
-        return realSession.run( query.text(), query.parameters() );
+    public Result run(Query query) {
+        return realSession.run(query.text(), query.parameters());
     }
 
     @Override
-    public Result run(String query, TransactionConfig config )
-    {
-        return realSession.run(query, config );
+    public Result run(String query, TransactionConfig config) {
+        return realSession.run(query, config);
     }
 
     @Override
-    public Result run(String query, Map<String,Object> parameters, TransactionConfig config )
-    {
-        return realSession.run(query, parameters, config );
+    public Result run(String query, Map<String, Object> parameters, TransactionConfig config) {
+        return realSession.run(query, parameters, config);
     }
 
     @Override
-    public Result run(Query query, TransactionConfig config )
-    {
-        return realSession.run(query, config );
+    public Result run(Query query, TransactionConfig config) {
+        return realSession.run(query, config);
     }
 }

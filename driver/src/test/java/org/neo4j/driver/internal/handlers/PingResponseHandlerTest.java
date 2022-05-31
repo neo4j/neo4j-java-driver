@@ -18,13 +18,6 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.channel.Channel;
-import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.netty.util.concurrent.Promise;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.Value;
-
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,47 +25,47 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-class PingResponseHandlerTest
-{
+import io.netty.channel.Channel;
+import io.netty.util.concurrent.ImmediateEventExecutor;
+import io.netty.util.concurrent.Promise;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+
+class PingResponseHandlerTest {
     @Test
-    void shouldResolvePromiseOnSuccess()
-    {
+    void shouldResolvePromiseOnSuccess() {
         Promise<Boolean> promise = newPromise();
-        PingResponseHandler handler = newHandler( promise );
+        PingResponseHandler handler = newHandler(promise);
 
-        handler.onSuccess( emptyMap() );
+        handler.onSuccess(emptyMap());
 
-        assertTrue( promise.isSuccess() );
-        assertTrue( promise.getNow() );
+        assertTrue(promise.isSuccess());
+        assertTrue(promise.getNow());
     }
 
     @Test
-    void shouldResolvePromiseOnFailure()
-    {
+    void shouldResolvePromiseOnFailure() {
         Promise<Boolean> promise = newPromise();
-        PingResponseHandler handler = newHandler( promise );
+        PingResponseHandler handler = newHandler(promise);
 
-        handler.onFailure( new RuntimeException() );
+        handler.onFailure(new RuntimeException());
 
-        assertTrue( promise.isSuccess() );
-        assertFalse( promise.getNow() );
+        assertTrue(promise.isSuccess());
+        assertFalse(promise.getNow());
     }
 
     @Test
-    void shouldNotSupportRecordMessages()
-    {
-        PingResponseHandler handler = newHandler( newPromise() );
+    void shouldNotSupportRecordMessages() {
+        PingResponseHandler handler = newHandler(newPromise());
 
-        assertThrows( UnsupportedOperationException.class, () -> handler.onRecord( new Value[0] ) );
+        assertThrows(UnsupportedOperationException.class, () -> handler.onRecord(new Value[0]));
     }
 
-    private static Promise<Boolean> newPromise()
-    {
+    private static Promise<Boolean> newPromise() {
         return ImmediateEventExecutor.INSTANCE.newPromise();
     }
 
-    private static PingResponseHandler newHandler( Promise<Boolean> result )
-    {
-        return new PingResponseHandler( result, mock( Channel.class ), DEV_NULL_LOGGING );
+    private static PingResponseHandler newHandler(Promise<Boolean> result) {
+        return new PingResponseHandler(result, mock(Channel.class), DEV_NULL_LOGGING);
     }
 }

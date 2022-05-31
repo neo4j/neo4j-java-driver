@@ -23,24 +23,20 @@ import org.neo4j.driver.Bookmark;
 /**
  * @since 2.0
  */
-public class ReadOnlyBookmarkHolder implements BookmarkHolder
-{
+public class ReadOnlyBookmarkHolder implements BookmarkHolder {
     private final Bookmark bookmark;
 
-    public ReadOnlyBookmarkHolder( Bookmark bookmark )
-    {
+    public ReadOnlyBookmarkHolder(Bookmark bookmark) {
         this.bookmark = bookmark;
     }
 
     @Override
-    public Bookmark getBookmark()
-    {
+    public Bookmark getBookmark() {
         return bookmark;
     }
 
     @Override
-    public void setBookmark( Bookmark bookmark )
-    {
+    public void setBookmark(Bookmark bookmark) {
         // NO_OP
     }
 }

@@ -25,8 +25,7 @@ import java.net.UnknownHostException;
  * A resolver function used by the driver to resolve domain names.
  */
 @FunctionalInterface
-public interface DomainNameResolver
-{
+public interface DomainNameResolver {
     /**
      * Resolve the given domain name to a set of addresses.
      *
@@ -34,5 +33,5 @@ public interface DomainNameResolver
      * @return the resolved addresses.
      * @throws UnknownHostException must be thrown if the given name can not be resolved to at least one address.
      */
-    InetAddress[] resolve( String name ) throws UnknownHostException;
+    InetAddress[] resolve(String name) throws UnknownHostException;
 }

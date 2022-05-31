@@ -18,10 +18,13 @@
  */
 package org.neo4j.driver.internal.messaging.request;
 
+import static java.util.Collections.emptyMap;
+import static org.neo4j.driver.Values.ofValue;
+import static org.neo4j.driver.internal.messaging.request.TransactionMetadataBuilder.buildMetadata;
+
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -29,82 +32,80 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
 
-import static java.util.Collections.emptyMap;
-import static org.neo4j.driver.Values.ofValue;
-import static org.neo4j.driver.internal.messaging.request.TransactionMetadataBuilder.buildMetadata;
-
-public class RunWithMetadataMessage extends MessageWithMetadata
-{
-    public final static byte SIGNATURE = 0x10;
+public class RunWithMetadataMessage extends MessageWithMetadata {
+    public static final byte SIGNATURE = 0x10;
 
     private final String query;
-    private final Map<String,Value> parameters;
+    private final Map<String, Value> parameters;
 
-    public static RunWithMetadataMessage autoCommitTxRunMessage( Query query, TransactionConfig config, DatabaseName databaseName, AccessMode mode,
-                                                                 Bookmark bookmark, String impersonatedUser )
-    {
-        return autoCommitTxRunMessage( query, config.timeout(), config.metadata(), databaseName, mode, bookmark, impersonatedUser );
+    public static RunWithMetadataMessage autoCommitTxRunMessage(
+            Query query,
+            TransactionConfig config,
+            DatabaseName databaseName,
+            AccessMode mode,
+            Bookmark bookmark,
+            String impersonatedUser) {
+        return autoCommitTxRunMessage(
+                query, config.timeout(), config.metadata(), databaseName, mode, bookmark, impersonatedUser);
     }
 
-    public static RunWithMetadataMessage autoCommitTxRunMessage( Query query, Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName,
-                                                                 AccessMode mode, Bookmark bookmark, String impersonatedUser )
-    {
-        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmark, impersonatedUser );
-        return new RunWithMetadataMessage( query.text(), query.parameters().asMap( ofValue() ), metadata );
+    public static RunWithMetadataMessage autoCommitTxRunMessage(
+            Query query,
+            Duration txTimeout,
+            Map<String, Value> txMetadata,
+            DatabaseName databaseName,
+            AccessMode mode,
+            Bookmark bookmark,
+            String impersonatedUser) {
+        Map<String, Value> metadata =
+                buildMetadata(txTimeout, txMetadata, databaseName, mode, bookmark, impersonatedUser);
+        return new RunWithMetadataMessage(query.text(), query.parameters().asMap(ofValue()), metadata);
     }
 
-    public static RunWithMetadataMessage unmanagedTxRunMessage( Query query )
-    {
-        return new RunWithMetadataMessage( query.text(), query.parameters().asMap( ofValue() ), emptyMap() );
+    public static RunWithMetadataMessage unmanagedTxRunMessage(Query query) {
+        return new RunWithMetadataMessage(query.text(), query.parameters().asMap(ofValue()), emptyMap());
     }
 
-    private RunWithMetadataMessage(String query, Map<String,Value> parameters, Map<String,Value> metadata )
-    {
-        super( metadata );
+    private RunWithMetadataMessage(String query, Map<String, Value> parameters, Map<String, Value> metadata) {
+        super(metadata);
         this.query = query;
         this.parameters = parameters;
     }
 
-    public String query()
-    {
+    public String query() {
         return query;
     }
 
-    public Map<String,Value> parameters()
-    {
+    public Map<String, Value> parameters() {
         return parameters;
     }
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         RunWithMetadataMessage that = (RunWithMetadataMessage) o;
-        return Objects.equals(query, that.query) && Objects.equals( parameters, that.parameters ) && Objects.equals( metadata(), that.metadata() );
+        return Objects.equals(query, that.query)
+                && Objects.equals(parameters, that.parameters)
+                && Objects.equals(metadata(), that.metadata());
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash(query, parameters, metadata() );
+    public int hashCode() {
+        return Objects.hash(query, parameters, metadata());
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "RUN \"" + query + "\" " + parameters + " " + metadata();
     }
 }

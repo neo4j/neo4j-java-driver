@@ -18,57 +18,49 @@
  */
 package org.neo4j.driver.integration.async;
 
+import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
+
+import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
-
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
-
-import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @ParallelizableIT
-public class AsyncQueryIT
-{
+public class AsyncQueryIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private AsyncSession session;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         session = neo4j.driver().asyncSession();
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         session.closeAsync();
     }
 
     @Test
-    void shouldBeAbleToLogSemanticWrongExceptions() throws ExecutionException, InterruptedException
-    {
-        session.writeTransactionAsync( tx -> Flux.from(
-                Mono.fromCompletionStage(
-                        tx.runAsync( "MATCH (n:Element) WHERE n.name = {param} RETURN n", parameters("param", "Luke") )
-                )).collectList().toFuture())
-
-               .toCompletableFuture()
-               .exceptionally( ex -> {
-                   assertNoCircularReferences(ex);
-                   return new ArrayList<>();
-               } )
-               .get();
+    void shouldBeAbleToLogSemanticWrongExceptions() throws ExecutionException, InterruptedException {
+        session.writeTransactionAsync(tx -> Flux.from(Mono.fromCompletionStage(tx.runAsync(
+                                "MATCH (n:Element) WHERE n.name = {param} RETURN n", parameters("param", "Luke"))))
+                        .collectList()
+                        .toFuture())
+                .toCompletableFuture()
+                .exceptionally(ex -> {
+                    assertNoCircularReferences(ex);
+                    return new ArrayList<>();
+                })
+                .get();
     }
-
 }

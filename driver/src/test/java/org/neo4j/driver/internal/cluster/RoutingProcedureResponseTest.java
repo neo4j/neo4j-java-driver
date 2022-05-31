@@ -18,80 +18,71 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Query;
-import org.neo4j.driver.Value;
-
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class RoutingProcedureResponseTest
-{
-    private static final Query PROCEDURE = new Query( "procedure" );
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.value.StringValue;
 
-    private static final Record RECORD_1 = new InternalRecord( asList( "a", "b" ),
-            new Value[]{new StringValue( "a" ), new StringValue( "b" )} );
-    private static final Record RECORD_2 = new InternalRecord( asList( "a", "b" ),
-            new Value[]{new StringValue( "aa" ), new StringValue( "bb" )} );
+class RoutingProcedureResponseTest {
+    private static final Query PROCEDURE = new Query("procedure");
+
+    private static final Record RECORD_1 =
+            new InternalRecord(asList("a", "b"), new Value[] {new StringValue("a"), new StringValue("b")});
+    private static final Record RECORD_2 =
+            new InternalRecord(asList("a", "b"), new Value[] {new StringValue("aa"), new StringValue("bb")});
 
     @Test
-    void shouldBeSuccessfulWithRecords()
-    {
-        RoutingProcedureResponse response = new RoutingProcedureResponse( PROCEDURE, asList( RECORD_1, RECORD_2 ) );
-        assertTrue( response.isSuccess() );
+    void shouldBeSuccessfulWithRecords() {
+        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
+        assertTrue(response.isSuccess());
     }
 
     @Test
-    void shouldNotBeSuccessfulWithError()
-    {
-        RoutingProcedureResponse response = new RoutingProcedureResponse( PROCEDURE, new RuntimeException() );
-        assertFalse( response.isSuccess() );
+    void shouldNotBeSuccessfulWithError() {
+        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, new RuntimeException());
+        assertFalse(response.isSuccess());
     }
 
     @Test
-    void shouldThrowWhenFailedAndAskedForRecords()
-    {
+    void shouldThrowWhenFailedAndAskedForRecords() {
         RuntimeException error = new RuntimeException();
-        RoutingProcedureResponse response = new RoutingProcedureResponse( PROCEDURE, error );
+        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, error);
 
-        IllegalStateException e = assertThrows( IllegalStateException.class, response::records );
-        assertEquals( e.getCause(), error );
+        IllegalStateException e = assertThrows(IllegalStateException.class, response::records);
+        assertEquals(e.getCause(), error);
     }
 
     @Test
-    void shouldThrowWhenSuccessfulAndAskedForError()
-    {
-        RoutingProcedureResponse response = new RoutingProcedureResponse( PROCEDURE, asList( RECORD_1, RECORD_2 ) );
+    void shouldThrowWhenSuccessfulAndAskedForError() {
+        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
 
-        assertThrows( IllegalStateException.class, response::error );
+        assertThrows(IllegalStateException.class, response::error);
     }
 
     @Test
-    void shouldHaveErrorWhenFailed()
-    {
-        RuntimeException error = new RuntimeException( "Hi!" );
-        RoutingProcedureResponse response = new RoutingProcedureResponse( PROCEDURE, error );
-        assertEquals( error, response.error() );
+    void shouldHaveErrorWhenFailed() {
+        RuntimeException error = new RuntimeException("Hi!");
+        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, error);
+        assertEquals(error, response.error());
     }
 
     @Test
-    void shouldHaveRecordsWhenSuccessful()
-    {
-        RoutingProcedureResponse response = new RoutingProcedureResponse( PROCEDURE, asList( RECORD_1, RECORD_2 ) );
-        assertEquals( asList( RECORD_1, RECORD_2 ), response.records() );
+    void shouldHaveRecordsWhenSuccessful() {
+        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
+        assertEquals(asList(RECORD_1, RECORD_2), response.records());
     }
 
     @Test
-    void shouldHaveProcedure()
-    {
-        RoutingProcedureResponse response = new RoutingProcedureResponse( PROCEDURE, asList( RECORD_1, RECORD_2 ) );
-        assertEquals( PROCEDURE, response.procedure() );
+    void shouldHaveProcedure() {
+        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
+        assertEquals(PROCEDURE, response.procedure());
     }
 }

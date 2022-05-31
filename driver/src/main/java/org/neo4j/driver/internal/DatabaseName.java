@@ -20,8 +20,7 @@ package org.neo4j.driver.internal;
 
 import java.util.Optional;
 
-public interface DatabaseName
-{
+public interface DatabaseName {
     Optional<String> databaseName();
 
     String description();

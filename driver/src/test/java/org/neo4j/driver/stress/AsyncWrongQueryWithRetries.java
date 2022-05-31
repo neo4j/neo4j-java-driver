@@ -18,9 +18,14 @@
  */
 package org.neo4j.driver.stress;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
@@ -30,55 +35,38 @@ import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-public class AsyncWrongQueryWithRetries<C extends AbstractContext> extends AbstractAsyncQuery<C>
-{
-    public AsyncWrongQueryWithRetries( Driver driver )
-    {
-        super( driver, false );
+public class AsyncWrongQueryWithRetries<C extends AbstractContext> extends AbstractAsyncQuery<C> {
+    public AsyncWrongQueryWithRetries(Driver driver) {
+        super(driver, false);
     }
 
     @Override
-    public CompletionStage<Void> execute( C context )
-    {
-        AsyncSession session = newSession( AccessMode.READ, context );
+    public CompletionStage<Void> execute(C context) {
+        AsyncSession session = newSession(AccessMode.READ, context);
 
         AtomicReference<Record> recordRef = new AtomicReference<>();
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
 
-        CompletionStage<ResultSummary> txStage = session.readTransactionAsync(
-                tx -> tx.runAsync( "RETURN Wrong" )
-                        .thenCompose(
-                                cursor -> cursor.nextAsync()
-                                                .thenCompose(
-                                                        record ->
-                                                        {
-                                                            recordRef.set( record );
-                                                            return cursor.consumeAsync();
-                                                        } ) ) );
+        CompletionStage<ResultSummary> txStage = session.readTransactionAsync(tx -> tx.runAsync("RETURN Wrong")
+                .thenCompose(cursor -> cursor.nextAsync().thenCompose(record -> {
+                    recordRef.set(record);
+                    return cursor.consumeAsync();
+                })));
 
-        CompletionStage<Void> resultsProcessingStage = txStage
-                .handle( ( resultSummary, throwable ) ->
-                         {
-                             throwableRef.set( throwable );
-                             return null;
-                         } )
-                .thenApply( nothing ->
-                            {
-                                assertNull( recordRef.get() );
+        CompletionStage<Void> resultsProcessingStage = txStage.handle((resultSummary, throwable) -> {
+                    throwableRef.set(throwable);
+                    return null;
+                })
+                .thenApply(nothing -> {
+                    assertNull(recordRef.get());
 
-                                Throwable cause = Futures.completionExceptionCause( throwableRef.get() );
-                                assertNotNull( cause );
-                                assertThat( cause, instanceOf( ClientException.class ) );
-                                assertThat( ((Neo4jException) cause).code(), containsString( "SyntaxError" ) );
-                                return null;
-                            } );
+                    Throwable cause = Futures.completionExceptionCause(throwableRef.get());
+                    assertNotNull(cause);
+                    assertThat(cause, instanceOf(ClientException.class));
+                    assertThat(((Neo4jException) cause).code(), containsString("SyntaxError"));
+                    return null;
+                });
 
-        return resultsProcessingStage.whenComplete( ( nothing, throwable ) -> session.closeAsync() );
+        return resultsProcessingStage.whenComplete((nothing, throwable) -> session.closeAsync());
     }
 }

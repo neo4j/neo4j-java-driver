@@ -18,22 +18,19 @@
  */
 package org.neo4j.driver.internal.messaging.encode;
 
-import java.io.IOException;
+import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
+import java.io.IOException;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.DiscardMessage;
 
-import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
-
-public class DiscardMessageEncoder implements MessageEncoder
-{
+public class DiscardMessageEncoder implements MessageEncoder {
     @Override
-    public void encode( Message message, ValuePacker packer ) throws IOException
-    {
-        checkArgument( message, DiscardMessage.class );
-        packer.packStructHeader( 1, DiscardMessage.SIGNATURE );
-        packer.pack( ((DiscardMessage) message).metadata() );
+    public void encode(Message message, ValuePacker packer) throws IOException {
+        checkArgument(message, DiscardMessage.class);
+        packer.packStructHeader(1, DiscardMessage.SIGNATURE);
+        packer.pack(((DiscardMessage) message).metadata());
     }
 }

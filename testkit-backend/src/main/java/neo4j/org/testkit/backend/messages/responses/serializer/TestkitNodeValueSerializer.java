@@ -18,14 +18,14 @@
  */
 package neo4j.org.testkit.backend.messages.responses.serializer;
 
+import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherObject;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
-
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
@@ -33,31 +33,25 @@ import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Node;
 
-import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherObject;
-
-public class TestkitNodeValueSerializer extends StdSerializer<NodeValue>
-{
-    public TestkitNodeValueSerializer()
-    {
-        super( NodeValue.class );
+public class TestkitNodeValueSerializer extends StdSerializer<NodeValue> {
+    public TestkitNodeValueSerializer() {
+        super(NodeValue.class);
     }
 
     @Override
-    public void serialize( NodeValue nodeValue, JsonGenerator gen, SerializerProvider serializerProvider ) throws IOException
-    {
+    public void serialize(NodeValue nodeValue, JsonGenerator gen, SerializerProvider serializerProvider)
+            throws IOException {
 
-        cypherObject( gen, "Node", () ->
-        {
+        cypherObject(gen, "Node", () -> {
             Node node = nodeValue.asNode();
-            gen.writeObjectField( "id", new IntegerValue( node.id() ) );
+            gen.writeObjectField("id", new IntegerValue(node.id()));
 
-            StringValue[] labels = StreamSupport.stream( node.labels().spliterator(), false )
-                                                .map( StringValue::new )
-                                                .toArray( StringValue[]::new );
+            StringValue[] labels = StreamSupport.stream(node.labels().spliterator(), false)
+                    .map(StringValue::new)
+                    .toArray(StringValue[]::new);
 
-            gen.writeObjectField( "labels", new ListValue( labels ) );
-            gen.writeObjectField( "props", new MapValue( node.asMap( Function.identity() ) ) );
-
-        } );
+            gen.writeObjectField("labels", new ListValue(labels));
+            gen.writeObjectField("props", new MapValue(node.asMap(Function.identity())));
+        });
     }
 }

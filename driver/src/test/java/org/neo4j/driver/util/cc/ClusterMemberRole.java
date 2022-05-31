@@ -18,8 +18,7 @@
  */
 package org.neo4j.driver.util.cc;
 
-public enum ClusterMemberRole
-{
+public enum ClusterMemberRole {
     LEADER,
     FOLLOWER,
     READ_REPLICA,

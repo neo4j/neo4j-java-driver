@@ -18,18 +18,6 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-
-import java.util.Arrays;
-import java.util.Collections;
-
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,156 +30,152 @@ import static org.mockito.MockitoAnnotations.openMocks;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 
-class LeastConnectedLoadBalancingStrategyTest
-{
+import java.util.Arrays;
+import java.util.Collections;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.spi.ConnectionPool;
+
+class LeastConnectedLoadBalancingStrategyTest {
     @Mock
     private ConnectionPool connectionPool;
+
     private LeastConnectedLoadBalancingStrategy strategy;
 
     @BeforeEach
-    void setUp()
-    {
-        openMocks( this );
-        strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING );
+    void setUp() {
+        openMocks(this);
+        strategy = new LeastConnectedLoadBalancingStrategy(connectionPool, DEV_NULL_LOGGING);
     }
 
     @Test
-    void shouldHandleEmptyReaders()
-    {
-        assertNull( strategy.selectReader( Collections.emptyList() ) );
+    void shouldHandleEmptyReaders() {
+        assertNull(strategy.selectReader(Collections.emptyList()));
     }
 
     @Test
-    void shouldHandleEmptyWriters()
-    {
-        assertNull( strategy.selectWriter( Collections.emptyList() ) );
+    void shouldHandleEmptyWriters() {
+        assertNull(strategy.selectWriter(Collections.emptyList()));
     }
 
     @Test
-    void shouldHandleSingleReaderWithoutActiveConnections()
-    {
-        BoltServerAddress address = new BoltServerAddress( "reader", 9999 );
+    void shouldHandleSingleReaderWithoutActiveConnections() {
+        BoltServerAddress address = new BoltServerAddress("reader", 9999);
 
-        assertEquals( address, strategy.selectReader( Collections.singletonList( address ) ) );
+        assertEquals(address, strategy.selectReader(Collections.singletonList(address)));
     }
 
     @Test
-    void shouldHandleSingleWriterWithoutActiveConnections()
-    {
-        BoltServerAddress address = new BoltServerAddress( "writer", 9999 );
+    void shouldHandleSingleWriterWithoutActiveConnections() {
+        BoltServerAddress address = new BoltServerAddress("writer", 9999);
 
-        assertEquals( address, strategy.selectWriter( Collections.singletonList( address ) ) );
+        assertEquals(address, strategy.selectWriter(Collections.singletonList(address)));
     }
 
     @Test
-    void shouldHandleSingleReaderWithActiveConnections()
-    {
-        BoltServerAddress address = new BoltServerAddress( "reader", 9999 );
-        when( connectionPool.inUseConnections( address ) ).thenReturn( 42 );
+    void shouldHandleSingleReaderWithActiveConnections() {
+        BoltServerAddress address = new BoltServerAddress("reader", 9999);
+        when(connectionPool.inUseConnections(address)).thenReturn(42);
 
-        assertEquals( address, strategy.selectReader( Collections.singletonList( address ) ) );
+        assertEquals(address, strategy.selectReader(Collections.singletonList(address)));
     }
 
     @Test
-    void shouldHandleSingleWriterWithActiveConnections()
-    {
-        BoltServerAddress address = new BoltServerAddress( "writer", 9999 );
-        when( connectionPool.inUseConnections( address ) ).thenReturn( 24 );
+    void shouldHandleSingleWriterWithActiveConnections() {
+        BoltServerAddress address = new BoltServerAddress("writer", 9999);
+        when(connectionPool.inUseConnections(address)).thenReturn(24);
 
-        assertEquals( address, strategy.selectWriter( Collections.singletonList( address ) ) );
+        assertEquals(address, strategy.selectWriter(Collections.singletonList(address)));
     }
 
     @Test
-    void shouldHandleMultipleReadersWithActiveConnections()
-    {
-        BoltServerAddress address1 = new BoltServerAddress( "reader", 1 );
-        BoltServerAddress address2 = new BoltServerAddress( "reader", 2 );
-        BoltServerAddress address3 = new BoltServerAddress( "reader", 3 );
+    void shouldHandleMultipleReadersWithActiveConnections() {
+        BoltServerAddress address1 = new BoltServerAddress("reader", 1);
+        BoltServerAddress address2 = new BoltServerAddress("reader", 2);
+        BoltServerAddress address3 = new BoltServerAddress("reader", 3);
 
-        when( connectionPool.inUseConnections( address1 ) ).thenReturn( 3 );
-        when( connectionPool.inUseConnections( address2 ) ).thenReturn( 4 );
-        when( connectionPool.inUseConnections( address3 ) ).thenReturn( 1 );
+        when(connectionPool.inUseConnections(address1)).thenReturn(3);
+        when(connectionPool.inUseConnections(address2)).thenReturn(4);
+        when(connectionPool.inUseConnections(address3)).thenReturn(1);
 
-        assertEquals( address3, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
+        assertEquals(address3, strategy.selectReader(Arrays.asList(address1, address2, address3)));
     }
 
     @Test
-    void shouldHandleMultipleWritersWithActiveConnections()
-    {
-        BoltServerAddress address1 = new BoltServerAddress( "writer", 1 );
-        BoltServerAddress address2 = new BoltServerAddress( "writer", 2 );
-        BoltServerAddress address3 = new BoltServerAddress( "writer", 3 );
-        BoltServerAddress address4 = new BoltServerAddress( "writer", 4 );
+    void shouldHandleMultipleWritersWithActiveConnections() {
+        BoltServerAddress address1 = new BoltServerAddress("writer", 1);
+        BoltServerAddress address2 = new BoltServerAddress("writer", 2);
+        BoltServerAddress address3 = new BoltServerAddress("writer", 3);
+        BoltServerAddress address4 = new BoltServerAddress("writer", 4);
 
-        when( connectionPool.inUseConnections( address1 ) ).thenReturn( 5 );
-        when( connectionPool.inUseConnections( address2 ) ).thenReturn( 6 );
-        when( connectionPool.inUseConnections( address3 ) ).thenReturn( 0 );
-        when( connectionPool.inUseConnections( address4 ) ).thenReturn( 1 );
+        when(connectionPool.inUseConnections(address1)).thenReturn(5);
+        when(connectionPool.inUseConnections(address2)).thenReturn(6);
+        when(connectionPool.inUseConnections(address3)).thenReturn(0);
+        when(connectionPool.inUseConnections(address4)).thenReturn(1);
 
-        assertEquals( address3,
-                      strategy.selectWriter( Arrays.asList( address1, address2, address3, address4 ) ) );
+        assertEquals(address3, strategy.selectWriter(Arrays.asList(address1, address2, address3, address4)));
     }
 
     @Test
-    void shouldReturnDifferentReaderOnEveryInvocationWhenNoActiveConnections()
-    {
-        BoltServerAddress address1 = new BoltServerAddress( "reader", 1 );
-        BoltServerAddress address2 = new BoltServerAddress( "reader", 2 );
-        BoltServerAddress address3 = new BoltServerAddress( "reader", 3 );
+    void shouldReturnDifferentReaderOnEveryInvocationWhenNoActiveConnections() {
+        BoltServerAddress address1 = new BoltServerAddress("reader", 1);
+        BoltServerAddress address2 = new BoltServerAddress("reader", 2);
+        BoltServerAddress address3 = new BoltServerAddress("reader", 3);
 
-        assertEquals( address1, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
-        assertEquals( address2, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
-        assertEquals( address3, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
+        assertEquals(address1, strategy.selectReader(Arrays.asList(address1, address2, address3)));
+        assertEquals(address2, strategy.selectReader(Arrays.asList(address1, address2, address3)));
+        assertEquals(address3, strategy.selectReader(Arrays.asList(address1, address2, address3)));
 
-        assertEquals( address1, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
-        assertEquals( address2, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
-        assertEquals( address3, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
+        assertEquals(address1, strategy.selectReader(Arrays.asList(address1, address2, address3)));
+        assertEquals(address2, strategy.selectReader(Arrays.asList(address1, address2, address3)));
+        assertEquals(address3, strategy.selectReader(Arrays.asList(address1, address2, address3)));
     }
 
     @Test
-    void shouldReturnDifferentWriterOnEveryInvocationWhenNoActiveConnections()
-    {
-        BoltServerAddress address1 = new BoltServerAddress( "writer", 1 );
-        BoltServerAddress address2 = new BoltServerAddress( "writer", 2 );
+    void shouldReturnDifferentWriterOnEveryInvocationWhenNoActiveConnections() {
+        BoltServerAddress address1 = new BoltServerAddress("writer", 1);
+        BoltServerAddress address2 = new BoltServerAddress("writer", 2);
 
-        assertEquals( address1, strategy.selectReader( Arrays.asList( address1, address2 ) ) );
-        assertEquals( address2, strategy.selectReader( Arrays.asList( address1, address2 ) ) );
+        assertEquals(address1, strategy.selectReader(Arrays.asList(address1, address2)));
+        assertEquals(address2, strategy.selectReader(Arrays.asList(address1, address2)));
 
-        assertEquals( address1, strategy.selectReader( Arrays.asList( address1, address2 ) ) );
-        assertEquals( address2, strategy.selectReader( Arrays.asList( address1, address2 ) ) );
+        assertEquals(address1, strategy.selectReader(Arrays.asList(address1, address2)));
+        assertEquals(address2, strategy.selectReader(Arrays.asList(address1, address2)));
     }
 
     @Test
-    void shouldTraceLogWhenNoAddressSelected()
-    {
-        Logging logging = mock( Logging.class );
-        Logger logger = mock( Logger.class );
-        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
+    void shouldTraceLogWhenNoAddressSelected() {
+        Logging logging = mock(Logging.class);
+        Logger logger = mock(Logger.class);
+        when(logging.getLog(any(Class.class))).thenReturn(logger);
 
-        LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, logging );
+        LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy(connectionPool, logging);
 
-        strategy.selectReader( Collections.emptyList() );
-        strategy.selectWriter( Collections.emptyList() );
+        strategy.selectReader(Collections.emptyList());
+        strategy.selectWriter(Collections.emptyList());
 
-        verify( logger ).trace( startsWith( "Unable to select" ), eq( "reader" ) );
-        verify( logger ).trace( startsWith( "Unable to select" ), eq( "writer" ) );
+        verify(logger).trace(startsWith("Unable to select"), eq("reader"));
+        verify(logger).trace(startsWith("Unable to select"), eq("writer"));
     }
 
     @Test
-    void shouldTraceLogSelectedAddress()
-    {
-        Logging logging = mock( Logging.class );
-        Logger logger = mock( Logger.class );
-        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
+    void shouldTraceLogSelectedAddress() {
+        Logging logging = mock(Logging.class);
+        Logger logger = mock(Logger.class);
+        when(logging.getLog(any(Class.class))).thenReturn(logger);
 
-        when( connectionPool.inUseConnections( any( BoltServerAddress.class ) ) ).thenReturn( 42 );
+        when(connectionPool.inUseConnections(any(BoltServerAddress.class))).thenReturn(42);
 
-        LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, logging );
+        LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy(connectionPool, logging);
 
-        strategy.selectReader( Collections.singletonList( A ) );
-        strategy.selectWriter( Collections.singletonList( A ) );
+        strategy.selectReader(Collections.singletonList(A));
+        strategy.selectWriter(Collections.singletonList(A));
 
-        verify( logger ).trace( startsWith( "Selected" ), eq( "reader" ), eq( A ), eq( 42 ) );
-        verify( logger ).trace( startsWith( "Selected" ), eq( "writer" ), eq( A ), eq( 42 ) );
+        verify(logger).trace(startsWith("Selected"), eq("reader"), eq(A), eq(42));
+        verify(logger).trace(startsWith("Selected"), eq("writer"), eq(A), eq(42));
     }
 }

@@ -18,120 +18,98 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Map;
+import static org.neo4j.driver.Values.ofObject;
 
+import java.util.Map;
+import java.util.function.Function;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
 import org.neo4j.driver.types.Entity;
-import java.util.function.Function;
 
-import static org.neo4j.driver.Values.ofObject;
-
-public abstract class InternalEntity implements Entity, AsValue
-{
+public abstract class InternalEntity implements Entity, AsValue {
     private final long id;
-    private final Map<String,Value> properties;
+    private final Map<String, Value> properties;
 
-    public InternalEntity( long id, Map<String, Value> properties )
-    {
+    public InternalEntity(long id, Map<String, Value> properties) {
         this.id = id;
         this.properties = properties;
     }
 
     @Override
-    public long id()
-    {
+    public long id() {
         return id;
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return properties.size();
     }
 
     @Override
-    public Map<String,Object> asMap()
-    {
-        return asMap( ofObject() );
+    public Map<String, Object> asMap() {
+        return asMap(ofObject());
     }
 
     @Override
-    public <T> Map<String,T> asMap( Function<Value,T> mapFunction )
-    {
-        return Extract.map( properties, mapFunction );
+    public <T> Map<String, T> asMap(Function<Value, T> mapFunction) {
+        return Extract.map(properties, mapFunction);
     }
 
     @Override
-    public Value asValue()
-    {
-        return new MapValue( properties );
+    public Value asValue() {
+        return new MapValue(properties);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         InternalEntity that = (InternalEntity) o;
 
         return id == that.id;
-
     }
 
     @Override
-    public int hashCode()
-    {
-        return (int)(id ^ (id >>> 32));
+    public int hashCode() {
+        return (int) (id ^ (id >>> 32));
     }
 
     @Override
-    public String toString()
-    {
-        return "Entity{" +
-               "id=" + id +
-               ", properties=" + properties +
-               '}';
+    public String toString() {
+        return "Entity{" + "id=" + id + ", properties=" + properties + '}';
     }
 
     @Override
-    public boolean containsKey( String key )
-    {
-        return properties.containsKey( key );
+    public boolean containsKey(String key) {
+        return properties.containsKey(key);
     }
 
     @Override
-    public Iterable<String> keys()
-    {
+    public Iterable<String> keys() {
         return properties.keySet();
     }
 
     @Override
-    public Value get( String key )
-    {
-        Value value = properties.get( key );
+    public Value get(String key) {
+        Value value = properties.get(key);
         return value == null ? Values.NULL : value;
     }
 
     @Override
-    public Iterable<Value> values()
-    {
+    public Iterable<Value> values() {
         return properties.values();
     }
 
     @Override
-    public <T> Iterable<T> values( Function<Value,T> mapFunction )
-    {
-        return Iterables.map( properties.values(), mapFunction );
+    public <T> Iterable<T> values(Function<Value, T> mapFunction) {
+        return Iterables.map(properties.values(), mapFunction);
     }
 }

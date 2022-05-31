@@ -20,7 +20,6 @@ package org.neo4j.driver.stress;
 
 import java.util.concurrent.CompletionStage;
 
-public interface RxCommand<C extends AbstractContext>
-{
-    CompletionStage<Void> execute( C context );
+public interface RxCommand<C extends AbstractContext> {
+    CompletionStage<Void> execute(C context);
 }

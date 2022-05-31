@@ -18,6 +18,7 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -25,52 +26,40 @@ import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletionStage;
-
 @Setter
 @Getter
-public class RetryablePositive implements TestkitRequest
-{
+public class RetryablePositive implements TestkitRequest {
     private RetryablePositiveBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        SessionHolder sessionHolder = testkitState.getSessionHolder( data.sessionId );
-        if ( sessionHolder == null )
-        {
-            throw new RuntimeException( "Could not find session" );
+    public TestkitResponse process(TestkitState testkitState) {
+        SessionHolder sessionHolder = testkitState.getSessionHolder(data.sessionId);
+        if (sessionHolder == null) {
+            throw new RuntimeException("Could not find session");
         }
-        sessionHolder.getTxWorkFuture().complete( null );
+        sessionHolder.getTxWorkFuture().complete(null);
         return null;
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncSessionHolder( data.getSessionId() )
-                           .thenApply( sessionHolder ->
-                                       {
-                                           sessionHolder.getTxWorkFuture().complete( null );
-                                           return null;
-                                       } );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState.getAsyncSessionHolder(data.getSessionId()).thenApply(sessionHolder -> {
+            sessionHolder.getTxWorkFuture().complete(null);
+            return null;
+        });
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return testkitState.getRxSessionHolder( data.getSessionId() )
-                           .mapNotNull( sessionHolder ->
-                                        {
-                                            sessionHolder.getTxWorkFuture().complete( null );
-                                            return null;
-                                        } );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        return testkitState.getRxSessionHolder(data.getSessionId()).mapNotNull(sessionHolder -> {
+            sessionHolder.getTxWorkFuture().complete(null);
+            return null;
+        });
     }
 
     @Setter
     @Getter
-    public static class RetryablePositiveBody
-    {
+    public static class RetryablePositiveBody {
         private String sessionId;
     }
 }

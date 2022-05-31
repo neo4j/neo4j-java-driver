@@ -22,60 +22,51 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class TestkitMessageInboundHandler extends SimpleChannelInboundHandler<ByteBuf>
-{
+public class TestkitMessageInboundHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private final StringBuilder requestBuffer = new StringBuilder();
 
     @Override
-    public void channelRead0( ChannelHandlerContext ctx, ByteBuf byteBuf )
-    {
-        String requestStr = byteBuf.toString( CharsetUtil.UTF_8 );
-        requestBuffer.append( requestStr );
+    public void channelRead0(ChannelHandlerContext ctx, ByteBuf byteBuf) {
+        String requestStr = byteBuf.toString(CharsetUtil.UTF_8);
+        requestBuffer.append(requestStr);
 
         List<String> testkitMessages = new ArrayList<>();
         Optional<String> testkitMessageOpt = extractTestkitMessage();
-        while ( testkitMessageOpt.isPresent() )
-        {
-            testkitMessages.add( testkitMessageOpt.get() );
+        while (testkitMessageOpt.isPresent()) {
+            testkitMessages.add(testkitMessageOpt.get());
             testkitMessageOpt = extractTestkitMessage();
         }
 
-        testkitMessages.forEach( ctx::fireChannelRead );
+        testkitMessages.forEach(ctx::fireChannelRead);
     }
 
-    private Optional<String> extractTestkitMessage()
-    {
+    private Optional<String> extractTestkitMessage() {
         String requestEndMarker = "#request end\n";
-        int endMarkerIndex = requestBuffer.indexOf( requestEndMarker );
-        if ( endMarkerIndex < 0 )
-        {
+        int endMarkerIndex = requestBuffer.indexOf(requestEndMarker);
+        if (endMarkerIndex < 0) {
             return Optional.empty();
         }
         String requestBeginMarker = "#request begin\n";
-        int beginMarkerIndex = requestBuffer.indexOf( requestBeginMarker );
-        if ( beginMarkerIndex != 0 )
-        {
-            throw new RuntimeException( "Unexpected data in message buffer" );
+        int beginMarkerIndex = requestBuffer.indexOf(requestBeginMarker);
+        if (beginMarkerIndex != 0) {
+            throw new RuntimeException("Unexpected data in message buffer");
         }
         // extract Testkit message without markers
-        String testkitMessage = requestBuffer.substring( requestBeginMarker.length(), endMarkerIndex );
-        if ( testkitMessage.contains( requestBeginMarker ) || testkitMessage.contains( requestEndMarker ) )
-        {
-            throw new RuntimeException( "Testkit message contains request markers" );
+        String testkitMessage = requestBuffer.substring(requestBeginMarker.length(), endMarkerIndex);
+        if (testkitMessage.contains(requestBeginMarker) || testkitMessage.contains(requestEndMarker)) {
+            throw new RuntimeException("Testkit message contains request markers");
         }
         // remove Testkit message from buffer
-        requestBuffer.delete( 0, endMarkerIndex + requestEndMarker.length() + 1 );
-        return Optional.of( testkitMessage );
+        requestBuffer.delete(0, endMarkerIndex + requestEndMarker.length() + 1);
+        return Optional.of(testkitMessage);
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
-    {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         ctx.close();
     }
 }

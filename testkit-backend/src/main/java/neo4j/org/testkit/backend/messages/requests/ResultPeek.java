@@ -18,11 +18,10 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
-import neo4j.org.testkit.backend.RxBufferedSubscriber;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.holder.RxResultHolder;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.Record;
@@ -30,60 +29,50 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletionStage;
-
 @Setter
 @Getter
-public class ResultPeek implements TestkitRequest
-{
+public class ResultPeek implements TestkitRequest {
     private ResultPeekBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        try
-        {
-            Result result = testkitState.getResultHolder( data.getResultId() ).getResult();
-            return createResponse( result.peek() );
-        }
-        catch ( NoSuchRecordException ignored )
-        {
+    public TestkitResponse process(TestkitState testkitState) {
+        try {
+            Result result = testkitState.getResultHolder(data.getResultId()).getResult();
+            return createResponse(result.peek());
+        } catch (NoSuchRecordException ignored) {
             return NullRecord.builder().build();
         }
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncResultHolder( data.getResultId() )
-                           .thenCompose( resultCursorHolder -> resultCursorHolder.getResult().peekAsync() )
-                           .thenApply( this::createResponseNullSafe );
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        return testkitState
+                .getAsyncResultHolder(data.getResultId())
+                .thenCompose(
+                        resultCursorHolder -> resultCursorHolder.getResult().peekAsync())
+                .thenApply(this::createResponseNullSafe);
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        throw new UnsupportedOperationException( "Operation not supported" );
+    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
+        throw new UnsupportedOperationException("Operation not supported");
     }
 
-    private TestkitResponse createResponse( Record record )
-    {
+    private TestkitResponse createResponse(Record record) {
         return neo4j.org.testkit.backend.messages.responses.Record.builder()
-                                                                  .data( neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()
-                                                                                                                                       .values( record )
-                                                                                                                                       .build() )
-                                                                  .build();
+                .data(neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()
+                        .values(record)
+                        .build())
+                .build();
     }
 
-    private TestkitResponse createResponseNullSafe( Record record )
-    {
-        return record != null ? createResponse( record ) : NullRecord.builder().build();
+    private TestkitResponse createResponseNullSafe(Record record) {
+        return record != null ? createResponse(record) : NullRecord.builder().build();
     }
 
     @Setter
     @Getter
-    public static class ResultPeekBody
-    {
+    public static class ResultPeekBody {
         private String resultId;
     }
 }

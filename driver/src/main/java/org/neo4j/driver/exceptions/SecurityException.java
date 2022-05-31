@@ -24,15 +24,12 @@ package org.neo4j.driver.exceptions;
  * Restart of server/driver/cluster might be required to recover from this error.
  * @since 1.1
  */
-public class SecurityException extends ClientException
-{
-    public SecurityException( String code, String message )
-    {
-        super( code, message );
+public class SecurityException extends ClientException {
+    public SecurityException(String code, String message) {
+        super(code, message);
     }
 
-    public SecurityException( String message, Throwable t )
-    {
-        super( message, t );
+    public SecurityException(String message, Throwable t) {
+        super(message, t);
     }
 }

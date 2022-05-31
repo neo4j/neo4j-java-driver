@@ -18,51 +18,44 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.jupiter.api.Test;
-
-import java.time.LocalDateTime;
-
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.exceptions.value.Uncoercible;
-
 import static java.time.Month.AUGUST;
 import static java.time.Month.FEBRUARY;
 import static java.time.Month.JANUARY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class LocalDateTimeValueTest
-{
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.exceptions.value.Uncoercible;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+
+class LocalDateTimeValueTest {
     @Test
-    void shouldHaveCorrectType()
-    {
-        LocalDateTime dateTime = LocalDateTime.of( 1991, AUGUST, 24, 12, 0, 0 );
-        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue( dateTime );
-        assertEquals( InternalTypeSystem.TYPE_SYSTEM.LOCAL_DATE_TIME(), dateTimeValue.type() );
+    void shouldHaveCorrectType() {
+        LocalDateTime dateTime = LocalDateTime.of(1991, AUGUST, 24, 12, 0, 0);
+        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue(dateTime);
+        assertEquals(InternalTypeSystem.TYPE_SYSTEM.LOCAL_DATE_TIME(), dateTimeValue.type());
     }
 
     @Test
-    void shouldSupportAsObject()
-    {
-        LocalDateTime dateTime = LocalDateTime.of( 2015, FEBRUARY, 2, 23, 59, 59, 999_999 );
-        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue( dateTime );
-        assertEquals( dateTime, dateTimeValue.asObject() );
+    void shouldSupportAsObject() {
+        LocalDateTime dateTime = LocalDateTime.of(2015, FEBRUARY, 2, 23, 59, 59, 999_999);
+        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue(dateTime);
+        assertEquals(dateTime, dateTimeValue.asObject());
     }
 
     @Test
-    void shouldSupportAsLocalDateTime()
-    {
-        LocalDateTime dateTime = LocalDateTime.of( 1822, JANUARY, 24, 9, 23, 57, 123 );
-        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue( dateTime );
-        assertEquals( dateTime, dateTimeValue.asLocalDateTime() );
+    void shouldSupportAsLocalDateTime() {
+        LocalDateTime dateTime = LocalDateTime.of(1822, JANUARY, 24, 9, 23, 57, 123);
+        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue(dateTime);
+        assertEquals(dateTime, dateTimeValue.asLocalDateTime());
     }
 
     @Test
-    void shouldNotSupportAsLong()
-    {
+    void shouldNotSupportAsLong() {
         LocalDateTime dateTime = LocalDateTime.now();
-        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue( dateTime );
+        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue(dateTime);
 
-        assertThrows( Uncoercible.class, dateTimeValue::asLong );
+        assertThrows(Uncoercible.class, dateTimeValue::asLong);
     }
 }

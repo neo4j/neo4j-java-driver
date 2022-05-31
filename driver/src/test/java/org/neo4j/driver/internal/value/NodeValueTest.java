@@ -18,11 +18,6 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.internal.types.TypeConstructor;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,38 +25,36 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledNodeValue;
 
-class NodeValueTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.types.TypeConstructor;
+
+class NodeValueTest {
     @Test
-    void shouldHaveSensibleToString()
-    {
-        assertEquals( "node<1234>", emptyNodeValue().toString() );
-        assertEquals( "node<1234>", filledNodeValue().toString() );
+    void shouldHaveSensibleToString() {
+        assertEquals("node<1234>", emptyNodeValue().toString());
+        assertEquals("node<1234>", filledNodeValue().toString());
     }
 
     @Test
-    void shouldHaveCorrectPropertyCount()
-    {
-        assertEquals( 0, emptyNodeValue().size()) ;
-        assertEquals( 1, filledNodeValue().size()) ;
+    void shouldHaveCorrectPropertyCount() {
+        assertEquals(0, emptyNodeValue().size());
+        assertEquals(1, filledNodeValue().size());
     }
 
     @Test
-    void shouldNotBeNull()
-    {
-        assertFalse( emptyNodeValue().isNull() );
+    void shouldNotBeNull() {
+        assertFalse(emptyNodeValue().isNull());
     }
 
     @Test
-    void shouldHaveCorrectType()
-    {
-        assertThat( emptyNodeValue().type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.NODE() ));
+    void shouldHaveCorrectType() {
+        assertThat(emptyNodeValue().type(), equalTo(InternalTypeSystem.TYPE_SYSTEM.NODE()));
     }
 
     @Test
-    void shouldTypeAsNode()
-    {
+    void shouldTypeAsNode() {
         InternalValue value = emptyNodeValue();
-        assertThat( value.typeConstructor(), equalTo( TypeConstructor.NODE ) );
+        assertThat(value.typeConstructor(), equalTo(TypeConstructor.NODE));
     }
 }

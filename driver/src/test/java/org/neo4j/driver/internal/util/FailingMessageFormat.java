@@ -19,10 +19,8 @@
 package org.neo4j.driver.internal.util;
 
 import io.netty.util.internal.PlatformDependent;
-
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
@@ -30,103 +28,85 @@ import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
-public class FailingMessageFormat implements MessageFormat
-{
+public class FailingMessageFormat implements MessageFormat {
     private final MessageFormat delegate;
     private final AtomicReference<Throwable> writerThrowableRef = new AtomicReference<>();
     private final AtomicReference<Throwable> readerThrowableRef = new AtomicReference<>();
     private final AtomicReference<FailureMessage> readerFailureRef = new AtomicReference<>();
 
-    public FailingMessageFormat( MessageFormat delegate )
-    {
+    public FailingMessageFormat(MessageFormat delegate) {
         this.delegate = delegate;
     }
 
-    public void makeWriterThrow( Throwable error )
-    {
-        writerThrowableRef.set( error );
+    public void makeWriterThrow(Throwable error) {
+        writerThrowableRef.set(error);
     }
 
-    public void makeReaderThrow( Throwable error )
-    {
-        readerThrowableRef.set( error );
+    public void makeReaderThrow(Throwable error) {
+        readerThrowableRef.set(error);
     }
 
-    public void makeReaderFail( FailureMessage failureMsg )
-    {
-        readerFailureRef.set( failureMsg );
+    public void makeReaderFail(FailureMessage failureMsg) {
+        readerFailureRef.set(failureMsg);
     }
 
     @Override
-    public Writer newWriter( PackOutput output )
-    {
-        return new ThrowingWriter( delegate.newWriter( output ), writerThrowableRef );
+    public Writer newWriter(PackOutput output) {
+        return new ThrowingWriter(delegate.newWriter(output), writerThrowableRef);
     }
 
     @Override
-    public Reader newReader( PackInput input )
-    {
-        return new ThrowingReader( delegate.newReader( input ), readerThrowableRef, readerFailureRef );
+    public Reader newReader(PackInput input) {
+        return new ThrowingReader(delegate.newReader(input), readerThrowableRef, readerFailureRef);
     }
 
-    private static class ThrowingWriter implements MessageFormat.Writer
-    {
+    private static class ThrowingWriter implements MessageFormat.Writer {
         final MessageFormat.Writer delegate;
         final AtomicReference<Throwable> throwableRef;
 
-        ThrowingWriter( Writer delegate, AtomicReference<Throwable> throwableRef )
-        {
+        ThrowingWriter(Writer delegate, AtomicReference<Throwable> throwableRef) {
             this.delegate = delegate;
             this.throwableRef = throwableRef;
         }
 
         @Override
-        public void write( Message msg ) throws IOException
-        {
-            Throwable error = throwableRef.getAndSet( null );
-            if ( error != null )
-            {
-                PlatformDependent.throwException( error );
-            }
-            else
-            {
-                delegate.write( msg );
+        public void write(Message msg) throws IOException {
+            Throwable error = throwableRef.getAndSet(null);
+            if (error != null) {
+                PlatformDependent.throwException(error);
+            } else {
+                delegate.write(msg);
             }
         }
     }
 
-    private static class ThrowingReader implements MessageFormat.Reader
-    {
+    private static class ThrowingReader implements MessageFormat.Reader {
         final MessageFormat.Reader delegate;
         final AtomicReference<Throwable> throwableRef;
         final AtomicReference<FailureMessage> failureRef;
 
-        ThrowingReader( Reader delegate, AtomicReference<Throwable> throwableRef,
-                AtomicReference<FailureMessage> failureRef )
-        {
+        ThrowingReader(
+                Reader delegate, AtomicReference<Throwable> throwableRef, AtomicReference<FailureMessage> failureRef) {
             this.delegate = delegate;
             this.throwableRef = throwableRef;
             this.failureRef = failureRef;
         }
 
         @Override
-        public void read( ResponseMessageHandler handler ) throws IOException
-        {
-            Throwable error = throwableRef.getAndSet( null );
-            if ( error != null )
-            {
-                PlatformDependent.throwException( error );
+        public void read(ResponseMessageHandler handler) throws IOException {
+            Throwable error = throwableRef.getAndSet(null);
+            if (error != null) {
+                PlatformDependent.throwException(error);
                 return;
             }
 
-            FailureMessage failureMsg = failureRef.getAndSet( null );
-            if ( failureMsg != null )
-            {
-                handler.handleFailureMessage( failureMsg.code(), failureMsg.message() );
+            FailureMessage failureMsg = failureRef.getAndSet(null);
+            if (failureMsg != null) {
+                handler.handleFailureMessage(failureMsg.code(), failureMsg.message());
                 return;
             }
 
-            delegate.read( handler );
+            delegate.read(handler);
         }
     }
 }

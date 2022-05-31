@@ -18,48 +18,43 @@
  */
 package org.neo4j.driver.util;
 
+import static java.util.Arrays.asList;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static java.util.Arrays.asList;
-
 /**
  * Utility that can be used to temporarily capture and store process-wide stdout and stderr output.
  */
-public class StdIOCapture
-{
+public class StdIOCapture {
     private final List<String> stdout = new CopyOnWriteArrayList<>();
     private final List<String> stderr = new CopyOnWriteArrayList<>();
 
     /** Put this in a try-with-resources block to capture all standard io that happens within the try block */
-    public AutoCloseable capture()
-    {
+    public AutoCloseable capture() {
         final PrintStream originalStdOut = System.out;
         final PrintStream originalStdErr = System.err;
         final ByteArrayOutputStream capturedStdOut = new ByteArrayOutputStream();
         final ByteArrayOutputStream capturedStdErr = new ByteArrayOutputStream();
 
-        System.setOut( new PrintStream( capturedStdOut ) );
-        System.setErr( new PrintStream( capturedStdErr ) );
+        System.setOut(new PrintStream(capturedStdOut));
+        System.setErr(new PrintStream(capturedStdErr));
 
-        return () ->
-        {
-            System.setOut( originalStdOut );
-            System.setErr( originalStdErr );
-            stdout.addAll( asList( capturedStdOut.toString( "UTF-8" ).split( System.lineSeparator() ) ) );
-            stderr.addAll( asList( capturedStdErr.toString( "UTF-8" ).split( System.lineSeparator() ) ) );
+        return () -> {
+            System.setOut(originalStdOut);
+            System.setErr(originalStdErr);
+            stdout.addAll(asList(capturedStdOut.toString("UTF-8").split(System.lineSeparator())));
+            stderr.addAll(asList(capturedStdErr.toString("UTF-8").split(System.lineSeparator())));
         };
     }
 
-    public List<String> stdout()
-    {
+    public List<String> stdout() {
         return stdout;
     }
 
-    public List<String> stderr()
-    {
+    public List<String> stderr() {
         return stderr;
     }
 }

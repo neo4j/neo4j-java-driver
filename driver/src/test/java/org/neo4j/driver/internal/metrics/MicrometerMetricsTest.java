@@ -18,24 +18,21 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import java.util.Collection;
-
-import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.BoltServerAddress;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
-class MicrometerMetricsTest
-{
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.Collection;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.neo4j.driver.ConnectionPoolMetrics;
+import org.neo4j.driver.internal.BoltServerAddress;
+
+class MicrometerMetricsTest {
     static final String ID = "id";
 
     MicrometerMetrics metrics;
@@ -44,204 +41,191 @@ class MicrometerMetricsTest
     ConnectionPoolMetricsListener poolMetricsListener;
 
     @BeforeEach
-    void beforeEach()
-    {
+    void beforeEach() {
         registry = new SimpleMeterRegistry();
-        metrics = new MicrometerMetrics( registry );
-        poolMetricsListener = mock( ConnectionPoolMetricsListener.class, Mockito.withSettings().extraInterfaces( ConnectionPoolMetrics.class ) );
+        metrics = new MicrometerMetrics(registry);
+        poolMetricsListener = mock(
+                ConnectionPoolMetricsListener.class,
+                Mockito.withSettings().extraInterfaces(ConnectionPoolMetrics.class));
         poolMetrics = (ConnectionPoolMetrics) poolMetricsListener;
     }
 
     @Test
-    void shouldReturnEmptyConnectionPoolMetrics()
-    {
+    void shouldReturnEmptyConnectionPoolMetrics() {
         // GIVEN & WHEN
         Collection<ConnectionPoolMetrics> collection = metrics.connectionPoolMetrics();
 
         // THEN
-        assertTrue( collection.isEmpty() );
+        assertTrue(collection.isEmpty());
     }
 
     @Test
-    void shouldDelegateBeforeCreating()
-    {
+    void shouldDelegateBeforeCreating() {
         // GIVEN
-        ListenerEvent<?> event = mock( ListenerEvent.class );
-        metrics.putPoolMetrics( ID, poolMetrics );
+        ListenerEvent<?> event = mock(ListenerEvent.class);
+        metrics.putPoolMetrics(ID, poolMetrics);
 
         // WHEN
-        metrics.beforeCreating( ID, event );
+        metrics.beforeCreating(ID, event);
 
         // THEN
-        assertEquals( 1, metrics.connectionPoolMetrics().size() );
-        then( poolMetricsListener ).should().beforeCreating( event );
+        assertEquals(1, metrics.connectionPoolMetrics().size());
+        then(poolMetricsListener).should().beforeCreating(event);
     }
 
     @Test
-    void shouldDelegateAfterCreated()
-    {
+    void shouldDelegateAfterCreated() {
         // GIVEN
-        ListenerEvent<?> event = mock( ListenerEvent.class );
-        metrics.putPoolMetrics( ID, poolMetrics );
+        ListenerEvent<?> event = mock(ListenerEvent.class);
+        metrics.putPoolMetrics(ID, poolMetrics);
 
         // WHEN
-        metrics.afterCreated( ID, event );
+        metrics.afterCreated(ID, event);
 
         // THEN
-        assertEquals( 1, metrics.connectionPoolMetrics().size() );
-        then( poolMetricsListener ).should().afterCreated( event );
+        assertEquals(1, metrics.connectionPoolMetrics().size());
+        then(poolMetricsListener).should().afterCreated(event);
     }
 
     @Test
-    void shouldDelegateAfterFailedToCreate()
-    {
+    void shouldDelegateAfterFailedToCreate() {
         // GIVEN
-        metrics.putPoolMetrics( ID, poolMetrics );
+        metrics.putPoolMetrics(ID, poolMetrics);
 
         // WHEN
-        metrics.afterFailedToCreate( ID );
+        metrics.afterFailedToCreate(ID);
 
         // THEN
-        assertEquals( 1, metrics.connectionPoolMetrics().size() );
-        then( poolMetricsListener ).should().afterFailedToCreate();
+        assertEquals(1, metrics.connectionPoolMetrics().size());
+        then(poolMetricsListener).should().afterFailedToCreate();
     }
 
     @Test
-    void shouldDelegateAfterClosed()
-    {
+    void shouldDelegateAfterClosed() {
         // GIVEN
-        metrics.putPoolMetrics( ID, poolMetrics );
+        metrics.putPoolMetrics(ID, poolMetrics);
 
         // WHEN
-        metrics.afterClosed( ID );
+        metrics.afterClosed(ID);
 
         // THEN
-        assertEquals( 1, metrics.connectionPoolMetrics().size() );
-        then( poolMetricsListener ).should().afterClosed();
+        assertEquals(1, metrics.connectionPoolMetrics().size());
+        then(poolMetricsListener).should().afterClosed();
     }
 
     @Test
-    void shouldDelegateBeforeAcquiringOrCreating()
-    {
+    void shouldDelegateBeforeAcquiringOrCreating() {
         // GIVEN
-        ListenerEvent<?> event = mock( ListenerEvent.class );
-        metrics.putPoolMetrics( ID, poolMetrics );
+        ListenerEvent<?> event = mock(ListenerEvent.class);
+        metrics.putPoolMetrics(ID, poolMetrics);
 
         // WHEN
-        metrics.beforeAcquiringOrCreating( ID, event );
+        metrics.beforeAcquiringOrCreating(ID, event);
 
         // THEN
-        assertEquals( 1, metrics.connectionPoolMetrics().size() );
-        then( poolMetricsListener ).should().beforeAcquiringOrCreating( event );
+        assertEquals(1, metrics.connectionPoolMetrics().size());
+        then(poolMetricsListener).should().beforeAcquiringOrCreating(event);
     }
 
     @Test
-    void shouldDelegateAfterAcquiringOrCreating()
-    {
+    void shouldDelegateAfterAcquiringOrCreating() {
         // GIVEN
-        metrics.putPoolMetrics( ID, poolMetrics );
+        metrics.putPoolMetrics(ID, poolMetrics);
 
         // WHEN
-        metrics.afterAcquiringOrCreating( ID );
+        metrics.afterAcquiringOrCreating(ID);
 
         // THEN
-        assertEquals( 1, metrics.connectionPoolMetrics().size() );
-        then( poolMetricsListener ).should().afterAcquiringOrCreating();
+        assertEquals(1, metrics.connectionPoolMetrics().size());
+        then(poolMetricsListener).should().afterAcquiringOrCreating();
     }
 
     @Test
-    void shouldDelegateAfterAcquiredOrCreated()
-    {
+    void shouldDelegateAfterAcquiredOrCreated() {
         // GIVEN
-        ListenerEvent<?> event = mock( ListenerEvent.class );
-        metrics.putPoolMetrics( ID, poolMetrics );
+        ListenerEvent<?> event = mock(ListenerEvent.class);
+        metrics.putPoolMetrics(ID, poolMetrics);
 
         // WHEN
-        metrics.afterAcquiredOrCreated( ID, event );
+        metrics.afterAcquiredOrCreated(ID, event);
 
         // THEN
-        assertEquals( 1, metrics.connectionPoolMetrics().size() );
-        then( poolMetricsListener ).should().afterAcquiredOrCreated( event );
+        assertEquals(1, metrics.connectionPoolMetrics().size());
+        then(poolMetricsListener).should().afterAcquiredOrCreated(event);
     }
 
     @Test
-    void shouldDelegateAfterTimedOutToAcquireOrCreate()
-    {
+    void shouldDelegateAfterTimedOutToAcquireOrCreate() {
         // GIVEN
-        metrics.putPoolMetrics( ID, poolMetrics );
+        metrics.putPoolMetrics(ID, poolMetrics);
 
         // WHEN
-        metrics.afterTimedOutToAcquireOrCreate( ID );
+        metrics.afterTimedOutToAcquireOrCreate(ID);
 
         // THEN
-        assertEquals( 1, metrics.connectionPoolMetrics().size() );
-        then( poolMetricsListener ).should().afterTimedOutToAcquireOrCreate();
+        assertEquals(1, metrics.connectionPoolMetrics().size());
+        then(poolMetricsListener).should().afterTimedOutToAcquireOrCreate();
     }
 
     @Test
-    void shouldDelegateAfterConnectionCreated()
-    {
+    void shouldDelegateAfterConnectionCreated() {
         // GIVEN
-        ListenerEvent<?> event = mock( ListenerEvent.class );
-        metrics.putPoolMetrics( ID, poolMetrics );
+        ListenerEvent<?> event = mock(ListenerEvent.class);
+        metrics.putPoolMetrics(ID, poolMetrics);
 
         // WHEN
-        metrics.afterConnectionCreated( ID, event );
+        metrics.afterConnectionCreated(ID, event);
 
         // THEN
-        assertEquals( 1, metrics.connectionPoolMetrics().size() );
-        then( poolMetricsListener ).should().acquired( event );
+        assertEquals(1, metrics.connectionPoolMetrics().size());
+        then(poolMetricsListener).should().acquired(event);
     }
 
     @Test
-    void shouldDelegateAfterConnectionReleased()
-    {
+    void shouldDelegateAfterConnectionReleased() {
         // GIVEN
-        ListenerEvent<?> event = mock( ListenerEvent.class );
-        metrics.putPoolMetrics( ID, poolMetrics );
+        ListenerEvent<?> event = mock(ListenerEvent.class);
+        metrics.putPoolMetrics(ID, poolMetrics);
 
         // WHEN
-        metrics.afterConnectionReleased( ID, event );
+        metrics.afterConnectionReleased(ID, event);
 
         // THEN
-        assertEquals( 1, metrics.connectionPoolMetrics().size() );
-        then( poolMetricsListener ).should().released( event );
+        assertEquals(1, metrics.connectionPoolMetrics().size());
+        then(poolMetricsListener).should().released(event);
     }
 
     @Test
-    void shouldCreateListenerEvent()
-    {
+    void shouldCreateListenerEvent() {
         // GIVEN & WHEN
         ListenerEvent<?> event = metrics.createListenerEvent();
 
         // THEN
-        assertTrue( event instanceof MicrometerTimerListenerEvent );
+        assertTrue(event instanceof MicrometerTimerListenerEvent);
     }
 
     @Test
-    void shouldPutPoolMetrics()
-    {
+    void shouldPutPoolMetrics() {
         // GIVEN
         int size = metrics.connectionPoolMetrics().size();
 
         // WHEN
-        metrics.registerPoolMetrics( ID, BoltServerAddress.LOCAL_DEFAULT, () -> 23, () -> 42 );
+        metrics.registerPoolMetrics(ID, BoltServerAddress.LOCAL_DEFAULT, () -> 23, () -> 42);
 
         // THEN
-        assertEquals( size + 1, metrics.connectionPoolMetrics().size() );
+        assertEquals(size + 1, metrics.connectionPoolMetrics().size());
     }
 
     @Test
-    void shouldRemovePoolMetrics()
-    {
+    void shouldRemovePoolMetrics() {
         // GIVEN
-        metrics.putPoolMetrics( ID, poolMetrics );
+        metrics.putPoolMetrics(ID, poolMetrics);
         int size = metrics.connectionPoolMetrics().size();
 
         // WHEN
-        metrics.removePoolMetrics( ID );
+        metrics.removePoolMetrics(ID);
 
         // THEN
-        assertEquals( size - 1, metrics.connectionPoolMetrics().size() );
+        assertEquals(size - 1, metrics.connectionPoolMetrics().size());
     }
 }

@@ -18,10 +18,6 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.spi.Connection;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -29,22 +25,23 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 
-public class DirectConnectionTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.spi.Connection;
+
+public class DirectConnectionTest {
     @Test
-    void shouldReturnServerAgent()
-    {
+    void shouldReturnServerAgent() {
         // given
-        Connection connection = mock( Connection.class );
-        DirectConnection directConnection = new DirectConnection( connection, defaultDatabase(), READ, null );
+        Connection connection = mock(Connection.class);
+        DirectConnection directConnection = new DirectConnection(connection, defaultDatabase(), READ, null);
         String agent = "Neo4j/4.2.5";
-        given( connection.serverAgent() ).willReturn( agent );
+        given(connection.serverAgent()).willReturn(agent);
 
         // when
         String actualAgent = directConnection.serverAgent();
 
         // then
-        assertEquals( agent, actualAgent );
-        then( connection ).should().serverAgent();
+        assertEquals(agent, actualAgent);
+        then(connection).should().serverAgent();
     }
 }

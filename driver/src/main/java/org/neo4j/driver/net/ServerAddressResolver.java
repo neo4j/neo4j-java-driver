@@ -25,8 +25,7 @@ import java.util.Set;
  * A resolver function used by the routing driver to resolve the initial address used to create the driver.
  */
 @FunctionalInterface
-public interface ServerAddressResolver
-{
+public interface ServerAddressResolver {
     /**
      * Resolve the given address to a set of other addresses.
      * It is highly recommended to shuffle the addresses returned to prevent the driver from
@@ -37,5 +36,5 @@ public interface ServerAddressResolver
      * @param address the address to resolve.
      * @return new set of addresses.
      */
-    Set<ServerAddress> resolve( ServerAddress address );
+    Set<ServerAddress> resolve(ServerAddress address);
 }

@@ -18,59 +18,51 @@
  */
 package org.neo4j.driver.stress;
 
-import java.util.concurrent.CompletionStage;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class AsyncWriteQueryWithRetries<C extends AbstractContext> extends AbstractAsyncQuery<C>
-{
+public class AsyncWriteQueryWithRetries<C extends AbstractContext> extends AbstractAsyncQuery<C> {
     private final AbstractStressTestBase<C> stressTest;
 
-    public AsyncWriteQueryWithRetries( AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+    public AsyncWriteQueryWithRetries(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
         this.stressTest = stressTest;
     }
 
     @Override
-    public CompletionStage<Void> execute( C context )
-    {
-        AsyncSession session = newSession( AccessMode.WRITE, context );
+    public CompletionStage<Void> execute(C context) {
+        AsyncSession session = newSession(AccessMode.WRITE, context);
 
-        CompletionStage<ResultSummary> txStage = session.writeTransactionAsync(
-                tx -> tx.runAsync( "CREATE ()" ).thenCompose( ResultCursor::consumeAsync ) );
+        CompletionStage<ResultSummary> txStage =
+                session.writeTransactionAsync(tx -> tx.runAsync("CREATE ()").thenCompose(ResultCursor::consumeAsync));
 
-        return txStage.thenApply( resultSummary -> processResultSummary( resultSummary, context ) )
-                      .handle( ( nothing, throwable ) -> recordAndRethrowThrowable( throwable, context ) )
-                      .whenComplete( ( nothing, throwable ) -> finalizeSession( session, context ) );
+        return txStage.thenApply(resultSummary -> processResultSummary(resultSummary, context))
+                .handle((nothing, throwable) -> recordAndRethrowThrowable(throwable, context))
+                .whenComplete((nothing, throwable) -> finalizeSession(session, context));
     }
 
-    private Void processResultSummary( ResultSummary resultSummary, C context )
-    {
-        assertEquals( 1, resultSummary.counters().nodesCreated() );
+    private Void processResultSummary(ResultSummary resultSummary, C context) {
+        assertEquals(1, resultSummary.counters().nodesCreated());
         context.nodeCreated();
         return null;
     }
 
-    private Void recordAndRethrowThrowable( Throwable throwable, C context )
-    {
-        if ( throwable != null )
-        {
-            stressTest.handleWriteFailure( throwable, context );
-            throw new RuntimeException( throwable );
+    private Void recordAndRethrowThrowable(Throwable throwable, C context) {
+        if (throwable != null) {
+            stressTest.handleWriteFailure(throwable, context);
+            throw new RuntimeException(throwable);
         }
         return null;
     }
 
-    private void finalizeSession( AsyncSession session, C context )
-    {
-        context.setBookmark( session.lastBookmark() );
+    private void finalizeSession(AsyncSession session, C context) {
+        context.setBookmark(session.lastBookmark());
         session.closeAsync();
     }
 }

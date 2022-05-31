@@ -18,8 +18,13 @@
  */
 package org.neo4j.driver.internal.util;
 
-import org.junit.jupiter.api.Test;
+import static java.lang.Integer.MAX_VALUE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
@@ -27,56 +32,46 @@ import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 
-import static java.lang.Integer.MAX_VALUE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-class ServerVersionTest
-{
+class ServerVersionTest {
     @Test
-    void version()
-    {
-        assertThat( ServerVersion.version( "Neo4j/dev" ), is( ServerVersion.vInDev ) );
-        assertThat( ServerVersion.version( "Neo4j/4.0.0" ), is( ServerVersion.v4_0_0 ) );
+    void version() {
+        assertThat(ServerVersion.version("Neo4j/dev"), is(ServerVersion.vInDev));
+        assertThat(ServerVersion.version("Neo4j/4.0.0"), is(ServerVersion.v4_0_0));
     }
 
     @Test
-    void shouldHaveCorrectToString()
-    {
-        assertEquals( "Neo4j/dev", ServerVersion.vInDev.toString() );
-        assertEquals( "Neo4j/4.0.0", ServerVersion.v4_0_0.toString() );
-        assertEquals( "Neo4j/3.5.0", ServerVersion.v3_5_0.toString() );
-        assertEquals( "Neo4j/3.5.7", ServerVersion.version( "Neo4j/3.5.7" ).toString() );
+    void shouldHaveCorrectToString() {
+        assertEquals("Neo4j/dev", ServerVersion.vInDev.toString());
+        assertEquals("Neo4j/4.0.0", ServerVersion.v4_0_0.toString());
+        assertEquals("Neo4j/3.5.0", ServerVersion.v3_5_0.toString());
+        assertEquals("Neo4j/3.5.7", ServerVersion.version("Neo4j/3.5.7").toString());
     }
 
     @Test
-    void shouldFailToParseIllegalVersions()
-    {
-        assertThrows( IllegalArgumentException.class, () -> ServerVersion.version( "" ) );
-        assertThrows( IllegalArgumentException.class, () -> ServerVersion.version( "/1.2.3" ) );
-        assertThrows( IllegalArgumentException.class, () -> ServerVersion.version( "Neo4j1.2.3" ) );
-        assertThrows( IllegalArgumentException.class, () -> ServerVersion.version( "Neo4j" ) );
+    void shouldFailToParseIllegalVersions() {
+        assertThrows(IllegalArgumentException.class, () -> ServerVersion.version(""));
+        assertThrows(IllegalArgumentException.class, () -> ServerVersion.version("/1.2.3"));
+        assertThrows(IllegalArgumentException.class, () -> ServerVersion.version("Neo4j1.2.3"));
+        assertThrows(IllegalArgumentException.class, () -> ServerVersion.version("Neo4j"));
     }
 
     @Test
-    void shouldFailToCompareDifferentProducts()
-    {
-        ServerVersion version1 = ServerVersion.version( "MyNeo4j/1.2.3" );
-        ServerVersion version2 = ServerVersion.version( "OtherNeo4j/1.2.4" );
+    void shouldFailToCompareDifferentProducts() {
+        ServerVersion version1 = ServerVersion.version("MyNeo4j/1.2.3");
+        ServerVersion version2 = ServerVersion.version("OtherNeo4j/1.2.4");
 
-        assertThrows( IllegalArgumentException.class, () -> version1.greaterThanOrEqual( version2 ) );
+        assertThrows(IllegalArgumentException.class, () -> version1.greaterThanOrEqual(version2));
     }
 
     @Test
-    void shouldReturnCorrectServerVersionFromBoltProtocolVersion()
-    {
-        assertEquals( ServerVersion.v4_0_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV4.VERSION ) );
-        assertEquals( ServerVersion.v4_1_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV41.VERSION ) );
-        assertEquals( ServerVersion.v4_2_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV42.VERSION ) );
-        assertEquals( ServerVersion.v4_3_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV43.VERSION ) );
-        assertEquals( ServerVersion.v4_4_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV44.VERSION ) );
-        assertEquals( ServerVersion.vInDev, ServerVersion.fromBoltProtocolVersion( new BoltProtocolVersion( MAX_VALUE, MAX_VALUE ) ) );
+    void shouldReturnCorrectServerVersionFromBoltProtocolVersion() {
+        assertEquals(ServerVersion.v4_0_0, ServerVersion.fromBoltProtocolVersion(BoltProtocolV4.VERSION));
+        assertEquals(ServerVersion.v4_1_0, ServerVersion.fromBoltProtocolVersion(BoltProtocolV41.VERSION));
+        assertEquals(ServerVersion.v4_2_0, ServerVersion.fromBoltProtocolVersion(BoltProtocolV42.VERSION));
+        assertEquals(ServerVersion.v4_3_0, ServerVersion.fromBoltProtocolVersion(BoltProtocolV43.VERSION));
+        assertEquals(ServerVersion.v4_4_0, ServerVersion.fromBoltProtocolVersion(BoltProtocolV44.VERSION));
+        assertEquals(
+                ServerVersion.vInDev,
+                ServerVersion.fromBoltProtocolVersion(new BoltProtocolVersion(MAX_VALUE, MAX_VALUE)));
     }
 }

@@ -18,59 +18,54 @@
  */
 package org.neo4j.driver.integration;
 
-import org.hamcrest.CoreMatchers;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.net.URI;
-
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.internal.util.Neo4jFeature;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
-
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
 
+import java.net.URI;
+import org.hamcrest.CoreMatchers;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.Neo4jFeature;
+import org.neo4j.driver.util.DatabaseExtension;
+import org.neo4j.driver.util.ParallelizableIT;
+
 @ParallelizableIT
-@EnabledOnNeo4jWith( Neo4jFeature.BOLT_V4 )
-class RoutingDriverIT
-{
+@EnabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
+class RoutingDriverIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
-    void shouldBeAbleToConnectSingleInstanceWithNeo4jScheme() throws Throwable
-    {
-        URI uri = URI.create( String.format( "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort() ) );
+    void shouldBeAbleToConnectSingleInstanceWithNeo4jScheme() throws Throwable {
+        URI uri = URI.create(String.format(
+                "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort()));
 
-        try ( Driver driver = GraphDatabase.driver( uri, neo4j.authToken() );
-              Session session = driver.session() )
-        {
-            assertThat( driver, is( clusterDriver() ) );
+        try (Driver driver = GraphDatabase.driver(uri, neo4j.authToken());
+                Session session = driver.session()) {
+            assertThat(driver, is(clusterDriver()));
 
-            Result result = session.run( "RETURN 1" );
-            assertThat( result.single().get( 0 ).asInt(), CoreMatchers.equalTo( 1 ) );
+            Result result = session.run("RETURN 1");
+            assertThat(result.single().get(0).asInt(), CoreMatchers.equalTo(1));
         }
     }
 
     @Test
-    void shouldBeAbleToRunQueryOnNeo4j() throws Throwable
-    {
-        URI uri = URI.create( String.format( "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort() ) );
-        try ( Driver driver = GraphDatabase.driver( uri, neo4j.authToken() );
-              Session session = driver.session( forDatabase( "neo4j" ) ) )
-        {
-            assertThat( driver, is( clusterDriver() ) );
+    void shouldBeAbleToRunQueryOnNeo4j() throws Throwable {
+        URI uri = URI.create(String.format(
+                "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort()));
+        try (Driver driver = GraphDatabase.driver(uri, neo4j.authToken());
+                Session session = driver.session(forDatabase("neo4j"))) {
+            assertThat(driver, is(clusterDriver()));
 
-            Result result = session.run( "RETURN 1" );
-            assertThat( result.single().get( 0 ).asInt(), CoreMatchers.equalTo( 1 ) );
+            Result result = session.run("RETURN 1");
+            assertThat(result.single().get(0).asInt(), CoreMatchers.equalTo(1));
         }
     }
 }

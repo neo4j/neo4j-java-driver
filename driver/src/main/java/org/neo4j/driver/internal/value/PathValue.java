@@ -22,29 +22,23 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Type;
 
-public class PathValue extends ObjectValueAdapter<Path>
-{
-    public PathValue( Path adapted )
-    {
-        super( adapted );
+public class PathValue extends ObjectValueAdapter<Path> {
+    public PathValue(Path adapted) {
+        super(adapted);
     }
 
     @Override
-    public Path asPath()
-    {
+    public Path asPath() {
         return asObject();
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return asObject().length();
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.PATH();
     }
-
 }

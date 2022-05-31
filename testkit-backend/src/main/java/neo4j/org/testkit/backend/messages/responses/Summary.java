@@ -18,31 +18,26 @@
  */
 package neo4j.org.testkit.backend.messages.responses;
 
+import java.util.List;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
-
-import java.util.List;
-import java.util.Map;
-
 import org.neo4j.driver.Value;
 
 @Getter
 @Builder
-public class Summary implements TestkitResponse
-{
+public class Summary implements TestkitResponse {
     private SummaryBody data;
 
     @Override
-    public String testkitName()
-    {
+    public String testkitName() {
         return "Summary";
     }
 
     @Getter
     @Builder
-    public static class SummaryBody
-    {
+    public static class SummaryBody {
         private ServerInfo serverInfo;
 
         private Counters counters;
@@ -66,8 +61,7 @@ public class Summary implements TestkitResponse
 
     @Getter
     @Builder
-    public static class ServerInfo
-    {
+    public static class ServerInfo {
         private String address;
 
         private String protocolVersion;
@@ -77,8 +71,7 @@ public class Summary implements TestkitResponse
 
     @Getter
     @Builder
-    public static class Counters
-    {
+    public static class Counters {
         private int constraintsAdded;
 
         private int constraintsRemoved;
@@ -110,17 +103,15 @@ public class Summary implements TestkitResponse
 
     @Getter
     @Builder
-    public static class Query
-    {
+    public static class Query {
         private String text;
 
-        private Map<String,Value> parameters;
+        private Map<String, Value> parameters;
     }
 
     @Getter
     @Builder
-    public static class Notification
-    {
+    public static class Notification {
         private String code;
 
         private String title;
@@ -134,8 +125,7 @@ public class Summary implements TestkitResponse
 
     @Getter
     @Builder
-    public static class InputPosition
-    {
+    public static class InputPosition {
         private int offset;
 
         private int line;
@@ -145,11 +135,10 @@ public class Summary implements TestkitResponse
 
     @Getter
     @SuperBuilder
-    public static class Plan
-    {
+    public static class Plan {
         private String operatorType;
 
-        private Map<String,Object> args;
+        private Map<String, Object> args;
 
         private List<String> identifiers;
 
@@ -158,8 +147,7 @@ public class Summary implements TestkitResponse
 
     @Getter
     @SuperBuilder
-    public static class Profile extends Plan
-    {
+    public static class Profile extends Plan {
         private long dbHits;
 
         private long rows;

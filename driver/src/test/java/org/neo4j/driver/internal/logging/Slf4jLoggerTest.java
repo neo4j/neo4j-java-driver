@@ -18,109 +18,100 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class Slf4jLoggerTest
-{
-    private final Logger logger = mock( Logger.class );
-    private final Slf4jLogger slf4jLogger = new Slf4jLogger( logger );
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+
+class Slf4jLoggerTest {
+    private final Logger logger = mock(Logger.class);
+    private final Slf4jLogger slf4jLogger = new Slf4jLogger(logger);
 
     @Test
-    void shouldLogErrorWithMessageAndThrowable()
-    {
-        when( logger.isErrorEnabled() ).thenReturn( true );
+    void shouldLogErrorWithMessageAndThrowable() {
+        when(logger.isErrorEnabled()).thenReturn(true);
         String message = "Hello";
-        IllegalArgumentException error = new IllegalArgumentException( "World" );
+        IllegalArgumentException error = new IllegalArgumentException("World");
 
-        slf4jLogger.error( message, error );
+        slf4jLogger.error(message, error);
 
-        verify( logger ).error( message, error );
+        verify(logger).error(message, error);
     }
 
     @Test
-    void shouldLogInfoWithMessageAndParams()
-    {
-        when( logger.isInfoEnabled() ).thenReturn( true );
+    void shouldLogInfoWithMessageAndParams() {
+        when(logger.isInfoEnabled()).thenReturn(true);
         String message = "One %s, two %s, three %s";
         Object[] params = {"111", "222", "333"};
 
-        slf4jLogger.info( message, params );
+        slf4jLogger.info(message, params);
 
-        verify( logger ).info( "One 111, two 222, three 333" );
+        verify(logger).info("One 111, two 222, three 333");
     }
 
     @Test
-    void shouldLogWarnWithMessageAndParams()
-    {
-        when( logger.isWarnEnabled() ).thenReturn( true );
+    void shouldLogWarnWithMessageAndParams() {
+        when(logger.isWarnEnabled()).thenReturn(true);
         String message = "C for %s, d for %s";
         Object[] params = {"cat", "dog"};
 
-        slf4jLogger.warn( message, params );
+        slf4jLogger.warn(message, params);
 
-        verify( logger ).warn( "C for cat, d for dog" );
+        verify(logger).warn("C for cat, d for dog");
     }
 
     @Test
-    void shouldLogWarnWithMessageAndThrowable()
-    {
-        when( logger.isWarnEnabled() ).thenReturn( true );
+    void shouldLogWarnWithMessageAndThrowable() {
+        when(logger.isWarnEnabled()).thenReturn(true);
         String message = "Hello";
-        RuntimeException error = new RuntimeException( "World" );
+        RuntimeException error = new RuntimeException("World");
 
-        slf4jLogger.warn( message, error );
+        slf4jLogger.warn(message, error);
 
-        verify( logger ).warn( message, error );
+        verify(logger).warn(message, error);
     }
 
     @Test
-    void shouldLogDebugWithMessageAndParams()
-    {
-        when( logger.isDebugEnabled() ).thenReturn( true );
+    void shouldLogDebugWithMessageAndParams() {
+        when(logger.isDebugEnabled()).thenReturn(true);
         String message = "Hello%s%s!";
         Object[] params = {" ", "World"};
 
-        slf4jLogger.debug( message, params );
+        slf4jLogger.debug(message, params);
 
-        verify( logger ).debug( "Hello World!" );
+        verify(logger).debug("Hello World!");
     }
 
     @Test
-    void shouldLogTraceWithMessageAndParams()
-    {
-        when( logger.isTraceEnabled() ).thenReturn( true );
+    void shouldLogTraceWithMessageAndParams() {
+        when(logger.isTraceEnabled()).thenReturn(true);
         String message = "I'll be %s!";
         Object[] params = {"back"};
 
-        slf4jLogger.trace( message, params );
+        slf4jLogger.trace(message, params);
 
-        verify( logger ).trace( "I'll be back!" );
+        verify(logger).trace("I'll be back!");
     }
 
     @Test
-    void shouldCheckIfDebugIsEnabled()
-    {
-        when( logger.isDebugEnabled() ).thenReturn( false );
-        assertFalse( slf4jLogger.isDebugEnabled() );
+    void shouldCheckIfDebugIsEnabled() {
+        when(logger.isDebugEnabled()).thenReturn(false);
+        assertFalse(slf4jLogger.isDebugEnabled());
 
-        when( logger.isDebugEnabled() ).thenReturn( true );
-        assertTrue( slf4jLogger.isDebugEnabled() );
+        when(logger.isDebugEnabled()).thenReturn(true);
+        assertTrue(slf4jLogger.isDebugEnabled());
     }
 
     @Test
-    void shouldCheckIfTraceIsEnabled()
-    {
-        when( logger.isTraceEnabled() ).thenReturn( false );
-        assertFalse( slf4jLogger.isTraceEnabled() );
+    void shouldCheckIfTraceIsEnabled() {
+        when(logger.isTraceEnabled()).thenReturn(false);
+        assertFalse(slf4jLogger.isTraceEnabled());
 
-        when( logger.isTraceEnabled() ).thenReturn( true );
-        assertTrue( slf4jLogger.isTraceEnabled() );
+        when(logger.isTraceEnabled()).thenReturn(true);
+        assertTrue(slf4jLogger.isTraceEnabled());
     }
 }

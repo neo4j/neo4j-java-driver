@@ -18,12 +18,6 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.types.TypeSystem;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -32,85 +26,81 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.value.BooleanValue.FALSE;
 import static org.neo4j.driver.internal.value.BooleanValue.TRUE;
 
-class BooleanValueTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.types.TypeConstructor;
+import org.neo4j.driver.types.TypeSystem;
+
+class BooleanValueTest {
     private TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
 
     @Test
-    void testBooleanTrue()
-    {
+    void testBooleanTrue() {
         // Given
         BooleanValue value = TRUE;
 
         // Then
-        assertThat( value.asBoolean(), equalTo( true ) );
-        assertThat( value.isTrue(), equalTo( true ) );
-        assertThat( value.isFalse(), equalTo( false ) );
+        assertThat(value.asBoolean(), equalTo(true));
+        assertThat(value.isTrue(), equalTo(true));
+        assertThat(value.isFalse(), equalTo(false));
     }
 
     @Test
-    void testBooleanFalse()
-    {
+    void testBooleanFalse() {
         // Given
         BooleanValue value = FALSE;
 
         // Then
-        assertThat( value.asBoolean(), equalTo( false ) );
-        assertThat( value.isTrue(), equalTo( false ) );
-        assertThat( value.isFalse(), equalTo( true ) );
+        assertThat(value.asBoolean(), equalTo(false));
+        assertThat(value.isTrue(), equalTo(false));
+        assertThat(value.isFalse(), equalTo(true));
     }
 
     @Test
-    void testIsBoolean()
-    {
+    void testIsBoolean() {
         // Given
         BooleanValue value = TRUE;
 
         // Then
-        assertThat( typeSystem.BOOLEAN().isTypeOf( value ), equalTo( true ) );
+        assertThat(typeSystem.BOOLEAN().isTypeOf(value), equalTo(true));
     }
 
     @Test
-    void testEquals()
-    {
+    void testEquals() {
         // Given
         BooleanValue firstValue = TRUE;
         BooleanValue secondValue = TRUE;
 
         // Then
-        assertThat( firstValue, equalTo( secondValue ) );
+        assertThat(firstValue, equalTo(secondValue));
     }
 
     @Test
-    void testHashCode()
-    {
+    void testHashCode() {
         // Given
         BooleanValue value = TRUE;
 
         // Then
-        assertThat( value.hashCode(), notNullValue() );
+        assertThat(value.hashCode(), notNullValue());
     }
 
     @Test
-    void shouldNotBeNull()
-    {
-        assertFalse( TRUE.isNull() );
-        assertFalse( BooleanValue.FALSE.isNull() );
+    void shouldNotBeNull() {
+        assertFalse(TRUE.isNull());
+        assertFalse(BooleanValue.FALSE.isNull());
     }
 
     @Test
-    void shouldTypeAsBoolean()
-    {
-        assertThat( TRUE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN ) );
-        assertThat( BooleanValue.FALSE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN ) );
+    void shouldTypeAsBoolean() {
+        assertThat(TRUE.typeConstructor(), equalTo(TypeConstructor.BOOLEAN));
+        assertThat(BooleanValue.FALSE.typeConstructor(), equalTo(TypeConstructor.BOOLEAN));
     }
 
     @Test
-    void shouldConvertToBooleanAndObject()
-    {
-        assertTrue( TRUE.asBoolean());
-        assertFalse( BooleanValue.FALSE.asBoolean());
-        assertThat( TRUE.asObject(), equalTo( (Object) Boolean.TRUE ));
-        assertThat( FALSE.asObject(), equalTo( (Object) Boolean.FALSE ));
+    void shouldConvertToBooleanAndObject() {
+        assertTrue(TRUE.asBoolean());
+        assertFalse(BooleanValue.FALSE.asBoolean());
+        assertThat(TRUE.asObject(), equalTo((Object) Boolean.TRUE));
+        assertThat(FALSE.asObject(), equalTo((Object) Boolean.FALSE));
     }
 }

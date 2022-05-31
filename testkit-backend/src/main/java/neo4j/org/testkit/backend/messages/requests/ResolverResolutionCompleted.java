@@ -18,27 +18,23 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
-
 @Setter
 @Getter
-public class ResolverResolutionCompleted implements TestkitCallbackResult
-{
+public class ResolverResolutionCompleted implements TestkitCallbackResult {
     private ResolverResolutionCompletedBody data;
 
     @Override
-    public String getCallbackId()
-    {
+    public String getCallbackId() {
         return data.getRequestId();
     }
 
     @Setter
     @Getter
-    public static class ResolverResolutionCompletedBody
-    {
+    public static class ResolverResolutionCompletedBody {
         private String requestId;
         private List<String> addresses;
     }

@@ -18,97 +18,86 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class RouteMessageResponseHandlerTest
-{
+class RouteMessageResponseHandlerTest {
 
     @Test
-    void onSuccessShouldSuccessFullyCompleteFutureWithRoutingTable() throws Exception
-    {
-        CompletableFuture<Map<String,Value>> completableFuture = new CompletableFuture<>();
-        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler( completableFuture );
-        Map<String,Value> routingTable = getRoutingTable();
-        Map<String,Value> metadata = getMetadataWithRoutingTable( routingTable );
+    void onSuccessShouldSuccessFullyCompleteFutureWithRoutingTable() throws Exception {
+        CompletableFuture<Map<String, Value>> completableFuture = new CompletableFuture<>();
+        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler(completableFuture);
+        Map<String, Value> routingTable = getRoutingTable();
+        Map<String, Value> metadata = getMetadataWithRoutingTable(routingTable);
 
-        responseHandler.onSuccess( metadata );
+        responseHandler.onSuccess(metadata);
 
-        assertEquals( routingTable, completableFuture.getNow( null ) );
+        assertEquals(routingTable, completableFuture.getNow(null));
     }
 
     @Test
-    void onSuccessShouldExceptionallyCompleteFutureWhenMetadataDoesNotHaveRoutingTable() throws Exception
-    {
-        CompletableFuture<Map<String,Value>> completableFuture = new CompletableFuture<>();
-        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler( completableFuture );
-        Map<String,Value> metadata = new HashMap<>();
+    void onSuccessShouldExceptionallyCompleteFutureWhenMetadataDoesNotHaveRoutingTable() throws Exception {
+        CompletableFuture<Map<String, Value>> completableFuture = new CompletableFuture<>();
+        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler(completableFuture);
+        Map<String, Value> metadata = new HashMap<>();
 
-        responseHandler.onSuccess( metadata );
+        responseHandler.onSuccess(metadata);
 
-        assertThrows( CompletionException.class, () -> completableFuture.getNow( null ) );
+        assertThrows(CompletionException.class, () -> completableFuture.getNow(null));
     }
 
     @Test
-    void onFailureShouldCompleteExceptionallyWithTheOriginalException()
-    {
-        CompletableFuture<Map<String,Value>> completableFuture = new CompletableFuture<>();
-        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler( completableFuture );
-        RuntimeException expectedException = new RuntimeException( "Test exception" );
+    void onFailureShouldCompleteExceptionallyWithTheOriginalException() {
+        CompletableFuture<Map<String, Value>> completableFuture = new CompletableFuture<>();
+        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler(completableFuture);
+        RuntimeException expectedException = new RuntimeException("Test exception");
 
-        responseHandler.onFailure( expectedException );
+        responseHandler.onFailure(expectedException);
 
-        assertTrue( completableFuture.isCompletedExceptionally() );
-        completableFuture.handle( ( value, ex ) ->
-                                  {
-                                      assertNull( value );
-                                      assertEquals( expectedException, ex );
-                                      return null;
-                                  } );
+        assertTrue(completableFuture.isCompletedExceptionally());
+        completableFuture.handle((value, ex) -> {
+            assertNull(value);
+            assertEquals(expectedException, ex);
+            return null;
+        });
     }
 
     @Test
-    void onRecordShouldThrowUnsupportedOperation()
-    {
-        CompletableFuture<Map<String,Value>> completableFuture = new CompletableFuture<>();
-        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler( completableFuture );
+    void onRecordShouldThrowUnsupportedOperation() {
+        CompletableFuture<Map<String, Value>> completableFuture = new CompletableFuture<>();
+        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler(completableFuture);
 
-        responseHandler.onRecord( new Value[0] );
+        responseHandler.onRecord(new Value[0]);
 
-        assertTrue( completableFuture.isCompletedExceptionally() );
-        completableFuture.handle( ( value, ex ) ->
-                                  {
-                                      assertNull( value );
-                                      assertEquals( UnsupportedOperationException.class, ex.getClass() );
-                                      return null;
-                                  } );
+        assertTrue(completableFuture.isCompletedExceptionally());
+        completableFuture.handle((value, ex) -> {
+            assertNull(value);
+            assertEquals(UnsupportedOperationException.class, ex.getClass());
+            return null;
+        });
     }
 
-    private Map<String,Value> getMetadataWithRoutingTable( Map<String,Value> routingTable )
-    {
-        Map<String,Value> metadata = new HashMap<>();
-        metadata.put( "rt", Values.value( routingTable ) );
+    private Map<String, Value> getMetadataWithRoutingTable(Map<String, Value> routingTable) {
+        Map<String, Value> metadata = new HashMap<>();
+        metadata.put("rt", Values.value(routingTable));
         return metadata;
     }
 
-    private Map<String,Value> getRoutingTable()
-    {
-        Map<String,Value> routingTable = new HashMap<>();
-        routingTable.put( "ttl", Values.value( 300 ) );
-        routingTable.put( "addresses", Values.value( new ArrayList<>() ) );
+    private Map<String, Value> getRoutingTable() {
+        Map<String, Value> routingTable = new HashMap<>();
+        routingTable.put("ttl", Values.value(300));
+        routingTable.put("addresses", Values.value(new ArrayList<>()));
         return routingTable;
     }
 }

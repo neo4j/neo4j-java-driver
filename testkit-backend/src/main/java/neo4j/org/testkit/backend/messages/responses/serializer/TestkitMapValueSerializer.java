@@ -18,40 +18,34 @@
  */
 package neo4j.org.testkit.backend.messages.responses.serializer;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.function.Function;
-
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.value.MapValue;
-
 import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherObject;
 import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.object;
 
-public class TestkitMapValueSerializer extends StdSerializer<MapValue>
-{
-    public TestkitMapValueSerializer()
-    {
-        super( MapValue.class );
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import java.io.IOException;
+import java.util.Map;
+import java.util.function.Function;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.value.MapValue;
+
+public class TestkitMapValueSerializer extends StdSerializer<MapValue> {
+    public TestkitMapValueSerializer() {
+        super(MapValue.class);
     }
 
     @Override
-    public void serialize( MapValue mapValue, JsonGenerator gen, SerializerProvider serializerProvider ) throws IOException
-    {
-        cypherObject( gen, "CypherMap", () ->
-        {
-            gen.writeFieldName( "value" );
-            object( gen, () ->
-            {
-                for ( Map.Entry<String,Value> entry : mapValue.asMap( Function.identity() ).entrySet() )
-                {
-                    gen.writeObjectField( entry.getKey(), entry.getValue() );
+    public void serialize(MapValue mapValue, JsonGenerator gen, SerializerProvider serializerProvider)
+            throws IOException {
+        cypherObject(gen, "CypherMap", () -> {
+            gen.writeFieldName("value");
+            object(gen, () -> {
+                for (Map.Entry<String, Value> entry :
+                        mapValue.asMap(Function.identity()).entrySet()) {
+                    gen.writeObjectField(entry.getKey(), entry.getValue());
                 }
-            } );
-        } );
+            });
+        });
     }
 }

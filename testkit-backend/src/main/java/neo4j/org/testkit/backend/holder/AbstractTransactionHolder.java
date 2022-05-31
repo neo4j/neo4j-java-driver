@@ -23,8 +23,7 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Getter
-public abstract class AbstractTransactionHolder<T1, T2>
-{
+public abstract class AbstractTransactionHolder<T1, T2> {
     private final T1 sessionHolder;
     private final T2 transaction;
 }

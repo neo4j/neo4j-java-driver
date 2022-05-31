@@ -19,50 +19,41 @@
 package org.neo4j.driver.internal.summary;
 
 import java.util.Objects;
-
 import org.neo4j.driver.summary.DatabaseInfo;
 
-public class InternalDatabaseInfo implements DatabaseInfo
-{
-    public static DatabaseInfo DEFAULT_DATABASE_INFO = new InternalDatabaseInfo( null );
+public class InternalDatabaseInfo implements DatabaseInfo {
+    public static DatabaseInfo DEFAULT_DATABASE_INFO = new InternalDatabaseInfo(null);
 
     private final String name;
 
-    public InternalDatabaseInfo( String name )
-    {
+    public InternalDatabaseInfo(String name) {
         this.name = name;
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return this.name;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         InternalDatabaseInfo that = (InternalDatabaseInfo) o;
-        return Objects.equals( name, that.name );
+        return Objects.equals(name, that.name);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( name );
+    public int hashCode() {
+        return Objects.hash(name);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "InternalDatabaseInfo{" + "name='" + name + '\'' + '}';
     }
 }

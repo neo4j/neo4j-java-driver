@@ -18,81 +18,67 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import org.neo4j.driver.Logger;
-
 import static java.util.Objects.requireNonNull;
 
-public abstract class ReformattedLogger implements Logger
-{
+import org.neo4j.driver.Logger;
+
+public abstract class ReformattedLogger implements Logger {
     private final Logger delegate;
 
-    protected ReformattedLogger(Logger delegate)
-    {
-        this.delegate = requireNonNull( delegate );
+    protected ReformattedLogger(Logger delegate) {
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
-    public void error( String message, Throwable cause )
-    {
-        delegate.error( reformat( message ), cause );
+    public void error(String message, Throwable cause) {
+        delegate.error(reformat(message), cause);
     }
 
     @Override
-    public void info( String message, Object... params )
-    {
-        delegate.info( reformat( message ), params );
+    public void info(String message, Object... params) {
+        delegate.info(reformat(message), params);
     }
 
     @Override
-    public void warn( String message, Object... params )
-    {
-        delegate.warn( reformat( message ), params );
+    public void warn(String message, Object... params) {
+        delegate.warn(reformat(message), params);
     }
 
     @Override
-    public void warn( String message, Throwable cause )
-    {
-        delegate.warn( reformat( message ), cause );
+    public void warn(String message, Throwable cause) {
+        delegate.warn(reformat(message), cause);
     }
 
     @Override
-    public void debug( String message, Object... params )
-    {
-        if ( isDebugEnabled() )
-        {
-            delegate.debug( reformat( message ), params );
+    public void debug(String message, Object... params) {
+        if (isDebugEnabled()) {
+            delegate.debug(reformat(message), params);
         }
     }
 
     @Override
-    public void debug( String message, Throwable throwable )
-    {
-        if ( isDebugEnabled() )
-        {
-            delegate.debug( reformat( message ), throwable );
+    public void debug(String message, Throwable throwable) {
+        if (isDebugEnabled()) {
+            delegate.debug(reformat(message), throwable);
         }
     }
 
     @Override
-    public void trace( String message, Object... params )
-    {
-        if ( isTraceEnabled() )
-        {
-            delegate.trace( reformat( message ), params );
+    public void trace(String message, Object... params) {
+        if (isTraceEnabled()) {
+            delegate.trace(reformat(message), params);
         }
     }
 
     @Override
-    public boolean isTraceEnabled()
-    {
+    public boolean isTraceEnabled() {
         return delegate.isTraceEnabled();
     }
 
     @Override
-    public boolean isDebugEnabled()
-    {
+    public boolean isDebugEnabled() {
         return delegate.isDebugEnabled();
     }
 
-    protected abstract String reformat( String message );
+    protected abstract String reformat(String message);
 }

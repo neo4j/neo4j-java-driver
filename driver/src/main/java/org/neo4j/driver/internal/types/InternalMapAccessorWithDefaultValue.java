@@ -20,325 +20,237 @@ package org.neo4j.driver.internal.types;
 
 import java.util.List;
 import java.util.Map;
-
-import org.neo4j.driver.internal.AsValue;
+import java.util.function.Function;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.MapAccessorWithDefaultValue;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
-import java.util.function.Function;
 
-public abstract class InternalMapAccessorWithDefaultValue implements MapAccessorWithDefaultValue
-{
-    public abstract Value get( String key );
+public abstract class InternalMapAccessorWithDefaultValue implements MapAccessorWithDefaultValue {
+    public abstract Value get(String key);
 
     @Override
-    public Value get( String key, Value defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public Value get(String key, Value defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private Value get( Value value, Value defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private Value get(Value value, Value defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return ((AsValue) value).asValue();
         }
     }
 
     @Override
-    public Object get( String key, Object defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public Object get(String key, Object defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private Object get(Value value, Object defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private Object get(Value value, Object defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asObject();
         }
     }
 
     @Override
-    public Number get( String key, Number defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public Number get(String key, Number defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private Number get( Value value, Number defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private Number get(Value value, Number defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asNumber();
         }
     }
 
     @Override
-    public Entity get( String key, Entity defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public Entity get(String key, Entity defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private Entity get( Value value, Entity defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private Entity get(Value value, Entity defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asEntity();
         }
     }
 
     @Override
-    public Node get( String key, Node defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public Node get(String key, Node defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private Node get( Value value, Node defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private Node get(Value value, Node defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asNode();
         }
     }
 
     @Override
-    public Path get( String key, Path defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public Path get(String key, Path defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private Path get( Value value, Path defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private Path get(Value value, Path defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asPath();
         }
     }
 
     @Override
-    public Relationship get( String key, Relationship defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public Relationship get(String key, Relationship defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private Relationship get( Value value, Relationship defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private Relationship get(Value value, Relationship defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asRelationship();
         }
     }
 
     @Override
-    public List<Object> get( String key, List<Object> defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public List<Object> get(String key, List<Object> defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private List<Object> get( Value value, List<Object> defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private List<Object> get(Value value, List<Object> defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
-            return  value.asList();
+        } else {
+            return value.asList();
         }
     }
 
     @Override
-    public  <T> List<T> get( String key, List<T> defaultValue, Function<Value,T> mapFunc )
-    {
-        return get( get( key ), defaultValue, mapFunc );
+    public <T> List<T> get(String key, List<T> defaultValue, Function<Value, T> mapFunc) {
+        return get(get(key), defaultValue, mapFunc);
     }
 
-    private <T> List<T> get( Value value, List<T> defaultValue, Function<Value, T> mapFunc )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private <T> List<T> get(Value value, List<T> defaultValue, Function<Value, T> mapFunc) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
-            return value.asList( mapFunc );
+        } else {
+            return value.asList(mapFunc);
         }
     }
 
     @Override
-    public Map<String, Object> get( String key, Map<String,Object> defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public Map<String, Object> get(String key, Map<String, Object> defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private Map<String, Object> get( Value value, Map<String, Object> defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private Map<String, Object> get(Value value, Map<String, Object> defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asMap();
         }
     }
 
     @Override
-    public <T> Map<String, T> get( String key, Map<String,T> defaultValue, Function<Value,T> mapFunc )
-    {
-        return get( get( key ), defaultValue, mapFunc );
+    public <T> Map<String, T> get(String key, Map<String, T> defaultValue, Function<Value, T> mapFunc) {
+        return get(get(key), defaultValue, mapFunc);
     }
 
-    private <T>Map<String, T> get( Value value, Map<String, T> defaultValue, Function<Value, T> mapFunc )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private <T> Map<String, T> get(Value value, Map<String, T> defaultValue, Function<Value, T> mapFunc) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
-            return value.asMap( mapFunc );
+        } else {
+            return value.asMap(mapFunc);
         }
     }
 
     @Override
-    public int get( String key, int defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public int get(String key, int defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private int get( Value value, int defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private int get(Value value, int defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asInt();
         }
     }
 
     @Override
-    public long get( String key, long defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public long get(String key, long defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private long get( Value value, long defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private long get(Value value, long defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asLong();
         }
     }
 
     @Override
-    public boolean get( String key, boolean defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public boolean get(String key, boolean defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private boolean get( Value value, boolean defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private boolean get(Value value, boolean defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asBoolean();
         }
     }
 
     @Override
-    public String get( String key, String defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public String get(String key, String defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private String get( Value value, String defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private String get(Value value, String defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asString();
         }
     }
 
     @Override
-    public float get( String key, float defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public float get(String key, float defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private float get( Value value, float defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private float get(Value value, float defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asFloat();
         }
     }
 
     @Override
-    public double get( String key, double defaultValue )
-    {
-        return get( get( key ), defaultValue );
+    public double get(String key, double defaultValue) {
+        return get(get(key), defaultValue);
     }
 
-    private double get( Value value, double defaultValue )
-    {
-        if( value.equals( Values.NULL ) )
-        {
+    private double get(Value value, double defaultValue) {
+        if (value.equals(Values.NULL)) {
             return defaultValue;
-        }
-        else
-        {
+        } else {
             return value.asDouble();
         }
     }
-
 }

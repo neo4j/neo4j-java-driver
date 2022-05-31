@@ -18,8 +18,10 @@
  */
 package org.neo4j.driver.stress;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.driver.internal.util.Iterables.single;
 
+import java.util.List;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
@@ -28,36 +30,26 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Node;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.driver.internal.util.Iterables.single;
-
-public class BlockingReadQueryWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C>
-{
-    public BlockingReadQueryWithRetries( Driver driver, boolean useBookmark )
-    {
-        super( driver, useBookmark );
+public class BlockingReadQueryWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C> {
+    public BlockingReadQueryWithRetries(Driver driver, boolean useBookmark) {
+        super(driver, useBookmark);
     }
 
     @Override
-    public void execute( C context )
-    {
-        try ( Session session = newSession( AccessMode.READ, context ) )
-        {
-            ResultSummary resultSummary = session.readTransaction(
-                    tx ->
-                    {
-                        Result result = tx.run( "MATCH (n) RETURN n LIMIT 1" );
-                        List<Record> records = result.list();
-                        if ( !records.isEmpty() )
-                        {
-                            Record record = single( records );
-                            Node node = record.get( 0 ).asNode();
-                            assertNotNull( node );
-                        }
+    public void execute(C context) {
+        try (Session session = newSession(AccessMode.READ, context)) {
+            ResultSummary resultSummary = session.readTransaction(tx -> {
+                Result result = tx.run("MATCH (n) RETURN n LIMIT 1");
+                List<Record> records = result.list();
+                if (!records.isEmpty()) {
+                    Record record = single(records);
+                    Node node = record.get(0).asNode();
+                    assertNotNull(node);
+                }
 
-                        return result.consume();
-                    } );
-            context.readCompleted( resultSummary );
+                return result.consume();
+            });
+            context.readCompleted(resultSummary);
         }
     }
 }

@@ -23,39 +23,29 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
 
-public class LockUtil
-{
-    public static void executeWithLock( Lock lock, Runnable runnable )
-    {
+public class LockUtil {
+    public static void executeWithLock(Lock lock, Runnable runnable) {
         lock.lock();
-        try
-        {
+        try {
             runnable.run();
-        }
-        finally
-        {
+        } finally {
             lock.unlock();
         }
     }
 
-    public static <T> T executeWithLock( Lock lock, Supplier<T> supplier )
-    {
+    public static <T> T executeWithLock(Lock lock, Supplier<T> supplier) {
         lock.lock();
-        try
-        {
+        try {
             return supplier.get();
-        }
-        finally
-        {
+        } finally {
             lock.unlock();
         }
     }
 
-    public static <T> void executeWithLockAsync( Lock lock, Supplier<CompletionStage<T>> stageSupplier )
-    {
+    public static <T> void executeWithLockAsync(Lock lock, Supplier<CompletionStage<T>> stageSupplier) {
         lock.lock();
-        CompletableFuture.completedFuture( lock )
-                         .thenCompose( ignored -> stageSupplier.get() )
-                         .whenComplete( ( ignored, throwable ) -> lock.unlock() );
+        CompletableFuture.completedFuture(lock)
+                .thenCompose(ignored -> stageSupplier.get())
+                .whenComplete((ignored, throwable) -> lock.unlock());
     }
 }

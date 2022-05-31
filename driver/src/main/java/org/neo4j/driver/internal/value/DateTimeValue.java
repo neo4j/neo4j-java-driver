@@ -20,32 +20,26 @@ package org.neo4j.driver.internal.value;
 
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
-
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
-public class DateTimeValue extends ObjectValueAdapter<ZonedDateTime>
-{
-    public DateTimeValue( ZonedDateTime zonedDateTime )
-    {
-        super( zonedDateTime );
+public class DateTimeValue extends ObjectValueAdapter<ZonedDateTime> {
+    public DateTimeValue(ZonedDateTime zonedDateTime) {
+        super(zonedDateTime);
     }
 
     @Override
-    public OffsetDateTime asOffsetDateTime()
-    {
+    public OffsetDateTime asOffsetDateTime() {
         return asZonedDateTime().toOffsetDateTime();
     }
 
     @Override
-    public ZonedDateTime asZonedDateTime()
-    {
+    public ZonedDateTime asZonedDateTime() {
         return asObject();
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.DATE_TIME();
     }
 }

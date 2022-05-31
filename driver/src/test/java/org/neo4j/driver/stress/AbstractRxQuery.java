@@ -18,29 +18,28 @@
  */
 package org.neo4j.driver.stress;
 
+import static org.neo4j.driver.SessionConfig.builder;
+
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.reactive.RxSession;
 
-import static org.neo4j.driver.SessionConfig.builder;
-
-public abstract class AbstractRxQuery<C extends AbstractContext> implements RxCommand<C>
-{
+public abstract class AbstractRxQuery<C extends AbstractContext> implements RxCommand<C> {
     protected final Driver driver;
     protected final boolean useBookmark;
 
-    public AbstractRxQuery( Driver driver, boolean useBookmark )
-    {
+    public AbstractRxQuery(Driver driver, boolean useBookmark) {
         this.driver = driver;
         this.useBookmark = useBookmark;
     }
 
-    public RxSession newSession( AccessMode mode, C context )
-    {
-        if ( useBookmark )
-        {
-            return driver.rxSession( builder().withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ).build() );
+    public RxSession newSession(AccessMode mode, C context) {
+        if (useBookmark) {
+            return driver.rxSession(builder()
+                    .withDefaultAccessMode(mode)
+                    .withBookmarks(context.getBookmark())
+                    .build());
         }
-        return driver.rxSession( builder().withDefaultAccessMode( mode ).build() );
+        return driver.rxSession(builder().withDefaultAccessMode(mode).build());
     }
 }

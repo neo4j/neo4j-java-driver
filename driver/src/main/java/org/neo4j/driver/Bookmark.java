@@ -19,7 +19,6 @@
 package org.neo4j.driver;
 
 import java.util.Set;
-
 import org.neo4j.driver.internal.InternalBookmark;
 
 /**
@@ -33,8 +32,7 @@ import org.neo4j.driver.internal.InternalBookmark;
  *
  * To opt out of this mechanism for unrelated units of work, applications can use multiple sessions.
  */
-public interface Bookmark
-{
+public interface Bookmark {
     /**
      * Returns a read-only set of bookmark strings that this bookmark instance identifies.
      * @return a read-only set of bookmark strings that this bookmark instance identifies.
@@ -46,9 +44,8 @@ public interface Bookmark
      * @param values values obtained from a previous bookmark.
      * @return A bookmark.
      */
-    static Bookmark from( Set<String> values )
-    {
-        return InternalBookmark.parse( values );
+    static Bookmark from(Set<String> values) {
+        return InternalBookmark.parse(values);
     }
 
     /**

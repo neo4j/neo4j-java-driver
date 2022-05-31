@@ -18,24 +18,19 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.Set;
+import static java.util.Collections.singleton;
 
+import java.util.Set;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
 
-import static java.util.Collections.singleton;
-
-public class IdentityResolver implements ServerAddressResolver
-{
+public class IdentityResolver implements ServerAddressResolver {
     public static final IdentityResolver IDENTITY_RESOLVER = new IdentityResolver();
 
-    private IdentityResolver()
-    {
-    }
+    private IdentityResolver() {}
 
     @Override
-    public Set<ServerAddress> resolve( ServerAddress initialRouter )
-    {
-        return singleton( initialRouter );
+    public Set<ServerAddress> resolve(ServerAddress initialRouter) {
+        return singleton(initialRouter);
     }
 }

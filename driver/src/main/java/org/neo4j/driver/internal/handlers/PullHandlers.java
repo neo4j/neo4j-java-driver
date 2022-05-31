@@ -27,37 +27,52 @@ import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.Connection;
 
-public class PullHandlers
-{
+public class PullHandlers {
 
-    public static PullAllResponseHandler newBoltV3PullAllHandler(Query query, RunResponseHandler runHandler, Connection connection,
-            BookmarkHolder bookmarkHolder, UnmanagedTransaction tx )
-    {
-        PullResponseCompletionListener completionListener = createPullResponseCompletionListener( connection, bookmarkHolder, tx );
+    public static PullAllResponseHandler newBoltV3PullAllHandler(
+            Query query,
+            RunResponseHandler runHandler,
+            Connection connection,
+            BookmarkHolder bookmarkHolder,
+            UnmanagedTransaction tx) {
+        PullResponseCompletionListener completionListener =
+                createPullResponseCompletionListener(connection, bookmarkHolder, tx);
 
-        return new LegacyPullAllResponseHandler(query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener );
+        return new LegacyPullAllResponseHandler(
+                query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener);
     }
 
-    public static PullAllResponseHandler newBoltV4AutoPullHandler(Query query, RunResponseHandler runHandler, Connection connection,
-                                                                  BookmarkHolder bookmarkHolder, UnmanagedTransaction tx, long fetchSize )
-    {
-        PullResponseCompletionListener completionListener = createPullResponseCompletionListener( connection, bookmarkHolder, tx );
+    public static PullAllResponseHandler newBoltV4AutoPullHandler(
+            Query query,
+            RunResponseHandler runHandler,
+            Connection connection,
+            BookmarkHolder bookmarkHolder,
+            UnmanagedTransaction tx,
+            long fetchSize) {
+        PullResponseCompletionListener completionListener =
+                createPullResponseCompletionListener(connection, bookmarkHolder, tx);
 
-        return new AutoPullResponseHandler(query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener, fetchSize );
+        return new AutoPullResponseHandler(
+                query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener, fetchSize);
     }
 
+    public static PullResponseHandler newBoltV4BasicPullHandler(
+            Query query,
+            RunResponseHandler runHandler,
+            Connection connection,
+            BookmarkHolder bookmarkHolder,
+            UnmanagedTransaction tx) {
+        PullResponseCompletionListener completionListener =
+                createPullResponseCompletionListener(connection, bookmarkHolder, tx);
 
-    public static PullResponseHandler newBoltV4BasicPullHandler(Query query, RunResponseHandler runHandler, Connection connection,
-            BookmarkHolder bookmarkHolder, UnmanagedTransaction tx )
-    {
-        PullResponseCompletionListener completionListener = createPullResponseCompletionListener( connection, bookmarkHolder, tx );
-
-        return new BasicPullResponseHandler(query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener );
+        return new BasicPullResponseHandler(
+                query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener);
     }
 
-    private static PullResponseCompletionListener createPullResponseCompletionListener( Connection connection, BookmarkHolder bookmarkHolder,
-            UnmanagedTransaction tx )
-    {
-        return tx != null ? new TransactionPullResponseCompletionListener( tx ) : new SessionPullResponseCompletionListener( connection, bookmarkHolder );
+    private static PullResponseCompletionListener createPullResponseCompletionListener(
+            Connection connection, BookmarkHolder bookmarkHolder, UnmanagedTransaction tx) {
+        return tx != null
+                ? new TransactionPullResponseCompletionListener(tx)
+                : new SessionPullResponseCompletionListener(connection, bookmarkHolder);
     }
 }

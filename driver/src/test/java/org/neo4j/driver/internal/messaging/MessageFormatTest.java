@@ -18,31 +18,6 @@
  */
 package org.neo4j.driver.internal.messaging;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.async.connection.BoltProtocolUtil;
-import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilderImpl;
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.async.outbound.ChunkAwareByteBufOutput;
-import org.neo4j.driver.internal.messaging.common.CommonValueUnpacker;
-import org.neo4j.driver.internal.messaging.response.FailureMessage;
-import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
-import org.neo4j.driver.internal.messaging.response.RecordMessage;
-import org.neo4j.driver.internal.messaging.response.SuccessMessage;
-import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
-import org.neo4j.driver.internal.packstream.PackStream;
-import org.neo4j.driver.internal.util.messaging.KnowledgeableMessageFormat;
-import org.neo4j.driver.internal.util.messaging.MemorizingInboundMessageDispatcher;
-
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
@@ -61,143 +36,148 @@ import static org.neo4j.driver.internal.util.ValueFactory.filledNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledRelationshipValue;
 
-class MessageFormatTest
-{
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.embedded.EmbeddedChannel;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.async.connection.BoltProtocolUtil;
+import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilderImpl;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.async.outbound.ChunkAwareByteBufOutput;
+import org.neo4j.driver.internal.messaging.common.CommonValueUnpacker;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
+import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.response.RecordMessage;
+import org.neo4j.driver.internal.messaging.response.SuccessMessage;
+import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
+import org.neo4j.driver.internal.packstream.PackStream;
+import org.neo4j.driver.internal.util.messaging.KnowledgeableMessageFormat;
+import org.neo4j.driver.internal.util.messaging.MemorizingInboundMessageDispatcher;
+
+class MessageFormatTest {
     public MessageFormat format = new MessageFormatV3();
 
     @Test
-    void shouldUnpackAllResponses() throws Throwable
-    {
-        assertSerializes( new FailureMessage( "Hello", "World!" ) );
-        assertSerializes( IgnoredMessage.IGNORED );
-        assertSerializes( new RecordMessage( new Value[]{value( 1337L )} ) );
-        assertSerializes( new SuccessMessage( new HashMap<>() ) );
+    void shouldUnpackAllResponses() throws Throwable {
+        assertSerializes(new FailureMessage("Hello", "World!"));
+        assertSerializes(IgnoredMessage.IGNORED);
+        assertSerializes(new RecordMessage(new Value[] {value(1337L)}));
+        assertSerializes(new SuccessMessage(new HashMap<>()));
     }
 
     @Test
-    void shouldPackUnpackValidValues() throws Throwable
-    {
-        assertSerializesValue( value( parameters( "cat", null, "dog", null ) ) );
-        assertSerializesValue( value( parameters( "k", 12, "a", "banana" ) ) );
-        assertSerializesValue( value( asList( "k", 12, "a", "banana" ) ) );
+    void shouldPackUnpackValidValues() throws Throwable {
+        assertSerializesValue(value(parameters("cat", null, "dog", null)));
+        assertSerializesValue(value(parameters("k", 12, "a", "banana")));
+        assertSerializesValue(value(asList("k", 12, "a", "banana")));
     }
 
     @Test
-    void shouldUnpackNodeRelationshipAndPath() throws Throwable
-    {
+    void shouldUnpackNodeRelationshipAndPath() throws Throwable {
         // Given
-        assertOnlyDeserializesValue( emptyNodeValue() );
-        assertOnlyDeserializesValue( filledNodeValue() );
-        assertOnlyDeserializesValue( emptyRelationshipValue() );
-        assertOnlyDeserializesValue( filledRelationshipValue() );
-        assertOnlyDeserializesValue( emptyPathValue() );
-        assertOnlyDeserializesValue( filledPathValue() );
+        assertOnlyDeserializesValue(emptyNodeValue());
+        assertOnlyDeserializesValue(filledNodeValue());
+        assertOnlyDeserializesValue(emptyRelationshipValue());
+        assertOnlyDeserializesValue(filledRelationshipValue());
+        assertOnlyDeserializesValue(emptyPathValue());
+        assertOnlyDeserializesValue(filledPathValue());
     }
 
-
     @Test
-    void shouldGiveHelpfulErrorOnMalformedNodeStruct() throws Throwable
-    {
+    void shouldGiveHelpfulErrorOnMalformedNodeStruct() throws Throwable {
         // Given
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput();
         ByteBuf buf = Unpooled.buffer();
-        output.start( buf );
-        PackStream.Packer packer = new PackStream.Packer( output );
+        output.start(buf);
+        PackStream.Packer packer = new PackStream.Packer(output);
 
-        packer.packStructHeader( 1, RecordMessage.SIGNATURE );
-        packer.packListHeader( 1 );
-        packer.packStructHeader( 0, CommonValueUnpacker.NODE );
+        packer.packStructHeader(1, RecordMessage.SIGNATURE);
+        packer.packListHeader(1);
+        packer.packStructHeader(0, CommonValueUnpacker.NODE);
 
         output.stop();
-        BoltProtocolUtil.writeMessageBoundary( buf );
+        BoltProtocolUtil.writeMessageBoundary(buf);
 
         // Expect
-        ClientException error = assertThrows( ClientException.class, () -> unpack( buf, newEmbeddedChannel() ) );
-        assertThat( error.getMessage(), startsWith(
-                "Invalid message received, serialized NODE structures should have 3 fields, " +
-                "received NODE structure has 0 fields." ) );
+        ClientException error = assertThrows(ClientException.class, () -> unpack(buf, newEmbeddedChannel()));
+        assertThat(
+                error.getMessage(),
+                startsWith("Invalid message received, serialized NODE structures should have 3 fields, "
+                        + "received NODE structure has 0 fields."));
     }
 
-    private void assertSerializesValue( Value value ) throws Throwable
-    {
-        assertSerializes( new RecordMessage( new Value[]{value} ) );
+    private void assertSerializesValue(Value value) throws Throwable {
+        assertSerializes(new RecordMessage(new Value[] {value}));
     }
 
-    private void assertSerializes( Message message ) throws Throwable
-    {
-        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeableMessageFormat() );
+    private void assertSerializes(Message message) throws Throwable {
+        EmbeddedChannel channel = newEmbeddedChannel(new KnowledgeableMessageFormat());
 
-        ByteBuf packed = pack( message, channel );
-        Message unpackedMessage = unpack( packed, channel );
+        ByteBuf packed = pack(message, channel);
+        Message unpackedMessage = unpack(packed, channel);
 
-        assertEquals( message, unpackedMessage );
+        assertEquals(message, unpackedMessage);
     }
 
-    private EmbeddedChannel newEmbeddedChannel()
-    {
-        return newEmbeddedChannel( format );
+    private EmbeddedChannel newEmbeddedChannel() {
+        return newEmbeddedChannel(format);
     }
 
-    private EmbeddedChannel newEmbeddedChannel( MessageFormat format )
-    {
+    private EmbeddedChannel newEmbeddedChannel(MessageFormat format) {
         EmbeddedChannel channel = new EmbeddedChannel();
-        setMessageDispatcher( channel, new MemorizingInboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
-        new ChannelPipelineBuilderImpl().build( format, channel.pipeline(), DEV_NULL_LOGGING );
+        setMessageDispatcher(channel, new MemorizingInboundMessageDispatcher(channel, DEV_NULL_LOGGING));
+        new ChannelPipelineBuilderImpl().build(format, channel.pipeline(), DEV_NULL_LOGGING);
         return channel;
     }
 
-    private ByteBuf pack( Message message, EmbeddedChannel channel )
-    {
-        assertTrue( channel.writeOutbound( message ) );
+    private ByteBuf pack(Message message, EmbeddedChannel channel) {
+        assertTrue(channel.writeOutbound(message));
 
-        ByteBuf[] packedMessages = channel.outboundMessages()
-                .stream()
-                .map( msg -> (ByteBuf) msg )
-                .toArray( ByteBuf[]::new );
+        ByteBuf[] packedMessages =
+                channel.outboundMessages().stream().map(msg -> (ByteBuf) msg).toArray(ByteBuf[]::new);
 
-        return Unpooled.wrappedBuffer( packedMessages );
+        return Unpooled.wrappedBuffer(packedMessages);
     }
 
-    private Message unpack( ByteBuf packed, EmbeddedChannel channel ) throws Throwable
-    {
-        channel.writeInbound( packed );
+    private Message unpack(ByteBuf packed, EmbeddedChannel channel) throws Throwable {
+        channel.writeInbound(packed);
 
-        InboundMessageDispatcher dispatcher = messageDispatcher( channel );
+        InboundMessageDispatcher dispatcher = messageDispatcher(channel);
         MemorizingInboundMessageDispatcher memorizingDispatcher = ((MemorizingInboundMessageDispatcher) dispatcher);
 
         Throwable error = memorizingDispatcher.currentError();
-        if ( error != null )
-        {
+        if (error != null) {
             throw error;
         }
 
         List<Message> unpackedMessages = memorizingDispatcher.messages();
 
-        assertEquals( 1, unpackedMessages.size() );
-        return unpackedMessages.get( 0 );
+        assertEquals(1, unpackedMessages.size());
+        return unpackedMessages.get(0);
     }
 
-    private void assertOnlyDeserializesValue( Value value ) throws Throwable
-    {
-        RecordMessage message = new RecordMessage( new Value[]{value} );
-        ByteBuf packed = knowledgeablePack( message );
+    private void assertOnlyDeserializesValue(Value value) throws Throwable {
+        RecordMessage message = new RecordMessage(new Value[] {value});
+        ByteBuf packed = knowledgeablePack(message);
 
         EmbeddedChannel channel = newEmbeddedChannel();
-        Message unpackedMessage = unpack( packed, channel );
+        Message unpackedMessage = unpack(packed, channel);
 
-        assertEquals( message, unpackedMessage );
+        assertEquals(message, unpackedMessage);
     }
 
-    private ByteBuf knowledgeablePack( Message message ) throws IOException
-    {
-        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeableMessageFormat() );
-        assertTrue( channel.writeOutbound( message ) );
+    private ByteBuf knowledgeablePack(Message message) throws IOException {
+        EmbeddedChannel channel = newEmbeddedChannel(new KnowledgeableMessageFormat());
+        assertTrue(channel.writeOutbound(message));
 
-        ByteBuf[] packedMessages = channel.outboundMessages()
-                .stream()
-                .map( msg -> (ByteBuf) msg )
-                .toArray( ByteBuf[]::new );
+        ByteBuf[] packedMessages =
+                channel.outboundMessages().stream().map(msg -> (ByteBuf) msg).toArray(ByteBuf[]::new);
 
-        return Unpooled.wrappedBuffer( packedMessages );
+        return Unpooled.wrappedBuffer(packedMessages);
     }
 }

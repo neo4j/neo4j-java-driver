@@ -22,7 +22,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Session;
@@ -55,8 +54,7 @@ import org.neo4j.driver.Session;
  * @see QueryRunner
  * @since 4.0
  */
-public interface AsyncTransaction extends AsyncQueryRunner
-{
+public interface AsyncTransaction extends AsyncQueryRunner {
     /**
      * Commit this transaction in asynchronous fashion. This operation is typically executed as part of the
      * {@link CompletionStage} chain that starts with a transaction.

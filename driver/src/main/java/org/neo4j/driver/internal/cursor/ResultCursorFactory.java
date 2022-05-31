@@ -20,8 +20,7 @@ package org.neo4j.driver.internal.cursor;
 
 import java.util.concurrent.CompletionStage;
 
-public interface ResultCursorFactory
-{
+public interface ResultCursorFactory {
     CompletionStage<AsyncResultCursor> asyncResult();
 
     CompletionStage<RxResultCursor> rxResult();

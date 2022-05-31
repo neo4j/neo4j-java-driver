@@ -26,24 +26,19 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 // end::config-unencrypted-import[]
 
-public class ConfigUnencryptedExample implements AutoCloseable
-{
+public class ConfigUnencryptedExample implements AutoCloseable {
     private final Driver driver;
 
     // tag::config-unencrypted[]
-    public ConfigUnencryptedExample( String uri, String user, String password )
-    {
-        Config config = Config.builder()
-                .withoutEncryption()
-                .build();
+    public ConfigUnencryptedExample(String uri, String user, String password) {
+        Config config = Config.builder().withoutEncryption().build();
 
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
     // end::config-unencrypted[]
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         driver.close();
     }
 }

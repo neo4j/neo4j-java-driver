@@ -20,56 +20,46 @@ package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.Value;
 
-public class ResetResponseHandler implements ResponseHandler
-{
+public class ResetResponseHandler implements ResponseHandler {
     private final InboundMessageDispatcher messageDispatcher;
     private final CompletableFuture<Void> completionFuture;
 
-    public ResetResponseHandler( InboundMessageDispatcher messageDispatcher )
-    {
-        this( messageDispatcher, null );
+    public ResetResponseHandler(InboundMessageDispatcher messageDispatcher) {
+        this(messageDispatcher, null);
     }
 
-    public ResetResponseHandler( InboundMessageDispatcher messageDispatcher, CompletableFuture<Void> completionFuture )
-    {
+    public ResetResponseHandler(InboundMessageDispatcher messageDispatcher, CompletableFuture<Void> completionFuture) {
         this.messageDispatcher = messageDispatcher;
         this.completionFuture = completionFuture;
     }
 
     @Override
-    public final void onSuccess( Map<String,Value> metadata )
-    {
-        resetCompleted( true );
+    public final void onSuccess(Map<String, Value> metadata) {
+        resetCompleted(true);
     }
 
     @Override
-    public final void onFailure( Throwable error )
-    {
-        resetCompleted( false );
+    public final void onFailure(Throwable error) {
+        resetCompleted(false);
     }
 
     @Override
-    public final void onRecord( Value[] fields )
-    {
+    public final void onRecord(Value[] fields) {
         throw new UnsupportedOperationException();
     }
 
-    private void resetCompleted( boolean success )
-    {
+    private void resetCompleted(boolean success) {
         messageDispatcher.clearCurrentError();
-        if ( completionFuture != null )
-        {
-            resetCompleted( completionFuture, success );
+        if (completionFuture != null) {
+            resetCompleted(completionFuture, success);
         }
     }
 
-    protected void resetCompleted( CompletableFuture<Void> completionFuture, boolean success )
-    {
-        completionFuture.complete( null );
+    protected void resetCompleted(CompletableFuture<Void> completionFuture, boolean success) {
+        completionFuture.complete(null);
     }
 }

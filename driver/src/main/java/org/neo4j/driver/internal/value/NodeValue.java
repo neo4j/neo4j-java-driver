@@ -22,22 +22,18 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Type;
 
-public class NodeValue extends EntityValueAdapter<Node>
-{
-    public NodeValue( Node adapted )
-    {
-        super( adapted );
+public class NodeValue extends EntityValueAdapter<Node> {
+    public NodeValue(Node adapted) {
+        super(adapted);
     }
 
     @Override
-    public Node asNode()
-    {
+    public Node asNode() {
         return asEntity();
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.NODE();
     }
 }

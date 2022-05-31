@@ -18,74 +18,61 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Handles the RouteMessage response getting the success response
  * and return its routing table property as the response.
  */
-public class RouteMessageResponseHandler implements ResponseHandler
-{
-    private final CompletableFuture<Map<String,Value>> completableFuture;
+public class RouteMessageResponseHandler implements ResponseHandler {
+    private final CompletableFuture<Map<String, Value>> completableFuture;
 
-    public RouteMessageResponseHandler( final CompletableFuture<Map<String,Value>> completableFuture )
-    {
-        this.completableFuture = requireNonNull( completableFuture );
+    public RouteMessageResponseHandler(final CompletableFuture<Map<String, Value>> completableFuture) {
+        this.completableFuture = requireNonNull(completableFuture);
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
-    {
-        try
-        {
-            completableFuture.complete( metadata.get( "rt" ).asMap( Values::value ) );
-        }
-        catch ( Exception ex )
-        {
-            completableFuture.completeExceptionally( ex );
+    public void onSuccess(Map<String, Value> metadata) {
+        try {
+            completableFuture.complete(metadata.get("rt").asMap(Values::value));
+        } catch (Exception ex) {
+            completableFuture.completeExceptionally(ex);
         }
     }
 
     @Override
-    public void onFailure( Throwable error )
-    {
-        completableFuture.completeExceptionally( error );
+    public void onFailure(Throwable error) {
+        completableFuture.completeExceptionally(error);
     }
 
     @Override
-    public void onRecord( Value[] fields )
-    {
-        completableFuture.completeExceptionally( new UnsupportedOperationException(
-                "Route is not expected to receive records: " + Arrays.toString( fields ) ) );
+    public void onRecord(Value[] fields) {
+        completableFuture.completeExceptionally(new UnsupportedOperationException(
+                "Route is not expected to receive records: " + Arrays.toString(fields)));
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         RouteMessageResponseHandler that = (RouteMessageResponseHandler) o;
-        return completableFuture.equals( that.completableFuture );
+        return completableFuture.equals(that.completableFuture);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( completableFuture );
+    public int hashCode() {
+        return Objects.hash(completableFuture);
     }
 }

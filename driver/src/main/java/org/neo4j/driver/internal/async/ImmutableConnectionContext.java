@@ -18,57 +18,52 @@
  */
 package org.neo4j.driver.internal.async;
 
-import java.util.concurrent.CompletableFuture;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
+import static org.neo4j.driver.internal.InternalBookmark.empty;
 
+import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.Connection;
 
-import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
-import static org.neo4j.driver.internal.InternalBookmark.empty;
-
 /**
  * A {@link Connection} shall fulfil this {@link ImmutableConnectionContext} when acquired from a connection provider.
  */
-public class ImmutableConnectionContext implements ConnectionContext
-{
-    private static final ConnectionContext SINGLE_DB_CONTEXT = new ImmutableConnectionContext( defaultDatabase(), empty(), AccessMode.READ );
-    private static final ConnectionContext MULTI_DB_CONTEXT = new ImmutableConnectionContext( systemDatabase(), empty(), AccessMode.READ );
+public class ImmutableConnectionContext implements ConnectionContext {
+    private static final ConnectionContext SINGLE_DB_CONTEXT =
+            new ImmutableConnectionContext(defaultDatabase(), empty(), AccessMode.READ);
+    private static final ConnectionContext MULTI_DB_CONTEXT =
+            new ImmutableConnectionContext(systemDatabase(), empty(), AccessMode.READ);
 
     private final CompletableFuture<DatabaseName> databaseNameFuture;
     private final AccessMode mode;
     private final Bookmark rediscoveryBookmark;
 
-    public ImmutableConnectionContext( DatabaseName databaseName, Bookmark bookmark, AccessMode mode )
-    {
-        this.databaseNameFuture = CompletableFuture.completedFuture( databaseName );
+    public ImmutableConnectionContext(DatabaseName databaseName, Bookmark bookmark, AccessMode mode) {
+        this.databaseNameFuture = CompletableFuture.completedFuture(databaseName);
         this.rediscoveryBookmark = bookmark;
         this.mode = mode;
     }
 
     @Override
-    public CompletableFuture<DatabaseName> databaseNameFuture()
-    {
+    public CompletableFuture<DatabaseName> databaseNameFuture() {
         return databaseNameFuture;
     }
 
     @Override
-    public AccessMode mode()
-    {
+    public AccessMode mode() {
         return mode;
     }
 
     @Override
-    public Bookmark rediscoveryBookmark()
-    {
+    public Bookmark rediscoveryBookmark() {
         return rediscoveryBookmark;
     }
 
     @Override
-    public String impersonatedUser()
-    {
+    public String impersonatedUser() {
         return null;
     }
 
@@ -76,8 +71,7 @@ public class ImmutableConnectionContext implements ConnectionContext
      * A simple context is used to test connectivity with a remote server/cluster. As long as there is a read only service, the connection shall be established
      * successfully. Depending on whether multidb is supported or not, this method returns different context for routing table discovery.
      */
-    public static ConnectionContext simple( boolean supportsMultiDb )
-    {
+    public static ConnectionContext simple(boolean supportsMultiDb) {
         return supportsMultiDb ? MULTI_DB_CONTEXT : SINGLE_DB_CONTEXT;
     }
 }

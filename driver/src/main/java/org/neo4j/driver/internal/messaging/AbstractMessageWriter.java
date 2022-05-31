@@ -18,31 +18,27 @@
  */
 package org.neo4j.driver.internal.messaging;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.IOException;
 import java.util.Map;
 
-import static java.util.Objects.requireNonNull;
-
-public abstract class AbstractMessageWriter implements MessageFormat.Writer
-{
+public abstract class AbstractMessageWriter implements MessageFormat.Writer {
     private final ValuePacker packer;
-    private final Map<Byte,MessageEncoder> encodersByMessageSignature;
+    private final Map<Byte, MessageEncoder> encodersByMessageSignature;
 
-    protected AbstractMessageWriter( ValuePacker packer, Map<Byte,MessageEncoder> encodersByMessageSignature )
-    {
-        this.packer = requireNonNull( packer );
-        this.encodersByMessageSignature = requireNonNull( encodersByMessageSignature );
+    protected AbstractMessageWriter(ValuePacker packer, Map<Byte, MessageEncoder> encodersByMessageSignature) {
+        this.packer = requireNonNull(packer);
+        this.encodersByMessageSignature = requireNonNull(encodersByMessageSignature);
     }
 
     @Override
-    public final void write( Message msg ) throws IOException
-    {
+    public final void write(Message msg) throws IOException {
         byte signature = msg.signature();
-        MessageEncoder encoder = encodersByMessageSignature.get( signature );
-        if ( encoder == null )
-        {
-            throw new IOException( "No encoder found for message " + msg + " with signature " + signature );
+        MessageEncoder encoder = encodersByMessageSignature.get(signature);
+        if (encoder == null) {
+            throw new IOException("No encoder found for message " + msg + " with signature " + signature);
         }
-        encoder.encode( msg, packer );
+        encoder.encode(msg, packer);
     }
 }

@@ -18,10 +18,8 @@
  */
 package org.neo4j.driver.util.cc;
 
-class ClusterUnavailableException extends Exception
-{
-    ClusterUnavailableException( String message )
-    {
-        super( message );
+class ClusterUnavailableException extends Exception {
+    ClusterUnavailableException(String message) {
+        super(message);
     }
 }

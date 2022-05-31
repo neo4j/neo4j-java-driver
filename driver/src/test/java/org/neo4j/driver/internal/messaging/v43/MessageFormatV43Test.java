@@ -18,39 +18,35 @@
  */
 package org.neo4j.driver.internal.messaging.v43;
 
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.mockito.Mockito.mock;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.common.CommonMessageReader;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.mockito.Mockito.mock;
 
 /**
  * The MessageFormat under tests is the one provided by the {@link BoltProtocolV43} and not an specific class implementation.
  * <p>
  * It's done on this way to make easy to replace the implementation and still getting the same behaviour.
  */
-class MessageFormatV43Test
-{
+class MessageFormatV43Test {
     private static final MessageFormat format = BoltProtocolV43.INSTANCE.createMessageFormat();
 
     @Test
-    void shouldCreateCorrectWriter()
-    {
-        MessageFormat.Writer writer = format.newWriter( mock( PackOutput.class ) );
+    void shouldCreateCorrectWriter() {
+        MessageFormat.Writer writer = format.newWriter(mock(PackOutput.class));
 
-        assertThat( writer, instanceOf( MessageWriterV43.class ) );
+        assertThat(writer, instanceOf(MessageWriterV43.class));
     }
 
     @Test
-    void shouldCreateCorrectReader()
-    {
-        MessageFormat.Reader reader = format.newReader( mock( PackInput.class ) );
+    void shouldCreateCorrectReader() {
+        MessageFormat.Reader reader = format.newReader(mock(PackInput.class));
 
-        assertThat( reader, instanceOf( CommonMessageReader.class ) );
+        assertThat(reader, instanceOf(CommonMessageReader.class));
     }
 }
