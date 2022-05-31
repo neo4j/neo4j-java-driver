@@ -67,7 +67,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
             MetadataExtractor metadataExtractor,
             PullResponseCompletionListener completionListener,
             long fetchSize) {
-        super(query, runResponseHandler, connection, metadataExtractor, completionListener);
+        super(query, runResponseHandler, connection, metadataExtractor, completionListener, true);
         this.fetchSize = fetchSize;
 
         // For pull everything ensure conditions for disabling auto pull are never met
