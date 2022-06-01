@@ -19,3 +19,19 @@ Full license texts are found in LICENSES.txt.
 Third-party licenses
 --------------------
 
+Apache Software License, Version 2.0
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
+  Neo4j Java Driver
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
+  Non-Blocking Reactive Foundation for the JVM
+
+Creative Commons 0
+  reactive-streams
+

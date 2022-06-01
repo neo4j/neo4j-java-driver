@@ -19,3 +19,18 @@ Full license texts are found in LICENSES.txt.
 Third-party licenses
 --------------------
 
+Apache Software License, Version 2.0
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
+  Non-Blocking Reactive Foundation for the JVM
+
+Creative Commons 0
+  reactive-streams
+
+MIT License
+  SLF4J API Module
+
