@@ -18,16 +18,15 @@
  */
 package org.neo4j.driver;
 
+import static org.neo4j.driver.internal.Scheme.NEO4J_URI_SCHEME;
+
+import java.net.URI;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
-
-import java.net.URI;
-
-import static org.neo4j.driver.internal.Scheme.NEO4J_URI_SCHEME;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
