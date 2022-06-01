@@ -141,7 +141,9 @@ public class GraphDatabase {
      * @param authToken authentication to use, see {@link AuthTokens}
      * @param config user defined configuration
      * @return a new driver instance
+     * @deprecated driver should be configured with initial address resolution as documented in the driver manual
      */
+    @Deprecated
     public static Driver routingDriver(Iterable<URI> routingUris, AuthToken authToken, Config config) {
         return routingDriver(routingUris, authToken, config, new DriverFactory());
     }
