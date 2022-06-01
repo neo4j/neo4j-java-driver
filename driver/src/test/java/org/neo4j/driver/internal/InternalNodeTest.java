@@ -60,20 +60,10 @@ class InternalNodeTest {
         assertThat(node.get("k3"), equalTo(NULL));
     }
 
-    @Test
-    void shouldThrowOnIdWhenNumericIdUnavailable() {
-        // GIVEN
-        InternalNode node = new InternalNode(-1, "value", Collections.emptyList(), Collections.emptyMap(), false);
-
-        // WHEN & THEN
-        IllegalStateException e = assertThrows(IllegalStateException.class, node::id);
-        assertEquals(InternalEntity.INVALID_ID_ERROR, e.getMessage());
-    }
-
     private InternalNode createNode() {
         Map<String, Value> props = new HashMap<>();
         props.put("k1", value(1));
         props.put("k2", value(2));
-        return new InternalNode(42L, String.valueOf(42L), Collections.singletonList("L"), props, true);
+        return new InternalNode(42L, String.valueOf(42L), Collections.singletonList("L"), props);
     }
 }

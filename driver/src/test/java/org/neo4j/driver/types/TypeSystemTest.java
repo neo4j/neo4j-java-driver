@@ -43,7 +43,7 @@ import org.neo4j.driver.internal.value.RelationshipValue;
 
 class TypeSystemTest {
     private final InternalNode node =
-            new InternalNode(42L, String.valueOf(42L), Collections.emptyList(), Collections.emptyMap(), true);
+            new InternalNode(42L, String.valueOf(42L), Collections.emptyList(), Collections.emptyMap());
     private final InternalRelationship relationship = new InternalRelationship(
             42L,
             String.valueOf(42L),
@@ -52,8 +52,7 @@ class TypeSystemTest {
             43L,
             String.valueOf(43L),
             "T",
-            Collections.emptyMap(),
-            true);
+            Collections.emptyMap());
 
     private Value integerValue = value(13);
     private Value floatValue = value(13.1);
