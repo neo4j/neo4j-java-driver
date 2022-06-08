@@ -308,7 +308,7 @@ public class UnmanagedTransaction {
     /**
      * Marks transaction as terminated and sends {@code RESET} message over allocated connection.
      * <p>
-     * <b>THIS METHOD IS NOT PART OF PUBLIC API</b>
+     * <b>THIS METHOD IS NOT PART OF PUBLIC API. This method may be changed or removed at any moment in time.</b>
      *
      * @return {@code RESET} response stage
      */
