@@ -18,3 +18,10 @@ Full license texts are found in LICENSES.txt.
 Third-party licenses
 --------------------
 
+Apache Software License, Version 2.0
+  Non-Blocking Reactive Foundation for the JVM
+  RxJava
+
+Creative Commons 0
+  reactive-streams
+

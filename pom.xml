@@ -51,6 +51,7 @@
     <lombok.version>1.18.24</lombok.version>
     <svm.version>21.3.2.1</svm.version>
     <micrometer.version>1.9.0</micrometer.version>
+    <build-resources.version>4.4.7</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
@@ -390,6 +391,81 @@
             <fail>true</fail>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>3.0</version>
+          <configuration>
+            <strictCheck>true</strictCheck>
+            <header>${rootDir}/build/license-header.txt</header>
+            <mapping>
+              <java>SLASHSTAR_STYLE</java>
+            </mapping>
+            <includes>
+              <include>**/*.java</include>
+            </includes>
+          </configuration>
+          <executions>
+            <execution>
+              <!-- always check license headers -->
+              <id>check-licenses</id>
+              <phase>initialize</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+            <!-- also available: `mvn license:[cmd]` where cmd could be one of `check`, `format`, or `delete`-->
+          </executions>
+          <dependencies>
+            <dependency>
+              <groupId>org.neo4j.build</groupId>
+              <artifactId>build-resources</artifactId>
+              <version>${build-resources.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>licensing-maven-plugin</artifactId>
+          <version>1.7.11</version>
+          <configuration>
+            <failIfDisliked>true</failIfDisliked>
+            <failIfMissing>true</failIfMissing>
+            <plainTextReport>true</plainTextReport>
+            <prependText>${rootDir}/build/notice-asl-prefix.txt</prependText>
+            <excludedGroups>
+              ^((org.neo4j.driver){1})$
+            </excludedGroups>
+            <includedScopes>compile</includedScopes>
+          </configuration>
+          <executions>
+            <execution>
+              <id>list-all-licenses</id>
+              <phase>compile</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <configuration>
+                <licensingRequirementFiles>
+                  <licensingRequirementFile>licensing/licensing-requirements-base.xml</licensingRequirementFile>
+                </licensingRequirementFiles>
+                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}-NOTICE.txt
+                </thirdPartyLicensingFilename>
+                <checkExistingNoticeFile>${project.build.directory}/../NOTICE.txt</checkExistingNoticeFile>
+                <listPrependText>licensing/list-prefix.txt</listPrependText>
+                <listReport>${project.artifactId}-${project.version}-LICENSES.txt</listReport>
+                <checkExistingLicensesFile>${project.build.directory}/../LICENSES.txt</checkExistingLicensesFile>
+              </configuration>
+            </execution>
+          </executions>
+          <dependencies>
+            <dependency>
+              <groupId>org.neo4j.build</groupId>
+              <artifactId>build-resources</artifactId>
+              <version>${build-resources.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -397,30 +473,10 @@
       <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <version>3.0</version>
-        <configuration>
-          <header>${rootDir}/build/license-header.txt</header>
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-          </mapping>
-          <properties>
-            <thisYear>2020</thisYear>
-          </properties>
-          <includes>
-            <include>**/*.java</include>
-          </includes>
-        </configuration>
-        <executions>
-          <execution>
-            <!-- always check license headers -->
-            <id>check-license-header</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-          <!-- also available: `mvn license:[cmd]` where cmd could be one of `check`, `format`, or `delete`-->
-        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>licensing-maven-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
