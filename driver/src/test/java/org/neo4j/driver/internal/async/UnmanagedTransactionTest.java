@@ -440,6 +440,33 @@ class UnmanagedTransactionTest {
         assertNull(closeStage.toCompletableFuture().join());
     }
 
+    @Test
+    void shouldInterruptOnInterruptAsync() {
+        // Given
+        Connection connection = connectionMock(BoltProtocolV4.INSTANCE);
+        UnmanagedTransaction tx = beginTx(connection);
+
+        // When
+        await(tx.interruptAsync());
+
+        // Then
+        then(connection).should().reset();
+    }
+
+    @Test
+    void shouldServeTheSameStageOnInterruptAsync() {
+        // Given
+        Connection connection = connectionMock(BoltProtocolV4.INSTANCE);
+        UnmanagedTransaction tx = beginTx(connection);
+
+        // When
+        CompletionStage<Void> stage0 = tx.interruptAsync();
+        CompletionStage<Void> stage1 = tx.interruptAsync();
+
+        // Then
+        assertEquals(stage0, stage1);
+    }
+
     private static UnmanagedTransaction beginTx(Connection connection) {
         return beginTx(connection, Collections.emptySet());
     }
