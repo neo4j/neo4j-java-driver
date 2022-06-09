@@ -33,6 +33,7 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Result;
@@ -54,6 +55,15 @@ import org.neo4j.driver.util.ParallelizableIT;
 class TransactionBoltV3IT {
     @RegisterExtension
     static final DriverExtension driver = new DriverExtension();
+
+    private static String showTxMetadata;
+
+    @BeforeEach
+    void beforeAll() {
+        showTxMetadata = driver.isNeo4j43OrEarlier()
+                ? "CALL dbms.listTransactions() YIELD metaData"
+                : "SHOW TRANSACTIONS YIELD metaData";
+    }
 
     @Test
     void shouldSetTransactionMetadata() {
@@ -166,7 +176,7 @@ class TransactionBoltV3IT {
 
     private static void verifyTransactionMetadata(Map<String, Object> metadata) {
         try (Session session = driver.driver().session()) {
-            Result result = session.run("CALL dbms.listTransactions()");
+            Result result = session.run(showTxMetadata);
 
             Map<String, Object> receivedMetadata = result.list().stream()
                     .map(record -> record.get("metaData"))

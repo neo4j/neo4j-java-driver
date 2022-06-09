@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Bookmark;
@@ -73,18 +74,26 @@ class SessionBoltV3IT {
     @RegisterExtension
     static final DriverExtension driver = new DriverExtension();
 
+    private static String showTxMetadata;
+
+    @BeforeEach
+    void beforeAll() {
+        showTxMetadata = driver.isNeo4j43OrEarlier()
+                ? "CALL dbms.listTransactions() YIELD metaData"
+                : "SHOW TRANSACTIONS YIELD metaData";
+    }
+
     @Test
     void shouldSetTransactionMetadata() {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("a", "hello world");
         metadata.put("b", LocalDate.now());
-        metadata.put("c", asList(true, false, true));
+        metadata.put("c", driver.isNeo4j43OrEarlier() ? asList(true, false, true) : false);
 
         TransactionConfig config =
                 TransactionConfig.builder().withMetadata(metadata).build();
 
-        // call listTransactions procedure that should list itself with the specified metadata
-        Result result = driver.session().run("CALL dbms.listTransactions()", config);
+        Result result = driver.session().run(showTxMetadata, config);
         Map<String, Object> receivedMetadata = result.single().get("metaData").asMap();
 
         assertEquals(metadata, receivedMetadata);
@@ -99,9 +108,8 @@ class SessionBoltV3IT {
         TransactionConfig config =
                 TransactionConfig.builder().withMetadata(metadata).build();
 
-        // call listTransactions procedure that should list itself with the specified metadata
         CompletionStage<Map<String, Object>> metadataFuture = driver.asyncSession()
-                .runAsync("CALL dbms.listTransactions()", config)
+                .runAsync(showTxMetadata, config)
                 .thenCompose(ResultCursor::singleAsync)
                 .thenApply(record -> record.get("metaData").asMap());
 
@@ -309,14 +317,11 @@ class SessionBoltV3IT {
         TransactionConfig config =
                 TransactionConfig.builder().withMetadata(metadata).build();
 
-        // call listTransactions procedure that should list itself with the specified metadata
         CompletionStage<Record> singleFuture = read
                 ? asyncSession.readTransactionAsync(
-                        tx -> tx.runAsync("CALL dbms.listTransactions()").thenCompose(ResultCursor::singleAsync),
-                        config)
+                        tx -> tx.runAsync(showTxMetadata).thenCompose(ResultCursor::singleAsync), config)
                 : asyncSession.writeTransactionAsync(
-                        tx -> tx.runAsync("CALL dbms.listTransactions()").thenCompose(ResultCursor::singleAsync),
-                        config);
+                        tx -> tx.runAsync(showTxMetadata).thenCompose(ResultCursor::singleAsync), config);
 
         CompletionStage<Map<String, Object>> metadataFuture =
                 singleFuture.thenApply(record -> record.get("metaData").asMap());
@@ -334,12 +339,9 @@ class SessionBoltV3IT {
         TransactionConfig config =
                 TransactionConfig.builder().withMetadata(metadata).build();
 
-        // call listTransactions procedure that should list itself with the specified metadata
         Record single = read
-                ? session.readTransaction(
-                        tx -> tx.run("CALL dbms.listTransactions()").single(), config)
-                : session.writeTransaction(
-                        tx -> tx.run("CALL dbms.listTransactions()").single(), config);
+                ? session.readTransaction(tx -> tx.run(showTxMetadata).single(), config)
+                : session.writeTransaction(tx -> tx.run(showTxMetadata).single(), config);
 
         Map<String, Object> receivedMetadata = single.get("metaData").asMap();
 
