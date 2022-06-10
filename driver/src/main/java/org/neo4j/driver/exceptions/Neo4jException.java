@@ -23,7 +23,7 @@ package org.neo4j.driver.exceptions;
  *
  * @since 1.0
  */
-public abstract class Neo4jException extends RuntimeException {
+public class Neo4jException extends RuntimeException {
     private static final long serialVersionUID = -80579062276712566L;
 
     private final String code;
