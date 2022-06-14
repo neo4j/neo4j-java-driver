@@ -56,7 +56,8 @@ public class GetFeatures implements TestkitRequest {
             "Feature:API:SSLConfig",
             "Detail:DefaultSecurityConfigValueEquality",
             "Detail:ThrowOnMissingId",
-            "Optimization:ImplicitDefaultArguments"));
+            "Optimization:ImplicitDefaultArguments",
+            "Feature:Bolt:Patch:UTC"));
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:3.0",

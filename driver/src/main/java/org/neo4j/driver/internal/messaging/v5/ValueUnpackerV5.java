@@ -42,7 +42,7 @@ public class ValueUnpackerV5 extends CommonValueUnpacker {
     private static final int RELATIONSHIP_FIELDS = 8;
 
     public ValueUnpackerV5(PackInput input) {
-        super(input);
+        super(input, true);
     }
 
     @Override

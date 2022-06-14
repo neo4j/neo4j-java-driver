@@ -50,6 +50,7 @@ import org.neo4j.driver.types.Relationship;
  */
 public class KnowledgeableMessageFormat extends MessageFormatV3 {
     private final boolean elementIdEnabled;
+    private boolean dateTimeUtcEnabled;
 
     public KnowledgeableMessageFormat(boolean elementIdEnabled) {
         this.elementIdEnabled = elementIdEnabled;
@@ -57,12 +58,17 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
 
     @Override
     public Writer newWriter(PackOutput output) {
-        return new KnowledgeableMessageWriter(output, elementIdEnabled);
+        return new KnowledgeableMessageWriter(output, elementIdEnabled, dateTimeUtcEnabled);
+    }
+
+    @Override
+    public void enableDateTimeUtc() {
+        dateTimeUtcEnabled = true;
     }
 
     private static class KnowledgeableMessageWriter extends AbstractMessageWriter {
-        KnowledgeableMessageWriter(PackOutput output, boolean enableElementId) {
-            super(new KnowledgeableValuePacker(output, enableElementId), buildEncoders());
+        KnowledgeableMessageWriter(PackOutput output, boolean enableElementId, boolean dateTimeUtcEnabled) {
+            super(new KnowledgeableValuePacker(output, enableElementId, dateTimeUtcEnabled), buildEncoders());
         }
 
         static Map<Byte, MessageEncoder> buildEncoders() {
@@ -83,8 +89,8 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
     private static class KnowledgeableValuePacker extends CommonValuePacker {
         private final boolean elementIdEnabled;
 
-        KnowledgeableValuePacker(PackOutput output, boolean elementIdEnabled) {
-            super(output);
+        KnowledgeableValuePacker(PackOutput output, boolean elementIdEnabled, boolean dateTimeUtcEnabled) {
+            super(output, dateTimeUtcEnabled);
             this.elementIdEnabled = elementIdEnabled;
         }
 

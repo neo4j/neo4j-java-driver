@@ -19,7 +19,9 @@
 package neo4j.org.testkit.backend.messages;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import java.time.ZonedDateTime;
 import java.util.List;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherDateTimeDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitListDeserializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitListValueSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitMapValueSerializer;
@@ -39,6 +41,7 @@ import org.neo4j.driver.internal.value.RelationshipValue;
 public class TestkitModule extends SimpleModule {
     public TestkitModule() {
         this.addDeserializer(List.class, new TestkitListDeserializer());
+        this.addDeserializer(ZonedDateTime.class, new TestkitCypherDateTimeDeserializer());
 
         this.addSerializer(Value.class, new TestkitValueSerializer());
         this.addSerializer(NodeValue.class, new TestkitNodeValueSerializer());

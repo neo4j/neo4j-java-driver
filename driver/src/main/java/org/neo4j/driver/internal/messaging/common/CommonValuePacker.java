@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.messaging.common;
 import static java.time.ZoneOffset.UTC;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -54,7 +55,9 @@ public class CommonValuePacker implements ValuePacker {
     public static final int LOCAL_DATE_TIME_STRUCT_SIZE = 2;
 
     public static final byte DATE_TIME_WITH_ZONE_OFFSET = 'F';
+    public static final byte DATE_TIME_WITH_ZONE_OFFSET_UTC = 'I';
     public static final byte DATE_TIME_WITH_ZONE_ID = 'f';
+    public static final byte DATE_TIME_WITH_ZONE_ID_UTC = 'i';
     public static final int DATE_TIME_STRUCT_SIZE = 3;
 
     public static final byte DURATION = 'E';
@@ -66,9 +69,11 @@ public class CommonValuePacker implements ValuePacker {
     public static final byte POINT_3D_STRUCT_TYPE = 'Y';
     public static final int POINT_3D_STRUCT_SIZE = 4;
 
+    private final boolean dateTimeUtcEnabled;
     protected final PackStream.Packer packer;
 
-    public CommonValuePacker(PackOutput output) {
+    public CommonValuePacker(PackOutput output, boolean dateTimeUtcEnabled) {
+        this.dateTimeUtcEnabled = dateTimeUtcEnabled;
         this.packer = new PackStream.Packer(output);
     }
 
@@ -119,7 +124,11 @@ public class CommonValuePacker implements ValuePacker {
                 packLocalDateTime(value.asLocalDateTime());
                 break;
             case DATE_TIME:
-                packZonedDateTime(value.asZonedDateTime());
+                if (dateTimeUtcEnabled) {
+                    packZonedDateTimeUsingUtcBaseline(value.asZonedDateTime());
+                } else {
+                    packZonedDateTime(value.asZonedDateTime());
+                }
                 break;
             case DURATION:
                 packDuration(value.asIsoDuration());
@@ -197,6 +206,29 @@ public class CommonValuePacker implements ValuePacker {
         packer.packStructHeader(LOCAL_DATE_TIME_STRUCT_SIZE, LOCAL_DATE_TIME);
         packer.pack(epochSecondUtc);
         packer.pack(nano);
+    }
+
+    private void packZonedDateTimeUsingUtcBaseline(ZonedDateTime zonedDateTime) throws IOException {
+        Instant instant = zonedDateTime.toInstant();
+        long epochSecondLocal = instant.getEpochSecond();
+        int nano = zonedDateTime.getNano();
+        ZoneId zone = zonedDateTime.getZone();
+
+        if (zone instanceof ZoneOffset) {
+            int offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
+
+            packer.packStructHeader(DATE_TIME_STRUCT_SIZE, DATE_TIME_WITH_ZONE_OFFSET_UTC);
+            packer.pack(epochSecondLocal);
+            packer.pack(nano);
+            packer.pack(offsetSeconds);
+        } else {
+            String zoneId = zone.getId();
+
+            packer.packStructHeader(DATE_TIME_STRUCT_SIZE, DATE_TIME_WITH_ZONE_ID_UTC);
+            packer.pack(epochSecondLocal);
+            packer.pack(nano);
+            packer.pack(zoneId);
+        }
     }
 
     private void packZonedDateTime(ZonedDateTime zonedDateTime) throws IOException {
