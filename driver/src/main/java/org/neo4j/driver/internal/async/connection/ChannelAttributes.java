@@ -22,9 +22,13 @@ import static io.netty.util.AttributeKey.newInstance;
 
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.messaging.BoltPatchesListener;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.util.ServerVersion;
 
@@ -41,6 +45,8 @@ public final class ChannelAttributes {
     private static final AttributeKey<String> TERMINATION_REASON = newInstance("terminationReason");
     private static final AttributeKey<AuthorizationStateListener> AUTHORIZATION_STATE_LISTENER =
             newInstance("authorizationStateListener");
+    private static final AttributeKey<Set<BoltPatchesListener>> BOLT_PATCHES_LISTENERS =
+            newInstance("boltPatchesListeners");
 
     // configuration hints provided by the server
     private static final AttributeKey<Long> CONNECTION_READ_TIMEOUT = newInstance("connectionReadTimeout");
@@ -142,6 +148,20 @@ public final class ChannelAttributes {
 
     public static void setConnectionReadTimeout(Channel channel, Long connectionReadTimeout) {
         setOnce(channel, CONNECTION_READ_TIMEOUT, connectionReadTimeout);
+    }
+
+    public static void addBoltPatchesListener(Channel channel, BoltPatchesListener listener) {
+        Set<BoltPatchesListener> boltPatchesListeners = get(channel, BOLT_PATCHES_LISTENERS);
+        if (boltPatchesListeners == null) {
+            boltPatchesListeners = new HashSet<>();
+            setOnce(channel, BOLT_PATCHES_LISTENERS, boltPatchesListeners);
+        }
+        boltPatchesListeners.add(listener);
+    }
+
+    public static Set<BoltPatchesListener> boltPatchesListeners(Channel channel) {
+        Set<BoltPatchesListener> boltPatchesListeners = get(channel, BOLT_PATCHES_LISTENERS);
+        return boltPatchesListeners != null ? boltPatchesListeners : Collections.emptySet();
     }
 
     private static <T> T get(Channel channel, AttributeKey<T> key) {

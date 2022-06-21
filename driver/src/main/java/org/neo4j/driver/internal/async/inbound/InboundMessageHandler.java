@@ -23,32 +23,38 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
+import java.util.Set;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
+import org.neo4j.driver.internal.messaging.BoltPatchesListener;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 
-public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf> {
+public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf> implements BoltPatchesListener {
     private final ByteBufInput input;
-    private final MessageFormat.Reader reader;
+    private final MessageFormat messageFormat;
     private final Logging logging;
 
     private InboundMessageDispatcher messageDispatcher;
+    private MessageFormat.Reader reader;
     private Logger log;
 
     public InboundMessageHandler(MessageFormat messageFormat, Logging logging) {
         this.input = new ByteBufInput();
-        this.reader = messageFormat.newReader(input);
+        this.messageFormat = messageFormat;
         this.logging = logging;
+        this.reader = messageFormat.newReader(input);
     }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
-        messageDispatcher = requireNonNull(messageDispatcher(ctx.channel()));
-        log = new ChannelActivityLogger(ctx.channel(), logging, getClass());
+        Channel channel = ctx.channel();
+        messageDispatcher = requireNonNull(messageDispatcher(channel));
+        log = new ChannelActivityLogger(channel, logging, getClass());
     }
 
     @Override
@@ -77,6 +83,14 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
             throw new DecoderException("Failed to read inbound message:\n" + hexDump(msg) + "\n", error);
         } finally {
             input.stop();
+        }
+    }
+
+    @Override
+    public void handle(Set<String> patches) {
+        if (patches.contains(DATE_TIME_UTC_PATCH)) {
+            messageFormat.enableDateTimeUtc();
+            reader = messageFormat.newReader(input);
         }
     }
 }

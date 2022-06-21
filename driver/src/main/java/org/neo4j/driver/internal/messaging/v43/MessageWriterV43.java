@@ -52,8 +52,8 @@ import org.neo4j.driver.internal.util.Iterables;
  * new messages such as ROUTE
  */
 public class MessageWriterV43 extends AbstractMessageWriter {
-    public MessageWriterV43(PackOutput output) {
-        super(new CommonValuePacker(output), buildEncoders());
+    public MessageWriterV43(PackOutput output, boolean dateTimeUtcEnabled) {
+        super(new CommonValuePacker(output, dateTimeUtcEnabled), buildEncoders());
     }
 
     private static Map<Byte, MessageEncoder> buildEncoders() {

@@ -31,6 +31,6 @@ public class MessageFormatV3 implements MessageFormat {
 
     @Override
     public Reader newReader(PackInput input) {
-        return new CommonMessageReader(input);
+        return new CommonMessageReader(input, false);
     }
 }

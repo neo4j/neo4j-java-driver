@@ -34,4 +34,11 @@ public interface MessageFormat {
     Writer newWriter(PackOutput output);
 
     Reader newReader(PackInput input);
+
+    /**
+     * Enables datetime in UTC if supported by the given message format. This is only for use with formats that support multiple modes.
+     * <p>
+     * This only takes effect on subsequent writer and reader creation via {@link #newWriter(PackOutput)} and {@link #newReader(PackInput)}.
+     */
+    default void enableDateTimeUtc() {}
 }

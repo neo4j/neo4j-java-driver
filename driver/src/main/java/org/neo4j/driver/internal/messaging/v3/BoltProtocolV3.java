@@ -82,9 +82,14 @@ public class BoltProtocolV3 implements BoltProtocol {
         HelloMessage message;
 
         if (routingContext.isServerRoutingEnabled()) {
-            message = new HelloMessage(userAgent, ((InternalAuthToken) authToken).toMap(), routingContext.toMap());
+            message = new HelloMessage(
+                    userAgent,
+                    ((InternalAuthToken) authToken).toMap(),
+                    routingContext.toMap(),
+                    includeDateTimeUtcPatchInHello());
         } else {
-            message = new HelloMessage(userAgent, ((InternalAuthToken) authToken).toMap(), null);
+            message = new HelloMessage(
+                    userAgent, ((InternalAuthToken) authToken).toMap(), null, includeDateTimeUtcPatchInHello());
         }
 
         HelloResponseHandler handler = new HelloResponseHandler(channelInitializedPromise, version());
@@ -179,5 +184,9 @@ public class BoltProtocolV3 implements BoltProtocol {
     @Override
     public BoltProtocolVersion version() {
         return VERSION;
+    }
+
+    protected boolean includeDateTimeUtcPatchInHello() {
+        return false;
     }
 }

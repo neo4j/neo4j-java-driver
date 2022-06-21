@@ -18,10 +18,13 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.boltPatchesListeners;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.protocolVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionReadTimeout;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAgent;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerVersion;
+import static org.neo4j.driver.internal.util.MetadataExtractor.extractBoltPatches;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractServer;
 import static org.neo4j.driver.internal.util.ServerVersion.fromBoltProtocolVersion;
@@ -30,10 +33,13 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
+import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 public class HelloResponseHandler implements ResponseHandler {
@@ -69,6 +75,14 @@ public class HelloResponseHandler implements ResponseHandler {
             setConnectionId(channel, connectionId);
 
             processConfigurationHints(metadata);
+
+            BoltProtocolVersion protocolVersion = protocolVersion(channel);
+            if (BoltProtocolV44.VERSION.equals(protocolVersion) || BoltProtocolV43.VERSION.equals(protocolVersion)) {
+                Set<String> boltPatches = extractBoltPatches(metadata);
+                if (!boltPatches.isEmpty()) {
+                    boltPatchesListeners(channel).forEach(listener -> listener.handle(boltPatches));
+                }
+            }
 
             connectionInitializedPromise.setSuccess();
         } catch (Throwable error) {

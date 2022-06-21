@@ -72,7 +72,9 @@ public class CommonValueUnpacker implements ValueUnpacker {
     public static final int LOCAL_DATE_TIME_STRUCT_SIZE = 2;
 
     public static final byte DATE_TIME_WITH_ZONE_OFFSET = 'F';
+    public static final byte DATE_TIME_WITH_ZONE_OFFSET_UTC = 'I';
     public static final byte DATE_TIME_WITH_ZONE_ID = 'f';
+    public static final byte DATE_TIME_WITH_ZONE_ID_UTC = 'i';
     public static final int DATE_TIME_STRUCT_SIZE = 3;
 
     public static final byte DURATION = 'E';
@@ -91,9 +93,11 @@ public class CommonValueUnpacker implements ValueUnpacker {
 
     public static final int NODE_FIELDS = 3;
 
+    private final boolean dateTimeUtcEnabled;
     protected final PackStream.Unpacker unpacker;
 
-    public CommonValueUnpacker(PackInput input) {
+    public CommonValueUnpacker(PackInput input, boolean dateTimeUtcEnabled) {
+        this.dateTimeUtcEnabled = dateTimeUtcEnabled;
         this.unpacker = new PackStream.Unpacker(input);
     }
 
@@ -181,11 +185,25 @@ public class CommonValueUnpacker implements ValueUnpacker {
                 ensureCorrectStructSize(TypeConstructor.LOCAL_DATE_TIME, LOCAL_DATE_TIME_STRUCT_SIZE, size);
                 return unpackLocalDateTime();
             case DATE_TIME_WITH_ZONE_OFFSET:
-                ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
-                return unpackDateTimeWithZoneOffset();
+                if (!dateTimeUtcEnabled) {
+                    ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
+                    return unpackDateTimeWithZoneOffset();
+                }
+            case DATE_TIME_WITH_ZONE_OFFSET_UTC:
+                if (dateTimeUtcEnabled) {
+                    ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
+                    return unpackDateTimeUtcWithZoneOffset();
+                }
             case DATE_TIME_WITH_ZONE_ID:
-                ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
-                return unpackDateTimeWithZoneId();
+                if (!dateTimeUtcEnabled) {
+                    ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
+                    return unpackDateTimeWithZoneId();
+                }
+            case DATE_TIME_WITH_ZONE_ID_UTC:
+                if (dateTimeUtcEnabled) {
+                    ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
+                    return unpackDateTimeUtcWithZoneId();
+                }
             case DURATION:
                 ensureCorrectStructSize(TypeConstructor.DURATION, DURATION_TIME_STRUCT_SIZE, size);
                 return unpackDuration();
@@ -342,11 +360,27 @@ public class CommonValueUnpacker implements ValueUnpacker {
         return value(newZonedDateTime(epochSecondLocal, nano, ZoneOffset.ofTotalSeconds(offsetSeconds)));
     }
 
+    private Value unpackDateTimeUtcWithZoneOffset() throws IOException {
+        long epochSecondLocal = unpacker.unpackLong();
+        int nano = Math.toIntExact(unpacker.unpackLong());
+        int offsetSeconds = Math.toIntExact(unpacker.unpackLong());
+        ZoneOffset offset = ZoneOffset.ofTotalSeconds(offsetSeconds);
+        return value(newZonedDateTimeUsingUtcBaseline(epochSecondLocal, nano, offset));
+    }
+
     private Value unpackDateTimeWithZoneId() throws IOException {
         long epochSecondLocal = unpacker.unpackLong();
         int nano = Math.toIntExact(unpacker.unpackLong());
         String zoneIdString = unpacker.unpackString();
         return value(newZonedDateTime(epochSecondLocal, nano, ZoneId.of(zoneIdString)));
+    }
+
+    private Value unpackDateTimeUtcWithZoneId() throws IOException {
+        long epochSecondLocal = unpacker.unpackLong();
+        int nano = Math.toIntExact(unpacker.unpackLong());
+        String zoneIdString = unpacker.unpackString();
+        ZoneId zoneId = ZoneId.of(zoneIdString);
+        return value(newZonedDateTimeUsingUtcBaseline(epochSecondLocal, nano, zoneId));
     }
 
     private Value unpackDuration() throws IOException {
@@ -375,6 +409,12 @@ public class CommonValueUnpacker implements ValueUnpacker {
     private static ZonedDateTime newZonedDateTime(long epochSecondLocal, long nano, ZoneId zoneId) {
         Instant instant = Instant.ofEpochSecond(epochSecondLocal, nano);
         LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, UTC);
+        return ZonedDateTime.of(localDateTime, zoneId);
+    }
+
+    private ZonedDateTime newZonedDateTimeUsingUtcBaseline(long epochSecondLocal, int nano, ZoneId zoneId) {
+        Instant instant = Instant.ofEpochSecond(epochSecondLocal, nano);
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, zoneId);
         return ZonedDateTime.of(localDateTime, zoneId);
     }
 }
