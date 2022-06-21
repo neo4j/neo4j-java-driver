@@ -83,6 +83,9 @@ public class StartTest implements TestkitRequest {
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query_nested$", skipMessage);
         skipMessage = "This test became flaky and needs investigation";
         COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.test_trusted_ca_correct_hostname$", skipMessage);
+        skipMessage = "Additional type support is needed";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^neo4j\\.datatypes\\.test_temporal_types\\.TestDataTypes\\..*$", skipMessage);
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
 
@@ -171,6 +174,7 @@ public class StartTest implements TestkitRequest {
     }
 
     private TestkitResponse createResponse(Map<String, String> skipPatternToReason) {
+        System.out.println(data.getTestName());
         return skipPatternToReason.entrySet().stream()
                 .filter(entry -> data.getTestName().matches(entry.getKey()))
                 .findFirst()

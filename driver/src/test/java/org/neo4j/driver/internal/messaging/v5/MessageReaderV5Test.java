@@ -113,4 +113,9 @@ public class MessageReaderV5Test extends AbstractMessageReaderTestBase {
     protected boolean isElementIdEnabled() {
         return true;
     }
+
+    @Override
+    protected boolean isDateTimeUtcEnabled() {
+        return true;
+    }
 }

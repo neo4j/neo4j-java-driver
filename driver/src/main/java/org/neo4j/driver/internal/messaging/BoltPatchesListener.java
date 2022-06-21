@@ -16,21 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v4;
+package org.neo4j.driver.internal.messaging;
 
-import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.common.CommonMessageReader;
-import org.neo4j.driver.internal.packstream.PackInput;
-import org.neo4j.driver.internal.packstream.PackOutput;
+import java.util.Set;
 
-public class MessageFormatV4 implements MessageFormat {
-    @Override
-    public Writer newWriter(PackOutput output) {
-        return new MessageWriterV4(output);
-    }
+public interface BoltPatchesListener {
+    String DATE_TIME_UTC_PATCH = "utc";
 
-    @Override
-    public Reader newReader(PackInput input) {
-        return new CommonMessageReader(input, false);
-    }
+    void handle(Set<String> patches);
 }

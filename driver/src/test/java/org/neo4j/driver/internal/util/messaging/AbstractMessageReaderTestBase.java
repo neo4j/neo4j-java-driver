@@ -97,6 +97,9 @@ public abstract class AbstractMessageReaderTestBase {
         ByteBuf buffer = Unpooled.buffer();
 
         MessageFormat messageFormat = new KnowledgeableMessageFormat(isElementIdEnabled());
+        if (isDateTimeUtcEnabled()) {
+            messageFormat.enableDateTimeUtc();
+        }
         MessageFormat.Writer writer = messageFormat.newWriter(new ByteBufOutput(buffer));
         writer.write(message);
 
@@ -106,6 +109,10 @@ public abstract class AbstractMessageReaderTestBase {
     }
 
     protected boolean isElementIdEnabled() {
+        return false;
+    }
+
+    protected boolean isDateTimeUtcEnabled() {
         return false;
     }
 }
