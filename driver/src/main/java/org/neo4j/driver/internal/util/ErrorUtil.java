@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.util;
 
-import io.netty.util.internal.PlatformDependent;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
@@ -115,7 +114,13 @@ public final class ErrorUtil {
                 .toArray(StackTraceElement[]::new);
         error.setStackTrace(currentStackTrace);
 
-        PlatformDependent.throwException(error);
+        RuntimeException exception;
+        if (error instanceof RuntimeException) {
+            exception = (RuntimeException) error;
+        } else {
+            exception = new Neo4jException("Driver execution failed", error);
+        }
+        throw exception;
     }
 
     private static boolean isProtocolViolationError(Neo4jException error) {

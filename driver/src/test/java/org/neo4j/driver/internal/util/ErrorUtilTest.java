@@ -24,12 +24,18 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.util.ErrorUtil.isFatal;
 import static org.neo4j.driver.internal.util.ErrorUtil.newConnectionTerminatedError;
 import static org.neo4j.driver.internal.util.ErrorUtil.newNeo4jError;
+import static org.neo4j.driver.internal.util.ErrorUtil.rethrowAsyncException;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
@@ -194,5 +200,17 @@ class ErrorUtilTest {
         assertThat(error, instanceOf(ClientException.class));
         assertEquals("Neo.ClientError.Transaction.LockClientStopped", error.code());
         assertEquals(message, error.getMessage());
+    }
+
+    @Test
+    void shouldWrapCheckedExceptionsInNeo4jExceptionWhenRethrowingAsyncException() {
+        ExecutionException ee = mock(ExecutionException.class);
+        UnknownHostException uhe = mock(UnknownHostException.class);
+        given(ee.getCause()).willReturn(uhe);
+        given(uhe.getStackTrace()).willReturn(new StackTraceElement[0]);
+
+        Neo4jException actual = assertThrows(Neo4jException.class, () -> rethrowAsyncException(ee));
+
+        assertEquals(actual.getCause(), uhe);
     }
 }
