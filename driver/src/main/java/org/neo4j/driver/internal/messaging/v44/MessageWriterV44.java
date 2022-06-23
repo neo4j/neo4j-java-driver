@@ -49,8 +49,8 @@ import org.neo4j.driver.internal.util.Iterables;
  * Bolt message writer v4.4
  */
 public class MessageWriterV44 extends AbstractMessageWriter {
-    public MessageWriterV44(PackOutput output) {
-        super(new CommonValuePacker(output), buildEncoders());
+    public MessageWriterV44(PackOutput output, boolean dateTimeUtcEnabled) {
+        super(new CommonValuePacker(output, dateTimeUtcEnabled), buildEncoders());
     }
 
     private static Map<Byte, MessageEncoder> buildEncoders() {

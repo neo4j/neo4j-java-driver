@@ -41,4 +41,9 @@ public class BoltProtocolV43 extends BoltProtocolV42 {
     public BoltProtocolVersion version() {
         return VERSION;
     }
+
+    @Override
+    protected boolean includeDateTimeUtcPatchInHello() {
+        return true;
+    }
 }

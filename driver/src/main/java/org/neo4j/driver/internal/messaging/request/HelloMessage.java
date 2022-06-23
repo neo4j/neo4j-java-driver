@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.messaging.request;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.security.InternalAuthToken.CREDENTIALS_KEY;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -31,9 +32,16 @@ public class HelloMessage extends MessageWithMetadata {
 
     private static final String USER_AGENT_METADATA_KEY = "user_agent";
     private static final String ROUTING_CONTEXT_METADATA_KEY = "routing";
+    private static final String PATCH_BOLT_METADATA_KEY = "patch_bolt";
 
-    public HelloMessage(String userAgent, Map<String, Value> authToken, Map<String, String> routingContext) {
-        super(buildMetadata(userAgent, authToken, routingContext));
+    private static final String DATE_TIME_UTC_PATCH_VALUE = "utc";
+
+    public HelloMessage(
+            String userAgent,
+            Map<String, Value> authToken,
+            Map<String, String> routingContext,
+            boolean includeDateTimeUtc) {
+        super(buildMetadata(userAgent, authToken, routingContext, includeDateTimeUtc));
     }
 
     @Override
@@ -66,11 +74,17 @@ public class HelloMessage extends MessageWithMetadata {
     }
 
     private static Map<String, Value> buildMetadata(
-            String userAgent, Map<String, Value> authToken, Map<String, String> routingContext) {
+            String userAgent,
+            Map<String, Value> authToken,
+            Map<String, String> routingContext,
+            boolean includeDateTimeUtc) {
         Map<String, Value> result = new HashMap<>(authToken);
         result.put(USER_AGENT_METADATA_KEY, value(userAgent));
         if (routingContext != null) {
             result.put(ROUTING_CONTEXT_METADATA_KEY, value(routingContext));
+        }
+        if (includeDateTimeUtc) {
+            result.put(PATCH_BOLT_METADATA_KEY, value(Collections.singleton(DATE_TIME_UTC_PATCH_VALUE)));
         }
         return result;
     }

@@ -25,25 +25,29 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import java.util.List;
+import java.util.Set;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.async.connection.BoltProtocolUtil;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
+import org.neo4j.driver.internal.messaging.BoltPatchesListener;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 
-public class OutboundMessageHandler extends MessageToMessageEncoder<Message> {
+public class OutboundMessageHandler extends MessageToMessageEncoder<Message> implements BoltPatchesListener {
     public static final String NAME = OutboundMessageHandler.class.getSimpleName();
     private final ChunkAwareByteBufOutput output;
-    private final MessageFormat.Writer writer;
+    private final MessageFormat messageFormat;
     private final Logging logging;
 
+    private MessageFormat.Writer writer;
     private Logger log;
 
     public OutboundMessageHandler(MessageFormat messageFormat, Logging logging) {
         this.output = new ChunkAwareByteBufOutput();
-        this.writer = messageFormat.newWriter(output);
+        this.messageFormat = messageFormat;
         this.logging = logging;
+        this.writer = messageFormat.newWriter(output);
     }
 
     @Override
@@ -78,5 +82,13 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message> {
 
         BoltProtocolUtil.writeMessageBoundary(messageBuf);
         out.add(messageBuf);
+    }
+
+    @Override
+    public void handle(Set<String> patches) {
+        if (patches.contains(DATE_TIME_UTC_PATCH)) {
+            messageFormat.enableDateTimeUtc();
+            writer = messageFormat.newWriter(output);
+        }
     }
 }

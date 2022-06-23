@@ -107,7 +107,8 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                 new HelloMessage(
                         "MyDriver/1.2.3",
                         ((InternalAuthToken) basic("neo4j", "neo4j")).toMap(),
-                        Collections.emptyMap()),
+                        Collections.emptyMap(),
+                        false),
                 GOODBYE,
                 new BeginMessage(
                         InternalBookmark.parse("neo4j:bookmark:v1:tx123"),

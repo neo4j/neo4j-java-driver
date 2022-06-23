@@ -33,8 +33,8 @@ import org.neo4j.driver.internal.packstream.PackInput;
 public class CommonMessageReader implements MessageFormat.Reader {
     private final ValueUnpacker unpacker;
 
-    public CommonMessageReader(PackInput input) {
-        this(new CommonValueUnpacker(input));
+    public CommonMessageReader(PackInput input, boolean dateTimeUtcEnabled) {
+        this(new CommonValueUnpacker(input, dateTimeUtcEnabled));
     }
 
     protected CommonMessageReader(ValueUnpacker unpacker) {

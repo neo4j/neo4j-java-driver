@@ -49,14 +49,21 @@ import org.neo4j.driver.types.Relationship;
  * SUCCESS, FAILURE, IGNORED and RECORD.
  */
 public class KnowledgeableMessageFormat extends MessageFormatV3 {
+    private boolean dateTimeUtcEnabled;
+
     @Override
     public Writer newWriter(PackOutput output) {
-        return new KnowledgeableMessageWriter(output);
+        return new KnowledgeableMessageWriter(output, dateTimeUtcEnabled);
+    }
+
+    @Override
+    public void enableDateTimeUtc() {
+        dateTimeUtcEnabled = true;
     }
 
     private static class KnowledgeableMessageWriter extends AbstractMessageWriter {
-        KnowledgeableMessageWriter(PackOutput output) {
-            super(new KnowledgeableValuePacker(output), buildEncoders());
+        KnowledgeableMessageWriter(PackOutput output, boolean dateTimeUtcEnabled) {
+            super(new KnowledgeableValuePacker(output, dateTimeUtcEnabled), buildEncoders());
         }
 
         static Map<Byte, MessageEncoder> buildEncoders() {
@@ -75,8 +82,9 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
     }
 
     private static class KnowledgeableValuePacker extends CommonValuePacker {
-        KnowledgeableValuePacker(PackOutput output) {
-            super(output);
+
+        KnowledgeableValuePacker(PackOutput output, boolean dateTimeUtcEnabled) {
+            super(output, dateTimeUtcEnabled);
         }
 
         @Override

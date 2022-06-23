@@ -27,13 +27,20 @@ import org.neo4j.driver.internal.packstream.PackOutput;
  * Bolt message format v4.3
  */
 public class MessageFormatV43 implements MessageFormat {
+    private boolean dateTimeUtcEnabled;
+
     @Override
     public Writer newWriter(PackOutput output) {
-        return new MessageWriterV43(output);
+        return new MessageWriterV43(output, dateTimeUtcEnabled);
     }
 
     @Override
     public Reader newReader(PackInput input) {
-        return new CommonMessageReader(input);
+        return new CommonMessageReader(input, dateTimeUtcEnabled);
+    }
+
+    @Override
+    public void enableDateTimeUtc() {
+        dateTimeUtcEnabled = true;
     }
 }
