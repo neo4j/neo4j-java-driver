@@ -328,4 +328,10 @@
         <method>java.util.Set lastBookmarks()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/exceptions/Neo4jException</className>
+        <differenceType>7002</differenceType>
+        <method>java.lang.String neo4jErrorCode()</method>
+    </difference>
+
 </differences>
