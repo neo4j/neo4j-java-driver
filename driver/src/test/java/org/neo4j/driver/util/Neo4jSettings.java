@@ -29,16 +29,14 @@ import java.util.Set;
 public class Neo4jSettings {
     public static final String DATA_DIR = "dbms.directories.data";
     public static final String IMPORT_DIR = "dbms.directories.import";
+    public static final String SSL_POLICY_BOLT_ENABLED = "dbms.ssl.policy.bolt.enabled";
+    public static final String SSL_POLICY_BOLT_CLIENT_AUTH = "dbms.ssl.policy.bolt.client_auth";
     // 5.0
-    public static final String SERVER_IMPORT_DIR = "server.directories.import";
     public static final String LISTEN_ADDR = "dbms.default_listen_address";
     public static final String IPV6_ENABLED_ADDR = "::";
     public static final String BOLT_TLS_LEVEL = "dbms.connector.bolt.tls_level";
 
     private static final String DEFAULT_IMPORT_DIR = "import";
-    private static final String DEFAULT_CERT_DIR = "certificates";
-    public static final String DEFAULT_TLS_CERT_PATH = DEFAULT_CERT_DIR + "/neo4j.cert";
-    public static final String DEFAULT_TLS_KEY_PATH = DEFAULT_CERT_DIR + "/neo4j.key";
     public static final String DEFAULT_BOLT_TLS_LEVEL = BoltTlsLevel.OPTIONAL.toString();
 
     public static final String DEFAULT_DATA_DIR = "data";
@@ -91,21 +89,6 @@ public class Neo4jSettings {
 
     public Map<String, String> propertiesMap() {
         return settings;
-    }
-
-    public Neo4jSettings updateWith(String key, String value) {
-        return updateWith(map(key, value), excludes);
-    }
-
-    private Neo4jSettings updateWith(Map<String, String> updates, Set<String> excludes) {
-        HashMap<String, String> newSettings = new HashMap<>(settings);
-        for (Map.Entry<String, String> entry : updates.entrySet()) {
-            newSettings.put(entry.getKey(), entry.getValue());
-        }
-        for (String exclude : excludes) {
-            newSettings.remove(exclude);
-        }
-        return new Neo4jSettings(newSettings, excludes);
     }
 
     public Neo4jSettings without(String key) {

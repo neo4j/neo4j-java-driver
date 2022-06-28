@@ -97,18 +97,17 @@ To use the driver in a project, please use the released driver via Maven Central
 
 #### Running Tests and Creating a Package
 
-Our test setup requires a bit of infrastructure to run.
-We rely mostly on [`testkit`](https://github.com/neo4j-drivers/testkit).
-Testkit is a tooling that is used to run integration tests for all of the drivers we provide.
-
-Some older tests still rely on [`boltkit`](https://github.com/neo4j-drivers/boltkit), the predecessor to Testkit.
-If `boltkit` is not installed, then all tests that requires `boltkit` will be ignored and will not be executed.
-
-In case you want or can verify contributions with unit tests alone, use the following command to skip all integration and Testkit tests:
-
+The following command may be used to unit test and install artifacts without running integration tests:
 ```
 mvn clean install -DskipITs -P skip-testkit
 ```
+
+Integration tests have the following prerequisites:
+- Docker
+- [`Testkit`](https://github.com/neo4j-drivers/testkit)
+
+Testkit that is a tooling that is used to run integration tests for all official Neo4j drivers.
+It can be executed using Docker during Maven build and in such case does not require additional setup. See the instructions below for more details.
 
 There are 2 ways of running Testkit tests:
 1. Using the `testkit-tests` module of this project.
