@@ -34,7 +34,7 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-handler.version>4.1.78.Final</netty-handler.version>
+    <netty-bom.version>4.1.78.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
@@ -97,8 +97,10 @@
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
-        <artifactId>netty-handler</artifactId>
-        <version>${netty-handler.version}</version>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty-bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>io.projectreactor</groupId>
