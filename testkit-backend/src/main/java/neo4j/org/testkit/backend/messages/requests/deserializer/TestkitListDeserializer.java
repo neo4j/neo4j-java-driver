@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherType;
 
 public class TestkitListDeserializer extends StdDeserializer<List<?>> {
     private final TestkitCypherParamDeserializer mapDeserializer;
@@ -80,7 +81,11 @@ public class TestkitListDeserializer extends StdDeserializer<List<?>> {
                         {
                             result.add(mapDeserializer.deserialize(p, ctxt));
                         } else {
-                            result.add(p.readValueAs(mapValueType));
+                            Object obj = p.readValueAs(mapValueType);
+                            if (obj instanceof CypherType) {
+                                obj = ((CypherType) obj).asValue();
+                            }
+                            result.add(obj);
                         }
                     }
                 }

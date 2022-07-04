@@ -37,7 +37,6 @@ import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import reactor.core.publisher.Mono;
 
@@ -63,7 +62,7 @@ public class TestkitState {
     private final Map<String, RxTransactionHolder> transactionIdToRxTransactionHolder = new HashMap<>();
 
     @Getter
-    private final Map<String, Neo4jException> errors = new HashMap<>();
+    private final Map<String, Exception> errors = new HashMap<>();
 
     private final AtomicInteger idGenerator = new AtomicInteger(0);
 
