@@ -24,7 +24,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import lombok.Getter;
 import lombok.Setter;
-import neo4j.org.testkit.backend.FrontendError;
 import neo4j.org.testkit.backend.ReactiveTransactionContextAdapter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
@@ -39,7 +38,6 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransactionWork;
-import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.reactive.ReactiveTransactionCallback;
 import org.neo4j.driver.reactive.RxTransactionWork;
 import org.reactivestreams.Publisher;
@@ -130,11 +128,8 @@ public class SessionWriteTransaction implements TestkitRequest {
                 if (workThrowable instanceof ExecutionException) {
                     workThrowable = workThrowable.getCause();
                 }
-                if (workThrowable instanceof Neo4jException) {
-                    throw (Neo4jException) workThrowable;
-                }
-                if (workThrowable instanceof FrontendError) {
-                    throw (FrontendError) workThrowable;
+                if (workThrowable instanceof RuntimeException) {
+                    throw (RuntimeException) workThrowable;
                 }
                 throw new RuntimeException("Unexpected exception occurred in transaction work function", workThrowable);
             }
