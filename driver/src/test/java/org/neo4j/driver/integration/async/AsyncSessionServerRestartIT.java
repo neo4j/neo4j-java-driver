@@ -67,26 +67,26 @@ class AsyncSessionServerRestartIT {
                 ResultCursor cursor = await(session.runAsync(query));
 
                 if (i == 0) {
-                    neo4j.stopDb();
+                    neo4j.stopProxy();
                 }
 
                 List<Record> records = await(cursor.listAsync());
                 assertEquals(100, records.size());
             }
         });
-        neo4j.startDb();
+        neo4j.startProxy();
     }
 
     @Test
     void shouldRunAfterRunFailureToAcquireConnection() {
-        neo4j.stopDb();
+        neo4j.stopProxy();
 
         assertThrows(ServiceUnavailableException.class, () -> {
             ResultCursor cursor = await(session.runAsync("RETURN 42"));
             await(cursor.nextAsync());
         });
 
-        neo4j.startDb();
+        neo4j.startProxy();
 
         ResultCursor cursor2 = await(session.runAsync("RETURN 42"));
         Record record = await(cursor2.singleAsync());
@@ -95,14 +95,14 @@ class AsyncSessionServerRestartIT {
 
     @Test
     void shouldBeginTxAfterRunFailureToAcquireConnection() {
-        neo4j.stopDb();
+        neo4j.stopProxy();
 
         assertThrows(ServiceUnavailableException.class, () -> {
             ResultCursor cursor = await(session.runAsync("RETURN 42"));
             await(cursor.consumeAsync());
         });
 
-        neo4j.startDb();
+        neo4j.startProxy();
 
         AsyncTransaction tx = await(session.beginTransactionAsync());
         ResultCursor cursor2 = await(tx.runAsync("RETURN 42"));

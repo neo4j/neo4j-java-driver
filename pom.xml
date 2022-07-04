@@ -22,7 +22,7 @@
     <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
 
     <rootDir>${project.basedir}</rootDir>
-    <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
+    <parallelizable.it.forkCount>2</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
     <surefire.and.failsafe.version>3.0.0-M6</surefire.and.failsafe.version>

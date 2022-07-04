@@ -55,7 +55,6 @@ import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
 import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.Neo4jRunner;
 import org.neo4j.driver.util.ParallelizableIT;
 
 @ParallelizableIT
@@ -122,7 +121,7 @@ class NettyChannelPoolIT {
             AuthenticationException e = assertThrows(AuthenticationException.class, () -> acquire(pool));
         }
 
-        authTokenMap.put("credentials", value(Neo4jRunner.PASSWORD));
+        authTokenMap.put("credentials", value(neo4j.adminPassword()));
 
         assertNotNull(acquire(pool));
     }

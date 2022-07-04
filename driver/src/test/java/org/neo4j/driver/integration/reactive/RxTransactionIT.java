@@ -549,7 +549,7 @@ class RxTransactionIT {
 
         assertThrows(ServiceUnavailableException.class, () -> {
             await(Flux.from(result.records()).doOnSubscribe(subscription -> {
-                neo4j.stopDb();
+                neo4j.stopProxy();
             }));
             await(tx.commit());
         });

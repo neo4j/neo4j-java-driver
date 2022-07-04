@@ -508,7 +508,7 @@ class AsyncTransactionIT {
 
         await(tx.runAsync("CREATE ()"));
 
-        neo4j.stopDb();
+        neo4j.stopProxy();
 
         assertThrows(ServiceUnavailableException.class, () -> await(tx.commitAsync()));
     }
