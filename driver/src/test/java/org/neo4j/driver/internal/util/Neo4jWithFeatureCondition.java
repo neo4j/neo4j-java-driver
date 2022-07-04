@@ -30,8 +30,7 @@ import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.util.Neo4jRunner;
-import org.neo4j.driver.util.Neo4jSettings;
+import org.neo4j.driver.util.DatabaseExtension;
 
 public class Neo4jWithFeatureCondition implements ExecutionCondition {
     private static final ConditionEvaluationResult ENABLED_NOT_ANNOTATED =
@@ -63,7 +62,7 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition {
     }
 
     private static ConditionEvaluationResult checkFeatureAvailability(Neo4jFeature feature, boolean negated) {
-        Driver driver = getSharedNeo4jDriver();
+        Driver driver = DatabaseExtension.getInstance().driver();
         if (driver != null) {
             try (Session session = driver.session()) {
                 String agent = session.readTransaction(
@@ -88,7 +87,7 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition {
         if (previousResult.isDisabled()) {
             return previousResult;
         }
-        Driver driver = getSharedNeo4jDriver();
+        Driver driver = DatabaseExtension.getInstance().driver();
         if (driver != null) {
             try (Session session = driver.session()) {
                 String value = session.run("CALL dbms.components() YIELD edition")
@@ -120,19 +119,6 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition {
             return negated
                     ? enabled("Enabled on neo4j " + version + " because it does not support " + feature)
                     : disabled("Disabled on neo4j " + version + " because it does not support " + feature);
-        }
-    }
-
-    private static Driver getSharedNeo4jDriver() {
-        try {
-            Neo4jRunner runner = Neo4jRunner.getOrCreateGlobalRunner();
-            // ensure database is running with default credentials
-            runner.ensureRunning(Neo4jSettings.TEST_SETTINGS);
-            return runner.driver();
-        } catch (Throwable t) {
-            System.err.println("Failed to check database version in the test execution condition");
-            t.printStackTrace();
-            return null;
         }
     }
 }
