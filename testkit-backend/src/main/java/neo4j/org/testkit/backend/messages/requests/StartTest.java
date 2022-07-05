@@ -180,7 +180,7 @@ public class StartTest implements TestkitRequest {
         } else {
             testkitResponse = RunTest.builder().build();
         }
-        return Mono.fromCompletionStage(CompletableFuture.completedFuture(testkitResponse));
+        return Mono.just(testkitResponse);
     }
 
     @Override
@@ -191,7 +191,7 @@ public class StartTest implements TestkitRequest {
         } else {
             testkitResponse = RunTest.builder().build();
         }
-        return Mono.fromCompletionStage(CompletableFuture.completedFuture(testkitResponse));
+        return Mono.just(testkitResponse);
     }
 
     private TestkitResponse createSkipResponse(Map<String, String> skipPatternToReason) {
