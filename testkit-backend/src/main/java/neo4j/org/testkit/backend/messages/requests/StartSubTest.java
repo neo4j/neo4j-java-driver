@@ -166,13 +166,13 @@ public class StartSubTest implements TestkitRequest {
     @Override
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         TestkitResponse testkitResponse = createResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_CHECK);
-        return Mono.fromCompletionStage(CompletableFuture.completedFuture(testkitResponse));
+        return Mono.just(testkitResponse);
     }
 
     @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         TestkitResponse testkitResponse = createResponse(REACTIVE_SKIP_PATTERN_TO_CHECK);
-        return Mono.fromCompletionStage(CompletableFuture.completedFuture(testkitResponse));
+        return Mono.just(testkitResponse);
     }
 
     private TestkitResponse createResponse(Map<String, SkipDeciderInterface> skipPatternToCheck) {
