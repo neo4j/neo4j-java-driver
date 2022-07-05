@@ -39,9 +39,9 @@ public class CypherTime implements CypherType {
 
     @Override
     public Value asValue() {
-        if (offset == null) {
-            return new LocalTimeValue(LocalTime.of(hour, minute, second, nano));
+        if (offset != null) {
+            return new TimeValue(OffsetTime.of(hour, minute, second, nano, ZoneOffset.ofTotalSeconds(offset)));
         }
-        return new TimeValue(OffsetTime.of(hour, minute, second, nano, ZoneOffset.ofTotalSeconds(offset)));
+        return new LocalTimeValue(LocalTime.of(hour, minute, second, nano));
     }
 }
