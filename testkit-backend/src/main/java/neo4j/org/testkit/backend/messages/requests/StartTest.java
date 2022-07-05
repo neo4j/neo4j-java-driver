@@ -163,7 +163,6 @@ public class StartTest implements TestkitRequest {
     }
 
     private TestkitResponse createSkipResponse(Map<String, String> skipPatternToReason) {
-        System.out.println(data.getTestName());
         return skipPatternToReason.entrySet().stream()
                 .filter(entry -> data.getTestName().matches(entry.getKey()))
                 .findFirst()
