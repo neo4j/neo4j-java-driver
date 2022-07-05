@@ -66,7 +66,9 @@ public class TestkitCypherTypeMapper {
             Field field = data.getClass().getDeclaredField(fieldName);
             field.set(data, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            // ignored
+            throw new RuntimeException(String.format(
+                    "Received unexpected TestKit data field %s while parsing into %s",
+                    fieldName, data.getClass().getName()));
         }
     }
 }
