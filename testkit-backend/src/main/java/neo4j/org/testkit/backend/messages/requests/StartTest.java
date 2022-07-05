@@ -20,6 +20,7 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
@@ -151,59 +152,48 @@ public class StartTest implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createSkipResponse(COMMON_SKIP_PATTERN_TO_REASON);
-        if (testkitResponse != null) {
-            return testkitResponse;
-        }
-        if (StartSubTest.decidePerSubTest(data.getTestName())) {
-            return RunSubTests.builder().build();
-        }
-        return RunTest.builder().build();
+        return createSkipResponse(COMMON_SKIP_PATTERN_TO_REASON)
+                .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
+                        ? RunSubTests.builder().build()
+                        : RunTest.builder().build());
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createSkipResponse(ASYNC_SKIP_PATTERN_TO_REASON);
-        if (testkitResponse == null && StartSubTest.decidePerSubTestAsync(data.getTestName())) {
-            testkitResponse = RunSubTests.builder().build();
-        } else {
-            testkitResponse = RunTest.builder().build();
-        }
+        TestkitResponse testkitResponse = createSkipResponse(ASYNC_SKIP_PATTERN_TO_REASON)
+                .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
+                        ? RunSubTests.builder().build()
+                        : RunTest.builder().build());
         return CompletableFuture.completedFuture(testkitResponse);
     }
 
     @Override
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createSkipResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON);
-        if (testkitResponse == null && StartSubTest.decidePerSubTestReactiveLegacy(data.getTestName())) {
-            testkitResponse = RunSubTests.builder().build();
-        } else {
-            testkitResponse = RunTest.builder().build();
-        }
+        TestkitResponse testkitResponse = createSkipResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON)
+                .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
+                        ? RunSubTests.builder().build()
+                        : RunTest.builder().build());
         return Mono.just(testkitResponse);
     }
 
     @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createSkipResponse(REACTIVE_SKIP_PATTERN_TO_REASON);
-        if (testkitResponse == null && StartSubTest.decidePerSubTestReactive(data.getTestName())) {
-            testkitResponse = RunSubTests.builder().build();
-        } else {
-            testkitResponse = RunTest.builder().build();
-        }
+        TestkitResponse testkitResponse = createSkipResponse(REACTIVE_SKIP_PATTERN_TO_REASON)
+                .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
+                        ? RunSubTests.builder().build()
+                        : RunTest.builder().build());
         return Mono.just(testkitResponse);
     }
 
-    private TestkitResponse createSkipResponse(Map<String, String> skipPatternToReason) {
+    private Optional<TestkitResponse> createSkipResponse(Map<String, String> skipPatternToReason) {
         return skipPatternToReason.entrySet().stream()
                 .filter(entry -> data.getTestName().matches(entry.getKey()))
                 .findFirst()
-                .map(entry -> (TestkitResponse) SkipTest.builder()
+                .map(entry -> SkipTest.builder()
                         .data(SkipTest.SkipTestBody.builder()
                                 .reason(entry.getValue())
                                 .build())
-                        .build())
-                .orElse(null);
+                        .build());
     }
 
     @Setter
