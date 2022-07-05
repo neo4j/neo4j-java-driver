@@ -33,18 +33,18 @@ public class TestkitCypherTimeDeserializer extends StdDeserializer<CypherTime> {
         mapper = new TestkitCypherTypeMapper();
     }
 
+    @Override
+    public CypherTime deserialize(JsonParser p, DeserializationContext ctxt)
+            throws IOException, JsonProcessingException {
+        CypherTimeData data = mapper.mapData(p, ctxt, new CypherTimeData());
+        return new CypherTime(data.hour, data.minute, data.second, data.nanosecond, data.utc_offset_s);
+    }
+
     private static final class CypherTimeData {
         Integer hour;
         Integer minute;
         Integer second;
         Integer nanosecond;
         Integer utc_offset_s;
-    }
-
-    @Override
-    public CypherTime deserialize(JsonParser p, DeserializationContext ctxt)
-            throws IOException, JsonProcessingException {
-        CypherTimeData data = mapper.mapData(p, ctxt, new CypherTimeData());
-        return new CypherTime(data.hour, data.minute, data.second, data.nanosecond, data.utc_offset_s);
     }
 }

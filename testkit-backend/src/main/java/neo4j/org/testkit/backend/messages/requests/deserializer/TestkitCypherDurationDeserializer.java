@@ -34,16 +34,16 @@ public class TestkitCypherDurationDeserializer extends StdDeserializer<IsoDurati
         mapper = new TestkitCypherTypeMapper();
     }
 
+    public IsoDuration deserialize(JsonParser p, DeserializationContext ctxt)
+            throws IOException, JsonProcessingException {
+        CypherDurationData data = mapper.mapData(p, ctxt, new CypherDurationData());
+        return new InternalIsoDuration(data.months, data.days, data.seconds, data.nanoseconds);
+    }
+
     private static final class CypherDurationData {
         Long months;
         Long days;
         Long seconds;
         Integer nanoseconds;
-    }
-
-    public IsoDuration deserialize(JsonParser p, DeserializationContext ctxt)
-            throws IOException, JsonProcessingException {
-        CypherDurationData data = mapper.mapData(p, ctxt, new CypherDurationData());
-        return new InternalIsoDuration(data.months, data.days, data.seconds, data.nanoseconds);
     }
 }

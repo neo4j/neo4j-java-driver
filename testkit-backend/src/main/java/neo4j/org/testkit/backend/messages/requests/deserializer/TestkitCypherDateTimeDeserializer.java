@@ -33,18 +33,6 @@ public class TestkitCypherDateTimeDeserializer extends StdDeserializer<CypherDat
         mapper = new TestkitCypherTypeMapper();
     }
 
-    private static final class CypherDateTimeData {
-        Integer year;
-        Integer month;
-        Integer day;
-        Integer hour;
-        Integer minute;
-        Integer second;
-        Integer nanosecond;
-        Integer utc_offset_s;
-        String timezone_id;
-    }
-
     @Override
     public CypherDateTime deserialize(JsonParser p, DeserializationContext ctxt)
             throws IOException, JsonProcessingException {
@@ -59,5 +47,17 @@ public class TestkitCypherDateTimeDeserializer extends StdDeserializer<CypherDat
                 data.nanosecond,
                 data.timezone_id,
                 data.utc_offset_s);
+    }
+
+    private static final class CypherDateTimeData {
+        Integer year;
+        Integer month;
+        Integer day;
+        Integer hour;
+        Integer minute;
+        Integer second;
+        Integer nanosecond;
+        Integer utc_offset_s;
+        String timezone_id;
     }
 }

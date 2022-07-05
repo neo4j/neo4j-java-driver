@@ -30,12 +30,6 @@ public class TestkitCypherDateDeserializer extends StdDeserializer<LocalDate> {
 
     private final TestkitCypherTypeMapper mapper;
 
-    private static final class CypherDateData {
-        Integer year;
-        Integer month;
-        Integer day;
-    }
-
     public TestkitCypherDateDeserializer() {
         super(Date.class);
         mapper = new TestkitCypherTypeMapper();
@@ -45,5 +39,11 @@ public class TestkitCypherDateDeserializer extends StdDeserializer<LocalDate> {
             throws IOException, JsonProcessingException {
         CypherDateData data = mapper.mapData(p, ctxt, new CypherDateData());
         return LocalDate.of(data.year, data.month, data.day);
+    }
+
+    private static final class CypherDateData {
+        Integer year;
+        Integer month;
+        Integer day;
     }
 }
