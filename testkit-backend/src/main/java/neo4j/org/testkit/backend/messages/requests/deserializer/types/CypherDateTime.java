@@ -18,7 +18,6 @@
  */
 package neo4j.org.testkit.backend.messages.requests.deserializer.types;
 
-import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -55,17 +54,21 @@ public class CypherDateTime implements CypherType {
 
     @Override
     public Value asValue() {
-        if (offset == null) {
-            return new LocalDateTimeValue(LocalDateTime.of(year, month, day, hour, minute, second, nano));
+        if (zoneId != null) {
+            ZonedDateTime dateTime = ZonedDateTime.of(year, month, day, hour, minute, second, nano, ZoneId.of(zoneId));
+            if (dateTime.getOffset().getTotalSeconds() != offset) {
+                throw new RuntimeException(String.format(
+                        "TestKit's and driver's tz info diverge. "
+                                + "TestKit assumes %ds offset for %s while the driver assumes %ds for %s.",
+                        offset, zoneId, dateTime.getOffset().getTotalSeconds(), dateTime));
+            }
+            return new DateTimeValue(dateTime);
         }
-        if (zoneId == null) {
+
+        if (offset != null) {
             ZoneOffset zoneOffset = ZoneOffset.ofTotalSeconds(offset);
             return new DateTimeValue(ZonedDateTime.of(year, month, day, hour, minute, second, nano, zoneOffset));
         }
-        try {
-            return new DateTimeValue(ZonedDateTime.of(year, month, day, hour, minute, second, nano, ZoneId.of(zoneId)));
-        } catch (DateTimeException e) {
-            return null;
-        }
+        return new LocalDateTimeValue(LocalDateTime.of(year, month, day, hour, minute, second, nano));
     }
 }

@@ -21,5 +21,5 @@ package neo4j.org.testkit.backend.messages.requests.deserializer.types;
 import org.neo4j.driver.Value;
 
 public interface CypherType {
-    public Value asValue();
+    Value asValue();
 }
