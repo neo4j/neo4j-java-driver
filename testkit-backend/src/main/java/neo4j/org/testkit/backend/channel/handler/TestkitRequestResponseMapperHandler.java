@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import neo4j.org.testkit.backend.messages.TestkitModule;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
-import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
@@ -44,16 +43,6 @@ public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
         TestkitResponse testkitResponse = (TestkitResponse) msg;
         String responseStr = objectMapper.writeValueAsString(testkitResponse);
         ctx.writeAndFlush(responseStr, promise);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        TestkitResponse response = BackendError.builder()
-                .data(BackendError.BackendErrorBody.builder()
-                        .msg(cause.toString())
-                        .build())
-                .build();
-        ctx.writeAndFlush(objectMapper.writeValueAsString(response));
     }
 
     public static ObjectMapper newObjectMapper() {
