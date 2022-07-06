@@ -20,13 +20,10 @@ package org.neo4j.driver.internal;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.NULL;
 import static org.neo4j.driver.Values.value;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -58,39 +55,6 @@ class InternalRelationshipTest {
         assertThat(relationship.get("k1"), equalTo(value(1)));
         assertThat(relationship.get("k2"), equalTo(value(2)));
         assertThat(relationship.get("k3"), equalTo(NULL));
-    }
-
-    @Test
-    void shouldThrowOnIdWhenNumericIdUnavailable() {
-        // GIVEN
-        InternalRelationship relationship = new InternalRelationship(
-                -1, "value", 1, String.valueOf(1), 2, String.valueOf(2), "T", Collections.emptyMap(), false);
-
-        // WHEN & THEN
-        IllegalStateException e = assertThrows(IllegalStateException.class, relationship::id);
-        assertEquals(InternalEntity.INVALID_ID_ERROR, e.getMessage());
-    }
-
-    @Test
-    void shouldThrowOnStartNodeIdWhenNumericIdUnavailable() {
-        // GIVEN
-        InternalRelationship relationship = new InternalRelationship(
-                -1, "value", 1, String.valueOf(1), 2, String.valueOf(2), "T", Collections.emptyMap(), false);
-
-        // WHEN & THEN
-        IllegalStateException e = assertThrows(IllegalStateException.class, relationship::startNodeId);
-        assertEquals(InternalEntity.INVALID_ID_ERROR, e.getMessage());
-    }
-
-    @Test
-    void shouldThrowOnEndNodeIdWhenNumericIdUnavailable() {
-        // GIVEN
-        InternalRelationship relationship = new InternalRelationship(
-                -1, "value", 1, String.valueOf(1), 2, String.valueOf(2), "T", Collections.emptyMap(), false);
-
-        // WHEN & THEN
-        IllegalStateException e = assertThrows(IllegalStateException.class, relationship::endNodeId);
-        assertEquals(InternalEntity.INVALID_ID_ERROR, e.getMessage());
     }
 
     private InternalRelationship createRelationship() {

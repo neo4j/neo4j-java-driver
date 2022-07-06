@@ -55,7 +55,6 @@ public class GetFeatures implements TestkitRequest {
             "Feature:API:Driver.IsEncrypted",
             "Feature:API:SSLConfig",
             "Detail:DefaultSecurityConfigValueEquality",
-            "Detail:ThrowOnMissingId",
             "Optimization:ImplicitDefaultArguments",
             "Feature:Bolt:Patch:UTC",
             "Feature:API:Type.Temporal"));

@@ -404,27 +404,6 @@ public class PackStream {
             }
         }
 
-        public Long unpackLongOrNull() throws IOException {
-            final byte markerByte = in.readByte();
-            if (markerByte >= MINUS_2_TO_THE_4) {
-                return (long) markerByte;
-            }
-            switch (markerByte) {
-                case INT_8:
-                    return (long) in.readByte();
-                case INT_16:
-                    return (long) in.readShort();
-                case INT_32:
-                    return (long) in.readInt();
-                case INT_64:
-                    return in.readLong();
-                case NULL:
-                    return null;
-                default:
-                    throw new Unexpected("Expected an integer, but got: " + toHexString(markerByte));
-            }
-        }
-
         public long unpackLong() throws IOException {
             final byte markerByte = in.readByte();
             if (markerByte >= MINUS_2_TO_THE_4) {
