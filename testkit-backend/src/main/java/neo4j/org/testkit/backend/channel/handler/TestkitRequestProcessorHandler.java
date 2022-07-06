@@ -87,7 +87,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                     }
                 });
             } catch (Throwable throwable) {
-                ctx.writeAndFlush(createErrorResponse(throwable));
+                exceptionCaught(ctx, throwable);
             }
         });
     }
@@ -101,6 +101,11 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
             result.completeExceptionally(t);
         }
         return result;
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        ctx.writeAndFlush(createErrorResponse(cause));
     }
 
     private TestkitResponse createErrorResponse(Throwable throwable) {
