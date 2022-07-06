@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Config.TrustStrategy.trustAllCertificates;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
@@ -81,7 +83,9 @@ class EncryptionIT {
     }
 
     private void testMatchingEncryption(BoltTlsLevel tlsLevel, boolean driverEncrypted, String scheme) {
-        neo4j.restartDb(Neo4jSettings.TEST_SETTINGS.updateWith(Neo4jSettings.BOLT_TLS_LEVEL, tlsLevel.toString()));
+        Map<String, String> tlsConfig = new HashMap<>();
+        tlsConfig.put(Neo4jSettings.BOLT_TLS_LEVEL, tlsLevel.toString());
+        neo4j.deleteAndStartNeo4j(tlsConfig);
         Config config;
 
         if (scheme.equals(Scheme.BOLT_LOW_TRUST_URI_SCHEME)) {
@@ -107,7 +111,9 @@ class EncryptionIT {
     }
 
     private void testMismatchingEncryption(BoltTlsLevel tlsLevel, boolean driverEncrypted) {
-        neo4j.restartDb(Neo4jSettings.TEST_SETTINGS.updateWith(Neo4jSettings.BOLT_TLS_LEVEL, tlsLevel.toString()));
+        Map<String, String> tlsConfig = new HashMap<>();
+        tlsConfig.put(Neo4jSettings.BOLT_TLS_LEVEL, tlsLevel.toString());
+        neo4j.deleteAndStartNeo4j(tlsConfig);
         Config config = newConfig(driverEncrypted);
 
         ServiceUnavailableException e = assertThrows(

@@ -31,14 +31,12 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.Neo4jSettings;
 import org.neo4j.driver.util.ParallelizableIT;
 
 @ParallelizableIT
 class LoadCSVIT {
     @RegisterExtension
-    static final DatabaseExtension neo4j = new DatabaseExtension(
-            Neo4jSettings.TEST_SETTINGS.without(Neo4jSettings.IMPORT_DIR).without(Neo4jSettings.SERVER_IMPORT_DIR));
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
     void shouldLoadCSV() throws Throwable {
@@ -74,7 +72,7 @@ class LoadCSVIT {
             session.run("CREATE (c:Class {name: $className}) RETURN c", parameters("className", className));
         }
 
-        return neo4j.putTmpFile("iris", ".csv", IRIS_DATA).toExternalForm();
+        return neo4j.addImportFile("iris", ".csv", IRIS_DATA);
     }
 
     private static String[] IRIS_CLASS_NAMES = new String[] {"Iris-setosa", "Iris-versicolor", "Iris-virginica"};
