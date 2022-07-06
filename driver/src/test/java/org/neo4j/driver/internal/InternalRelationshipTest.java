@@ -60,39 +60,6 @@ class InternalRelationshipTest {
         assertThat(relationship.get("k3"), equalTo(NULL));
     }
 
-    @Test
-    void shouldThrowOnIdWhenNumericIdUnavailable() {
-        // GIVEN
-        InternalRelationship relationship = new InternalRelationship(
-                -1, "value", 1, String.valueOf(1), 2, String.valueOf(2), "T", Collections.emptyMap(), false);
-
-        // WHEN & THEN
-        IllegalStateException e = assertThrows(IllegalStateException.class, relationship::id);
-        assertEquals(InternalEntity.INVALID_ID_ERROR, e.getMessage());
-    }
-
-    @Test
-    void shouldThrowOnStartNodeIdWhenNumericIdUnavailable() {
-        // GIVEN
-        InternalRelationship relationship = new InternalRelationship(
-                -1, "value", 1, String.valueOf(1), 2, String.valueOf(2), "T", Collections.emptyMap(), false);
-
-        // WHEN & THEN
-        IllegalStateException e = assertThrows(IllegalStateException.class, relationship::startNodeId);
-        assertEquals(InternalEntity.INVALID_ID_ERROR, e.getMessage());
-    }
-
-    @Test
-    void shouldThrowOnEndNodeIdWhenNumericIdUnavailable() {
-        // GIVEN
-        InternalRelationship relationship = new InternalRelationship(
-                -1, "value", 1, String.valueOf(1), 2, String.valueOf(2), "T", Collections.emptyMap(), false);
-
-        // WHEN & THEN
-        IllegalStateException e = assertThrows(IllegalStateException.class, relationship::endNodeId);
-        assertEquals(InternalEntity.INVALID_ID_ERROR, e.getMessage());
-    }
-
     private InternalRelationship createRelationship() {
         Map<String, Value> props = new HashMap<>();
         props.put("k1", value(1));

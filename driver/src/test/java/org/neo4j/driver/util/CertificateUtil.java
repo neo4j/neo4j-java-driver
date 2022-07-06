@@ -37,8 +37,11 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import javax.security.auth.x500.X500Principal;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.BasicConstraints;
@@ -79,7 +82,7 @@ public class CertificateUtil {
     }
 
     private static X509Certificate generateCert(
-            X500Name issuer, X500Name subject, KeyPair issuerKeys, PublicKey publicKey)
+            X500Name issuer, X500Name subject, KeyPair issuerKeys, PublicKey publicKey, GeneralName... generalNames)
             throws GeneralSecurityException, OperatorCreationException, CertIOException {
         // Create x509 certificate
         Date startDate = new Date(System.currentTimeMillis());
@@ -89,7 +92,10 @@ public class CertificateUtil {
                 new JcaX509v3CertificateBuilder(issuer, serialNum, startDate, endDate, subject, publicKey);
 
         // Subject alternative name (part of SNI extension, used for hostname verification)
-        GeneralNames subjectAlternativeName = new GeneralNames(new GeneralName(GeneralName.dNSName, DEFAULT_HOST_NAME));
+        Set<GeneralName> names = new HashSet<>();
+        names.add(new GeneralName(GeneralName.dNSName, DEFAULT_HOST_NAME));
+        names.addAll(Arrays.asList(generalNames));
+        GeneralNames subjectAlternativeName = new GeneralNames(names.toArray(new GeneralName[0]));
         certBuilder.addExtension(Extension.subjectAlternativeName, false, subjectAlternativeName);
         certBuilder.addExtension(Extension.basicConstraints, false, new BasicConstraints(true));
 
@@ -107,7 +113,7 @@ public class CertificateUtil {
         private final KeyPair keyPair;
         private final X509Certificate certificate;
 
-        public SelfSignedCertificateGenerator()
+        public SelfSignedCertificateGenerator(GeneralName... generalNames)
                 throws GeneralSecurityException, OperatorCreationException, CertIOException {
             // Create the public/private rsa key pair
             keyPair = generateKeyPair();
@@ -117,7 +123,8 @@ public class CertificateUtil {
                     new X500Name("CN=" + DEFAULT_HOST_NAME),
                     new X500Name("CN=" + DEFAULT_HOST_NAME),
                     keyPair,
-                    keyPair.getPublic());
+                    keyPair.getPublic(),
+                    generalNames);
         }
 
         public void savePrivateKey(File saveTo) throws IOException {
@@ -128,14 +135,15 @@ public class CertificateUtil {
             writePem("CERTIFICATE", certificate.getEncoded(), saveTo);
         }
 
-        public X509Certificate sign(PKCS10CertificationRequest csr, PublicKey csrPublicKey)
+        public X509Certificate sign(PKCS10CertificationRequest csr, PublicKey csrPublicKey, GeneralName... generalNames)
                 throws GeneralSecurityException, OperatorCreationException, CertIOException {
             return generateCert(
                     X500Name.getInstance(
                             this.certificate.getSubjectX500Principal().getEncoded()),
                     csr.getSubject(),
                     keyPair,
-                    csrPublicKey);
+                    csrPublicKey,
+                    generalNames);
         }
     }
 
@@ -195,26 +203,27 @@ public class CertificateUtil {
         }
     }
 
-    public static CertificateKeyPair<File, File> createNewCertificateAndKeySignedBy(CertificateKeyPair<File, File> root)
-            throws Throwable {
+    public static CertificateKeyPair<File, File> createNewCertificateAndKeySignedBy(
+            CertificateKeyPair<File, File> root, GeneralName... generalNames) throws Throwable {
         Objects.requireNonNull(root.certGenerator);
         File cert = tempFile("driver", ".cert");
         File key = tempFile("driver", ".key");
         CertificateUtil.CertificateSigningRequestGenerator csrGenerator =
                 new CertificateUtil.CertificateSigningRequestGenerator();
-        X509Certificate signedCert =
-                root.certGenerator.sign(csrGenerator.certificateSigningRequest(), csrGenerator.publicKey());
+        X509Certificate signedCert = root.certGenerator.sign(
+                csrGenerator.certificateSigningRequest(), csrGenerator.publicKey(), generalNames);
         csrGenerator.savePrivateKey(key);
         saveX509Cert(signedCert, cert);
 
         return new CertificateKeyPair<>(cert, key);
     }
 
-    public static CertificateKeyPair<File, File> createNewCertificateAndKey() throws Throwable {
+    public static CertificateKeyPair<File, File> createNewCertificateAndKey(GeneralName... ipAddresses)
+            throws Throwable {
         File cert = tempFile("driver", ".cert");
         File key = tempFile("driver", ".key");
         CertificateUtil.SelfSignedCertificateGenerator certGenerator =
-                new CertificateUtil.SelfSignedCertificateGenerator();
+                new CertificateUtil.SelfSignedCertificateGenerator(ipAddresses);
         certGenerator.saveSelfSignedCertificate(cert);
         certGenerator.savePrivateKey(key);
 

@@ -21,7 +21,6 @@ package org.neo4j.driver.integration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.Config.TrustStrategy.trustCustomCertificateSignedBy;
-import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -69,11 +68,12 @@ class ServerKilledIT {
     @MethodSource("data")
     void shouldRecoverFromServerRestart(String name, Config.ConfigBuilder configBuilder) {
         // Given config with sessionLivenessCheckTimeout not set, i.e. turned off
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), DEFAULT_AUTH_TOKEN, configBuilder.build())) {
+        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), configBuilder.build())) {
             acquireAndReleaseConnections(4, driver);
 
             // When
-            neo4j.forceRestartDb();
+            neo4j.stopProxy();
+            neo4j.startProxy();
 
             // Then we should be able to start using sessions again, at most O(numSessions) session calls later
             int toleratedFailures = 4;
@@ -102,8 +102,9 @@ class ServerKilledIT {
         try (Driver driver = createDriver(clock, configBuilder.build())) {
             acquireAndReleaseConnections(5, driver);
 
-            // restart database to invalidate all idle connections in the pool
-            neo4j.forceRestartDb();
+            // restart database access to invalidate all idle connections in the pool
+            neo4j.stopProxy();
+            neo4j.startProxy();
             // move clock forward more than configured liveness check timeout
             clock.progress(TimeUnit.MINUTES.toMillis(livenessCheckTimeoutMinutes + 1));
 
@@ -131,6 +132,6 @@ class ServerKilledIT {
         RoutingSettings routingSettings = RoutingSettings.DEFAULT;
         RetrySettings retrySettings = RetrySettings.DEFAULT;
         return factory.newInstance(
-                neo4j.uri(), DEFAULT_AUTH_TOKEN, routingSettings, retrySettings, config, SecurityPlanImpl.insecure());
+                neo4j.uri(), neo4j.authToken(), routingSettings, retrySettings, config, SecurityPlanImpl.insecure());
     }
 }

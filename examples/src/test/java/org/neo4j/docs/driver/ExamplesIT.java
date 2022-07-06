@@ -36,8 +36,6 @@ import static org.neo4j.driver.Config.TrustStrategy.trustAllCertificates;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Neo4jEdition.ENTERPRISE;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.util.Neo4jRunner.PASSWORD;
-import static org.neo4j.driver.util.Neo4jRunner.USER;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.createDatabase;
 import static org.neo4j.driver.util.TestUtil.dropDatabase;
@@ -52,8 +50,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
@@ -70,8 +66,9 @@ import org.neo4j.driver.util.StdIOCapture;
 import org.neo4j.driver.util.TestUtil;
 
 @ParallelizableIT
-@Execution(ExecutionMode.CONCURRENT)
 class ExamplesIT {
+    static final String USER = "neo4j";
+
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
@@ -128,7 +125,8 @@ class ExamplesIT {
     @Test
     void testShouldRunAutocommitTransactionExample() throws Exception {
         // Given
-        try (AutocommitTransactionExample example = new AutocommitTransactionExample(uri, USER, PASSWORD)) {
+        try (AutocommitTransactionExample example =
+                new AutocommitTransactionExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addPerson("Alice");
 
@@ -139,7 +137,8 @@ class ExamplesIT {
 
     @Test
     void testShouldRunAsyncAutocommitTransactionExample() throws Exception {
-        try (AsyncAutocommitTransactionExample example = new AsyncAutocommitTransactionExample(uri, USER, PASSWORD)) {
+        try (AsyncAutocommitTransactionExample example =
+                new AsyncAutocommitTransactionExample(uri, USER, neo4j.adminPassword())) {
             // create some 'Product' nodes
             try (Session session = neo4j.driver().session()) {
                 session.run("UNWIND ['Tesseract', 'Orb', 'Eye of Agamotto'] AS item "
@@ -157,7 +156,7 @@ class ExamplesIT {
         // Given
         write("CREATE (a:Person {name: 'Alice'})");
         write("CREATE (a:Person {name: 'Bob'})");
-        try (AsyncResultConsumeExample example = new AsyncResultConsumeExample(uri, USER, PASSWORD)) {
+        try (AsyncResultConsumeExample example = new AsyncResultConsumeExample(uri, USER, neo4j.adminPassword())) {
             // When
             List<String> names = await(example.getPeople());
 
@@ -171,7 +170,8 @@ class ExamplesIT {
         // Given
         write("CREATE (a:Person {name: 'Alice'})");
         write("CREATE (a:Person {name: 'Bob'})");
-        try (AsyncRunMultipleTransactionExample example = new AsyncRunMultipleTransactionExample(uri, USER, PASSWORD)) {
+        try (AsyncRunMultipleTransactionExample example =
+                new AsyncRunMultipleTransactionExample(uri, USER, neo4j.adminPassword())) {
             // When
             Integer nodesCreated = await(example.addEmployees("Acme"));
 
@@ -186,7 +186,7 @@ class ExamplesIT {
     @Test
     void testShouldRunConfigConnectionPoolExample() throws Exception {
         // Given
-        try (ConfigConnectionPoolExample example = new ConfigConnectionPoolExample(uri, USER, PASSWORD)) {
+        try (ConfigConnectionPoolExample example = new ConfigConnectionPoolExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertTrue(example.canConnect());
         }
@@ -195,7 +195,7 @@ class ExamplesIT {
     @Test
     void testShouldRunBasicAuthExample() throws Exception {
         // Given
-        try (BasicAuthExample example = new BasicAuthExample(uri, USER, PASSWORD)) {
+        try (BasicAuthExample example = new BasicAuthExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertTrue(example.canConnect());
         }
@@ -204,7 +204,8 @@ class ExamplesIT {
     @Test
     void testShouldRunConfigConnectionTimeoutExample() throws Exception {
         // Given
-        try (ConfigConnectionTimeoutExample example = new ConfigConnectionTimeoutExample(uri, USER, PASSWORD)) {
+        try (ConfigConnectionTimeoutExample example =
+                new ConfigConnectionTimeoutExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertThat(example, instanceOf(ConfigConnectionTimeoutExample.class));
         }
@@ -213,7 +214,7 @@ class ExamplesIT {
     @Test
     void testShouldRunConfigMaxRetryTimeExample() throws Exception {
         // Given
-        try (ConfigMaxRetryTimeExample example = new ConfigMaxRetryTimeExample(uri, USER, PASSWORD)) {
+        try (ConfigMaxRetryTimeExample example = new ConfigMaxRetryTimeExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertThat(example, instanceOf(ConfigMaxRetryTimeExample.class));
         }
@@ -222,7 +223,7 @@ class ExamplesIT {
     @Test
     void testShouldRunConfigTrustExample() throws Exception {
         // Given
-        try (ConfigTrustExample example = new ConfigTrustExample(uri, USER, PASSWORD)) {
+        try (ConfigTrustExample example = new ConfigTrustExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertThat(example, instanceOf(ConfigTrustExample.class));
         }
@@ -231,7 +232,7 @@ class ExamplesIT {
     @Test
     void testShouldRunConfigUnencryptedExample() throws Exception {
         // Given
-        try (ConfigUnencryptedExample example = new ConfigUnencryptedExample(uri, USER, PASSWORD)) {
+        try (ConfigUnencryptedExample example = new ConfigUnencryptedExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertThat(example, instanceOf(ConfigUnencryptedExample.class));
         }
@@ -240,7 +241,7 @@ class ExamplesIT {
     @Test
     void testShouldRunCypherErrorExample() throws Exception {
         // Given
-        try (CypherErrorExample example = new CypherErrorExample(uri, USER, PASSWORD)) {
+        try (CypherErrorExample example = new CypherErrorExample(uri, USER, neo4j.adminPassword())) {
             // When & Then
             StdIOCapture stdIO = new StdIOCapture();
             try (AutoCloseable ignored = stdIO.capture()) {
@@ -255,7 +256,7 @@ class ExamplesIT {
     @Test
     void testShouldRunDriverLifecycleExample() throws Exception {
         // Given
-        try (DriverLifecycleExample example = new DriverLifecycleExample(uri, USER, PASSWORD)) {
+        try (DriverLifecycleExample example = new DriverLifecycleExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertThat(example, instanceOf(DriverLifecycleExample.class));
         }
@@ -264,7 +265,7 @@ class ExamplesIT {
     @Test
     void testShouldRunHelloWorld() throws Exception {
         // Given
-        try (HelloWorldExample greeter = new HelloWorldExample(uri, USER, PASSWORD)) {
+        try (HelloWorldExample greeter = new HelloWorldExample(uri, USER, neo4j.adminPassword())) {
             // When
             StdIOCapture stdIO = new StdIOCapture();
 
@@ -285,7 +286,8 @@ class ExamplesIT {
                 .withEncryption()
                 .withTrustStrategy(trustAllCertificates())
                 .build();
-        try (DriverIntroductionExample intro = new DriverIntroductionExample(uri, USER, PASSWORD, config)) {
+        try (DriverIntroductionExample intro =
+                new DriverIntroductionExample(uri, USER, neo4j.adminPassword(), config)) {
             // When
             StdIOCapture stdIO = new StdIOCapture();
 
@@ -304,7 +306,7 @@ class ExamplesIT {
     @Test
     void testShouldRunReadWriteTransactionExample() throws Exception {
         // Given
-        try (ReadWriteTransactionExample example = new ReadWriteTransactionExample(uri, USER, PASSWORD)) {
+        try (ReadWriteTransactionExample example = new ReadWriteTransactionExample(uri, USER, neo4j.adminPassword())) {
             // When
             long nodeID = example.addPerson("Alice");
 
@@ -318,7 +320,7 @@ class ExamplesIT {
         // Given
         write("CREATE (a:Person {name: 'Alice'})");
         write("CREATE (a:Person {name: 'Bob'})");
-        try (ResultConsumeExample example = new ResultConsumeExample(uri, USER, PASSWORD)) {
+        try (ResultConsumeExample example = new ResultConsumeExample(uri, USER, neo4j.adminPassword())) {
             // When
             List<String> names = example.getPeople();
 
@@ -332,7 +334,7 @@ class ExamplesIT {
         // Given
         write("CREATE (a:Person {name: 'Alice'})");
         write("CREATE (a:Person {name: 'Bob'})");
-        try (ResultRetainExample example = new ResultRetainExample(uri, USER, PASSWORD)) {
+        try (ResultRetainExample example = new ResultRetainExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addEmployees("Acme");
 
@@ -346,15 +348,15 @@ class ExamplesIT {
     @Test
     void testShouldRunServiceUnavailableExample() throws Exception {
         // Given
-        try (ServiceUnavailableExample example = new ServiceUnavailableExample(uri, USER, PASSWORD)) {
+        try (ServiceUnavailableExample example = new ServiceUnavailableExample(uri, USER, neo4j.adminPassword())) {
             try {
                 // When
-                neo4j.stopDb();
+                neo4j.stopProxy();
 
                 // Then
                 assertThat(example.addItem(), equalTo(false));
             } finally {
-                neo4j.startDb();
+                neo4j.startProxy();
             }
         }
     }
@@ -362,7 +364,7 @@ class ExamplesIT {
     @Test
     void testShouldRunSessionExample() throws Exception {
         // Given
-        try (SessionExample example = new SessionExample(uri, USER, PASSWORD)) {
+        try (SessionExample example = new SessionExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addPerson("Alice");
 
@@ -375,7 +377,7 @@ class ExamplesIT {
     @Test
     void testShouldRunTransactionFunctionExample() throws Exception {
         // Given
-        try (TransactionFunctionExample example = new TransactionFunctionExample(uri, USER, PASSWORD)) {
+        try (TransactionFunctionExample example = new TransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addPerson("Alice");
 
@@ -387,7 +389,8 @@ class ExamplesIT {
     @Test
     void testShouldConfigureTransactionTimeoutExample() throws Exception {
         // Given
-        try (TransactionTimeoutConfigExample example = new TransactionTimeoutConfigExample(uri, USER, PASSWORD)) {
+        try (TransactionTimeoutConfigExample example =
+                new TransactionTimeoutConfigExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addPerson("Alice");
 
@@ -399,7 +402,8 @@ class ExamplesIT {
     @Test
     void testShouldConfigureTransactionMetadataExample() throws Exception {
         // Given
-        try (TransactionMetadataConfigExample example = new TransactionMetadataConfigExample(uri, USER, PASSWORD)) {
+        try (TransactionMetadataConfigExample example =
+                new TransactionMetadataConfigExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addPerson("Alice");
 
@@ -410,7 +414,8 @@ class ExamplesIT {
 
     @Test
     void testShouldRunAsyncTransactionFunctionExample() throws Exception {
-        try (AsyncTransactionFunctionExample example = new AsyncTransactionFunctionExample(uri, USER, PASSWORD)) {
+        try (AsyncTransactionFunctionExample example =
+                new AsyncTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
             // create some 'Product' nodes
             try (Session session = neo4j.driver().session()) {
                 session.run(
@@ -432,7 +437,7 @@ class ExamplesIT {
 
     @Test
     void testPassBookmarksExample() throws Exception {
-        try (PassBookmarkExample example = new PassBookmarkExample(uri, USER, PASSWORD)) {
+        try (PassBookmarkExample example = new PassBookmarkExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addEmployAndMakeFriends();
 
@@ -458,7 +463,8 @@ class ExamplesIT {
 
     @Test
     void testAsyncUnmanagedTransactionExample() throws Exception {
-        try (AsyncUnmanagedTransactionExample example = new AsyncUnmanagedTransactionExample(uri, USER, PASSWORD)) {
+        try (AsyncUnmanagedTransactionExample example =
+                new AsyncUnmanagedTransactionExample(uri, USER, neo4j.adminPassword())) {
             // create a 'Product' node
             try (Session session = neo4j.driver().session()) {
                 session.run("CREATE (:Product {id: 0, title: 'Mind Gem'})");
@@ -491,7 +497,7 @@ class ExamplesIT {
         assertThat(logFileContent, is(emptyString()));
 
         String randomString = UUID.randomUUID().toString();
-        try (Slf4jLoggingExample example = new Slf4jLoggingExample(uri, USER, PASSWORD)) {
+        try (Slf4jLoggingExample example = new Slf4jLoggingExample(uri, USER, neo4j.adminPassword())) {
             Object result = example.runReturnQuery(randomString);
             assertEquals(randomString, result);
         }
@@ -505,7 +511,7 @@ class ExamplesIT {
     @Test
     void testHostnameVerificationExample() {
         try (HostnameVerificationExample example =
-                new HostnameVerificationExample(uri, USER, PASSWORD, neo4j.tlsCertFile())) {
+                new HostnameVerificationExample(uri, USER, neo4j.adminPassword(), neo4j.tlsCertFile())) {
             assertTrue(example.canConnect());
         }
     }
@@ -513,7 +519,8 @@ class ExamplesIT {
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
     void testShouldRunRxAutocommitTransactionExample() throws Exception {
-        try (RxAutocommitTransactionExample example = new RxAutocommitTransactionExample(uri, USER, PASSWORD)) {
+        try (RxAutocommitTransactionExample example =
+                new RxAutocommitTransactionExample(uri, USER, neo4j.adminPassword())) {
             // create some 'Product' nodes
             try (Session session = neo4j.driver().session()) {
                 session.run("UNWIND ['Tesseract', 'Orb', 'Eye of Agamotto'] AS item "
@@ -532,7 +539,8 @@ class ExamplesIT {
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
     void testRxUnmanagedTransactionExample() throws Exception {
-        try (RxUnmanagedTransactionExample example = new RxUnmanagedTransactionExample(uri, USER, PASSWORD)) {
+        try (RxUnmanagedTransactionExample example =
+                new RxUnmanagedTransactionExample(uri, USER, neo4j.adminPassword())) {
             // create a 'Product' node
             try (Session session = neo4j.driver().session()) {
                 session.run("CREATE (:Product {id: 0, title: 'Mind Gem'})");
@@ -551,7 +559,8 @@ class ExamplesIT {
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
     void testShouldRunRxTransactionFunctionExampleReactor() throws Exception {
-        try (RxTransactionFunctionExample example = new RxTransactionFunctionExample(uri, USER, PASSWORD)) {
+        try (RxTransactionFunctionExample example =
+                new RxTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
             // create some 'Product' nodes
             try (Session session = neo4j.driver().session()) {
                 session.run(
@@ -576,7 +585,8 @@ class ExamplesIT {
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
     void testShouldRunRxTransactionFunctionExampleRxJava() throws Exception {
-        try (RxTransactionFunctionExample example = new RxTransactionFunctionExample(uri, USER, PASSWORD)) {
+        try (RxTransactionFunctionExample example =
+                new RxTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
             // create some 'Product' nodes
             try (Session session = neo4j.driver().session()) {
                 session.run(
@@ -604,7 +614,7 @@ class ExamplesIT {
         // Given
         write("CREATE (a:Person {name: 'Alice'})");
         write("CREATE (a:Person {name: 'Bob'})");
-        try (RxResultConsumeExample example = new RxResultConsumeExample(uri, USER, PASSWORD)) {
+        try (RxResultConsumeExample example = new RxResultConsumeExample(uri, USER, neo4j.adminPassword())) {
             // When
             List<String> names = await(example.getPeople());
 
@@ -619,7 +629,7 @@ class ExamplesIT {
         // Given
         write("CREATE (a:Person {name: 'Alice'})");
         write("CREATE (a:Person {name: 'Bob'})");
-        try (RxResultConsumeExample example = new RxResultConsumeExample(uri, USER, PASSWORD)) {
+        try (RxResultConsumeExample example = new RxResultConsumeExample(uri, USER, neo4j.adminPassword())) {
             // When
             List<String> names = await(example.getPeopleRxJava());
 
@@ -635,7 +645,7 @@ class ExamplesIT {
         dropDatabase(driver, "examples");
         createDatabase(driver, "examples");
 
-        try (DatabaseSelectionExample example = new DatabaseSelectionExample(uri, USER, PASSWORD)) {
+        try (DatabaseSelectionExample example = new DatabaseSelectionExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.useAnotherDatabaseExample();
 
@@ -647,7 +657,7 @@ class ExamplesIT {
 
     @Test
     void testReadingValuesExample() throws Exception {
-        try (ReadingValuesExample example = new ReadingValuesExample(uri, USER, PASSWORD)) {
+        try (ReadingValuesExample example = new ReadingValuesExample(uri, USER, neo4j.adminPassword())) {
             assertThat(example.integerFieldIsNull(), is(false));
             assertThat(example.integerAsInteger(), is(4));
             assertThat(example.integerAsLong(), is(4L));
