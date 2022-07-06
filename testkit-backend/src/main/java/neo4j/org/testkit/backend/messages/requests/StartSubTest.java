@@ -176,8 +176,7 @@ public class StartSubTest implements TestkitRequest {
     }
 
     private TestkitResponse createResponse(Map<String, SkipDeciderInterface> skipPatternToCheck) {
-        System.out.println(data.getTestName());
-        return (TestkitResponse) skipPatternToCheck.entrySet().stream()
+        return skipPatternToCheck.entrySet().stream()
                 .filter(entry -> data.getTestName().matches(entry.getKey()))
                 .findFirst()
                 .map(entry -> {
