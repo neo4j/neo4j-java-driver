@@ -20,11 +20,14 @@ package neo4j.org.testkit.backend.messages.responses.serializer;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import java.io.IOException;
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherDateTime;
+import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherTime;
+import org.neo4j.driver.types.IsoDuration;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class GenUtils {
@@ -55,12 +58,32 @@ public final class GenUtils {
         });
     }
 
+    public static void writeDate(JsonGenerator gen, int year, int month, int day) throws IOException {
+        gen.writeFieldName("year");
+        gen.writeNumber(year);
+        gen.writeFieldName("month");
+        gen.writeNumber(month);
+        gen.writeFieldName("day");
+        gen.writeNumber(day);
+    }
+
+    public static void writeTime(JsonGenerator gen, int hour, int minute, int second, int nano) throws IOException {
+        gen.writeFieldName("hour");
+        gen.writeNumber(hour);
+        gen.writeFieldName("minute");
+        gen.writeNumber(minute);
+        gen.writeFieldName("second");
+        gen.writeNumber(second);
+        gen.writeFieldName("nanosecond");
+        gen.writeNumber(nano);
+    }
+
     public static Class<?> cypherTypeToJavaType(String typeString) {
         switch (typeString) {
             case "CypherBool":
                 return Boolean.class;
             case "CypherInt":
-                return Integer.class;
+                return Long.class;
             case "CypherFloat":
                 return Double.class;
             case "CypherString":
@@ -70,7 +93,13 @@ public final class GenUtils {
             case "CypherMap":
                 return Map.class;
             case "CypherDateTime":
-                return ZonedDateTime.class;
+                return CypherDateTime.class;
+            case "CypherTime":
+                return CypherTime.class;
+            case "CypherDate":
+                return LocalDate.class;
+            case "CypherDuration":
+                return IsoDuration.class;
             case "CypherNull":
                 return null;
             default:

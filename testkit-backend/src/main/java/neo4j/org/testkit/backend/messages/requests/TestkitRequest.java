@@ -41,7 +41,8 @@ import reactor.core.publisher.Mono;
     @JsonSubTypes.Type(GetRoutingTable.class), @JsonSubTypes.Type(TransactionClose.class),
     @JsonSubTypes.Type(ResultList.class), @JsonSubTypes.Type(GetConnectionPoolMetrics.class),
     @JsonSubTypes.Type(ResultPeek.class), @JsonSubTypes.Type(CheckDriverIsEncrypted.class),
-    @JsonSubTypes.Type(CypherTypeField.class), @JsonSubTypes.Type(ResultSingle.class)
+    @JsonSubTypes.Type(CypherTypeField.class), @JsonSubTypes.Type(ResultSingle.class),
+    @JsonSubTypes.Type(StartSubTest.class)
 })
 public interface TestkitRequest {
     TestkitResponse process(TestkitState testkitState);

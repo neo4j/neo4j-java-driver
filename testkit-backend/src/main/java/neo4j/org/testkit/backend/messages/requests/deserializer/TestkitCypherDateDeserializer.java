@@ -23,41 +23,27 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
-import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherDateTime;
+import java.time.LocalDate;
+import java.util.Date;
 
-public class TestkitCypherDateTimeDeserializer extends StdDeserializer<CypherDateTime> {
+public class TestkitCypherDateDeserializer extends StdDeserializer<LocalDate> {
+
     private final TestkitCypherTypeMapper mapper;
 
-    public TestkitCypherDateTimeDeserializer() {
-        super(CypherDateTime.class);
+    public TestkitCypherDateDeserializer() {
+        super(Date.class);
         mapper = new TestkitCypherTypeMapper();
     }
 
-    @Override
-    public CypherDateTime deserialize(JsonParser p, DeserializationContext ctxt)
+    public LocalDate deserialize(JsonParser p, DeserializationContext ctxt)
             throws IOException, JsonProcessingException {
-        CypherDateTimeData data = mapper.mapData(p, ctxt, new CypherDateTimeData());
-        return new CypherDateTime(
-                data.year,
-                data.month,
-                data.day,
-                data.hour,
-                data.minute,
-                data.second,
-                data.nanosecond,
-                data.timezone_id,
-                data.utc_offset_s);
+        CypherDateData data = mapper.mapData(p, ctxt, new CypherDateData());
+        return LocalDate.of(data.year, data.month, data.day);
     }
 
-    private static final class CypherDateTimeData {
+    private static final class CypherDateData {
         Integer year;
         Integer month;
         Integer day;
-        Integer hour;
-        Integer minute;
-        Integer second;
-        Integer nanosecond;
-        Integer utc_offset_s;
-        String timezone_id;
     }
 }

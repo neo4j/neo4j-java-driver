@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherType;
 
 public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String, Object>> {
     public TestkitCypherParamDeserializer() {
@@ -77,7 +78,11 @@ public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String, 
                         {
                             result.put(key, deserialize(p, ctxt));
                         } else {
-                            result.put(key, p.readValueAs(mapValueType));
+                            Object obj = p.readValueAs(mapValueType);
+                            if (obj instanceof CypherType) {
+                                obj = ((CypherType) obj).asValue();
+                            }
+                            result.put(key, obj);
                         }
                     }
                 }
