@@ -44,6 +44,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 
 class FuturesTest {
@@ -177,8 +178,8 @@ class FuturesTest {
         CompletableFuture<String> future = new CompletableFuture<>();
         future.completeExceptionally(error);
 
-        Exception e = assertThrows(Exception.class, () -> Futures.blockingGet(future));
-        assertEquals(error, e);
+        Neo4jException e = assertThrows(Neo4jException.class, () -> Futures.blockingGet(future));
+        assertEquals(error, e.getCause());
     }
 
     @Test

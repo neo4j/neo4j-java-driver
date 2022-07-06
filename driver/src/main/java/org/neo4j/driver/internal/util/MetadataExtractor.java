@@ -22,8 +22,10 @@ import static org.neo4j.driver.internal.summary.InternalDatabaseInfo.DEFAULT_DAT
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -203,5 +205,14 @@ public class MetadataExtractor {
             return resultConsumedAfterValue.asLong();
         }
         return -1;
+    }
+
+    public static Set<String> extractBoltPatches(Map<String, Value> metadata) {
+        Value boltPatch = metadata.get("patch_bolt");
+        if (boltPatch != null && !boltPatch.isNull()) {
+            return new HashSet<>(boltPatch.asList(Value::asString));
+        } else {
+            return Collections.emptySet();
+        }
     }
 }

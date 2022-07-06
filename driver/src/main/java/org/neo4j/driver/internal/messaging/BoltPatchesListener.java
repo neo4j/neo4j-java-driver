@@ -16,14 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.util.cc;
+package org.neo4j.driver.internal.messaging;
 
-class CommandLineException extends RuntimeException {
-    CommandLineException(String message) {
-        super(message);
-    }
+import java.util.Set;
 
-    CommandLineException(String message, Throwable cause) {
-        super(message, cause);
-    }
+public interface BoltPatchesListener {
+    String DATE_TIME_UTC_PATCH = "utc";
+
+    void handle(Set<String> patches);
 }

@@ -25,14 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
 
 import java.net.URI;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -86,18 +83,5 @@ class DirectDriverIT {
 
         // Then
         assertThat(driver, is(directDriverWithAddress(address)));
-    }
-
-    @Test
-    void shouldConnectIPv6Uri() {
-        // Given
-        try (Driver driver = GraphDatabase.driver("bolt://[::1]:" + neo4j.boltPort(), neo4j.authToken());
-                Session session = driver.session()) {
-            // When
-            Result result = session.run("RETURN 1");
-
-            // Then
-            assertThat(result.single().get(0).asInt(), CoreMatchers.equalTo(1));
-        }
     }
 }

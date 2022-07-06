@@ -177,13 +177,12 @@ class ErrorIT {
     }
 
     @Test
-    void shouldGetHelpfulErrorWhenTryingToConnectToHttpPort() throws Throwable {
-        // the http server needs some time to start up
-        Thread.sleep(2000);
-
+    void shouldGetHelpfulErrorWhenTryingToConnectToHttpPort() {
         Config config = Config.builder().withoutEncryption().build();
 
-        final Driver driver = GraphDatabase.driver("bolt://localhost:" + session.httpPort(), config);
+        URI boltUri = session.uri();
+        URI uri = URI.create(String.format("%s://%s:%d", boltUri.getScheme(), boltUri.getHost(), session.httpPort()));
+        final Driver driver = GraphDatabase.driver(uri, config);
         ClientException e = assertThrows(ClientException.class, driver::verifyConnectivity);
         assertEquals(
                 "Server responded HTTP. Make sure you are not trying to connect to the http endpoint "

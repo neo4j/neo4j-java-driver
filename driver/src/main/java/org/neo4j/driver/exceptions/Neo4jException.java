@@ -19,11 +19,11 @@
 package org.neo4j.driver.exceptions;
 
 /**
- * This is the base class for all exceptions caused as part of communication with the remote Neo4j server.
+ * This is the base class for Neo4j exceptions.
  *
  * @since 1.0
  */
-public abstract class Neo4jException extends RuntimeException {
+public class Neo4jException extends RuntimeException {
     private static final long serialVersionUID = -80579062276712566L;
 
     private final String code;
@@ -43,17 +43,6 @@ public abstract class Neo4jException extends RuntimeException {
     public Neo4jException(String code, String message, Throwable cause) {
         super(message, cause);
         this.code = code;
-    }
-
-    /**
-     * Access the standard Neo4j Status Code for this exception, you can use this to refer to the Neo4j manual for
-     * details on what caused the error.
-     *
-     * @return the Neo4j Status Code for this exception, or 'N/A' if none is available
-     */
-    @Deprecated
-    public String neo4jErrorCode() {
-        return code;
     }
 
     /**

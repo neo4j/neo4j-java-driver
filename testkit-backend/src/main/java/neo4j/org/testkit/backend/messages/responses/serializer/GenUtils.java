@@ -20,6 +20,7 @@ package neo4j.org.testkit.backend.messages.responses.serializer;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import lombok.AccessLevel;
@@ -68,6 +69,8 @@ public final class GenUtils {
                 return List.class;
             case "CypherMap":
                 return Map.class;
+            case "CypherDateTime":
+                return ZonedDateTime.class;
             case "CypherNull":
                 return null;
             default:

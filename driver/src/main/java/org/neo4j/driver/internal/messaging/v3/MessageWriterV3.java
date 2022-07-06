@@ -45,7 +45,7 @@ import org.neo4j.driver.internal.util.Iterables;
 
 public class MessageWriterV3 extends AbstractMessageWriter {
     public MessageWriterV3(PackOutput output) {
-        super(new CommonValuePacker(output), buildEncoders());
+        super(new CommonValuePacker(output, false), buildEncoders());
     }
 
     private static Map<Byte, MessageEncoder> buildEncoders() {

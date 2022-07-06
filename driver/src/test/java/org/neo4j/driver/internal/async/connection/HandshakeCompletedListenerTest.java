@@ -75,7 +75,7 @@ class HandshakeCompletedListenerTest {
     void shouldWriteInitializationMessageInBoltV3WhenHandshakeCompleted() {
         testWritingOfInitializationMessage(
                 BoltProtocolV3.VERSION,
-                new HelloMessage(USER_AGENT, authToken().toMap(), Collections.emptyMap()),
+                new HelloMessage(USER_AGENT, authToken().toMap(), Collections.emptyMap(), false),
                 HelloResponseHandler.class);
     }
 

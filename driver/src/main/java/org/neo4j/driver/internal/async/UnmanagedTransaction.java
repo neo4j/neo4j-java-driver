@@ -91,6 +91,7 @@ public class UnmanagedTransaction {
     private CompletableFuture<Void> commitFuture;
     private CompletableFuture<Void> rollbackFuture;
     private Throwable causeOfTermination;
+    private CompletionStage<Void> interruptStage;
 
     public UnmanagedTransaction(Connection connection, BookmarksHolder bookmarksHolder, long fetchSize) {
         this(connection, bookmarksHolder, fetchSize, new ResultCursorsHolder());
@@ -302,5 +303,22 @@ public class UnmanagedTransaction {
         }
 
         return stage;
+    }
+
+    /**
+     * Marks transaction as terminated and sends {@code RESET} message over allocated connection.
+     * <p>
+     * <b>THIS METHOD IS NOT PART OF PUBLIC API. This method may be changed or removed at any moment in time.</b>
+     *
+     * @return {@code RESET} response stage
+     */
+    public CompletionStage<Void> interruptAsync() {
+        return executeWithLock(lock, () -> {
+            if (interruptStage == null) {
+                markTerminated(null);
+                interruptStage = connection.reset();
+            }
+            return interruptStage;
+        });
     }
 }
