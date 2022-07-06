@@ -97,7 +97,7 @@ public class ValueUnpackerV5 extends CommonValueUnpacker {
             Map<String, Value> props = unpackMap();
             String elementId = unpacker.unpackString();
             uniqRels[i] = new InternalRelationship(
-                            id, elementId, -1, String.valueOf(-1), -1, String.valueOf(-1), relType, props);
+                    id, elementId, -1, String.valueOf(-1), -1, String.valueOf(-1), relType, props);
         }
 
         // Path sequence
@@ -148,7 +148,7 @@ public class ValueUnpackerV5 extends CommonValueUnpacker {
         String endElementId = unpacker.unpackString();
 
         InternalRelationship adapted = new InternalRelationship(
-                        urn, elementId, startUrn, startElementId, endUrn, endElementId, relType, props);
+                urn, elementId, startUrn, startElementId, endUrn, endElementId, relType, props);
         return new RelationshipValue(adapted);
     }
 }
