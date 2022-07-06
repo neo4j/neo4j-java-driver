@@ -36,18 +36,15 @@ public abstract class InternalEntity implements Entity, AsValue {
     private final long id;
     private final String elementId;
     private final Map<String, Value> properties;
-    private final boolean numericIdAvailable;
 
-    public InternalEntity(long id, String elementId, Map<String, Value> properties, boolean numericIdAvailable) {
+    public InternalEntity(long id, String elementId, Map<String, Value> properties) {
         this.id = id;
         this.elementId = elementId;
         this.properties = properties;
-        this.numericIdAvailable = numericIdAvailable;
     }
 
     @Override
     public long id() {
-        assertNumericIdAvailable();
         return id;
     }
 
@@ -124,15 +121,5 @@ public abstract class InternalEntity implements Entity, AsValue {
     @Override
     public <T> Iterable<T> values(Function<Value, T> mapFunction) {
         return Iterables.map(properties.values(), mapFunction);
-    }
-
-    protected void assertNumericIdAvailable() {
-        if (!numericIdAvailable) {
-            throw new IllegalStateException(INVALID_ID_ERROR);
-        }
-    }
-
-    public boolean isNumericIdAvailable() {
-        return numericIdAvailable;
     }
 }
