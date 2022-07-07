@@ -95,7 +95,7 @@ public interface AsyncQueryRunner {
      * <p>
      * If you are creating parameters programmatically, {@link #runAsync(String, Map)}
      * might be more helpful, it converts your map to a {@link Value} for you.
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      *
@@ -126,7 +126,7 @@ public interface AsyncQueryRunner {
      * This version of runAsync takes a {@link Map} of parameters. The values in the map
      * must be values that can be converted to Neo4j types. See {@link Values#parameters(Object...)} for
      * a list of allowed types.
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      *
@@ -186,7 +186,7 @@ public interface AsyncQueryRunner {
     /**
      * Run a query asynchronously and return a {@link CompletionStage} with a
      * result cursor.
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      * Query query = new Query( "MATCH (n) WHERE n.name = $myNameParam RETURN n.age" );
