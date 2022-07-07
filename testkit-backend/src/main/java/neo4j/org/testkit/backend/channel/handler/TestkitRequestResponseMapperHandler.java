@@ -18,7 +18,6 @@
  */
 package neo4j.org.testkit.backend.channel.handler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelDuplexHandler;
@@ -32,14 +31,10 @@ public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
     private final ObjectMapper objectMapper = newObjectMapper();
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         String testkitMessage = (String) msg;
         TestkitRequest testkitRequest;
-        try {
-            testkitRequest = objectMapper.readValue(testkitMessage, TestkitRequest.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to deserialize Testkit message", e);
-        }
+        testkitRequest = objectMapper.readValue(testkitMessage, TestkitRequest.class);
         ctx.fireChannelRead(testkitRequest);
     }
 

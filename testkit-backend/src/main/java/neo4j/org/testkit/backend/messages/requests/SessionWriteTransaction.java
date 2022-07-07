@@ -36,7 +36,6 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransactionWork;
-import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.reactive.RxTransactionWork;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
@@ -107,12 +106,10 @@ public class SessionWriteTransaction implements TestkitRequest {
                 if (workThrowable instanceof ExecutionException) {
                     workThrowable = workThrowable.getCause();
                 }
-                if (workThrowable instanceof Neo4jException) {
-                    throw (Neo4jException) workThrowable;
-                } else {
-                    throw new RuntimeException(
-                            "Unexpected exception occurred in transaction work function", workThrowable);
+                if (workThrowable instanceof RuntimeException) {
+                    throw (RuntimeException) workThrowable;
                 }
+                throw new RuntimeException("Unexpected exception occurred in transaction work function", workThrowable);
             }
         };
     }

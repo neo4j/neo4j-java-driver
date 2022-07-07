@@ -21,6 +21,7 @@ package neo4j.org.testkit.backend.channel.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import java.time.zone.ZoneRulesException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -79,7 +80,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                     }
                 });
             } catch (Throwable throwable) {
-                ctx.writeAndFlush(createErrorResponse(throwable));
+                exceptionCaught(ctx, throwable);
             }
         });
     }
@@ -93,6 +94,11 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
             result.completeExceptionally(t);
         }
         return result;
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        ctx.writeAndFlush(createErrorResponse(cause));
     }
 
     private TestkitResponse createErrorResponse(Throwable throwable) {
@@ -111,8 +117,11 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                             .msg(e.getMessage())
                             .build())
                     .build();
-        } else if (isConnectionPoolClosedException(throwable) || throwable instanceof UntrustedServerException) {
+        } else if (isConnectionPoolClosedException(throwable)
+                || throwable instanceof UntrustedServerException
+                || throwable instanceof ZoneRulesException) {
             String id = testkitState.newId();
+            testkitState.getErrors().put(id, (Exception) throwable);
             return DriverError.builder()
                     .data(DriverError.DriverErrorBody.builder()
                             .id(id)

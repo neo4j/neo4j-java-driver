@@ -23,41 +23,27 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
-import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherDateTime;
+import org.neo4j.driver.internal.InternalIsoDuration;
+import org.neo4j.driver.types.IsoDuration;
 
-public class TestkitCypherDateTimeDeserializer extends StdDeserializer<CypherDateTime> {
+public class TestkitCypherDurationDeserializer extends StdDeserializer<IsoDuration> {
     private final TestkitCypherTypeMapper mapper;
 
-    public TestkitCypherDateTimeDeserializer() {
-        super(CypherDateTime.class);
+    public TestkitCypherDurationDeserializer() {
+        super(IsoDuration.class);
         mapper = new TestkitCypherTypeMapper();
     }
 
-    @Override
-    public CypherDateTime deserialize(JsonParser p, DeserializationContext ctxt)
+    public IsoDuration deserialize(JsonParser p, DeserializationContext ctxt)
             throws IOException, JsonProcessingException {
-        CypherDateTimeData data = mapper.mapData(p, ctxt, new CypherDateTimeData());
-        return new CypherDateTime(
-                data.year,
-                data.month,
-                data.day,
-                data.hour,
-                data.minute,
-                data.second,
-                data.nanosecond,
-                data.timezone_id,
-                data.utc_offset_s);
+        CypherDurationData data = mapper.mapData(p, ctxt, new CypherDurationData());
+        return new InternalIsoDuration(data.months, data.days, data.seconds, data.nanoseconds);
     }
 
-    private static final class CypherDateTimeData {
-        Integer year;
-        Integer month;
-        Integer day;
-        Integer hour;
-        Integer minute;
-        Integer second;
-        Integer nanosecond;
-        Integer utc_offset_s;
-        String timezone_id;
+    private static final class CypherDurationData {
+        Long months;
+        Long days;
+        Long seconds;
+        Integer nanoseconds;
     }
 }

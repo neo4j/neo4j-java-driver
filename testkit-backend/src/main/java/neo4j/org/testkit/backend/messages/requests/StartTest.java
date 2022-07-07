@@ -20,11 +20,13 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.messages.responses.RunSubTests;
 import neo4j.org.testkit.backend.messages.responses.RunTest;
 import neo4j.org.testkit.backend.messages.responses.SkipTest;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -74,9 +76,6 @@ public class StartTest implements TestkitRequest {
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query$", skipMessage);
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query_nested$", skipMessage);
-        skipMessage = "Additional type support is needed";
-        COMMON_SKIP_PATTERN_TO_REASON.put(
-                "^neo4j\\.datatypes\\.test_temporal_types\\.TestDataTypes\\..*$", skipMessage);
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
         ASYNC_SKIP_PATTERN_TO_REASON.put(
@@ -129,31 +128,39 @@ public class StartTest implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        return createResponse(COMMON_SKIP_PATTERN_TO_REASON);
+        return createSkipResponse(COMMON_SKIP_PATTERN_TO_REASON)
+                .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
+                        ? RunSubTests.builder().build()
+                        : RunTest.builder().build());
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createResponse(ASYNC_SKIP_PATTERN_TO_REASON);
+        TestkitResponse testkitResponse = createSkipResponse(ASYNC_SKIP_PATTERN_TO_REASON)
+                .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
+                        ? RunSubTests.builder().build()
+                        : RunTest.builder().build());
         return CompletableFuture.completedFuture(testkitResponse);
     }
 
     @Override
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createResponse(REACTIVE_SKIP_PATTERN_TO_REASON);
-        return Mono.fromCompletionStage(CompletableFuture.completedFuture(testkitResponse));
+        TestkitResponse testkitResponse = createSkipResponse(REACTIVE_SKIP_PATTERN_TO_REASON)
+                .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
+                        ? RunSubTests.builder().build()
+                        : RunTest.builder().build());
+        return Mono.just(testkitResponse);
     }
 
-    private TestkitResponse createResponse(Map<String, String> skipPatternToReason) {
+    private Optional<TestkitResponse> createSkipResponse(Map<String, String> skipPatternToReason) {
         return skipPatternToReason.entrySet().stream()
                 .filter(entry -> data.getTestName().matches(entry.getKey()))
                 .findFirst()
-                .map(entry -> (TestkitResponse) SkipTest.builder()
+                .map(entry -> SkipTest.builder()
                         .data(SkipTest.SkipTestBody.builder()
                                 .reason(entry.getValue())
                                 .build())
-                        .build())
-                .orElseGet(() -> RunTest.builder().build());
+                        .build());
     }
 
     @Setter
