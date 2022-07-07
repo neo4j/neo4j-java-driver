@@ -45,7 +45,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.SessionExtension;
@@ -173,12 +175,14 @@ class TemporalTypesIT {
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendDateTimeWithZoneOffset() {
         ZoneOffset offset = ZoneOffset.ofHoursMinutes(-4, -15);
         testSendValue(ZonedDateTime.of(1845, 3, 25, 19, 15, 45, 22, offset), Value::asZonedDateTime);
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldReceiveDateTimeWithZoneOffset() {
         ZoneOffset offset = ZoneOffset.ofHoursMinutes(3, 30);
         testReceiveValue(
@@ -188,27 +192,32 @@ class TemporalTypesIT {
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendAndReceiveDateTimeWithZoneOffset() {
         ZoneOffset offset = ZoneOffset.ofHoursMinutes(-7, -15);
         testSendAndReceiveValue(ZonedDateTime.of(2017, 3, 9, 11, 12, 13, 14, offset), Value::asZonedDateTime);
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendAndReceiveRandomDateTimeWithZoneOffset() {
         testSendAndReceiveRandomValues(TemporalUtil::randomZonedDateTimeWithOffset, Value::asZonedDateTime);
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendAndReceiveListsWithRandomDateTimeWithZoneOffsets() {
         testSendAndReceiveRandomLists(TemporalUtil::randomZonedDateTimeWithOffset);
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendDateTimeRepresentedWithOffsetDateTime() {
         testSendValue(OffsetDateTime.of(1851, 9, 29, 1, 29, 42, 987, ZoneOffset.ofHours(-8)), Value::asOffsetDateTime);
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldReceiveDateTimeRepresentedWithOffsetDateTime() {
         testReceiveValue(
                 "RETURN datetime({year:2121, month:1, day:1, hour:2, minute:2, second:2, timezone:'-07:20'})",
@@ -217,6 +226,7 @@ class TemporalTypesIT {
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendAndReceiveDateTimeRepresentedWithOffsetDateTime() {
         testSendAndReceiveValue(
                 OffsetDateTime.of(1998, 12, 12, 23, 54, 14, 123, ZoneOffset.ofHoursMinutes(1, 15)),
@@ -224,22 +234,26 @@ class TemporalTypesIT {
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendAndReceiveRandomDateTimeRepresentedWithOffsetDateTime() {
         testSendAndReceiveRandomValues(TemporalUtil::randomOffsetDateTime, Value::asOffsetDateTime);
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendAndReceiveListsWithRandomDateTimeRepresentedWithOffsetDateTimes() {
         testSendAndReceiveRandomLists(TemporalUtil::randomOffsetDateTime, value -> value.asList(ofOffsetDateTime()));
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendDateTimeWithZoneId() {
         ZoneId zoneId = ZoneId.of("Europe/Stockholm");
         testSendValue(ZonedDateTime.of(2049, 9, 11, 19, 10, 40, 20, zoneId), Value::asZonedDateTime);
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldReceiveDateTimeWithZoneId() {
         ZoneId zoneId = ZoneId.of("Europe/London");
         testReceiveValue(
@@ -249,17 +263,20 @@ class TemporalTypesIT {
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendAndReceiveDateTimeWithZoneId() {
         ZoneId zoneId = ZoneId.of("Europe/Stockholm");
         testSendAndReceiveValue(ZonedDateTime.of(2099, 12, 29, 12, 59, 59, 59, zoneId), Value::asZonedDateTime);
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendAndReceiveRandomDateTimeWithZoneId() {
         testSendAndReceiveRandomValues(TemporalUtil::randomZonedDateTimeWithZoneId, Value::asZonedDateTime);
     }
 
     @Test
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V5)
     void shouldSendAndReceiveListsWithRandomDateTimeWithZoneIds() {
         testSendAndReceiveRandomLists(TemporalUtil::randomZonedDateTimeWithZoneId);
     }
