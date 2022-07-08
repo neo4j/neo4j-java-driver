@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
@@ -188,21 +189,29 @@ public class CommonValueUnpacker implements ValueUnpacker {
                 if (!dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
                     return unpackDateTimeWithZoneOffset();
+                } else {
+                    throw instantiateExceptionForUnknownType(type);
                 }
             case DATE_TIME_WITH_ZONE_OFFSET_UTC:
                 if (dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
                     return unpackDateTimeUtcWithZoneOffset();
+                } else {
+                    throw instantiateExceptionForUnknownType(type);
                 }
             case DATE_TIME_WITH_ZONE_ID:
                 if (!dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
                     return unpackDateTimeWithZoneId();
+                } else {
+                    throw instantiateExceptionForUnknownType(type);
                 }
             case DATE_TIME_WITH_ZONE_ID_UTC:
                 if (dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
                     return unpackDateTimeUtcWithZoneId();
+                } else {
+                    throw instantiateExceptionForUnknownType(type);
                 }
             case DURATION:
                 ensureCorrectStructSize(TypeConstructor.DURATION, DURATION_TIME_STRUCT_SIZE, size);
@@ -224,7 +233,7 @@ public class CommonValueUnpacker implements ValueUnpacker {
                 ensureCorrectStructSize(TypeConstructor.PATH, 3, size);
                 return unpackPath();
             default:
-                throw new IOException("Unknown struct type: " + type);
+                throw instantiateExceptionForUnknownType(type);
         }
     }
 
@@ -416,5 +425,9 @@ public class CommonValueUnpacker implements ValueUnpacker {
         Instant instant = Instant.ofEpochSecond(epochSecondLocal, nano);
         LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, zoneId);
         return ZonedDateTime.of(localDateTime, zoneId);
+    }
+
+    private ProtocolException instantiateExceptionForUnknownType(byte type) {
+        return new ProtocolException("Unknown struct type: " + type);
     }
 }
