@@ -34,26 +34,26 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-handler.version>4.1.77.Final</netty-handler.version>
+    <netty-bom.version>4.1.78.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2020.0.19</reactor-bom.version>
+    <reactor-bom.version>2020.0.20</reactor-bom.version>
     <rxjava.version>2.2.21</rxjava.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
     <mockito-core.version>4.6.1</mockito-core.version>
     <junit.version>5.8.2</junit.version>
-    <testng-engine.version>1.0.2</testng-engine.version>
+    <testng-engine.version>1.0.4</testng-engine.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.70</bouncycastle-jdk15on.version>
     <logback-classic.version>1.2.11</logback-classic.version>
     <jackson.version>2.13.3</jackson.version>
     <lombok.version>1.18.24</lombok.version>
     <svm.version>21.3.2.1</svm.version>
-    <micrometer.version>1.9.0</micrometer.version>
-    <testcontainers.version>1.17.2</testcontainers.version>
-    <build-resources.version>4.4.7</build-resources.version>
+    <micrometer.version>1.9.1</micrometer.version>
+    <testcontainers.version>1.17.3</testcontainers.version>
+    <build-resources.version>4.4.8</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
@@ -99,8 +99,10 @@
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
-        <artifactId>netty-handler</artifactId>
-        <version>${netty-handler.version}</version>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty-bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>io.projectreactor</groupId>
@@ -474,6 +476,11 @@
               <version>${build-resources.version}</version>
             </dependency>
           </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>2.7</version>
         </plugin>
       </plugins>
     </pluginManagement>
