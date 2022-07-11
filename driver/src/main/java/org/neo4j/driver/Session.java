@@ -261,7 +261,7 @@ public interface Session extends Resource, QueryRunner {
      * must be values that can be converted to Neo4j types. See {@link Values#parameters(Object...)} for
      * a list of allowed types.
      *
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      * Map<String, Object> metadata = new HashMap<>();
@@ -289,7 +289,7 @@ public interface Session extends Resource, QueryRunner {
     /**
      * Run a query in a managed auto-commit transaction with the specified
      * {@link TransactionConfig configuration}, and return a result stream.
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      * Map<String, Object> metadata = new HashMap<>();

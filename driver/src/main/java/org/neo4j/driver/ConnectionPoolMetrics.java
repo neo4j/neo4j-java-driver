@@ -105,7 +105,7 @@ public interface ConnectionPoolMetrics {
      * This number increases every time when a connection is acquired.
      * See {@link ConnectionPoolMetrics#acquired()} for the total amount of connection acquired since the driver is created.
      * The average acquisition time can be calculated using the code below:
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      * ConnectionPoolMetrics previous, current;
@@ -129,7 +129,7 @@ public interface ConnectionPoolMetrics {
      * This number increases every time when a connection is established.
      * See {@link ConnectionPoolMetrics#created()} for the total amount of connections established since the pool is created.
      * The average connection time can be calculated using the code below:
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      * ConnectionPoolMetrics previous, current;
@@ -154,7 +154,7 @@ public interface ConnectionPoolMetrics {
      * This number increases every time when a connection is returned back to the pool.
      * See {@link ConnectionPoolMetrics#totalInUseCount()} for the total amount of connections that are borrowed out of the pool.
      * The average in-use time can be calculated using the code below:
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      * ConnectionPoolMetrics previous, current;
