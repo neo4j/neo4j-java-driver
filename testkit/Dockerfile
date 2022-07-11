@@ -12,4 +12,5 @@ ENV PATH=$JAVA_HOME/bin:$PATH
 # JAVA_HOME needed by update-ca-certificates hook to update Java with changed system CAs.
 COPY CAs/* /usr/local/share/ca-certificates/
 COPY CustomCAs/* /usr/local/share/custom-ca-certificates/
-RUN update-ca-certificates
+RUN echo 'jdk.tls.disabledAlgorithms=jdk.tls.disabledAlgorithms=SSLv3, TLSv1, RC4, DES, MD5withRSA, DH keySize < 1024, EC keySize < 224, 3DES_EDE_CBC, anon, NULL' > /testkit.java.security \
+    && update-ca-certificates
