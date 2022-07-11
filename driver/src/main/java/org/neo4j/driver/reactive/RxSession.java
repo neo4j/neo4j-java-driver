@@ -170,7 +170,7 @@ public interface RxSession extends RxQueryRunner {
      * The values in the map must be values that can be converted to Neo4j types.
      * See {@link Values#parameters(Object...)} for a list of allowed types.
      *
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      * Map<String, Object> metadata = new HashMap<>();
@@ -199,7 +199,7 @@ public interface RxSession extends RxQueryRunner {
      * Run a query in an auto-commit transaction with specified {@link TransactionConfig configuration} and return a reactive result stream.
      * The query is not executed when the reactive result is returned.
      * Instead, the publishers in the result will actually start the execution of the query.
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      * Map<String, Object> metadata = new HashMap<>();

@@ -15,8 +15,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
 
     <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
@@ -247,18 +247,6 @@
       </build>
     </profile>
 
-    <profile>
-      <id>java9</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <jdk>9</jdk>
-      </activation>
-      <properties>
-        <maven.compiler.source>9</maven.compiler.source>
-        <maven.compiler.target>9</maven.compiler.target>
-      </properties>
-    </profile>
-
     <!-- Disable parallel execution of integration tests with "-DsequentialITs" -->
     <profile>
       <id>sequentialIntegrationTests</id>
@@ -367,12 +355,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>2.21.0</version>
+          <version>2.23.0</version>
           <executions>
             <execution>
               <goals>

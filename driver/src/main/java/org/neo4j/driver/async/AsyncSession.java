@@ -323,7 +323,7 @@ public interface AsyncSession extends AsyncQueryRunner {
      * This version of runAsync takes a {@link Map} of parameters. The values in the map
      * must be values that can be converted to Neo4j types. See {@link Values#parameters(Object...)} for
      * a list of allowed types.
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      * Map<String, Object> metadata = new HashMap<>();
@@ -357,7 +357,7 @@ public interface AsyncSession extends AsyncQueryRunner {
     /**
      * Run a query asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
      * {@link CompletionStage} with a result cursor.
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre>
      * {@code
      * Map<String, Object> metadata = new HashMap<>();

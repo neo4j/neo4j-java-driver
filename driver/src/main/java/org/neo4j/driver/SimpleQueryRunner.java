@@ -65,7 +65,7 @@ public interface SimpleQueryRunner {
      * <p>
      * If you are creating parameters programmatically, {@link #run(String, Map)} might be more helpful, it converts your map to a {@link Value} for you.
      *
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre class="doctest:QueryRunnerDocIT#parameterTest">
      * {@code
      *
@@ -89,7 +89,7 @@ public interface SimpleQueryRunner {
      * This version of run takes a {@link Map} of parameters. The values in the map must be values that can be converted to Neo4j types. See {@link
      * Values#parameters(Object...)} for a list of allowed types.
      *
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre class="doctest:QueryRunnerDocIT#parameterTest">
      * {@code
      *
@@ -131,7 +131,7 @@ public interface SimpleQueryRunner {
 
     /**
      * Run a query and return a result stream.
-     * <h2>Example</h2>
+     * <h4>Example</h4>
      * <pre class="doctest:QueryRunnerDocIT#queryObjectTest">
      * {@code
      *
