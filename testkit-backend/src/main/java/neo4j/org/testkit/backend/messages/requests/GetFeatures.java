@@ -57,7 +57,8 @@ public class GetFeatures implements TestkitRequest {
             "Detail:DefaultSecurityConfigValueEquality",
             "Optimization:ImplicitDefaultArguments",
             "Feature:Bolt:Patch:UTC",
-            "Feature:API:Type.Temporal"));
+            "Feature:API:Type.Temporal",
+            "Feature:API:UpdateRoutingTableTimeout"));
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:3.0",

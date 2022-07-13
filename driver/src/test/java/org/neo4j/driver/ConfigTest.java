@@ -148,6 +148,29 @@ class ConfigTest {
     }
 
     @Test
+    void shouldHaveDefaultUpdateRoutingTableTimeout() {
+        var defaultConfig = Config.defaultConfig();
+        assertEquals(TimeUnit.SECONDS.toMillis(90), defaultConfig.updateRoutingTableTimeoutMillis());
+    }
+
+    @Test
+    void shouldSetUpdateRoutingTableTimeout() {
+        var value = 1;
+        var config = Config.builder()
+                .withUpdateRoutingTableTimeout(value, TimeUnit.HOURS)
+                .build();
+        assertEquals(TimeUnit.HOURS.toMillis(value), config.updateRoutingTableTimeoutMillis());
+    }
+
+    @Test
+    void shouldRejectLessThen1Millisecond() {
+        var builder = Config.builder();
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> builder.withUpdateRoutingTableTimeout(999_999, TimeUnit.NANOSECONDS));
+    }
+
+    @Test
     void shouldHaveDefaultConnectionTimeout() {
         Config defaultConfig = Config.defaultConfig();
         assertEquals(TimeUnit.SECONDS.toMillis(30), defaultConfig.connectionTimeoutMillis());

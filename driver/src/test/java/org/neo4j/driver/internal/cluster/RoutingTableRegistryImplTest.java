@@ -25,9 +25,12 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,6 +38,7 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.SYSTEM_DATABASE_NAME;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
+import static org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl.TABLE_ACQUISITION_TIMEOUT_MESSAGE;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
@@ -48,13 +52,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.ImmutableConnectionContext;
@@ -135,7 +142,7 @@ class RoutingTableRegistryImplTest {
         RoutingTableHandler handler = mockedRoutingTableHandler();
         RoutingTableHandlerFactory factory = mockedHandlerFactory(handler);
         RoutingTableRegistryImpl routingTables =
-                new RoutingTableRegistryImpl(map, factory, null, null, null, DEV_NULL_LOGGING);
+                new RoutingTableRegistryImpl(map, factory, Long.MAX_VALUE, null, null, null, DEV_NULL_LOGGING);
 
         ImmutableConnectionContext context =
                 new ImmutableConnectionContext(defaultDatabase(), Collections.emptySet(), mode);
@@ -155,7 +162,7 @@ class RoutingTableRegistryImplTest {
         map.put(database("Orange"), mockedRoutingTableHandler(E, F, C));
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
         RoutingTableRegistryImpl routingTables =
-                new RoutingTableRegistryImpl(map, factory, null, null, null, DEV_NULL_LOGGING);
+                new RoutingTableRegistryImpl(map, factory, Long.MAX_VALUE, null, null, null, DEV_NULL_LOGGING);
 
         // When
         Set<BoltServerAddress> servers = routingTables.allServers();
@@ -198,6 +205,26 @@ class RoutingTableRegistryImplTest {
         assertThat(routingTables.allServers(), empty());
     }
 
+    @Test
+    void shouldReturnExistingRoutingTableHandlerWhenFreshRoutingTables() throws Throwable {
+        // Given
+        var map = new ConcurrentHashMap<DatabaseName, RoutingTableHandler>();
+        var handler = mock(RoutingTableHandler.class);
+        given(handler.ensureRoutingTable(any())).willReturn(new CompletableFuture<>());
+        var database = database("neo4j");
+        map.put(database, handler);
+
+        var factory = mockedHandlerFactory();
+        var routingTables = new RoutingTableRegistryImpl(map, factory, 250, null, null, null, DEV_NULL_LOGGING);
+        var context = new ImmutableConnectionContext(database, Collections.emptySet(), AccessMode.READ);
+
+        // When & Then
+        var actual =
+                assertThrows(ServiceUnavailableException.class, () -> await(routingTables.ensureRoutingTable(context)));
+        assertEquals(TABLE_ACQUISITION_TIMEOUT_MESSAGE, actual.getMessage());
+        assertInstanceOf(TimeoutException.class, actual.getCause());
+    }
+
     private RoutingTableHandler mockedRoutingTableHandler(BoltServerAddress... servers) {
         RoutingTableHandler handler = mock(RoutingTableHandler.class);
         when(handler.servers()).thenReturn(new HashSet<>(Arrays.asList(servers)));
@@ -207,7 +234,7 @@ class RoutingTableRegistryImplTest {
 
     private RoutingTableRegistryImpl newRoutingTables(
             ConcurrentMap<DatabaseName, RoutingTableHandler> handlers, RoutingTableHandlerFactory factory) {
-        return new RoutingTableRegistryImpl(handlers, factory, null, null, null, DEV_NULL_LOGGING);
+        return new RoutingTableRegistryImpl(handlers, factory, Long.MAX_VALUE, null, null, null, DEV_NULL_LOGGING);
     }
 
     private RoutingTableHandlerFactory mockedHandlerFactory(RoutingTableHandler handler) {

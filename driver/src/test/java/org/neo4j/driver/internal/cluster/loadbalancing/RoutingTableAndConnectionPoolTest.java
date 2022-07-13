@@ -323,7 +323,7 @@ class RoutingTableAndConnectionPoolTest {
 
     private RoutingTableRegistryImpl newRoutingTables(ConnectionPool connectionPool, Rediscovery rediscovery) {
         return new RoutingTableRegistryImpl(
-                connectionPool, rediscovery, clock, logging, STALE_ROUTING_TABLE_PURGE_DELAY_MS);
+                connectionPool, rediscovery, Long.MAX_VALUE, clock, logging, STALE_ROUTING_TABLE_PURGE_DELAY_MS);
     }
 
     private LoadBalancer newLoadBalancer(ConnectionPool connectionPool, RoutingTableRegistry routingTables) {
