@@ -32,7 +32,11 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -49,6 +53,7 @@ import org.neo4j.driver.internal.cluster.RediscoveryImpl;
 import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
+import org.neo4j.driver.internal.cluster.RoutingTableHandler;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl;
 import org.neo4j.driver.internal.spi.Connection;
@@ -65,9 +70,12 @@ public class LoadBalancer implements ConnectionProvider {
             "Failed to obtain connection towards %s server. Known routing table is: %s";
     private static final String CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE =
             "Failed to obtain a connection towards address %s, will try other addresses if available. Complete failure is reported separately from this entry.";
+    static final String SESSION_CONNECTION_ACQUISITION_TIMEOUT_MESSAGE =
+            "Failed to acquire connection within session connection timeout.";
     private final ConnectionPool connectionPool;
     private final RoutingTableRegistry routingTables;
     private final LoadBalancingStrategy loadBalancingStrategy;
+    private final long sessionConnectionTimeoutMillis;
     private final EventExecutorGroup eventExecutorGroup;
     private final Logger log;
     private final Rediscovery rediscovery;
@@ -76,6 +84,7 @@ public class LoadBalancer implements ConnectionProvider {
             BoltServerAddress initialRouter,
             RoutingSettings settings,
             ConnectionPool connectionPool,
+            long sessionConnectionTimeoutMillis,
             long updateRoutingTableTimeoutMillis,
             EventExecutorGroup eventExecutorGroup,
             Clock clock,
@@ -89,6 +98,7 @@ public class LoadBalancer implements ConnectionProvider {
                         initialRouter, resolver, settings, clock, logging, requireNonNull(domainNameResolver)),
                 settings,
                 loadBalancingStrategy,
+                sessionConnectionTimeoutMillis,
                 updateRoutingTableTimeoutMillis,
                 eventExecutorGroup,
                 clock,
@@ -100,6 +110,7 @@ public class LoadBalancer implements ConnectionProvider {
             Rediscovery rediscovery,
             RoutingSettings settings,
             LoadBalancingStrategy loadBalancingStrategy,
+            long sessionConnectionTimeoutMillis,
             long updateRoutingTableTimeoutMillis,
             EventExecutorGroup eventExecutorGroup,
             Clock clock,
@@ -110,6 +121,7 @@ public class LoadBalancer implements ConnectionProvider {
                         connectionPool, rediscovery, settings, updateRoutingTableTimeoutMillis, clock, logging),
                 rediscovery,
                 loadBalancingStrategy,
+                sessionConnectionTimeoutMillis,
                 eventExecutorGroup,
                 logging);
     }
@@ -119,27 +131,51 @@ public class LoadBalancer implements ConnectionProvider {
             RoutingTableRegistry routingTables,
             Rediscovery rediscovery,
             LoadBalancingStrategy loadBalancingStrategy,
+            long sessionConnectionTimeoutMillis,
             EventExecutorGroup eventExecutorGroup,
             Logging logging) {
         this.connectionPool = connectionPool;
         this.routingTables = routingTables;
         this.rediscovery = rediscovery;
         this.loadBalancingStrategy = loadBalancingStrategy;
+        this.sessionConnectionTimeoutMillis = sessionConnectionTimeoutMillis;
         this.eventExecutorGroup = eventExecutorGroup;
         this.log = logging.getLog(getClass());
     }
 
     @Override
     public CompletionStage<Connection> acquireConnection(ConnectionContext context) {
-        return routingTables.ensureRoutingTable(context).thenCompose(handler -> acquire(
-                        context.mode(), handler.routingTable())
-                .thenApply(connection -> new RoutingConnection(
-                        connection,
-                        Futures.joinNowOrElseThrow(
-                                context.databaseNameFuture(), PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER),
-                        context.mode(),
-                        context.impersonatedUser(),
-                        handler)));
+        var connectionFuture = new CompletableFuture<Connection>();
+
+        try {
+            eventExecutorGroup.schedule(
+                    () -> connectionFuture.completeExceptionally(new SessionConnectionAcquisitionTimeoutException()),
+                    sessionConnectionTimeoutMillis,
+                    TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            if (!eventExecutorGroup.isShuttingDown() && !eventExecutorGroup.isShutdown()) {
+                throw e;
+            }
+        }
+
+        routingTables
+                .ensureRoutingTable(context)
+                .handle((handler, throwable) -> {
+                    if (throwable != null) {
+                        connectionFuture.completeExceptionally(throwable);
+                    } else {
+                        var attemptExceptions = new ArrayList<Throwable>();
+                        acquire(context, handler, connectionFuture, attemptExceptions);
+                    }
+                    return null;
+                })
+                .whenComplete((ignored, throwable) -> {
+                    if (throwable != null) {
+                        connectionFuture.completeExceptionally(throwable);
+                    }
+                });
+
+        return connectionFuture.handle(this::handleTimeoutException);
     }
 
     @Override
@@ -210,47 +246,69 @@ public class LoadBalancer implements ConnectionProvider {
         });
     }
 
-    private CompletionStage<Connection> acquire(AccessMode mode, RoutingTable routingTable) {
-        CompletableFuture<Connection> result = new CompletableFuture<>();
-        List<Throwable> attemptExceptions = new ArrayList<>();
-        acquire(mode, routingTable, result, attemptExceptions);
-        return result;
-    }
-
     private void acquire(
-            AccessMode mode,
-            RoutingTable routingTable,
+            ConnectionContext context,
+            RoutingTableHandler handler,
             CompletableFuture<Connection> result,
             List<Throwable> attemptErrors) {
-        List<BoltServerAddress> addresses = getAddressesByMode(mode, routingTable);
-        BoltServerAddress address = selectAddress(mode, addresses);
-
-        if (address == null) {
-            SessionExpiredException completionError = new SessionExpiredException(
-                    format(CONNECTION_ACQUISITION_COMPLETION_EXCEPTION_MESSAGE, mode, routingTable));
-            attemptErrors.forEach(completionError::addSuppressed);
-            log.error(CONNECTION_ACQUISITION_COMPLETION_FAILURE_MESSAGE, completionError);
-            result.completeExceptionally(completionError);
+        if (result.isDone()) {
             return;
         }
 
-        connectionPool.acquire(address).whenComplete((connection, completionError) -> {
-            Throwable error = completionExceptionCause(completionError);
-            if (error != null) {
-                if (error instanceof ServiceUnavailableException) {
-                    String attemptMessage = format(CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE, address);
-                    log.warn(attemptMessage);
-                    log.debug(attemptMessage, error);
-                    attemptErrors.add(error);
-                    routingTable.forget(address);
-                    eventExecutorGroup.next().execute(() -> acquire(mode, routingTable, result, attemptErrors));
-                } else {
-                    result.completeExceptionally(error);
-                }
-            } else {
-                result.complete(connection);
+        var mode = context.mode();
+        var routingTable = handler.routingTable();
+        var addresses = getAddressesByMode(mode, routingTable);
+        var address = selectAddress(mode, addresses);
+
+        if (address == null) {
+            var completionError = new SessionExpiredException(
+                    format(CONNECTION_ACQUISITION_COMPLETION_EXCEPTION_MESSAGE, mode, routingTable));
+            attemptErrors.forEach(completionError::addSuppressed);
+            if (result.completeExceptionally(completionError)) {
+                log.error(CONNECTION_ACQUISITION_COMPLETION_FAILURE_MESSAGE, completionError);
             }
-        });
+            return;
+        }
+
+        var connectionStage = connectionPool.acquire(address);
+        CompletableFuture.anyOf(connectionStage.toCompletableFuture(), result)
+                .thenApply(obj -> (Connection) obj)
+                .handle((connection, completionError) -> {
+                    var error = completionExceptionCause(completionError);
+                    if (error != null) {
+                        if (error instanceof TimeoutException) {
+                            routingTable.forget(address);
+                            connectionStage.thenApply(Connection::release);
+                        } else if (error instanceof ServiceUnavailableException) {
+                            var attemptMessage = format(CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE, address);
+                            log.warn(attemptMessage);
+                            log.debug(attemptMessage, error);
+                            attemptErrors.add(error);
+                            routingTable.forget(address);
+                            eventExecutorGroup.next().execute(() -> acquire(context, handler, result, attemptErrors));
+                        } else {
+                            result.completeExceptionally(error);
+                        }
+                    } else {
+                        var routingConnection = new RoutingConnection(
+                                connection,
+                                Futures.joinNowOrElseThrow(
+                                        context.databaseNameFuture(), PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER),
+                                mode,
+                                context.impersonatedUser(),
+                                handler);
+                        if (!result.complete(routingConnection)) {
+                            routingTable.forget(address);
+                            connection.release();
+                        }
+                    }
+                    return null;
+                })
+                .whenComplete((ignored, throwable) -> {
+                    if (throwable != null) {
+                        result.completeExceptionally(throwable);
+                    }
+                });
     }
 
     private static List<BoltServerAddress> getAddressesByMode(AccessMode mode, RoutingTable routingTable) {
@@ -306,4 +364,19 @@ public class LoadBalancer implements ConnectionProvider {
     private static RuntimeException unknownMode(AccessMode mode) {
         return new IllegalArgumentException("Mode '" + mode + "' is not supported");
     }
+
+    private Connection handleTimeoutException(Connection connection, Throwable throwable) {
+        if (throwable != null) {
+            if (throwable instanceof SessionConnectionAcquisitionTimeoutException) {
+                throw new SessionExpiredException(SESSION_CONNECTION_ACQUISITION_TIMEOUT_MESSAGE);
+            } else if (throwable instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            } else {
+                throw new CompletionException(throwable);
+            }
+        }
+        return connection;
+    }
+
+    private static final class SessionConnectionAcquisitionTimeoutException extends RuntimeException {}
 }

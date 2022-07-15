@@ -148,6 +148,29 @@ class ConfigTest {
     }
 
     @Test
+    void shouldHaveDefaultSessionConnectionTimeout() {
+        var defaultConfig = Config.defaultConfig();
+        assertEquals(TimeUnit.SECONDS.toMillis(120), defaultConfig.sessionConnectionTimeoutMillis());
+    }
+
+    @Test
+    void shouldSetSessionConnectionTimeout() {
+        var value = 1;
+        var config = Config.builder()
+                .withSessionConnectionTimeout(value, TimeUnit.HOURS)
+                .build();
+        assertEquals(TimeUnit.HOURS.toMillis(value), config.sessionConnectionTimeoutMillis());
+    }
+
+    @Test
+    void shouldRejectLessThen1MillisecondSessionConnectionTimeout() {
+        var builder = Config.builder();
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> builder.withSessionConnectionTimeout(999_999, TimeUnit.NANOSECONDS));
+    }
+
+    @Test
     void shouldHaveDefaultUpdateRoutingTableTimeout() {
         var defaultConfig = Config.defaultConfig();
         assertEquals(TimeUnit.SECONDS.toMillis(90), defaultConfig.updateRoutingTableTimeoutMillis());
@@ -163,7 +186,7 @@ class ConfigTest {
     }
 
     @Test
-    void shouldRejectLessThen1Millisecond() {
+    void shouldRejectLessThen1MillisecondRoutingTableTimeout() {
         var builder = Config.builder();
         assertThrows(
                 IllegalArgumentException.class,

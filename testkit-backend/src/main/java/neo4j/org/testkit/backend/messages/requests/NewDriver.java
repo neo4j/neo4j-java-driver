@@ -101,6 +101,8 @@ public class NewDriver implements TestkitRequest {
             domainNameResolver = callbackDomainNameResolver(testkitState);
         }
         Optional.ofNullable(data.userAgent).ifPresent(configBuilder::withUserAgent);
+        Optional.ofNullable(data.sessionConnectionTimeoutMs)
+                .ifPresent(timeout -> configBuilder.withSessionConnectionTimeout(timeout, TimeUnit.MILLISECONDS));
         Optional.ofNullable(data.updateRoutingTableTimeoutMs)
                 .ifPresent(timeout -> configBuilder.withUpdateRoutingTableTimeout(timeout, TimeUnit.MILLISECONDS));
         Optional.ofNullable(data.connectionTimeoutMs)
@@ -280,6 +282,7 @@ public class NewDriver implements TestkitRequest {
         private String userAgent;
         private boolean resolverRegistered;
         private boolean domainNameResolverRegistered;
+        private Long sessionConnectionTimeoutMs;
         private Long updateRoutingTableTimeoutMs;
         private Long connectionTimeoutMs;
         private Integer fetchSize;

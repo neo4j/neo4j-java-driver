@@ -79,6 +79,7 @@ public class Config implements Serializable {
 
     private final boolean logLeakedSessions;
 
+    private final long sessionConnectionTimeoutMillis;
     private final long updateRoutingTableTimeoutMillis;
 
     private final int maxConnectionPoolSize;
@@ -104,6 +105,7 @@ public class Config implements Serializable {
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
 
+        this.sessionConnectionTimeoutMillis = builder.sessionConnectionTimeoutMillis;
         this.updateRoutingTableTimeoutMillis = builder.updateRoutingTableTimeoutMillis;
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
         this.maxConnectionLifetimeMillis = builder.maxConnectionLifetimeMillis;
@@ -138,6 +140,15 @@ public class Config implements Serializable {
      */
     public boolean logLeakedSessions() {
         return logLeakedSessions;
+    }
+
+    /**
+     * Returns maximum amount of time the driver may wait for read or write connection to a server node in routing mode for running query.
+     *
+     * @return the maximum time in milliseconds
+     */
+    public long sessionConnectionTimeoutMillis() {
+        return sessionConnectionTimeoutMillis;
     }
 
     /**
@@ -269,6 +280,7 @@ public class Config implements Serializable {
     public static class ConfigBuilder {
         private Logging logging = DEV_NULL_LOGGING;
         private boolean logLeakedSessions;
+        private long sessionConnectionTimeoutMillis = TimeUnit.SECONDS.toMillis(120);
         private long updateRoutingTableTimeoutMillis = TimeUnit.SECONDS.toMillis(90);
         private int maxConnectionPoolSize = PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
@@ -320,6 +332,26 @@ public class Config implements Serializable {
          */
         public ConfigBuilder withLeakedSessionsLogging() {
             this.logLeakedSessions = true;
+            return this;
+        }
+
+        /**
+         * Sets maximum amount of time the driver may wait for read or write connection to a server node in routing mode for running query.
+         * <p>
+         * This option allows setting API response time expectation.
+         * <p>
+         * Default is 120 seconds.
+         *
+         * @param value the maximum time amount
+         * @param unit  the time unit
+         * @return this builder
+         */
+        public ConfigBuilder withSessionConnectionTimeout(long value, TimeUnit unit) {
+            var millis = unit.toMillis(value);
+            if (millis <= 0) {
+                throw new IllegalArgumentException("The provided value must be at least 1 millisecond.");
+            }
+            this.sessionConnectionTimeoutMillis = millis;
             return this;
         }
 

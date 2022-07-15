@@ -375,6 +375,7 @@ class LoadBalancerTest {
                 routingTables,
                 rediscovery,
                 new LeastConnectedLoadBalancingStrategy(connectionPool, DEV_NULL_LOGGING),
+                Long.MAX_VALUE,
                 GlobalEventExecutor.INSTANCE,
                 DEV_NULL_LOGGING);
         ConnectionContext context = mock(ConnectionContext.class);
@@ -454,6 +455,7 @@ class LoadBalancerTest {
                 routingTables,
                 rediscovery,
                 new LeastConnectedLoadBalancingStrategy(connectionPool, DEV_NULL_LOGGING),
+                Long.MAX_VALUE,
                 GlobalEventExecutor.INSTANCE,
                 DEV_NULL_LOGGING);
     }
@@ -472,6 +474,7 @@ class LoadBalancerTest {
                 routingTables,
                 rediscovery,
                 new LeastConnectedLoadBalancingStrategy(connectionPool, DEV_NULL_LOGGING),
+                Long.MAX_VALUE,
                 GlobalEventExecutor.INSTANCE,
                 DEV_NULL_LOGGING);
     }

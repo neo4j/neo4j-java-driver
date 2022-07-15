@@ -333,6 +333,7 @@ class RoutingTableAndConnectionPoolTest {
                 routingTables,
                 rediscovery,
                 new LeastConnectedLoadBalancingStrategy(connectionPool, logging),
+                Long.MAX_VALUE,
                 GlobalEventExecutor.INSTANCE,
                 logging);
     }
