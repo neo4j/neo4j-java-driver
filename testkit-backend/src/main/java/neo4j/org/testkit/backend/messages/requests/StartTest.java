@@ -86,6 +86,9 @@ public class StartTest implements TestkitRequest {
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.test_unknown_then_known_zoned_date_time(_patched)?$",
                 "Unknown zone names make the driver close the connection.");
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.test_unknown_zoned_date_time(_patched)?$",
+                "Unknown zone names make the driver close the connection.");
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
 
