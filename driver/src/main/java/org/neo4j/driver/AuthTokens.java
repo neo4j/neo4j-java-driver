@@ -126,29 +126,30 @@ public class AuthTokens {
 
     /**
      * A custom authentication token used for doing custom authentication on the server side.
-     * @param principal this used to identify who this token represents
+     *
+     * @param principal   this used to identify who this token represents
      * @param credentials this is credentials authenticating the principal
-     * @param realm this is the "realm:, specifying the authentication provider.
-     * @param scheme this it the authentication scheme, specifying what kind of authentication that should be used
-     * @param parameters extra parameters to be sent along the authentication provider.
+     * @param realm       this is the "realm:", specifying the authentication provider.
+     * @param scheme      this is the authentication scheme, specifying what kind of authentication that should be used
+     * @param parameters  extra parameters to be sent along the authentication provider.
      * @return an authentication token that can be used to connect to Neo4j
+     * @throws NullPointerException when scheme is {@code null}
      * @see GraphDatabase#driver(String, AuthToken)
-     * @throws NullPointerException when either principal, credentials or scheme is {@code null}
      */
     public static AuthToken custom(
             String principal, String credentials, String realm, String scheme, Map<String, Object> parameters) {
-        Objects.requireNonNull(principal, "Principal can't be null");
-        Objects.requireNonNull(credentials, "Credentials can't be null");
         Objects.requireNonNull(scheme, "Scheme can't be null");
 
         Map<String, Value> map = newHashMapWithSize(5);
         map.put(SCHEME_KEY, value(scheme));
-        map.put(PRINCIPAL_KEY, value(principal));
-        map.put(CREDENTIALS_KEY, value(credentials));
-        if (realm != null) {
+        map.put(PRINCIPAL_KEY, value(principal != null ? principal : ""));
+        if (credentials != null && !credentials.isEmpty()) {
+            map.put(CREDENTIALS_KEY, value(credentials));
+        }
+        if (realm != null && !realm.isEmpty()) {
             map.put(REALM_KEY, value(realm));
         }
-        if (parameters != null) {
+        if (parameters != null && !parameters.isEmpty()) {
             map.put(PARAMETERS_KEY, value(parameters));
         }
         return new InternalAuthToken(map);

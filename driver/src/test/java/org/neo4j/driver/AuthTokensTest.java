@@ -22,7 +22,9 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.AuthTokens.basic;
 import static org.neo4j.driver.AuthTokens.custom;
 import static org.neo4j.driver.Values.values;
@@ -43,9 +45,9 @@ class AuthTokensTest {
         Map<String, Value> map = basic.toMap();
 
         assertThat(map.size(), equalTo(3));
-        assertThat(map.get("scheme"), equalTo((Value) new StringValue("basic")));
-        assertThat(map.get("principal"), equalTo((Value) new StringValue("foo")));
-        assertThat(map.get("credentials"), equalTo((Value) new StringValue("bar")));
+        assertThat(map.get("scheme"), equalTo(new StringValue("basic")));
+        assertThat(map.get("principal"), equalTo(new StringValue("foo")));
+        assertThat(map.get("credentials"), equalTo(new StringValue("bar")));
     }
 
     @Test
@@ -55,10 +57,10 @@ class AuthTokensTest {
         Map<String, Value> map = basic.toMap();
 
         assertThat(map.size(), equalTo(4));
-        assertThat(map.get("scheme"), equalTo((Value) new StringValue("basic")));
-        assertThat(map.get("principal"), equalTo((Value) new StringValue("foo")));
-        assertThat(map.get("credentials"), equalTo((Value) new StringValue("bar")));
-        assertThat(map.get("realm"), equalTo((Value) new StringValue("baz")));
+        assertThat(map.get("scheme"), equalTo(new StringValue("basic")));
+        assertThat(map.get("principal"), equalTo(new StringValue("foo")));
+        assertThat(map.get("credentials"), equalTo(new StringValue("bar")));
+        assertThat(map.get("realm"), equalTo(new StringValue("baz")));
     }
 
     @Test
@@ -68,10 +70,10 @@ class AuthTokensTest {
         Map<String, Value> map = basic.toMap();
 
         assertThat(map.size(), equalTo(4));
-        assertThat(map.get("scheme"), equalTo((Value) new StringValue("my_scheme")));
-        assertThat(map.get("principal"), equalTo((Value) new StringValue("foo")));
-        assertThat(map.get("credentials"), equalTo((Value) new StringValue("bar")));
-        assertThat(map.get("realm"), equalTo((Value) new StringValue("baz")));
+        assertThat(map.get("scheme"), equalTo(new StringValue("my_scheme")));
+        assertThat(map.get("principal"), equalTo(new StringValue("foo")));
+        assertThat(map.get("credentials"), equalTo(new StringValue("bar")));
+        assertThat(map.get("realm"), equalTo(new StringValue("baz")));
     }
 
     @Test
@@ -85,11 +87,11 @@ class AuthTokensTest {
         Map<String, Value> map = basic.toMap();
 
         assertThat(map.size(), equalTo(5));
-        assertThat(map.get("scheme"), equalTo((Value) new StringValue("my_scheme")));
-        assertThat(map.get("principal"), equalTo((Value) new StringValue("foo")));
-        assertThat(map.get("credentials"), equalTo((Value) new StringValue("bar")));
-        assertThat(map.get("realm"), equalTo((Value) new StringValue("baz")));
-        assertThat(map.get("parameters"), equalTo((Value) new MapValue(expectedParameters)));
+        assertThat(map.get("scheme"), equalTo(new StringValue("my_scheme")));
+        assertThat(map.get("principal"), equalTo(new StringValue("foo")));
+        assertThat(map.get("credentials"), equalTo(new StringValue("bar")));
+        assertThat(map.get("realm"), equalTo(new StringValue("baz")));
+        assertThat(map.get("parameters"), equalTo(new MapValue(expectedParameters)));
     }
 
     @Test
@@ -113,9 +115,9 @@ class AuthTokensTest {
         Map<String, Value> map = token.toMap();
 
         assertThat(map.size(), equalTo(3));
-        assertThat(map.get("scheme"), equalTo((Value) new StringValue("kerberos")));
-        assertThat(map.get("principal"), equalTo((Value) new StringValue("")));
-        assertThat(map.get("credentials"), equalTo((Value) new StringValue("base64")));
+        assertThat(map.get("scheme"), equalTo(new StringValue("kerberos")));
+        assertThat(map.get("principal"), equalTo(new StringValue("")));
+        assertThat(map.get("credentials"), equalTo(new StringValue("base64")));
     }
 
     @Test
@@ -154,17 +156,17 @@ class AuthTokensTest {
     }
 
     @Test
-    void shouldNotAllowCustomAuthTokenWithNullPrincipal() {
-        NullPointerException e = assertThrows(
-                NullPointerException.class, () -> AuthTokens.custom(null, "credentials", "realm", "scheme"));
-        assertEquals("Principal can't be null", e.getMessage());
+    void shouldAllowCustomAuthTokenWithNullPrincipal() {
+        InternalAuthToken token = (InternalAuthToken) AuthTokens.custom(null, "credentials", "realm", "scheme");
+
+        assertTrue(token.toMap().containsKey(InternalAuthToken.PRINCIPAL_KEY));
     }
 
     @Test
-    void shouldNotAllowCustomAuthTokenWithNullCredentials() {
-        NullPointerException e =
-                assertThrows(NullPointerException.class, () -> AuthTokens.custom("principal", null, "realm", "scheme"));
-        assertEquals("Credentials can't be null", e.getMessage());
+    void shouldAllowCustomAuthTokenWithNullCredentials() {
+        InternalAuthToken token = (InternalAuthToken) AuthTokens.custom("principal", null, "realm", "scheme");
+
+        assertFalse(token.toMap().containsKey(InternalAuthToken.CREDENTIALS_KEY));
     }
 
     @Test
