@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -197,7 +198,8 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
      * 64-bit precision. This is why these types return java {@link Long} and
      * {@link Double}, respectively.
      *
-     * @return the value as a Java Object
+     * @return the value as a Java Object.
+     * @throws DateTimeException if zone information supplied by server is not supported by driver runtime. Applicable to datetime values only.
      */
     Object asObject();
 
@@ -416,12 +418,14 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     /**
      * @return the value as a {@link java.time.OffsetDateTime}, if possible.
      * @throws Uncoercible if value types are incompatible.
+     * @throws DateTimeException if zone information supplied by server is not supported by driver runtime.
      */
     OffsetDateTime asOffsetDateTime();
 
     /**
      * @return the value as a {@link ZonedDateTime}, if possible.
      * @throws Uncoercible if value types are incompatible.
+     * @throws DateTimeException if zone information supplied by server is not supported by driver runtime.
      */
     ZonedDateTime asZonedDateTime();
 
