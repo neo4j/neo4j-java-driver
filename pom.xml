@@ -53,7 +53,7 @@
     <svm.version>21.3.2.1</svm.version>
     <micrometer.version>1.9.1</micrometer.version>
     <testcontainers.version>1.17.3</testcontainers.version>
-    <build-resources.version>4.4.8</build-resources.version>
+    <build-resources.version>4.4.9</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
@@ -443,7 +443,7 @@
             <failIfDisliked>true</failIfDisliked>
             <failIfMissing>true</failIfMissing>
             <plainTextReport>true</plainTextReport>
-            <prependText>${rootDir}/build/notice-asl-prefix.txt</prependText>
+            <prependText>licensing/notice-asl-prefix.txt</prependText>
             <excludedGroups>
               ^((org.neo4j.driver){1})$
             </excludedGroups>
