@@ -12,4 +12,4 @@ def run(args):
 
 
 if __name__ == "__main__" and "TEST_SKIP_BUILD" not in os.environ:
-    run(["mvn", "clean", "install", "-P", "!determine-revision", "-DskipTests"])
+    run(["mvn", "--show-version", "--batch-mode", "clean", "install", "-P", "!determine-revision", "-DskipTests"])
