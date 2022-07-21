@@ -24,6 +24,7 @@ import static org.neo4j.driver.Values.point;
 import static org.neo4j.driver.Values.value;
 
 import java.io.IOException;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ProtocolException;
@@ -54,12 +56,12 @@ import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
+import org.neo4j.driver.internal.value.UnsupportedDateTimeValue;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
 
 public class CommonValueUnpacker implements ValueUnpacker {
-
     public static final byte DATE = 'D';
     public static final int DATE_STRUCT_SIZE = 1;
 
@@ -189,28 +191,28 @@ public class CommonValueUnpacker implements ValueUnpacker {
             case DATE_TIME_WITH_ZONE_OFFSET:
                 if (!dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
-                    return unpackDateTimeWithZoneOffset();
+                    return unpackDateTime(ZoneMode.OFFSET, BaselineMode.LEGACY);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
             case DATE_TIME_WITH_ZONE_OFFSET_UTC:
                 if (dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
-                    return unpackDateTimeUtcWithZoneOffset();
+                    return unpackDateTime(ZoneMode.OFFSET, BaselineMode.UTC);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
             case DATE_TIME_WITH_ZONE_ID:
                 if (!dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
-                    return unpackDateTimeWithZoneId();
+                    return unpackDateTime(ZoneMode.ZONE_ID, BaselineMode.LEGACY);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
             case DATE_TIME_WITH_ZONE_ID_UTC:
                 if (dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
-                    return unpackDateTimeUtcWithZoneId();
+                    return unpackDateTime(ZoneMode.ZONE_ID, BaselineMode.UTC);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
@@ -374,34 +376,26 @@ public class CommonValueUnpacker implements ValueUnpacker {
         return value(LocalDateTime.ofEpochSecond(epochSecondUtc, nano, UTC));
     }
 
-    private Value unpackDateTimeWithZoneOffset() throws IOException {
-        long epochSecondLocal = unpacker.unpackLong();
-        int nano = Math.toIntExact(unpacker.unpackLong());
-        int offsetSeconds = Math.toIntExact(unpacker.unpackLong());
-        return value(newZonedDateTime(epochSecondLocal, nano, ZoneOffset.ofTotalSeconds(offsetSeconds)));
-    }
-
-    private Value unpackDateTimeUtcWithZoneOffset() throws IOException {
-        long epochSecondLocal = unpacker.unpackLong();
-        int nano = Math.toIntExact(unpacker.unpackLong());
-        int offsetSeconds = Math.toIntExact(unpacker.unpackLong());
-        ZoneOffset offset = ZoneOffset.ofTotalSeconds(offsetSeconds);
-        return value(newZonedDateTimeUsingUtcBaseline(epochSecondLocal, nano, offset));
-    }
-
-    private Value unpackDateTimeWithZoneId() throws IOException {
-        long epochSecondLocal = unpacker.unpackLong();
-        int nano = Math.toIntExact(unpacker.unpackLong());
-        String zoneIdString = unpacker.unpackString();
-        return value(newZonedDateTime(epochSecondLocal, nano, ZoneId.of(zoneIdString)));
-    }
-
-    private Value unpackDateTimeUtcWithZoneId() throws IOException {
-        long epochSecondLocal = unpacker.unpackLong();
-        int nano = Math.toIntExact(unpacker.unpackLong());
-        String zoneIdString = unpacker.unpackString();
-        ZoneId zoneId = ZoneId.of(zoneIdString);
-        return value(newZonedDateTimeUsingUtcBaseline(epochSecondLocal, nano, zoneId));
+    private Value unpackDateTime(ZoneMode unpackOffset, BaselineMode useUtcBaseline) throws IOException {
+        var epochSecondLocal = unpacker.unpackLong();
+        var nano = Math.toIntExact(unpacker.unpackLong());
+        Supplier<ZoneId> zoneIdSupplier;
+        if (unpackOffset == ZoneMode.OFFSET) {
+            var offsetSeconds = Math.toIntExact(unpacker.unpackLong());
+            zoneIdSupplier = () -> ZoneOffset.ofTotalSeconds(offsetSeconds);
+        } else {
+            var zoneIdString = unpacker.unpackString();
+            zoneIdSupplier = () -> ZoneId.of(zoneIdString);
+        }
+        ZoneId zoneId;
+        try {
+            zoneId = zoneIdSupplier.get();
+        } catch (DateTimeException e) {
+            return new UnsupportedDateTimeValue(e);
+        }
+        return useUtcBaseline == BaselineMode.UTC
+                ? value(newZonedDateTimeUsingUtcBaseline(epochSecondLocal, nano, zoneId))
+                : value(newZonedDateTime(epochSecondLocal, nano, zoneId));
     }
 
     private Value unpackDuration() throws IOException {
@@ -449,5 +443,15 @@ public class CommonValueUnpacker implements ValueUnpacker {
 
     protected int getRelationshipFields() {
         return RELATIONSHIP_FIELDS;
+    }
+
+    private enum ZoneMode {
+        OFFSET,
+        ZONE_ID
+    }
+
+    private enum BaselineMode {
+        UTC,
+        LEGACY
     }
 }

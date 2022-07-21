@@ -22,14 +22,17 @@ import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.messages.AbstractResultNext;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.Value;
 
 @Setter
 @Getter
 public class ResultNext extends AbstractResultNext {
+    private static final String DATE_TIME = "DATE_TIME";
     private ResultNextBody data;
 
     @Override
     protected neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponse(Record record) {
+        record.values().stream().filter(v -> DATE_TIME.equals(v.type().name())).forEach(Value::asObject);
         return neo4j.org.testkit.backend.messages.responses.Record.builder()
                 .data(neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()
                         .values(record)
