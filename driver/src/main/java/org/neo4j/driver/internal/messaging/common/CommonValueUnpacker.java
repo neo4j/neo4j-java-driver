@@ -62,7 +62,6 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
 
 public class CommonValueUnpacker implements ValueUnpacker {
-
     public static final byte DATE = 'D';
     public static final int DATE_STRUCT_SIZE = 1;
 
@@ -192,28 +191,28 @@ public class CommonValueUnpacker implements ValueUnpacker {
             case DATE_TIME_WITH_ZONE_OFFSET:
                 if (!dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
-                    return unpackDateTime(true, false);
+                    return unpackDateTime(ZoneMode.OFFSET, BaselineMode.LEGACY);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
             case DATE_TIME_WITH_ZONE_OFFSET_UTC:
                 if (dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
-                    return unpackDateTime(true, true);
+                    return unpackDateTime(ZoneMode.OFFSET, BaselineMode.UTC);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
             case DATE_TIME_WITH_ZONE_ID:
                 if (!dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
-                    return unpackDateTime(false, false);
+                    return unpackDateTime(ZoneMode.ZONE_ID, BaselineMode.LEGACY);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
             case DATE_TIME_WITH_ZONE_ID_UTC:
                 if (dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
-                    return unpackDateTime(false, true);
+                    return unpackDateTime(ZoneMode.ZONE_ID, BaselineMode.UTC);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
@@ -377,11 +376,11 @@ public class CommonValueUnpacker implements ValueUnpacker {
         return value(LocalDateTime.ofEpochSecond(epochSecondUtc, nano, UTC));
     }
 
-    private Value unpackDateTime(boolean unpackOffset, boolean useUtcBaseline) throws IOException {
+    private Value unpackDateTime(ZoneMode unpackOffset, BaselineMode useUtcBaseline) throws IOException {
         var epochSecondLocal = unpacker.unpackLong();
         var nano = Math.toIntExact(unpacker.unpackLong());
         Supplier<ZoneId> zoneIdSupplier;
-        if (unpackOffset) {
+        if (unpackOffset == ZoneMode.OFFSET) {
             var offsetSeconds = Math.toIntExact(unpacker.unpackLong());
             zoneIdSupplier = () -> ZoneOffset.ofTotalSeconds(offsetSeconds);
         } else {
@@ -394,7 +393,7 @@ public class CommonValueUnpacker implements ValueUnpacker {
         } catch (DateTimeException e) {
             return new UnsupportedDateTimeValue(e);
         }
-        return useUtcBaseline
+        return useUtcBaseline == BaselineMode.UTC
                 ? value(newZonedDateTimeUsingUtcBaseline(epochSecondLocal, nano, zoneId))
                 : value(newZonedDateTime(epochSecondLocal, nano, zoneId));
     }
@@ -444,5 +443,15 @@ public class CommonValueUnpacker implements ValueUnpacker {
 
     protected int getRelationshipFields() {
         return RELATIONSHIP_FIELDS;
+    }
+
+    private enum ZoneMode {
+        OFFSET,
+        ZONE_ID
+    }
+
+    private enum BaselineMode {
+        UTC,
+        LEGACY
     }
 }
