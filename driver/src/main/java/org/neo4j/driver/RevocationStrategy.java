@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver;
 
 public enum RevocationStrategy {
     /** Don't do any OCSP revocation checks, regardless whether there are stapled revocation statuses or not. */

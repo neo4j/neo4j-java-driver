@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.retry.RetrySettings.DEFAULT;
-import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
+import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 
 import io.netty.channel.Channel;
 import java.util.List;
@@ -50,9 +50,9 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
-import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.SessionExtension;
-import org.neo4j.driver.util.TestUtil;
+import org.neo4j.driver.testutil.ParallelizableIT;
+import org.neo4j.driver.testutil.SessionExtension;
+import org.neo4j.driver.testutil.TestUtil;
 
 @ParallelizableIT
 class TransactionIT {

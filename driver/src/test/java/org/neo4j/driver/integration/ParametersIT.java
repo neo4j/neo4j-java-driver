@@ -48,9 +48,9 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.SessionExtension;
-import org.neo4j.driver.util.TestUtil;
+import org.neo4j.driver.testutil.ParallelizableIT;
+import org.neo4j.driver.testutil.SessionExtension;
+import org.neo4j.driver.testutil.TestUtil;
 
 @ParallelizableIT
 class ParametersIT {

@@ -88,9 +88,9 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.testutil.DaemonThreadFactory;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Point;
-import org.neo4j.driver.util.DaemonThreadFactory;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 

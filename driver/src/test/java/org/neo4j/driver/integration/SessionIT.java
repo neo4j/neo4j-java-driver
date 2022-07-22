@@ -49,7 +49,7 @@ import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkIsNotEmp
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
+import static org.neo4j.driver.testutil.DaemonThreadFactory.daemon;
 
 import java.util.HashSet;
 import java.util.List;
@@ -93,9 +93,9 @@ import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.TestUtil;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
+import org.neo4j.driver.testutil.TestUtil;
 import reactor.test.StepVerifier;
 
 @ParallelizableIT

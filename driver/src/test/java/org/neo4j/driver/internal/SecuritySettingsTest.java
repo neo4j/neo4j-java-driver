@@ -22,9 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.RevocationStrategy.NO_CHECKS;
-import static org.neo4j.driver.internal.RevocationStrategy.STRICT;
-import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
+import static org.neo4j.driver.RevocationStrategy.NO_CHECKS;
+import static org.neo4j.driver.RevocationStrategy.STRICT;
+import static org.neo4j.driver.RevocationStrategy.VERIFY_IF_PRESENT;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +39,7 @@ import org.junit.platform.commons.support.ReflectionSupport;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.util.TestUtil;
+import org.neo4j.driver.testutil.TestUtil;
 
 class SecuritySettingsTest {
     private static Stream<String> selfSignedSchemes() {

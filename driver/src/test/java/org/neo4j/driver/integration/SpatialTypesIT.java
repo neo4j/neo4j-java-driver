@@ -34,9 +34,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.testutil.ParallelizableIT;
+import org.neo4j.driver.testutil.SessionExtension;
 import org.neo4j.driver.types.Point;
-import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.SessionExtension;
 
 @EnabledOnNeo4jWith(SPATIAL_TYPES)
 @ParallelizableIT

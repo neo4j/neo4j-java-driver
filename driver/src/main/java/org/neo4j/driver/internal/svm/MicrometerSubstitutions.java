@@ -33,7 +33,7 @@ import org.neo4j.driver.internal.util.Clock;
 final class Target_org_neo4j_driver_internal_DriverFactory {
 
     /**
-     * Substitutes metrics adatper in such a way that it falls back to off when Micrometer is not available.
+     * Substitutes metrics adapter in such a way that it falls back to off when Micrometer is not available.
      *
      * @param config Drivers config
      * @param clock Clock to use

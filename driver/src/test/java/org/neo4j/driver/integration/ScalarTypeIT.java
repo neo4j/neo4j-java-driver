@@ -42,8 +42,8 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.SessionExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
+import org.neo4j.driver.testutil.SessionExtension;
 
 @ParallelizableIT
 class ScalarTypeIT {

@@ -65,8 +65,8 @@ import org.neo4j.driver.internal.util.FailingMessageFormat;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactoryWithFailingMessageFormat;
-import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.SessionExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
+import org.neo4j.driver.testutil.SessionExtension;
 
 @ParallelizableIT
 class ErrorIT {

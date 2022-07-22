@@ -41,9 +41,9 @@ import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAft
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
-import static org.neo4j.driver.util.TestUtil.await;
-import static org.neo4j.driver.util.TestUtil.awaitAll;
+import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
+import static org.neo4j.driver.testutil.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.awaitAll;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -81,9 +81,9 @@ import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
 import org.neo4j.driver.types.Node;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
 
 @ParallelizableIT
 class AsyncSessionIT {

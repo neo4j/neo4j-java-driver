@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.InternalBookmark.parse;
-import static org.neo4j.driver.util.TestUtil.asSet;
+import static org.neo4j.driver.testutil.TestUtil.asSet;
 
 import java.util.Arrays;
 import java.util.Set;

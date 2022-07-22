@@ -21,7 +21,7 @@ package org.neo4j.driver.stress;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.GraphDatabase.driver;
-import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
+import static org.neo4j.driver.testutil.DaemonThreadFactory.daemon;
 
 import java.util.List;
 import java.util.Random;
@@ -39,8 +39,8 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
 
 @ParallelizableIT
 class SessionPoolingStressIT {

@@ -19,7 +19,7 @@
 package org.neo4j.driver.integration.async;
 
 import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
+import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
@@ -28,8 +28,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

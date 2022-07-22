@@ -37,10 +37,10 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.Scheme;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.Neo4jSettings;
-import org.neo4j.driver.util.Neo4jSettings.BoltTlsLevel;
-import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.Neo4jSettings;
+import org.neo4j.driver.testutil.Neo4jSettings.BoltTlsLevel;
+import org.neo4j.driver.testutil.ParallelizableIT;
 
 @ParallelizableIT
 class EncryptionIT {

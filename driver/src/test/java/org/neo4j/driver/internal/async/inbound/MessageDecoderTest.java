@@ -22,7 +22,7 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.util.TestUtil.assertByteBufEquals;
+import static org.neo4j.driver.testutil.TestUtil.assertByteBufEquals;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.AfterEach;

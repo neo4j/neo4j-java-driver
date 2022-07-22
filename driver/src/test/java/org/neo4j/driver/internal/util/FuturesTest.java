@@ -27,8 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
-import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
-import static org.neo4j.driver.util.TestUtil.sleep;
+import static org.neo4j.driver.testutil.DaemonThreadFactory.daemon;
+import static org.neo4j.driver.testutil.TestUtil.sleep;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.DefaultPromise;

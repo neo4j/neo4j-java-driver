@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.security;
 
 import javax.net.ssl.SSLContext;
-import org.neo4j.driver.internal.RevocationStrategy;
+import org.neo4j.driver.RevocationStrategy;
 
 /**
  * A SecurityPlan consists of encryption and trust details.

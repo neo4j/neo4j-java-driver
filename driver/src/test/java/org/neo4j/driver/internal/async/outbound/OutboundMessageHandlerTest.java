@@ -28,7 +28,7 @@ import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
-import static org.neo4j.driver.util.TestUtil.assertByteBufContains;
+import static org.neo4j.driver.testutil.TestUtil.assertByteBufContains;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;

@@ -24,7 +24,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
-import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
@@ -33,8 +33,8 @@ import org.junit.jupiter.api.function.Executable;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
-import org.neo4j.driver.util.DriverExtension;
-import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.testutil.DriverExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
 
 @DisabledOnNeo4jWith(BOLT_V3)
 @ParallelizableIT
