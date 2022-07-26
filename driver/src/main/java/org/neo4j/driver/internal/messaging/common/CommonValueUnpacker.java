@@ -277,6 +277,7 @@ public class CommonValueUnpacker implements ValueUnpacker {
         return new InternalNode(urn, String.valueOf(urn), labels, props);
     }
 
+    @SuppressWarnings("deprecation")
     protected Value unpackPath() throws IOException {
         // List of unique nodes
         Node[] uniqNodes = new Node[(int) unpacker.unpackListHeader()];

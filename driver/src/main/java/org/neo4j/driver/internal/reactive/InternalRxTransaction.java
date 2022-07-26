@@ -26,6 +26,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
 
+@Deprecated
 public class InternalRxTransaction extends AbstractReactiveTransaction implements RxTransaction {
     public InternalRxTransaction(UnmanagedTransaction tx) {
         super(tx);

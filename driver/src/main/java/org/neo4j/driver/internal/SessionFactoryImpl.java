@@ -67,6 +67,7 @@ public class SessionFactoryImpl implements SessionFactory {
         if (bookmarks != null) {
             for (Bookmark bookmark : bookmarks) {
                 if (bookmark != null) {
+                    @SuppressWarnings("deprecation")
                     Set<String> values = bookmark.values();
                     int size = values.size();
                     if (size == 1) {

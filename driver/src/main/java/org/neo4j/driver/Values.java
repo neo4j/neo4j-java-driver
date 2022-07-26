@@ -570,10 +570,21 @@ public abstract class Values {
     /**
      * Converts values to {@link Long entity id}.
      *
+     * @deprecated superseded by {@link #ofEntityElementId()}.
      * @return a function that returns the id an entity {@link Value}
      */
+    @Deprecated
     public static Function<Value, Long> ofEntityId() {
         return val -> val.asEntity().id();
+    }
+
+    /**
+     * Converts values to {@link String element id}.
+     *
+     * @return a function that returns the element id of an entity {@link Value}
+     */
+    public static Function<Value, String> ofEntityElementId() {
+        return val -> val.asEntity().elementId();
     }
 
     /**

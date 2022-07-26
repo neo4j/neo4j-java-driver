@@ -18,12 +18,17 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * A <em>DatabaseException</em> indicates that there is a problem within the underlying database.
  * The error code provided can be used to determine further detail for the problem.
  * @since 1.0
  */
 public class DatabaseException extends Neo4jException {
+    @Serial
+    private static final long serialVersionUID = 4591061578560201032L;
+
     public DatabaseException(String code, String message) {
         super(code, message);
     }

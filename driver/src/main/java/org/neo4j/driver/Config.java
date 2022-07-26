@@ -22,6 +22,7 @@ import static java.lang.String.format;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 import java.io.File;
+import java.io.Serial;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -70,6 +71,7 @@ import org.neo4j.driver.util.Immutable;
  */
 @Immutable
 public class Config implements Serializable {
+    @Serial
     private static final long serialVersionUID = -4496545746399601108L;
 
     private static final Config EMPTY = builder().build();

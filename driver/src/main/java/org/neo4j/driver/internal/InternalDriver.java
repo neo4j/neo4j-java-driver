@@ -72,6 +72,7 @@ public class InternalDriver implements Driver {
     }
 
     @Override
+    @Deprecated
     public RxSession rxSession(SessionConfig sessionConfig) {
         return new InternalRxSession(newSession(sessionConfig));
     }

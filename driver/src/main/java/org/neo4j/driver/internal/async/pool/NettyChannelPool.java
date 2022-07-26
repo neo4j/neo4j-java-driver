@@ -74,7 +74,7 @@ public class NettyChannelPool implements ExtendedChannelPool {
                         RELEASE_HEALTH_CHECK) {
                     @Override
                     protected ChannelFuture connectChannel(Bootstrap bootstrap) {
-                        ListenerEvent creatingEvent = handler.channelCreating(id);
+                        ListenerEvent<?> creatingEvent = handler.channelCreating(id);
                         ChannelFuture connectedChannelFuture = connector.connect(address, bootstrap);
                         Channel channel = connectedChannelFuture.channel();
                         // This ensures that handler.channelCreated is called before SimpleChannelPool calls

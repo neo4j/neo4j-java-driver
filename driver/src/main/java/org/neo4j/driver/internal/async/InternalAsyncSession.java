@@ -83,11 +83,13 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     @Override
+    @Deprecated
     public <T> CompletionStage<T> readTransactionAsync(AsyncTransactionWork<CompletionStage<T>> work) {
         return readTransactionAsync(work, TransactionConfig.empty());
     }
 
     @Override
+    @Deprecated
     public <T> CompletionStage<T> readTransactionAsync(
             AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config) {
         return transactionAsync(AccessMode.READ, work, config);
@@ -100,11 +102,13 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     @Override
+    @Deprecated
     public <T> CompletionStage<T> writeTransactionAsync(AsyncTransactionWork<CompletionStage<T>> work) {
         return writeTransactionAsync(work, TransactionConfig.empty());
     }
 
     @Override
+    @Deprecated
     public <T> CompletionStage<T> writeTransactionAsync(
             AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config) {
         return transactionAsync(AccessMode.WRITE, work, config);
@@ -117,6 +121,7 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     @Override
+    @Deprecated
     public Bookmark lastBookmark() {
         return InternalBookmark.from(session.lastBookmarks());
     }
@@ -127,7 +132,9 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     private <T> CompletionStage<T> transactionAsync(
-            AccessMode mode, AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config) {
+            AccessMode mode,
+            @SuppressWarnings("deprecation") AsyncTransactionWork<CompletionStage<T>> work,
+            TransactionConfig config) {
         return session.retryLogic().retryAsync(() -> {
             CompletableFuture<T> resultFuture = new CompletableFuture<>();
             CompletionStage<UnmanagedTransaction> txFuture = session.beginTransactionAsync(mode, config);
@@ -146,7 +153,9 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     private <T> void executeWork(
-            CompletableFuture<T> resultFuture, UnmanagedTransaction tx, AsyncTransactionWork<CompletionStage<T>> work) {
+            CompletableFuture<T> resultFuture,
+            UnmanagedTransaction tx,
+            @SuppressWarnings("deprecation") AsyncTransactionWork<CompletionStage<T>> work) {
         CompletionStage<T> workFuture = safeExecuteWork(tx, work);
         workFuture.whenComplete((result, completionError) -> {
             Throwable error = Futures.completionExceptionCause(completionError);
@@ -159,7 +168,7 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     private <T> CompletionStage<T> safeExecuteWork(
-            UnmanagedTransaction tx, AsyncTransactionWork<CompletionStage<T>> work) {
+            UnmanagedTransaction tx, @SuppressWarnings("deprecation") AsyncTransactionWork<CompletionStage<T>> work) {
         // given work might fail in both async and sync way
         // async failure will result in a failed future being returned
         // sync failure will result in an exception being thrown

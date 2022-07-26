@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * Failed to authenticate the driver to the server due to bad credentials provided.
  * When this error happens, the error could be recovered by closing the current driver and restart a new driver with
@@ -26,6 +28,9 @@ package org.neo4j.driver.exceptions;
  * @since 1.1
  */
 public class AuthenticationException extends SecurityException {
+    @Serial
+    private static final long serialVersionUID = 1324352999966240271L;
+
     public AuthenticationException(String code, String message) {
         super(code, message);
     }

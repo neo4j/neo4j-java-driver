@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * An error has happened while getting routing table with a remote server.
  * While this error is not fatal and we might be able to recover if we continue trying on another server.
@@ -27,6 +29,9 @@ package org.neo4j.driver.exceptions;
  * If you see this error in your logs, it is safe to ignore if your cluster is temporarily changing structure during that time.
  */
 public class DiscoveryException extends Neo4jException {
+    @Serial
+    private static final long serialVersionUID = 6711564351333659090L;
+
     public DiscoveryException(String message, Throwable cause) {
         super(message, cause);
     }

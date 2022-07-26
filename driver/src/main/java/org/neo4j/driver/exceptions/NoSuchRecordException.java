@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
 import java.util.NoSuchElementException;
 
 /**
@@ -28,6 +29,7 @@ import java.util.NoSuchElementException;
  * @since 1.0
  */
 public class NoSuchRecordException extends NoSuchElementException {
+    @Serial
     private static final long serialVersionUID = 9091962868264042491L;
 
     public NoSuchRecordException(String message) {

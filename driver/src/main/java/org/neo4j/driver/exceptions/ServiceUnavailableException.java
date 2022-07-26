@@ -18,12 +18,17 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * An <em>ServiceUnavailableException</em> indicates that the driver cannot communicate with the cluster.
  *
  * @since 1.1
  */
 public class ServiceUnavailableException extends Neo4jException implements RetryableException {
+    @Serial
+    private static final long serialVersionUID = 8316077882191697974L;
+
     public ServiceUnavailableException(String message) {
         super(message);
     }

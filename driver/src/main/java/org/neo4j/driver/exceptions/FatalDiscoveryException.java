@@ -18,12 +18,17 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * This error indicate a fatal problem to obtain routing tables such as the routing table for a specified database does not exist.
  * This exception should not be retried.
  * @since 4.0
  */
 public class FatalDiscoveryException extends ClientException {
+    @Serial
+    private static final long serialVersionUID = -2831830142554054420L;
+
     public FatalDiscoveryException(String message) {
         super(message);
     }

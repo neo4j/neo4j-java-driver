@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * A <em>TransientException</em> signals a temporary fault that may be worked around by retrying. The error code provided can be used to determine further
  * detail for the problem.
@@ -25,6 +27,9 @@ package org.neo4j.driver.exceptions;
  * @since 1.0
  */
 public class TransientException extends Neo4jException implements RetryableException {
+    @Serial
+    private static final long serialVersionUID = -2744576986358599923L;
+
     public TransientException(String code, String message) {
         super(code, message);
     }

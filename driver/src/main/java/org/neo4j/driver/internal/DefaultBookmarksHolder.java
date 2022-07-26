@@ -43,6 +43,7 @@ public class DefaultBookmarksHolder implements BookmarksHolder {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void setBookmark(Bookmark bookmark) {
         if (bookmark != null && !bookmark.isEmpty()) {
             bookmarks = Collections.singleton(bookmark);

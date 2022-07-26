@@ -18,10 +18,15 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * Thrown if the remote server cannot be verified as Neo4j.
  */
 public class UntrustedServerException extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID = 3196604305660766197L;
+
     public UntrustedServerException(String message) {
         super(message);
     }

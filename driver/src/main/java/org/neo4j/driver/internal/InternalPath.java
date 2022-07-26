@@ -82,6 +82,7 @@ public class InternalPath implements Path, AsValue {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public String toString() {
             return String.format(
                     relationship.startNodeId() == start.id() ? "(%s)-[%s:%s]->(%s)" : "(%s)<-[%s:%s]-(%s)",
@@ -92,6 +93,7 @@ public class InternalPath implements Path, AsValue {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private static boolean isEndpoint(Node node, Relationship relationship) {
         return node.id() == relationship.startNodeId() || node.id() == relationship.endNodeId();
     }

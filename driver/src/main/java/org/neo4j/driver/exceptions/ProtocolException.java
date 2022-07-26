@@ -18,11 +18,16 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * A signal that the contract for client-server communication has broken down.
  * The user should contact support and cannot resolve this his or herself.
  */
 public class ProtocolException extends Neo4jException {
+    @Serial
+    private static final long serialVersionUID = -6806924452045883275L;
+
     private static final String CODE = "Protocol violation: ";
 
     public ProtocolException(String message) {

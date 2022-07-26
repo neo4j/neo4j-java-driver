@@ -18,10 +18,15 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * This exception indicates a user is nesting new transaction with an on-going transaction (unmanaged and/or auto-commit).
  */
 public class TransactionNestingException extends ClientException {
+    @Serial
+    private static final long serialVersionUID = -8264319542004457065L;
+
     public TransactionNestingException(String message) {
         super(message);
     }

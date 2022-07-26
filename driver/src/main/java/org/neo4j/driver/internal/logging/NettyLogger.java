@@ -21,11 +21,15 @@ package org.neo4j.driver.internal.logging;
 import static java.lang.String.format;
 
 import io.netty.util.internal.logging.AbstractInternalLogger;
+import java.io.Serial;
 import java.util.regex.Pattern;
 import org.neo4j.driver.Logger;
 
 public class NettyLogger extends AbstractInternalLogger {
-    private Logger log;
+    @Serial
+    private static final long serialVersionUID = -1466889786216191159L;
+
+    private final Logger log;
     private static final Pattern PLACE_HOLDER_PATTERN = Pattern.compile("\\{\\}");
 
     public NettyLogger(String name, Logger log) {

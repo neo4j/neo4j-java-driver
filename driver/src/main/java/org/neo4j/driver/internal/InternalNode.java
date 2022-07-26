@@ -60,6 +60,7 @@ public class InternalNode extends InternalEntity implements Node {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public String toString() {
         return String.format("node<%s>", id());
     }

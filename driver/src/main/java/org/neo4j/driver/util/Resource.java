@@ -31,4 +31,7 @@ public interface Resource extends AutoCloseable {
      * @return true if the resource is open
      */
     boolean isOpen();
+
+    @Override
+    void close() throws RuntimeException;
 }

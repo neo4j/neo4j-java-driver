@@ -75,6 +75,7 @@ public class InternalRelationship extends InternalEntity implements Relationship
     }
 
     @Override
+    @Deprecated
     public long startNodeId() {
         return start;
     }
@@ -85,6 +86,7 @@ public class InternalRelationship extends InternalEntity implements Relationship
     }
 
     @Override
+    @Deprecated
     public long endNodeId() {
         return end;
     }
@@ -105,6 +107,7 @@ public class InternalRelationship extends InternalEntity implements Relationship
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public String toString() {
         return String.format("relationship<%s>", id());
     }

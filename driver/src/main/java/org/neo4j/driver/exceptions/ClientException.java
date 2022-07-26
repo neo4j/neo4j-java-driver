@@ -18,12 +18,17 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * A <em>ClientException</em> indicates that the client has carried out an operation incorrectly.
  * The error code provided can be used to determine further detail for the problem.
  * @since 1.0
  */
 public class ClientException extends Neo4jException {
+    @Serial
+    private static final long serialVersionUID = -6732913155228185887L;
+
     public ClientException(String message) {
         super(message);
     }

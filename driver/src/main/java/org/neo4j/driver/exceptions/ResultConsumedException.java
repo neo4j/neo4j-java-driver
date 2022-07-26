@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
 import org.neo4j.driver.QueryRunner;
 
 /**
@@ -26,6 +27,9 @@ import org.neo4j.driver.QueryRunner;
  * the {@link QueryRunner} where the resources are created has already been closed.
  */
 public class ResultConsumedException extends ClientException {
+    @Serial
+    private static final long serialVersionUID = 944999841543178703L;
+
     public ResultConsumedException(String message) {
         super(message);
     }

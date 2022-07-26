@@ -18,12 +18,15 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * This is the base class for Neo4j exceptions.
  *
  * @since 1.0
  */
 public class Neo4jException extends RuntimeException {
+    @Serial
     private static final long serialVersionUID = -80579062276712566L;
 
     private final String code;
