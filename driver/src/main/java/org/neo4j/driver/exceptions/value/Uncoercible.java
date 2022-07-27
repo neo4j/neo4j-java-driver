@@ -20,11 +20,14 @@ package org.neo4j.driver.exceptions.value;
 
 import static java.lang.String.format;
 
+import java.io.Serial;
+
 /**
  * A <em>Uncoercible</em> exception indicates that the conversion cannot be achieved.
  * @since 1.0
  */
 public class Uncoercible extends ValueException {
+    @Serial
     private static final long serialVersionUID = -6259981390929065201L;
 
     public Uncoercible(String sourceTypeName, String destinationTypeName) {

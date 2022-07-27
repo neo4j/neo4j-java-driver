@@ -1,4 +1,4 @@
-FROM maven:3.8.6-openjdk-18-slim
+FROM maven:3.8.5-openjdk-17-slim
 
 RUN apt-get --quiet --quiet update \
     && apt-get --quiet --quiet install -y bash python3 \

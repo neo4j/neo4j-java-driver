@@ -53,6 +53,7 @@ public class LeakLoggingNetworkSession extends NetworkSession {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     protected void finalize() throws Throwable {
         logLeakIfNeeded();
         super.finalize();

@@ -132,6 +132,7 @@ public class ValueUnpackerV5 extends CommonValueUnpacker {
         return new PathValue(new InternalPath(Arrays.asList(segments), Arrays.asList(nodes), Arrays.asList(rels)));
     }
 
+    @SuppressWarnings("deprecation")
     private void setStartAndEnd(InternalRelationship rel, InternalNode start, InternalNode end) {
         rel.setStartAndEnd(start.id(), start.elementId(), end.id(), end.elementId());
     }

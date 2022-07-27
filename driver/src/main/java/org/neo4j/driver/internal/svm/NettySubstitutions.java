@@ -131,7 +131,7 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_Alp
     public SSLEngine wrapSslEngine(
             SSLEngine engine,
             ByteBufAllocator alloc,
-            JdkApplicationProtocolNegotiator applicationNegotiator,
+            @SuppressWarnings("deprecation") JdkApplicationProtocolNegotiator applicationNegotiator,
             boolean isServer) {
         return (SSLEngine)
                 (Object) new Target_io_netty_handler_ssl_JdkAlpnSslEngine(engine, applicationNegotiator, isServer);
@@ -146,7 +146,7 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_Alp
     public SSLEngine wrapSslEngine(
             SSLEngine engine,
             ByteBufAllocator alloc,
-            JdkApplicationProtocolNegotiator applicationNegotiator,
+            @SuppressWarnings("deprecation") JdkApplicationProtocolNegotiator applicationNegotiator,
             boolean isServer) {
         if (Target_io_netty_handler_ssl_JettyAlpnSslEngine.isAvailable()) {
             return isServer
@@ -170,14 +170,14 @@ final class Target_io_netty_handler_ssl_JettyAlpnSslEngine {
     @Substitute
     @SuppressWarnings("deprecation")
     static Target_io_netty_handler_ssl_JettyAlpnSslEngine newClientEngine(
-            SSLEngine engine, JdkApplicationProtocolNegotiator applicationNegotiator) {
+            SSLEngine engine, @SuppressWarnings("deprecation") JdkApplicationProtocolNegotiator applicationNegotiator) {
         return null;
     }
 
     @Substitute
     @SuppressWarnings("deprecation")
     static Target_io_netty_handler_ssl_JettyAlpnSslEngine newServerEngine(
-            SSLEngine engine, JdkApplicationProtocolNegotiator applicationNegotiator) {
+            SSLEngine engine, @SuppressWarnings("deprecation") JdkApplicationProtocolNegotiator applicationNegotiator) {
         return null;
     }
 }
@@ -189,7 +189,7 @@ final class Target_io_netty_handler_ssl_JdkAlpnSslEngine {
     @SuppressWarnings("deprecation")
     Target_io_netty_handler_ssl_JdkAlpnSslEngine(
             final SSLEngine engine,
-            final JdkApplicationProtocolNegotiator applicationNegotiator,
+            final @SuppressWarnings("deprecation") JdkApplicationProtocolNegotiator applicationNegotiator,
             final boolean isServer) {}
 }
 
@@ -197,6 +197,7 @@ final class Target_io_netty_handler_ssl_JdkAlpnSslEngine {
 final class Target_io_netty_handler_ssl_SslContext {
 
     @Substitute
+    @SafeVarargs
     static SslContext newServerContextInternal(
             SslProvider provider,
             Provider sslContextProvider,
@@ -242,6 +243,7 @@ final class Target_io_netty_handler_ssl_SslContext {
     }
 
     @Substitute
+    @SafeVarargs
     static SslContext newClientContextInternal(
             SslProvider provider,
             Provider sslContextProvider,
@@ -293,6 +295,7 @@ final class Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator 
 final class Target_io_netty_handler_ssl_JdkSslContext {
 
     @Substitute
+    @SuppressWarnings("deprecation")
     static JdkApplicationProtocolNegotiator toNegotiator(ApplicationProtocolConfig config, boolean isServer) {
         if (config == null) {
             return (JdkApplicationProtocolNegotiator)
@@ -360,13 +363,14 @@ final class Target_io_netty_handler_ssl_JdkSslContext {
 final class Target_io_netty_bootstrap_AbstractBootstrap {
 
     @Alias
-    private ChannelFactory channelFactory;
+    @SuppressWarnings("deprecation")
+    private ChannelFactory<?> channelFactory;
 
     @Alias
     void init(Channel channel) throws Exception {}
 
     @Alias
-    public AbstractBootstrapConfig config() {
+    public AbstractBootstrapConfig<?, ?> config() {
         return null;
     }
 

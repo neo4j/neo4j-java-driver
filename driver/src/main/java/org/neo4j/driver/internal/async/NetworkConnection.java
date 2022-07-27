@@ -64,7 +64,7 @@ public class NetworkConnection implements Connection {
 
     private final AtomicReference<Status> status = new AtomicReference<>(Status.OPEN);
     private final MetricsListener metricsListener;
-    private final ListenerEvent inUseEvent;
+    private final ListenerEvent<?> inUseEvent;
 
     private final Long connectionReadTimeout;
     private ChannelHandler connectionReadTimeoutHandler;

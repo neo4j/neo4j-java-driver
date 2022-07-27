@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * The provided token has expired.
  * <p>
@@ -26,6 +28,9 @@ package org.neo4j.driver.exceptions;
  * Error code: Neo.ClientError.Security.TokenExpired
  */
 public class TokenExpiredException extends SecurityException {
+    @Serial
+    private static final long serialVersionUID = -5593851859769531234L;
+
     public TokenExpiredException(String code, String message) {
         super(code, message);
     }

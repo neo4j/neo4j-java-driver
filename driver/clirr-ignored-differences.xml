@@ -334,4 +334,10 @@
         <method>java.lang.String neo4jErrorCode()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/QueryRunner</className>
+        <differenceType>7012</differenceType>
+        <method>void close()</method>
+    </difference>
+
 </differences>

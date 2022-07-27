@@ -23,6 +23,7 @@ import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.HashMap;
@@ -63,6 +64,7 @@ import org.neo4j.driver.internal.util.Extract;
  * @see Session
  */
 public class TransactionConfig implements Serializable {
+    @Serial
     private static final long serialVersionUID = -7954949878657177280L;
 
     private static final TransactionConfig EMPTY = builder().build();

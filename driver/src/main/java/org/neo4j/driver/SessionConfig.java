@@ -21,6 +21,7 @@ package org.neo4j.driver;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.assertValidFetchSize;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
@@ -34,6 +35,7 @@ import org.reactivestreams.Subscription;
  * The session configurations used to configure a session.
  */
 public class SessionConfig implements Serializable {
+    @Serial
     private static final long serialVersionUID = 5773462156979050657L;
 
     private static final SessionConfig EMPTY = builder().build();

@@ -80,7 +80,7 @@ public class InternalPlan<T extends Plan> implements Plan {
             return false;
         }
 
-        InternalPlan that = (InternalPlan) o;
+        InternalPlan<?> that = (InternalPlan<?>) o;
 
         return operatorType.equals(that.operatorType)
                 && arguments.equals(that.arguments)

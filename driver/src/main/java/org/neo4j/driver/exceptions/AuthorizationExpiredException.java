@@ -18,12 +18,17 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * The authorization info maintained on the server has expired. The client should reconnect.
  * <p>
  * Error code: Neo.ClientError.Security.AuthorizationExpired
  */
 public class AuthorizationExpiredException extends SecurityException implements RetryableException {
+    @Serial
+    private static final long serialVersionUID = 5688002170978405558L;
+
     public static final String DESCRIPTION =
             "Authorization information kept on the server has expired, this connection is no longer valid.";
 

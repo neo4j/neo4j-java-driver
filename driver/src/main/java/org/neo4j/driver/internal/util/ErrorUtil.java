@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.util;
 
+import java.io.Serial;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
@@ -173,6 +174,9 @@ public final class ErrorUtil {
      * Used for blocking API calls that block on async API calls.
      */
     private static class InternalExceptionCause extends RuntimeException {
+        @Serial
+        private static final long serialVersionUID = -1988733529334222027L;
+
         InternalExceptionCause(StackTraceElement[] stackTrace) {
             setStackTrace(stackTrace);
         }

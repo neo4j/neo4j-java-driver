@@ -121,7 +121,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
         assertNotClosed();
         ExtendedChannelPool pool = getOrCreatePool(address);
 
-        ListenerEvent acquireEvent = metricsListener.createListenerEvent();
+        ListenerEvent<?> acquireEvent = metricsListener.createListenerEvent();
         metricsListener.beforeAcquiringOrCreating(pool.id(), acquireEvent);
         CompletionStage<Channel> channelFuture = pool.acquire();
 

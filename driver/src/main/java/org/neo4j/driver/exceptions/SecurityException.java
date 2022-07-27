@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.exceptions;
 
+import java.io.Serial;
+
 /**
  * Failed to communicate with the server due to security errors.
  * When this type of error happens, the security cause of the error should be fixed to ensure the safety of your data.
@@ -25,6 +27,9 @@ package org.neo4j.driver.exceptions;
  * @since 1.1
  */
 public class SecurityException extends ClientException {
+    @Serial
+    private static final long serialVersionUID = -5964665406806523214L;
+
     public SecurityException(String code, String message) {
         super(code, message);
     }

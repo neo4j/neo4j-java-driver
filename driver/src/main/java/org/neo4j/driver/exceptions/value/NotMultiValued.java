@@ -18,12 +18,15 @@
  */
 package org.neo4j.driver.exceptions.value;
 
+import java.io.Serial;
+
 /**
  * A <em>NotMultiValued</em> exception indicates that the value does not consist of multiple values, a.k.a. not a map
  * or array.
  * @since 1.0
  */
 public class NotMultiValued extends ValueException {
+    @Serial
     private static final long serialVersionUID = -7380569883011364090L;
 
     public NotMultiValued(String message) {

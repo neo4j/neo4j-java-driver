@@ -108,7 +108,7 @@ public class NettyChannelTracker implements ChannelPoolHandler {
         throw new IllegalStateException("Untraceable channel created.");
     }
 
-    public void channelCreated(Channel channel, ListenerEvent creatingEvent) {
+    public void channelCreated(Channel channel, ListenerEvent<?> creatingEvent) {
         // when it is created, we count it as idle as it has not been acquired out of the pool
         doInWriteLock(() -> incrementIdle(channel));
 
@@ -119,8 +119,8 @@ public class NettyChannelTracker implements ChannelPoolHandler {
                 channel.id(), channel.localAddress(), channel.remoteAddress());
     }
 
-    public ListenerEvent channelCreating(String poolId) {
-        ListenerEvent creatingEvent = metricsListener.createListenerEvent();
+    public ListenerEvent<?> channelCreating(String poolId) {
+        ListenerEvent<?> creatingEvent = metricsListener.createListenerEvent();
         metricsListener.beforeCreating(poolId, creatingEvent);
         return creatingEvent;
     }

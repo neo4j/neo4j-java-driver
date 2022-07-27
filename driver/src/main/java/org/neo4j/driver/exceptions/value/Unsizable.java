@@ -18,11 +18,14 @@
  */
 package org.neo4j.driver.exceptions.value;
 
+import java.io.Serial;
+
 /**
  * An <em>Unsizable</em> exception indicates that the value does not have a size.
  * @since 1.0
  */
 public class Unsizable extends ValueException {
+    @Serial
     private static final long serialVersionUID = 741487155344252339L;
 
     public Unsizable(String message) {

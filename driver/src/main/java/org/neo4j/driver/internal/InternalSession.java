@@ -96,11 +96,13 @@ public class InternalSession extends AbstractQueryRunner implements Session {
     }
 
     @Override
+    @Deprecated
     public <T> T readTransaction(TransactionWork<T> work) {
         return readTransaction(work, TransactionConfig.empty());
     }
 
     @Override
+    @Deprecated
     public <T> T readTransaction(TransactionWork<T> work, TransactionConfig config) {
         return transaction(AccessMode.READ, work, config);
     }
@@ -111,11 +113,13 @@ public class InternalSession extends AbstractQueryRunner implements Session {
     }
 
     @Override
+    @Deprecated
     public <T> T writeTransaction(TransactionWork<T> work) {
         return writeTransaction(work, TransactionConfig.empty());
     }
 
     @Override
+    @Deprecated
     public <T> T writeTransaction(TransactionWork<T> work, TransactionConfig config) {
         return transaction(AccessMode.WRITE, work, config);
     }
@@ -126,6 +130,7 @@ public class InternalSession extends AbstractQueryRunner implements Session {
     }
 
     @Override
+    @Deprecated
     public Bookmark lastBookmark() {
         return InternalBookmark.from(session.lastBookmarks());
     }
@@ -135,7 +140,8 @@ public class InternalSession extends AbstractQueryRunner implements Session {
         return session.lastBookmarks();
     }
 
-    private <T> T transaction(AccessMode mode, TransactionWork<T> work, TransactionConfig config) {
+    private <T> T transaction(
+            AccessMode mode, @SuppressWarnings("deprecation") TransactionWork<T> work, TransactionConfig config) {
         // use different code path compared to async so that work is executed in the caller thread
         // caller thread will also be the one who sleeps between retries;
         // it is unsafe to execute retries in the event loop threads because this can cause a deadlock

@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,6 +30,7 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.util.Iterables;
 
 public final class InternalBookmark implements Bookmark, Serializable {
+    @Serial
     private static final long serialVersionUID = 8196096018245038950L;
 
     private static final InternalBookmark EMPTY = new InternalBookmark(Collections.emptySet());
@@ -44,6 +46,7 @@ public final class InternalBookmark implements Bookmark, Serializable {
         return EMPTY;
     }
 
+    @SuppressWarnings("deprecation")
     public static Bookmark from(Iterable<Bookmark> bookmarks) {
         if (bookmarks == null) {
             return empty();
@@ -95,6 +98,7 @@ public final class InternalBookmark implements Bookmark, Serializable {
     }
 
     @Override
+    @Deprecated
     public boolean isEmpty() {
         return values.isEmpty();
     }
@@ -105,6 +109,7 @@ public final class InternalBookmark implements Bookmark, Serializable {
     }
 
     @Override
+    @Deprecated
     public Set<String> values() {
         return Collections.unmodifiableSet(values);
     }
