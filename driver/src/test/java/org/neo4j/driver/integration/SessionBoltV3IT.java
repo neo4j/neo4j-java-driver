@@ -189,6 +189,7 @@ class SessionBoltV3IT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldUseBookmarksForAutoCommitTransactions() {
         Session session = driver.session();
         Bookmark initialBookmark = session.lastBookmark();
@@ -213,6 +214,7 @@ class SessionBoltV3IT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldUseBookmarksForAutoCommitAndUnmanagedTransactions() {
         Session session = driver.session();
         Bookmark initialBookmark = session.lastBookmark();
@@ -243,6 +245,7 @@ class SessionBoltV3IT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldUseBookmarksForAutoCommitTransactionsAndTransactionFunctions() {
         Session session = driver.session();
         Bookmark initialBookmark = session.lastBookmark();
@@ -307,6 +310,7 @@ class SessionBoltV3IT {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private static void testTransactionMetadataWithAsyncTransactionFunctions(boolean read) {
         AsyncSession asyncSession = driver.asyncSession();
         Map<String, Object> metadata = new HashMap<>();
@@ -329,6 +333,7 @@ class SessionBoltV3IT {
         assertEquals(metadata, await(metadataFuture));
     }
 
+    @SuppressWarnings("deprecation")
     private static void testTransactionMetadataWithTransactionFunctions(boolean read) {
         Session session = driver.session();
         Map<String, Object> metadata = new HashMap<>();

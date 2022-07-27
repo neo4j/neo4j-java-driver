@@ -82,7 +82,7 @@ public class TestConnectionPool extends ConnectionPoolImpl {
                 setServerAddress(channel, address);
                 setPoolId(channel, id());
 
-                ListenerEvent event = nettyChannelTracker.channelCreating(id());
+                ListenerEvent<?> event = nettyChannelTracker.channelCreating(id());
                 nettyChannelTracker.channelCreated(channel, event);
                 nettyChannelTracker.channelAcquired(channel);
 

@@ -300,6 +300,7 @@ class ConnectionHandlingIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("deprecation")
     void sessionCloseShouldReleaseConnectionUsedBySessionRun() {
         RxSession session = driver.rxSession();
         RxResult res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
@@ -320,6 +321,7 @@ class ConnectionHandlingIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("deprecation")
     void resultRecordsShouldReleaseConnectionUsedBySessionRun() {
         RxSession session = driver.rxSession();
         RxResult res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
@@ -339,6 +341,7 @@ class ConnectionHandlingIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("deprecation")
     void resultSummaryShouldReleaseConnectionUsedBySessionRun() {
         RxSession session = driver.rxSession();
         RxResult res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
@@ -354,6 +357,7 @@ class ConnectionHandlingIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("deprecation")
     void txCommitShouldReleaseConnectionUsedByBeginTx() {
         AtomicReference<Connection> connection1Ref = new AtomicReference<>();
 
@@ -386,6 +390,7 @@ class ConnectionHandlingIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("deprecation")
     void txRollbackShouldReleaseConnectionUsedByBeginTx() {
         AtomicReference<Connection> connection1Ref = new AtomicReference<>();
 
@@ -418,6 +423,7 @@ class ConnectionHandlingIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("deprecation")
     void sessionCloseShouldReleaseConnectionUsedByBeginTx() {
         // Given
         RxSession session = driver.rxSession();

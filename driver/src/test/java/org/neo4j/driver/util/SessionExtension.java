@@ -78,11 +78,13 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public <T> T readTransaction(TransactionWork<T> work) {
         return realSession.readTransaction(work);
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public <T> T readTransaction(TransactionWork<T> work, TransactionConfig config) {
         return realSession.readTransaction(work, config);
     }
@@ -93,11 +95,13 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public <T> T writeTransaction(TransactionWork<T> work) {
         return realSession.writeTransaction(work);
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public <T> T writeTransaction(TransactionWork<T> work, TransactionConfig config) {
         return realSession.writeTransaction(work, config);
     }
@@ -108,11 +112,13 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Bookmark lastBookmark() {
         return realSession.lastBookmark();
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Set<Bookmark> lastBookmarks() {
         Bookmark bookmark = lastBookmark();
         if (bookmark == null || bookmark.isEmpty()) {

@@ -183,6 +183,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void readTxRetriedUntilSuccess() {
         int failures = 6;
         int retries = failures + 1;
@@ -202,6 +203,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void writeTxRetriedUntilSuccess() {
         int failures = 4;
         int retries = failures + 1;
@@ -223,6 +225,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void readTxRetriedUntilFailure() {
         int failures = 3;
         int retries = failures - 1;
@@ -237,6 +240,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void writeTxRetriedUntilFailure() {
         int failures = 8;
         int retries = failures - 1;
@@ -256,6 +260,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void writeTxRetryErrorsAreCollected() {
         try (Driver driver = newDriverWithLimitedRetries(5, TimeUnit.SECONDS)) {
             ThrowingWork work = newThrowingWorkSpy("CREATE (:Person {name: 'Ronan'})", Integer.MAX_VALUE);
@@ -277,6 +282,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void readTxRetryErrorsAreCollected() {
         try (Driver driver = newDriverWithLimitedRetries(4, TimeUnit.SECONDS)) {
             ThrowingWork work = newThrowingWorkSpy("MATCH (n) RETURN n.name", Integer.MAX_VALUE);
@@ -293,6 +299,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void readTxCommittedWithoutTxSuccess() {
         try (Driver driver = newDriverWithoutRetries();
                 Session session = driver.session()) {
@@ -308,6 +315,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void writeTxCommittedWithoutTxSuccess() {
         try (Driver driver = newDriverWithoutRetries()) {
             try (Session session = driver.session()) {
@@ -326,6 +334,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void readTxRolledBackWithTxFailure() {
         try (Driver driver = newDriverWithoutRetries();
                 Session session = driver.session()) {
@@ -345,6 +354,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void writeTxRolledBackWithTxFailure() {
         try (Driver driver = newDriverWithoutRetries()) {
             try (Session session = driver.session()) {
@@ -365,6 +375,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void readTxRolledBackWhenExceptionIsThrown() {
         try (Driver driver = newDriverWithoutRetries();
                 Session session = driver.session()) {
@@ -386,6 +397,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void writeTxRolledBackWhenExceptionIsThrown() {
         try (Driver driver = newDriverWithoutRetries()) {
             try (Session session = driver.session()) {
@@ -405,6 +417,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void readTxRolledBackWhenMarkedBothSuccessAndFailure() {
         try (Driver driver = newDriverWithoutRetries();
                 Session session = driver.session()) {
@@ -421,6 +434,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void writeTxFailWhenBothCommitAndRollback() {
         try (Driver driver = newDriverWithoutRetries()) {
             try (Session session = driver.session()) {
@@ -439,6 +453,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void readTxCommittedWhenCommitAndThrowsException() {
         try (Driver driver = newDriverWithoutRetries();
                 Session session = driver.session()) {
@@ -458,6 +473,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void writeTxCommittedWhenCommitAndThrowsException() {
         try (Driver driver = newDriverWithoutRetries()) {
             try (Session session = driver.session()) {
@@ -478,6 +494,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void readRolledBackWhenRollbackAndThrowsException() {
         try (Driver driver = newDriverWithoutRetries();
                 Session session = driver.session()) {
@@ -497,6 +514,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void writeTxRolledBackWhenRollbackAndThrowsException() {
         try (Driver driver = newDriverWithoutRetries()) {
             try (Session session = driver.session()) {
@@ -574,6 +592,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void writeTransactionFunctionShouldRetryDeadlocks() throws Exception {
         final int nodeId1 = 42;
         final int nodeId2 = 4242;
@@ -653,6 +672,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldExecuteTransactionWorkInCallerThread() {
         int maxFailures = 3;
         Thread callerThread = Thread.currentThread();
@@ -754,6 +774,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldNotRetryOnConnectionAcquisitionTimeout() {
         int maxPoolSize = 3;
         Config config = Config.builder()
@@ -923,6 +944,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldAllowReturningNullFromTransactionFunction() {
         try (Session session = neo4j.driver().session()) {
             assertNull(session.readTransaction(tx -> null));
@@ -1049,6 +1071,7 @@ class SessionIT {
 
     @Test
     @DisabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("deprecation")
     void shouldErrorWhenTryingToUseRxAPIWithoutBoltV4() throws Throwable {
         // Given
         RxSession session = neo4j.driver().rxSession();
@@ -1115,6 +1138,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("deprecation")
     void shouldAllowDatabaseNameUsingTxWithRetries() throws Throwable {
         try (Session session = neo4j.driver().session(forDatabase("neo4j"))) {
             int num = session.readTransaction(
@@ -1155,6 +1179,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("deprecation")
     void shouldErrorDatabaseNameUsingTxWithRetriesWhenDatabaseIsAbsent() throws Throwable {
         // Given
         Session session = neo4j.driver().session(forDatabase("foo"));
@@ -1167,6 +1192,7 @@ class SessionIT {
         session.close();
     }
 
+    @SuppressWarnings("deprecation")
     private void testExecuteReadTx(AccessMode sessionMode) {
         Driver driver = neo4j.driver();
 
@@ -1193,6 +1219,7 @@ class SessionIT {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private void testExecuteWriteTx(AccessMode sessionMode) {
         Driver driver = neo4j.driver();
 
@@ -1216,6 +1243,7 @@ class SessionIT {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private void testTxRollbackWhenFunctionThrows(AccessMode sessionMode) {
         Driver driver = neo4j.driver();
 
@@ -1330,6 +1358,7 @@ class SessionIT {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private static class ThrowingWork implements TransactionWork<Record> {
         final String query;
         final int failures;

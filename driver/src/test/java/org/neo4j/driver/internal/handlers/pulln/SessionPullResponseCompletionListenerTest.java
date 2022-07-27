@@ -40,7 +40,9 @@ class SessionPullResponseCompletionListenerTest extends BasicPullResponseHandler
     protected void shouldHandleSuccessWithSummary(BasicPullResponseHandler.State state) {
         // Given
         Connection conn = mockConnection();
+        @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
         BookmarksHolder bookmarksHolder = mock(BookmarksHolder.class);
         PullResponseHandler handler =
@@ -60,7 +62,9 @@ class SessionPullResponseCompletionListenerTest extends BasicPullResponseHandler
     protected void shouldHandleFailure(BasicPullResponseHandler.State state) {
         // Given
         Connection conn = mockConnection();
+        @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
         BasicPullResponseHandler handler = newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
 

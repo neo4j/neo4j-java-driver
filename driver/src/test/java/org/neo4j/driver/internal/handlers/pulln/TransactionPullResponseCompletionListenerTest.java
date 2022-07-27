@@ -42,7 +42,9 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
     protected void shouldHandleSuccessWithSummary(BasicPullResponseHandler.State state) {
         // Given
         Connection conn = mockConnection();
+        @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
         BasicPullResponseHandler handler = newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
 
@@ -59,7 +61,9 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
     protected void shouldHandleFailure(BasicPullResponseHandler.State state) {
         // Given
         Connection conn = mockConnection();
+        @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
         UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
         when(tx.isOpen()).thenReturn(true);

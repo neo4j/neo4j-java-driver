@@ -52,6 +52,7 @@ import org.neo4j.driver.reactive.RxTransaction;
 import org.reactivestreams.Publisher;
 import reactor.test.StepVerifier;
 
+@SuppressWarnings("deprecation")
 class InternalRxTransactionTest {
     @Test
     void commitShouldDelegate() {

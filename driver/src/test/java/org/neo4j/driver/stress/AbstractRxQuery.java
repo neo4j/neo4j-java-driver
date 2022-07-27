@@ -33,6 +33,7 @@ public abstract class AbstractRxQuery<C extends AbstractContext> implements RxCo
         this.useBookmark = useBookmark;
     }
 
+    @SuppressWarnings("deprecation")
     public RxSession newSession(AccessMode mode, C context) {
         if (useBookmark) {
             return driver.rxSession(builder()

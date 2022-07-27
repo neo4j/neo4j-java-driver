@@ -42,6 +42,7 @@ public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
 

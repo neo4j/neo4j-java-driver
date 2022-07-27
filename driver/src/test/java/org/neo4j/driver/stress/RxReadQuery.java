@@ -36,6 +36,7 @@ public class RxReadQuery<C extends AbstractContext> extends AbstractRxQuery<C> {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
         Flux.usingWhen(
@@ -54,6 +55,7 @@ public class RxReadQuery<C extends AbstractContext> extends AbstractRxQuery<C> {
         return queryFinished;
     }
 
+    @SuppressWarnings("deprecation")
     private Publisher<ResultSummary> processAndGetSummary(RxSession session) {
         RxResult result = session.run("MATCH (n) RETURN n LIMIT 1");
         Mono<Node> records = Flux.from(result.records()).singleOrEmpty().map(record -> record.get(0)

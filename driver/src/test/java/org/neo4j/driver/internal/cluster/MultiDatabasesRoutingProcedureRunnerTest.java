@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.equalTo;
@@ -65,7 +64,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertThat(runner.connection.databaseName(), equalTo(systemDatabase()));
         assertThat(runner.connection.mode(), equalTo(AccessMode.READ));
 
-        Query query = generateMultiDatabaseRoutingQuery(EMPTY_MAP, db);
+        Query query = generateMultiDatabaseRoutingQuery(Collections.emptyMap(), db);
         assertThat(runner.procedure, equalTo(query));
     }
 
@@ -101,7 +100,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         return new TestRoutingProcedureRunner(context, runProcedureResult);
     }
 
-    private static Query generateMultiDatabaseRoutingQuery(Map context, String db) {
+    private static Query generateMultiDatabaseRoutingQuery(Map<String, String> context, String db) {
         Value parameters = parameters(ROUTING_CONTEXT, context, DATABASE_NAME, db);
         return new Query(MULTI_DB_GET_ROUTING_TABLE, parameters);
     }

@@ -252,7 +252,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
 
     private boolean isNeo4jVersionOrEarlier(int major, int minor) {
         try (Session session = driver.session()) {
-            String neo4jVersion = session.readTransaction(
+            String neo4jVersion = session.executeRead(
                     tx -> tx.run("CALL dbms.components() YIELD versions " + "RETURN versions[0] AS version")
                             .single()
                             .get("version")
@@ -312,6 +312,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         return neo4jContainer;
     }
 
+    @SuppressWarnings("rawtypes")
     private static GenericContainer<?> setupNginxContainer() {
         ImageFromDockerfile extendedNginxImage = new ImageFromDockerfile()
                 .withDockerfileFromBuilder(builder -> builder.from("nginx:1.23.0-alpine")
@@ -319,7 +320,6 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
                         .build())
                 .withFileFromClasspath("nginx.conf", "nginx.conf");
 
-        //noinspection rawtypes
         return new GenericContainer(extendedNginxImage.get())
                 .withNetwork(network)
                 .withExposedPorts(BOLT_PORT, HTTP_PORT)

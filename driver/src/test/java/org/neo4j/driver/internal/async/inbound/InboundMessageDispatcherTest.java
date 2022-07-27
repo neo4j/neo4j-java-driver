@@ -431,7 +431,7 @@ class InboundMessageDispatcherTest {
         when(channel.id()).thenReturn(DefaultChannelId.newInstance());
         ChannelConfig channelConfig = mock(ChannelConfig.class);
         when(channel.config()).thenReturn(channelConfig);
-        Attribute attribute = mock(Attribute.class);
+        Attribute<Object> attribute = mock(Attribute.class);
         when(channel.attr(any())).thenReturn(attribute);
         return channel;
     }

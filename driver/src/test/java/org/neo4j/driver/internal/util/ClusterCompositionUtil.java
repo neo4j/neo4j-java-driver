@@ -46,6 +46,7 @@ public final class ClusterCompositionUtil {
     }
 
     @SafeVarargs
+    @SuppressWarnings("fallthrough")
     public static ClusterComposition createClusterComposition(
             long expirationTimestamp, List<BoltServerAddress>... servers) {
         Set<BoltServerAddress> routers = new LinkedHashSet<>();

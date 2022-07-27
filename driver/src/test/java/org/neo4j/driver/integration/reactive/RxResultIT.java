@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.integration.reactive;
 
-import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -32,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -50,6 +50,7 @@ import reactor.test.StepVerifier;
 
 @EnabledOnNeo4jWith(BOLT_V4)
 @ParallelizableIT
+@SuppressWarnings("deprecation")
 class RxResultIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
@@ -430,8 +431,12 @@ class RxResultIT {
         RxResult result = session.run("Invalid");
 
         // When
-        StepVerifier.create(Flux.from(result.keys())).expectNext(EMPTY_LIST).verifyComplete();
-        StepVerifier.create(Flux.from(result.keys())).expectNext(EMPTY_LIST).verifyComplete();
+        StepVerifier.create(Flux.from(result.keys()))
+                .expectNext(Collections.emptyList())
+                .verifyComplete();
+        StepVerifier.create(Flux.from(result.keys()))
+                .expectNext(Collections.emptyList())
+                .verifyComplete();
     }
 
     @Test

@@ -88,6 +88,7 @@ class AsyncTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldBePossibleToCommitEmptyTx() {
         Bookmark bookmarkBefore = session.lastBookmark();
 
@@ -101,6 +102,7 @@ class AsyncTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldBePossibleToRollbackEmptyTx() {
         Bookmark bookmarkBefore = session.lastBookmark();
 
@@ -596,6 +598,7 @@ class AsyncTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldUpdateSessionBookmarkAfterCommit() {
         Bookmark bookmarkBefore = session.lastBookmark();
 

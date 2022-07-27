@@ -36,6 +36,7 @@ public class AsyncWriteQueryWithRetries<C extends AbstractContext> extends Abstr
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         AsyncSession session = newSession(AccessMode.WRITE, context);
 
@@ -61,6 +62,7 @@ public class AsyncWriteQueryWithRetries<C extends AbstractContext> extends Abstr
         return null;
     }
 
+    @SuppressWarnings("deprecation")
     private void finalizeSession(AsyncSession session, C context) {
         context.setBookmark(session.lastBookmark());
         session.closeAsync();

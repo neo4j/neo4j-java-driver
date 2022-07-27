@@ -36,6 +36,7 @@ import static org.neo4j.driver.Values.point;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Duration;
@@ -310,7 +311,9 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     private CompletableFuture<Void> executeRxCommands(C context, List<RxCommand<C>> commands, int count) {
-        CompletableFuture<Void>[] executions = new CompletableFuture[count];
+        @SuppressWarnings("unchecked")
+        CompletableFuture<Void>[] executions =
+                (CompletableFuture<Void>[]) Array.newInstance(CompletableFuture.class, count);
         for (int i = 0; i < count; i++) {
             RxCommand<C> command = randomOf(commands);
             CompletionStage<Void> execution = command.execute(context);
@@ -357,9 +360,10 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         });
     }
 
-    @SuppressWarnings("unchecked")
     private CompletableFuture<Void> executeAsyncCommands(C context, List<AsyncCommand<C>> commands, int count) {
-        CompletableFuture<Void>[] executions = new CompletableFuture[count];
+        @SuppressWarnings("unchecked")
+        CompletableFuture<Void>[] executions =
+                (CompletableFuture<Void>[]) Array.newInstance(CompletableFuture.class, count);
         for (int i = 0; i < count; i++) {
             AsyncCommand<C> command = randomOf(commands);
             CompletionStage<Void> execution = command.execute(context);
@@ -452,6 +456,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return BIG_DATA_TEST_NODE_COUNT / BIG_DATA_TEST_BATCH_SIZE;
     }
 
+    @SuppressWarnings("deprecation")
     private static Bookmark createNodesBlocking(int batchCount, int batchSize, Driver driver) {
         Bookmark bookmark;
 
@@ -469,6 +474,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return bookmark;
     }
 
+    @SuppressWarnings("deprecation")
     private static void readNodesBlocking(Driver driver, Bookmark bookmark, int expectedNodeCount) {
         long start = System.nanoTime();
         try (Session session = driver.session(builder().withBookmarks(bookmark).build())) {
@@ -496,6 +502,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         System.out.println("Reading nodes with blocking API took: " + NANOSECONDS.toMillis(end - start) + "ms");
     }
 
+    @SuppressWarnings("deprecation")
     private static Bookmark createNodesAsync(int batchCount, int batchSize, Driver driver) throws Throwable {
         long start = System.nanoTime();
 
@@ -521,6 +528,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return session.lastBookmark();
     }
 
+    @SuppressWarnings("deprecation")
     private static void readNodesAsync(Driver driver, Bookmark bookmark, int expectedNodeCount) throws Throwable {
         long start = System.nanoTime();
 
@@ -555,6 +563,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         System.out.println("Reading nodes with async API took: " + NANOSECONDS.toMillis(end - start) + "ms");
     }
 
+    @SuppressWarnings("deprecation")
     private Bookmark createNodesRx(int batchCount, int batchSize, InternalDriver driver) {
         long start = System.nanoTime();
 
@@ -571,6 +580,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return session.lastBookmark();
     }
 
+    @SuppressWarnings("deprecation")
     private Publisher<Void> createNodesInTxRx(RxTransaction tx, int batchIndex, int batchSize) {
         return Flux.concat(Flux.range(0, batchSize)
                 .map(index -> batchIndex * batchSize + index)
@@ -580,6 +590,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
                 }));
     }
 
+    @SuppressWarnings("deprecation")
     private void readNodesRx(InternalDriver driver, Bookmark bookmark, int expectedNodeCount) {
         long start = System.nanoTime();
 

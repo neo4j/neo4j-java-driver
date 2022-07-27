@@ -32,7 +32,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.WRITE;
-import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
@@ -129,6 +128,7 @@ public final class TestUtil {
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static <T> List<T> awaitAll(CompletionStage<T>... stages) {
         return awaitAll(Arrays.asList(stages));
     }
@@ -187,26 +187,20 @@ public final class TestUtil {
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static <T> Set<T> asOrderedSet(T... elements) {
         return new LinkedHashSet<>(Arrays.asList(elements));
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static <T> Set<T> asSet(T... elements) {
         return new HashSet<>(Arrays.asList(elements));
     }
 
-    public static long countNodes(Driver driver, Bookmark bookmark) {
-        try (Session session = driver.session(builder().withBookmarks(bookmark).build())) {
-            return session.readTransaction(
-                    tx -> tx.run("MATCH (n) RETURN count(n)").single().get(0).asLong());
-        }
-    }
-
-    public static Bookmark cleanDb(Driver driver) {
+    public static void cleanDb(Driver driver) {
         try (Session session = driver.session()) {
             cleanDb(session);
-            return session.lastBookmark();
         }
     }
 
@@ -550,7 +544,7 @@ public final class TestUtil {
     }
 
     private static int deleteBatchOfNodes(Session session) {
-        return session.writeTransaction(tx -> {
+        return session.executeWrite(tx -> {
             Result result = tx.run("MATCH (n) WITH n LIMIT 1000 DETACH DELETE n RETURN count(n)");
             return result.single().get(0).asInt();
         });

@@ -114,6 +114,7 @@ class SessionMixIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldFailToExecuteBlockingRunInAsyncTransactionFunction() {
         AsyncTransactionWork<CompletionStage<Void>> completionStageTransactionWork = tx -> {
             if (EventLoopGroupFactory.isEventLoopThread(Thread.currentThread())) {

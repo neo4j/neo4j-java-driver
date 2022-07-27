@@ -39,6 +39,7 @@ public class RxFailingQueryInTx<C extends AbstractContext> extends AbstractRxQue
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
         RxSession session = newSession(AccessMode.READ, context);

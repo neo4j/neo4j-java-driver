@@ -120,6 +120,7 @@ class InternalAsyncSessionTest {
                 session -> session.beginTransactionAsync(TransactionConfig.empty()));
     }
 
+    @SuppressWarnings("deprecation")
     private static Stream<Function<AsyncSession, CompletionStage<String>>> allRunTxMethods() {
         return Stream.of(
                 session -> session.readTransactionAsync(tx -> completedFuture("a")),
@@ -251,6 +252,7 @@ class InternalAsyncSessionTest {
         then(logic).should().retryAsync(any());
     }
 
+    @SuppressWarnings("deprecation")
     private void testTxRollbackWhenThrows(AccessMode transactionMode) {
         final RuntimeException error = new IllegalStateException("Oh!");
         AsyncTransactionWork<CompletionStage<Void>> work = tx -> {
@@ -336,6 +338,7 @@ class InternalAsyncSessionTest {
         verifyCommitTx(connection, times(failures));
     }
 
+    @SuppressWarnings("deprecation")
     private static <T> T executeTransaction(
             AsyncSession session, AccessMode mode, AsyncTransactionWork<CompletionStage<T>> work) {
         if (mode == READ) {
@@ -347,10 +350,12 @@ class InternalAsyncSessionTest {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private static void verifyInvocationCount(AsyncTransactionWork<?> workSpy, int expectedInvocationCount) {
         verify(workSpy, times(expectedInvocationCount)).execute(any(AsyncTransaction.class));
     }
 
+    @SuppressWarnings("deprecation")
     private static class TxWork implements AsyncTransactionWork<CompletionStage<Integer>> {
         final int result;
         final int timesToThrow;

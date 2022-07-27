@@ -65,7 +65,7 @@ class RoutingProcedureClusterCompositionProviderTest {
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection);
 
         RoutingProcedureResponse noRecordsResponse = newRoutingResponse();
-        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(noRecordsResponse));
 
         // When & Then
@@ -85,7 +85,7 @@ class RoutingProcedureClusterCompositionProviderTest {
 
         Record aRecord = new InternalRecord(asList("key1", "key2"), new Value[] {new StringValue("a value")});
         RoutingProcedureResponse routingResponse = newRoutingResponse(aRecord, aRecord);
-        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
 
         // When
@@ -105,7 +105,7 @@ class RoutingProcedureClusterCompositionProviderTest {
 
         Record aRecord = new InternalRecord(asList("key1", "key2"), new Value[] {new StringValue("a value")});
         RoutingProcedureResponse routingResponse = newRoutingResponse(aRecord);
-        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
 
         // When
@@ -128,7 +128,7 @@ class RoutingProcedureClusterCompositionProviderTest {
             value(100), value(asList(serverInfo("READ", "one:1337", "two:1337"), serverInfo("WRITE", "one:1337")))
         });
         RoutingProcedureResponse routingResponse = newRoutingResponse(record);
-        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
@@ -152,7 +152,7 @@ class RoutingProcedureClusterCompositionProviderTest {
             value(100), value(asList(serverInfo("READ", "one:1337", "two:1337"), serverInfo("WRITE", "one:1337")))
         });
         RoutingProcedureResponse routingResponse = newRoutingResponse(record);
-        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
@@ -176,7 +176,7 @@ class RoutingProcedureClusterCompositionProviderTest {
             value(100), value(asList(serverInfo("WRITE", "one:1337"), serverInfo("ROUTE", "one:1337", "two:1337")))
         });
         RoutingProcedureResponse routingResponse = newRoutingResponse(record);
-        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
@@ -200,7 +200,7 @@ class RoutingProcedureClusterCompositionProviderTest {
             value(100), value(asList(serverInfo("WRITE", "one:1337"), serverInfo("ROUTE", "one:1337", "two:1337")))
         });
         RoutingProcedureResponse routingResponse = newRoutingResponse(record);
-        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
@@ -219,7 +219,7 @@ class RoutingProcedureClusterCompositionProviderTest {
         Connection connection = mock(Connection.class);
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection);
 
-        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(failedFuture(new ServiceUnavailableException("Connection breaks during cypher execution")));
 
         // When & Then
@@ -246,7 +246,7 @@ class RoutingProcedureClusterCompositionProviderTest {
                     serverInfo("ROUTE", "one:1337", "two:1337")))
         });
         RoutingProcedureResponse routingResponse = newRoutingResponse(record);
-        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
@@ -277,7 +277,7 @@ class RoutingProcedureClusterCompositionProviderTest {
                     serverInfo("ROUTE", "one:1337", "two:1337")))
         });
         RoutingProcedureResponse routingResponse = newRoutingResponse(record);
-        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
@@ -298,7 +298,7 @@ class RoutingProcedureClusterCompositionProviderTest {
         Connection connection = mock(Connection.class);
 
         RuntimeException error = new RuntimeException("hi");
-        when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(newRoutingResponse(error)));
 
         RoutingProcedureClusterCompositionProvider provider =
@@ -319,11 +319,11 @@ class RoutingProcedureClusterCompositionProviderTest {
         RoutingProcedureClusterCompositionProvider provider =
                 newClusterCompositionProvider(procedureRunner, connection);
 
-        when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedWithNull());
         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null);
 
-        verify(procedureRunner).run(eq(connection), any(DatabaseName.class), any(Set.class), any());
+        verify(procedureRunner).run(eq(connection), any(DatabaseName.class), any(), any());
     }
 
     @Test
@@ -334,11 +334,11 @@ class RoutingProcedureClusterCompositionProviderTest {
         RoutingProcedureClusterCompositionProvider provider =
                 newClusterCompositionProvider(procedureRunner, connection);
 
-        when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedWithNull());
         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null);
 
-        verify(procedureRunner).run(eq(connection), any(DatabaseName.class), any(Set.class), any());
+        verify(procedureRunner).run(eq(connection), any(DatabaseName.class), any(), any());
     }
 
     @Test
@@ -349,11 +349,11 @@ class RoutingProcedureClusterCompositionProviderTest {
         RoutingProcedureClusterCompositionProvider provider =
                 newClusterCompositionProvider(procedureRunner, connection);
 
-        when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(Set.class), any()))
+        when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedWithNull());
         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null);
 
-        verify(procedureRunner).run(eq(connection), any(DatabaseName.class), any(Set.class), any());
+        verify(procedureRunner).run(eq(connection), any(DatabaseName.class), any(), any());
     }
 
     private static Map<String, Object> serverInfo(String role, String... addresses) {

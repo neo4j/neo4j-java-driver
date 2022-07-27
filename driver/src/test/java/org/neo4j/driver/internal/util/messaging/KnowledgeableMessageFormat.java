@@ -117,6 +117,7 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
             }
         }
 
+        @SuppressWarnings("deprecation")
         private void packPath(Path path) throws IOException {
             packer.packStructHeader(3, CommonValueUnpacker.PATH);
 
@@ -162,6 +163,7 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
             }
         }
 
+        @SuppressWarnings("deprecation")
         private void packRelationship(Relationship rel) throws IOException {
             packer.packStructHeader(elementIdEnabled ? 8 : 5, CommonValueUnpacker.RELATIONSHIP);
             packer.pack(rel.id());
@@ -179,6 +181,7 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
             }
         }
 
+        @SuppressWarnings("deprecation")
         private void packNode(Node node) throws IOException {
             packer.packStructHeader(elementIdEnabled ? 4 : 3, CommonValueUnpacker.NODE);
             packer.pack(node.id());
