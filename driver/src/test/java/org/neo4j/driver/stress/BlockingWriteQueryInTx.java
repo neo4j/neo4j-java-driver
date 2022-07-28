@@ -35,6 +35,7 @@ public class BlockingWriteQueryInTx<C extends AbstractContext> extends AbstractB
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void execute(C context) {
         Result result = null;
         Throwable txError = null;

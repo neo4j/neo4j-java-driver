@@ -36,6 +36,7 @@ public class AsyncWriteQuery<C extends AbstractContext> extends AbstractAsyncQue
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         AsyncSession session = newSession(AccessMode.WRITE, context);
 

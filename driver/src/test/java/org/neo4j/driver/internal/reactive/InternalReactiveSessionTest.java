@@ -172,6 +172,7 @@ public class InternalReactiveSessionTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldRetryOnError() {
         // Given
         int retryCount = 2;
@@ -199,6 +200,7 @@ public class InternalReactiveSessionTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldObtainResultIfRetrySucceed() {
         // Given
         int retryCount = 2;
@@ -232,6 +234,7 @@ public class InternalReactiveSessionTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldDelegateBookmark() {
         // Given
         NetworkSession session = mock(NetworkSession.class);
@@ -246,6 +249,7 @@ public class InternalReactiveSessionTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldDelegateBookmarks() {
         // Given
         NetworkSession session = mock(NetworkSession.class);
@@ -260,6 +264,7 @@ public class InternalReactiveSessionTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldDelegateClose() {
         // Given
         NetworkSession session = mock(NetworkSession.class);

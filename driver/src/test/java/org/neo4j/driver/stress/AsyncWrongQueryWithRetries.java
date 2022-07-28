@@ -41,6 +41,7 @@ public class AsyncWrongQueryWithRetries<C extends AbstractContext> extends Abstr
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         AsyncSession session = newSession(AccessMode.READ, context);
 

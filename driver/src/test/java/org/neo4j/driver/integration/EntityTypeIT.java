@@ -36,6 +36,7 @@ class EntityTypeIT {
     static final SessionExtension session = new SessionExtension();
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldReturnIdentitiesOfNodes() {
         // When
         Result cursor = session.run("CREATE (n) RETURN n");
@@ -46,6 +47,7 @@ class EntityTypeIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldReturnIdentitiesOfRelationships() {
         // When
         Result cursor = session.run("CREATE ()-[r:T]->() RETURN r");
@@ -58,6 +60,7 @@ class EntityTypeIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldReturnIdentitiesOfPaths() {
         // When
         Result cursor = session.run("CREATE p=()-[r:T]->() RETURN p");

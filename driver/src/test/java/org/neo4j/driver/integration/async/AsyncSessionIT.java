@@ -306,6 +306,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldRunAsyncTransactionWithoutRetries() {
         InvocationTrackingWork work = new InvocationTrackingWork("CREATE (:Apa) RETURN 42");
         CompletionStage<Record> txStage = session.writeTransactionAsync(work);
@@ -319,6 +320,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldRunAsyncTransactionWithRetriesOnAsyncFailures() {
         InvocationTrackingWork work = new InvocationTrackingWork("CREATE (:Node) RETURN 24")
                 .withAsyncFailures(
@@ -337,6 +339,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldRunAsyncTransactionWithRetriesOnSyncFailures() {
         InvocationTrackingWork work = new InvocationTrackingWork("CREATE (:Test) RETURN 12")
                 .withSyncFailures(
@@ -354,6 +357,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldRunAsyncTransactionThatCanNotBeRetried() {
         InvocationTrackingWork work = new InvocationTrackingWork("UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x");
         CompletionStage<Record> txStage = session.writeTransactionAsync(work);
@@ -365,6 +369,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldRunAsyncTransactionThatCanNotBeRetriedAfterATransientFailure() {
         // first throw TransientException directly from work, retry can happen afterwards
         // then return a future failed with DatabaseException, retry can't happen afterwards
@@ -549,6 +554,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldExecuteReadTransactionUntilSuccessWhenWorkThrows() {
         int maxFailures = 1;
 
@@ -571,6 +577,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldExecuteWriteTransactionUntilSuccessWhenWorkThrows() {
         int maxFailures = 2;
 
@@ -594,6 +601,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldExecuteReadTransactionUntilSuccessWhenWorkFails() {
         int maxFailures = 3;
 
@@ -619,6 +627,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldExecuteWriteTransactionUntilSuccessWhenWorkFails() {
         int maxFailures = 2;
 
@@ -728,6 +737,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldAllowReturningNullFromAsyncTransactionFunction() {
         CompletionStage<Object> readResult = session.readTransactionAsync(tx -> null);
         assertNull(await(readResult));
@@ -825,6 +835,7 @@ class AsyncSessionIT {
         assertThrows(ResultConsumedException.class, () -> await(cursor.nextAsync()));
     }
 
+    @SuppressWarnings("deprecation")
     private static class InvocationTrackingWork implements AsyncTransactionWork<CompletionStage<Record>> {
         final String query;
         final AtomicInteger invocationCount;

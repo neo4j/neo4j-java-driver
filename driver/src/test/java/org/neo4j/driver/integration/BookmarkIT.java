@@ -28,7 +28,6 @@ import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkContains
 import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkIsEmpty;
 import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarksContainsSingleUniqueValues;
 
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -59,6 +58,7 @@ class BookmarkIT {
 
     @Test
     @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
+    @SuppressWarnings("deprecation")
     void shouldReceiveBookmarkOnSuccessfulCommit() throws Throwable {
         // Given
         assertBookmarkIsEmpty(session.lastBookmark());
@@ -72,6 +72,7 @@ class BookmarkIT {
 
     @Test
     @EnabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
+    @SuppressWarnings("deprecation")
     void shouldReceiveNewBookmarkOnSuccessfulCommit() throws Throwable {
         // Given
         Bookmark initialBookmark = session.lastBookmark();
@@ -96,6 +97,7 @@ class BookmarkIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void bookmarkRemainsAfterRolledBackTx() {
         assertBookmarkIsEmpty(session.lastBookmark());
 
@@ -113,6 +115,7 @@ class BookmarkIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void bookmarkRemainsAfterTxFailure() {
         assertBookmarkIsEmpty(session.lastBookmark());
 
@@ -128,6 +131,7 @@ class BookmarkIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void bookmarkRemainsAfterSuccessfulSessionRun() {
         assertBookmarkIsEmpty(session.lastBookmark());
 
@@ -142,6 +146,7 @@ class BookmarkIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void bookmarkRemainsAfterFailedSessionRun() {
         assertBookmarkIsEmpty(session.lastBookmark());
 
@@ -155,6 +160,7 @@ class BookmarkIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void bookmarkIsUpdatedOnEveryCommittedTx() {
         assertBookmarkIsEmpty(session.lastBookmark());
 
@@ -174,6 +180,7 @@ class BookmarkIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void createSessionWithInitialBookmark() {
         Bookmark bookmark = parse("TheBookmark");
         try (Session session = driver.session(builder().withBookmarks(bookmark).build())) {
@@ -182,6 +189,7 @@ class BookmarkIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void createSessionWithAccessModeAndInitialBookmark() {
         Bookmark bookmark = parse("TheBookmark");
         try (Session session = driver.session(builder().withBookmarks(bookmark).build())) {
@@ -194,23 +202,5 @@ class BookmarkIT {
             tx.run("CREATE (a:Person)");
             tx.commit();
         }
-    }
-
-    private static boolean isUuid(String string) {
-        try {
-            UUID.fromString(string);
-        } catch (IllegalArgumentException | NullPointerException e) {
-            return false;
-        }
-        return true;
-    }
-
-    private static boolean isNumeric(String string) {
-        try {
-            Long.parseLong(string);
-        } catch (NumberFormatException | NullPointerException e) {
-            return false;
-        }
-        return true;
     }
 }

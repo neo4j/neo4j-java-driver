@@ -27,7 +27,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.Map;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -66,7 +65,7 @@ public class ListBasedPullHandler extends BasicPullResponseHandler {
                 mock(PullResponseCompletionListener.class));
         this.list = list;
         this.error = error;
-        when(super.metadataExtractor.extractSummary(any(Query.class), any(Connection.class), anyLong(), any(Map.class)))
+        when(super.metadataExtractor.extractSummary(any(Query.class), any(Connection.class), anyLong(), any()))
                 .thenReturn(mock(ResultSummary.class));
         if (list.size() > 1) {
             Record record = list.get(0);

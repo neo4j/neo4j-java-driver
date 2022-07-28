@@ -44,6 +44,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
@@ -53,6 +54,7 @@ import org.neo4j.driver.summary.ResultSummary;
 
 class RxResultCursorImplTest {
     @Test
+    @SuppressWarnings("unchecked")
     void shouldInstallSummaryConsumerWithoutReportingError() {
         // Given
         RuntimeException error = new RuntimeException("Hi");
@@ -154,7 +156,8 @@ class RxResultCursorImplTest {
     void shouldInstallRecordConsumerAndReportError() {
         // Given
         RuntimeException error = new RuntimeException("Hi");
-        BiConsumer recordConsumer = mock(BiConsumer.class);
+        @SuppressWarnings("unchecked")
+        BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
 
         // When
         RunResponseHandler runHandler = newRunResponseHandler(error);

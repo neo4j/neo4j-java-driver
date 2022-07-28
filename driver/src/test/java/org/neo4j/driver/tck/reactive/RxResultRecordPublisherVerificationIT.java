@@ -33,6 +33,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
 @Testcontainers(disabledWithoutDocker = true)
+@SuppressWarnings("deprecation")
 public class RxResultRecordPublisherVerificationIT extends PublisherVerification<Record> {
     private final Neo4jManager NEO4J = new Neo4jManager();
     private static final long MAX_NUMBER_OF_RECORDS = 30000;

@@ -40,6 +40,7 @@ import org.neo4j.driver.Bookmark;
 
 class InternalBookmarkTest {
     @Test
+    @SuppressWarnings("deprecation")
     void isEmptyForEmptyBookmark() {
         Bookmark bookmark = InternalBookmark.empty();
         assertTrue(bookmark.isEmpty());
@@ -80,6 +81,7 @@ class InternalBookmarkTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void isNotEmptyForNonEmptyBookmark() {
         Bookmark bookmark = InternalBookmark.parse("SomeBookmark");
         assertFalse(bookmark.isEmpty());
@@ -92,6 +94,7 @@ class InternalBookmarkTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void bookmarkFromString() {
         Bookmark bookmark = InternalBookmark.parse("Cat");
         assertEquals(singleton("Cat"), bookmark.values());
@@ -99,6 +102,7 @@ class InternalBookmarkTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void bookmarkFromNullString() {
         Bookmark bookmark = InternalBookmark.parse((String) null);
         assertTrue(bookmark.isEmpty());
@@ -112,12 +116,14 @@ class InternalBookmarkTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void bookmarkFromNullIterable() {
         Bookmark bookmark = InternalBookmark.parse((Set<String>) null);
         assertTrue(bookmark.isEmpty());
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void bookmarkFromEmptyIterable() {
         Bookmark bookmark = InternalBookmark.parse(emptySet());
         assertTrue(bookmark.isEmpty());
@@ -131,6 +137,7 @@ class InternalBookmarkTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldReturnAllBookmarks() {
         assertIterableEquals(emptyList(), InternalBookmark.empty().values());
         assertIterableEquals(
@@ -142,12 +149,14 @@ class InternalBookmarkTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void valueShouldBeReadOnly() {
         Bookmark bookmark = InternalBookmark.parse(asSet("first", "second"));
         Set<String> values = bookmark.values();
         assertThrows(UnsupportedOperationException.class, () -> values.add("third"));
     }
 
+    @SuppressWarnings("deprecation")
     private static void verifyValues(Bookmark bookmark, String... expectedValues) {
         assertThat(bookmark.values().size(), equalTo(expectedValues.length));
         assertThat(bookmark.values(), hasItems(expectedValues));

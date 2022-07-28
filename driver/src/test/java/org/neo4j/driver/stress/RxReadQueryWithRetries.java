@@ -36,6 +36,7 @@ public class RxReadQueryWithRetries<C extends AbstractContext> extends AbstractR
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
         Flux.usingWhen(
@@ -54,6 +55,7 @@ public class RxReadQueryWithRetries<C extends AbstractContext> extends AbstractR
         return queryFinished;
     }
 
+    @SuppressWarnings("deprecation")
     private Publisher<ResultSummary> processAndGetSummary(RxSession session) {
         return session.readTransaction(tx -> {
             RxResult result = tx.run("MATCH (n) RETURN n LIMIT 1");

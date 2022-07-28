@@ -53,6 +53,7 @@ import reactor.test.StepVerifier;
 
 @EnabledOnNeo4jWith(BOLT_V4)
 @ParallelizableIT
+@SuppressWarnings("deprecation")
 class RxSessionIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();

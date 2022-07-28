@@ -38,6 +38,7 @@ public class RxWriteQuery<C extends AbstractContext> extends AbstractRxQuery<C> 
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
         Flux.usingWhen(

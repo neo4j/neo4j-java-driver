@@ -258,8 +258,7 @@ class RoutingTableHandlerTest {
         Rediscovery rediscovery = mock(RediscoveryImpl.class);
         Set<BoltServerAddress> noServers = Collections.emptySet();
         ClusterComposition clusterComposition = new ClusterComposition(1, noServers, noServers, noServers, null);
-        when(rediscovery.lookupClusterComposition(
-                        any(RoutingTable.class), any(ConnectionPool.class), any(Set.class), any()))
+        when(rediscovery.lookupClusterComposition(any(RoutingTable.class), any(ConnectionPool.class), any(), any()))
                 .thenReturn(completedFuture(new ClusterCompositionLookupResult(clusterComposition)));
         return rediscovery;
     }

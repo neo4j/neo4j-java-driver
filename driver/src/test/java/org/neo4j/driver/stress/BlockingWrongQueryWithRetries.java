@@ -33,6 +33,7 @@ public class BlockingWrongQueryWithRetries<C extends AbstractContext> extends Ab
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void execute(C context) {
         try (Session session = newSession(AccessMode.READ, context)) {
             Exception e = assertThrows(

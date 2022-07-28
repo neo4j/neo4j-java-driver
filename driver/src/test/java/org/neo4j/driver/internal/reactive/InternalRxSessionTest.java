@@ -63,6 +63,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+@SuppressWarnings("deprecation")
 class InternalRxSessionTest {
     private static Stream<Function<RxSession, RxResult>> allSessionRunMethods() {
         return Stream.of(

@@ -35,6 +35,7 @@ public class AsyncReadQueryWithRetries<C extends AbstractContext> extends Abstra
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         AsyncSession session = newSession(AccessMode.READ, context);
 

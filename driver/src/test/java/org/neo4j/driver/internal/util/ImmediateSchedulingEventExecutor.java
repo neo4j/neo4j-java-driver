@@ -154,6 +154,7 @@ public class ImmediateSchedulingEventExecutor implements EventExecutor {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
         scheduleDelays.add(unit.toMillis(delay));
         delegate.submit(callable);

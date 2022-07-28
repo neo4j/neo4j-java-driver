@@ -507,14 +507,6 @@
             <arg>-Werror</arg>
           </compilerArgs>
         </configuration>
-        <executions>
-          <execution>
-            <id>default-testCompile</id>
-            <configuration>
-              <compilerArgs combine.self="override"/>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

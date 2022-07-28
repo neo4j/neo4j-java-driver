@@ -34,6 +34,7 @@ public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlock
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void execute(C context) {
         ResultSummary summary = null;
         Throwable queryError = null;

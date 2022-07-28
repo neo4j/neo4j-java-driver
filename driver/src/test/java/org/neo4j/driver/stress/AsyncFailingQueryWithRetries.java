@@ -38,6 +38,7 @@ public class AsyncFailingQueryWithRetries<C extends AbstractContext> extends Abs
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         AsyncSession session = newSession(AccessMode.READ, context);
 

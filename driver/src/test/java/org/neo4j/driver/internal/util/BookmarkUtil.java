@@ -38,6 +38,7 @@ public class BookmarkUtil {
     /**
      * Bookmark is empty.
      */
+    @SuppressWarnings("deprecation")
     public static void assertBookmarkIsEmpty(Bookmark bookmark) {
         assertNotNull(bookmark);
         assertThat(bookmark, instanceOf(InternalBookmark.class));
@@ -47,6 +48,7 @@ public class BookmarkUtil {
     /**
      * Bookmark is not empty but I do not care what value it has.
      */
+    @SuppressWarnings("deprecation")
     public static void assertBookmarkIsNotEmpty(Bookmark bookmark) {
         assertNotNull(bookmark);
         assertThat(bookmark, instanceOf(InternalBookmark.class));
@@ -63,6 +65,7 @@ public class BookmarkUtil {
     /**
      * Bookmark contains one single value and the value matches the requirement set by matcher.
      */
+    @SuppressWarnings("deprecation")
     public static void assertBookmarkContainsSingleValue(Bookmark bookmark, Matcher<String> matcher) {
         assertNotNull(bookmark);
         assertThat(bookmark, instanceOf(InternalBookmark.class));
@@ -75,6 +78,7 @@ public class BookmarkUtil {
     /**
      * Bookmark contains values matching the requirement set by matcher.
      */
+    @SuppressWarnings("deprecation")
     public static void assertBookmarkContainsValues(Bookmark bookmark, Matcher<Iterable<String>> matcher) {
         assertNotNull(bookmark);
         assertThat(bookmark, instanceOf(InternalBookmark.class));
@@ -86,6 +90,7 @@ public class BookmarkUtil {
     /**
      * Each bookmark contains one single value and the values are all different from each other.
      */
+    @SuppressWarnings("deprecation")
     public static void assertBookmarksContainsSingleUniqueValues(Bookmark... bookmarks) {
         int count = bookmarks.length;
         HashSet<String> bookmarkStrings = new HashSet<>();

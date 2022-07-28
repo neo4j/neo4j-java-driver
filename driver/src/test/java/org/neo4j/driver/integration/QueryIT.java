@@ -169,6 +169,7 @@ class QueryIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldBeAbleToLogSemanticWrongExceptions() {
         try {
             // When I run a query with the old syntax

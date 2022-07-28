@@ -39,6 +39,7 @@ class SelfContainedNodeTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void testIdentity() {
         // Given
         Node node = adamTheNode();

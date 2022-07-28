@@ -34,6 +34,7 @@ public class BlockingWriteQueryWithRetries<C extends AbstractContext> extends Ab
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void execute(C context) {
         try (Session session = newSession(AccessMode.WRITE, context)) {
             ResultSummary resultSummary =

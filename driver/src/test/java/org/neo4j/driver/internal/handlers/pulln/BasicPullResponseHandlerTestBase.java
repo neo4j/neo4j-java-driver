@@ -83,7 +83,9 @@ abstract class BasicPullResponseHandlerTestBase {
     void shouldInformSummaryConsumerSuccessWithHasMore() throws Throwable {
         // Given
         Connection conn = mockConnection();
+        @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
         BasicPullResponseHandler handler = newResponseHandlerWithStatus(
                 conn, recordConsumer, summaryConsumer, BasicPullResponseHandler.State.STREAMING_STATE);
@@ -123,7 +125,9 @@ abstract class BasicPullResponseHandlerTestBase {
     void shouldReportRecordInStreaming() throws Throwable {
         // Given a handler in streaming state
         Connection conn = mockConnection();
+        @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
         BasicPullResponseHandler handler = newResponseHandlerWithStatus(
                 conn, recordConsumer, summaryConsumer, BasicPullResponseHandler.State.STREAMING_STATE);
@@ -143,7 +147,9 @@ abstract class BasicPullResponseHandlerTestBase {
     void shouldNotReportRecordWhenNotStreaming(BasicPullResponseHandler.State state) throws Throwable {
         // Given a handler in streaming state
         Connection conn = mockConnection();
+        @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
         BasicPullResponseHandler handler = newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
 
@@ -242,7 +248,9 @@ abstract class BasicPullResponseHandlerTestBase {
 
     private BasicPullResponseHandler newResponseHandlerWithStatus(
             Connection conn, BasicPullResponseHandler.State state) {
+        @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
         return newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
     }

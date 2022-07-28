@@ -36,6 +36,7 @@ public class BlockingReadQueryWithRetries<C extends AbstractContext> extends Abs
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void execute(C context) {
         try (Session session = newSession(AccessMode.READ, context)) {
             ResultSummary resultSummary = session.readTransaction(tx -> {

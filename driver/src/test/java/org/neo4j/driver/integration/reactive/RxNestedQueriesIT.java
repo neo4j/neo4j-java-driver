@@ -36,6 +36,7 @@ import reactor.test.StepVerifier;
 
 @EnabledOnNeo4jWith(BOLT_V4)
 @ParallelizableIT
+@SuppressWarnings("deprecation")
 class RxNestedQueriesIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();

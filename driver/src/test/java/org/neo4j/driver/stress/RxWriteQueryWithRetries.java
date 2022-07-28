@@ -38,6 +38,7 @@ public class RxWriteQueryWithRetries<C extends AbstractContext> extends Abstract
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
 

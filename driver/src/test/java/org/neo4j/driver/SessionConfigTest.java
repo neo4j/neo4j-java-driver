@@ -174,6 +174,7 @@ class SessionConfigTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldSerialize() throws Exception {
         SessionConfig config = SessionConfig.builder()
                 .withBookmarks(

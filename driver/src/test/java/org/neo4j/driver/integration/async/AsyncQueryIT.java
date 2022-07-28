@@ -51,6 +51,7 @@ public class AsyncQueryIT {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldBeAbleToLogSemanticWrongExceptions() throws ExecutionException, InterruptedException {
         session.writeTransactionAsync(tx -> Flux.from(Mono.fromCompletionStage(tx.runAsync(
                                 "MATCH (n:Element) WHERE n.name = {param} RETURN n", parameters("param", "Luke"))))

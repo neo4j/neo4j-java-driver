@@ -39,6 +39,7 @@ public class RxFailingQueryWithRetries<C extends AbstractContext> extends Abstra
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
         Flux.usingWhen(
