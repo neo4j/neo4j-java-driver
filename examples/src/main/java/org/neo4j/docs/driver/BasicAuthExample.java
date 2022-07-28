@@ -19,7 +19,6 @@
 package org.neo4j.docs.driver;
 
 // tag::basic-auth-import[]
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -36,7 +35,7 @@ public class BasicAuthExample implements AutoCloseable {
     // end::basic-auth[]
 
     @Override
-    public void close() throws Exception {
+    public void close() throws RuntimeException {
         driver.close();
     }
 

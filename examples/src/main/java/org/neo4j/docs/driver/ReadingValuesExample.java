@@ -144,6 +144,7 @@ public class ReadingValuesExample extends BaseApplication {
         });
     }
 
+    @SuppressWarnings("deprecation")
     private <T, O> O echo(T value, Function<Record, O> transformation) {
         try (Session session = driver.session()) {
             return session.readTransaction(tx -> {

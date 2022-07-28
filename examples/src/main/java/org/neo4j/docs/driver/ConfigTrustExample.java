@@ -19,7 +19,6 @@
 package org.neo4j.docs.driver;
 
 // tag::config-trust-import[]
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -40,7 +39,7 @@ public class ConfigTrustExample implements AutoCloseable {
     // end::config-trust[]
 
     @Override
-    public void close() throws Exception {
+    public void close() throws RuntimeException {
         driver.close();
     }
 }

@@ -17,12 +17,15 @@
  * limitations under the License.
  */
 package org.neo4j.docs.driver;
+
 // tag::async-autocommit-transaction-import[]
+
+import org.neo4j.driver.async.AsyncSession;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.async.AsyncSession;
 // end::async-autocommit-transaction-import[]
 
 public class AsyncAutocommitTransactionExample extends BaseApplication {

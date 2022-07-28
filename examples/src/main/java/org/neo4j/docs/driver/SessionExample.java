@@ -20,10 +20,10 @@ package org.neo4j.docs.driver;
 
 // tag::session-import[]
 
+import org.neo4j.driver.Session;
+
 import static org.neo4j.driver.Values.parameters;
 // end::session-import[]
-
-import org.neo4j.driver.Session;
 
 public class SessionExample extends BaseApplication {
     public SessionExample(String uri, String user, String password) {

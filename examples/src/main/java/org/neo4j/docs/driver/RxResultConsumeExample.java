@@ -18,17 +18,20 @@
  */
 package org.neo4j.docs.driver;
 
-import io.reactivex.Flowable;
 // tag::rx-result-consume-import[]
+
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
-import java.util.Collections;
-import java.util.Map;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
-// end::rx-result-consume-import[]
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collections;
+import java.util.Map;
+// end::rx-result-consume-import[]
+
+@SuppressWarnings("deprecation")
 public class RxResultConsumeExample extends BaseApplication {
     public RxResultConsumeExample(String uri, String user, String password) {
         super(uri, user, password);

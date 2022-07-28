@@ -20,18 +20,19 @@ package org.neo4j.docs.driver;
 
 // tag::pass-bookmarks-import[]
 
-import static org.neo4j.driver.SessionConfig.builder;
-import static org.neo4j.driver.Values.parameters;
-// end::pass-bookmarks-import[]
-
-import java.util.ArrayList;
-import java.util.List;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.Values.parameters;
+// end::pass-bookmarks-import[]
 
 public class PassBookmarkExample extends BaseApplication {
 
@@ -79,6 +80,7 @@ public class PassBookmarkExample extends BaseApplication {
         return result;
     }
 
+    @SuppressWarnings("deprecation")
     public void addEmployAndMakeFriends() {
         // To collect the session bookmarks
         List<Bookmark> savedBookmarks = new ArrayList<>();

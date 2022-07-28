@@ -20,20 +20,21 @@ package org.neo4j.docs.driver;
 
 // tag::cypher-error-import[]
 
-import static org.neo4j.driver.Values.parameters;
-// end::cypher-error-import[]
-
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.ClientException;
 
+import static org.neo4j.driver.Values.parameters;
+// end::cypher-error-import[]
+
 public class CypherErrorExample extends BaseApplication {
     public CypherErrorExample(String uri, String user, String password) {
         super(uri, user, password);
     }
 
+    @SuppressWarnings("deprecation")
     // tag::cypher-error[]
     public int getEmployeeNumber(final String name) {
         try (Session session = driver.session()) {

@@ -20,10 +20,10 @@ package org.neo4j.docs.driver;
 
 // tag::autocommit-transaction-import[]
 
+import org.neo4j.driver.Session;
+
 import static org.neo4j.driver.Values.parameters;
 // end::autocommit-transaction-import[]
-
-import org.neo4j.driver.Session;
 
 public class AutocommitTransactionExample extends BaseApplication {
     public AutocommitTransactionExample(String uri, String user, String password) {

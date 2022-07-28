@@ -20,9 +20,10 @@ package org.neo4j.docs.driver;
 
 // tag::async-result-consume-import[]
 
+import org.neo4j.driver.async.AsyncSession;
+
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.async.AsyncSession;
 // end::async-result-consume-import[]
 
 public class AsyncResultConsumeExample extends BaseApplication {
@@ -30,6 +31,7 @@ public class AsyncResultConsumeExample extends BaseApplication {
         super(uri, user, password);
     }
 
+    @SuppressWarnings("deprecation")
     // tag::async-result-consume[]
     public CompletionStage<List<String>> getPeople() {
 

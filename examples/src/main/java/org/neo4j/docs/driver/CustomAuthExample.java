@@ -20,10 +20,11 @@ package org.neo4j.docs.driver;
 
 // tag::custom-auth-import[]
 
-import java.util.Map;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+
+import java.util.Map;
 // end::custom-auth-import[]
 
 public class CustomAuthExample implements AutoCloseable {
@@ -42,7 +43,7 @@ public class CustomAuthExample implements AutoCloseable {
     // end::custom-auth[]
 
     @Override
-    public void close() throws Exception {
+    public void close() throws RuntimeException {
         driver.close();
     }
 }

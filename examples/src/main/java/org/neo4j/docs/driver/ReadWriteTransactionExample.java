@@ -20,18 +20,19 @@ package org.neo4j.docs.driver;
 
 // tag::read-write-transaction-import[]
 
-import static org.neo4j.driver.Values.parameters;
-// end::read-write-transaction-import[]
-
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
+
+import static org.neo4j.driver.Values.parameters;
+// end::read-write-transaction-import[]
 
 public class ReadWriteTransactionExample extends BaseApplication {
     public ReadWriteTransactionExample(String uri, String user, String password) {
         super(uri, user, password);
     }
 
+    @SuppressWarnings("deprecation")
     // tag::read-write-transaction[]
     public long addPerson(final String name) {
         try (Session session = driver.session()) {

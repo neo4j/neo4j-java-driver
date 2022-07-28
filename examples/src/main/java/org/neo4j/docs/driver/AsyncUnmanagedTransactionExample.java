@@ -17,14 +17,17 @@
  * limitations under the License.
  */
 package org.neo4j.docs.driver;
+
 // tag::async-unmanaged-transaction-import[]
+
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.ResultCursor;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.ResultCursor;
 // end::async-unmanaged-transaction-import[]
 
 public class AsyncUnmanagedTransactionExample extends BaseApplication {

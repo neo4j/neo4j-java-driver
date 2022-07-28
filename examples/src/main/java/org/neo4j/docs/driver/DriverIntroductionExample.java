@@ -20,11 +20,6 @@ package org.neo4j.docs.driver;
 
 // tag::driver-introduction-example-import[]
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -34,6 +29,12 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.Neo4jException;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 // end::driver-introduction-example-import[]
 
 // tag::driver-introduction-example[]
@@ -47,11 +48,12 @@ public class DriverIntroductionExample implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws RuntimeException {
         // The driver object should be closed before the application ends.
         driver.close();
     }
 
+    @SuppressWarnings("deprecation")
     public void createFriendship(final String person1Name, final String person2Name, final String knowsFrom) {
         // To learn more about the Cypher syntax, see https://neo4j.com/docs/cypher-manual/current/
         // The Reference Card is also a good resource for keywords https://neo4j.com/docs/cypher-refcard/current/
@@ -83,6 +85,7 @@ public class DriverIntroductionExample implements AutoCloseable {
         }
     }
 
+    @SuppressWarnings("deprecation")
     public void findPerson(final String personName) {
         String readPersonByNameQuery = "MATCH (p:Person)\n" + "WHERE p.name = $person_name\n" + "RETURN p.name AS name";
 
