@@ -50,6 +50,7 @@ public class SessionLastBookmarks implements TestkitRequest {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState
                 .getRxSessionHolder(data.getSessionId())

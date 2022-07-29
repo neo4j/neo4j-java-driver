@@ -25,12 +25,16 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
+import java.io.Serial;
 import java.util.Map;
 import java.util.function.Function;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.MapValue;
 
 public class TestkitMapValueSerializer extends StdSerializer<MapValue> {
+    @Serial
+    private static final long serialVersionUID = 3405706388191274032L;
+
     public TestkitMapValueSerializer() {
         super(MapValue.class);
     }

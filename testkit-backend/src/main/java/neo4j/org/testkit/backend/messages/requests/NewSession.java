@@ -105,6 +105,7 @@ public class NewSession implements TestkitRequest {
                 driverHolder, driverHolder.getDriver().asyncSession(sessionConfig), sessionConfig);
     }
 
+    @SuppressWarnings("deprecation")
     private RxSessionHolder createRxSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
         return new RxSessionHolder(driverHolder, driverHolder.getDriver().rxSession(sessionConfig), sessionConfig);
     }

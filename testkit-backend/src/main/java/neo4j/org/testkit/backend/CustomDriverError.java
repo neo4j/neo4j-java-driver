@@ -18,7 +18,12 @@
  */
 package neo4j.org.testkit.backend;
 
+import java.io.Serial;
+
 public class CustomDriverError extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID = 2979071989786663535L;
+
     public CustomDriverError(Throwable cause) {
         super(cause);
     }

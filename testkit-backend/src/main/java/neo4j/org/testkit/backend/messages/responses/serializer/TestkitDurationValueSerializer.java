@@ -24,10 +24,14 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
+import java.io.Serial;
 import org.neo4j.driver.internal.value.DurationValue;
 import org.neo4j.driver.types.IsoDuration;
 
 public class TestkitDurationValueSerializer extends StdSerializer<DurationValue> {
+    @Serial
+    private static final long serialVersionUID = -4371898769147355036L;
+
     public TestkitDurationValueSerializer() {
         super(DurationValue.class);
     }

@@ -23,10 +23,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
+import java.io.Serial;
 import java.time.LocalDate;
 import java.util.Date;
 
 public class TestkitCypherDateDeserializer extends StdDeserializer<LocalDate> {
+
+    @Serial
+    private static final long serialVersionUID = 3489940766207129614L;
 
     private final TestkitCypherTypeMapper mapper;
 

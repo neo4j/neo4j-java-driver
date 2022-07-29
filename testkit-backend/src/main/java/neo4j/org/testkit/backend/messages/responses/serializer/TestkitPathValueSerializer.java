@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
+import java.io.Serial;
 import java.util.stream.StreamSupport;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.NodeValue;
@@ -32,6 +33,9 @@ import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.types.Path;
 
 public class TestkitPathValueSerializer extends StdSerializer<PathValue> {
+    @Serial
+    private static final long serialVersionUID = -6937949051813143300L;
+
     public TestkitPathValueSerializer() {
         super(PathValue.class);
     }

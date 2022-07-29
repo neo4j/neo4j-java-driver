@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
+import java.io.Serial;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
@@ -35,11 +36,15 @@ import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Node;
 
 public class TestkitNodeValueSerializer extends StdSerializer<NodeValue> {
+    @Serial
+    private static final long serialVersionUID = 5456264010641357998L;
+
     public TestkitNodeValueSerializer() {
         super(NodeValue.class);
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void serialize(NodeValue nodeValue, JsonGenerator gen, SerializerProvider serializerProvider)
             throws IOException {
 

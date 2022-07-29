@@ -18,4 +18,9 @@
  */
 package neo4j.org.testkit.backend;
 
-public class FrontendError extends RuntimeException {}
+import java.io.Serial;
+
+public class FrontendError extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID = -8369933385092563391L;
+}

@@ -24,12 +24,16 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
+import java.io.Serial;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import org.neo4j.driver.internal.value.DateTimeValue;
 
 public class TestkitDateTimeValueSerializer extends StdSerializer<DateTimeValue> {
+    @Serial
+    private static final long serialVersionUID = 819438767898259613L;
+
     public TestkitDateTimeValueSerializer() {
         super(DateTimeValue.class);
     }

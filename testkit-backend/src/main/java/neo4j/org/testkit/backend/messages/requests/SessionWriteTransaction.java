@@ -49,6 +49,7 @@ public class SessionWriteTransaction implements TestkitRequest {
     private SessionWriteTransactionBody data;
 
     @Override
+    @SuppressWarnings("deprecation")
     public TestkitResponse process(TestkitState testkitState) {
         SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         Session session = sessionHolder.getSession();
@@ -57,6 +58,7 @@ public class SessionWriteTransaction implements TestkitRequest {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
         return testkitState
                 .getAsyncSessionHolder(data.getSessionId())
@@ -78,6 +80,7 @@ public class SessionWriteTransaction implements TestkitRequest {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState
                 .getRxSessionHolder(data.getSessionId())
@@ -114,6 +117,7 @@ public class SessionWriteTransaction implements TestkitRequest {
                 .then(Mono.just(retryableDone()));
     }
 
+    @SuppressWarnings("deprecation")
     private TransactionWork<Void> handle(TestkitState testkitState, SessionHolder sessionHolder) {
         return tx -> {
             String txId = testkitState.addTransactionHolder(new TransactionHolder(sessionHolder, tx));

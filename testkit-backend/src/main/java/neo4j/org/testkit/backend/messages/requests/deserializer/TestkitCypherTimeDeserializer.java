@@ -23,9 +23,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
+import java.io.Serial;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherTime;
 
 public class TestkitCypherTimeDeserializer extends StdDeserializer<CypherTime> {
+    @Serial
+    private static final long serialVersionUID = 8354352358618500970L;
+
     private final TestkitCypherTypeMapper mapper;
 
     public TestkitCypherTimeDeserializer() {
