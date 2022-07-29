@@ -20,13 +20,13 @@ package org.neo4j.docs.driver;
 
 // tag::config-max-retry-time-import[]
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-// end::config-max-retry-time-import[]
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+// end::config-max-retry-time-import[]
 
 public class ConfigMaxRetryTimeExample implements AutoCloseable {
     private final Driver driver;
@@ -41,7 +41,7 @@ public class ConfigMaxRetryTimeExample implements AutoCloseable {
     // end::config-max-retry-time[]
 
     @Override
-    public void close() throws Exception {
+    public void close() throws RuntimeException {
         driver.close();
     }
 }

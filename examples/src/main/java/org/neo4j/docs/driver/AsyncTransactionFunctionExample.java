@@ -17,12 +17,15 @@
  * limitations under the License.
  */
 package org.neo4j.docs.driver;
+
 // tag::async-transaction-function-import[]
+
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.summary.ResultSummary;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.summary.ResultSummary;
 // end::async-transaction-function-import[]
 
 public class AsyncTransactionFunctionExample extends BaseApplication {
@@ -30,6 +33,7 @@ public class AsyncTransactionFunctionExample extends BaseApplication {
         super(uri, user, password);
     }
 
+    @SuppressWarnings("deprecation")
     // tag::async-transaction-function[]
     public CompletionStage<ResultSummary> printAllProducts() {
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";

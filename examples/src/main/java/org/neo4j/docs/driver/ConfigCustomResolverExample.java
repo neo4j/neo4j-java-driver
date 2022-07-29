@@ -17,13 +17,9 @@
  * limitations under the License.
  */
 package org.neo4j.docs.driver;
+
 // tag::config-custom-resolver-import[]
 
-import static org.neo4j.driver.SessionConfig.builder;
-import static org.neo4j.driver.Values.parameters;
-
-import java.util.Arrays;
-import java.util.HashSet;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
@@ -34,7 +30,13 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.net.ServerAddress;
 
+import java.util.Arrays;
+import java.util.HashSet;
+
+import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.Values.parameters;
 // end::config-custom-resolver-import[]
+
 public class ConfigCustomResolverExample implements AutoCloseable {
     private final Driver driver;
 
@@ -75,7 +77,7 @@ public class ConfigCustomResolverExample implements AutoCloseable {
     // end::config-custom-resolver[]
 
     @Override
-    public void close() throws Exception {
+    public void close() throws RuntimeException {
         driver.close();
     }
 

@@ -74,6 +74,7 @@ class ExamplesIT {
 
     private String uri;
 
+    @SuppressWarnings("deprecation")
     private int readInt(String database, final String query, final Value parameters) {
         SessionConfig sessionConfig;
         if (database == null) {
@@ -95,6 +96,7 @@ class ExamplesIT {
         return readInt(query, parameters());
     }
 
+    @SuppressWarnings("deprecation")
     private void write(final String query, final Value parameters) {
         try (Session session = neo4j.driver().session()) {
             session.writeTransaction(tx -> {
@@ -243,8 +245,8 @@ class ExamplesIT {
         // Given
         try (CypherErrorExample example = new CypherErrorExample(uri, USER, neo4j.adminPassword())) {
             // When & Then
-            StdIOCapture stdIO = new StdIOCapture();
-            try (AutoCloseable ignored = stdIO.capture()) {
+            StdIOCapture stdIO = StdIOCapture.capture();
+            try (stdIO) {
                 int employeeNumber = example.getEmployeeNumber("Alice");
 
                 assertThat(employeeNumber, equalTo(-1));
@@ -267,9 +269,9 @@ class ExamplesIT {
         // Given
         try (HelloWorldExample greeter = new HelloWorldExample(uri, USER, neo4j.adminPassword())) {
             // When
-            StdIOCapture stdIO = new StdIOCapture();
+            StdIOCapture stdIO = StdIOCapture.capture();
 
-            try (AutoCloseable ignored = stdIO.capture()) {
+            try (stdIO) {
                 greeter.printGreeting("hello, world");
             }
 
@@ -289,9 +291,9 @@ class ExamplesIT {
         try (DriverIntroductionExample intro =
                 new DriverIntroductionExample(uri, USER, neo4j.adminPassword(), config)) {
             // When
-            StdIOCapture stdIO = new StdIOCapture();
+            StdIOCapture stdIO = StdIOCapture.capture();
 
-            try (AutoCloseable ignored = stdIO.capture()) {
+            try (stdIO) {
                 intro.createFriendship("Alice", "David", "School");
                 intro.findPerson("Alice");
             }
@@ -422,10 +424,10 @@ class ExamplesIT {
                         "UNWIND ['Infinity Gauntlet', 'Mjölnir'] AS item " + "CREATE (:Product {id: 0, title: item})");
             }
 
-            StdIOCapture stdIOCapture = new StdIOCapture();
+            StdIOCapture stdIOCapture = StdIOCapture.capture();
 
             // print all 'Product' nodes to fake stdout
-            try (AutoCloseable ignore = stdIOCapture.capture()) {
+            try (stdIOCapture) {
                 ResultSummary summary = await(example.printAllProducts());
                 assertEquals(QueryType.READ_ONLY, summary.queryType());
             }
@@ -470,10 +472,10 @@ class ExamplesIT {
                 session.run("CREATE (:Product {id: 0, title: 'Mind Gem'})");
             }
 
-            StdIOCapture stdIOCapture = new StdIOCapture();
+            StdIOCapture stdIOCapture = StdIOCapture.capture();
 
             // print the single 'Product' node
-            try (AutoCloseable ignore = stdIOCapture.capture()) {
+            try (stdIOCapture) {
                 await(example.printSingleProduct());
             }
 
@@ -567,10 +569,10 @@ class ExamplesIT {
                         "UNWIND ['Infinity Gauntlet', 'Mjölnir'] AS item " + "CREATE (:Product {id: 0, title: item})");
             }
 
-            StdIOCapture stdIOCapture = new StdIOCapture();
+            StdIOCapture stdIOCapture = StdIOCapture.capture();
 
             // print all 'Product' nodes to fake stdout
-            try (AutoCloseable ignore = stdIOCapture.capture()) {
+            try (stdIOCapture) {
                 final List<ResultSummary> summaryList = await(example.printAllProducts());
                 assertThat(summaryList.size(), equalTo(1));
                 ResultSummary summary = summaryList.get(0);
@@ -593,10 +595,10 @@ class ExamplesIT {
                         "UNWIND ['Infinity Gauntlet', 'Mjölnir'] AS item " + "CREATE (:Product {id: 0, title: item})");
             }
 
-            StdIOCapture stdIOCapture = new StdIOCapture();
+            StdIOCapture stdIOCapture = StdIOCapture.capture();
 
             // print all 'Product' nodes to fake stdout
-            try (AutoCloseable ignore = stdIOCapture.capture()) {
+            try (stdIOCapture) {
                 final List<ResultSummary> summaryList = await(example.printAllProductsRxJava());
                 assertThat(summaryList.size(), equalTo(1));
                 ResultSummary summary = summaryList.get(0);

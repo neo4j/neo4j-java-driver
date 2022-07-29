@@ -18,23 +18,26 @@
  */
 package org.neo4j.docs.driver;
 
-import io.reactivex.Flowable;
 // tag::rx-transaction-function-import[]
+
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
-import java.util.Collections;
-import java.util.Map;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.summary.ResultSummary;
-// end::rx-transaction-function-import[]
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Collections;
+import java.util.Map;
+// end::rx-transaction-function-import[]
 
 public class RxTransactionFunctionExample extends BaseApplication {
     public RxTransactionFunctionExample(String uri, String user, String password) {
         super(uri, user, password);
     }
 
+    @SuppressWarnings("deprecation")
     // tag::rx-transaction-function[]
     public Flux<ResultSummary> printAllProducts() {
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
@@ -52,6 +55,7 @@ public class RxTransactionFunctionExample extends BaseApplication {
     }
     // end::rx-transaction-function[]
 
+    @SuppressWarnings("deprecation")
     // tag::RxJava-transaction-function[]
     public Flowable<ResultSummary> printAllProductsRxJava() {
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";

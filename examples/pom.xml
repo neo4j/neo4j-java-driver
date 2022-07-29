@@ -18,6 +18,9 @@
 
   <properties>
     <rootDir>${project.basedir}/..</rootDir>
+    <!-- Turned off because it moves/deletes example tags and needs investigation. -->
+    <spotless.check.skip>true</spotless.check.skip>
+    <spotless.apply.skip>true</spotless.apply.skip>
   </properties>
 
   <dependencies>
@@ -82,13 +85,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <compilerArgs combine.self="override"/>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>

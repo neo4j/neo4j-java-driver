@@ -20,10 +20,11 @@ package org.neo4j.docs.driver;
 
 // tag::result-consume-import[]
 
-import java.util.ArrayList;
-import java.util.List;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
+
+import java.util.ArrayList;
+import java.util.List;
 // end::result-consume-import[]
 
 public class ResultConsumeExample extends BaseApplication {
@@ -32,6 +33,7 @@ public class ResultConsumeExample extends BaseApplication {
     }
 
     // tag::result-consume[]
+    @SuppressWarnings("deprecation")
     public List<String> getPeople() {
         try (Session session = driver.session()) {
             return session.readTransaction(tx -> {

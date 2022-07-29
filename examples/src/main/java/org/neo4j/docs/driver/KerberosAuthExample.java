@@ -19,7 +19,6 @@
 package org.neo4j.docs.driver;
 
 // tag::kerberos-auth-import[]
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -35,7 +34,7 @@ public class KerberosAuthExample implements AutoCloseable {
     // end::kerberos-auth[]
 
     @Override
-    public void close() throws Exception {
+    public void close() throws RuntimeException {
         driver.close();
     }
 }

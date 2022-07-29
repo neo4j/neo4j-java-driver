@@ -30,7 +30,7 @@ public abstract class BaseApplication implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws RuntimeException {
         driver.close();
     }
 }

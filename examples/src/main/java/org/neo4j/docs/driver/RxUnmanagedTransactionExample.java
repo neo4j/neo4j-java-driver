@@ -18,18 +18,21 @@
  */
 package org.neo4j.docs.driver;
 
-import io.reactivex.Flowable;
 // tag::reactor-unmanaged-transaction-import[]
+
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
-import java.util.Collections;
-import java.util.Map;
 import org.neo4j.driver.reactive.RxQueryRunner;
 import org.neo4j.driver.reactive.RxSession;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-// tag::reactor-unmanaged-transaction-import[]
+import java.util.Collections;
+import java.util.Map;
+// end::reactor-unmanaged-transaction-import[]
+
+@SuppressWarnings("deprecation")
 public class RxUnmanagedTransactionExample extends BaseApplication {
     public RxUnmanagedTransactionExample(String uri, String user, String password) {
         super(uri, user, password);

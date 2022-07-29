@@ -20,24 +20,25 @@ package org.neo4j.docs.driver;
 
 // tag::async-result-consume-import[]
 
-import static org.neo4j.driver.Values.parameters;
-// end::async-result-consume-import[]
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.SummaryCounters;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import static org.neo4j.driver.Values.parameters;
+// end::async-result-consume-import[]
+
 public class AsyncRunMultipleTransactionExample extends BaseApplication {
     public AsyncRunMultipleTransactionExample(String uri, String user, String password) {
         super(uri, user, password);
     }
 
+    @SuppressWarnings("deprecation")
     // tag::async-multiple-tx[]
     public CompletionStage<Integer> addEmployees(final String companyName) {
         AsyncSession session = driver.asyncSession();
@@ -53,14 +54,13 @@ public class AsyncRunMultipleTransactionExample extends BaseApplication {
                         cursor -> cursor.listAsync(record -> record.get("name").asString()));
     }
 
-    private static CompletableFuture<Integer> createNodes(
+    private static CompletionStage<Integer> createNodes(
             AsyncTransaction tx, String companyName, List<String> personNames) {
-        CompletableFuture<Integer>[] nodeCreatedCounts = personNames.stream()
+        return personNames.stream()
                 .map(personName -> createNode(tx, companyName, personName))
-                .toArray(size -> new CompletableFuture[size]);
-        return CompletableFuture.allOf(nodeCreatedCounts).thenApply(ignored -> Arrays.stream(nodeCreatedCounts)
-                .map(CompletableFuture::join)
-                .reduce(0, Integer::sum));
+                .reduce(
+                        CompletableFuture.completedFuture(0),
+                        (stage1, stage2) -> stage1.thenCombine(stage2, Integer::sum));
     }
 
     private static CompletionStage<Integer> createNode(AsyncTransaction tx, String companyName, String personName) {

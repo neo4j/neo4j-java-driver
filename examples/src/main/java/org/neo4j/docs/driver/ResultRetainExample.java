@@ -20,21 +20,23 @@ package org.neo4j.docs.driver;
 
 // tag::result-retain-import[]
 
-import static org.neo4j.driver.Values.parameters;
-// end::result-retain-import[]
-
-import java.util.List;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
 
+import java.util.List;
+
+import static org.neo4j.driver.Values.parameters;
+// end::result-retain-import[]
+
 public class ResultRetainExample extends BaseApplication {
     public ResultRetainExample(String uri, String user, String password) {
         super(uri, user, password);
     }
 
+    @SuppressWarnings("deprecation")
     // tag::result-retain[]
     public int addEmployees(final String companyName) {
         try (Session session = driver.session()) {

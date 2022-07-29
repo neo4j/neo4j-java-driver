@@ -20,16 +20,17 @@ package org.neo4j.docs.driver;
 
 // tag::transaction-function-import[]
 
+import org.neo4j.driver.Session;
+
 import static org.neo4j.driver.Values.parameters;
 // end::transaction-function-import[]
-
-import org.neo4j.driver.Session;
 
 public class TransactionFunctionExample extends BaseApplication {
     public TransactionFunctionExample(String uri, String user, String password) {
         super(uri, user, password);
     }
 
+    @SuppressWarnings("deprecation")
     // tag::transaction-function[]
     public void addPerson(final String name) {
         try (Session session = driver.session()) {

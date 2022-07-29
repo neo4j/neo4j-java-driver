@@ -20,14 +20,14 @@ package org.neo4j.docs.driver;
 
 // tag::hello-world-import[]
 
-import static org.neo4j.driver.Values.parameters;
-// end::hello-world-import[]
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
+
+import static org.neo4j.driver.Values.parameters;
+// end::hello-world-import[]
 
 // tag::hello-world[]
 public class HelloWorldExample implements AutoCloseable {
@@ -38,10 +38,11 @@ public class HelloWorldExample implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws RuntimeException {
         driver.close();
     }
 
+    @SuppressWarnings("deprecation")
     public void printGreeting(final String message) {
         try (Session session = driver.session()) {
             String greeting = session.writeTransaction(tx -> {

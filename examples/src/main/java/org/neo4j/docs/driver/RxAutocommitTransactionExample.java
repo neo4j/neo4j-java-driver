@@ -18,16 +18,19 @@
  */
 package org.neo4j.docs.driver;
 
-import io.reactivex.Flowable;
 // tag::rx-autocommit-transaction-import[]
+
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
-import java.util.Collections;
-import java.util.Map;
 import org.neo4j.driver.reactive.RxSession;
-// end::rx-autocommit-transaction-import[]
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collections;
+import java.util.Map;
+// end::rx-autocommit-transaction-import[]
+
+@SuppressWarnings("deprecation")
 public class RxAutocommitTransactionExample extends BaseApplication {
     public RxAutocommitTransactionExample(String uri, String user, String password) {
         super(uri, user, password);

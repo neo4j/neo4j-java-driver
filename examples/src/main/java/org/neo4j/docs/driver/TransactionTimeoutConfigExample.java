@@ -30,6 +30,7 @@ public class TransactionTimeoutConfigExample extends BaseApplication {
         super(uri, user, password);
     }
 
+    @SuppressWarnings("deprecation")
     // tag::transaction-timeout-config[]
     public void addPerson(final String name) {
         try (Session session = driver.session()) {

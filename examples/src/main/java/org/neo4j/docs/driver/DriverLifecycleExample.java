@@ -19,7 +19,6 @@
 package org.neo4j.docs.driver;
 
 // tag::driver-lifecycle-import[]
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -34,7 +33,7 @@ public class DriverLifecycleExample implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws RuntimeException {
         driver.close();
     }
 }
