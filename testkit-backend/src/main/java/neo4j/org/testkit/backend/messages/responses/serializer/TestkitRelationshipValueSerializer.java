@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
+import java.io.Serial;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -33,11 +34,15 @@ import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Relationship;
 
 public class TestkitRelationshipValueSerializer extends StdSerializer<RelationshipValue> {
+    @Serial
+    private static final long serialVersionUID = 7011005216175127691L;
+
     public TestkitRelationshipValueSerializer() {
         super(RelationshipValue.class);
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void serialize(RelationshipValue relationshipValue, JsonGenerator gen, SerializerProvider provider)
             throws IOException {
         cypherObject(gen, "Relationship", () -> {

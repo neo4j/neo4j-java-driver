@@ -26,12 +26,16 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
+import java.io.Serial;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherType;
 
 public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String, Object>> {
+    @Serial
+    private static final long serialVersionUID = -3239342714470961079L;
+
     public TestkitCypherParamDeserializer() {
         super(Map.class);
     }

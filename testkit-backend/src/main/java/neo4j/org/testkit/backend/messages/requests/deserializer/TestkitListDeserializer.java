@@ -26,11 +26,15 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherType;
 
 public class TestkitListDeserializer extends StdDeserializer<List<?>> {
+    @Serial
+    private static final long serialVersionUID = -1878499456593526741L;
+
     private final TestkitCypherParamDeserializer mapDeserializer;
 
     public TestkitListDeserializer() {

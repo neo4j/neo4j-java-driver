@@ -26,6 +26,7 @@ import neo4j.org.testkit.backend.RxBufferedSubscriber;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.reactive.RxResult;
 
+@SuppressWarnings("deprecation")
 public class RxResultHolder extends AbstractResultHolder<RxSessionHolder, RxTransactionHolder, RxResult> {
     @Setter
     private RxBufferedSubscriber<Record> subscriber;

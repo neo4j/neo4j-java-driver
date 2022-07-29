@@ -23,10 +23,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
+import java.io.Serial;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.types.IsoDuration;
 
 public class TestkitCypherDurationDeserializer extends StdDeserializer<IsoDuration> {
+    @Serial
+    private static final long serialVersionUID = 3128342779161014747L;
+
     private final TestkitCypherTypeMapper mapper;
 
     public TestkitCypherDurationDeserializer() {

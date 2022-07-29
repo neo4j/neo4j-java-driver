@@ -19,6 +19,7 @@
 package neo4j.org.testkit.backend.messages;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import java.io.Serial;
 import java.time.LocalDate;
 import java.util.List;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherDateDeserializer;
@@ -57,6 +58,9 @@ import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.types.IsoDuration;
 
 public class TestkitModule extends SimpleModule {
+    @Serial
+    private static final long serialVersionUID = 7051732358423895087L;
+
     public TestkitModule() {
         this.addDeserializer(List.class, new TestkitListDeserializer());
         this.addDeserializer(CypherDateTime.class, new TestkitCypherDateTimeDeserializer());
