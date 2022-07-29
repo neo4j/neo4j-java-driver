@@ -281,7 +281,6 @@ public class DriverFactory {
                 address,
                 routingSettings,
                 connectionPool,
-                config.updateRoutingTableTimeoutMillis(),
                 eventExecutorGroup,
                 createClock(),
                 config.logging(),
