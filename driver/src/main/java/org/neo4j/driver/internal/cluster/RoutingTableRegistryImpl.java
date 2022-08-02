@@ -27,16 +27,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.DatabaseNameUtil;
@@ -46,12 +42,10 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 
 public class RoutingTableRegistryImpl implements RoutingTableRegistry {
-    static final String TABLE_ACQUISITION_TIMEOUT_MESSAGE = "Failed to acquire routing table in configured timeout.";
     private final ConcurrentMap<DatabaseName, RoutingTableHandler> routingTableHandlers;
     private final Map<Principal, CompletionStage<DatabaseName>> principalToDatabaseNameStage;
     private final RoutingTableHandlerFactory factory;
     private final Logger log;
-    private final long updateRoutingTableTimeoutMillis;
     private final Clock clock;
     private final ConnectionPool connectionPool;
     private final Rediscovery rediscovery;
@@ -59,14 +53,12 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
     public RoutingTableRegistryImpl(
             ConnectionPool connectionPool,
             Rediscovery rediscovery,
-            long updateRoutingTableTimeoutMillis,
             Clock clock,
             Logging logging,
             long routingTablePurgeDelayMs) {
         this(
                 new ConcurrentHashMap<>(),
                 new RoutingTableHandlerFactory(connectionPool, rediscovery, clock, logging, routingTablePurgeDelayMs),
-                updateRoutingTableTimeoutMillis,
                 clock,
                 connectionPool,
                 rediscovery,
@@ -76,7 +68,6 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
     RoutingTableRegistryImpl(
             ConcurrentMap<DatabaseName, RoutingTableHandler> routingTableHandlers,
             RoutingTableHandlerFactory factory,
-            long updateRoutingTableTimeoutMillis,
             Clock clock,
             ConnectionPool connectionPool,
             Rediscovery rediscovery,
@@ -84,7 +75,6 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
         this.factory = factory;
         this.routingTableHandlers = routingTableHandlers;
         this.principalToDatabaseNameStage = new HashMap<>();
-        this.updateRoutingTableTimeoutMillis = updateRoutingTableTimeoutMillis;
         this.clock = clock;
         this.connectionPool = connectionPool;
         this.rediscovery = rediscovery;
@@ -93,18 +83,14 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
 
     @Override
     public CompletionStage<RoutingTableHandler> ensureRoutingTable(ConnectionContext context) {
-        return ensureDatabaseNameIsCompleted(context)
-                .thenCompose(ctxAndHandler -> {
-                    ConnectionContext completedContext = ctxAndHandler.getContext();
-                    RoutingTableHandler handler = ctxAndHandler.getHandler() != null
-                            ? ctxAndHandler.getHandler()
-                            : getOrCreate(Futures.joinNowOrElseThrow(
-                                    completedContext.databaseNameFuture(), PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER));
-                    return handler.ensureRoutingTable(completedContext).thenApply(ignored -> handler);
-                })
-                .toCompletableFuture()
-                .orTimeout(updateRoutingTableTimeoutMillis, TimeUnit.MILLISECONDS)
-                .handle(this::handleTimeoutException);
+        return ensureDatabaseNameIsCompleted(context).thenCompose(ctxAndHandler -> {
+            ConnectionContext completedContext = ctxAndHandler.getContext();
+            RoutingTableHandler handler = ctxAndHandler.getHandler() != null
+                    ? ctxAndHandler.getHandler()
+                    : getOrCreate(Futures.joinNowOrElseThrow(
+                            completedContext.databaseNameFuture(), PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER));
+            return handler.ensureRoutingTable(completedContext).thenApply(ignored -> handler);
+        });
     }
 
     private CompletionStage<ConnectionContextAndHandler> ensureDatabaseNameIsCompleted(ConnectionContext context) {
@@ -202,19 +188,6 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
     @Override
     public Optional<RoutingTableHandler> getRoutingTableHandler(DatabaseName databaseName) {
         return Optional.ofNullable(routingTableHandlers.get(databaseName));
-    }
-
-    private RoutingTableHandler handleTimeoutException(RoutingTableHandler handler, Throwable throwable) {
-        if (throwable != null) {
-            if (throwable instanceof TimeoutException) {
-                throw new ServiceUnavailableException(TABLE_ACQUISITION_TIMEOUT_MESSAGE, throwable);
-            } else if (throwable instanceof RuntimeException runtimeException) {
-                throw runtimeException;
-            } else {
-                throw new CompletionException(throwable);
-            }
-        }
-        return handler;
     }
 
     // For tests

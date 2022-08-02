@@ -76,7 +76,6 @@ public class LoadBalancer implements ConnectionProvider {
             BoltServerAddress initialRouter,
             RoutingSettings settings,
             ConnectionPool connectionPool,
-            long updateRoutingTableTimeoutMillis,
             EventExecutorGroup eventExecutorGroup,
             Clock clock,
             Logging logging,
@@ -89,7 +88,6 @@ public class LoadBalancer implements ConnectionProvider {
                         initialRouter, resolver, settings, clock, logging, requireNonNull(domainNameResolver)),
                 settings,
                 loadBalancingStrategy,
-                updateRoutingTableTimeoutMillis,
                 eventExecutorGroup,
                 clock,
                 logging);
@@ -100,14 +98,12 @@ public class LoadBalancer implements ConnectionProvider {
             Rediscovery rediscovery,
             RoutingSettings settings,
             LoadBalancingStrategy loadBalancingStrategy,
-            long updateRoutingTableTimeoutMillis,
             EventExecutorGroup eventExecutorGroup,
             Clock clock,
             Logging logging) {
         this(
                 connectionPool,
-                createRoutingTables(
-                        connectionPool, rediscovery, settings, updateRoutingTableTimeoutMillis, clock, logging),
+                createRoutingTables(connectionPool, rediscovery, settings, clock, logging),
                 rediscovery,
                 loadBalancingStrategy,
                 eventExecutorGroup,
@@ -279,16 +275,10 @@ public class LoadBalancer implements ConnectionProvider {
             ConnectionPool connectionPool,
             Rediscovery rediscovery,
             RoutingSettings settings,
-            long updateRoutingTableTimeoutMillis,
             Clock clock,
             Logging logging) {
         return new RoutingTableRegistryImpl(
-                connectionPool,
-                rediscovery,
-                updateRoutingTableTimeoutMillis,
-                clock,
-                logging,
-                settings.routingTablePurgeDelayMs());
+                connectionPool, rediscovery, clock, logging, settings.routingTablePurgeDelayMs());
     }
 
     private static Rediscovery createRediscovery(
