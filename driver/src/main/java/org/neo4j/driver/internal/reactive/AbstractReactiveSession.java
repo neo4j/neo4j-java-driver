@@ -23,6 +23,7 @@ import static org.neo4j.driver.internal.reactive.RxUtils.createSingleItemPublish
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 import java.util.function.Function;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
@@ -32,6 +33,7 @@ import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.util.Futures;
 import org.reactivestreams.Publisher;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Flux;
 
 abstract class AbstractReactiveSession<S> {
@@ -47,23 +49,24 @@ abstract class AbstractReactiveSession<S> {
 
     abstract S createTransaction(UnmanagedTransaction unmanagedTransaction);
 
-    abstract Publisher<Void> closeTransaction(S transaction, boolean commit);
+    abstract Flow.Publisher<Void> closeTransaction(S transaction, boolean commit);
 
-    public Publisher<S> beginTransaction(TransactionConfig config) {
-        return createSingleItemPublisher(
-                () -> {
-                    CompletableFuture<S> txFuture = new CompletableFuture<>();
-                    session.beginTransactionAsync(config).whenComplete((tx, completionError) -> {
-                        if (tx != null) {
-                            txFuture.complete(createTransaction(tx));
-                        } else {
-                            releaseConnectionBeforeReturning(txFuture, completionError);
-                        }
-                    });
-                    return txFuture;
-                },
-                () -> new IllegalStateException(
-                        "Unexpected condition, begin transaction call has completed successfully with transaction being null"));
+    public Flow.Publisher<S> beginTransaction(TransactionConfig config) {
+        return JdkFlowAdapter.publisherToFlowPublisher(
+                createSingleItemPublisher(
+                        () -> {
+                            CompletableFuture<S> txFuture = new CompletableFuture<>();
+                            session.beginTransactionAsync(config).whenComplete((tx, completionError) -> {
+                                if (tx != null) {
+                                    txFuture.complete(createTransaction(tx));
+                                } else {
+                                    releaseConnectionBeforeReturning(txFuture, completionError);
+                                }
+                            });
+                            return txFuture;
+                        },
+                        () -> new IllegalStateException(
+                                "Unexpected condition, begin transaction call has completed successfully with transaction being null")));
     }
 
     Publisher<S> beginTransaction(AccessMode mode, TransactionConfig config) {
@@ -88,9 +91,9 @@ abstract class AbstractReactiveSession<S> {
         Flux<T> repeatableWork = Flux.usingWhen(
                 beginTransaction(mode, config),
                 work,
-                tx -> closeTransaction(tx, true),
-                (tx, error) -> closeTransaction(tx, false),
-                (tx) -> closeTransaction(tx, false));
+                tx -> JdkFlowAdapter.flowPublisherToFlux(closeTransaction(tx, true)),
+                (tx, error) -> JdkFlowAdapter.flowPublisherToFlux(closeTransaction(tx, false)),
+                (tx) -> JdkFlowAdapter.flowPublisherToFlux(closeTransaction(tx, false)));
         return session.retryLogic().retryRx(repeatableWork);
     }
 
@@ -115,7 +118,7 @@ abstract class AbstractReactiveSession<S> {
         return session.lastBookmarks();
     }
 
-    public <T> Publisher<T> close() {
+    public <T> Flow.Publisher<T> close() {
         return createEmptyPublisher(session::closeAsync);
     }
 }

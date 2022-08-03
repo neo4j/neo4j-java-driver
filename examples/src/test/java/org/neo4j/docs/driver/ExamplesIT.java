@@ -18,6 +18,32 @@
  */
 package org.neo4j.docs.driver;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionConfig;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.exceptions.value.Uncoercible;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.summary.QueryType;
+import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
+import org.neo4j.driver.testutil.StdIOCapture;
+import org.neo4j.driver.testutil.TestUtil;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
@@ -39,31 +65,6 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.testutil.TestUtil.await;
 import static org.neo4j.driver.testutil.TestUtil.createDatabase;
 import static org.neo4j.driver.testutil.TestUtil.dropDatabase;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
-import org.neo4j.driver.exceptions.value.Uncoercible;
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.summary.QueryType;
-import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.testutil.DatabaseExtension;
-import org.neo4j.driver.testutil.ParallelizableIT;
-import org.neo4j.driver.testutil.StdIOCapture;
-import org.neo4j.driver.testutil.TestUtil;
 
 @ParallelizableIT
 class ExamplesIT {
@@ -538,107 +539,107 @@ class ExamplesIT {
         }
     }
 
-    @Test
-    @EnabledOnNeo4jWith(BOLT_V4)
-    void testRxUnmanagedTransactionExample() throws Exception {
-        try (RxUnmanagedTransactionExample example =
-                new RxUnmanagedTransactionExample(uri, USER, neo4j.adminPassword())) {
-            // create a 'Product' node
-            try (Session session = neo4j.driver().session()) {
-                session.run("CREATE (:Product {id: 0, title: 'Mind Gem'})");
-            }
-
-            List<String> products = await(example.readSingleProduct());
-            assertEquals(1, products.size());
-            assertEquals("Mind Gem", products.get(0));
-
-            products = await(example.readSingleProductRxJava());
-            assertEquals(1, products.size());
-            assertEquals("Mind Gem", products.get(0));
-        }
-    }
-
-    @Test
-    @EnabledOnNeo4jWith(BOLT_V4)
-    void testShouldRunRxTransactionFunctionExampleReactor() throws Exception {
-        try (RxTransactionFunctionExample example =
-                new RxTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
-            // create some 'Product' nodes
-            try (Session session = neo4j.driver().session()) {
-                session.run(
-                        "UNWIND ['Infinity Gauntlet', 'Mjölnir'] AS item " + "CREATE (:Product {id: 0, title: item})");
-            }
-
-            StdIOCapture stdIOCapture = StdIOCapture.capture();
-
-            // print all 'Product' nodes to fake stdout
-            try (stdIOCapture) {
-                final List<ResultSummary> summaryList = await(example.printAllProducts());
-                assertThat(summaryList.size(), equalTo(1));
-                ResultSummary summary = summaryList.get(0);
-                assertEquals(QueryType.READ_ONLY, summary.queryType());
-            }
-
-            Set<String> capturedOutput = new HashSet<>(stdIOCapture.stdout());
-            assertEquals(new HashSet<>(asList("Infinity Gauntlet", "Mjölnir")), capturedOutput);
-        }
-    }
-
-    @Test
-    @EnabledOnNeo4jWith(BOLT_V4)
-    void testShouldRunRxTransactionFunctionExampleRxJava() throws Exception {
-        try (RxTransactionFunctionExample example =
-                new RxTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
-            // create some 'Product' nodes
-            try (Session session = neo4j.driver().session()) {
-                session.run(
-                        "UNWIND ['Infinity Gauntlet', 'Mjölnir'] AS item " + "CREATE (:Product {id: 0, title: item})");
-            }
-
-            StdIOCapture stdIOCapture = StdIOCapture.capture();
-
-            // print all 'Product' nodes to fake stdout
-            try (stdIOCapture) {
-                final List<ResultSummary> summaryList = await(example.printAllProductsRxJava());
-                assertThat(summaryList.size(), equalTo(1));
-                ResultSummary summary = summaryList.get(0);
-                assertEquals(QueryType.READ_ONLY, summary.queryType());
-            }
-
-            Set<String> capturedOutput = new HashSet<>(stdIOCapture.stdout());
-            assertEquals(new HashSet<>(asList("Infinity Gauntlet", "Mjölnir")), capturedOutput);
-        }
-    }
-
-    @Test
-    @EnabledOnNeo4jWith(BOLT_V4)
-    void testShouldRunRxResultConsumeExampleReactor() throws Exception {
-        // Given
-        write("CREATE (a:Person {name: 'Alice'})");
-        write("CREATE (a:Person {name: 'Bob'})");
-        try (RxResultConsumeExample example = new RxResultConsumeExample(uri, USER, neo4j.adminPassword())) {
-            // When
-            List<String> names = await(example.getPeople());
-
-            // Then
-            assertThat(names, equalTo(asList("Alice", "Bob")));
-        }
-    }
-
-    @Test
-    @EnabledOnNeo4jWith(BOLT_V4)
-    void testShouldRunRxResultConsumeExampleRxJava() throws Exception {
-        // Given
-        write("CREATE (a:Person {name: 'Alice'})");
-        write("CREATE (a:Person {name: 'Bob'})");
-        try (RxResultConsumeExample example = new RxResultConsumeExample(uri, USER, neo4j.adminPassword())) {
-            // When
-            List<String> names = await(example.getPeopleRxJava());
-
-            // Then
-            assertThat(names, equalTo(asList("Alice", "Bob")));
-        }
-    }
+//    @Test
+//    @EnabledOnNeo4jWith(BOLT_V4)
+//    void testRxUnmanagedTransactionExample() throws Exception {
+//        try (RxUnmanagedTransactionExample example =
+//                new RxUnmanagedTransactionExample(uri, USER, neo4j.adminPassword())) {
+//            // create a 'Product' node
+//            try (Session session = neo4j.driver().session()) {
+//                session.run("CREATE (:Product {id: 0, title: 'Mind Gem'})");
+//            }
+//
+//            List<String> products = await(example.readSingleProduct());
+//            assertEquals(1, products.size());
+//            assertEquals("Mind Gem", products.get(0));
+//
+//            products = await(example.readSingleProductRxJava());
+//            assertEquals(1, products.size());
+//            assertEquals("Mind Gem", products.get(0));
+//        }
+//    }
+//
+//    @Test
+//    @EnabledOnNeo4jWith(BOLT_V4)
+//    void testShouldRunRxTransactionFunctionExampleReactor() throws Exception {
+//        try (RxTransactionFunctionExample example =
+//                new RxTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
+//            // create some 'Product' nodes
+//            try (Session session = neo4j.driver().session()) {
+//                session.run(
+//                        "UNWIND ['Infinity Gauntlet', 'Mjölnir'] AS item " + "CREATE (:Product {id: 0, title: item})");
+//            }
+//
+//            StdIOCapture stdIOCapture = StdIOCapture.capture();
+//
+//            // print all 'Product' nodes to fake stdout
+//            try (stdIOCapture) {
+//                final List<ResultSummary> summaryList = await(example.printAllProducts());
+//                assertThat(summaryList.size(), equalTo(1));
+//                ResultSummary summary = summaryList.get(0);
+//                assertEquals(QueryType.READ_ONLY, summary.queryType());
+//            }
+//
+//            Set<String> capturedOutput = new HashSet<>(stdIOCapture.stdout());
+//            assertEquals(new HashSet<>(asList("Infinity Gauntlet", "Mjölnir")), capturedOutput);
+//        }
+//    }
+//
+//    @Test
+//    @EnabledOnNeo4jWith(BOLT_V4)
+//    void testShouldRunRxTransactionFunctionExampleRxJava() throws Exception {
+//        try (RxTransactionFunctionExample example =
+//                new RxTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
+//            // create some 'Product' nodes
+//            try (Session session = neo4j.driver().session()) {
+//                session.run(
+//                        "UNWIND ['Infinity Gauntlet', 'Mjölnir'] AS item " + "CREATE (:Product {id: 0, title: item})");
+//            }
+//
+//            StdIOCapture stdIOCapture = StdIOCapture.capture();
+//
+//            // print all 'Product' nodes to fake stdout
+//            try (stdIOCapture) {
+//                final List<ResultSummary> summaryList = await(example.printAllProductsRxJava());
+//                assertThat(summaryList.size(), equalTo(1));
+//                ResultSummary summary = summaryList.get(0);
+//                assertEquals(QueryType.READ_ONLY, summary.queryType());
+//            }
+//
+//            Set<String> capturedOutput = new HashSet<>(stdIOCapture.stdout());
+//            assertEquals(new HashSet<>(asList("Infinity Gauntlet", "Mjölnir")), capturedOutput);
+//        }
+//    }
+//
+//    @Test
+//    @EnabledOnNeo4jWith(BOLT_V4)
+//    void testShouldRunRxResultConsumeExampleReactor() throws Exception {
+//        // Given
+//        write("CREATE (a:Person {name: 'Alice'})");
+//        write("CREATE (a:Person {name: 'Bob'})");
+//        try (RxResultConsumeExample example = new RxResultConsumeExample(uri, USER, neo4j.adminPassword())) {
+//            // When
+//            List<String> names = await(example.getPeople());
+//
+//            // Then
+//            assertThat(names, equalTo(asList("Alice", "Bob")));
+//        }
+//    }
+//
+//    @Test
+//    @EnabledOnNeo4jWith(BOLT_V4)
+//    void testShouldRunRxResultConsumeExampleRxJava() throws Exception {
+//        // Given
+//        write("CREATE (a:Person {name: 'Alice'})");
+//        write("CREATE (a:Person {name: 'Bob'})");
+//        try (RxResultConsumeExample example = new RxResultConsumeExample(uri, USER, neo4j.adminPassword())) {
+//            // When
+//            List<String> names = await(example.getPeopleRxJava());
+//
+//            // Then
+//            assertThat(names, equalTo(asList("Alice", "Bob")));
+//        }
+//    }
 
     @Test
     @EnabledOnNeo4jWith(value = BOLT_V4, edition = ENTERPRISE)

@@ -22,7 +22,8 @@ package org.neo4j.docs.driver;
 
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
-import org.neo4j.driver.reactive.RxSession;
+import org.reactivestreams.FlowAdapters;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -43,9 +44,9 @@ public class RxAutocommitTransactionExample extends BaseApplication {
 
         return Flux.usingWhen(
                 Mono.fromSupplier(driver::rxSession),
-                session -> Flux.from(session.run(query, parameters).records())
+                session -> JdkFlowAdapter.flowPublisherToFlux(session.run(query, parameters).records())
                         .map(record -> record.get(0).asString()),
-                RxSession::close);
+                session -> JdkFlowAdapter.flowPublisherToFlux(session.close()));
     }
     // end::rx-autocommit-transaction[]
 
@@ -56,9 +57,9 @@ public class RxAutocommitTransactionExample extends BaseApplication {
 
         return Flowable.using(
                 driver::rxSession,
-                session -> Flowable.fromPublisher(session.run(query, parameters).records())
+                session -> Flowable.fromPublisher(FlowAdapters.toPublisher(session.run(query, parameters).records()))
                         .map(record -> record.get(0).asString()),
-                session -> Observable.fromPublisher(session.close()).subscribe());
+                session -> Observable.fromPublisher(FlowAdapters.toPublisher(session.close())).subscribe());
     }
     // end::RxJava-autocommit-transaction[]
 }

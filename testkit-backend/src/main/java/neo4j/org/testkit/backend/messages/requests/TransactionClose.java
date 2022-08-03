@@ -26,6 +26,7 @@ import neo4j.org.testkit.backend.holder.AbstractTransactionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
 import org.neo4j.driver.async.AsyncTransaction;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -54,7 +55,7 @@ public class TransactionClose implements TestkitRequest {
         return testkitState
                 .getRxTransactionHolder(data.getTxId())
                 .map(AbstractTransactionHolder::getTransaction)
-                .flatMap(tx -> Mono.fromDirect(tx.close()))
+                .flatMap(tx -> Mono.from(JdkFlowAdapter.flowPublisherToFlux(tx.close())))
                 .then(Mono.just(createResponse(data.getTxId())));
     }
 
@@ -63,7 +64,7 @@ public class TransactionClose implements TestkitRequest {
         return testkitState
                 .getReactiveTransactionHolder(data.getTxId())
                 .map(AbstractTransactionHolder::getTransaction)
-                .flatMap(tx -> Mono.fromDirect(tx.close()))
+                .flatMap(tx -> Mono.from(JdkFlowAdapter.flowPublisherToFlux(tx.close())))
                 .then(Mono.just(createResponse(data.getTxId())));
     }
 

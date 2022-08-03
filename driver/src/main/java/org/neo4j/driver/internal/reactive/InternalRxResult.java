@@ -23,6 +23,7 @@ import static reactor.core.publisher.FluxSink.OverflowStrategy.IGNORE;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.neo4j.driver.Record;
@@ -30,7 +31,7 @@ import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.summary.ResultSummary;
-import org.reactivestreams.Publisher;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -45,15 +46,15 @@ public class InternalRxResult implements RxResult {
     }
 
     @Override
-    public Publisher<List<String>> keys() {
-        return Mono.defer(() -> Mono.fromCompletionStage(getCursorFuture())
+    public Flow.Publisher<List<String>> keys() {
+        return JdkFlowAdapter.publisherToFlowPublisher(Mono.defer(() -> Mono.fromCompletionStage(getCursorFuture())
                 .map(RxResultCursor::keys)
-                .onErrorMap(Futures::completionExceptionCause));
+                .onErrorMap(Futures::completionExceptionCause)));
     }
 
     @Override
-    public Publisher<Record> records() {
-        return Flux.create(
+    public Flow.Publisher<Record> records() {
+        return JdkFlowAdapter.publisherToFlowPublisher(Flux.create(
                 sink -> getCursorFuture().whenComplete((cursor, completionError) -> {
                     if (cursor != null) {
                         if (cursor.isDone()) {
@@ -68,7 +69,7 @@ public class InternalRxResult implements RxResult {
                         sink.error(error);
                     }
                 }),
-                IGNORE);
+                IGNORE));
     }
 
     /**
@@ -111,27 +112,29 @@ public class InternalRxResult implements RxResult {
     }
 
     @Override
-    public Publisher<ResultSummary> consume() {
-        return Mono.create(sink -> getCursorFuture().whenComplete((cursor, completionError) -> {
-            if (cursor != null) {
-                cursor.summaryAsync().whenComplete((summary, summaryCompletionError) -> {
-                    Throwable error = Futures.completionExceptionCause(summaryCompletionError);
-                    if (summary != null) {
-                        sink.success(summary);
+    public Flow.Publisher<ResultSummary> consume() {
+        return JdkFlowAdapter.publisherToFlowPublisher(
+                Mono.create(sink -> getCursorFuture().whenComplete((cursor, completionError) -> {
+                    if (cursor != null) {
+                        cursor.summaryAsync().whenComplete((summary, summaryCompletionError) -> {
+                            Throwable error = Futures.completionExceptionCause(summaryCompletionError);
+                            if (summary != null) {
+                                sink.success(summary);
+                            } else {
+                                sink.error(error);
+                            }
+                        });
                     } else {
+                        Throwable error = Futures.completionExceptionCause(completionError);
                         sink.error(error);
                     }
-                });
-            } else {
-                Throwable error = Futures.completionExceptionCause(completionError);
-                sink.error(error);
-            }
-        }));
+                })));
     }
 
     @Override
-    public Publisher<Boolean> isOpen() {
-        return Mono.fromCompletionStage(getCursorFuture()).map(cursor -> !cursor.isDone());
+    public Flow.Publisher<Boolean> isOpen() {
+        return JdkFlowAdapter.publisherToFlowPublisher(
+                Mono.fromCompletionStage(getCursorFuture()).map(cursor -> !cursor.isDone()));
     }
 
     // For testing purpose

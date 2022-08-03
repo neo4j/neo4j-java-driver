@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Flow;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.ReactiveTransactionContextAdapter;
@@ -40,7 +41,7 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.reactive.ReactiveTransactionCallback;
 import org.neo4j.driver.reactive.RxTransactionWork;
-import org.reactivestreams.Publisher;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -85,15 +86,16 @@ public class SessionWriteTransaction implements TestkitRequest {
         return testkitState
                 .getRxSessionHolder(data.getSessionId())
                 .flatMap(sessionHolder -> {
-                    RxTransactionWork<Publisher<Void>> workWrapper = tx -> {
+                    RxTransactionWork<Flow.Publisher<Void>> workWrapper = tx -> {
                         String txId = testkitState.addRxTransactionHolder(new RxTransactionHolder(sessionHolder, tx));
                         testkitState.getResponseWriter().accept(retryableTry(txId));
                         CompletableFuture<Void> tryResult = new CompletableFuture<>();
                         sessionHolder.setTxWorkFuture(tryResult);
-                        return Mono.fromCompletionStage(tryResult);
+                        return JdkFlowAdapter.publisherToFlowPublisher(Mono.fromCompletionStage(tryResult));
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().writeTransaction(workWrapper));
+                    return Mono.from(JdkFlowAdapter.flowPublisherToFlux(
+                            sessionHolder.getSession().writeTransaction(workWrapper)));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -103,16 +105,17 @@ public class SessionWriteTransaction implements TestkitRequest {
         return testkitState
                 .getReactiveSessionHolder(data.getSessionId())
                 .flatMap(sessionHolder -> {
-                    ReactiveTransactionCallback<Publisher<Void>> workWrapper = tx -> {
+                    ReactiveTransactionCallback<Flow.Publisher<Void>> workWrapper = tx -> {
                         String txId = testkitState.addReactiveTransactionHolder(new ReactiveTransactionHolder(
                                 sessionHolder, new ReactiveTransactionContextAdapter(tx)));
                         testkitState.getResponseWriter().accept(retryableTry(txId));
                         CompletableFuture<Void> tryResult = new CompletableFuture<>();
                         sessionHolder.setTxWorkFuture(tryResult);
-                        return Mono.fromCompletionStage(tryResult);
+                        return JdkFlowAdapter.publisherToFlowPublisher(Mono.fromCompletionStage(tryResult));
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().executeWrite(workWrapper));
+                    return Mono.from(JdkFlowAdapter.flowPublisherToFlux(
+                            sessionHolder.getSession().executeWrite(workWrapper)));
                 })
                 .then(Mono.just(retryableDone()));
     }

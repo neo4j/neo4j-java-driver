@@ -43,6 +43,7 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -115,7 +116,8 @@ public class SessionRun implements TestkitRequest {
 
             // The keys() method causes RUN message exchange.
             // However, it does not currently report errors.
-            return Mono.fromDirect(result.keys()).map(keys -> createResponse(id, keys));
+            return Mono.fromDirect(JdkFlowAdapter.flowPublisherToFlux(result.keys()))
+                    .map(keys -> createResponse(id, keys));
         });
     }
 
@@ -130,12 +132,12 @@ public class SessionRun implements TestkitRequest {
             Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
             configureTimeout(transactionConfig);
 
-            return Mono.fromDirect(session.run(query, transactionConfig.build()))
+            return Mono.fromDirect(JdkFlowAdapter.flowPublisherToFlux(session.run(query, transactionConfig.build()))
                     .map(result -> {
                         String id =
                                 testkitState.addReactiveResultHolder(new ReactiveResultHolder(sessionHolder, result));
                         return createResponse(id, result.keys());
-                    });
+                    }));
         });
     }
 

@@ -29,6 +29,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.reactivestreams.FlowAdapters;
 import reactor.core.publisher.Mono;
 
 public abstract class AbstractResultNext implements TestkitRequest {
@@ -60,7 +61,7 @@ public abstract class AbstractResultNext implements TestkitRequest {
                         RxBufferedSubscriber<Record> subscriberInstance =
                                 new RxBufferedSubscriber<>(getFetchSize(resultHolder));
                         resultHolder.setSubscriber(subscriberInstance);
-                        resultHolder.getResult().records().subscribe(subscriberInstance);
+                        resultHolder.getResult().records().subscribe(FlowAdapters.toFlowSubscriber(subscriberInstance));
                         return subscriberInstance;
                     });
             return subscriber
@@ -79,7 +80,7 @@ public abstract class AbstractResultNext implements TestkitRequest {
                         RxBufferedSubscriber<Record> subscriberInstance =
                                 new RxBufferedSubscriber<>(getFetchSize(resultHolder));
                         resultHolder.setSubscriber(subscriberInstance);
-                        resultHolder.getResult().records().subscribe(subscriberInstance);
+                        resultHolder.getResult().records().subscribe(FlowAdapters.toFlowSubscriber(subscriberInstance));
                         return subscriberInstance;
                     });
             return subscriber

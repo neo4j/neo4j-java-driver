@@ -20,8 +20,9 @@ package org.neo4j.driver.internal.reactive;
 
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
 
+import java.util.concurrent.Flow;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
-import org.reactivestreams.Publisher;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Mono;
 
 abstract class AbstractReactiveTransaction {
@@ -31,23 +32,23 @@ abstract class AbstractReactiveTransaction {
         this.tx = tx;
     }
 
-    public <T> Publisher<T> commit() {
+    public <T> Flow.Publisher<T> commit() {
         return createEmptyPublisher(tx::commitAsync);
     }
 
-    public <T> Publisher<T> rollback() {
+    public <T> Flow.Publisher<T> rollback() {
         return createEmptyPublisher(tx::rollbackAsync);
     }
 
-    public Publisher<Void> close() {
+    public Flow.Publisher<Void> close() {
         return close(false);
     }
 
-    public Publisher<Boolean> isOpen() {
-        return Mono.just(tx.isOpen());
+    public Flow.Publisher<Boolean> isOpen() {
+        return JdkFlowAdapter.publisherToFlowPublisher(Mono.just(tx.isOpen()));
     }
 
-    Publisher<Void> close(boolean commit) {
+    Flow.Publisher<Void> close(boolean commit) {
         return createEmptyPublisher(() -> tx.closeAsync(commit));
     }
 }

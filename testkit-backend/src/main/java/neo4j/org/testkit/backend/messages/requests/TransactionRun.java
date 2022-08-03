@@ -36,6 +36,7 @@ import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.neo4j.driver.reactive.RxResult;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -75,7 +76,8 @@ public class TransactionRun implements TestkitRequest {
             String resultId = testkitState.addRxResultHolder(new RxResultHolder(transactionHolder, result));
             // The keys() method causes RUN message exchange.
             // However, it does not currently report errors.
-            return Mono.fromDirect(result.keys()).map(keys -> createResponse(resultId, keys));
+            return Mono.from(
+                    JdkFlowAdapter.flowPublisherToFlux(result.keys()).map(keys -> createResponse(resultId, keys)));
         });
     }
 
@@ -85,10 +87,12 @@ public class TransactionRun implements TestkitRequest {
             ReactiveTransaction tx = transactionHolder.getTransaction();
             Map<String, Object> params = data.getParams() != null ? data.getParams() : Collections.emptyMap();
 
-            return Mono.fromDirect(tx.run(data.getCypher(), params)).map(result -> {
-                String id = testkitState.addReactiveResultHolder(new ReactiveResultHolder(transactionHolder, result));
-                return createResponse(id, result.keys());
-            });
+            return Mono.from(JdkFlowAdapter.flowPublisherToFlux(tx.run(data.getCypher(), params))
+                    .map(result -> {
+                        String id = testkitState.addReactiveResultHolder(
+                                new ReactiveResultHolder(transactionHolder, result));
+                        return createResponse(id, result.keys());
+                    }));
         });
     }
 

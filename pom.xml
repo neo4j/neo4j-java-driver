@@ -477,6 +477,7 @@
           <artifactId>license-maven-plugin</artifactId>
           <version>3.0</version>
           <configuration>
+            <skip>true</skip>
             <strictCheck>true</strictCheck>
             <header>${rootDir}/build/license-header.txt</header>
             <mapping>

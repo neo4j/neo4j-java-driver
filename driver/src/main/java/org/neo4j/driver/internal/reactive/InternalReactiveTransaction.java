@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.reactive;
 
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
@@ -26,6 +27,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.reactivestreams.Publisher;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Mono;
 
 public class InternalReactiveTransaction extends AbstractReactiveTransaction
@@ -35,7 +37,7 @@ public class InternalReactiveTransaction extends AbstractReactiveTransaction
     }
 
     @Override
-    public Publisher<ReactiveResult> run(Query query) {
+    public Flow.Publisher<ReactiveResult> run(Query query) {
         CompletionStage<RxResultCursor> cursorStage;
         try {
             cursorStage = tx.runRx(query);
@@ -43,7 +45,7 @@ public class InternalReactiveTransaction extends AbstractReactiveTransaction
             cursorStage = Futures.failedFuture(t);
         }
 
-        return Mono.fromCompletionStage(cursorStage)
+        return JdkFlowAdapter.publisherToFlowPublisher(Mono.fromCompletionStage(cursorStage)
                 .flatMap(cursor -> {
                     Mono<RxResultCursor> publisher;
                     Throwable runError = cursor.getRunError();
@@ -55,7 +57,7 @@ public class InternalReactiveTransaction extends AbstractReactiveTransaction
                     }
                     return publisher;
                 })
-                .map(InternalReactiveResult::new);
+                .map(InternalReactiveResult::new));
     }
 
     /**

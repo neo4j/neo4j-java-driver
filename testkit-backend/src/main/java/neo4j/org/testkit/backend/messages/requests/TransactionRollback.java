@@ -24,6 +24,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Mono;
 
 @Getter
@@ -49,7 +50,8 @@ public class TransactionRollback implements TestkitRequest {
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState
                 .getRxTransactionHolder(data.getTxId())
-                .flatMap(tx -> Mono.fromDirect(tx.getTransaction().rollback()))
+                .flatMap(tx -> Mono.from(
+                        JdkFlowAdapter.flowPublisherToFlux(tx.getTransaction().rollback())))
                 .then(Mono.just(createResponse(data.getTxId())));
     }
 
@@ -57,7 +59,8 @@ public class TransactionRollback implements TestkitRequest {
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState
                 .getReactiveTransactionHolder(data.getTxId())
-                .flatMap(tx -> Mono.fromDirect(tx.getTransaction().rollback()))
+                .flatMap(tx -> Mono.from(
+                        JdkFlowAdapter.flowPublisherToFlux(tx.getTransaction().rollback())))
                 .then(Mono.just(createResponse(data.getTxId())));
     }
 

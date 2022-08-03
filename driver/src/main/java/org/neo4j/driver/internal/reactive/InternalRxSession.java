@@ -18,10 +18,9 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
-
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -36,7 +35,7 @@ import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.reactive.RxTransactionWork;
-import org.reactivestreams.Publisher;
+import reactor.adapter.JdkFlowAdapter;
 
 @Deprecated
 public class InternalRxSession extends AbstractReactiveSession<RxTransaction> implements RxSession {
@@ -50,28 +49,32 @@ public class InternalRxSession extends AbstractReactiveSession<RxTransaction> im
     }
 
     @Override
-    Publisher<Void> closeTransaction(RxTransaction transaction, boolean commit) {
+    Flow.Publisher<Void> closeTransaction(RxTransaction transaction, boolean commit) {
         return ((InternalRxTransaction) transaction).close(commit);
     }
 
     @Override
-    public <T> Publisher<T> readTransaction(RxTransactionWork<? extends Publisher<T>> work) {
+    public <T> Flow.Publisher<T> readTransaction(RxTransactionWork<? extends Flow.Publisher<T>> work) {
         return readTransaction(work, TransactionConfig.empty());
     }
 
     @Override
-    public <T> Publisher<T> readTransaction(RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config) {
-        return runTransaction(AccessMode.READ, work::execute, config);
+    public <T> Flow.Publisher<T> readTransaction(
+            RxTransactionWork<? extends Flow.Publisher<T>> work, TransactionConfig config) {
+        return JdkFlowAdapter.publisherToFlowPublisher(
+                runTransaction(AccessMode.READ, tx -> JdkFlowAdapter.flowPublisherToFlux(work.execute(tx)), config));
     }
 
     @Override
-    public <T> Publisher<T> writeTransaction(RxTransactionWork<? extends Publisher<T>> work) {
+    public <T> Flow.Publisher<T> writeTransaction(RxTransactionWork<? extends Flow.Publisher<T>> work) {
         return writeTransaction(work, TransactionConfig.empty());
     }
 
     @Override
-    public <T> Publisher<T> writeTransaction(RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config) {
-        return runTransaction(AccessMode.WRITE, work::execute, config);
+    public <T> Flow.Publisher<T> writeTransaction(
+            RxTransactionWork<? extends Flow.Publisher<T>> work, TransactionConfig config) {
+        return JdkFlowAdapter.publisherToFlowPublisher(
+                runTransaction(AccessMode.WRITE, tx -> JdkFlowAdapter.flowPublisherToFlux(work.execute(tx)), config));
     }
 
     @Override
@@ -124,10 +127,5 @@ public class InternalRxSession extends AbstractReactiveSession<RxTransaction> im
     @Override
     public Bookmark lastBookmark() {
         return InternalBookmark.from(session.lastBookmarks());
-    }
-
-    @Override
-    public <T> Publisher<T> close() {
-        return createEmptyPublisher(session::closeAsync);
     }
 }

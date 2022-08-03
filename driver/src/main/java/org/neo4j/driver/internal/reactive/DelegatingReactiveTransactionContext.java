@@ -19,13 +19,13 @@
 package org.neo4j.driver.internal.reactive;
 
 import java.util.Map;
+import java.util.concurrent.Flow;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.neo4j.driver.reactive.ReactiveTransactionContext;
-import org.reactivestreams.Publisher;
 
 final class DelegatingReactiveTransactionContext implements ReactiveTransactionContext {
     private final ReactiveTransaction delegate;
@@ -35,27 +35,27 @@ final class DelegatingReactiveTransactionContext implements ReactiveTransactionC
     }
 
     @Override
-    public Publisher<ReactiveResult> run(String query, Value parameters) {
+    public Flow.Publisher<ReactiveResult> run(String query, Value parameters) {
         return delegate.run(query, parameters);
     }
 
     @Override
-    public Publisher<ReactiveResult> run(String query, Map<String, Object> parameters) {
+    public Flow.Publisher<ReactiveResult> run(String query, Map<String, Object> parameters) {
         return delegate.run(query, parameters);
     }
 
     @Override
-    public Publisher<ReactiveResult> run(String query, Record parameters) {
+    public Flow.Publisher<ReactiveResult> run(String query, Record parameters) {
         return delegate.run(query, parameters);
     }
 
     @Override
-    public Publisher<ReactiveResult> run(String query) {
+    public Flow.Publisher<ReactiveResult> run(String query) {
         return delegate.run(query);
     }
 
     @Override
-    public Publisher<ReactiveResult> run(Query query) {
+    public Flow.Publisher<ReactiveResult> run(Query query) {
         return delegate.run(query);
     }
 }

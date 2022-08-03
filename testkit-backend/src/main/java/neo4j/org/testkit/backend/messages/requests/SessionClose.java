@@ -24,6 +24,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -49,8 +50,8 @@ public class SessionClose implements TestkitRequest {
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState
                 .getRxSessionHolder(data.getSessionId())
-                .flatMap(sessionHolder ->
-                        Mono.fromDirect(sessionHolder.getSession().close()))
+                .flatMap(sessionHolder -> Mono.from(JdkFlowAdapter.flowPublisherToFlux(
+                        sessionHolder.getSession().close())))
                 .then(Mono.just(createResponse()));
     }
 
@@ -58,8 +59,8 @@ public class SessionClose implements TestkitRequest {
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState
                 .getReactiveSessionHolder(data.getSessionId())
-                .flatMap(sessionHolder ->
-                        Mono.fromDirect(sessionHolder.getSession().close()))
+                .flatMap(sessionHolder -> Mono.from(JdkFlowAdapter.flowPublisherToFlux(
+                        sessionHolder.getSession().close())))
                 .then(Mono.just(createResponse()));
     }
 

@@ -26,10 +26,6 @@
   <dependencies>
     <!-- Compile dependencies -->
     <dependency>
-      <groupId>org.reactivestreams</groupId>
-      <artifactId>reactive-streams</artifactId>
-    </dependency>
-    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
     </dependency>
@@ -169,6 +165,7 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>clirr-maven-plugin</artifactId>
           <configuration>
+            <skip>true</skip>
             <comparisonArtifacts>
               <comparisonArtifact>
                 <groupId>org.neo4j.driver</groupId>

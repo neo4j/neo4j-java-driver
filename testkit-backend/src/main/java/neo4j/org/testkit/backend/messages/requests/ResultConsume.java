@@ -39,6 +39,7 @@ import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.SummaryCounters;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -69,8 +70,8 @@ public class ResultConsume implements TestkitRequest {
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState
                 .getRxResultHolder(data.getResultId())
-                .flatMap(
-                        resultHolder -> Mono.fromDirect(resultHolder.getResult().consume()))
+                .flatMap(resultHolder -> Mono.from(JdkFlowAdapter.flowPublisherToFlux(
+                        resultHolder.getResult().consume())))
                 .map(this::createResponse);
     }
 
@@ -78,8 +79,8 @@ public class ResultConsume implements TestkitRequest {
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState
                 .getReactiveResultHolder(data.getResultId())
-                .flatMap(
-                        resultHolder -> Mono.fromDirect(resultHolder.getResult().consume()))
+                .flatMap(resultHolder -> Mono.from(JdkFlowAdapter.flowPublisherToFlux(
+                        resultHolder.getResult().consume())))
                 .map(this::createResponse);
     }
 

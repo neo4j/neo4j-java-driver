@@ -20,9 +20,11 @@ package org.neo4j.driver.internal.reactive;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow;
 import java.util.function.Supplier;
 import org.neo4j.driver.internal.util.Futures;
 import org.reactivestreams.Publisher;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Mono;
 
 public class RxUtils {
@@ -31,15 +33,16 @@ public class RxUtils {
      * @param supplier supplies a {@link CompletionStage<Void>}.
      * @return A publisher that publishes nothing on completion or fails with an error.
      */
-    public static <T> Publisher<T> createEmptyPublisher(Supplier<CompletionStage<Void>> supplier) {
-        return Mono.create(sink -> supplier.get().whenComplete((ignore, completionError) -> {
-            Throwable error = Futures.completionExceptionCause(completionError);
-            if (error != null) {
-                sink.error(error);
-            } else {
-                sink.success();
-            }
-        }));
+    public static <T> Flow.Publisher<T> createEmptyPublisher(Supplier<CompletionStage<Void>> supplier) {
+        return JdkFlowAdapter.publisherToFlowPublisher(
+                Mono.create(sink -> supplier.get().whenComplete((ignore, completionError) -> {
+                    Throwable error = Futures.completionExceptionCause(completionError);
+                    if (error != null) {
+                        sink.error(error);
+                    } else {
+                        sink.success();
+                    }
+                })));
     }
 
     /**

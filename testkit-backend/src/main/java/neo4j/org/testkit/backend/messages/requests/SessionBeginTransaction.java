@@ -38,6 +38,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -97,9 +98,9 @@ public class SessionBeginTransaction implements TestkitRequest {
 
             configureTimeout(builder);
 
-            return Mono.fromDirect(session.beginTransaction(builder.build()))
+            return Mono.from(JdkFlowAdapter.flowPublisherToFlux(session.beginTransaction(builder.build()))
                     .map(tx -> transaction(
-                            testkitState.addRxTransactionHolder(new RxTransactionHolder(sessionHolder, tx))));
+                            testkitState.addRxTransactionHolder(new RxTransactionHolder(sessionHolder, tx)))));
         });
     }
 
@@ -112,9 +113,9 @@ public class SessionBeginTransaction implements TestkitRequest {
 
             configureTimeout(builder);
 
-            return Mono.fromDirect(session.beginTransaction(builder.build()))
+            return Mono.from(JdkFlowAdapter.flowPublisherToFlux(session.beginTransaction(builder.build()))
                     .map(tx -> transaction(testkitState.addReactiveTransactionHolder(
-                            new ReactiveTransactionHolder(sessionHolder, tx))));
+                            new ReactiveTransactionHolder(sessionHolder, tx)))));
         });
     }
 

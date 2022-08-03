@@ -28,6 +28,7 @@ module org.neo4j.driver {
     exports org.neo4j.driver.exceptions;
 
     requires reactor.core;
+    requires org.reactivestreams;
     requires io.netty.common;
     requires io.netty.handler;
     requires io.netty.transport;
@@ -35,7 +36,6 @@ module org.neo4j.driver {
     requires io.netty.codec;
     requires io.netty.resolver;
     requires transitive java.logging;
-    //    requires transitive org.reactivestreams;
     requires static micrometer.core;
     requires static org.graalvm.nativeimage.builder;
     requires static org.slf4j;

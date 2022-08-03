@@ -20,15 +20,10 @@ package org.neo4j.docs.driver;
 
 // tag::rx-result-consume-import[]
 
-import io.reactivex.Flowable;
-import io.reactivex.Observable;
 import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxSession;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.Collections;
-import java.util.Map;
 // end::rx-result-consume-import[]
 
 @SuppressWarnings("deprecation")
@@ -43,28 +38,28 @@ public class RxResultConsumeExample extends BaseApplication {
 
         return Flux.usingWhen(
                 Mono.fromSupplier(driver::rxSession),
-                session -> session.readTransaction(tx -> {
+                session -> JdkFlowAdapter.flowPublisherToFlux(session.readTransaction(tx -> {
                     RxResult result = tx.run(query);
-                    return Flux.from(result.records())
-                            .map(record -> record.get(0).asString());
-                }),
-                RxSession::close);
+                    return JdkFlowAdapter.publisherToFlowPublisher(Flux.from(JdkFlowAdapter.flowPublisherToFlux(result.records()))
+                            .map(record -> record.get(0).asString()));
+                })),
+                session -> JdkFlowAdapter.flowPublisherToFlux(session.close()));
     }
     // end::rx-result-consume[]
 
     // tag::RxJava-result-consume[]
-    public Flowable<String> getPeopleRxJava() {
-        String query = "MATCH (a:Person) RETURN a.name ORDER BY a.name";
-        Map<String, Object> parameters = Collections.singletonMap("id", 0);
-
-        return Flowable.using(
-                driver::rxSession,
-                session -> session.readTransaction(tx -> {
-                    RxResult result = tx.run(query, parameters);
-                    return Flowable.fromPublisher(result.records())
-                            .map(record -> record.get(0).asString());
-                }),
-                session -> Observable.fromPublisher(session.close()).subscribe());
-    }
+//    public Flowable<String> getPeopleRxJava() {
+//        String query = "MATCH (a:Person) RETURN a.name ORDER BY a.name";
+//        Map<String, Object> parameters = Collections.singletonMap("id", 0);
+//
+//        return Flowable.using(
+//                driver::rxSession,
+//                session -> session.readTransaction(tx -> {
+//                    RxResult result = tx.run(query, parameters);
+//                    return Flowable.fromPublisher(result.records())
+//                            .map(record -> record.get(0).asString());
+//                }),
+//                session -> Observable.fromPublisher(session.close()).subscribe());
+//    }
     // end::RxJava-result-consume[]
 }
