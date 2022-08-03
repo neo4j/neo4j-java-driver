@@ -16,28 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver;
 
-import java.util.Set;
-import org.neo4j.driver.Bookmark;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * @since 2.0
- */
-public class ReadOnlyBookmarksHolder implements BookmarksHolder {
-    private final Set<Bookmark> bookmarks;
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.Neo4jBookmarkManager;
 
-    public ReadOnlyBookmarksHolder(Set<Bookmark> bookmarks) {
-        this.bookmarks = bookmarks;
-    }
+class BookmarkManagersTest {
+    @Test
+    void shouldCreateDefaultBookmarkManager() {
+        // GIVEN
+        var config = BookmarkManagerConfig.builder().build();
 
-    @Override
-    public Set<Bookmark> getBookmarks() {
-        return bookmarks;
-    }
+        // WHEN
+        var bookmarkManager = BookmarkManagers.defaultManager(config);
 
-    @Override
-    public void setBookmark(Bookmark bookmark) {
-        // NO_OP
+        // THEN
+        assertTrue(bookmarkManager instanceof Neo4jBookmarkManager);
     }
 }

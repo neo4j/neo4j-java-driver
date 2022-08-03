@@ -21,26 +21,27 @@ package org.neo4j.driver.internal.handlers;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Map;
+import java.util.function.Consumer;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 
 public class SessionPullResponseCompletionListener implements PullResponseCompletionListener {
-    private final BookmarksHolder bookmarksHolder;
+    private final Consumer<DatabaseBookmark> bookmarkConsumer;
     private final Connection connection;
 
-    public SessionPullResponseCompletionListener(Connection connection, BookmarksHolder bookmarksHolder) {
+    public SessionPullResponseCompletionListener(Connection connection, Consumer<DatabaseBookmark> bookmarkConsumer) {
+        this.bookmarkConsumer = requireNonNull(bookmarkConsumer);
         this.connection = requireNonNull(connection);
-        this.bookmarksHolder = requireNonNull(bookmarksHolder);
     }
 
     @Override
     public void afterSuccess(Map<String, Value> metadata) {
         releaseConnection();
-        bookmarksHolder.setBookmark(MetadataExtractor.extractBookmarks(metadata));
+        bookmarkConsumer.accept(MetadataExtractor.extractDatabaseBookmark(metadata));
     }
 
     @Override

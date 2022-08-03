@@ -34,8 +34,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.WRITE;
@@ -54,6 +56,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,9 +70,8 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
@@ -245,10 +247,10 @@ public final class BoltProtocolV43Test {
                 .when(connection)
                 .writeAndFlush(eq(CommitMessage.COMMIT), any());
 
-        CompletionStage<Bookmark> stage = protocol.commitTransaction(connection);
+        CompletionStage<DatabaseBookmark> stage = protocol.commitTransaction(connection);
 
         verify(connection).writeAndFlush(eq(CommitMessage.COMMIT), any(CommitTxResponseHandler.class));
-        assertEquals(InternalBookmark.parse(bookmarkString), await(stage));
+        assertEquals(InternalBookmark.parse(bookmarkString), await(stage).bookmark());
     }
 
     @Test
@@ -342,7 +344,8 @@ public final class BoltProtocolV43Test {
         assertDoesNotThrow(() -> protocol.runInAutoCommitTransaction(
                 connectionMock("foo", protocol),
                 new Query("RETURN 1"),
-                BookmarksHolder.NO_OP,
+                Collections.emptySet(),
+                (ignored) -> {},
                 TransactionConfig.empty(),
                 UNLIMITED_FETCH_SIZE));
     }
@@ -355,10 +358,11 @@ public final class BoltProtocolV43Test {
             Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) throws Exception {
         // Given
         Connection connection = connectionMock(mode, protocol);
-        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder(bookmarks);
+        @SuppressWarnings("unchecked")
+        Consumer<DatabaseBookmark> bookmarkConsumer = mock(Consumer.class);
 
         CompletableFuture<AsyncResultCursor> cursorFuture = protocol.runInAutoCommitTransaction(
-                        connection, QUERY, bookmarksHolder, config, UNLIMITED_FETCH_SIZE)
+                        connection, QUERY, bookmarks, bookmarkConsumer, config, UNLIMITED_FETCH_SIZE)
                 .asyncResult()
                 .toCompletableFuture();
 
@@ -370,7 +374,7 @@ public final class BoltProtocolV43Test {
         runHandler.onFailure(error);
 
         // Then
-        assertEquals(bookmarks, bookmarksHolder.getBookmarks());
+        then(bookmarkConsumer).should(times(0)).accept(any());
         assertTrue(cursorFuture.isDone());
         Throwable actual =
                 assertThrows(error.getClass(), () -> await(cursorFuture.get().mapSuccessfulRunCompletionAsync()));
@@ -381,10 +385,11 @@ public final class BoltProtocolV43Test {
             Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) throws Exception {
         // Given
         Connection connection = connectionMock(mode, protocol);
-        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder(bookmarks);
+        @SuppressWarnings("unchecked")
+        Consumer<DatabaseBookmark> bookmarkConsumer = mock(Consumer.class);
 
         CompletableFuture<AsyncResultCursor> cursorFuture = protocol.runInAutoCommitTransaction(
-                        connection, QUERY, bookmarksHolder, config, UNLIMITED_FETCH_SIZE)
+                        connection, QUERY, bookmarks, bookmarkConsumer, config, UNLIMITED_FETCH_SIZE)
                 .asyncResult()
                 .toCompletableFuture();
 
@@ -395,7 +400,7 @@ public final class BoltProtocolV43Test {
         runHandler.onSuccess(emptyMap());
 
         // Then
-        assertEquals(bookmarks, bookmarksHolder.getBookmarks());
+        then(bookmarkConsumer).should(times(0)).accept(any());
         assertTrue(cursorFuture.isDone());
         assertNotNull(cursorFuture.get());
     }
@@ -439,9 +444,10 @@ public final class BoltProtocolV43Test {
 
         CompletionStage<AsyncResultCursor> cursorStage;
         if (autoCommitTx) {
-            BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder(initialBookmarks);
+            @SuppressWarnings("unchecked")
+            Consumer<DatabaseBookmark> bookmarkConsumer = mock(Consumer.class);
             cursorStage = protocol.runInAutoCommitTransaction(
-                            connection, QUERY, bookmarksHolder, config, UNLIMITED_FETCH_SIZE)
+                            connection, QUERY, initialBookmarks, bookmarkConsumer, config, UNLIMITED_FETCH_SIZE)
                     .asyncResult();
         } else {
             cursorStage = protocol.runInUnmanagedTransaction(
@@ -466,7 +472,12 @@ public final class BoltProtocolV43Test {
         Connection connection = connectionMock("foo", protocol);
         if (autoCommitTx) {
             ResultCursorFactory factory = protocol.runInAutoCommitTransaction(
-                    connection, QUERY, BookmarksHolder.NO_OP, TransactionConfig.empty(), UNLIMITED_FETCH_SIZE);
+                    connection,
+                    QUERY,
+                    Collections.emptySet(),
+                    (ignored) -> {},
+                    TransactionConfig.empty(),
+                    UNLIMITED_FETCH_SIZE);
             CompletionStage<AsyncResultCursor> resultStage = factory.asyncResult();
             ResponseHandler runHandler = verifySessionRunInvoked(
                     connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));

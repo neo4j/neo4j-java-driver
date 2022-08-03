@@ -18,8 +18,9 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import java.util.function.Consumer;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.handlers.pulln.AutoPullResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
@@ -33,10 +34,10 @@ public class PullHandlers {
             Query query,
             RunResponseHandler runHandler,
             Connection connection,
-            BookmarksHolder bookmarksHolder,
+            Consumer<DatabaseBookmark> bookmarkConsumer,
             UnmanagedTransaction tx) {
         PullResponseCompletionListener completionListener =
-                createPullResponseCompletionListener(connection, bookmarksHolder, tx);
+                createPullResponseCompletionListener(connection, bookmarkConsumer, tx);
 
         return new LegacyPullAllResponseHandler(
                 query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener);
@@ -46,11 +47,11 @@ public class PullHandlers {
             Query query,
             RunResponseHandler runHandler,
             Connection connection,
-            BookmarksHolder bookmarksHolder,
+            Consumer<DatabaseBookmark> bookmarkConsumer,
             UnmanagedTransaction tx,
             long fetchSize) {
         PullResponseCompletionListener completionListener =
-                createPullResponseCompletionListener(connection, bookmarksHolder, tx);
+                createPullResponseCompletionListener(connection, bookmarkConsumer, tx);
 
         return new AutoPullResponseHandler(
                 query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener, fetchSize);
@@ -60,19 +61,19 @@ public class PullHandlers {
             Query query,
             RunResponseHandler runHandler,
             Connection connection,
-            BookmarksHolder bookmarksHolder,
+            Consumer<DatabaseBookmark> bookmarkConsumer,
             UnmanagedTransaction tx) {
         PullResponseCompletionListener completionListener =
-                createPullResponseCompletionListener(connection, bookmarksHolder, tx);
+                createPullResponseCompletionListener(connection, bookmarkConsumer, tx);
 
         return new BasicPullResponseHandler(
                 query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener);
     }
 
     private static PullResponseCompletionListener createPullResponseCompletionListener(
-            Connection connection, BookmarksHolder bookmarksHolder, UnmanagedTransaction tx) {
+            Connection connection, Consumer<DatabaseBookmark> bookmarkConsumer, UnmanagedTransaction tx) {
         return tx != null
                 ? new TransactionPullResponseCompletionListener(tx)
-                : new SessionPullResponseCompletionListener(connection, bookmarksHolder);
+                : new SessionPullResponseCompletionListener(connection, bookmarkConsumer);
     }
 }

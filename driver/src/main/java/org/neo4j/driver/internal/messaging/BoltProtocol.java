@@ -24,6 +24,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -31,7 +32,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -88,7 +89,7 @@ public interface BoltProtocol {
      * @param connection the connection to use.
      * @return a completion stage completed with a bookmark when transaction is committed or completed exceptionally when there was a failure.
      */
-    CompletionStage<Bookmark> commitTransaction(Connection connection);
+    CompletionStage<DatabaseBookmark> commitTransaction(Connection connection);
 
     /**
      * Rollback the unmanaged transaction.
@@ -103,7 +104,7 @@ public interface BoltProtocol {
      *
      * @param connection      the network connection to use.
      * @param query           the cypher to execute.
-     * @param bookmarksHolder the bookmarksHolder that keeps track of the current bookmarks and can be updated with a new bookmark.
+     * @param bookmarkConsumer the database bookmark consumer.
      * @param config          the transaction config for the implicitly started auto-commit transaction.
      * @param fetchSize       the record fetch size for PULL message.
      * @return stage with cursor.
@@ -111,7 +112,8 @@ public interface BoltProtocol {
     ResultCursorFactory runInAutoCommitTransaction(
             Connection connection,
             Query query,
-            BookmarksHolder bookmarksHolder,
+            Set<Bookmark> bookmarks,
+            Consumer<DatabaseBookmark> bookmarkConsumer,
             TransactionConfig config,
             long fetchSize);
 

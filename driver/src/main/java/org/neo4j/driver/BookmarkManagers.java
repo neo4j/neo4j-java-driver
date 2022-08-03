@@ -16,19 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver;
 
-import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.BookmarkManager;
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.Neo4jBookmarkManager;
 
-public interface SessionFactory {
-    NetworkSession newInstance(SessionConfig sessionConfig, BookmarkManager bookmarkManager);
-
-    CompletionStage<Void> verifyConnectivity();
-
-    CompletionStage<Void> close();
-
-    CompletionStage<Boolean> supportsMultiDb();
+/**
+ * Setups new instances of {@link BookmarkManager}.
+ */
+public interface BookmarkManagers {
+    /**
+     * Setups a new instance of bookmark manager that can be used in {@link org.neo4j.driver.Config.ConfigBuilder#withBookmarkManager(BookmarkManager)}.
+     *
+     * @param config the bookmark manager configuration
+     * @return the bookmark manager
+     */
+    static BookmarkManager defaultManager(BookmarkManagerConfig config) {
+        return new Neo4jBookmarkManager(config.initialBookmarks(), config.updateListener(), config.bookmarkSupplier());
+    }
 }

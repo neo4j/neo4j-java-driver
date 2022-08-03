@@ -19,8 +19,13 @@
 package org.neo4j.driver.internal.async;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -28,6 +33,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
@@ -35,8 +41,9 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransactionNestingException;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.ImpersonationUtil;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
@@ -49,40 +56,51 @@ import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
 
 public class NetworkSession {
+    /**
+     * Fallback database name used by the driver when session has no database name configured and database discovery is unavailable.
+     */
+    String FALLBACK_DATABASE_NAME = "";
+
     private final ConnectionProvider connectionProvider;
     private final NetworkSessionConnectionContext connectionContext;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
     protected final Logger log;
 
-    private final BookmarksHolder bookmarksHolder;
     private final long fetchSize;
     private volatile CompletionStage<UnmanagedTransaction> transactionStage = completedWithNull();
     private volatile CompletionStage<Connection> connectionStage = completedWithNull();
     private volatile CompletionStage<? extends FailableCursor> resultCursorStage = completedWithNull();
 
     private final AtomicBoolean open = new AtomicBoolean(true);
+    private final BookmarkManager bookmarkManager;
+    private volatile Set<Bookmark> lastUsedBookmarks = Collections.emptySet();
+    private volatile Set<Bookmark> lastReceivedBookmarks;
 
     public NetworkSession(
             ConnectionProvider connectionProvider,
             RetryLogic retryLogic,
             DatabaseName databaseName,
             AccessMode mode,
-            BookmarksHolder bookmarksHolder,
+            Set<Bookmark> bookmarks,
             String impersonatedUser,
             long fetchSize,
-            Logging logging) {
+            Logging logging,
+            BookmarkManager bookmarkManager) {
+        Objects.requireNonNull(bookmarks, "bookmarks may not be null");
+        Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
         this.log = new PrefixedLogger("[" + hashCode() + "]", logging.getLog(getClass()));
-        this.bookmarksHolder = bookmarksHolder;
         CompletableFuture<DatabaseName> databaseNameFuture = databaseName
                 .databaseName()
                 .map(ignored -> CompletableFuture.completedFuture(databaseName))
                 .orElse(new CompletableFuture<>());
-        this.connectionContext = new NetworkSessionConnectionContext(
-                databaseNameFuture, bookmarksHolder.getBookmarks(), impersonatedUser);
+        this.bookmarkManager = bookmarkManager;
+        this.lastReceivedBookmarks = bookmarks;
+        this.connectionContext =
+                new NetworkSessionConnectionContext(databaseNameFuture, determineBookmarks(true), impersonatedUser);
         this.fetchSize = fetchSize;
     }
 
@@ -117,8 +135,8 @@ public class NetworkSession {
                 .thenApply(connection ->
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
-                    UnmanagedTransaction tx = new UnmanagedTransaction(connection, bookmarksHolder, fetchSize);
-                    return tx.beginAsync(bookmarksHolder.getBookmarks(), config);
+                    UnmanagedTransaction tx = new UnmanagedTransaction(connection, this::handleNewBookmark, fetchSize);
+                    return tx.beginAsync(determineBookmarks(false), config);
                 });
 
         // update the reference to the only known transaction
@@ -143,7 +161,7 @@ public class NetworkSession {
     }
 
     public Set<Bookmark> lastBookmarks() {
-        return bookmarksHolder.getBookmarks();
+        return lastReceivedBookmarks;
     }
 
     public CompletionStage<Void> releaseConnectionAsync() {
@@ -210,7 +228,13 @@ public class NetworkSession {
                     try {
                         ResultCursorFactory factory = connection
                                 .protocol()
-                                .runInAutoCommitTransaction(connection, query, bookmarksHolder, config, fetchSize);
+                                .runInAutoCommitTransaction(
+                                        connection,
+                                        query,
+                                        determineBookmarks(false),
+                                        this::handleNewBookmark,
+                                        config,
+                                        fetchSize);
                         return completedFuture(factory);
                     } catch (Throwable e) {
                         return Futures.failedFuture(e);
@@ -302,6 +326,44 @@ public class NetworkSession {
             throw new ClientException(
                     "No more interaction with this session are allowed as the current session is already closed. ");
         }
+    }
+
+    private void handleNewBookmark(DatabaseBookmark databaseBookmark) {
+        assertDatabaseNameFutureIsDone();
+        var bookmark = databaseBookmark.bookmark();
+        if (bookmark != null) {
+            var bookmarks = Set.of(bookmark);
+            String databaseName = databaseBookmark.databaseName();
+            if (databaseName == null || databaseName.isEmpty()) {
+                databaseName = getDatabaseNameNow().orElse(FALLBACK_DATABASE_NAME);
+            }
+            lastReceivedBookmarks = bookmarks;
+            bookmarkManager.updateBookmarks(databaseName, lastUsedBookmarks, bookmarks);
+        }
+    }
+
+    private Set<Bookmark> determineBookmarks(boolean useSystemOnly) {
+        var bookmarks = new HashSet<Bookmark>();
+        if (useSystemOnly) {
+            bookmarks.addAll(bookmarkManager.getBookmarks(DatabaseNameUtil.SYSTEM_DATABASE_NAME));
+        } else {
+            bookmarks.addAll(bookmarkManager.getAllBookmarks());
+            lastUsedBookmarks = Collections.unmodifiableSet(bookmarks);
+        }
+        bookmarks.addAll(lastReceivedBookmarks);
+        return bookmarks;
+    }
+
+    private void assertDatabaseNameFutureIsDone() {
+        if (!connectionContext.databaseNameFuture().isDone()) {
+            throw new IllegalStateException("Illegal internal state encountered, database name future is not done.");
+        }
+    }
+
+    private Optional<String> getDatabaseNameNow() {
+        return Futures.joinNowOrElseThrow(
+                        connectionContext.databaseNameFuture(), PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER)
+                .databaseName();
     }
 
     /**

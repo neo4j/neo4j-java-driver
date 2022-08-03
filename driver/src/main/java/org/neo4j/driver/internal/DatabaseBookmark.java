@@ -18,17 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.BookmarkManager;
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.Bookmark;
 
-public interface SessionFactory {
-    NetworkSession newInstance(SessionConfig sessionConfig, BookmarkManager bookmarkManager);
-
-    CompletionStage<Void> verifyConnectivity();
-
-    CompletionStage<Void> close();
-
-    CompletionStage<Boolean> supportsMultiDb();
-}
+public record DatabaseBookmark(String databaseName, Bookmark bookmark) {}

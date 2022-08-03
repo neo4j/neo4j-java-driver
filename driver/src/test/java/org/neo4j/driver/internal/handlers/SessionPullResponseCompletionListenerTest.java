@@ -27,12 +27,13 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
@@ -45,7 +46,7 @@ class SessionPullResponseCompletionListenerTest {
     void shouldReleaseConnectionOnSuccess() {
         Connection connection = newConnectionMock();
         PullResponseCompletionListener listener =
-                new SessionPullResponseCompletionListener(connection, BookmarksHolder.NO_OP);
+                new SessionPullResponseCompletionListener(connection, (ignored) -> {});
         ResponseHandler handler = newHandler(connection, listener);
 
         handler.onSuccess(emptyMap());
@@ -57,7 +58,7 @@ class SessionPullResponseCompletionListenerTest {
     void shouldReleaseConnectionOnFailure() {
         Connection connection = newConnectionMock();
         PullResponseCompletionListener listener =
-                new SessionPullResponseCompletionListener(connection, BookmarksHolder.NO_OP);
+                new SessionPullResponseCompletionListener(connection, (ignored) -> {});
         ResponseHandler handler = newHandler(connection, listener);
 
         handler.onFailure(new RuntimeException());
@@ -69,21 +70,22 @@ class SessionPullResponseCompletionListenerTest {
     void shouldUpdateBookmarksOnSuccess() {
         Connection connection = newConnectionMock();
         String bookmarkValue = "neo4j:bookmark:v1:tx42";
-        BookmarksHolder bookmarksHolder = mock(BookmarksHolder.class);
+        @SuppressWarnings("unchecked")
+        Consumer<DatabaseBookmark> bookmarkConsumer = mock(Consumer.class);
         PullResponseCompletionListener listener =
-                new SessionPullResponseCompletionListener(connection, bookmarksHolder);
+                new SessionPullResponseCompletionListener(connection, bookmarkConsumer);
         ResponseHandler handler = newHandler(connection, listener);
 
         handler.onSuccess(singletonMap("bookmark", value(bookmarkValue)));
 
-        verify(bookmarksHolder).setBookmark(InternalBookmark.parse(bookmarkValue));
+        verify(bookmarkConsumer).accept(new DatabaseBookmark(null, InternalBookmark.parse(bookmarkValue)));
     }
 
     @Test
     void shouldReleaseConnectionImmediatelyOnAuthorizationExpiredExceptionFailure() {
         Connection connection = newConnectionMock();
         PullResponseCompletionListener listener =
-                new SessionPullResponseCompletionListener(connection, BookmarksHolder.NO_OP);
+                new SessionPullResponseCompletionListener(connection, (ignored) -> {});
         ResponseHandler handler = newHandler(connection, listener);
         AuthorizationExpiredException exception = new AuthorizationExpiredException("code", "message");
 
@@ -97,7 +99,7 @@ class SessionPullResponseCompletionListenerTest {
     void shouldReleaseConnectionImmediatelyOnConnectionReadTimeoutExceptionFailure() {
         Connection connection = newConnectionMock();
         PullResponseCompletionListener listener =
-                new SessionPullResponseCompletionListener(connection, BookmarksHolder.NO_OP);
+                new SessionPullResponseCompletionListener(connection, (ignored) -> {});
         ResponseHandler handler = newHandler(connection, listener);
 
         handler.onFailure(ConnectionReadTimeoutException.INSTANCE);

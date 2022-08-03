@@ -34,12 +34,12 @@ import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 
+import java.util.Collections;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.InternalSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -107,10 +107,11 @@ class ParametersTest {
                 retryLogic,
                 defaultDatabase(),
                 AccessMode.WRITE,
-                new DefaultBookmarksHolder(),
+                Collections.emptySet(),
                 null,
                 UNLIMITED_FETCH_SIZE,
-                DEV_NULL_LOGGING);
+                DEV_NULL_LOGGING,
+                mock(BookmarkManager.class));
         return new InternalSession(session);
     }
 }

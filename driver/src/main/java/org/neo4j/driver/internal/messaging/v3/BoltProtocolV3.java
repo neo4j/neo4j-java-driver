@@ -31,11 +31,12 @@ import io.netty.channel.ChannelPromise;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
@@ -127,8 +128,8 @@ public class BoltProtocolV3 implements BoltProtocol {
     }
 
     @Override
-    public CompletionStage<Bookmark> commitTransaction(Connection connection) {
-        CompletableFuture<Bookmark> commitFuture = new CompletableFuture<>();
+    public CompletionStage<DatabaseBookmark> commitTransaction(Connection connection) {
+        CompletableFuture<DatabaseBookmark> commitFuture = new CompletableFuture<>();
         connection.writeAndFlush(COMMIT, new CommitTxResponseHandler(commitFuture));
         return commitFuture;
     }
@@ -144,38 +145,34 @@ public class BoltProtocolV3 implements BoltProtocol {
     public ResultCursorFactory runInAutoCommitTransaction(
             Connection connection,
             Query query,
-            BookmarksHolder bookmarksHolder,
+            Set<Bookmark> bookmarks,
+            Consumer<DatabaseBookmark> bookmarkConsumer,
             TransactionConfig config,
             long fetchSize) {
         verifyDatabaseNameBeforeTransaction(connection.databaseName());
         RunWithMetadataMessage runMessage = autoCommitTxRunMessage(
-                query,
-                config,
-                connection.databaseName(),
-                connection.mode(),
-                bookmarksHolder.getBookmarks(),
-                connection.impersonatedUser());
-        return buildResultCursorFactory(connection, query, bookmarksHolder, null, runMessage, fetchSize);
+                query, config, connection.databaseName(), connection.mode(), bookmarks, connection.impersonatedUser());
+        return buildResultCursorFactory(connection, query, bookmarkConsumer, null, runMessage, fetchSize);
     }
 
     @Override
     public ResultCursorFactory runInUnmanagedTransaction(
             Connection connection, Query query, UnmanagedTransaction tx, long fetchSize) {
         RunWithMetadataMessage runMessage = unmanagedTxRunMessage(query);
-        return buildResultCursorFactory(connection, query, BookmarksHolder.NO_OP, tx, runMessage, fetchSize);
+        return buildResultCursorFactory(connection, query, (ignored) -> {}, tx, runMessage, fetchSize);
     }
 
     protected ResultCursorFactory buildResultCursorFactory(
             Connection connection,
             Query query,
-            BookmarksHolder bookmarksHolder,
+            Consumer<DatabaseBookmark> bookmarkConsumer,
             UnmanagedTransaction tx,
             RunWithMetadataMessage runMessage,
             long ignored) {
         CompletableFuture<Void> runFuture = new CompletableFuture<>();
         RunResponseHandler runHandler = new RunResponseHandler(runFuture, METADATA_EXTRACTOR, connection, tx);
         PullAllResponseHandler pullHandler =
-                newBoltV3PullAllHandler(query, runHandler, connection, bookmarksHolder, tx);
+                newBoltV3PullAllHandler(query, runHandler, connection, bookmarkConsumer, tx);
 
         return new AsyncResultCursorOnlyFactory(connection, runMessage, runHandler, runFuture, pullHandler);
     }

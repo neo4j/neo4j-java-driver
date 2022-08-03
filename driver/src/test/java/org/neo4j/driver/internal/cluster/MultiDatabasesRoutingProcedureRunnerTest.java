@@ -39,15 +39,15 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.BookmarksHolder;
-import org.neo4j.driver.internal.ReadOnlyBookmarksHolder;
 import org.neo4j.driver.internal.spi.Connection;
 
 class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest {
@@ -60,7 +60,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());
 
-        assertThat(runner.bookmarksHolder, instanceOf(ReadOnlyBookmarksHolder.class));
+        assertThat(runner.bookmarks, instanceOf(Set.class));
         assertThat(runner.connection.databaseName(), equalTo(systemDatabase()));
         assertThat(runner.connection.mode(), equalTo(AccessMode.READ));
 
@@ -80,7 +80,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());
 
-        assertThat(runner.bookmarksHolder, instanceOf(ReadOnlyBookmarksHolder.class));
+        assertThat(runner.bookmarks, instanceOf(Set.class));
         assertThat(runner.connection.databaseName(), equalTo(systemDatabase()));
         assertThat(runner.connection.mode(), equalTo(AccessMode.READ));
 
@@ -109,7 +109,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         final CompletionStage<List<Record>> runProcedureResult;
         private Connection connection;
         private Query procedure;
-        private BookmarksHolder bookmarksHolder;
+        private Set<Bookmark> bookmarks;
 
         TestRoutingProcedureRunner(RoutingContext context) {
             this(context, completedFuture(singletonList(mock(Record.class))));
@@ -121,11 +121,10 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         }
 
         @Override
-        CompletionStage<List<Record>> runProcedure(
-                Connection connection, Query procedure, BookmarksHolder bookmarksHolder) {
+        CompletionStage<List<Record>> runProcedure(Connection connection, Query procedure, Set<Bookmark> bookmarks) {
             this.connection = connection;
             this.procedure = procedure;
-            this.bookmarksHolder = bookmarksHolder;
+            this.bookmarks = bookmarks;
             return runProcedureResult;
         }
     }

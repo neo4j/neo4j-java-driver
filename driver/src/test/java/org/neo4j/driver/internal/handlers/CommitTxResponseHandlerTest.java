@@ -21,26 +21,25 @@ package org.neo4j.driver.internal.handlers;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.InternalBookmark;
 
 class CommitTxResponseHandlerTest {
-    private final CompletableFuture<Bookmark> future = new CompletableFuture<>();
+    private final CompletableFuture<DatabaseBookmark> future = new CompletableFuture<>();
     private final CommitTxResponseHandler handler = new CommitTxResponseHandler(future);
 
     @Test
     void shouldHandleSuccessWithoutBookmark() {
         handler.onSuccess(emptyMap());
 
-        assertNull(await(future));
+        assertEquals(new DatabaseBookmark(null, null), await(future));
     }
 
     @Test
@@ -49,7 +48,7 @@ class CommitTxResponseHandlerTest {
 
         handler.onSuccess(singletonMap("bookmark", value(bookmarkString)));
 
-        assertEquals(InternalBookmark.parse(bookmarkString), await(future));
+        assertEquals(InternalBookmark.parse(bookmarkString), await(future).bookmark());
     }
 
     @Test

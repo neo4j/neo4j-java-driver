@@ -16,24 +16,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver;
 
-import java.util.Collections;
 import java.util.Set;
-import org.neo4j.driver.Bookmark;
 
-public interface BookmarksHolder {
-    Set<Bookmark> getBookmarks();
+/**
+ * Supplies additional bookmarks to {@link BookmarkManager} implementation provided by {@link BookmarkManagers#defaultManager(BookmarkManagerConfig)}.
+ * <p>
+ * Implementations must avoid calling driver.
+ */
+public interface BookmarkSupplier {
+    /**
+     * Supplies a set of bookmarks for a given database.
+     *
+     * @param database the database name
+     * @return the set of bookmarks, must not be {@code null}
+     */
+    Set<Bookmark> getBookmarks(String database);
 
-    void setBookmark(Bookmark bookmark);
-
-    BookmarksHolder NO_OP = new BookmarksHolder() {
-        @Override
-        public Set<Bookmark> getBookmarks() {
-            return Collections.emptySet();
-        }
-
-        @Override
-        public void setBookmark(Bookmark bookmark) {}
-    };
+    /**
+     * Supplies a set of bookmarks for all databases.
+     *
+     * @return the set of bookmarks, must not be {@code null}
+     */
+    Set<Bookmark> getAllBookmarks();
 }

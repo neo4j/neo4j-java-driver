@@ -53,6 +53,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
@@ -61,6 +62,7 @@ import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.summary.ResultSummary;
 
 class InternalAsyncTransactionTest {
+    private static final String DATABASE = "neo4j";
     private Connection connection;
     private NetworkSession networkSession;
     private InternalAsyncTransaction tx;
@@ -69,8 +71,11 @@ class InternalAsyncTransactionTest {
     void setUp() {
         connection = connectionMock(BoltProtocolV4.INSTANCE);
         ConnectionProvider connectionProvider = mock(ConnectionProvider.class);
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
-                .thenReturn(completedFuture(connection));
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenAnswer(invocation -> {
+            var context = (ConnectionContext) invocation.getArgument(0);
+            context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+            return completedFuture(connection);
+        });
         networkSession = newSession(connectionProvider);
         InternalAsyncSession session = new InternalAsyncSession(networkSession);
         tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());

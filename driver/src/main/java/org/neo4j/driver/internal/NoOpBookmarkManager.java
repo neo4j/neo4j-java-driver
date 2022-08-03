@@ -18,35 +18,38 @@
  */
 package org.neo4j.driver.internal;
 
+import java.io.Serial;
 import java.util.Collections;
 import java.util.Set;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.BookmarkManager;
 
 /**
- * @since 2.0
+ * A no-op {@link BookmarkManager} implementation.
  */
-public class DefaultBookmarksHolder implements BookmarksHolder {
-    private volatile Set<Bookmark> bookmarks;
+public class NoOpBookmarkManager implements BookmarkManager {
+    @Serial
+    private static final long serialVersionUID = 7175136719562680362L;
 
-    // for testing only
-    public DefaultBookmarksHolder() {
-        this(Collections.emptySet());
-    }
+    private static final Set<Bookmark> EMPTY = Collections.emptySet();
 
-    public DefaultBookmarksHolder(Set<Bookmark> bookmarks) {
-        this.bookmarks = bookmarks;
+    @Override
+    public void updateBookmarks(String database, Set<Bookmark> previousBookmarks, Set<Bookmark> newBookmarks) {
+        // ignored
     }
 
     @Override
-    public Set<Bookmark> getBookmarks() {
-        return bookmarks;
+    public Set<Bookmark> getBookmarks(String database) {
+        return EMPTY;
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public void setBookmark(Bookmark bookmark) {
-        if (bookmark != null && !bookmark.isEmpty()) {
-            bookmarks = Collections.singleton(bookmark);
-        }
+    public Set<Bookmark> getAllBookmarks() {
+        return EMPTY;
+    }
+
+    @Override
+    public void forget(Set<String> databases) {
+        // ignored
     }
 }
