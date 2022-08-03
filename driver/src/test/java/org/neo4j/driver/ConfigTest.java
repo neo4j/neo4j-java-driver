@@ -26,9 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.RevocationStrategy.NO_CHECKS;
-import static org.neo4j.driver.internal.RevocationStrategy.STRICT;
-import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.DEFAULT_FETCH_SIZE;
 
 import java.io.File;
@@ -44,6 +41,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.platform.commons.support.HierarchyTraversalMode;
 import org.junit.platform.commons.support.ReflectionSupport;
+import org.neo4j.driver.internal.RevocationStrategy;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.logging.JULogging;
@@ -279,19 +277,24 @@ class ConfigTest {
         assertFalse(trustStrategy.isHostnameVerificationEnabled());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldEnableAndDisableCertificateRevocationChecksOnTestStrategy() {
         Config.TrustStrategy trustStrategy = Config.TrustStrategy.trustSystemCertificates();
-        assertEquals(NO_CHECKS, trustStrategy.revocationStrategy());
+        assertEquals(RevocationCheckingStrategy.NO_CHECKS, trustStrategy.revocationCheckingStrategy());
+        assertEquals(RevocationStrategy.NO_CHECKS, trustStrategy.revocationStrategy());
 
         assertSame(trustStrategy, trustStrategy.withoutCertificateRevocationChecks());
-        assertEquals(NO_CHECKS, trustStrategy.revocationStrategy());
+        assertEquals(RevocationCheckingStrategy.NO_CHECKS, trustStrategy.revocationCheckingStrategy());
+        assertEquals(RevocationStrategy.NO_CHECKS, trustStrategy.revocationStrategy());
 
         assertSame(trustStrategy, trustStrategy.withStrictRevocationChecks());
-        assertEquals(STRICT, trustStrategy.revocationStrategy());
+        assertEquals(RevocationCheckingStrategy.STRICT, trustStrategy.revocationCheckingStrategy());
+        assertEquals(RevocationStrategy.STRICT, trustStrategy.revocationStrategy());
 
         assertSame(trustStrategy, trustStrategy.withVerifyIfPresentRevocationChecks());
-        assertEquals(VERIFY_IF_PRESENT, trustStrategy.revocationStrategy());
+        assertEquals(RevocationCheckingStrategy.VERIFY_IF_PRESENT, trustStrategy.revocationCheckingStrategy());
+        assertEquals(RevocationStrategy.VERIFY_IF_PRESENT, trustStrategy.revocationStrategy());
     }
 
     @Test

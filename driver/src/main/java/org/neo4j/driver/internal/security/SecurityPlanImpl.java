@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.internal.security;
 
-import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
-import static org.neo4j.driver.internal.RevocationStrategy.requiresRevocationChecking;
+import static org.neo4j.driver.RevocationCheckingStrategy.VERIFY_IF_PRESENT;
+import static org.neo4j.driver.RevocationCheckingStrategy.requiresRevocationChecking;
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
 import java.io.File;
@@ -41,36 +41,39 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-import org.neo4j.driver.internal.RevocationStrategy;
+import org.neo4j.driver.RevocationCheckingStrategy;
 
 /**
  * A SecurityPlan consists of encryption and trust details.
  */
 public class SecurityPlanImpl implements SecurityPlan {
     public static SecurityPlan forAllCertificates(
-            boolean requiresHostnameVerification, RevocationStrategy revocationStrategy)
+            boolean requiresHostnameVerification, RevocationCheckingStrategy revocationCheckingStrategy)
             throws GeneralSecurityException {
         SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(new KeyManager[0], new TrustManager[] {new TrustAllTrustManager()}, null);
 
-        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationStrategy);
+        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationCheckingStrategy);
     }
 
     public static SecurityPlan forCustomCASignedCertificates(
-            List<File> certFiles, boolean requiresHostnameVerification, RevocationStrategy revocationStrategy)
+            List<File> certFiles,
+            boolean requiresHostnameVerification,
+            RevocationCheckingStrategy revocationCheckingStrategy)
             throws GeneralSecurityException, IOException {
-        SSLContext sslContext = configureSSLContext(certFiles, revocationStrategy);
-        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationStrategy);
+        SSLContext sslContext = configureSSLContext(certFiles, revocationCheckingStrategy);
+        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationCheckingStrategy);
     }
 
     public static SecurityPlan forSystemCASignedCertificates(
-            boolean requiresHostnameVerification, RevocationStrategy revocationStrategy)
+            boolean requiresHostnameVerification, RevocationCheckingStrategy revocationCheckingStrategy)
             throws GeneralSecurityException, IOException {
-        SSLContext sslContext = configureSSLContext(Collections.emptyList(), revocationStrategy);
-        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationStrategy);
+        SSLContext sslContext = configureSSLContext(Collections.emptyList(), revocationCheckingStrategy);
+        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationCheckingStrategy);
     }
 
-    private static SSLContext configureSSLContext(List<File> customCertFiles, RevocationStrategy revocationStrategy)
+    private static SSLContext configureSSLContext(
+            List<File> customCertFiles, RevocationCheckingStrategy revocationCheckingStrategy)
             throws GeneralSecurityException, IOException {
         KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         trustedKeyStore.load(null, null);
@@ -83,7 +86,7 @@ public class SecurityPlanImpl implements SecurityPlan {
         }
 
         PKIXBuilderParameters pkixBuilderParameters =
-                configurePKIXBuilderParameters(trustedKeyStore, revocationStrategy);
+                configurePKIXBuilderParameters(trustedKeyStore, revocationCheckingStrategy);
 
         SSLContext sslContext = SSLContext.getInstance("TLS");
         TrustManagerFactory trustManagerFactory =
@@ -101,11 +104,11 @@ public class SecurityPlanImpl implements SecurityPlan {
     }
 
     private static PKIXBuilderParameters configurePKIXBuilderParameters(
-            KeyStore trustedKeyStore, RevocationStrategy revocationStrategy)
+            KeyStore trustedKeyStore, RevocationCheckingStrategy revocationCheckingStrategy)
             throws InvalidAlgorithmParameterException, KeyStoreException {
         PKIXBuilderParameters pkixBuilderParameters = null;
 
-        if (requiresRevocationChecking(revocationStrategy)) {
+        if (requiresRevocationChecking(revocationCheckingStrategy)) {
             // Configure certificate revocation checking (X509CertSelector() selects all certificates)
             pkixBuilderParameters = new PKIXBuilderParameters(trustedKeyStore, new X509CertSelector());
 
@@ -115,7 +118,7 @@ public class SecurityPlanImpl implements SecurityPlan {
             // enables status_request extension in client hello
             System.setProperty("jdk.tls.client.enableStatusRequestExtension", "true");
 
-            if (revocationStrategy.equals(VERIFY_IF_PRESENT)) {
+            if (revocationCheckingStrategy.equals(VERIFY_IF_PRESENT)) {
                 // enables soft-fail behaviour if no stapled response found.
                 Security.setProperty("ocsp.enable", "true");
             }
@@ -146,23 +149,23 @@ public class SecurityPlanImpl implements SecurityPlan {
     }
 
     public static SecurityPlan insecure() {
-        return new SecurityPlanImpl(false, null, false, RevocationStrategy.NO_CHECKS);
+        return new SecurityPlanImpl(false, null, false, RevocationCheckingStrategy.NO_CHECKS);
     }
 
     private final boolean requiresEncryption;
     private final SSLContext sslContext;
     private final boolean requiresHostnameVerification;
-    private final RevocationStrategy revocationStrategy;
+    private final RevocationCheckingStrategy revocationCheckingStrategy;
 
     private SecurityPlanImpl(
             boolean requiresEncryption,
             SSLContext sslContext,
             boolean requiresHostnameVerification,
-            RevocationStrategy revocationStrategy) {
+            RevocationCheckingStrategy revocationCheckingStrategy) {
         this.requiresEncryption = requiresEncryption;
         this.sslContext = sslContext;
         this.requiresHostnameVerification = requiresHostnameVerification;
-        this.revocationStrategy = revocationStrategy;
+        this.revocationCheckingStrategy = revocationCheckingStrategy;
     }
 
     @Override
@@ -181,8 +184,8 @@ public class SecurityPlanImpl implements SecurityPlan {
     }
 
     @Override
-    public RevocationStrategy revocationStrategy() {
-        return revocationStrategy;
+    public RevocationCheckingStrategy revocationCheckingStrategy() {
+        return revocationCheckingStrategy;
     }
 
     private static class TrustAllTrustManager implements X509TrustManager {
