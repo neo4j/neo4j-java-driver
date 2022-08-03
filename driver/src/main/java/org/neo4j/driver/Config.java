@@ -691,7 +691,7 @@ public class Config implements Serializable {
         private final Strategy strategy;
         private final List<File> certFiles;
         private boolean hostnameVerificationEnabled = true;
-        private RevocationStrategy revocationStrategy = RevocationStrategy.NO_CHECKS;
+        private RevocationCheckingStrategy revocationCheckingStrategy = RevocationCheckingStrategy.NO_CHECKS;
 
         private TrustStrategy(Strategy strategy) {
             this(strategy, Collections.emptyList());
@@ -802,8 +802,8 @@ public class Config implements Serializable {
          * The revocation strategy used for verifying certificates.
          * @return this {@link TrustStrategy}'s revocation strategy
          */
-        public RevocationStrategy revocationStrategy() {
-            return revocationStrategy;
+        public RevocationCheckingStrategy revocationCheckingStrategy() {
+            return revocationCheckingStrategy;
         }
 
         /**
@@ -812,7 +812,7 @@ public class Config implements Serializable {
          * @return the current trust strategy
          */
         public TrustStrategy withoutCertificateRevocationChecks() {
-            this.revocationStrategy = RevocationStrategy.NO_CHECKS;
+            this.revocationCheckingStrategy = RevocationCheckingStrategy.NO_CHECKS;
             return this;
         }
 
@@ -824,7 +824,7 @@ public class Config implements Serializable {
          * @return the current trust strategy
          */
         public TrustStrategy withVerifyIfPresentRevocationChecks() {
-            this.revocationStrategy = RevocationStrategy.VERIFY_IF_PRESENT;
+            this.revocationCheckingStrategy = RevocationCheckingStrategy.VERIFY_IF_PRESENT;
             return this;
         }
 
@@ -838,7 +838,7 @@ public class Config implements Serializable {
          * @return the current trust strategy
          */
         public TrustStrategy withStrictRevocationChecks() {
-            this.revocationStrategy = RevocationStrategy.STRICT;
+            this.revocationCheckingStrategy = RevocationCheckingStrategy.STRICT;
             return this;
         }
     }
