@@ -43,7 +43,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.RevocationStrategy;
+import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
@@ -134,7 +134,7 @@ class NettyChannelInitializerTest {
 
     private void testHostnameVerificationSetting(boolean enabled, String expectedValue) throws Exception {
         NettyChannelInitializer initializer =
-                newInitializer(SecurityPlanImpl.forAllCertificates(enabled, RevocationStrategy.NO_CHECKS));
+                newInitializer(SecurityPlanImpl.forAllCertificates(enabled, RevocationCheckingStrategy.NO_CHECKS));
 
         initializer.initChannel(channel);
 
@@ -158,6 +158,6 @@ class NettyChannelInitializerTest {
     }
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException {
-        return SecurityPlanImpl.forAllCertificates(false, RevocationStrategy.NO_CHECKS);
+        return SecurityPlanImpl.forAllCertificates(false, RevocationCheckingStrategy.NO_CHECKS);
     }
 }

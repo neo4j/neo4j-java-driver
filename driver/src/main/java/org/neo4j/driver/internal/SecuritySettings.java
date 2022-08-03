@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.security.GeneralSecurityException;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.RevocationStrategy;
+import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
@@ -67,7 +67,7 @@ public class SecuritySettings implements Serializable {
         return t1.isHostnameVerificationEnabled() == t2.isHostnameVerificationEnabled()
                 && t1.strategy() == t2.strategy()
                 && t1.certFiles().equals(t2.certFiles())
-                && t1.revocationStrategy() == t2.revocationStrategy();
+                && t1.revocationCheckingStrategy() == t2.revocationCheckingStrategy();
     }
 
     public SecurityPlan createSecurityPlan(String uriScheme) {
@@ -93,9 +93,9 @@ public class SecuritySettings implements Serializable {
 
     private SecurityPlan createSecurityPlanFromScheme(String scheme) throws GeneralSecurityException, IOException {
         if (isHighTrustScheme(scheme)) {
-            return SecurityPlanImpl.forSystemCASignedCertificates(true, RevocationStrategy.NO_CHECKS);
+            return SecurityPlanImpl.forSystemCASignedCertificates(true, RevocationCheckingStrategy.NO_CHECKS);
         } else {
-            return SecurityPlanImpl.forAllCertificates(false, RevocationStrategy.NO_CHECKS);
+            return SecurityPlanImpl.forAllCertificates(false, RevocationCheckingStrategy.NO_CHECKS);
         }
     }
 
@@ -107,16 +107,16 @@ public class SecuritySettings implements Serializable {
             throws GeneralSecurityException, IOException {
         if (encrypted) {
             boolean hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();
-            RevocationStrategy revocationStrategy = trustStrategy.revocationStrategy();
+            RevocationCheckingStrategy revocationCheckingStrategy = trustStrategy.revocationCheckingStrategy();
             switch (trustStrategy.strategy()) {
                 case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
                     return SecurityPlanImpl.forCustomCASignedCertificates(
-                            trustStrategy.certFiles(), hostnameVerificationEnabled, revocationStrategy);
+                            trustStrategy.certFiles(), hostnameVerificationEnabled, revocationCheckingStrategy);
                 case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
                     return SecurityPlanImpl.forSystemCASignedCertificates(
-                            hostnameVerificationEnabled, revocationStrategy);
+                            hostnameVerificationEnabled, revocationCheckingStrategy);
                 case TRUST_ALL_CERTIFICATES:
-                    return SecurityPlanImpl.forAllCertificates(hostnameVerificationEnabled, revocationStrategy);
+                    return SecurityPlanImpl.forAllCertificates(hostnameVerificationEnabled, revocationCheckingStrategy);
                 default:
                     throw new ClientException("Unknown TLS authentication strategy: "
                             + trustStrategy.strategy().name());

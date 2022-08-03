@@ -26,9 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.RevocationStrategy.NO_CHECKS;
-import static org.neo4j.driver.RevocationStrategy.STRICT;
-import static org.neo4j.driver.RevocationStrategy.VERIFY_IF_PRESENT;
+import static org.neo4j.driver.RevocationCheckingStrategy.NO_CHECKS;
+import static org.neo4j.driver.RevocationCheckingStrategy.STRICT;
+import static org.neo4j.driver.RevocationCheckingStrategy.VERIFY_IF_PRESENT;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.DEFAULT_FETCH_SIZE;
 
 import java.io.File;
@@ -282,16 +282,16 @@ class ConfigTest {
     @Test
     void shouldEnableAndDisableCertificateRevocationChecksOnTestStrategy() {
         Config.TrustStrategy trustStrategy = Config.TrustStrategy.trustSystemCertificates();
-        assertEquals(NO_CHECKS, trustStrategy.revocationStrategy());
+        assertEquals(NO_CHECKS, trustStrategy.revocationCheckingStrategy());
 
         assertSame(trustStrategy, trustStrategy.withoutCertificateRevocationChecks());
-        assertEquals(NO_CHECKS, trustStrategy.revocationStrategy());
+        assertEquals(NO_CHECKS, trustStrategy.revocationCheckingStrategy());
 
         assertSame(trustStrategy, trustStrategy.withStrictRevocationChecks());
-        assertEquals(STRICT, trustStrategy.revocationStrategy());
+        assertEquals(STRICT, trustStrategy.revocationCheckingStrategy());
 
         assertSame(trustStrategy, trustStrategy.withVerifyIfPresentRevocationChecks());
-        assertEquals(VERIFY_IF_PRESENT, trustStrategy.revocationStrategy());
+        assertEquals(VERIFY_IF_PRESENT, trustStrategy.revocationCheckingStrategy());
     }
 
     @Test
@@ -429,8 +429,8 @@ class ConfigTest {
                     config.trustStrategy().isHostnameVerificationEnabled(),
                     verify.trustStrategy().isHostnameVerificationEnabled());
             assertEquals(
-                    config.trustStrategy().revocationStrategy(),
-                    verify.trustStrategy().revocationStrategy());
+                    config.trustStrategy().revocationCheckingStrategy(),
+                    verify.trustStrategy().revocationCheckingStrategy());
             assertEquals(config.userAgent(), verify.userAgent());
             assertEquals(config.isMetricsEnabled(), verify.isMetricsEnabled());
             assertEquals(config.metricsAdapter(), verify.metricsAdapter());

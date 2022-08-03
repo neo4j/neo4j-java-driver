@@ -22,9 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.RevocationStrategy.NO_CHECKS;
-import static org.neo4j.driver.RevocationStrategy.STRICT;
-import static org.neo4j.driver.RevocationStrategy.VERIFY_IF_PRESENT;
+import static org.neo4j.driver.RevocationCheckingStrategy.NO_CHECKS;
+import static org.neo4j.driver.RevocationCheckingStrategy.STRICT;
+import static org.neo4j.driver.RevocationCheckingStrategy.VERIFY_IF_PRESENT;
 
 import java.io.File;
 import java.io.IOException;
@@ -77,7 +77,7 @@ class SecuritySettingsTest {
 
         assertTrue(securityPlan.requiresEncryption());
         assertTrue(securityPlan.requiresHostnameVerification());
-        assertEquals(NO_CHECKS, securityPlan.revocationStrategy());
+        assertEquals(NO_CHECKS, securityPlan.revocationCheckingStrategy());
     }
 
     @ParameterizedTest
@@ -178,7 +178,7 @@ class SecuritySettingsTest {
 
         SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertEquals(STRICT, securityPlan.revocationStrategy());
+        assertEquals(STRICT, securityPlan.revocationCheckingStrategy());
     }
 
     @ParameterizedTest
@@ -192,7 +192,7 @@ class SecuritySettingsTest {
 
         SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertEquals(VERIFY_IF_PRESENT, securityPlan.revocationStrategy());
+        assertEquals(VERIFY_IF_PRESENT, securityPlan.revocationCheckingStrategy());
     }
 
     @ParameterizedTest
@@ -205,7 +205,7 @@ class SecuritySettingsTest {
 
         SecurityPlan securityPlan = securitySettings.createSecurityPlan(scheme);
 
-        assertEquals(NO_CHECKS, securityPlan.revocationStrategy());
+        assertEquals(NO_CHECKS, securityPlan.revocationCheckingStrategy());
     }
 
     @Nested
