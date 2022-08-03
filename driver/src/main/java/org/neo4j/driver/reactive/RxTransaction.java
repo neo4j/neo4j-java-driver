@@ -18,14 +18,14 @@
  */
 package org.neo4j.driver.reactive;
 
+import java.util.concurrent.Flow;
 import org.neo4j.driver.Transaction;
-import org.reactivestreams.Publisher;
 
 /**
  * Same as {@link Transaction} except this reactive transaction exposes a reactive API.
  * @see Transaction
  * @see RxSession
- * @see Publisher
+ * @see Flow.Publisher
  * @since 4.0
  */
 @Deprecated
@@ -37,7 +37,7 @@ public interface RxTransaction extends RxQueryRunner {
      * @param <T> makes it easier to be chained after other publishers.
      * @return an empty publisher.
      */
-    <T> Publisher<T> commit();
+    <T> Flow.Publisher<T> commit();
 
     /**
      * Rolls back the transaction. It completes without publishing anything if transaction is rolled back successfully. Otherwise, errors when there is any
@@ -46,20 +46,20 @@ public interface RxTransaction extends RxQueryRunner {
      * @param <T> makes it easier to be chained after other publishers.
      * @return an empty publisher.
      */
-    <T> Publisher<T> rollback();
+    <T> Flow.Publisher<T> rollback();
 
     /**
      * Close the transaction. If the transaction has been {@link #commit() committed} or {@link #rollback() rolled back}, the close is optional and no operation
      * is performed. Otherwise, the transaction will be rolled back by default by this method.
      *
-     * @return new {@link Publisher} that gets completed when close is successful, otherwise an error is signalled.
+     * @return new {@link Flow.Publisher} that gets completed when close is successful, otherwise an error is signalled.
      */
-    Publisher<Void> close();
+    Flow.Publisher<Void> close();
 
     /**
      * Determine if transaction is open.
      *
      * @return a publisher emitting {@code true} if transaction is open and {@code false} otherwise.
      */
-    Publisher<Boolean> isOpen();
+    Flow.Publisher<Boolean> isOpen();
 }

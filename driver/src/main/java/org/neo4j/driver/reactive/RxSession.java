@@ -20,20 +20,20 @@ package org.neo4j.driver.reactive;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
-import org.reactivestreams.Publisher;
 
 /**
  * A reactive session is the same as {@link Session} except it provides a reactive API.
  * @see Session
  * @see RxResult
  * @see RxTransaction
- * @see Publisher
+ * @see Flow.Publisher
  * @since 4.0
  */
 @Deprecated
@@ -46,7 +46,7 @@ public interface RxSession extends RxQueryRunner {
      *
      * @return a new {@link RxTransaction}
      */
-    default Publisher<RxTransaction> beginTransaction() {
+    default Flow.Publisher<RxTransaction> beginTransaction() {
         return beginTransaction(TransactionConfig.empty());
     }
 
@@ -60,7 +60,7 @@ public interface RxSession extends RxQueryRunner {
      * @param config configuration for the new transaction.
      * @return a new {@link RxTransaction}
      */
-    Publisher<RxTransaction> beginTransaction(TransactionConfig config);
+    Flow.Publisher<RxTransaction> beginTransaction(TransactionConfig config);
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#READ read} reactive transaction.
@@ -77,11 +77,11 @@ public interface RxSession extends RxQueryRunner {
      * @param work the {@link RxTransactionWork} to be applied to a new read transaction.
      * Operation executed by the given work must NOT include any blocking operation.
      * @param <T> the return type of the given unit of work.
-     * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
+     * @return a {@link Flow.Publisher publisher} completed with the same result as returned by the given unit of work.
      * publisher can be completed exceptionally if given work or commit fails.
      *
      */
-    <T> Publisher<T> readTransaction(RxTransactionWork<? extends Publisher<T>> work);
+    <T> Flow.Publisher<T> readTransaction(RxTransactionWork<? extends Flow.Publisher<T>> work);
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#READ read} reactive transaction with
@@ -100,10 +100,11 @@ public interface RxSession extends RxQueryRunner {
      * Operation executed by the given work must NOT include any blocking operation.
      * @param config the transaction configuration.
      * @param <T> the return type of the given unit of work.
-     * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
+     * @return a {@link Flow.Publisher publisher} completed with the same result as returned by the given unit of work.
      * publisher can be completed exceptionally if given work or commit fails.
      */
-    <T> Publisher<T> readTransaction(RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config);
+    <T> Flow.Publisher<T> readTransaction(
+            RxTransactionWork<? extends Flow.Publisher<T>> work, TransactionConfig config);
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#WRITE write} reactive transaction.
@@ -120,10 +121,10 @@ public interface RxSession extends RxQueryRunner {
      * @param work the {@link RxTransactionWork} to be applied to a new read transaction.
      * Operation executed by the given work must NOT include any blocking operation.
      * @param <T> the return type of the given unit of work.
-     * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
+     * @return a {@link Flow.Publisher publisher} completed with the same result as returned by the given unit of work.
      * publisher can be completed exceptionally if given work or commit fails.
      */
-    <T> Publisher<T> writeTransaction(RxTransactionWork<? extends Publisher<T>> work);
+    <T> Flow.Publisher<T> writeTransaction(RxTransactionWork<? extends Flow.Publisher<T>> work);
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#WRITE write} reactive transaction with
@@ -142,10 +143,11 @@ public interface RxSession extends RxQueryRunner {
      * Operation executed by the given work must NOT include any blocking operation.
      * @param config the transaction configuration.
      * @param <T> the return type of the given unit of work.
-     * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
+     * @return a {@link Flow.Publisher publisher} completed with the same result as returned by the given unit of work.
      * publisher can be completed exceptionally if given work or commit fails.
      */
-    <T> Publisher<T> writeTransaction(RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config);
+    <T> Flow.Publisher<T> writeTransaction(
+            RxTransactionWork<? extends Flow.Publisher<T>> work, TransactionConfig config);
 
     /**
      * Run a query with parameters in an auto-commit transaction with specified {@link TransactionConfig} and return a reactive result stream. The query is not
@@ -246,5 +248,5 @@ public interface RxSession extends RxQueryRunner {
      * @param <T> makes it easier to be chained.
      * @return an empty publisher that represents the reactive close.
      */
-    <T> Publisher<T> close();
+    <T> Flow.Publisher<T> close();
 }

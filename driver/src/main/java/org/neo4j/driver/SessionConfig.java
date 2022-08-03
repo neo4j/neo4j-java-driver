@@ -26,10 +26,10 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Flow;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
-import org.reactivestreams.Subscription;
 
 /**
  * The session configurations used to configure a session.
@@ -260,7 +260,7 @@ public class SessionConfig implements Serializable {
          * Use {@code -1} to disables back pressure and config client to pull all records at once after each run.
          *
          * This config only applies to run result obtained via {@link Session} and {@link AsyncSession}.
-         * As with {@link RxSession}, the batch size is provided via {@link Subscription#request(long)} instead.
+         * As with {@link RxSession}, the batch size is provided via {@link Flow.Subscription#request(long)} instead.
          * @param size the default record fetch size when pulling records in batches using Bolt V4.
          * @return this builder
          */

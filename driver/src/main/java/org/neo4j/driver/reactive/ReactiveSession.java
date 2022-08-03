@@ -21,6 +21,7 @@ package org.neo4j.driver.reactive;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -28,7 +29,6 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
-import org.reactivestreams.Publisher;
 
 /**
  * A reactive session is the same as {@link Session} except it provides a reactive API.
@@ -36,7 +36,7 @@ import org.reactivestreams.Publisher;
  * @see Session
  * @see ReactiveResult
  * @see ReactiveTransaction
- * @see Publisher
+ * @see Flow.Publisher
  * @since 5.0
  */
 public interface ReactiveSession extends ReactiveQueryRunner {
@@ -48,7 +48,7 @@ public interface ReactiveSession extends ReactiveQueryRunner {
      *
      * @return a new {@link ReactiveTransaction}
      */
-    default Publisher<ReactiveTransaction> beginTransaction() {
+    default Flow.Publisher<ReactiveTransaction> beginTransaction() {
         return beginTransaction(TransactionConfig.empty());
     }
 
@@ -61,7 +61,7 @@ public interface ReactiveSession extends ReactiveQueryRunner {
      * @param config configuration for the new transaction.
      * @return a new {@link ReactiveTransaction}
      */
-    Publisher<ReactiveTransaction> beginTransaction(TransactionConfig config);
+    Flow.Publisher<ReactiveTransaction> beginTransaction(TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one
@@ -79,7 +79,7 @@ public interface ReactiveSession extends ReactiveQueryRunner {
      * @param <T>      the return type of the given unit of work.
      * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
      */
-    default <T> Publisher<T> executeRead(ReactiveTransactionCallback<? extends Publisher<T>> callback) {
+    default <T> Flow.Publisher<T> executeRead(ReactiveTransactionCallback<? extends Flow.Publisher<T>> callback) {
         return executeRead(callback, TransactionConfig.empty());
     }
 
@@ -100,8 +100,8 @@ public interface ReactiveSession extends ReactiveQueryRunner {
      * @param <T>      the return type of the given unit of work.
      * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
      */
-    <T> Publisher<T> executeRead(
-            ReactiveTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config);
+    <T> Flow.Publisher<T> executeRead(
+            ReactiveTransactionCallback<? extends Flow.Publisher<T>> callback, TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for
@@ -119,7 +119,7 @@ public interface ReactiveSession extends ReactiveQueryRunner {
      * @param <T>      the return type of the given unit of work.
      * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
      */
-    default <T> Publisher<T> executeWrite(ReactiveTransactionCallback<? extends Publisher<T>> callback) {
+    default <T> Flow.Publisher<T> executeWrite(ReactiveTransactionCallback<? extends Flow.Publisher<T>> callback) {
         return executeWrite(callback, TransactionConfig.empty());
     }
 
@@ -140,8 +140,8 @@ public interface ReactiveSession extends ReactiveQueryRunner {
      * @param <T>      the return type of the given unit of work.
      * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
      */
-    <T> Publisher<T> executeWrite(
-            ReactiveTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config);
+    <T> Flow.Publisher<T> executeWrite(
+            ReactiveTransactionCallback<? extends Flow.Publisher<T>> callback, TransactionConfig config);
 
     /**
      * Run a query with parameters in an auto-commit transaction with specified {@link TransactionConfig} and return a publisher of {@link ReactiveResult}.
@@ -153,7 +153,7 @@ public interface ReactiveSession extends ReactiveQueryRunner {
      * @param config configuration for the new transaction.
      * @return a publisher of reactive result.
      */
-    default Publisher<ReactiveResult> run(String query, TransactionConfig config) {
+    default Flow.Publisher<ReactiveResult> run(String query, TransactionConfig config) {
         return run(new Query(query), config);
     }
 
@@ -191,7 +191,7 @@ public interface ReactiveSession extends ReactiveQueryRunner {
      * @param config     configuration for the new transaction.
      * @return a publisher of reactive result.
      */
-    default Publisher<ReactiveResult> run(String query, Map<String, Object> parameters, TransactionConfig config) {
+    default Flow.Publisher<ReactiveResult> run(String query, Map<String, Object> parameters, TransactionConfig config) {
         return run(new Query(query, parameters), config);
     }
 
@@ -222,7 +222,7 @@ public interface ReactiveSession extends ReactiveQueryRunner {
      * @param config configuration for the new transaction.
      * @return a publisher of reactive result.
      */
-    Publisher<ReactiveResult> run(Query query, TransactionConfig config);
+    Flow.Publisher<ReactiveResult> run(Query query, TransactionConfig config);
 
     /**
      * Return a set of last bookmarks.
@@ -247,5 +247,5 @@ public interface ReactiveSession extends ReactiveQueryRunner {
      * @param <T> makes it easier to be chained.
      * @return an empty publisher that represents the reactive close.
      */
-    <T> Publisher<T> close();
+    <T> Flow.Publisher<T> close();
 }
