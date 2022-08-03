@@ -772,7 +772,7 @@ public class Config implements Serializable {
         private final Strategy strategy;
         private final List<File> certFiles;
         private boolean hostnameVerificationEnabled = true;
-        private RevocationStrategy revocationStrategy = RevocationStrategy.NO_CHECKS;
+        private RevocationCheckingStrategy revocationCheckingStrategy = RevocationCheckingStrategy.NO_CHECKS;
 
         private TrustStrategy(Strategy strategy) {
             this(strategy, Collections.emptyList());
@@ -883,7 +883,31 @@ public class Config implements Serializable {
          * The revocation strategy used for verifying certificates.
          * @return this {@link TrustStrategy}'s revocation strategy
          */
+        public RevocationCheckingStrategy revocationCheckingStrategy() {
+            return revocationCheckingStrategy;
+        }
+
+        /**
+         * The revocation strategy used for verifying certificates.
+         * @return this {@link TrustStrategy}'s revocation strategy
+         * @deprecated superseded by {@link TrustStrategy#revocationCheckingStrategy()}
+         */
+        @Deprecated
         public RevocationStrategy revocationStrategy() {
+            RevocationStrategy revocationStrategy;
+            switch (this.revocationCheckingStrategy) {
+                case VERIFY_IF_PRESENT:
+                    revocationStrategy = RevocationStrategy.VERIFY_IF_PRESENT;
+                    break;
+                case STRICT:
+                    revocationStrategy = RevocationStrategy.STRICT;
+                    break;
+                case NO_CHECKS:
+                    revocationStrategy = RevocationStrategy.NO_CHECKS;
+                    break;
+                default:
+                    throw new IllegalStateException("Failed to map RevocationCheckingStrategy to RevocationStrategy.");
+            }
             return revocationStrategy;
         }
 
@@ -893,7 +917,7 @@ public class Config implements Serializable {
          * @return the current trust strategy
          */
         public TrustStrategy withoutCertificateRevocationChecks() {
-            this.revocationStrategy = RevocationStrategy.NO_CHECKS;
+            this.revocationCheckingStrategy = RevocationCheckingStrategy.NO_CHECKS;
             return this;
         }
 
@@ -905,7 +929,7 @@ public class Config implements Serializable {
          * @return the current trust strategy
          */
         public TrustStrategy withVerifyIfPresentRevocationChecks() {
-            this.revocationStrategy = RevocationStrategy.VERIFY_IF_PRESENT;
+            this.revocationCheckingStrategy = RevocationCheckingStrategy.VERIFY_IF_PRESENT;
             return this;
         }
 
@@ -919,7 +943,7 @@ public class Config implements Serializable {
          * @return the current trust strategy
          */
         public TrustStrategy withStrictRevocationChecks() {
-            this.revocationStrategy = RevocationStrategy.STRICT;
+            this.revocationCheckingStrategy = RevocationCheckingStrategy.STRICT;
             return this;
         }
     }

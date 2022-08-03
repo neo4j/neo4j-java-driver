@@ -16,17 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
-
-import org.neo4j.driver.RevocationCheckingStrategy;
+package org.neo4j.driver;
 
 /**
  * Defines strategy for revocation checks.
- *
- * @deprecated superseded by {@link RevocationCheckingStrategy}
  */
-@Deprecated
-public enum RevocationStrategy {
+public enum RevocationCheckingStrategy {
     /** Don't do any OCSP revocation checks, regardless whether there are stapled revocation statuses or not. */
     NO_CHECKS,
     /** Verify OCSP revocation checks when the revocation status is stapled to the certificate, continue if not. */
@@ -34,7 +29,7 @@ public enum RevocationStrategy {
     /** Require stapled revocation status and verify OCSP revocation checks, fail if no revocation status is stapled to the certificate. */
     STRICT;
 
-    public static boolean requiresRevocationChecking(RevocationStrategy revocationStrategy) {
-        return revocationStrategy.equals(STRICT) || revocationStrategy.equals(VERIFY_IF_PRESENT);
+    public static boolean requiresRevocationChecking(RevocationCheckingStrategy revocationCheckingStrategy) {
+        return revocationCheckingStrategy.equals(STRICT) || revocationCheckingStrategy.equals(VERIFY_IF_PRESENT);
     }
 }
