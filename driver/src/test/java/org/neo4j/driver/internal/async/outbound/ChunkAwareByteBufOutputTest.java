@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.async.outbound;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.util.TestUtil.assertByteBufContains;
+import static org.neo4j.driver.testutil.TestUtil.assertByteBufContains;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

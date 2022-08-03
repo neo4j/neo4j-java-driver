@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.security.GeneralSecurityException;
 import org.neo4j.driver.Config;
+import org.neo4j.driver.RevocationStrategy;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;

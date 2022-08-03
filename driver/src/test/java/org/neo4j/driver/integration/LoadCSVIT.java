@@ -30,8 +30,8 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
 
 @ParallelizableIT
 class LoadCSVIT {

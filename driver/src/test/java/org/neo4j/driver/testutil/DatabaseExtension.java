@@ -16,14 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.util;
+package org.neo4j.driver.testutil;
 
 import static java.lang.Integer.parseInt;
-import static org.neo4j.driver.util.Neo4jSettings.BOLT_TLS_LEVEL;
-import static org.neo4j.driver.util.Neo4jSettings.BoltTlsLevel.OPTIONAL;
-import static org.neo4j.driver.util.Neo4jSettings.BoltTlsLevel.REQUIRED;
-import static org.neo4j.driver.util.Neo4jSettings.SSL_POLICY_BOLT_CLIENT_AUTH;
-import static org.neo4j.driver.util.Neo4jSettings.SSL_POLICY_BOLT_ENABLED;
+import static org.neo4j.driver.testutil.Neo4jSettings.BOLT_TLS_LEVEL;
+import static org.neo4j.driver.testutil.Neo4jSettings.BoltTlsLevel.OPTIONAL;
+import static org.neo4j.driver.testutil.Neo4jSettings.BoltTlsLevel.REQUIRED;
+import static org.neo4j.driver.testutil.Neo4jSettings.SSL_POLICY_BOLT_CLIENT_AUTH;
+import static org.neo4j.driver.testutil.Neo4jSettings.SSL_POLICY_BOLT_ENABLED;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,8 +49,8 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.testutil.CertificateUtil.CertificateKeyPair;
 import org.neo4j.driver.types.TypeSystem;
-import org.neo4j.driver.util.CertificateUtil.CertificateKeyPair;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Neo4jContainer;

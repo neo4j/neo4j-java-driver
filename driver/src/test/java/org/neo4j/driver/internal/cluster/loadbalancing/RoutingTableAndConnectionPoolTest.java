@@ -32,7 +32,7 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.SYSTEM_DATABASE_NAME;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithDatabase;
 import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
-import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.await;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.GlobalEventExecutor;

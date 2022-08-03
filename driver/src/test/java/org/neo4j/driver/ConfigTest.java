@@ -26,9 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.RevocationStrategy.NO_CHECKS;
-import static org.neo4j.driver.internal.RevocationStrategy.STRICT;
-import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
+import static org.neo4j.driver.RevocationStrategy.NO_CHECKS;
+import static org.neo4j.driver.RevocationStrategy.STRICT;
+import static org.neo4j.driver.RevocationStrategy.VERIFY_IF_PRESENT;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.DEFAULT_FETCH_SIZE;
 
 import java.io.File;
@@ -49,7 +49,7 @@ import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.logging.Slf4jLogging;
 import org.neo4j.driver.net.ServerAddressResolver;
-import org.neo4j.driver.util.TestUtil;
+import org.neo4j.driver.testutil.TestUtil;
 
 class ConfigTest {
     @Test

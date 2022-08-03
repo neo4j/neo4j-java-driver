@@ -340,4 +340,29 @@
         <method>void close()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/AuthTokens</className>
+        <differenceType>7009</differenceType>
+        <method>AuthTokens()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/GraphDatabase</className>
+        <differenceType>7009</differenceType>
+        <method>GraphDatabase()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Records</className>
+        <differenceType>7009</differenceType>
+        <method>Records()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Values</className>
+        <differenceType>7006</differenceType>
+        <method>org.neo4j.driver.internal.value.BytesValue value(byte[])</method>
+        <to>org.neo4j.driver.Value</to>
+    </difference>
+
 </differences>

@@ -27,8 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V5;
-import static org.neo4j.driver.util.TestUtil.TX_TIMEOUT_TEST_TIMEOUT;
-import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.TX_TIMEOUT_TEST_TIMEOUT;
+import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -49,8 +49,8 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.util.DriverExtension;
-import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.testutil.DriverExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
 
 @EnabledOnNeo4jWith(BOLT_V3)
 @ParallelizableIT

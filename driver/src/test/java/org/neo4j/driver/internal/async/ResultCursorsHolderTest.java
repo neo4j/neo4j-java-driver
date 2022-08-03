@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;

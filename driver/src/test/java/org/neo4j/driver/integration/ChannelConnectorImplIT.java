@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.await;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -49,12 +49,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.RevocationStrategy;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
-import org.neo4j.driver.internal.RevocationStrategy;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
@@ -63,8 +63,8 @@ import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
 
 @ParallelizableIT
 class ChannelConnectorImplIT {

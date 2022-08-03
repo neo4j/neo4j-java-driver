@@ -36,9 +36,9 @@ import static org.neo4j.driver.Config.TrustStrategy.trustAllCertificates;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Neo4jEdition.ENTERPRISE;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.util.TestUtil.await;
-import static org.neo4j.driver.util.TestUtil.createDatabase;
-import static org.neo4j.driver.util.TestUtil.dropDatabase;
+import static org.neo4j.driver.testutil.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.createDatabase;
+import static org.neo4j.driver.testutil.TestUtil.dropDatabase;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,10 +60,10 @@ import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.StdIOCapture;
-import org.neo4j.driver.util.TestUtil;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
+import org.neo4j.driver.testutil.StdIOCapture;
+import org.neo4j.driver.testutil.TestUtil;
 
 @ParallelizableIT
 class ExamplesIT {

@@ -33,7 +33,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.util.TestUtil;
+import org.neo4j.driver.testutil.TestUtil;
 
 class TransactionConfigTest {
     @Test

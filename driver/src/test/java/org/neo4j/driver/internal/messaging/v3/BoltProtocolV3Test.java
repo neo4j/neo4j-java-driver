@@ -42,8 +42,8 @@ import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
-import static org.neo4j.driver.util.TestUtil.await;
-import static org.neo4j.driver.util.TestUtil.connectionMock;
+import static org.neo4j.driver.testutil.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.connectionMock;
 
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;

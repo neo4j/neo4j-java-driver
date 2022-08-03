@@ -16,12 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.util;
+package org.neo4j.driver.testutil;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
-import static org.neo4j.driver.util.CertificateUtil.generateSelfSignedCertificate;
 
 import java.io.File;
 import java.security.KeyStore;
@@ -39,9 +38,9 @@ public class CertificateUtilTest {
         File certFile = File.createTempFile("3random", ".cer");
         certFile.deleteOnExit();
 
-        X509Certificate cert1 = generateSelfSignedCertificate();
-        X509Certificate cert2 = generateSelfSignedCertificate();
-        X509Certificate cert3 = generateSelfSignedCertificate();
+        X509Certificate cert1 = CertificateUtil.generateSelfSignedCertificate();
+        X509Certificate cert2 = CertificateUtil.generateSelfSignedCertificate();
+        X509Certificate cert3 = CertificateUtil.generateSelfSignedCertificate();
 
         saveX509Cert(new Certificate[] {cert1, cert2, cert3}, certFile);
 

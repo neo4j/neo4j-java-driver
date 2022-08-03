@@ -27,6 +27,8 @@ import java.util.function.Function;
  * @since 1.0
  */
 public abstract class Records {
+    private Records() {}
+
     public static Function<Record, Value> column(int index) {
         return column(index, Values.ofValue());
     }

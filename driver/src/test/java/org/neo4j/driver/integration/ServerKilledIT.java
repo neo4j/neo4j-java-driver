@@ -42,8 +42,8 @@ import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
 
 /**
  * Mainly concerned about the connection pool - we want to make sure that bad connections are evacuated from the

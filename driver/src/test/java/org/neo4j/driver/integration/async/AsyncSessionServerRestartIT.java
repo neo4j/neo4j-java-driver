@@ -21,7 +21,7 @@ package org.neo4j.driver.integration.async;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -33,8 +33,8 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
 
 @ParallelizableIT
 class AsyncSessionServerRestartIT {

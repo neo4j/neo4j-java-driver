@@ -123,6 +123,7 @@ final class Target_io_netty_handler_ssl_SslHandler$SslEngineType {
     }
 }
 
+@SuppressWarnings("removal")
 @TargetClass(
         className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper",
         onlyWith = JDK11OrLater.class)
@@ -138,6 +139,7 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_Alp
     }
 }
 
+@SuppressWarnings("removal")
 @TargetClass(
         className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper",
         onlyWith = JDK8OrEarlier.class)
@@ -160,6 +162,7 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_Alp
     }
 }
 
+@SuppressWarnings("removal")
 @TargetClass(className = "io.netty.handler.ssl.JettyAlpnSslEngine", onlyWith = JDK8OrEarlier.class)
 final class Target_io_netty_handler_ssl_JettyAlpnSslEngine {
     @Substitute
@@ -182,6 +185,7 @@ final class Target_io_netty_handler_ssl_JettyAlpnSslEngine {
     }
 }
 
+@SuppressWarnings("removal")
 @TargetClass(className = "io.netty.handler.ssl.JdkAlpnSslEngine", onlyWith = JDK11OrLater.class)
 final class Target_io_netty_handler_ssl_JdkAlpnSslEngine {
 

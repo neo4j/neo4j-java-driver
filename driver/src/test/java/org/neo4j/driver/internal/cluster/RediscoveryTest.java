@@ -42,8 +42,8 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.util.TestUtil.asOrderedSet;
-import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.asOrderedSet;
+import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.io.IOException;
 import java.net.InetAddress;

@@ -34,6 +34,8 @@ import org.neo4j.driver.internal.security.SecurityPlan;
  * @since 1.0
  */
 public class GraphDatabase {
+    private GraphDatabase() {}
+
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
      *

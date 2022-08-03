@@ -37,8 +37,8 @@ import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
-import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
-import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
+import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,9 +66,9 @@ import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
 import org.neo4j.driver.types.Node;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
 
 @ParallelizableIT
 class AsyncTransactionIT {

@@ -221,7 +221,7 @@ public abstract class Values {
         return new ListValue(values);
     }
 
-    public static BytesValue value(byte... input) {
+    public static Value value(byte... input) {
         return new BytesValue(input);
     }
 

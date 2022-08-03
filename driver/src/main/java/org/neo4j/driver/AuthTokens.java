@@ -39,6 +39,8 @@ import org.neo4j.driver.internal.security.InternalAuthToken;
  * @since 1.0
  */
 public class AuthTokens {
+    private AuthTokens() {}
+
     /**
      * The basic authentication scheme, using a username and a password.
      * @param username this is the "principal", identifying who this token represents

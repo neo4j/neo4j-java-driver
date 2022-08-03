@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.util.cc.LocalOrRemoteClusterExtension;
+import org.neo4j.driver.testutil.cc.LocalOrRemoteClusterExtension;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers(disabledWithoutDocker = true)

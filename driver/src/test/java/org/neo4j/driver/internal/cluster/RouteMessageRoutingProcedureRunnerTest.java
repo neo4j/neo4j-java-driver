@@ -50,7 +50,7 @@ import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.handlers.RouteMessageResponseHandler;
 import org.neo4j.driver.internal.messaging.request.RouteMessage;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.util.TestUtil;
+import org.neo4j.driver.testutil.TestUtil;
 
 class RouteMessageRoutingProcedureRunnerTest {
 

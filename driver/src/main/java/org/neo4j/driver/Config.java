@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import org.neo4j.driver.internal.RevocationStrategy;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -677,6 +676,7 @@ public class Config implements Serializable {
      * Control how the driver determines if it can trust the encryption certificates provided by the Neo4j instance it is connected to.
      */
     public static class TrustStrategy implements Serializable {
+        @Serial
         private static final long serialVersionUID = -1631888096243987740L;
 
         /**

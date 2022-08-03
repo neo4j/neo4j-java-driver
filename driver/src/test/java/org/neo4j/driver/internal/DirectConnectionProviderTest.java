@@ -32,7 +32,7 @@ import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithDatabase;
 import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithMode;
-import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;

@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.util.cc;
+package org.neo4j.driver.testutil.cc;
 
 import java.net.URI;
 import java.util.Optional;
@@ -29,7 +29,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.util.TestUtil;
+import org.neo4j.driver.testutil.TestUtil;
 import org.testcontainers.containers.Neo4jContainer;
 
 public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEachCallback, AfterAllCallback {

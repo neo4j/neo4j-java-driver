@@ -23,7 +23,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
+import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -35,8 +35,8 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.SessionExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
+import org.neo4j.driver.testutil.SessionExtension;
 
 @ParallelizableIT
 class QueryIT {

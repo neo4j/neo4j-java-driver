@@ -15,9 +15,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.release>17</maven.compiler.release>
+    <maven.compiler.xlint.extras/>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
 
     <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
@@ -26,7 +25,9 @@
     <parallelizable.it.forkCount>2</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
-    <surefire.and.failsafe.version>3.0.0-M6</surefire.and.failsafe.version>
+    <surefire.and.failsafe.version>3.0.0-M7</surefire.and.failsafe.version>
+    <surefire.jpms.args/>
+    <failsafe.parallelizable.jpms.args/>
     <!-- Skip deployment by default for everything in this project. -->
     <maven.deploy.skip>true</maven.deploy.skip>
 
@@ -51,7 +52,7 @@
     <logback-classic.version>1.2.11</logback-classic.version>
     <jackson.version>2.13.3</jackson.version>
     <lombok.version>1.18.24</lombok.version>
-    <svm.version>21.3.2.1</svm.version>
+    <svm.version>22.2.0</svm.version>
     <micrometer.version>1.9.1</micrometer.version>
     <testcontainers.version>1.17.3</testcontainers.version>
     <build-resources.version>4.4.9</build-resources.version>
@@ -265,6 +266,74 @@
   <build>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.10.1</version>
+          <configuration>
+            <showDeprecation>true</showDeprecation>
+            <showWarnings>true</showWarnings>
+            <compilerArgs>
+              <arg>-Xlint:all${maven.compiler.xlint.extras}</arg>
+              <arg>-Werror</arg>
+            </compilerArgs>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${surefire.and.failsafe.version}</version>
+          <configuration>
+            <argLine>${surefire.jpms.args}</argLine>
+            <trimStackTrace>false</trimStackTrace>
+            <classpathDependencyExcludes>
+              <classpathDependencyExclude>org.graalvm.nativeimage:svm</classpathDependencyExclude>
+            </classpathDependencyExcludes>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${surefire.and.failsafe.version}</version>
+          <configuration>
+            <classpathDependencyExcludes>
+              <classpathDependencyExclude>org.graalvm.nativeimage:svm</classpathDependencyExclude>
+            </classpathDependencyExcludes>
+          </configuration>
+          <executions>
+            <!-- execution 1: execute all ITs that support parallel execution (regular single-instance tests)  -->
+            <execution>
+              <id>parallelizable-integration-tests</id>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+              <configuration>
+                <argLine>-Dfile.encoding=${project.build.sourceEncoding} -DtestJvmId=${surefire.forkNumber} ${failsafe.parallelizable.jpms.args}</argLine>
+                <trimStackTrace>false</trimStackTrace>
+                <forkCount>${parallelizable.it.forkCount}</forkCount>
+                <reuseForks>true</reuseForks>
+                <groups>${parallelizable.it.tags}</groups>
+              </configuration>
+            </execution>
+
+            <!-- execution 2: execute all ITs that do not support parallel execution (stub server tests, causal cluster tests)  -->
+            <execution>
+              <id>sequential-integration-tests</id>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+              <configuration>
+                <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
+                <trimStackTrace>false</trimStackTrace>
+                <forkCount>1</forkCount>
+                <reuseForks>true</reuseForks>
+                <excludedGroups>${parallelizable.it.tags}</excludedGroups>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>clirr-maven-plugin</artifactId>
@@ -483,6 +552,54 @@
           <artifactId>maven-resources-plugin</artifactId>
           <version>2.7</version>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.4.0</version>
+          <configuration>
+            <charset>UTF-8</charset>
+            <docencoding>UTF-8</docencoding>
+            <encoding>UTF-8</encoding>
+            <top><![CDATA[
+            <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/styles/default.min.css">
+            <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
+            <script>hljs.initHighlightingOnLoad();</script>
+          ]]></top>
+            <bottom>
+              <![CDATA[
+                    <script>
+                    if (typeof useModuleDirectories !== 'undefined') {
+                      useModuleDirectories = false;
+                    }
+                    </script>
+                ]]>
+            </bottom>
+            <additionalOptions>
+              <!-- Required for Java 8u121 or later. See https://github.com/neo4j/neo4j-java-driver/pull/318  -->
+              <option>--allow-script-in-comments</option>
+            </additionalOptions>
+            <sourceFileIncludes>
+              <sourceFileInclude>org/neo4j/driver/**/*.java</sourceFileInclude>
+            </sourceFileIncludes>
+            <excludePackageNames>org.neo4j.driver.internal</excludePackageNames>
+            <overview>${rootDir}/build/javadoc/overview.html</overview>
+          </configuration>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>aggregate</id>
+              <goals>
+                <goal>aggregate</goal>
+              </goals>
+              <phase>site</phase>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -497,19 +614,6 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.0</version>
-        <configuration>
-          <showDeprecation>true</showDeprecation>
-          <showWarnings>true</showWarnings>
-          <compilerArgs>
-            <arg>-Xlint:all</arg>
-            <arg>-Werror</arg>
-          </compilerArgs>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <version>3.0.1</version>
         <executions>
@@ -518,99 +622,6 @@
             <goals>
               <goal>jar</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.0.1</version>
-        <configuration>
-          <charset>UTF-8</charset>
-          <docencoding>UTF-8</docencoding>
-          <encoding>UTF-8</encoding>
-          <top><![CDATA[
-            <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/styles/default.min.css">
-            <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
-            <script>hljs.initHighlightingOnLoad();</script>
-          ]]></top>
-          <bottom>
-            <![CDATA[
-                    <script>
-                    if (typeof useModuleDirectories !== 'undefined') {
-                      useModuleDirectories = false;
-                    }
-                    </script>
-                ]]>
-          </bottom>
-          <!-- Required for Java 8u121 or later. See https://github.com/neo4j/neo4j-java-driver/pull/318  -->
-          <additionalOptions>--allow-script-in-comments</additionalOptions>
-          <sourceFileIncludes>
-            <sourceFileInclude>org/neo4j/driver/**/*.java</sourceFileInclude>
-          </sourceFileIncludes>
-          <excludePackageNames>org.neo4j.driver.internal</excludePackageNames>
-          <overview>${rootDir}/build/javadoc/overview.html</overview>
-        </configuration>
-        <executions>
-          <execution>
-            <id>attach-javadocs</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>aggregate</id>
-            <goals>
-              <goal>aggregate</goal>
-            </goals>
-            <phase>site</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>${surefire.and.failsafe.version}</version>
-        <configuration>
-          <argLine>${surefire.and.failsafe.argLine}</argLine>
-          <trimStackTrace>false</trimStackTrace>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>${surefire.and.failsafe.version}</version>
-        <executions>
-          <!-- execution 1: execute all ITs that support parallel execution (regular single-instance tests)  -->
-          <execution>
-            <id>parallelizable-integration-tests</id>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-            <configuration>
-              <argLine>-Dfile.encoding=${project.build.sourceEncoding} -DtestJvmId=${surefire.forkNumber}</argLine>
-              <trimStackTrace>false</trimStackTrace>
-              <forkCount>${parallelizable.it.forkCount}</forkCount>
-              <reuseForks>true</reuseForks>
-              <groups>${parallelizable.it.tags}</groups>
-            </configuration>
-          </execution>
-
-          <!-- execution 2: execute all ITs that do not support parallel execution (stub server tests, causal cluster tests)  -->
-          <execution>
-            <id>sequential-integration-tests</id>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-            <configuration>
-              <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-              <trimStackTrace>false</trimStackTrace>
-              <forkCount>1</forkCount>
-              <reuseForks>true</reuseForks>
-              <excludedGroups>${parallelizable.it.tags}</excludedGroups>
-            </configuration>
           </execution>
         </executions>
       </plugin>

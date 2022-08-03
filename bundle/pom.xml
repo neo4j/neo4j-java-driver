@@ -55,6 +55,29 @@
   </dependencies>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <configuration>
+                <additionalOptions combine.children="append">
+                  <option>--add-exports jdk.internal.vm.ci/jdk.vm.ci.code=org.graalvm.nativeimage.builder</option>
+                  <option>--add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.annotate=org.neo4j.driver</option>
+                  <option>--add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=org.neo4j.driver</option>
+                </additionalOptions>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <!-- Extract the original sources again -->
       <plugin>
@@ -74,7 +97,12 @@
               <resources>
                 <resource>
                   <directory>${rootDir}/driver/src/main/java</directory>
-                  <includes>**\/*.java</includes>
+                  <includes>
+                    <include>**\/*.java</include>
+                  </includes>
+                  <excludes>
+                    <exclude>module-info.java</exclude>
+                  </excludes>
                 </resource>
               </resources>
             </configuration>

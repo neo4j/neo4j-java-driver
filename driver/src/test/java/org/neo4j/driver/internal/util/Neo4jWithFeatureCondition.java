@@ -30,7 +30,7 @@ import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.util.DatabaseExtension;
+import org.neo4j.driver.testutil.DatabaseExtension;
 
 public class Neo4jWithFeatureCondition implements ExecutionCondition {
     private static final ConditionEvaluationResult ENABLED_NOT_ANNOTATED =

@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.internal.security;
 
-import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
-import static org.neo4j.driver.internal.RevocationStrategy.requiresRevocationChecking;
+import static org.neo4j.driver.RevocationStrategy.VERIFY_IF_PRESENT;
+import static org.neo4j.driver.RevocationStrategy.requiresRevocationChecking;
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
 import java.io.File;
@@ -41,7 +41,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-import org.neo4j.driver.internal.RevocationStrategy;
+import org.neo4j.driver.RevocationStrategy;
 
 /**
  * A SecurityPlan consists of encryption and trust details.

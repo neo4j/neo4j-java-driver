@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.util.TestUtil.DEFAULT_TEST_PROTOCOL;
+import static org.neo4j.driver.testutil.TestUtil.DEFAULT_TEST_PROTOCOL;
 
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
-import org.neo4j.driver.util.TestUtil;
+import org.neo4j.driver.testutil.TestUtil;
 
 class LeakLoggingNetworkSessionTest {
     @Test

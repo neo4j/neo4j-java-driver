@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.util;
+package org.neo4j.driver.testutil;
 
 import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
-import static org.neo4j.driver.util.FileTools.tempFile;
+import static org.neo4j.driver.testutil.FileTools.tempFile;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -63,6 +63,7 @@ import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
 import org.neo4j.driver.internal.InternalPair;
+import org.neo4j.driver.util.Pair;
 
 public class CertificateUtil {
     private static final String DEFAULT_HOST_NAME = "localhost";

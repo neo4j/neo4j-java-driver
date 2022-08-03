@@ -34,8 +34,8 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.ParallelizableIT;
 
 @ParallelizableIT
 class MetricsIT {
