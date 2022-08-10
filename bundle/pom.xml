@@ -76,6 +76,25 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>org.moditect</groupId>
+          <artifactId>moditect-maven-plugin</artifactId>
+          <version>1.0.0.RC2</version>
+          <executions>
+            <execution>
+              <id>add-module-info</id>
+              <phase>package</phase>
+              <goals>
+                <goal>add-module-info</goal>
+              </goals>
+              <configuration>
+                <module>
+                  <moduleInfoFile>${project.basedir}/src/main/module/module-info.java</moduleInfoFile>
+                </module>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
@@ -216,6 +235,10 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.moditect</groupId>
+        <artifactId>moditect-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
