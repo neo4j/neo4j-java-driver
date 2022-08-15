@@ -18,18 +18,11 @@
  */
 package org.neo4j.driver;
 
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
@@ -37,7 +30,6 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -60,49 +52,6 @@ class GraphDatabaseTest {
     void throwsWhenBoltSchemeUsedWithRoutingParams() {
         assertThrows(
                 IllegalArgumentException.class, () -> GraphDatabase.driver("bolt://localhost:7687/?policy=my_policy"));
-    }
-
-    @Test
-    void shouldLogWhenUnableToCreateRoutingDriver() {
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
-        when(logging.getLog(any(Class.class))).thenReturn(logger);
-        InternalDriver driver = mock(InternalDriver.class);
-        doThrow(ServiceUnavailableException.class).when(driver).verifyConnectivity();
-        DriverFactory driverFactory = new MockSupplyingDriverFactory(Arrays.asList(driver, driver));
-        Config config = Config.builder().withLogging(logging).build();
-
-        List<URI> routingUris = asList(URI.create("neo4j://localhost:9001"), URI.create("neo4j://localhost:9002"));
-
-        assertThrows(
-                ServiceUnavailableException.class,
-                () -> GraphDatabase.routingDriver(routingUris, AuthTokens.none(), config, driverFactory));
-
-        verify(logger)
-                .warn(eq("Unable to create routing driver for URI: neo4j://localhost:9001"), any(Throwable.class));
-
-        verify(logger)
-                .warn(eq("Unable to create routing driver for URI: neo4j://localhost:9002"), any(Throwable.class));
-    }
-
-    @Test
-    void shouldNotFailRoutingDriverWhenThereIsWorkingUri() {
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
-        when(logging.getLog(any(Class.class))).thenReturn(logger);
-        InternalDriver failingDriver = mock(InternalDriver.class);
-        doThrow(ServiceUnavailableException.class).when(failingDriver).verifyConnectivity();
-        InternalDriver workingDriver = mock(InternalDriver.class);
-        DriverFactory driverFactory = new MockSupplyingDriverFactory(Arrays.asList(failingDriver, workingDriver));
-        Config config = Config.builder().withLogging(logging).build();
-
-        List<URI> routingUris = asList(URI.create("neo4j://localhost:9001"), URI.create("neo4j://localhost:9002"));
-
-        Driver driver = GraphDatabase.routingDriver(routingUris, AuthTokens.none(), config, driverFactory);
-
-        verify(logger)
-                .warn(eq("Unable to create routing driver for URI: neo4j://localhost:9001"), any(Throwable.class));
-        assertEquals(driver, workingDriver);
     }
 
     @Test

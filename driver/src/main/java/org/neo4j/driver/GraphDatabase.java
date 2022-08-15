@@ -18,10 +18,7 @@
  */
 package org.neo4j.driver;
 
-import static org.neo4j.driver.internal.Scheme.NEO4J_URI_SCHEME;
-
 import java.net.URI;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -131,68 +128,6 @@ public class GraphDatabase {
         SecuritySettings securitySettings = config.securitySettings();
         SecurityPlan securityPlan = securitySettings.createSecurityPlan(uri.getScheme());
         return driverFactory.newInstance(uri, authToken, routingSettings, retrySettings, config, securityPlan);
-    }
-
-    /**
-     * Try to create a neo4j driver from the <b>first</b> available address.
-     * This is wrapper for the {@link #driver} method that finds the <b>first</b>
-     * server to respond positively.
-     *
-     * @param routingUris an {@link Iterable} of server {@link URI}s for Neo4j instances. All given URIs should
-     * have 'neo4j' scheme.
-     * @param authToken authentication to use, see {@link AuthTokens}
-     * @param config user defined configuration
-     * @return a new driver instance
-     * @deprecated driver should be configured with initial address resolution as documented in the driver manual
-     */
-    @Deprecated
-    public static Driver routingDriver(Iterable<URI> routingUris, AuthToken authToken, Config config) {
-        return routingDriver(routingUris, authToken, config, new DriverFactory());
-    }
-
-    static Driver routingDriver(
-            Iterable<URI> routingUris, AuthToken authToken, Config config, DriverFactory driverFactory) {
-        assertRoutingUris(routingUris);
-        Logger log = createLogger(config);
-
-        for (URI uri : routingUris) {
-            final Driver driver = driver(uri, authToken, config, driverFactory);
-            try {
-                driver.verifyConnectivity();
-                return driver;
-            } catch (ServiceUnavailableException e) {
-                log.warn("Unable to create routing driver for URI: " + uri, e);
-                closeDriver(driver, uri, log);
-            } catch (Throwable e) {
-                // for any other errors, we first close the driver and then rethrow the original error out.
-                closeDriver(driver, uri, log);
-                throw e;
-            }
-        }
-
-        throw new ServiceUnavailableException("Failed to discover an available server");
-    }
-
-    private static void closeDriver(Driver driver, URI uri, Logger log) {
-        try {
-            driver.close();
-        } catch (Throwable closeError) {
-            log.warn("Unable to close driver towards URI: " + uri, closeError);
-        }
-    }
-
-    private static void assertRoutingUris(Iterable<URI> uris) {
-        for (URI uri : uris) {
-            if (!NEO4J_URI_SCHEME.equals(uri.getScheme())) {
-                throw new IllegalArgumentException(
-                        "Illegal URI scheme, expected '" + NEO4J_URI_SCHEME + "' in '" + uri + "'");
-            }
-        }
-    }
-
-    private static Logger createLogger(Config config) {
-        Logging logging = getOrDefault(config).logging();
-        return logging.getLog(GraphDatabase.class);
     }
 
     private static Config getOrDefault(Config config) {
