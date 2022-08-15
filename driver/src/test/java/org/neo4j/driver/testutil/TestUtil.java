@@ -73,6 +73,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
+import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DefaultBookmarksHolder;
@@ -544,10 +545,20 @@ public final class TestUtil {
     }
 
     private static int deleteBatchOfNodes(Session session) {
-        return session.executeWrite(tx -> {
-            Result result = tx.run("MATCH (n) WITH n LIMIT 1000 DETACH DELETE n RETURN count(n)");
-            return result.single().get(0).asInt();
-        });
+        while (true) {
+            try {
+                return session.executeWrite(tx -> {
+                    Result result = tx.run("MATCH (n) WITH n LIMIT 1000 DETACH DELETE n RETURN count(n)");
+                    return result.single().get(0).asInt();
+                });
+            } catch (FatalDiscoveryException e) {
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }
     }
 
     private static Number read(ByteBuf buf, Class<? extends Number> type) {
