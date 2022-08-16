@@ -29,12 +29,12 @@ import java.util.function.BiConsumer;
  */
 public final class BookmarkManagerConfig {
     private final Map<String, Set<Bookmark>> initialBookmarks;
-    private final BiConsumer<String, Set<Bookmark>> updateListener;
+    private final BiConsumer<String, Set<Bookmark>> bookmarkConsumer;
     private final BookmarkSupplier bookmarkSupplier;
 
     private BookmarkManagerConfig(BookmarkManagerConfigBuilder builder) {
         this.initialBookmarks = builder.initialBookmarks;
-        this.updateListener = builder.updateListener;
+        this.bookmarkConsumer = builder.bookmarkConsumer;
         this.bookmarkSupplier = builder.bookmarkSupplier;
     }
 
@@ -62,7 +62,7 @@ public final class BookmarkManagerConfig {
      * @return the update listener or {@code null}
      */
     public BiConsumer<String, Set<Bookmark>> updateListener() {
-        return updateListener;
+        return bookmarkConsumer;
     }
 
     /**
@@ -79,7 +79,7 @@ public final class BookmarkManagerConfig {
      */
     public static class BookmarkManagerConfigBuilder {
         private Map<String, Set<Bookmark>> initialBookmarks = Collections.emptyMap();
-        private BiConsumer<String, Set<Bookmark>> updateListener;
+        private BiConsumer<String, Set<Bookmark>> bookmarkConsumer;
         private BookmarkSupplier bookmarkSupplier;
 
         private BookmarkManagerConfigBuilder() {}
@@ -97,15 +97,15 @@ public final class BookmarkManagerConfig {
         }
 
         /**
-         * Provide a bookmarks update listener.
+         * Provide a bookmark consumer.
          * <p>
-         * The listener will be called outside bookmark manager's synchronisation lock.
+         * The consumer will be called outside bookmark manager's synchronisation lock.
          *
-         * @param updateListener update listener
+         * @param bookmarkConsumer bookmark consumer
          * @return this builder
          */
-        public BookmarkManagerConfigBuilder withUpdateListener(BiConsumer<String, Set<Bookmark>> updateListener) {
-            this.updateListener = updateListener;
+        public BookmarkManagerConfigBuilder withBookmarkConsumer(BiConsumer<String, Set<Bookmark>> bookmarkConsumer) {
+            this.bookmarkConsumer = bookmarkConsumer;
             return this;
         }
 
@@ -119,7 +119,7 @@ public final class BookmarkManagerConfig {
          * @param bookmarkSupplier the bookmarks supplier
          * @return this builder
          */
-        public BookmarkManagerConfigBuilder withBookmarksSupplier(BookmarkSupplier bookmarkSupplier) {
+        public BookmarkManagerConfigBuilder withBookmarkSupplier(BookmarkSupplier bookmarkSupplier) {
             this.bookmarkSupplier = bookmarkSupplier;
             return this;
         }
