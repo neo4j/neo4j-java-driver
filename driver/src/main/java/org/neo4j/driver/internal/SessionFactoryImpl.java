@@ -20,11 +20,13 @@ package org.neo4j.driver.internal;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.SessionConfig;
@@ -49,17 +51,18 @@ public class SessionFactoryImpl implements SessionFactory {
     }
 
     @Override
-    public NetworkSession newInstance(SessionConfig sessionConfig) {
-        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder(toDistinctSet(sessionConfig.bookmarks()));
+    public NetworkSession newInstance(SessionConfig sessionConfig, BookmarkManager bookmarkManager) {
+        Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         return createSession(
                 connectionProvider,
                 retryLogic,
                 parseDatabaseName(sessionConfig),
                 sessionConfig.defaultAccessMode(),
-                bookmarksHolder,
+                toDistinctSet(sessionConfig.bookmarks()),
                 parseFetchSize(sessionConfig),
                 sessionConfig.impersonatedUser().orElse(null),
-                logging);
+                logging,
+                bookmarkManager);
     }
 
     private Set<Bookmark> toDistinctSet(Iterable<Bookmark> bookmarks) {
@@ -125,28 +128,33 @@ public class SessionFactoryImpl implements SessionFactory {
             RetryLogic retryLogic,
             DatabaseName databaseName,
             AccessMode mode,
-            BookmarksHolder bookmarksHolder,
+            Set<Bookmark> bookmarks,
             long fetchSize,
             String impersonatedUser,
-            Logging logging) {
+            Logging logging,
+            BookmarkManager bookmarkManager) {
+        Objects.requireNonNull(bookmarks, "bookmarks may not be null");
+        Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         return leakedSessionsLoggingEnabled
                 ? new LeakLoggingNetworkSession(
                         connectionProvider,
                         retryLogic,
                         databaseName,
                         mode,
-                        bookmarksHolder,
+                        bookmarks,
                         impersonatedUser,
                         fetchSize,
-                        logging)
+                        logging,
+                        bookmarkManager)
                 : new NetworkSession(
                         connectionProvider,
                         retryLogic,
                         databaseName,
                         mode,
-                        bookmarksHolder,
+                        bookmarks,
                         impersonatedUser,
                         fetchSize,
-                        logging);
+                        logging,
+                        bookmarkManager);
     }
 }

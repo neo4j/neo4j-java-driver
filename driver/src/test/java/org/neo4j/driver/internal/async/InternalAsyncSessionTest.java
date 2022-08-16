@@ -76,6 +76,7 @@ import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
+import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
@@ -86,6 +87,7 @@ import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.value.IntegerValue;
 
 class InternalAsyncSessionTest {
+    private static final String DATABASE = "neo4j";
     private Connection connection;
     private ConnectionProvider connectionProvider;
     private AsyncSession asyncSession;
@@ -95,8 +97,11 @@ class InternalAsyncSessionTest {
     void setUp() {
         connection = connectionMock(BoltProtocolV4.INSTANCE);
         connectionProvider = mock(ConnectionProvider.class);
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
-                .thenReturn(completedFuture(connection));
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenAnswer(invocation -> {
+            var context = (ConnectionContext) invocation.getArgument(0);
+            context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+            return completedFuture(connection);
+        });
         session = newSession(connectionProvider);
         asyncSession = new InternalAsyncSession(session);
     }

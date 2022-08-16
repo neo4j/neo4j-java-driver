@@ -57,6 +57,7 @@ import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.summary.ResultSummary;
 
 class InternalTransactionTest {
+    private static final String DATABASE = "neo4j";
     private Connection connection;
     private Transaction tx;
 
@@ -64,8 +65,11 @@ class InternalTransactionTest {
     void setUp() {
         connection = connectionMock(BoltProtocolV4.INSTANCE);
         ConnectionProvider connectionProvider = mock(ConnectionProvider.class);
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
-                .thenReturn(completedFuture(connection));
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenAnswer(invocation -> {
+            var context = (ConnectionContext) invocation.getArgument(0);
+            context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+            return completedFuture(connection);
+        });
         InternalSession session = new InternalSession(newSession(connectionProvider));
         tx = session.beginTransaction();
     }

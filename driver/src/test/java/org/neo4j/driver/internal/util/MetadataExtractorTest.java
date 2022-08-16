@@ -342,30 +342,30 @@ class MetadataExtractorTest {
     void shouldExtractBookmark() {
         String bookmarkValue = "neo4j:bookmark:v1:tx123456";
 
-        Bookmark bookmark = MetadataExtractor.extractBookmarks(singletonMap("bookmark", value(bookmarkValue)));
+        Bookmark bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", value(bookmarkValue)));
 
         assertEquals(InternalBookmark.parse(bookmarkValue), bookmark);
     }
 
     @Test
     void shouldExtractNoBookmarkWhenMetadataContainsNull() {
-        Bookmark bookmark = MetadataExtractor.extractBookmarks(singletonMap("bookmark", null));
+        Bookmark bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", null));
 
-        assertEquals(InternalBookmark.empty(), bookmark);
+        assertNull(bookmark);
     }
 
     @Test
     void shouldExtractNoBookmarkWhenMetadataContainsNullValue() {
-        Bookmark bookmark = MetadataExtractor.extractBookmarks(singletonMap("bookmark", Values.NULL));
+        Bookmark bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", Values.NULL));
 
-        assertEquals(InternalBookmark.empty(), bookmark);
+        assertNull(bookmark);
     }
 
     @Test
     void shouldExtractNoBookmarkWhenMetadataContainsValueOfIncorrectType() {
-        Bookmark bookmark = MetadataExtractor.extractBookmarks(singletonMap("bookmark", value(42)));
+        Bookmark bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", value(42)));
 
-        assertEquals(InternalBookmark.empty(), bookmark);
+        assertNull(bookmark);
     }
 
     @Test

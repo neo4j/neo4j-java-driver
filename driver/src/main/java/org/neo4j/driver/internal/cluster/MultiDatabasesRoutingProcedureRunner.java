@@ -27,9 +27,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.ReadOnlyBookmarksHolder;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.spi.Connection;
@@ -48,8 +46,8 @@ public class MultiDatabasesRoutingProcedureRunner extends SingleDatabaseRoutingP
     }
 
     @Override
-    BookmarksHolder bookmarksHolder(Set<Bookmark> bookmarks) {
-        return new ReadOnlyBookmarksHolder(bookmarks);
+    Set<Bookmark> adaptBookmarks(Set<Bookmark> bookmarks) {
+        return bookmarks;
     }
 
     @Override

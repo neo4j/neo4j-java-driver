@@ -20,9 +20,11 @@ package org.neo4j.driver.internal.async;
 
 import static java.lang.System.lineSeparator;
 
+import java.util.Set;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -36,19 +38,21 @@ public class LeakLoggingNetworkSession extends NetworkSession {
             RetryLogic retryLogic,
             DatabaseName databaseName,
             AccessMode mode,
-            BookmarksHolder bookmarksHolder,
+            Set<Bookmark> bookmarks,
             String impersonatedUser,
             long fetchSize,
-            Logging logging) {
+            Logging logging,
+            BookmarkManager bookmarkManager) {
         super(
                 connectionProvider,
                 retryLogic,
                 databaseName,
                 mode,
-                bookmarksHolder,
+                bookmarks,
                 impersonatedUser,
                 fetchSize,
-                logging);
+                logging,
+                bookmarkManager);
         this.stackTrace = captureStackTrace();
     }
 

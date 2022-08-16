@@ -75,7 +75,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.DefaultBookmarksHolder;
+import org.neo4j.driver.internal.NoOpBookmarkManager;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -263,10 +263,11 @@ public final class TestUtil {
                 retryLogic,
                 defaultDatabase(),
                 mode,
-                new DefaultBookmarksHolder(bookmarks),
+                bookmarks,
                 null,
                 UNLIMITED_FETCH_SIZE,
-                DEV_NULL_LOGGING);
+                DEV_NULL_LOGGING,
+                new NoOpBookmarkManager());
     }
 
     public static void verifyRunRx(Connection connection, String query) {

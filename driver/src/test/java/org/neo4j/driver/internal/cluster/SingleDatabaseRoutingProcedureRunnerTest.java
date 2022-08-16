@@ -38,17 +38,18 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
-import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.spi.Connection;
 
 class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest {
@@ -61,7 +62,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());
 
-        assertThat(runner.bookmarksHolder, equalTo(BookmarksHolder.NO_OP));
+        assertThat(runner.bookmarks, equalTo(Collections.emptySet()));
         assertThat(runner.connection.databaseName(), equalTo(defaultDatabase()));
         assertThat(runner.connection.mode(), equalTo(AccessMode.WRITE));
 
@@ -81,7 +82,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());
 
-        assertThat(runner.bookmarksHolder, equalTo(BookmarksHolder.NO_OP));
+        assertThat(runner.bookmarks, equalTo(Collections.emptySet()));
         assertThat(runner.connection.databaseName(), equalTo(defaultDatabase()));
         assertThat(runner.connection.mode(), equalTo(AccessMode.WRITE));
 
@@ -121,7 +122,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         final CompletionStage<List<Record>> runProcedureResult;
         private Connection connection;
         private Query procedure;
-        private BookmarksHolder bookmarksHolder;
+        private Set<Bookmark> bookmarks;
 
         TestRoutingProcedureRunner(RoutingContext context) {
             this(context, completedFuture(singletonList(mock(Record.class))));
@@ -133,11 +134,10 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         }
 
         @Override
-        CompletionStage<List<Record>> runProcedure(
-                Connection connection, Query procedure, BookmarksHolder bookmarksHolder) {
+        CompletionStage<List<Record>> runProcedure(Connection connection, Query procedure, Set<Bookmark> bookmarks) {
             this.connection = connection;
             this.procedure = procedure;
-            this.bookmarksHolder = bookmarksHolder;
+            this.bookmarks = bookmarks;
             return runProcedureResult;
         }
     }

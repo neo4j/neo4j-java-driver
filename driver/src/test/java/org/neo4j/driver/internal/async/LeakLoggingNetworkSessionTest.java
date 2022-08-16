@@ -33,13 +33,14 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.testutil.TestUtil.DEFAULT_TEST_PROTOCOL;
 
 import java.lang.reflect.Method;
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.mockito.ArgumentCaptor;
+import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -96,10 +97,11 @@ class LeakLoggingNetworkSessionTest {
                 new FixedRetryLogic(0),
                 defaultDatabase(),
                 READ,
-                new DefaultBookmarksHolder(),
+                Collections.emptySet(),
                 null,
                 FetchSizeUtil.UNLIMITED_FETCH_SIZE,
-                logging);
+                logging,
+                mock(BookmarkManager.class));
     }
 
     private static ConnectionProvider connectionProviderMock(boolean openConnection) {

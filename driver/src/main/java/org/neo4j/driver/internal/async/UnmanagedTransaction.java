@@ -34,6 +34,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -42,7 +43,7 @@ import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -83,7 +84,7 @@ public class UnmanagedTransaction {
 
     private final Connection connection;
     private final BoltProtocol protocol;
-    private final BookmarksHolder bookmarksHolder;
+    private final Consumer<DatabaseBookmark> bookmarkConsumer;
     private final ResultCursorsHolder resultCursors;
     private final long fetchSize;
     private final Lock lock = new ReentrantLock();
@@ -93,15 +94,18 @@ public class UnmanagedTransaction {
     private Throwable causeOfTermination;
     private CompletionStage<Void> interruptStage;
 
-    public UnmanagedTransaction(Connection connection, BookmarksHolder bookmarksHolder, long fetchSize) {
-        this(connection, bookmarksHolder, fetchSize, new ResultCursorsHolder());
+    public UnmanagedTransaction(Connection connection, Consumer<DatabaseBookmark> bookmarkConsumer, long fetchSize) {
+        this(connection, bookmarkConsumer, fetchSize, new ResultCursorsHolder());
     }
 
     protected UnmanagedTransaction(
-            Connection connection, BookmarksHolder bookmarksHolder, long fetchSize, ResultCursorsHolder resultCursors) {
+            Connection connection,
+            Consumer<DatabaseBookmark> bookmarkConsumer,
+            long fetchSize,
+            ResultCursorsHolder resultCursors) {
         this.connection = connection;
         this.protocol = connection.protocol();
-        this.bookmarksHolder = bookmarksHolder;
+        this.bookmarkConsumer = bookmarkConsumer;
         this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
     }
@@ -215,7 +219,7 @@ public class UnmanagedTransaction {
                         : null);
         return exception != null
                 ? failedFuture(exception)
-                : protocol.commitTransaction(connection).thenAccept(bookmarksHolder::setBookmark);
+                : protocol.commitTransaction(connection).thenAccept(bookmarkConsumer);
     }
 
     private CompletionStage<Void> doRollbackAsync() {

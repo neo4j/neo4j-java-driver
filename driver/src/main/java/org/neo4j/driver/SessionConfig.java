@@ -45,6 +45,7 @@ public class SessionConfig implements Serializable {
     private final String database;
     private final Long fetchSize;
     private final String impersonatedUser;
+    private final boolean ignoreBookmarkManager;
 
     private SessionConfig(Builder builder) {
         this.bookmarks = builder.bookmarks;
@@ -52,6 +53,7 @@ public class SessionConfig implements Serializable {
         this.database = builder.database;
         this.fetchSize = builder.fetchSize;
         this.impersonatedUser = builder.impersonatedUser;
+        this.ignoreBookmarkManager = builder.ignoreBookmarkManager;
     }
 
     /**
@@ -130,6 +132,15 @@ public class SessionConfig implements Serializable {
         return Optional.ofNullable(impersonatedUser);
     }
 
+    /**
+     * Determines if {@link BookmarkManager} configured at driver level should be ignored.
+     *
+     * @return {@code true} if bookmark manager should be ignored and not otherwise.
+     */
+    public boolean ignoreBookmarkManager() {
+        return ignoreBookmarkManager;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -143,12 +154,13 @@ public class SessionConfig implements Serializable {
                 && defaultAccessMode == that.defaultAccessMode
                 && Objects.equals(database, that.database)
                 && Objects.equals(fetchSize, that.fetchSize)
-                && Objects.equals(impersonatedUser, that.impersonatedUser);
+                && Objects.equals(impersonatedUser, that.impersonatedUser)
+                && Objects.equals(ignoreBookmarkManager, that.ignoreBookmarkManager);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(bookmarks, defaultAccessMode, database, impersonatedUser);
+        return Objects.hash(bookmarks, defaultAccessMode, database, impersonatedUser, ignoreBookmarkManager);
     }
 
     @Override
@@ -167,6 +179,7 @@ public class SessionConfig implements Serializable {
         private AccessMode defaultAccessMode = AccessMode.WRITE;
         private String database = null;
         private String impersonatedUser = null;
+        private boolean ignoreBookmarkManager = false;
 
         private Builder() {}
 
@@ -289,6 +302,17 @@ public class SessionConfig implements Serializable {
                 throw new IllegalArgumentException(String.format("Illegal impersonated user '%s'.", impersonatedUser));
             }
             this.impersonatedUser = impersonatedUser;
+            return this;
+        }
+
+        /**
+         * Ignore {@link BookmarkManager} configured at driver level using {@link org.neo4j.driver.Config.ConfigBuilder#withBookmarkManager(BookmarkManager)}.
+         *
+         * @param ignore ignore if {@code true}, use otherwise.
+         * @return this builder.
+         */
+        public Builder withIgnoredBookmarkManager(boolean ignore) {
+            this.ignoreBookmarkManager = ignore;
             return this;
         }
 

@@ -63,6 +63,8 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.DatabaseBookmark;
+import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
@@ -72,6 +74,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 
 class NetworkSessionTest {
+    private static final String DATABASE = "neo4j";
     private Connection connection;
     private ConnectionProvider connectionProvider;
     private NetworkSession session;
@@ -80,8 +83,11 @@ class NetworkSessionTest {
     void setUp() {
         connection = connectionMock(BoltProtocolV4.INSTANCE);
         connectionProvider = mock(ConnectionProvider.class);
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
-                .thenReturn(completedFuture(connection));
+        when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenAnswer(invocation -> {
+            var context = (ConnectionContext) invocation.getArgument(0);
+            context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+            return completedFuture(connection);
+        });
         session = newSession(connectionProvider);
     }
 
@@ -213,7 +219,9 @@ class NetworkSessionTest {
         Bookmark bookmarkAfterCommit = InternalBookmark.parse("TheBookmark");
 
         BoltProtocol protocol = spy(BoltProtocolV4.INSTANCE);
-        doReturn(completedFuture(bookmarkAfterCommit)).when(protocol).commitTransaction(any(Connection.class));
+        doReturn(completedFuture(new DatabaseBookmark(DATABASE, bookmarkAfterCommit)))
+                .when(protocol)
+                .commitTransaction(any(Connection.class));
 
         when(connection.protocol()).thenReturn(protocol);
 
@@ -259,7 +267,9 @@ class NetworkSessionTest {
         NetworkSession session = newSession(connectionProvider);
 
         BoltProtocol protocol = spy(BoltProtocolV4.INSTANCE);
-        doReturn(completedFuture(bookmark1), completedFuture(bookmark2))
+        doReturn(
+                        completedFuture(new DatabaseBookmark(DATABASE, bookmark1)),
+                        completedFuture(new DatabaseBookmark(DATABASE, bookmark2)))
                 .when(protocol)
                 .commitTransaction(any(Connection.class));
 
@@ -323,7 +333,11 @@ class NetworkSessionTest {
         RuntimeException error = new RuntimeException("Hi");
         when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
                 .thenReturn(failedFuture(error))
-                .thenReturn(completedFuture(connection));
+                .thenAnswer(invocation -> {
+                    var context = (ConnectionContext) invocation.getArgument(0);
+                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+                    return completedFuture(connection);
+                });
 
         Exception e = assertThrows(Exception.class, () -> run(session, "RETURN 1"));
 
@@ -346,8 +360,16 @@ class NetworkSessionTest {
         Connection connection2 = connectionMock(BoltProtocolV4.INSTANCE);
 
         when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
-                .thenReturn(completedFuture(connection1))
-                .thenReturn(completedFuture(connection2));
+                .thenAnswer(invocation -> {
+                    var context = (ConnectionContext) invocation.getArgument(0);
+                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+                    return completedFuture(connection1);
+                })
+                .thenAnswer(invocation -> {
+                    var context = (ConnectionContext) invocation.getArgument(0);
+                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+                    return completedFuture(connection2);
+                });
 
         Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx42"));
         NetworkSession session = newSession(connectionProvider, bookmarks);
@@ -372,8 +394,16 @@ class NetworkSessionTest {
         Connection connection2 = connectionMock(BoltProtocolV4.INSTANCE);
 
         when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
-                .thenReturn(completedFuture(connection1))
-                .thenReturn(completedFuture(connection2));
+                .thenAnswer(invocation -> {
+                    var context = (ConnectionContext) invocation.getArgument(0);
+                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+                    return completedFuture(connection1);
+                })
+                .thenAnswer(invocation -> {
+                    var context = (ConnectionContext) invocation.getArgument(0);
+                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+                    return completedFuture(connection2);
+                });
 
         Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx42"));
         NetworkSession session = newSession(connectionProvider, bookmarks);
@@ -393,7 +423,11 @@ class NetworkSessionTest {
         RuntimeException error = new RuntimeException("Hi");
         when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
                 .thenReturn(failedFuture(error))
-                .thenReturn(completedFuture(connection));
+                .thenAnswer(invocation -> {
+                    var context = (ConnectionContext) invocation.getArgument(0);
+                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+                    return completedFuture(connection);
+                });
 
         Exception e = assertThrows(Exception.class, () -> run(session, "RETURN 1"));
         assertEquals(error, e);

@@ -32,6 +32,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.UntrustedServerException;
+import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalDatabaseInfo;
@@ -113,20 +114,10 @@ public class MetadataExtractor {
                 extractResultConsumedAfter(metadata, resultConsumedAfterMetadataKey));
     }
 
-    public static DatabaseInfo extractDatabaseInfo(Map<String, Value> metadata) {
-        Value dbValue = metadata.get("db");
-        if (dbValue == null || dbValue.isNull()) {
-            return DEFAULT_DATABASE_INFO;
-        } else {
-            return new InternalDatabaseInfo(dbValue.asString());
-        }
-    }
-
-    public static Bookmark extractBookmarks(Map<String, Value> metadata) {
-        Value bookmarkValue = metadata.get("bookmark");
-        return bookmarkValue != null && !bookmarkValue.isNull() && bookmarkValue.hasType(TYPE_SYSTEM.STRING())
-                ? InternalBookmark.parse(bookmarkValue.asString())
-                : InternalBookmark.empty();
+    public static DatabaseBookmark extractDatabaseBookmark(Map<String, Value> metadata) {
+        var databaseName = extractDatabaseInfo(metadata).name();
+        var bookmark = extractBookmark(metadata);
+        return new DatabaseBookmark(databaseName, bookmark);
     }
 
     public static Value extractServer(Map<String, Value> metadata) {
@@ -140,6 +131,24 @@ public class MetadataExtractor {
                     "Server does not identify as a genuine Neo4j instance: '" + serverAgent + "'");
         }
         return versionValue;
+    }
+
+    static DatabaseInfo extractDatabaseInfo(Map<String, Value> metadata) {
+        Value dbValue = metadata.get("db");
+        if (dbValue == null || dbValue.isNull()) {
+            return DEFAULT_DATABASE_INFO;
+        } else {
+            return new InternalDatabaseInfo(dbValue.asString());
+        }
+    }
+
+    static Bookmark extractBookmark(Map<String, Value> metadata) {
+        Value bookmarkValue = metadata.get("bookmark");
+        Bookmark bookmark = null;
+        if (bookmarkValue != null && !bookmarkValue.isNull() && bookmarkValue.hasType(TYPE_SYSTEM.STRING())) {
+            bookmark = InternalBookmark.parse(bookmarkValue.asString());
+        }
+        return bookmark;
     }
 
     private static QueryType extractQueryType(Map<String, Value> metadata) {
