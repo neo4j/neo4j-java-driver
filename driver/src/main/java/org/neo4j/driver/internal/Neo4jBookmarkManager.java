@@ -34,7 +34,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
-import org.neo4j.driver.BookmarkSupplier;
+import org.neo4j.driver.BookmarksSupplier;
 
 /**
  * A basic {@link BookmarkManager} implementation.
@@ -47,16 +47,16 @@ public final class Neo4jBookmarkManager implements BookmarkManager {
 
     private final Map<String, Set<Bookmark>> databaseToBookmarks = new HashMap<>();
     private final BiConsumer<String, Set<Bookmark>> updateListener;
-    private final BookmarkSupplier bookmarkSupplier;
+    private final BookmarksSupplier bookmarksSupplier;
 
     public Neo4jBookmarkManager(
             Map<String, Set<Bookmark>> initialBookmarks,
             BiConsumer<String, Set<Bookmark>> updateListener,
-            BookmarkSupplier bookmarkSupplier) {
+            BookmarksSupplier bookmarksSupplier) {
         Objects.requireNonNull(initialBookmarks, "initialBookmarks must not be null");
         this.databaseToBookmarks.putAll(initialBookmarks);
         this.updateListener = updateListener;
-        this.bookmarkSupplier = bookmarkSupplier;
+        this.bookmarksSupplier = bookmarksSupplier;
     }
 
     @Override
@@ -82,9 +82,9 @@ public final class Neo4jBookmarkManager implements BookmarkManager {
     public Set<Bookmark> getBookmarks(String database) {
         var immutableBookmarks = executeWithLock(
                 rwLock.readLock(), () -> databaseToBookmarks.getOrDefault(database, Collections.emptySet()));
-        if (bookmarkSupplier != null) {
+        if (bookmarksSupplier != null) {
             var bookmarks = new HashSet<>(immutableBookmarks);
-            bookmarks.addAll(bookmarkSupplier.getBookmarks(database));
+            bookmarks.addAll(bookmarksSupplier.getBookmarks(database));
             immutableBookmarks = Collections.unmodifiableSet(bookmarks);
         }
         return immutableBookmarks;
@@ -95,9 +95,9 @@ public final class Neo4jBookmarkManager implements BookmarkManager {
         var immutableBookmarks = executeWithLock(rwLock.readLock(), () -> databaseToBookmarks.values().stream()
                         .flatMap(Collection::stream))
                 .collect(Collectors.toUnmodifiableSet());
-        if (bookmarkSupplier != null) {
+        if (bookmarksSupplier != null) {
             var bookmarks = new HashSet<>(immutableBookmarks);
-            bookmarks.addAll(bookmarkSupplier.getAllBookmarks());
+            bookmarks.addAll(bookmarksSupplier.getAllBookmarks());
             immutableBookmarks = Collections.unmodifiableSet(bookmarks);
         }
         return immutableBookmarks;

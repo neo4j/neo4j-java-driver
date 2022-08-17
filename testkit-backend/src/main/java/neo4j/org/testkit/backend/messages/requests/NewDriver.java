@@ -128,11 +128,11 @@ public class NewDriver implements TestkitRequest {
             var managerConfigBuilder =
                     org.neo4j.driver.BookmarkManagerConfig.builder().withInitialBookmarks(initialBookmarks);
             if (managerConfig.isBookmarksSupplierRegistered()) {
-                managerConfigBuilder = managerConfigBuilder.withBookmarkSupplier(
-                        new TestkitBookmarkSupplier(testkitState, this::dispatchTestkitCallback));
+                managerConfigBuilder = managerConfigBuilder.withBookmarksSupplier(
+                        new TestkitBookmarksSupplier(testkitState, this::dispatchTestkitCallback));
             }
             if (managerConfig.isBookmarksConsumerRegistered()) {
-                managerConfigBuilder = managerConfigBuilder.withBookmarkConsumer(
+                managerConfigBuilder = managerConfigBuilder.withBookmarksConsumer(
                         new TestkitBookmarkConsumer(testkitState, this::dispatchTestkitCallback));
             }
             var manager = BookmarkManagers.defaultManager(managerConfigBuilder.build());

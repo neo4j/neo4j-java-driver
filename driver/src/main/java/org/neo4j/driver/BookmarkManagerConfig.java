@@ -21,6 +21,7 @@ package org.neo4j.driver;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -29,13 +30,13 @@ import java.util.function.BiConsumer;
  */
 public final class BookmarkManagerConfig {
     private final Map<String, Set<Bookmark>> initialBookmarks;
-    private final BiConsumer<String, Set<Bookmark>> bookmarkConsumer;
-    private final BookmarkSupplier bookmarkSupplier;
+    private final BiConsumer<String, Set<Bookmark>> bookmarksConsumer;
+    private final BookmarksSupplier bookmarksSupplier;
 
     private BookmarkManagerConfig(BookmarkManagerConfigBuilder builder) {
         this.initialBookmarks = builder.initialBookmarks;
-        this.bookmarkConsumer = builder.bookmarkConsumer;
-        this.bookmarkSupplier = builder.bookmarkSupplier;
+        this.bookmarksConsumer = builder.bookmarksConsumer;
+        this.bookmarksSupplier = builder.bookmarksSupplier;
     }
 
     /**
@@ -57,21 +58,21 @@ public final class BookmarkManagerConfig {
     }
 
     /**
-     * Returns a bookmark update listener that will be notified when database bookmarks are updated.
+     * Returns bookmarks consumer that will be notified when database bookmarks are updated.
      *
-     * @return the update listener or {@code null}
+     * @return the bookmarks consumer
      */
-    public BiConsumer<String, Set<Bookmark>> updateListener() {
-        return bookmarkConsumer;
+    public Optional<BiConsumer<String, Set<Bookmark>>> bookmarksConsumer() {
+        return Optional.ofNullable(bookmarksConsumer);
     }
 
     /**
-     * Returns bookmark supplier that will be used by the bookmark manager when getting bookmarks.
+     * Returns bookmarks supplier that will be used by the bookmark manager when getting bookmarks.
      *
-     * @return the bookmark supplier or {@code null}
+     * @return the bookmark supplier
      */
-    public BookmarkSupplier bookmarkSupplier() {
-        return bookmarkSupplier;
+    public Optional<BookmarksSupplier> bookmarksSupplier() {
+        return Optional.ofNullable(bookmarksSupplier);
     }
 
     /**
@@ -79,8 +80,8 @@ public final class BookmarkManagerConfig {
      */
     public static class BookmarkManagerConfigBuilder {
         private Map<String, Set<Bookmark>> initialBookmarks = Collections.emptyMap();
-        private BiConsumer<String, Set<Bookmark>> bookmarkConsumer;
-        private BookmarkSupplier bookmarkSupplier;
+        private BiConsumer<String, Set<Bookmark>> bookmarksConsumer;
+        private BookmarksSupplier bookmarksSupplier;
 
         private BookmarkManagerConfigBuilder() {}
 
@@ -97,30 +98,30 @@ public final class BookmarkManagerConfig {
         }
 
         /**
-         * Provide a bookmark consumer.
+         * Provide bookmarks consumer.
          * <p>
          * The consumer will be called outside bookmark manager's synchronisation lock.
          *
-         * @param bookmarkConsumer bookmark consumer
+         * @param bookmarksConsumer bookmarks consumer
          * @return this builder
          */
-        public BookmarkManagerConfigBuilder withBookmarkConsumer(BiConsumer<String, Set<Bookmark>> bookmarkConsumer) {
-            this.bookmarkConsumer = bookmarkConsumer;
+        public BookmarkManagerConfigBuilder withBookmarksConsumer(BiConsumer<String, Set<Bookmark>> bookmarksConsumer) {
+            this.bookmarksConsumer = bookmarksConsumer;
             return this;
         }
 
         /**
-         * Provide a bookmark supplier.
+         * Provide bookmarks supplier.
          * <p>
          * The supplied bookmarks will be served alongside the bookmarks served by the bookmark manager. The supplied bookmarks will not be stored nor managed by the bookmark manager.
          * <p>
          * The supplier will be called outside bookmark manager's synchronisation lock.
          *
-         * @param bookmarkSupplier the bookmarks supplier
+         * @param bookmarksSupplier the bookmarks supplier
          * @return this builder
          */
-        public BookmarkManagerConfigBuilder withBookmarkSupplier(BookmarkSupplier bookmarkSupplier) {
-            this.bookmarkSupplier = bookmarkSupplier;
+        public BookmarkManagerConfigBuilder withBookmarksSupplier(BookmarksSupplier bookmarksSupplier) {
+            this.bookmarksSupplier = bookmarksSupplier;
             return this;
         }
 
