@@ -365,4 +365,10 @@
         <to>org.neo4j.driver.Value</to>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/GraphDatabase</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.Driver routingDriver(java.lang.Iterable, org.neo4j.driver.AuthToken, org.neo4j.driver.Config)</method>
+    </difference>
+
 </differences>
