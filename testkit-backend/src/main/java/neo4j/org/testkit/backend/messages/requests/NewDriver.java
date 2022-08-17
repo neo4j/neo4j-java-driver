@@ -133,7 +133,7 @@ public class NewDriver implements TestkitRequest {
             }
             if (managerConfig.isBookmarksConsumerRegistered()) {
                 managerConfigBuilder = managerConfigBuilder.withBookmarksConsumer(
-                        new TestkitBookmarkConsumer(testkitState, this::dispatchTestkitCallback));
+                        new TestkitBookmarksConsumer(testkitState, this::dispatchTestkitCallback));
             }
             var manager = BookmarkManagers.defaultManager(managerConfigBuilder.build());
             configBuilder.withBookmarkManager(manager);
