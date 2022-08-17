@@ -20,7 +20,6 @@ package org.neo4j.driver;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -40,8 +39,8 @@ class BookmarkManagerConfigTest {
         // THEN
         assertNotNull(config.initialBookmarks());
         assertTrue(config.initialBookmarks().isEmpty());
-        assertNull(config.updateListener());
-        assertNull(config.bookmarkSupplier());
+        assertTrue(config.bookmarksConsumer().isEmpty());
+        assertTrue(config.bookmarksSupplier().isEmpty());
     }
 
     @Test
@@ -54,8 +53,8 @@ class BookmarkManagerConfigTest {
 
         // WHEN & THEN
         assertEquals(bookmarks, config.initialBookmarks());
-        assertNull(config.updateListener());
-        assertNull(config.bookmarkSupplier());
+        assertTrue(config.bookmarksConsumer().isEmpty());
+        assertTrue(config.bookmarksSupplier().isEmpty());
     }
 
     @Test
@@ -65,30 +64,30 @@ class BookmarkManagerConfigTest {
 
         // WHEN
         config = BookmarkManagerConfig.builder()
-                .withBookmarkConsumer(updateListener)
+                .withBookmarksConsumer(updateListener)
                 .build();
 
         // WHEN & THEN
         assertNotNull(config.initialBookmarks());
         assertTrue(config.initialBookmarks().isEmpty());
-        assertEquals(updateListener, config.updateListener());
-        assertNull(config.bookmarkSupplier());
+        assertEquals(updateListener, config.bookmarksConsumer().orElse(null));
+        assertTrue(config.bookmarksSupplier().isEmpty());
     }
 
     @Test
     void shouldReturnBookmarkSupplier() {
         // GIVEN
-        var bookmarkSupplier = mock(BookmarkSupplier.class);
+        var bookmarkSupplier = mock(BookmarksSupplier.class);
 
         // WHEN
         config = BookmarkManagerConfig.builder()
-                .withBookmarkSupplier(bookmarkSupplier)
+                .withBookmarksSupplier(bookmarkSupplier)
                 .build();
 
         // WHEN & THEN
         assertNotNull(config.initialBookmarks());
         assertTrue(config.initialBookmarks().isEmpty());
-        assertNull(config.updateListener());
-        assertEquals(bookmarkSupplier, config.bookmarkSupplier());
+        assertTrue(config.bookmarksConsumer().isEmpty());
+        assertEquals(bookmarkSupplier, config.bookmarksSupplier().orElse(null));
     }
 }

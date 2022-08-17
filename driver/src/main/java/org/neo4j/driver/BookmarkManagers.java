@@ -31,6 +31,9 @@ public interface BookmarkManagers {
      * @return the bookmark manager
      */
     static BookmarkManager defaultManager(BookmarkManagerConfig config) {
-        return new Neo4jBookmarkManager(config.initialBookmarks(), config.updateListener(), config.bookmarkSupplier());
+        return new Neo4jBookmarkManager(
+                config.initialBookmarks(),
+                config.bookmarksConsumer().orElse(null),
+                config.bookmarksSupplier().orElse(null));
     }
 }

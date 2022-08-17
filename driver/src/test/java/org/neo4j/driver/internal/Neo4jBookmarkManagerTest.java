@@ -31,7 +31,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.BookmarkSupplier;
+import org.neo4j.driver.BookmarksSupplier;
 
 class Neo4jBookmarkManagerTest {
     Neo4jBookmarkManager manager;
@@ -102,7 +102,7 @@ class Neo4jBookmarkManagerTest {
         // GIVEN
         var initialBookmark = Bookmark.from("SY:000001");
         var initialBookmarks = Map.of(DatabaseNameUtil.SYSTEM_DATABASE_NAME, Set.of(initialBookmark));
-        var bookmarkSupplier = mock(BookmarkSupplier.class);
+        var bookmarkSupplier = mock(BookmarksSupplier.class);
         var supplierBookmark = Bookmark.from("SY:000002");
         given(bookmarkSupplier.getBookmarks(DatabaseNameUtil.SYSTEM_DATABASE_NAME))
                 .willReturn(Set.of(supplierBookmark));
@@ -121,7 +121,7 @@ class Neo4jBookmarkManagerTest {
         // GIVEN
         var initialBookmark = Bookmark.from("SY:000001");
         var initialBookmarks = Map.of(DatabaseNameUtil.SYSTEM_DATABASE_NAME, Set.of(initialBookmark));
-        var bookmarkSupplier = mock(BookmarkSupplier.class);
+        var bookmarkSupplier = mock(BookmarksSupplier.class);
         var supplierBookmark = Bookmark.from("SY:000002");
         given(bookmarkSupplier.getAllBookmarks()).willReturn(Set.of(supplierBookmark));
         manager = new Neo4jBookmarkManager(initialBookmarks, null, bookmarkSupplier);

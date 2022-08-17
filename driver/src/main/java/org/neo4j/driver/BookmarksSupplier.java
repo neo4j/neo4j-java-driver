@@ -25,7 +25,7 @@ import java.util.Set;
  * <p>
  * Implementations must avoid calling driver.
  */
-public interface BookmarkSupplier {
+public interface BookmarksSupplier {
     /**
      * Supplies a set of bookmarks for a given database.
      *

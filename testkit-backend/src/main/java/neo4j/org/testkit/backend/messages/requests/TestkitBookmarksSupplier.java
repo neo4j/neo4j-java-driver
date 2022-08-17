@@ -28,10 +28,10 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.BookmarksSupplierRequest;
 import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.BookmarkSupplier;
+import org.neo4j.driver.BookmarksSupplier;
 
 @RequiredArgsConstructor
-class TestkitBookmarkSupplier implements BookmarkSupplier {
+class TestkitBookmarksSupplier implements BookmarksSupplier {
     private final TestkitState testkitState;
     private final BiFunction<TestkitState, TestkitCallback, CompletionStage<TestkitCallbackResult>> dispatchFunction;
 

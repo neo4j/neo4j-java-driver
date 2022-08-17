@@ -30,7 +30,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import org.neo4j.driver.Bookmark;
 
 @RequiredArgsConstructor
-class TestkitBookmarkConsumer implements BiConsumer<String, Set<Bookmark>> {
+class TestkitBookmarksConsumer implements BiConsumer<String, Set<Bookmark>> {
     private final TestkitState testkitState;
     private final BiFunction<TestkitState, TestkitCallback, CompletionStage<TestkitCallbackResult>> dispatchFunction;
 
