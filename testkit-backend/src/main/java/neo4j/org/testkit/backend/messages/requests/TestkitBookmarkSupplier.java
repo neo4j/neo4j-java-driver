@@ -18,10 +18,10 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import neo4j.org.testkit.backend.TestkitState;
@@ -37,7 +37,8 @@ class TestkitBookmarkSupplier implements BookmarkSupplier {
 
     @Override
     public Set<Bookmark> getBookmarks(String database) {
-        return getBookmarksFromTestkit(() -> database);
+        Objects.requireNonNull(database, "database must not be null");
+        return getBookmarksFromTestkit(database);
     }
 
     @Override
@@ -45,12 +46,12 @@ class TestkitBookmarkSupplier implements BookmarkSupplier {
         return getBookmarksFromTestkit(null);
     }
 
-    private Set<Bookmark> getBookmarksFromTestkit(Supplier<String> databaseSupplier) {
+    private Set<Bookmark> getBookmarksFromTestkit(String database) {
         var callbackId = testkitState.newId();
         var bodyBuilder =
                 BookmarksSupplierRequest.BookmarksSupplierRequestBody.builder().id(callbackId);
-        if (databaseSupplier != null) {
-            bodyBuilder = bodyBuilder.database(databaseSupplier.get());
+        if (database != null) {
+            bodyBuilder = bodyBuilder.database(database);
         }
         var callback =
                 BookmarksSupplierRequest.builder().data(bodyBuilder.build()).build();

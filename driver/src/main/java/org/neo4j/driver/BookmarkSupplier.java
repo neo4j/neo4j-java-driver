@@ -29,7 +29,7 @@ public interface BookmarkSupplier {
     /**
      * Supplies a set of bookmarks for a given database.
      *
-     * @param database the database name
+     * @param database the database name, must not be {@code null}
      * @return the set of bookmarks, must not be {@code null}
      */
     Set<Bookmark> getBookmarks(String database);
