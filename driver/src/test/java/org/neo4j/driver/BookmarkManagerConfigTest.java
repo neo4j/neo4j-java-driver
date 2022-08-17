@@ -65,7 +65,7 @@ class BookmarkManagerConfigTest {
 
         // WHEN
         config = BookmarkManagerConfig.builder()
-                .withUpdateListener(updateListener)
+                .withBookmarkConsumer(updateListener)
                 .build();
 
         // WHEN & THEN
@@ -82,7 +82,7 @@ class BookmarkManagerConfigTest {
 
         // WHEN
         config = BookmarkManagerConfig.builder()
-                .withBookmarksSupplier(bookmarkSupplier)
+                .withBookmarkSupplier(bookmarkSupplier)
                 .build();
 
         // WHEN & THEN

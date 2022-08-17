@@ -125,10 +125,17 @@ public class NewDriver implements TestkitRequest {
                     .collect(Collectors.toMap(
                             Map.Entry::getKey,
                             e -> e.getValue().stream().map(Bookmark::from).collect(Collectors.toSet())));
-            var config = org.neo4j.driver.BookmarkManagerConfig.builder()
-                    .withInitialBookmarks(initialBookmarks)
-                    .build();
-            var manager = BookmarkManagers.defaultManager(config);
+            var managerConfigBuilder =
+                    org.neo4j.driver.BookmarkManagerConfig.builder().withInitialBookmarks(initialBookmarks);
+            if (managerConfig.isBookmarksSupplierRegistered()) {
+                managerConfigBuilder = managerConfigBuilder.withBookmarkSupplier(
+                        new TestkitBookmarkSupplier(testkitState, this::dispatchTestkitCallback));
+            }
+            if (managerConfig.isBookmarksConsumerRegistered()) {
+                managerConfigBuilder = managerConfigBuilder.withBookmarkConsumer(
+                        new TestkitBookmarkConsumer(testkitState, this::dispatchTestkitCallback));
+            }
+            var manager = BookmarkManagers.defaultManager(managerConfigBuilder.build());
             configBuilder.withBookmarkManager(manager);
         });
         configBuilder.withDriverMetrics();
@@ -312,8 +319,8 @@ public class NewDriver implements TestkitRequest {
     @Getter
     public static class BookmarkManagerConfig {
         private Map<String, Set<String>> initialBookmarks;
-        private boolean bookmarkSupplier;
-        private boolean notifyBookmarks;
+        private boolean bookmarksSupplierRegistered;
+        private boolean bookmarksConsumerRegistered;
     }
 
     @RequiredArgsConstructor
