@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import org.neo4j.driver.internal.SecuritySettings;
@@ -258,10 +259,10 @@ public class Config implements Serializable {
     /**
      * A {@link BookmarkManager} implementation for the driver to use.
      *
-     * @return bookmark implementation or {@code null}.
+     * @return bookmark implementation
      */
-    public BookmarkManager bookmarkManager() {
-        return bookmarkManager;
+    public Optional<BookmarkManager> bookmarkManager() {
+        return Optional.ofNullable(bookmarkManager);
     }
 
     /**
