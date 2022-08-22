@@ -31,19 +31,19 @@ abstract class AbstractReactiveTransaction {
         this.tx = tx;
     }
 
-    public <T> Publisher<T> commit() {
+    <T> Publisher<T> doCommit() {
         return createEmptyPublisher(tx::commitAsync);
     }
 
-    public <T> Publisher<T> rollback() {
+    <T> Publisher<T> doRollback() {
         return createEmptyPublisher(tx::rollbackAsync);
     }
 
-    public Publisher<Void> close() {
+    Publisher<Void> doClose() {
         return close(false);
     }
 
-    public Publisher<Boolean> isOpen() {
+    Publisher<Boolean> doIsOpen() {
         return Mono.just(tx.isOpen());
     }
 

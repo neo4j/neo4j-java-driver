@@ -18,6 +18,8 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
@@ -58,8 +60,8 @@ public class SessionClose implements TestkitRequest {
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState
                 .getReactiveSessionHolder(data.getSessionId())
-                .flatMap(sessionHolder ->
-                        Mono.fromDirect(sessionHolder.getSession().close()))
+                .flatMap(sessionHolder -> Mono.fromDirect(
+                        flowPublisherToFlux(sessionHolder.getSession().close())))
                 .then(Mono.just(createResponse()));
     }
 

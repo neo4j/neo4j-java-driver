@@ -19,16 +19,17 @@
 package org.neo4j.driver.internal.reactive;
 
 import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
+import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 import static reactor.core.publisher.FluxSink.OverflowStrategy.IGNORE;
 
 import java.util.List;
+import java.util.concurrent.Flow.Publisher;
 import java.util.function.BiConsumer;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.summary.ResultSummary;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -47,7 +48,7 @@ public class InternalReactiveResult implements ReactiveResult {
 
     @Override
     public Publisher<Record> records() {
-        return Flux.create(
+        return publisherToFlowPublisher(Flux.create(
                 sink -> {
                     if (cursor.isDone()) {
                         sink.error(newResultConsumedError());
@@ -57,24 +58,25 @@ public class InternalReactiveResult implements ReactiveResult {
                         sink.onRequest(cursor::request);
                     }
                 },
-                IGNORE);
+                IGNORE));
     }
 
     @Override
     public Publisher<ResultSummary> consume() {
-        return Mono.create(sink -> cursor.summaryAsync().whenComplete((summary, summaryCompletionError) -> {
-            Throwable error = Futures.completionExceptionCause(summaryCompletionError);
-            if (summary != null) {
-                sink.success(summary);
-            } else {
-                sink.error(error);
-            }
-        }));
+        return publisherToFlowPublisher(
+                Mono.create(sink -> cursor.summaryAsync().whenComplete((summary, summaryCompletionError) -> {
+                    Throwable error = Futures.completionExceptionCause(summaryCompletionError);
+                    if (summary != null) {
+                        sink.success(summary);
+                    } else {
+                        sink.error(error);
+                    }
+                })));
     }
 
     @Override
     public Publisher<Boolean> isOpen() {
-        return Mono.just(!cursor.isDone());
+        return publisherToFlowPublisher(Mono.just(!cursor.isDone()));
     }
 
     /**

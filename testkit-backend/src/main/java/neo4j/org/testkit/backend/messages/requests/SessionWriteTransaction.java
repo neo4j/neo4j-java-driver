@@ -18,6 +18,9 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
+
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -103,16 +106,17 @@ public class SessionWriteTransaction implements TestkitRequest {
         return testkitState
                 .getReactiveSessionHolder(data.getSessionId())
                 .flatMap(sessionHolder -> {
-                    ReactiveTransactionCallback<Publisher<Void>> workWrapper = tx -> {
+                    ReactiveTransactionCallback<java.util.concurrent.Flow.Publisher<Void>> workWrapper = tx -> {
                         String txId = testkitState.addReactiveTransactionHolder(new ReactiveTransactionHolder(
                                 sessionHolder, new ReactiveTransactionContextAdapter(tx)));
                         testkitState.getResponseWriter().accept(retryableTry(txId));
                         CompletableFuture<Void> tryResult = new CompletableFuture<>();
                         sessionHolder.setTxWorkFuture(tryResult);
-                        return Mono.fromCompletionStage(tryResult);
+                        return publisherToFlowPublisher(Mono.fromCompletionStage(tryResult));
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().executeWrite(workWrapper));
+                    return Mono.fromDirect(
+                            flowPublisherToFlux(sessionHolder.getSession().executeWrite(workWrapper)));
                 })
                 .then(Mono.just(retryableDone()));
     }

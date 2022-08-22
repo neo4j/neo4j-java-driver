@@ -38,6 +38,7 @@ import org.reactivestreams.Subscription;
  * @see Subscriber
  * @see Subscription
  * @since 4.0
+ * @deprecated superseded by {@link ReactiveResult}
  */
 @Deprecated
 public interface RxResult {

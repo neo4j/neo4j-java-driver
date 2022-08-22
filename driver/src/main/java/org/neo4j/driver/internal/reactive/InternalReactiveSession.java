@@ -18,9 +18,13 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow.Publisher;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -33,7 +37,6 @@ import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.neo4j.driver.reactive.ReactiveTransactionCallback;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTransaction>
@@ -48,22 +51,31 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
     }
 
     @Override
-    Publisher<Void> closeTransaction(ReactiveTransaction transaction, boolean commit) {
+    org.reactivestreams.Publisher<Void> closeTransaction(ReactiveTransaction transaction, boolean commit) {
         return ((InternalReactiveTransaction) transaction).close(commit);
+    }
+
+    @Override
+    public Publisher<ReactiveTransaction> beginTransaction(TransactionConfig config) {
+        return publisherToFlowPublisher(doBeginTransaction(config));
     }
 
     @Override
     public <T> Publisher<T> executeRead(
             ReactiveTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config) {
-        return runTransaction(
-                AccessMode.READ, tx -> callback.execute(new DelegatingReactiveTransactionContext(tx)), config);
+        return publisherToFlowPublisher(runTransaction(
+                AccessMode.READ,
+                tx -> flowPublisherToFlux(callback.execute(new DelegatingReactiveTransactionContext(tx))),
+                config));
     }
 
     @Override
     public <T> Publisher<T> executeWrite(
             ReactiveTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config) {
-        return runTransaction(
-                AccessMode.WRITE, tx -> callback.execute(new DelegatingReactiveTransactionContext(tx)), config);
+        return publisherToFlowPublisher(runTransaction(
+                AccessMode.WRITE,
+                tx -> flowPublisherToFlux(callback.execute(new DelegatingReactiveTransactionContext(tx))),
+                config));
     }
 
     @Override
@@ -80,7 +92,7 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
             cursorStage = Futures.failedFuture(t);
         }
 
-        return Mono.fromCompletionStage(cursorStage)
+        return publisherToFlowPublisher(Mono.fromCompletionStage(cursorStage)
                 .onErrorResume(error -> Mono.fromCompletionStage(session.releaseConnectionAsync())
                         .onErrorMap(releaseError -> Futures.combineErrors(error, releaseError))
                         .then(Mono.error(error)))
@@ -96,11 +108,16 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
                     }
                     return publisher;
                 })
-                .map(InternalReactiveResult::new);
+                .map(InternalReactiveResult::new));
     }
 
     @Override
     public Set<Bookmark> lastBookmarks() {
         return new HashSet<>(session.lastBookmarks());
+    }
+
+    @Override
+    public <T> Publisher<T> close() {
+        return publisherToFlowPublisher(doClose());
     }
 }

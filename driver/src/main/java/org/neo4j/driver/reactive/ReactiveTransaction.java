@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.reactive;
 
+import java.util.concurrent.Flow.Publisher;
 import org.neo4j.driver.Transaction;
-import org.reactivestreams.Publisher;
 
 /**
  * Same as {@link Transaction} except this reactive transaction exposes a reactive API.

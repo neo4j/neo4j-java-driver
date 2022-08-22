@@ -31,6 +31,7 @@ import org.neo4j.driver.internal.value.MapValue;
  * @see RxSession
  * @see RxTransaction
  * @since 4.0
+ * @deprecated superseded by {@link ReactiveQueryRunner}
  */
 @Deprecated
 public interface RxQueryRunner {

@@ -19,13 +19,13 @@
 package neo4j.org.testkit.backend;
 
 import java.util.Map;
+import java.util.concurrent.Flow.Publisher;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.neo4j.driver.reactive.ReactiveTransactionContext;
-import org.reactivestreams.Publisher;
 
 public class ReactiveTransactionContextAdapter implements ReactiveTransaction {
     private final ReactiveTransactionContext delegate;

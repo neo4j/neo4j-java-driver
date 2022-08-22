@@ -35,11 +35,14 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.TransactionConfig.empty;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -64,7 +67,6 @@ import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.neo4j.driver.reactive.ReactiveTransactionCallback;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -100,7 +102,7 @@ public class InternalReactiveSessionTest {
         InternalReactiveSession rxSession = new InternalReactiveSession(session);
 
         // When
-        Publisher<ReactiveResult> result = runReturnOne.apply(rxSession);
+        var result = flowPublisherToFlux(runReturnOne.apply(rxSession));
 
         // Then
         verify(session).runRx(any(Query.class), any(TransactionConfig.class));
@@ -121,7 +123,7 @@ public class InternalReactiveSessionTest {
         InternalReactiveSession rxSession = new InternalReactiveSession(session);
 
         // When
-        Publisher<ReactiveResult> result = runReturnOne.apply(rxSession);
+        var result = flowPublisherToFlux(runReturnOne.apply(rxSession));
 
         // Then
         StepVerifier.create(result).expectErrorMatches(t -> error == t).verify();
@@ -140,7 +142,7 @@ public class InternalReactiveSessionTest {
         InternalReactiveSession rxSession = new InternalReactiveSession(session);
 
         // When
-        Publisher<ReactiveTransaction> rxTx = beginTx.apply(rxSession);
+        var rxTx = flowPublisherToFlux(beginTx.apply(rxSession));
         StepVerifier.create(Mono.from(rxTx)).expectNextCount(1).verifyComplete();
 
         // Then
@@ -161,7 +163,7 @@ public class InternalReactiveSessionTest {
         InternalReactiveSession rxSession = new InternalReactiveSession(session);
 
         // When
-        Publisher<ReactiveTransaction> rxTx = beginTx.apply(rxSession);
+        var rxTx = flowPublisherToFlux(beginTx.apply(rxSession));
         CompletableFuture<ReactiveTransaction> txFuture = Mono.from(rxTx).toFuture();
 
         // Then
@@ -186,8 +188,8 @@ public class InternalReactiveSessionTest {
         InternalRxSession rxSession = new InternalRxSession(session);
 
         // When
-        Publisher<String> strings =
-                rxSession.readTransaction(t -> Flux.just("a").then(Mono.error(new RuntimeException("Errored"))));
+        var strings = rxSession.<String>readTransaction(
+                t -> Flux.just("a").then(Mono.error(new RuntimeException("Errored"))));
         StepVerifier.create(Flux.from(strings))
                 // we lost the "a"s too as the user only see the last failure
                 .expectError(RuntimeException.class)
@@ -216,7 +218,7 @@ public class InternalReactiveSessionTest {
 
         // When
         AtomicInteger count = new AtomicInteger();
-        Publisher<String> strings = rxSession.readTransaction(t -> {
+        var strings = rxSession.readTransaction(t -> {
             // we fail for the first few retries, and then success on the last run.
             if (count.getAndIncrement() == retryCount) {
                 return Flux.just("a");
@@ -272,7 +274,7 @@ public class InternalReactiveSessionTest {
         InternalRxSession rxSession = new InternalRxSession(session);
 
         // When
-        Publisher<Void> mono = rxSession.close();
+        var mono = rxSession.<Void>close();
 
         // Then
         StepVerifier.create(mono).verifyComplete();
@@ -289,8 +291,9 @@ public class InternalReactiveSessionTest {
         RetryLogic logic = mock(RetryLogic.class);
         String expected = "";
         given(networkSession.retryLogic()).willReturn(logic);
-        ReactiveTransactionCallback<Publisher<String>> tc = (ignored) -> Mono.justOrEmpty(expected);
-        given(logic.<String>retryRx(any())).willReturn(tc.execute(null));
+        ReactiveTransactionCallback<Publisher<String>> tc =
+                (ignored) -> publisherToFlowPublisher(Mono.justOrEmpty(expected));
+        given(logic.<String>retryRx(any())).willReturn(flowPublisherToFlux(tc.execute(null)));
         TransactionConfig config = TransactionConfig.builder().build();
 
         // WHEN
@@ -299,7 +302,7 @@ public class InternalReactiveSessionTest {
                 : (executeVariation.explicitTxConfig ? session.executeWrite(tc, config) : session.executeWrite(tc));
 
         // THEN
-        assertEquals(expected, Mono.from(actual).block());
+        assertEquals(expected, Mono.from(flowPublisherToFlux(actual)).block());
         then(networkSession).should().retryLogic();
         then(logic).should().retryRx(any());
     }

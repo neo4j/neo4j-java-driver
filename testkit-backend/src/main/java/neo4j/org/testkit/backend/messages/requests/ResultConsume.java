@@ -18,6 +18,8 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,8 +80,8 @@ public class ResultConsume implements TestkitRequest {
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState
                 .getReactiveResultHolder(data.getResultId())
-                .flatMap(
-                        resultHolder -> Mono.fromDirect(resultHolder.getResult().consume()))
+                .flatMap(resultHolder -> Mono.fromDirect(
+                        flowPublisherToFlux(resultHolder.getResult().consume())))
                 .map(this::createResponse);
     }
 

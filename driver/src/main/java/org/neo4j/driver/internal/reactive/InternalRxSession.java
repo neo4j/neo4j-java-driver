@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
-
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.AccessMode;
@@ -52,6 +50,11 @@ public class InternalRxSession extends AbstractReactiveSession<RxTransaction> im
     @Override
     Publisher<Void> closeTransaction(RxTransaction transaction, boolean commit) {
         return ((InternalRxTransaction) transaction).close(commit);
+    }
+
+    @Override
+    public Publisher<RxTransaction> beginTransaction(TransactionConfig config) {
+        return doBeginTransaction(config);
     }
 
     @Override
@@ -128,6 +131,6 @@ public class InternalRxSession extends AbstractReactiveSession<RxTransaction> im
 
     @Override
     public <T> Publisher<T> close() {
-        return createEmptyPublisher(session::closeAsync);
+        return doClose();
     }
 }

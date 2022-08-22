@@ -18,6 +18,8 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
@@ -57,7 +59,8 @@ public class TransactionCommit implements TestkitRequest {
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState
                 .getReactiveTransactionHolder(data.getTxId())
-                .flatMap(tx -> Mono.fromDirect(tx.getTransaction().commit()))
+                .flatMap(tx ->
+                        Mono.fromDirect(flowPublisherToFlux(tx.getTransaction().commit())))
                 .then(Mono.just(createResponse(data.getTxId())));
     }
 

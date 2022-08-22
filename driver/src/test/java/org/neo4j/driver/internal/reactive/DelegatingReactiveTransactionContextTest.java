@@ -22,9 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
+import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.Flow.Publisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Query;
@@ -32,7 +34,6 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveTransaction;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 public class DelegatingReactiveTransactionContextTest {
@@ -50,11 +51,10 @@ public class DelegatingReactiveTransactionContextTest {
         // GIVEN
         String query = "something";
         Value params = mock(Value.class);
-        Publisher<ReactiveResult> expected = Mono.empty();
+        Publisher<ReactiveResult> expected = publisherToFlowPublisher(Mono.empty());
         given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        @SuppressWarnings("ReactiveStreamsUnusedPublisher")
         Publisher<ReactiveResult> actual = context.run(query, params);
 
         // THEN
@@ -67,11 +67,10 @@ public class DelegatingReactiveTransactionContextTest {
         // GIVEN
         String query = "something";
         Map<String, Object> params = Collections.emptyMap();
-        Publisher<ReactiveResult> expected = Mono.empty();
+        Publisher<ReactiveResult> expected = publisherToFlowPublisher(Mono.empty());
         given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        @SuppressWarnings("ReactiveStreamsUnusedPublisher")
         Publisher<ReactiveResult> actual = context.run(query, params);
 
         // THEN
@@ -84,11 +83,10 @@ public class DelegatingReactiveTransactionContextTest {
         // GIVEN
         String query = "something";
         Record params = mock(Record.class);
-        Publisher<ReactiveResult> expected = Mono.empty();
+        Publisher<ReactiveResult> expected = publisherToFlowPublisher(Mono.empty());
         given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        @SuppressWarnings("ReactiveStreamsUnusedPublisher")
         Publisher<ReactiveResult> actual = context.run(query, params);
 
         // THEN
@@ -100,11 +98,10 @@ public class DelegatingReactiveTransactionContextTest {
     void shouldDelegateRun() {
         // GIVEN
         String query = "something";
-        Publisher<ReactiveResult> expected = Mono.empty();
+        Publisher<ReactiveResult> expected = publisherToFlowPublisher(Mono.empty());
         given(transaction.run(query)).willReturn(expected);
 
         // WHEN
-        @SuppressWarnings("ReactiveStreamsUnusedPublisher")
         Publisher<ReactiveResult> actual = context.run(query);
 
         // THEN
@@ -116,11 +113,10 @@ public class DelegatingReactiveTransactionContextTest {
     void shouldDelegateRunWithQueryType() {
         // GIVEN
         Query query = mock(Query.class);
-        Publisher<ReactiveResult> expected = Mono.empty();
+        Publisher<ReactiveResult> expected = publisherToFlowPublisher(Mono.empty());
         given(transaction.run(query)).willReturn(expected);
 
         // WHEN
-        @SuppressWarnings("ReactiveStreamsUnusedPublisher")
         Publisher<ReactiveResult> actual = context.run(query);
 
         // THEN

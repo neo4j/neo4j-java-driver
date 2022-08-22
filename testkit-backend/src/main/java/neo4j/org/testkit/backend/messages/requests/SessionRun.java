@@ -18,6 +18,8 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.Duration;
 import java.util.List;
@@ -130,7 +132,7 @@ public class SessionRun implements TestkitRequest {
             Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
             configureTimeout(transactionConfig);
 
-            return Mono.fromDirect(session.run(query, transactionConfig.build()))
+            return Mono.fromDirect(flowPublisherToFlux(session.run(query, transactionConfig.build())))
                     .map(result -> {
                         String id =
                                 testkitState.addReactiveResultHolder(new ReactiveResultHolder(sessionHolder, result));
