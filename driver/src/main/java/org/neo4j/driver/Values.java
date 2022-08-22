@@ -78,7 +78,7 @@ import org.neo4j.driver.types.TypeSystem;
  *
  * @since 1.0
  */
-public abstract class Values {
+public final class Values {
     public static final Value EmptyMap = value(Collections.emptyMap());
     public static final Value NULL = NullValue.NULL;
 

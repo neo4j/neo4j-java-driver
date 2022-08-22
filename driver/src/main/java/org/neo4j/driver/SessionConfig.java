@@ -34,7 +34,7 @@ import org.reactivestreams.Subscription;
 /**
  * The session configurations used to configure a session.
  */
-public class SessionConfig implements Serializable {
+public final class SessionConfig implements Serializable {
     @Serial
     private static final long serialVersionUID = 5773462156979050657L;
 
@@ -173,7 +173,7 @@ public class SessionConfig implements Serializable {
     /**
      * Builder used to configure {@link SessionConfig} which will be used to create a session.
      */
-    public static class Builder {
+    public static final class Builder {
         private Long fetchSize = null;
         private Iterable<Bookmark> bookmarks = null;
         private AccessMode defaultAccessMode = AccessMode.WRITE;

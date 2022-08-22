@@ -23,14 +23,15 @@ import org.neo4j.driver.internal.Neo4jBookmarkManager;
 /**
  * Setups new instances of {@link BookmarkManager}.
  */
-public interface BookmarkManagers {
+public final class BookmarkManagers {
+    private BookmarkManagers() {}
     /**
      * Setups a new instance of bookmark manager that can be used in {@link org.neo4j.driver.Config.ConfigBuilder#withBookmarkManager(BookmarkManager)}.
      *
      * @param config the bookmark manager configuration
      * @return the bookmark manager
      */
-    static BookmarkManager defaultManager(BookmarkManagerConfig config) {
+    public static BookmarkManager defaultManager(BookmarkManagerConfig config) {
         return new Neo4jBookmarkManager(
                 config.initialBookmarks(),
                 config.bookmarksConsumer().orElse(null),

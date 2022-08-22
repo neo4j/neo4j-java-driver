@@ -146,8 +146,7 @@ class DriverFactoryTest {
     @Test
     void shouldNotCreateDriverMetrics() {
         // Given
-        Config config = mock(Config.class);
-        when(config.isMetricsEnabled()).thenReturn(false);
+        Config config = Config.builder().withoutDriverMetrics().build();
         // When
         MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.SYSTEM);
         // Then
@@ -157,9 +156,8 @@ class DriverFactoryTest {
     @Test
     void shouldCreateDriverMetricsIfMonitoringEnabled() {
         // Given
-        Config config = mock(Config.class);
-        when(config.isMetricsEnabled()).thenReturn(true);
-        when(config.logging()).thenReturn(Logging.none());
+        Config config =
+                Config.builder().withDriverMetrics().withLogging(Logging.none()).build();
         // When
         MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.SYSTEM);
         // Then
@@ -169,10 +167,11 @@ class DriverFactoryTest {
     @Test
     void shouldCreateMicrometerDriverMetricsIfMonitoringEnabled() {
         // Given
-        Config config = mock(Config.class);
-        when(config.isMetricsEnabled()).thenReturn(true);
-        when(config.metricsAdapter()).thenReturn(MetricsAdapter.MICROMETER);
-        when(config.logging()).thenReturn(Logging.none());
+        Config config = Config.builder()
+                .withDriverMetrics()
+                .withMetricsAdapter(MetricsAdapter.MICROMETER)
+                .withLogging(Logging.none())
+                .build();
         // When
         MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.SYSTEM);
         // Then

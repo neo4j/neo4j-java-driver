@@ -63,7 +63,7 @@ import org.neo4j.driver.internal.util.Extract;
  *
  * @see Session
  */
-public class TransactionConfig implements Serializable {
+public final class TransactionConfig implements Serializable {
     @Serial
     private static final long serialVersionUID = -7954949878657177280L;
 
@@ -160,7 +160,7 @@ public class TransactionConfig implements Serializable {
     /**
      * Builder used to construct {@link TransactionConfig transaction configuration} objects.
      */
-    public static class Builder {
+    public static final class Builder {
         private Duration timeout;
         private Map<String, Object> metadata = emptyMap();
 
