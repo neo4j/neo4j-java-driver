@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
@@ -69,6 +71,64 @@ public interface Driver extends AutoCloseable {
      * @return true if the driver requires encryption, false otherwise
      */
     boolean isEncrypted();
+
+    // todo
+    default EagerQueryResult query(String query) {
+        return query(query, Collections.emptyMap());
+    }
+
+    // todo
+    default EagerQueryResult query(String query, Map<String, Object> parameters) {
+        return query(query, parameters, DriverQueryConfig.builder().build());
+    }
+
+    // todo
+    default EagerQueryResult query(String query, Map<String, Object> parameters, DriverQueryConfig config) {
+        return query(new Query(query, parameters), config);
+    }
+
+    // todo
+    default EagerQueryResult query(String query, DriverQueryConfig config) {
+        return query(new Query(query, Collections.emptyMap()), config);
+    }
+
+    // todo
+    default EagerQueryResult query(String query, ClusterMemberAccess access) {
+        return query(query, Collections.emptyMap(), access);
+    }
+
+    // todo
+    default EagerQueryResult query(String query, Map<String, Object> parameters, ClusterMemberAccess access) {
+        return query(
+                new Query(query, parameters),
+                DriverQueryConfig.builder().withClusterMemberAccess(access).build());
+    }
+
+    // todo
+    default EagerQueryResult query(Query query, ClusterMemberAccess access) {
+        return query(
+                query,
+                DriverQueryConfig.builder().withClusterMemberAccess(access).build());
+    }
+
+    // todo
+    default EagerQueryResult query(Query query) {
+        return query(query, DriverQueryConfig.builder().build());
+    }
+
+    // todo
+    EagerQueryResult query(Query query, DriverQueryConfig config);
+
+    // todo
+    default <T> T execute(TransactionCallback<T> callback, TransactionClusterMemberAccess access) {
+        var config = DriverTransactionConfig.builder()
+                .withClusterMemberAccess(access)
+                .build();
+        return execute(callback, config);
+    }
+
+    // todo
+    <T> T execute(TransactionCallback<T> callback, DriverTransactionConfig config);
 
     /**
      * Create a new general purpose {@link Session} with default {@link SessionConfig session configuration}.

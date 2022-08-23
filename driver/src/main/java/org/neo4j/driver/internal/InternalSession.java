@@ -20,18 +20,24 @@ package org.neo4j.driver.internal;
 
 import static java.util.Collections.emptyMap;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.RetryStrategy;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionCallback;
+import org.neo4j.driver.TransactionClusterMemberAccess;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.spi.Connection;
@@ -127,6 +133,92 @@ public class InternalSession extends AbstractQueryRunner implements Session {
     @Override
     public <T> T executeWrite(TransactionCallback<T> callback, TransactionConfig config) {
         return writeTransaction(tx -> callback.execute(new DelegatingTransactionContext(tx)), config);
+    }
+
+    public <T> T execute(
+            TransactionCallback<T> callback,
+            TransactionConfig config,
+            TransactionClusterMemberAccess access,
+            RetryStrategy retryStrategy) {
+        var mode =
+                switch (access) {
+                    case WRITERS -> AccessMode.WRITE;
+                    case READERS -> AccessMode.READ;
+                };
+        return retry(
+                () -> {
+                    try (Transaction tx = beginTransaction(mode, config)) {
+                        T result = callback.execute(new DelegatingTransactionContext(tx));
+                        if (tx.isOpen()) {
+                            // commit tx if a user has not explicitly committed or rolled back the transaction
+                            tx.commit();
+                        }
+                        return result;
+                    }
+                },
+                retryStrategy);
+    }
+
+    public <T> T retry(Supplier<T> work, RetryStrategy retryStrategy) {
+        List<Throwable> throwableList = null;
+        var attempts = 0;
+
+        while (true) {
+            attempts++;
+            try {
+                return work.get();
+            } catch (RuntimeException runtimeException) {
+                var throwable = getInitialThrowable(runtimeException);
+                var retryInfo = new InternalRetryState(attempts, throwable);
+                var retryDelay = retryStrategy.getRetryDuration(retryInfo);
+
+                if (retryDelay.isPresent()) {
+                    var delay = retryDelay.get();
+                    if (!delay.isNegative()) {
+                        sleep(delay.toMillis());
+                        throwableList = appendThrowable(throwable, throwableList);
+                        continue;
+                    }
+                }
+
+                addSuppressed(runtimeException, throwableList);
+                throw runtimeException;
+            }
+        }
+    }
+
+    private static Throwable getInitialThrowable(Throwable error) {
+        if (error instanceof ClientException && error.getCause() != null) {
+            return error.getCause();
+        }
+        return error;
+    }
+
+    private static List<Throwable> appendThrowable(Throwable throwable, List<Throwable> throwableList) {
+        if (throwableList == null) {
+            throwableList = new ArrayList<>();
+        }
+        throwableList.add(throwable);
+        return throwableList;
+    }
+
+    private void sleep(long delayMs) {
+        try {
+            Thread.sleep(delayMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Retries interrupted", e);
+        }
+    }
+
+    private static void addSuppressed(Throwable throwable, List<Throwable> suppressedThrowableList) {
+        if (suppressedThrowableList != null) {
+            for (Throwable suppressedError : suppressedThrowableList) {
+                if (throwable != suppressedError) {
+                    throwable.addSuppressed(suppressedError);
+                }
+            }
+        }
     }
 
     @Override

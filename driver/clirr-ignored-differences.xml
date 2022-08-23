@@ -391,4 +391,70 @@
         <differenceType>3003</differenceType>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerQueryResult query(java.lang.String)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerQueryResult query(java.lang.String, java.util.Map)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerQueryResult query(java.lang.String, java.util.Map, org.neo4j.driver.DriverQueryConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerQueryResult query(java.lang.String, org.neo4j.driver.DriverQueryConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerQueryResult query(java.lang.String, org.neo4j.driver.ClusterMemberAccess)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerQueryResult query(java.lang.String, java.util.Map, org.neo4j.driver.ClusterMemberAccess)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerQueryResult query(org.neo4j.driver.Query, org.neo4j.driver.ClusterMemberAccess)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerQueryResult query(org.neo4j.driver.Query)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerQueryResult query(org.neo4j.driver.Query, org.neo4j.driver.DriverQueryConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Object execute(org.neo4j.driver.TransactionCallback, org.neo4j.driver.TransactionClusterMemberAccess)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Object execute(org.neo4j.driver.TransactionCallback, org.neo4j.driver.DriverTransactionConfig)</method>
+    </difference>
+
 </differences>

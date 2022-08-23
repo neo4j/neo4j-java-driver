@@ -18,18 +18,32 @@
  */
 package org.neo4j.driver.internal;
 
+import static org.neo4j.driver.TransactionClusterMemberAccess.READERS;
+import static org.neo4j.driver.TransactionClusterMemberAccess.WRITERS;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.DriverQueryConfig;
+import org.neo4j.driver.DriverTransactionConfig;
+import org.neo4j.driver.EagerQueryResult;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
+import org.neo4j.driver.TransactionCallback;
+import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
@@ -111,6 +125,78 @@ public class InternalDriver implements Driver {
     public boolean isEncrypted() {
         assertOpen();
         return securityPlan.requiresEncryption();
+    }
+
+    @Override
+    public EagerQueryResult query(Query query, DriverQueryConfig config) {
+        var sessionConfigBuilder = SessionConfig.builder().withBookmarks(config.bookmarks());
+        config.database().ifPresent(sessionConfigBuilder::withDatabase);
+        config.impersonatedUser().ifPresent(sessionConfigBuilder::withImpersonatedUser);
+        var accessMode =
+                switch (config.clusterMemberAccess()) {
+                    case AUTO, WRITERS -> AccessMode.WRITE;
+                    case READERS -> AccessMode.READ;
+                };
+        sessionConfigBuilder.withDefaultAccessMode(accessMode);
+        try (var session = session(sessionConfigBuilder.build())) {
+            var transactionConfigBuilder = TransactionConfig.builder();
+            config.timeout().ifPresent(transactionConfigBuilder::withTimeout);
+            transactionConfigBuilder.withMetadata(config.metadata());
+            if (config.explicitTransaction()) {
+                var memberAccess =
+                        switch (config.clusterMemberAccess()) {
+                            case AUTO, WRITERS -> WRITERS;
+                            case READERS -> READERS;
+                        };
+                return ((InternalSession) session)
+                        .execute(
+                                tx -> initEagerResult(tx.run(query), config),
+                                transactionConfigBuilder.build(),
+                                memberAccess,
+                                config.retryStrategy());
+            } else {
+                var result = session.run(query, transactionConfigBuilder.build());
+                return initEagerResult(result, config);
+            }
+        }
+    }
+
+    @Override
+    public <T> T execute(TransactionCallback<T> callback, DriverTransactionConfig config) {
+        var sessionConfigBuilder = SessionConfig.builder().withBookmarks(config.bookmarks());
+        config.database().ifPresent(sessionConfigBuilder::withDatabase);
+        config.impersonatedUser().ifPresent(sessionConfigBuilder::withImpersonatedUser);
+        var transactionConfigBuilder = TransactionConfig.builder();
+        config.timeout().ifPresent(transactionConfigBuilder::withTimeout);
+        transactionConfigBuilder.withMetadata(config.metadata());
+        try (var session = session(sessionConfigBuilder.build())) {
+            return ((InternalSession) session)
+                    .execute(
+                            callback,
+                            transactionConfigBuilder.build(),
+                            config.clusterMemberAccess(),
+                            config.retryStrategy());
+        }
+    }
+
+    private InternalEagerQueryResult initEagerResult(Result result, DriverQueryConfig config) {
+        return new InternalEagerQueryResult(result.keys(), listRecords(result, config), result.consume());
+    }
+
+    private List<Record> listRecords(Result result, DriverQueryConfig config) {
+        List<Record> records = new ArrayList<>();
+        if (!config.skipRecords()) {
+            long countdownLimit = config.maxRecordCount() + 1;
+            while (result.hasNext()) {
+                countdownLimit--;
+                if (countdownLimit == 0) {
+                    // todo determine exception
+                    throw new ClientException("Maximum record set size exceeded");
+                }
+                records.add(result.next());
+            }
+        }
+        return records;
     }
 
     @Override
