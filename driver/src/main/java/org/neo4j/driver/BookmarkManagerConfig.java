@@ -78,7 +78,7 @@ public final class BookmarkManagerConfig {
     /**
      * Builder used to configure {@link BookmarkManagerConfig} which will be used to create a bookmark manager.
      */
-    public static class BookmarkManagerConfigBuilder {
+    public static final class BookmarkManagerConfigBuilder {
         private Map<String, Set<Bookmark>> initialBookmarks = Collections.emptyMap();
         private BiConsumer<String, Set<Bookmark>> bookmarksConsumer;
         private BookmarksSupplier bookmarksSupplier;

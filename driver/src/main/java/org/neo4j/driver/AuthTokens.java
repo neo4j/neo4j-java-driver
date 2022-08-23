@@ -38,7 +38,7 @@ import org.neo4j.driver.internal.security.InternalAuthToken;
  * @see GraphDatabase#driver(String, AuthToken)
  * @since 1.0
  */
-public class AuthTokens {
+public final class AuthTokens {
     private AuthTokens() {}
 
     /**

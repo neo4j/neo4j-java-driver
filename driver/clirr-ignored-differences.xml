@@ -371,4 +371,24 @@
         <method>org.neo4j.driver.Driver routingDriver(java.lang.Iterable, org.neo4j.driver.AuthToken, org.neo4j.driver.Config)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/AuthTokens</className>
+        <differenceType>3003</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/GraphDatabase</className>
+        <differenceType>3003</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Query</className>
+        <differenceType>3003</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Records</className>
+        <differenceType>3003</differenceType>
+    </difference>
+
 </differences>

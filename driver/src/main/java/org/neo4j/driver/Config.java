@@ -70,7 +70,7 @@ import org.neo4j.driver.util.Immutable;
  * @since 1.0
  */
 @Immutable
-public class Config implements Serializable {
+public final class Config implements Serializable {
     @Serial
     private static final long serialVersionUID = -4496545746399601108L;
 
@@ -268,7 +268,7 @@ public class Config implements Serializable {
     /**
      * Used to build new config instances
      */
-    public static class ConfigBuilder {
+    public static final class ConfigBuilder {
         private Logging logging = DEV_NULL_LOGGING;
         private boolean logLeakedSessions;
         private int maxConnectionPoolSize = PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
@@ -702,7 +702,7 @@ public class Config implements Serializable {
     /**
      * Control how the driver determines if it can trust the encryption certificates provided by the Neo4j instance it is connected to.
      */
-    public static class TrustStrategy implements Serializable {
+    public static final class TrustStrategy implements Serializable {
         @Serial
         private static final long serialVersionUID = -1631888096243987740L;
 

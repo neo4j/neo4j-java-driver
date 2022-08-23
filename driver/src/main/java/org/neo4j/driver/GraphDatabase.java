@@ -30,7 +30,7 @@ import org.neo4j.driver.internal.security.SecurityPlan;
  * @see Driver
  * @since 1.0
  */
-public class GraphDatabase {
+public final class GraphDatabase {
     private GraphDatabase() {}
 
     /**
