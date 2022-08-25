@@ -19,12 +19,11 @@
 package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.NetworkSession;
 
 public interface SessionFactory {
-    NetworkSession newInstance(SessionConfig sessionConfig, BookmarkManager bookmarkManager);
+    NetworkSession newInstance(SessionConfig sessionConfig);
 
     CompletionStage<Void> verifyConnectivity();
 

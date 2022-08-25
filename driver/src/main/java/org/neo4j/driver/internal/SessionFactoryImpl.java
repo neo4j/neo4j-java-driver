@@ -51,8 +51,7 @@ public class SessionFactoryImpl implements SessionFactory {
     }
 
     @Override
-    public NetworkSession newInstance(SessionConfig sessionConfig, BookmarkManager bookmarkManager) {
-        Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
+    public NetworkSession newInstance(SessionConfig sessionConfig) {
         return createSession(
                 connectionProvider,
                 retryLogic,
@@ -62,7 +61,7 @@ public class SessionFactoryImpl implements SessionFactory {
                 parseFetchSize(sessionConfig),
                 sessionConfig.impersonatedUser().orElse(null),
                 logging,
-                bookmarkManager);
+                sessionConfig.bookmarkManager().orElse(new NoOpBookmarkManager()));
     }
 
     private Set<Bookmark> toDistinctSet(Iterable<Bookmark> bookmarks) {

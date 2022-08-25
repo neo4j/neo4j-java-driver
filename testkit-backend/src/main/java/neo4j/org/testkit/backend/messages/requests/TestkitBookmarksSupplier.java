@@ -32,6 +32,7 @@ import org.neo4j.driver.BookmarksSupplier;
 
 @RequiredArgsConstructor
 class TestkitBookmarksSupplier implements BookmarksSupplier {
+    private final String bookmarkManagerId;
     private final TestkitState testkitState;
     private final BiFunction<TestkitState, TestkitCallback, CompletionStage<TestkitCallbackResult>> dispatchFunction;
 
@@ -48,8 +49,9 @@ class TestkitBookmarksSupplier implements BookmarksSupplier {
 
     private Set<Bookmark> getBookmarksFromTestkit(String database) {
         var callbackId = testkitState.newId();
-        var bodyBuilder =
-                BookmarksSupplierRequest.BookmarksSupplierRequestBody.builder().id(callbackId);
+        var bodyBuilder = BookmarksSupplierRequest.BookmarksSupplierRequestBody.builder()
+                .id(callbackId)
+                .bookmarkManagerId(bookmarkManagerId);
         if (database != null) {
             bodyBuilder = bodyBuilder.database(database);
         }

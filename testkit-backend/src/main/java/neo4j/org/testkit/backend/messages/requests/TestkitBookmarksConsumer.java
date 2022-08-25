@@ -31,6 +31,7 @@ import org.neo4j.driver.Bookmark;
 
 @RequiredArgsConstructor
 class TestkitBookmarksConsumer implements BiConsumer<String, Set<Bookmark>> {
+    private final String bookmarkManagerId;
     private final TestkitState testkitState;
     private final BiFunction<TestkitState, TestkitCallback, CompletionStage<TestkitCallbackResult>> dispatchFunction;
 
@@ -39,6 +40,7 @@ class TestkitBookmarksConsumer implements BiConsumer<String, Set<Bookmark>> {
         var callbackId = testkitState.newId();
         var body = BookmarksConsumerRequest.BookmarksConsumerRequestBody.builder()
                 .id(callbackId)
+                .bookmarkManagerId(bookmarkManagerId)
                 .database(database)
                 .bookmarks(bookmarks.stream().map(Bookmark::value).collect(Collectors.toUnmodifiableSet()))
                 .build();

@@ -40,6 +40,7 @@ import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import reactor.core.publisher.Mono;
 
@@ -48,6 +49,7 @@ public class TestkitState {
     private static final String SESSION_NOT_FOUND_MESSAGE = "Could not find session";
     private static final String TRANSACTION_NOT_FOUND_MESSAGE = "Could not find transaction";
     private static final String RESULT_NOT_FOUND_MESSAGE = "Could not find result";
+    private static final String BOOKMARK_MANAGER_NOT_FOUND_MESSAGE = "Could not find bookmark manager";
 
     private final Map<String, DriverHolder> driverIdToDriverHolder = new HashMap<>();
 
@@ -66,6 +68,7 @@ public class TestkitState {
     private final Map<String, AsyncTransactionHolder> transactionIdToAsyncTransactionHolder = new HashMap<>();
     private final Map<String, RxTransactionHolder> transactionIdToRxTransactionHolder = new HashMap<>();
     private final Map<String, ReactiveTransactionHolder> transactionIdToReactiveTransactionHolder = new HashMap<>();
+    private final Map<String, BookmarkManager> bookmarkManagerIdToBookmarkManager = new HashMap<>();
 
     @Getter
     private final Map<String, Exception> errors = new HashMap<>();
@@ -188,6 +191,20 @@ public class TestkitState {
 
     public Mono<ReactiveResultHolder> getReactiveResultHolder(String id) {
         return getRx(id, resultIdToReactiveResultHolder, RESULT_NOT_FOUND_MESSAGE);
+    }
+
+    public void addBookmarkManager(String id, BookmarkManager bookmarkManager) {
+        bookmarkManagerIdToBookmarkManager.put(id, bookmarkManager);
+    }
+
+    public BookmarkManager getBookmarkManager(String id) {
+        return get(id, bookmarkManagerIdToBookmarkManager, BOOKMARK_MANAGER_NOT_FOUND_MESSAGE);
+    }
+
+    public void removeBookmarkManager(String id) {
+        if (bookmarkManagerIdToBookmarkManager.remove(id) == null) {
+            throw new RuntimeException(BOOKMARK_MANAGER_NOT_FOUND_MESSAGE);
+        }
     }
 
     private <T> String add(T value, Map<String, T> idToT) {

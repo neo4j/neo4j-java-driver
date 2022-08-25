@@ -29,6 +29,7 @@ import java.util.Optional;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.util.Experimental;
 import org.reactivestreams.Subscription;
 
 /**
@@ -45,7 +46,7 @@ public final class SessionConfig implements Serializable {
     private final String database;
     private final Long fetchSize;
     private final String impersonatedUser;
-    private final boolean ignoreBookmarkManager;
+    private final BookmarkManager bookmarkManager;
 
     private SessionConfig(Builder builder) {
         this.bookmarks = builder.bookmarks;
@@ -53,7 +54,7 @@ public final class SessionConfig implements Serializable {
         this.database = builder.database;
         this.fetchSize = builder.fetchSize;
         this.impersonatedUser = builder.impersonatedUser;
-        this.ignoreBookmarkManager = builder.ignoreBookmarkManager;
+        this.bookmarkManager = builder.bookmarkManager;
     }
 
     /**
@@ -133,12 +134,13 @@ public final class SessionConfig implements Serializable {
     }
 
     /**
-     * Determines if {@link BookmarkManager} configured at driver level should be ignored.
+     * A {@link BookmarkManager} implementation for the session to use.
      *
-     * @return {@code true} if bookmark manager should be ignored and not otherwise.
+     * @return bookmark implementation
      */
-    public boolean ignoreBookmarkManager() {
-        return ignoreBookmarkManager;
+    @Experimental
+    public Optional<BookmarkManager> bookmarkManager() {
+        return Optional.ofNullable(bookmarkManager);
     }
 
     @Override
@@ -155,19 +157,22 @@ public final class SessionConfig implements Serializable {
                 && Objects.equals(database, that.database)
                 && Objects.equals(fetchSize, that.fetchSize)
                 && Objects.equals(impersonatedUser, that.impersonatedUser)
-                && Objects.equals(ignoreBookmarkManager, that.ignoreBookmarkManager);
+                && Objects.equals(bookmarkManager, that.bookmarkManager);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(bookmarks, defaultAccessMode, database, impersonatedUser, ignoreBookmarkManager);
+        return Objects.hash(bookmarks, defaultAccessMode, database, impersonatedUser, bookmarkManager);
     }
 
     @Override
     public String toString() {
-        return "SessionParameters{" + "bookmarks=" + bookmarks + ", defaultAccessMode=" + defaultAccessMode
-                + ", database='" + database + '\'' + ", fetchSize=" + fetchSize + "impersonatedUser=" + impersonatedUser
-                + '}';
+        return String.format(
+                """
+                SessionParameters{bookmarks=%s, defaultAccessMode=%s, database='%s', fetchSize=%d, impersonatedUser=%s, \
+                bookmarkManager=%s}\
+                """,
+                bookmarks, defaultAccessMode, database, fetchSize, impersonatedUser, bookmarkManager);
     }
 
     /**
@@ -179,7 +184,7 @@ public final class SessionConfig implements Serializable {
         private AccessMode defaultAccessMode = AccessMode.WRITE;
         private String database = null;
         private String impersonatedUser = null;
-        private boolean ignoreBookmarkManager = false;
+        private BookmarkManager bookmarkManager;
 
         private Builder() {}
 
@@ -306,13 +311,16 @@ public final class SessionConfig implements Serializable {
         }
 
         /**
-         * Ignore {@link BookmarkManager} configured at driver level using {@link org.neo4j.driver.Config.ConfigBuilder#withBookmarkManager(BookmarkManager)}.
+         * Sets a {@link BookmarkManager} implementation for the session to use.
+         * <p>
+         * By default, bookmark manager is effectively disabled.
          *
-         * @param ignore ignore if {@code true}, use otherwise.
+         * @param bookmarkManager bookmark manager implementation. Providing {@code null} effectively disables bookmark manager.
          * @return this builder.
          */
-        public Builder withIgnoredBookmarkManager(boolean ignore) {
-            this.ignoreBookmarkManager = ignore;
+        @Experimental
+        public Builder withBookmarkManager(BookmarkManager bookmarkManager) {
+            this.bookmarkManager = bookmarkManager;
             return this;
         }
 

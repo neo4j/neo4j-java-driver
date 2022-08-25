@@ -23,24 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class BookmarksSupplierRequest implements TestkitCallback {
-    private BookmarksSupplierRequestBody data;
+public class BookmarkManager implements TestkitResponse {
+    private final BookmarkManagerBody data;
 
     @Override
     public String testkitName() {
-        return "BookmarksSupplierRequest";
-    }
-
-    @Override
-    public String getCallbackId() {
-        return data.getId();
+        return "BookmarkManager";
     }
 
     @Getter
     @Builder
-    public static class BookmarksSupplierRequestBody {
-        private String id;
-        private String bookmarkManagerId;
-        private String database;
+    public static class BookmarkManagerBody {
+        private final String id;
     }
 }

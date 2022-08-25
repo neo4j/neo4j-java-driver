@@ -22,7 +22,6 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -48,22 +47,18 @@ public class InternalDriver implements Driver {
     private final SessionFactory sessionFactory;
     private final Logger log;
 
-    private AtomicBoolean closed = new AtomicBoolean(false);
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     private final MetricsProvider metricsProvider;
-
-    private final BookmarkManager bookmarkManager;
 
     InternalDriver(
             SecurityPlan securityPlan,
             SessionFactory sessionFactory,
             MetricsProvider metricsProvider,
-            Logging logging,
-            BookmarkManager bookmarkManager) {
+            Logging logging) {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
         this.metricsProvider = metricsProvider;
         this.log = logging.getLog(getClass());
-        this.bookmarkManager = bookmarkManager != null ? bookmarkManager : new NoOpBookmarkManager();
     }
 
     @Override
@@ -169,8 +164,7 @@ public class InternalDriver implements Driver {
 
     public NetworkSession newSession(SessionConfig config) {
         assertOpen();
-        var bookmarkManager = config.ignoreBookmarkManager() ? new NoOpBookmarkManager() : this.bookmarkManager;
-        NetworkSession session = sessionFactory.newInstance(config, bookmarkManager);
+        NetworkSession session = sessionFactory.newInstance(config);
         if (closed.get()) {
             // session does not immediately acquire connection, it is fine to just throw
             throw driverCloseException();

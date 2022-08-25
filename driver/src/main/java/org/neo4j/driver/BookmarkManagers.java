@@ -19,14 +19,16 @@
 package org.neo4j.driver;
 
 import org.neo4j.driver.internal.Neo4jBookmarkManager;
+import org.neo4j.driver.util.Experimental;
 
 /**
  * Setups new instances of {@link BookmarkManager}.
  */
+@Experimental
 public final class BookmarkManagers {
     private BookmarkManagers() {}
     /**
-     * Setups a new instance of bookmark manager that can be used in {@link org.neo4j.driver.Config.ConfigBuilder#withBookmarkManager(BookmarkManager)}.
+     * Setups a new instance of bookmark manager that can be used in {@link org.neo4j.driver.SessionConfig.Builder#withBookmarkManager(BookmarkManager)}.
      *
      * @param config the bookmark manager configuration
      * @return the bookmark manager

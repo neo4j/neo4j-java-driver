@@ -83,11 +83,14 @@ public class NewSession implements TestkitRequest {
 
         Optional.ofNullable(data.database).ifPresent(builder::withDatabase);
         Optional.ofNullable(data.impersonatedUser).ifPresent(builder::withImpersonatedUser);
-        Optional.ofNullable(data.ignoreBookmarkManager).ifPresent(builder::withIgnoredBookmarkManager);
 
         if (data.getFetchSize() != 0) {
             builder.withFetchSize(data.getFetchSize());
         }
+
+        Optional.ofNullable(data.bookmarkManagerId)
+                .map(testkitState::getBookmarkManager)
+                .ifPresent(builder::withBookmarkManager);
 
         T sessionStateHolder = sessionStateProducer.apply(driverHolder, builder.build());
         String newId = addSessionHolder.apply(sessionStateHolder);
@@ -125,6 +128,6 @@ public class NewSession implements TestkitRequest {
         private String database;
         private String impersonatedUser;
         private int fetchSize;
-        private Boolean ignoreBookmarkManager;
+        private String bookmarkManagerId;
     }
 }
