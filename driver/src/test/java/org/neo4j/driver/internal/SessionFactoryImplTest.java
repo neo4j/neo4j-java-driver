@@ -26,7 +26,6 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -40,11 +39,11 @@ class SessionFactoryImplTest {
         SessionFactory factory = newSessionFactory(config);
 
         NetworkSession readSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.READ).build(), mock(BookmarkManager.class));
+                builder().withDefaultAccessMode(AccessMode.READ).build());
         assertThat(readSession, instanceOf(NetworkSession.class));
 
         NetworkSession writeSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.WRITE).build(), mock(BookmarkManager.class));
+                builder().withDefaultAccessMode(AccessMode.WRITE).build());
         assertThat(writeSession, instanceOf(NetworkSession.class));
     }
 
@@ -57,11 +56,11 @@ class SessionFactoryImplTest {
         SessionFactory factory = newSessionFactory(config);
 
         NetworkSession readSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.READ).build(), mock(BookmarkManager.class));
+                builder().withDefaultAccessMode(AccessMode.READ).build());
         assertThat(readSession, instanceOf(LeakLoggingNetworkSession.class));
 
         NetworkSession writeSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.WRITE).build(), mock(BookmarkManager.class));
+                builder().withDefaultAccessMode(AccessMode.WRITE).build());
         assertThat(writeSession, instanceOf(LeakLoggingNetworkSession.class));
     }
 

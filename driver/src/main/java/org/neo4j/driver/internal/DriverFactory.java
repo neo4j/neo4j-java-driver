@@ -260,12 +260,7 @@ public class DriverFactory {
      */
     protected InternalDriver createDriver(
             SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config) {
-        return new InternalDriver(
-                securityPlan,
-                sessionFactory,
-                metricsProvider,
-                config.logging(),
-                config.bookmarkManager().orElse(null));
+        return new InternalDriver(securityPlan, sessionFactory, metricsProvider, config.logging());
     }
 
     /**

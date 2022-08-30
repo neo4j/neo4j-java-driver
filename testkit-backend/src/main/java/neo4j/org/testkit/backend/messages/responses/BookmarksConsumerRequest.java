@@ -41,6 +41,7 @@ public class BookmarksConsumerRequest implements TestkitCallback {
     @Builder
     public static class BookmarksConsumerRequestBody {
         private String id;
+        private String bookmarkManagerId;
         private String database;
         private Set<String> bookmarks;
     }

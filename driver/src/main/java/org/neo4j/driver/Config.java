@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import org.neo4j.driver.internal.SecuritySettings;
@@ -99,7 +98,6 @@ public final class Config implements Serializable {
     private final int eventLoopThreads;
     private final String userAgent;
     private final MetricsAdapter metricsAdapter;
-    private final BookmarkManager bookmarkManager;
 
     private Config(ConfigBuilder builder) {
         this.logging = builder.logging;
@@ -121,8 +119,6 @@ public final class Config implements Serializable {
 
         this.eventLoopThreads = builder.eventLoopThreads;
         this.metricsAdapter = builder.metricsAdapter;
-
-        this.bookmarkManager = builder.bookmarkManager;
     }
 
     /**
@@ -257,15 +253,6 @@ public final class Config implements Serializable {
     }
 
     /**
-     * A {@link BookmarkManager} implementation for the driver to use.
-     *
-     * @return bookmark implementation
-     */
-    public Optional<BookmarkManager> bookmarkManager() {
-        return Optional.ofNullable(bookmarkManager);
-    }
-
-    /**
      * Used to build new config instances
      */
     public static final class ConfigBuilder {
@@ -285,7 +272,6 @@ public final class Config implements Serializable {
         private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
-        private BookmarkManager bookmarkManager;
 
         private ConfigBuilder() {}
 
@@ -656,19 +642,6 @@ public final class Config implements Serializable {
                 throw new IllegalArgumentException("The user_agent string must not be empty");
             }
             this.userAgent = userAgent;
-            return this;
-        }
-
-        /**
-         * Sets a {@link BookmarkManager} implementation for the driver to use.
-         * <p>
-         * By default, bookmark manager is effectively disabled.
-         *
-         * @param bookmarkManager bookmark manager implementation. Providing {@code null} effectively disables bookmark manager.
-         * @return this builder.
-         */
-        public ConfigBuilder withBookmarkManager(BookmarkManager bookmarkManager) {
-            this.bookmarkManager = bookmarkManager;
             return this;
         }
 

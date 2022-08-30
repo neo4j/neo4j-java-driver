@@ -24,12 +24,9 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -47,8 +44,6 @@ import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.BookmarkManagers;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
@@ -117,27 +112,6 @@ public class NewDriver implements TestkitRequest {
         Optional.ofNullable(data.maxConnectionPoolSize).ifPresent(configBuilder::withMaxConnectionPoolSize);
         Optional.ofNullable(data.connectionAcquisitionTimeoutMs)
                 .ifPresent(timeout -> configBuilder.withConnectionAcquisitionTimeout(timeout, TimeUnit.MILLISECONDS));
-        Optional.ofNullable(data.bookmarkManager).ifPresent(managerConfig -> {
-            var initialBookmarks = Optional.ofNullable(managerConfig.getInitialBookmarks())
-                    .orElseGet(Collections::emptyMap)
-                    .entrySet()
-                    .stream()
-                    .collect(Collectors.toMap(
-                            Map.Entry::getKey,
-                            e -> e.getValue().stream().map(Bookmark::from).collect(Collectors.toSet())));
-            var managerConfigBuilder =
-                    org.neo4j.driver.BookmarkManagerConfig.builder().withInitialBookmarks(initialBookmarks);
-            if (managerConfig.isBookmarksSupplierRegistered()) {
-                managerConfigBuilder = managerConfigBuilder.withBookmarksSupplier(
-                        new TestkitBookmarksSupplier(testkitState, this::dispatchTestkitCallback));
-            }
-            if (managerConfig.isBookmarksConsumerRegistered()) {
-                managerConfigBuilder = managerConfigBuilder.withBookmarksConsumer(
-                        new TestkitBookmarksConsumer(testkitState, this::dispatchTestkitCallback));
-            }
-            var manager = BookmarkManagers.defaultManager(managerConfigBuilder.build());
-            configBuilder.withBookmarkManager(manager);
-        });
         configBuilder.withDriverMetrics();
         org.neo4j.driver.Driver driver;
         Config config = configBuilder.build();
@@ -312,15 +286,6 @@ public class NewDriver implements TestkitRequest {
         private Long connectionAcquisitionTimeoutMs;
         private boolean encrypted;
         private List<String> trustedCertificates;
-        private BookmarkManagerConfig bookmarkManager;
-    }
-
-    @Setter
-    @Getter
-    public static class BookmarkManagerConfig {
-        private Map<String, Set<String>> initialBookmarks;
-        private boolean bookmarksSupplierRegistered;
-        private boolean bookmarksConsumerRegistered;
     }
 
     @RequiredArgsConstructor
