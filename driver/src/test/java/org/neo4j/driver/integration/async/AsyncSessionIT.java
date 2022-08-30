@@ -275,7 +275,7 @@ class AsyncSessionIT {
         // server versions; that is why do fuzzy assertions in this test based on string content
         String planAsString = summary.plan().toString().toLowerCase();
         assertThat(planAsString, containsString("create"));
-        assertThat(planAsString, containsString("expand"));
+        assertThat(planAsString, containsString("apply"));
         assertNull(summary.profile());
         assertEquals(0, summary.notifications().size());
         assertThat(summary, containsResultAvailableAfterAndResultConsumedAfter());
