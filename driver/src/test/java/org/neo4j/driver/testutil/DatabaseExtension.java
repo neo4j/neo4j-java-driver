@@ -31,10 +31,12 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -55,6 +57,8 @@ import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
@@ -286,11 +290,11 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     }
 
     private static Neo4jContainer<?> setupNeo4jContainer(File cert, File key, Map<String, String> config) {
-        String neo4JVersion =
+        String neo4jVersion =
                 Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
 
         ImageFromDockerfile extendedNeo4jImage = new ImageFromDockerfile()
-                .withDockerfileFromBuilder(builder -> builder.from(String.format("neo4j:%s-enterprise", neo4JVersion))
+                .withDockerfileFromBuilder(builder -> builder.from(String.format("neo4j:%s-enterprise", neo4jVersion))
                         .run("mkdir /var/lib/neo4j/certificates/bolt")
                         .copy("public.crt", "/var/lib/neo4j/certificates/bolt/")
                         .copy("private.key", "/var/lib/neo4j/certificates/bolt/")
@@ -305,11 +309,25 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
                 .withNetwork(network)
                 .withNetworkAliases("neo4j");
+        getMajorVersion(neo4jVersion)
+                .filter(major -> major >= 5)
+                .map(ignored -> {
+                    var waitForBolt =
+                            new LogMessageWaitStrategy().withRegEx(String.format(".*BOLT enabled on .*:%d\\.\n", 7687));
+                    return new WaitAllStrategy().withStrategy(waitForBolt).withStartupTimeout(Duration.ofMinutes(2));
+                })
+                .ifPresent(neo4jContainer::setWaitStrategy);
         for (Map.Entry<String, String> entry : config.entrySet()) {
             neo4jContainer.withNeo4jConfig(entry.getKey(), entry.getValue());
         }
 
         return neo4jContainer;
+    }
+
+    public static Optional<Integer> getMajorVersion(String neo4jVersion) {
+        var pattern = Pattern.compile("^(\\d+)\\..*$");
+        var matcher = pattern.matcher(neo4jVersion);
+        return matcher.matches() ? Optional.of(Integer.parseInt(matcher.group(1))) : Optional.empty();
     }
 
     @SuppressWarnings("rawtypes")
