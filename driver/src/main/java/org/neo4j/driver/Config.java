@@ -790,12 +790,14 @@ public final class Config implements Serializable {
 
         /**
          * Trust strategy for certificates that trust all certificates blindly. Suggested to only use this in tests.
+         * <p>
+         * This trust strategy comes with hostname verification turned off by default since driver version 5.0.
          *
          * @return an authentication config
          * @since 1.1
          */
         public static TrustStrategy trustAllCertificates() {
-            return new TrustStrategy(Strategy.TRUST_ALL_CERTIFICATES);
+            return new TrustStrategy(Strategy.TRUST_ALL_CERTIFICATES).withoutHostnameVerification();
         }
 
         /**

@@ -62,13 +62,7 @@ public class StartTest implements TestkitRequest {
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.test_partial_summary_contains_updates$", "Does not contain updates because value is zero");
         COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.test_supports_multi_db$", "Database is None");
-        String skipMessage =
-                "This test expects hostname verification to be turned off when all certificates are trusted";
-        COMMON_SKIP_PATTERN_TO_REASON.put(
-                "^.*\\.TestTrustAllCertsConfig\\.test_trusted_ca_wrong_hostname$", skipMessage);
-        COMMON_SKIP_PATTERN_TO_REASON.put(
-                "^.*\\.TestTrustAllCertsConfig\\.test_untrusted_ca_wrong_hostname$", skipMessage);
-        skipMessage = "Driver handles connection acquisition timeout differently";
+        var skipMessage = "Driver handles connection acquisition timeout differently";
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_encompass_the_handshake_time.*$", skipMessage);
         COMMON_SKIP_PATTERN_TO_REASON.put(
