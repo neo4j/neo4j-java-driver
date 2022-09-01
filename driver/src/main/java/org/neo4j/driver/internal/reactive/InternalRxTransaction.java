@@ -25,6 +25,7 @@ import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
+import org.reactivestreams.Publisher;
 
 @Deprecated
 public class InternalRxTransaction extends AbstractReactiveTransaction implements RxTransaction {
@@ -52,5 +53,25 @@ public class InternalRxTransaction extends AbstractReactiveTransaction implement
             });
             return cursorFuture;
         });
+    }
+
+    @Override
+    public <T> Publisher<T> commit() {
+        return doCommit();
+    }
+
+    @Override
+    public <T> Publisher<T> rollback() {
+        return doRollback();
+    }
+
+    @Override
+    public Publisher<Void> close() {
+        return doClose();
+    }
+
+    @Override
+    public Publisher<Boolean> isOpen() {
+        return doIsOpen();
     }
 }

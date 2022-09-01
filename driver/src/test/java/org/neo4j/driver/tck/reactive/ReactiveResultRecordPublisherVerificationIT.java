@@ -19,6 +19,7 @@
 package org.neo4j.driver.tck.reactive;
 
 import static org.neo4j.driver.Values.parameters;
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 
 import java.time.Duration;
 import org.neo4j.driver.Driver;
@@ -72,14 +73,15 @@ public class ReactiveResultRecordPublisherVerificationIT extends PublisherVerifi
     @Override
     public Publisher<Record> createPublisher(long elements) {
         ReactiveSession session = driver.reactiveSession();
-        return Mono.fromDirect(session.run(QUERY, parameters("numberOfRecords", elements)))
-                .flatMapMany(r -> Flux.from(r.records()));
+        return Mono.fromDirect(flowPublisherToFlux(session.run(QUERY, parameters("numberOfRecords", elements))))
+                .flatMapMany(r -> Flux.from(flowPublisherToFlux(r.records())));
     }
 
     @Override
     public Publisher<Record> createFailedPublisher() {
         ReactiveSession session = driver.reactiveSession();
         // Please note that this publisher fails on run stage.
-        return Mono.fromDirect(session.run("RETURN 5/0")).flatMapMany(r -> Flux.from(r.records()));
+        return Mono.fromDirect(flowPublisherToFlux(session.run("RETURN 5/0")))
+                .flatMapMany(r -> Flux.from(flowPublisherToFlux(r.records())));
     }
 }

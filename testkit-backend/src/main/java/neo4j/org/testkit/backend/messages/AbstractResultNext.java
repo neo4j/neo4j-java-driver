@@ -18,6 +18,8 @@
  */
 package neo4j.org.testkit.backend.messages;
 
+import static org.reactivestreams.FlowAdapters.toFlowSubscriber;
+
 import java.util.concurrent.CompletionStage;
 import neo4j.org.testkit.backend.RxBufferedSubscriber;
 import neo4j.org.testkit.backend.TestkitState;
@@ -79,7 +81,7 @@ public abstract class AbstractResultNext implements TestkitRequest {
                         RxBufferedSubscriber<Record> subscriberInstance =
                                 new RxBufferedSubscriber<>(getFetchSize(resultHolder));
                         resultHolder.setSubscriber(subscriberInstance);
-                        resultHolder.getResult().records().subscribe(subscriberInstance);
+                        resultHolder.getResult().records().subscribe(toFlowSubscriber(subscriberInstance));
                         return subscriberInstance;
                     });
             return subscriber

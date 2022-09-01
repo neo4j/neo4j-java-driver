@@ -18,7 +18,10 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
+
 import java.util.Map;
+import java.util.concurrent.Flow.Publisher;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -27,7 +30,6 @@ import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.reactive.ReactiveQueryRunner;
 import org.neo4j.driver.reactive.ReactiveResult;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 interface BaseReactiveQueryRunner extends ReactiveQueryRunner {
@@ -37,7 +39,7 @@ interface BaseReactiveQueryRunner extends ReactiveQueryRunner {
             Query query = new Query(queryStr, parameters);
             return run(query);
         } catch (Throwable t) {
-            return Mono.error(t);
+            return publisherToFlowPublisher(Mono.error(t));
         }
     }
 
@@ -57,7 +59,7 @@ interface BaseReactiveQueryRunner extends ReactiveQueryRunner {
             Query query = new Query(queryStr);
             return run(query);
         } catch (Throwable t) {
-            return Mono.error(t);
+            return publisherToFlowPublisher(Mono.error(t));
         }
     }
 

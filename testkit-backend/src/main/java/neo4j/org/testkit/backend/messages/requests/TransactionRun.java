@@ -18,6 +18,8 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.Collections;
 import java.util.List;
@@ -85,10 +87,12 @@ public class TransactionRun implements TestkitRequest {
             ReactiveTransaction tx = transactionHolder.getTransaction();
             Map<String, Object> params = data.getParams() != null ? data.getParams() : Collections.emptyMap();
 
-            return Mono.fromDirect(tx.run(data.getCypher(), params)).map(result -> {
-                String id = testkitState.addReactiveResultHolder(new ReactiveResultHolder(transactionHolder, result));
-                return createResponse(id, result.keys());
-            });
+            return Mono.fromDirect(flowPublisherToFlux(tx.run(data.getCypher(), params)))
+                    .map(result -> {
+                        String id = testkitState.addReactiveResultHolder(
+                                new ReactiveResultHolder(transactionHolder, result));
+                        return createResponse(id, result.keys());
+                    });
         });
     }
 

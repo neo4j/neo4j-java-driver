@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -39,7 +40,9 @@ public class InternalReactiveTransactionTest {
         tx = new InternalReactiveTransaction(utx);
 
         // When
-        StepVerifier.create(tx.interrupt()).expectComplete().verify();
+        StepVerifier.create(flowPublisherToFlux(tx.interrupt()))
+                .expectComplete()
+                .verify();
 
         // Then
         then(utx).should().interruptAsync();
@@ -54,7 +57,9 @@ public class InternalReactiveTransactionTest {
         tx = new InternalReactiveTransaction(utx);
 
         // When
-        StepVerifier.create(tx.interrupt()).expectErrorMatches(ar -> ar == e).verify();
+        StepVerifier.create(flowPublisherToFlux(tx.interrupt()))
+                .expectErrorMatches(ar -> ar == e)
+                .verify();
 
         // Then
         then(utx).should().interruptAsync();

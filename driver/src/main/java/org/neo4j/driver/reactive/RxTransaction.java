@@ -27,6 +27,7 @@ import org.reactivestreams.Publisher;
  * @see RxSession
  * @see Publisher
  * @since 4.0
+ * @deprecated superseded by {@link ReactiveTransaction}
  */
 @Deprecated
 public interface RxTransaction extends RxQueryRunner {

@@ -18,6 +18,8 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -112,7 +114,7 @@ public class SessionBeginTransaction implements TestkitRequest {
 
             configureTimeout(builder);
 
-            return Mono.fromDirect(session.beginTransaction(builder.build()))
+            return Mono.fromDirect(flowPublisherToFlux(session.beginTransaction(builder.build())))
                     .map(tx -> transaction(testkitState.addReactiveTransactionHolder(
                             new ReactiveTransactionHolder(sessionHolder, tx))));
         });

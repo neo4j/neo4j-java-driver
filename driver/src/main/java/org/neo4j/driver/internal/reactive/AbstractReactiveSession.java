@@ -49,7 +49,7 @@ abstract class AbstractReactiveSession<S> {
 
     abstract Publisher<Void> closeTransaction(S transaction, boolean commit);
 
-    public Publisher<S> beginTransaction(TransactionConfig config) {
+    Publisher<S> doBeginTransaction(TransactionConfig config) {
         return createSingleItemPublisher(
                 () -> {
                     CompletableFuture<S> txFuture = new CompletableFuture<>();
@@ -115,7 +115,7 @@ abstract class AbstractReactiveSession<S> {
         return session.lastBookmarks();
     }
 
-    public <T> Publisher<T> close() {
+    <T> Publisher<T> doClose() {
         return createEmptyPublisher(session::closeAsync);
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.driver.reactive;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow.Publisher;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -28,7 +29,6 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
-import org.reactivestreams.Publisher;
 
 /**
  * A reactive session is the same as {@link Session} except it provides a reactive API.

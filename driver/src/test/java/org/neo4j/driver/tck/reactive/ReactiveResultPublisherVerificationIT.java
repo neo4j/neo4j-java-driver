@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.tck.reactive;
 
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+
 import java.time.Duration;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.reactive.ReactiveResult;
@@ -65,13 +67,13 @@ public class ReactiveResultPublisherVerificationIT extends PublisherVerification
     @Override
     public Publisher<ReactiveResult> createPublisher(long elements) {
         ReactiveSession session = driver.reactiveSession();
-        return Mono.fromDirect(session.run("RETURN 1"));
+        return Mono.from(flowPublisherToFlux(session.run("RETURN 1")));
     }
 
     @Override
     public Publisher<ReactiveResult> createFailedPublisher() {
         ReactiveSession session = driver.reactiveSession();
         // Please note that this publisher fails on run stage.
-        return Mono.fromDirect(session.run("RETURN 5/0"));
+        return Mono.from(flowPublisherToFlux(session.run("RETURN 5/0")));
     }
 }
