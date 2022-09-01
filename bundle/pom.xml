@@ -19,6 +19,7 @@
   <properties>
     <moduleName>org.neo4j.driver</moduleName>
     <rootDir>${project.basedir}/..</rootDir>
+    <maven.compiler.xlint.extras>,-try</maven.compiler.xlint.extras>
     <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
 
