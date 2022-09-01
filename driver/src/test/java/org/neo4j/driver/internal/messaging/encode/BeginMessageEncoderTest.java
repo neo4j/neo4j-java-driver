@@ -52,7 +52,7 @@ class BeginMessageEncoderTest {
 
     @ParameterizedTest
     @MethodSource("arguments")
-    void shouldEncodeBeginMessage(AccessMode mode, String impersonatedUser) throws Exception {
+    void shouldEncodeBeginMessage(AccessMode mode, String impersonatedUser, String txType) throws Exception {
         Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx42"));
 
         Map<String, Value> txMetadata = new HashMap<>();
@@ -62,7 +62,8 @@ class BeginMessageEncoderTest {
         Duration txTimeout = Duration.ofSeconds(1);
 
         encoder.encode(
-                new BeginMessage(bookmarks, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser), packer);
+                new BeginMessage(bookmarks, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser, txType),
+                packer);
 
         InOrder order = inOrder(packer);
         order.verify(packer).packStructHeader(1, BeginMessage.SIGNATURE);
@@ -78,13 +79,17 @@ class BeginMessageEncoderTest {
         if (impersonatedUser != null) {
             expectedMetadata.put("imp_user", value(impersonatedUser));
         }
+        if (txType != null) {
+            expectedMetadata.put("tx_type", value(txType));
+        }
 
         order.verify(packer).pack(expectedMetadata);
     }
 
     private static Stream<Arguments> arguments() {
         return Arrays.stream(AccessMode.values())
-                .flatMap(accessMode -> Stream.of(Arguments.of(accessMode, "user"), Arguments.of(accessMode, null)));
+                .flatMap(accessMode ->
+                        Stream.of(Arguments.of(accessMode, "user", "IMPLICIT"), Arguments.of(accessMode, null, null)));
     }
 
     @Test

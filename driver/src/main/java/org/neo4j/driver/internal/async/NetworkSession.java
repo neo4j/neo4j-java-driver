@@ -123,10 +123,19 @@ public class NetworkSession {
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(TransactionConfig config) {
-        return this.beginTransactionAsync(mode, config);
+        return beginTransactionAsync(mode, config, null);
+    }
+
+    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(TransactionConfig config, String txType) {
+        return this.beginTransactionAsync(mode, config, txType);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(AccessMode mode, TransactionConfig config) {
+        return beginTransactionAsync(mode, config, null);
+    }
+
+    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
+            AccessMode mode, TransactionConfig config, String txType) {
         ensureSessionIsOpen();
 
         // create a chain that acquires connection and starts a transaction
@@ -136,7 +145,7 @@ public class NetworkSession {
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
                     UnmanagedTransaction tx = new UnmanagedTransaction(connection, this::handleNewBookmark, fetchSize);
-                    return tx.beginAsync(determineBookmarks(false), config);
+                    return tx.beginAsync(determineBookmarks(false), config, txType);
                 });
 
         // update the reference to the only known transaction

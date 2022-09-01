@@ -57,7 +57,11 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
 
     @Override
     public Publisher<ReactiveTransaction> beginTransaction(TransactionConfig config) {
-        return publisherToFlowPublisher(doBeginTransaction(config));
+        return beginTransaction(config, null);
+    }
+
+    public Publisher<ReactiveTransaction> beginTransaction(TransactionConfig config, String txType) {
+        return publisherToFlowPublisher(doBeginTransaction(config, txType));
     }
 
     @Override

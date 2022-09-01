@@ -79,9 +79,11 @@ public interface BoltProtocol {
      * @param connection the connection to use.
      * @param bookmarks  the bookmarks. Never null, should be empty when there are no bookmarks.
      * @param config     the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
+     * @param txType the Kernel transaction type
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
      */
-    CompletionStage<Void> beginTransaction(Connection connection, Set<Bookmark> bookmarks, TransactionConfig config);
+    CompletionStage<Void> beginTransaction(
+            Connection connection, Set<Bookmark> bookmarks, TransactionConfig config, String txType);
 
     /**
      * Commit the unmanaged transaction.

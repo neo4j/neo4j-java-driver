@@ -116,6 +116,7 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         singletonMap("key", value(42)),
                         READ,
                         defaultDatabase(),
+                        null,
                         null),
                 new BeginMessage(
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx123")),
@@ -123,6 +124,7 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         singletonMap("key", value(42)),
                         WRITE,
                         database("foo"),
+                        null,
                         null),
                 COMMIT,
                 ROLLBACK,
