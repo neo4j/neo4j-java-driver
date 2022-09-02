@@ -29,9 +29,9 @@ Apache Software License, Version 2.0
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
 
-Creative Commons 0
-  reactive-streams
-
 MIT License
   SLF4J API Module
+
+MIT No Attribution License
+  reactive-streams
 
