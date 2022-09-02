@@ -50,10 +50,14 @@ abstract class AbstractReactiveSession<S> {
     abstract Publisher<Void> closeTransaction(S transaction, boolean commit);
 
     Publisher<S> doBeginTransaction(TransactionConfig config) {
+        return doBeginTransaction(config, null);
+    }
+
+    Publisher<S> doBeginTransaction(TransactionConfig config, String txType) {
         return createSingleItemPublisher(
                 () -> {
                     CompletableFuture<S> txFuture = new CompletableFuture<>();
-                    session.beginTransactionAsync(config).whenComplete((tx, completionError) -> {
+                    session.beginTransactionAsync(config, txType).whenComplete((tx, completionError) -> {
                         if (tx != null) {
                             txFuture.complete(createTransaction(tx));
                         } else {

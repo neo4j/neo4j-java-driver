@@ -38,8 +38,9 @@ public class BeginMessage extends MessageWithMetadata {
             TransactionConfig config,
             DatabaseName databaseName,
             AccessMode mode,
-            String impersonatedUser) {
-        this(bookmarks, config.timeout(), config.metadata(), mode, databaseName, impersonatedUser);
+            String impersonatedUser,
+            String txType) {
+        this(bookmarks, config.timeout(), config.metadata(), mode, databaseName, impersonatedUser, txType);
     }
 
     public BeginMessage(
@@ -48,8 +49,9 @@ public class BeginMessage extends MessageWithMetadata {
             Map<String, Value> txMetadata,
             AccessMode mode,
             DatabaseName databaseName,
-            String impersonatedUser) {
-        super(buildMetadata(txTimeout, txMetadata, databaseName, mode, bookmarks, impersonatedUser));
+            String impersonatedUser,
+            String txType) {
+        super(buildMetadata(txTimeout, txMetadata, databaseName, mode, bookmarks, impersonatedUser, txType));
     }
 
     @Override

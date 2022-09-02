@@ -110,20 +110,22 @@ public class UnmanagedTransaction {
         this.fetchSize = fetchSize;
     }
 
-    public CompletionStage<UnmanagedTransaction> beginAsync(Set<Bookmark> initialBookmarks, TransactionConfig config) {
-        return protocol.beginTransaction(connection, initialBookmarks, config).handle((ignore, beginError) -> {
-            if (beginError != null) {
-                if (beginError instanceof AuthorizationExpiredException) {
-                    connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
-                } else if (beginError instanceof ConnectionReadTimeoutException) {
-                    connection.terminateAndRelease(beginError.getMessage());
-                } else {
-                    connection.release();
-                }
-                throw asCompletionException(beginError);
-            }
-            return this;
-        });
+    public CompletionStage<UnmanagedTransaction> beginAsync(
+            Set<Bookmark> initialBookmarks, TransactionConfig config, String txType) {
+        return protocol.beginTransaction(connection, initialBookmarks, config, txType)
+                .handle((ignore, beginError) -> {
+                    if (beginError != null) {
+                        if (beginError instanceof AuthorizationExpiredException) {
+                            connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
+                        } else if (beginError instanceof ConnectionReadTimeoutException) {
+                            connection.terminateAndRelease(beginError.getMessage());
+                        } else {
+                            connection.release();
+                        }
+                        throw asCompletionException(beginError);
+                    }
+                    return this;
+                });
     }
 
     public CompletionStage<Void> closeAsync() {

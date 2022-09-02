@@ -177,7 +177,8 @@ class UnmanagedTransactionTest {
         Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         TransactionConfig txConfig = TransactionConfig.empty();
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> await(tx.beginAsync(bookmarks, txConfig)));
+        RuntimeException e =
+                assertThrows(RuntimeException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null)));
 
         assertEquals(error, e);
         verify(connection).release();
@@ -191,7 +192,7 @@ class UnmanagedTransactionTest {
         Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         TransactionConfig txConfig = TransactionConfig.empty();
 
-        await(tx.beginAsync(bookmarks, txConfig));
+        await(tx.beginAsync(bookmarks, txConfig, null));
 
         verify(connection, never()).release();
     }
@@ -285,8 +286,8 @@ class UnmanagedTransactionTest {
         Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         TransactionConfig txConfig = TransactionConfig.empty();
 
-        AuthorizationExpiredException actualException =
-                assertThrows(AuthorizationExpiredException.class, () -> await(tx.beginAsync(bookmarks, txConfig)));
+        AuthorizationExpiredException actualException = assertThrows(
+                AuthorizationExpiredException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null)));
 
         assertSame(exception, actualException);
         verify(connection).terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
@@ -301,8 +302,8 @@ class UnmanagedTransactionTest {
         Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         TransactionConfig txConfig = TransactionConfig.empty();
 
-        ConnectionReadTimeoutException actualException =
-                assertThrows(ConnectionReadTimeoutException.class, () -> await(tx.beginAsync(bookmarks, txConfig)));
+        ConnectionReadTimeoutException actualException = assertThrows(
+                ConnectionReadTimeoutException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null)));
 
         assertSame(ConnectionReadTimeoutException.INSTANCE, actualException);
         verify(connection).terminateAndRelease(ConnectionReadTimeoutException.INSTANCE.getMessage());
@@ -461,7 +462,7 @@ class UnmanagedTransactionTest {
 
     private static UnmanagedTransaction beginTx(Connection connection, Set<Bookmark> initialBookmarks) {
         UnmanagedTransaction tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE);
-        return await(tx.beginAsync(initialBookmarks, TransactionConfig.empty()));
+        return await(tx.beginAsync(initialBookmarks, TransactionConfig.empty(), null));
     }
 
     private static Connection connectionWithBegin(Consumer<ResponseHandler> beginBehaviour) {

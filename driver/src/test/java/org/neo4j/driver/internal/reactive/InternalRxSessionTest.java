@@ -25,6 +25,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -147,7 +148,8 @@ class InternalRxSessionTest {
         NetworkSession session = mock(NetworkSession.class);
         UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
 
-        when(session.beginTransactionAsync(any(TransactionConfig.class))).thenReturn(completedFuture(tx));
+        when(session.beginTransactionAsync(any(TransactionConfig.class), isNull()))
+                .thenReturn(completedFuture(tx));
         InternalRxSession rxSession = new InternalRxSession(session);
 
         // When
@@ -155,7 +157,7 @@ class InternalRxSessionTest {
         StepVerifier.create(Mono.from(rxTx)).expectNextCount(1).verifyComplete();
 
         // Then
-        verify(session).beginTransactionAsync(any(TransactionConfig.class));
+        verify(session).beginTransactionAsync(any(TransactionConfig.class), isNull());
     }
 
     @ParameterizedTest
@@ -166,7 +168,8 @@ class InternalRxSessionTest {
         NetworkSession session = mock(NetworkSession.class);
 
         // Run failed with error
-        when(session.beginTransactionAsync(any(TransactionConfig.class))).thenReturn(Futures.failedFuture(error));
+        when(session.beginTransactionAsync(any(TransactionConfig.class), isNull()))
+                .thenReturn(Futures.failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
         InternalRxSession rxSession = new InternalRxSession(session);
@@ -176,7 +179,7 @@ class InternalRxSessionTest {
         CompletableFuture<RxTransaction> txFuture = Mono.from(rxTx).toFuture();
 
         // Then
-        verify(session).beginTransactionAsync(any(TransactionConfig.class));
+        verify(session).beginTransactionAsync(any(TransactionConfig.class), isNull());
         RuntimeException t = assertThrows(CompletionException.class, () -> Futures.getNow(txFuture));
         assertThat(t.getCause(), equalTo(error));
         verify(session).releaseConnectionAsync();

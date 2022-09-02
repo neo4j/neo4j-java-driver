@@ -184,12 +184,17 @@ public class BoltProtocolV3Test {
         Connection connection = connectionMock(protocol);
 
         CompletionStage<Void> stage =
-                protocol.beginTransaction(connection, Collections.emptySet(), TransactionConfig.empty());
+                protocol.beginTransaction(connection, Collections.emptySet(), TransactionConfig.empty(), null);
 
         verify(connection)
                 .writeAndFlush(
                         eq(new BeginMessage(
-                                Collections.emptySet(), TransactionConfig.empty(), defaultDatabase(), WRITE, null)),
+                                Collections.emptySet(),
+                                TransactionConfig.empty(),
+                                defaultDatabase(),
+                                WRITE,
+                                null,
+                                null)),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -199,11 +204,12 @@ public class BoltProtocolV3Test {
         Connection connection = connectionMock(protocol);
         Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx100"));
 
-        CompletionStage<Void> stage = protocol.beginTransaction(connection, bookmarks, TransactionConfig.empty());
+        CompletionStage<Void> stage = protocol.beginTransaction(connection, bookmarks, TransactionConfig.empty(), null);
 
         verify(connection)
                 .writeAndFlush(
-                        eq(new BeginMessage(bookmarks, TransactionConfig.empty(), defaultDatabase(), WRITE, null)),
+                        eq(new BeginMessage(
+                                bookmarks, TransactionConfig.empty(), defaultDatabase(), WRITE, null, null)),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -212,11 +218,11 @@ public class BoltProtocolV3Test {
     void shouldBeginTransactionWithConfig() {
         Connection connection = connectionMock(protocol);
 
-        CompletionStage<Void> stage = protocol.beginTransaction(connection, Collections.emptySet(), txConfig);
+        CompletionStage<Void> stage = protocol.beginTransaction(connection, Collections.emptySet(), txConfig, null);
 
         verify(connection)
                 .writeAndFlush(
-                        eq(new BeginMessage(Collections.emptySet(), txConfig, defaultDatabase(), WRITE, null)),
+                        eq(new BeginMessage(Collections.emptySet(), txConfig, defaultDatabase(), WRITE, null, null)),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -226,11 +232,11 @@ public class BoltProtocolV3Test {
         Connection connection = connectionMock(protocol);
         Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx4242"));
 
-        CompletionStage<Void> stage = protocol.beginTransaction(connection, bookmarks, txConfig);
+        CompletionStage<Void> stage = protocol.beginTransaction(connection, bookmarks, txConfig, null);
 
         verify(connection)
                 .writeAndFlush(
-                        eq(new BeginMessage(bookmarks, txConfig, defaultDatabase(), WRITE, null)),
+                        eq(new BeginMessage(bookmarks, txConfig, defaultDatabase(), WRITE, null, null)),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -336,7 +342,7 @@ public class BoltProtocolV3Test {
     @Test
     void shouldNotSupportDatabaseNameInBeginTransaction() {
         CompletionStage<Void> txStage = protocol.beginTransaction(
-                connectionMock("foo", protocol), Collections.emptySet(), TransactionConfig.empty());
+                connectionMock("foo", protocol), Collections.emptySet(), TransactionConfig.empty(), null);
 
         ClientException e = assertThrows(ClientException.class, () -> await(txStage));
         assertThat(e.getMessage(), startsWith("Database name parameter for selecting database is not supported"));
@@ -370,7 +376,7 @@ public class BoltProtocolV3Test {
                             UNLIMITED_FETCH_SIZE));
         } else {
             CompletionStage<Void> txStage = protocol.beginTransaction(
-                    connectionMock("foo", protocol), Collections.emptySet(), TransactionConfig.empty());
+                    connectionMock("foo", protocol), Collections.emptySet(), TransactionConfig.empty(), null);
             e = assertThrows(ClientException.class, () -> await(txStage));
         }
 

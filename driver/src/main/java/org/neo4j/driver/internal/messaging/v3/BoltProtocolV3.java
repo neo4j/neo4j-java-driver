@@ -113,7 +113,7 @@ public class BoltProtocolV3 implements BoltProtocol {
 
     @Override
     public CompletionStage<Void> beginTransaction(
-            Connection connection, Set<Bookmark> bookmarks, TransactionConfig config) {
+            Connection connection, Set<Bookmark> bookmarks, TransactionConfig config, String txType) {
         try {
             verifyDatabaseNameBeforeTransaction(connection.databaseName());
         } catch (Exception error) {
@@ -122,7 +122,7 @@ public class BoltProtocolV3 implements BoltProtocol {
 
         CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
         BeginMessage beginMessage = new BeginMessage(
-                bookmarks, config, connection.databaseName(), connection.mode(), connection.impersonatedUser());
+                bookmarks, config, connection.databaseName(), connection.mode(), connection.impersonatedUser(), txType);
         connection.writeAndFlush(beginMessage, new BeginTxResponseHandler(beginTxFuture));
         return beginTxFuture;
     }

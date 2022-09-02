@@ -39,14 +39,16 @@ public class TransactionMetadataBuilder {
     private static final String MODE_KEY = "mode";
     private static final String MODE_READ_VALUE = "r";
     private static final String IMPERSONATED_USER_KEY = "imp_user";
+    private static final String TX_TYPE_KEY = "tx_type";
 
     public static Map<String, Value> buildMetadata(
             Duration txTimeout,
             Map<String, Value> txMetadata,
             AccessMode mode,
             Set<Bookmark> bookmarks,
-            String impersonatedUser) {
-        return buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, impersonatedUser);
+            String impersonatedUser,
+            String txType) {
+        return buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, impersonatedUser, txType);
     }
 
     public static Map<String, Value> buildMetadata(
@@ -55,20 +57,23 @@ public class TransactionMetadataBuilder {
             DatabaseName databaseName,
             AccessMode mode,
             Set<Bookmark> bookmarks,
-            String impersonatedUser) {
+            String impersonatedUser,
+            String txType) {
         boolean bookmarksPresent = !bookmarks.isEmpty();
         boolean txTimeoutPresent = txTimeout != null;
         boolean txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
         boolean accessModePresent = mode == AccessMode.READ;
         boolean databaseNamePresent = databaseName.databaseName().isPresent();
         boolean impersonatedUserPresent = impersonatedUser != null;
+        boolean txTypePresent = txType != null;
 
         if (!bookmarksPresent
                 && !txTimeoutPresent
                 && !txMetadataPresent
                 && !accessModePresent
                 && !databaseNamePresent
-                && !impersonatedUserPresent) {
+                && !impersonatedUserPresent
+                && !txTypePresent) {
             return emptyMap();
         }
 
@@ -88,6 +93,9 @@ public class TransactionMetadataBuilder {
         }
         if (impersonatedUserPresent) {
             result.put(IMPERSONATED_USER_KEY, value(impersonatedUser));
+        }
+        if (txTypePresent) {
+            result.put(TX_TYPE_KEY, value(txType));
         }
 
         databaseName.databaseName().ifPresent(name -> result.put(DATABASE_NAME_KEY, value(name)));

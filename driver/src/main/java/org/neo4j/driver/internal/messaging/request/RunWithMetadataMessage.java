@@ -59,7 +59,7 @@ public class RunWithMetadataMessage extends MessageWithMetadata {
             Set<Bookmark> bookmarks,
             String impersonatedUser) {
         Map<String, Value> metadata =
-                buildMetadata(txTimeout, txMetadata, databaseName, mode, bookmarks, impersonatedUser);
+                buildMetadata(txTimeout, txMetadata, databaseName, mode, bookmarks, impersonatedUser, null);
         return new RunWithMetadataMessage(query.text(), query.parameters().asMap(ofValue()), metadata);
     }
 
