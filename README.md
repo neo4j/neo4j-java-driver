@@ -52,11 +52,12 @@ Starting from version 5.0 the `neo4j-java-driver` includes an explicit module de
 
 To run a simple query, the following can be used:
 ```java
-Driver driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "PasSW0rd"));
-try (Session session = driver.session()) {
-    Result result = session.run("CREATE (n) RETURN n");
+var authToken = AuthTokens.basic("neo4j", "password");
+try (var driver = GraphDatabase.driver("bolt://localhost:7687", authToken); var session = driver.session()) {
+    var result = session.run("CREATE (n)");
+    var summary = result.consume();
+    System.out.println(summary.counters().nodesCreated());
 }
-driver.close();
 ```
 
 For full applications, a single ``Driver`` object should be created with application-wide scope and lifetime.
