@@ -42,9 +42,11 @@ All available versions of this driver can be found at
 [Maven Central](https://mvnrepository.com/artifact/org.neo4j.driver/neo4j-java-driver) or
 [Releases](https://github.com/neo4j/neo4j-java-driver/releases).
 
-### Java Module System
+### Java Platform Module System
 
-The automatic module name of the driver for the Java Module System is `org.neo4j.driver`.
+Both `neo4j-java-driver` and `neo4j-java-driver-all` artifacts have `org.neo4j.driver` module name.
+
+Starting from version 5.0 the `neo4j-java-driver` includes an explicit module declaration ([module-info.java](driver/src/main/java/module-info.java)). The `neo4j-java-driver-all` stays unchanged and is shipped as an automatic module.
 
 ### Example
 
