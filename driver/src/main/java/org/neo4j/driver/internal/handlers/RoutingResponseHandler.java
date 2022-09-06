@@ -97,7 +97,7 @@ public class RoutingResponseHandler implements ResponseHandler {
 
     private Throwable handledTransientException(TransientException e) {
         String errorCode = e.code();
-        if (Objects.equals(errorCode, "Neo.TransientError.General.DatabaseUnavailable")) {
+        if (Objects.equals(errorCode, "Neo.TransientError.Database.DatabaseUnavailable")) {
             errorHandler.onConnectionFailure(address);
         }
         return e;
