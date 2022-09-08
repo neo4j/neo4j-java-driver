@@ -44,18 +44,18 @@
     <rxjava.version>2.2.21</rxjava.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
-    <mockito-core.version>4.7.0</mockito-core.version>
+    <mockito-core.version>4.8.0</mockito-core.version>
     <junit.version>5.9.0</junit.version>
     <testng-engine.version>1.0.4</testng-engine.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.70</bouncycastle-jdk15on.version>
     <logback-classic.version>1.4.0</logback-classic.version>
-    <jackson.version>2.13.3</jackson.version>
+    <jackson.version>2.13.4</jackson.version>
     <lombok.version>1.18.24</lombok.version>
     <svm.version>22.2.0</svm.version>
     <micrometer.version>1.9.3</micrometer.version>
     <testcontainers.version>1.17.3</testcontainers.version>
-    <build-resources.version>4.4.10</build-resources.version>
+    <build-resources.version>4.4.11</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
