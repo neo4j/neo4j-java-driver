@@ -122,6 +122,9 @@ public class StartTest implements TestkitRequest {
         skipMessage = "Does not support multiple concurrent result streams on session level";
         REACTIVE_SKIP_PATTERN_TO_REASON.put("^.*\\.TestSessionRun\\.test_iteration_nested$", skipMessage);
         REACTIVE_SKIP_PATTERN_TO_REASON.put("^.*\\.TestSessionRun\\.test_partial_iteration$", skipMessage);
+        skipMessage = "Does not report run FAILURE on session close";
+        REACTIVE_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestSessionRun\\.test_discard_on_session_close_unfinished_result_with_error$", skipMessage);
     }
 
     private StartTestBody data;
