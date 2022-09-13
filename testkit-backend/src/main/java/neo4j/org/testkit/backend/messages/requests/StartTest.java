@@ -134,12 +134,19 @@ public class StartTest implements TestkitRequest {
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put("^.*\\.TestSessionRun\\.test_iteration_nested$", skipMessage);
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put("^.*\\.TestSessionRun\\.test_partial_iteration$", skipMessage);
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put("^.*\\.TestIterationSessionRun\\.test_nested$", skipMessage);
+        skipMessage = "Does not report run FAILURE on session close";
+        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestSessionRun\\.test_discard_on_session_close_unfinished_result_with_error$", skipMessage);
 
         REACTIVE_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
 
+        skipMessage = "Does not support multiple concurrent result streams on session level";
         REACTIVE_SKIP_PATTERN_TO_REASON.put("^.*\\.TestSessionRun\\.test_iteration_nested$", skipMessage);
         REACTIVE_SKIP_PATTERN_TO_REASON.put("^.*\\.TestSessionRun\\.test_partial_iteration$", skipMessage);
         REACTIVE_SKIP_PATTERN_TO_REASON.put("^.*\\.TestIterationSessionRun\\.test_nested$", skipMessage);
+        skipMessage = "Does not report run FAILURE on session close";
+        REACTIVE_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestSessionRun\\.test_discard_on_session_close_unfinished_result_with_error$", skipMessage);
     }
 
     private StartTestBody data;
