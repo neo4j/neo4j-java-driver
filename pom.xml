@@ -261,6 +261,25 @@
         <parallelizable.it.forkCount>1</parallelizable.it.forkCount>
       </properties>
     </profile>
+
+    <profile>
+      <id>skip-docker-tests</id>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-failsafe-plugin</artifactId>
+              <configuration>
+                <systemPropertyVariables>
+                  <skipDockerTests>true</skipDockerTests>
+                </systemPropertyVariables>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
   </profiles>
 
   <build>

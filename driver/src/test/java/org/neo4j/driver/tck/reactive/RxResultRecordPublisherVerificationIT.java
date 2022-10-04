@@ -28,11 +28,9 @@ import org.neo4j.driver.reactive.RxSession;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
-@Testcontainers(disabledWithoutDocker = true)
 @SuppressWarnings("deprecation")
 public class RxResultRecordPublisherVerificationIT extends PublisherVerification<Record> {
     private final Neo4jManager NEO4J = new Neo4jManager();
@@ -54,7 +52,7 @@ public class RxResultRecordPublisherVerificationIT extends PublisherVerification
 
     @BeforeClass
     public void beforeClass() {
-        NEO4J.skipIfDockerUnavailable();
+        NEO4J.skipIfDockerTestsSkipped();
         NEO4J.start();
         driver = NEO4J.getDriver();
     }

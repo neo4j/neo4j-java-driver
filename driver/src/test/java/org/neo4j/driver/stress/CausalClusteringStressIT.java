@@ -22,14 +22,14 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.testutil.cc.LocalOrRemoteClusterExtension;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers(disabledWithoutDocker = true)
+@DisabledIfSystemProperty(named = "skipDockerTests", matches = "^true$")
 class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context> {
     @RegisterExtension
     static final LocalOrRemoteClusterExtension clusterRule = new LocalOrRemoteClusterExtension();
