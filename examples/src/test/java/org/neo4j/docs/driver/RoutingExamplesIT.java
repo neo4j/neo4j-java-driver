@@ -18,18 +18,19 @@
  */
 package org.neo4j.docs.driver;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.net.URI;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.net.ServerAddress;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers(disabledWithoutDocker = true)
+import java.net.URI;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@DisabledIfSystemProperty(named = "skipDockerTests", matches = "^true$")
 class RoutingExamplesIT {
     private static final String NEO4J_VERSION =
             Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");

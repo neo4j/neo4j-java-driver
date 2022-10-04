@@ -27,12 +27,10 @@ import org.neo4j.driver.reactive.ReactiveSession;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import reactor.core.publisher.Mono;
 
-@Testcontainers(disabledWithoutDocker = true)
 public class ReactiveResultPublisherVerificationIT extends PublisherVerification<ReactiveResult> {
     private final Neo4jManager NEO4J = new Neo4jManager();
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
@@ -49,7 +47,7 @@ public class ReactiveResultPublisherVerificationIT extends PublisherVerification
 
     @BeforeClass
     public void beforeClass() {
-        NEO4J.skipIfDockerUnavailable();
+        NEO4J.skipIfDockerTestsSkipped();
         NEO4J.start();
         driver = NEO4J.getDriver();
     }

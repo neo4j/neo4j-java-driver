@@ -20,7 +20,6 @@ package org.neo4j.driver.tck.reactive;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testng.SkipException;
 
@@ -39,18 +38,10 @@ public class Neo4jManager {
         return GraphDatabase.driver(NEO4J.getBoltUrl());
     }
 
-    public void skipIfDockerUnavailable() {
-        if (!isDockerAvailable()) {
+    public void skipIfDockerTestsSkipped() {
+        var skip = System.getProperty("skipDockerTests");
+        if (skip != null && skip.equals(Boolean.TRUE.toString())) {
             throw new SkipException("Docker is unavailable");
-        }
-    }
-
-    private boolean isDockerAvailable() {
-        try {
-            DockerClientFactory.instance().client();
-            return true;
-        } catch (Throwable ex) {
-            return false;
         }
     }
 }
