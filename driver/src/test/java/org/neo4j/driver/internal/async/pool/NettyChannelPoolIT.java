@@ -33,6 +33,7 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelHealthChecker;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -174,7 +175,8 @@ class NettyChannelPoolIT {
                 DEV_NULL_LOGGING,
                 new FakeClock(),
                 RoutingContext.EMPTY,
-                DefaultDomainNameResolver.getInstance());
+                DefaultDomainNameResolver.getInstance(),
+                Collections.emptySet());
         return new NettyChannelPool(
                 neo4j.address(), connector, bootstrap, poolHandler, ChannelHealthChecker.ACTIVE, 1_000, maxConnections);
     }

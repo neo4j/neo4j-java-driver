@@ -30,8 +30,8 @@ import org.neo4j.driver.Value;
 public class HelloMessage extends MessageWithMetadata {
     public static final byte SIGNATURE = 0x01;
 
-    private static final String USER_AGENT_METADATA_KEY = "user_agent";
-    private static final String ROUTING_CONTEXT_METADATA_KEY = "routing";
+    public static final String USER_AGENT_METADATA_KEY = "user_agent";
+    public static final String ROUTING_CONTEXT_METADATA_KEY = "routing";
     private static final String PATCH_BOLT_METADATA_KEY = "patch_bolt";
 
     private static final String DATE_TIME_UTC_PATCH_VALUE = "utc";
@@ -42,6 +42,10 @@ public class HelloMessage extends MessageWithMetadata {
             Map<String, String> routingContext,
             boolean includeDateTimeUtc) {
         super(buildMetadata(userAgent, authToken, routingContext, includeDateTimeUtc));
+    }
+
+    protected HelloMessage(Map<String, Value> metadata) {
+        super(metadata);
     }
 
     @Override

@@ -74,7 +74,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler {
     @Override
     public synchronized CompletionStage<RoutingTable> ensureRoutingTable(ConnectionContext context) {
         if (refreshRoutingTableFuture != null) {
-            // refresh is already happening concurrently, just use it's result
+            // refresh is already happening concurrently, just use its result
             return refreshRoutingTableFuture;
         } else if (routingTable.isStaleFor(context.mode())) {
             // existing routing table is not fresh and should be updated

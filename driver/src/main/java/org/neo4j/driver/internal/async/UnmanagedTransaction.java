@@ -48,6 +48,7 @@ import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.summary.NotificationFilterConfig;
 
 public class UnmanagedTransaction {
     private enum State {
@@ -111,8 +112,11 @@ public class UnmanagedTransaction {
     }
 
     public CompletionStage<UnmanagedTransaction> beginAsync(
-            Set<Bookmark> initialBookmarks, TransactionConfig config, String txType) {
-        return protocol.beginTransaction(connection, initialBookmarks, config, txType)
+            Set<Bookmark> initialBookmarks,
+            TransactionConfig config,
+            String txType,
+            NotificationFilterConfig notificationFilterConfig) {
+        return protocol.beginTransaction(connection, initialBookmarks, config, txType, notificationFilterConfig)
                 .handle((ignore, beginError) -> {
                     if (beginError != null) {
                         if (beginError instanceof AuthorizationExpiredException) {

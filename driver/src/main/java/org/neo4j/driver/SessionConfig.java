@@ -29,6 +29,7 @@ import java.util.Optional;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.summary.NotificationFilterConfig;
 import org.neo4j.driver.util.Experimental;
 import org.reactivestreams.Subscription;
 
@@ -47,6 +48,7 @@ public final class SessionConfig implements Serializable {
     private final Long fetchSize;
     private final String impersonatedUser;
     private final BookmarkManager bookmarkManager;
+    private final NotificationFilterConfig notificationFilterConfig;
 
     private SessionConfig(Builder builder) {
         this.bookmarks = builder.bookmarks;
@@ -55,6 +57,7 @@ public final class SessionConfig implements Serializable {
         this.fetchSize = builder.fetchSize;
         this.impersonatedUser = builder.impersonatedUser;
         this.bookmarkManager = builder.bookmarkManager;
+        this.notificationFilterConfig = builder.notificationFilterConfig;
     }
 
     /**
@@ -77,6 +80,7 @@ public final class SessionConfig implements Serializable {
 
     /**
      * Returns a {@link SessionConfig} for the specified database
+     *
      * @param database the database the session binds to.
      * @return a session config for a session for the specified database.
      */
@@ -143,6 +147,17 @@ public final class SessionConfig implements Serializable {
         return Optional.ofNullable(bookmarkManager);
     }
 
+    /**
+     * Returns notification filter configuration.
+     * <p>
+     * Driver level configuration is used by default when no explicit preference is provided.
+     *
+     * @return an {@link Optional} containing notification filter configuration or empty optional when driver level configuration is used
+     */
+    public Optional<NotificationFilterConfig> notificationFilterConfig() {
+        return Optional.ofNullable(notificationFilterConfig);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -157,22 +172,30 @@ public final class SessionConfig implements Serializable {
                 && Objects.equals(database, that.database)
                 && Objects.equals(fetchSize, that.fetchSize)
                 && Objects.equals(impersonatedUser, that.impersonatedUser)
-                && Objects.equals(bookmarkManager, that.bookmarkManager);
+                && Objects.equals(bookmarkManager, that.bookmarkManager)
+                && Objects.equals(notificationFilterConfig, that.notificationFilterConfig);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(bookmarks, defaultAccessMode, database, impersonatedUser, bookmarkManager);
+        return Objects.hash(
+                bookmarks, defaultAccessMode, database, impersonatedUser, bookmarkManager, notificationFilterConfig);
     }
 
     @Override
     public String toString() {
         return String.format(
                 """
-                SessionParameters{bookmarks=%s, defaultAccessMode=%s, database='%s', fetchSize=%d, impersonatedUser=%s, \
-                bookmarkManager=%s}\
-                """,
-                bookmarks, defaultAccessMode, database, fetchSize, impersonatedUser, bookmarkManager);
+                        SessionParameters{bookmarks=%s, defaultAccessMode=%s, database='%s', fetchSize=%d, impersonatedUser=%s, \
+                        bookmarkManager=%s, notificationFilterConfig=%s}\
+                        """,
+                bookmarks,
+                defaultAccessMode,
+                database,
+                fetchSize,
+                impersonatedUser,
+                bookmarkManager,
+                notificationFilterConfig);
     }
 
     /**
@@ -185,6 +208,7 @@ public final class SessionConfig implements Serializable {
         private String database = null;
         private String impersonatedUser = null;
         private BookmarkManager bookmarkManager;
+        private NotificationFilterConfig notificationFilterConfig;
 
         private Builder() {}
 
@@ -271,14 +295,15 @@ public final class SessionConfig implements Serializable {
          * Specify how many records to fetch in each batch for this session.
          * This config will overrides the default value set on {@link Config#fetchSize()}.
          * This config is only valid when the driver is used with servers that support Bolt V4 (Server version 4.0 and later).
-         *
+         * <p>
          * Bolt V4 enables pulling records in batches to allow client to take control of data population and apply back pressure to server.
          * This config specifies the default fetch size for all query runs using {@link Session} and {@link AsyncSession}.
          * By default, the value is set to {@code 1000}.
          * Use {@code -1} to disables back pressure and config client to pull all records at once after each run.
-         *
+         * <p>
          * This config only applies to run result obtained via {@link Session} and {@link AsyncSession}.
          * As with {@link RxSession}, the batch size is provided via {@link Subscription#request(long)} instead.
+         *
          * @param size the default record fetch size when pulling records in batches using Bolt V4.
          * @return this builder
          */
@@ -321,6 +346,22 @@ public final class SessionConfig implements Serializable {
         @Experimental
         public Builder withBookmarkManager(BookmarkManager bookmarkManager) {
             this.bookmarkManager = bookmarkManager;
+            return this;
+        }
+
+        /**
+         * Set notification filter configuration.
+         * <p>
+         * Driver level configuration is used by default when no explicit preference is provided.
+         * <p>
+         * Please note that configuration requires a minimum Bolt protocol version 5.1 that is available on Neo4j server version 5.3.
+         * On prior versions the configuration will be ignored.
+         *
+         * @param notificationFilterConfig notification filter configuration, use {@code null} to use driver level configuration
+         * @return this builder
+         */
+        public Builder withNotificationFilterConfig(NotificationFilterConfig notificationFilterConfig) {
+            this.notificationFilterConfig = notificationFilterConfig;
             return this;
         }
 

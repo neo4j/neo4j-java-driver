@@ -28,6 +28,7 @@ import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -36,6 +37,7 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -61,6 +63,7 @@ import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
+import org.neo4j.driver.summary.NotificationFilterConfig;
 
 public class BoltProtocolV3 implements BoltProtocol {
     public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(3, 0);
@@ -80,24 +83,38 @@ public class BoltProtocolV3 implements BoltProtocol {
             AuthToken authToken,
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise) {
-        Channel channel = channelInitializedPromise.channel();
+        var channel = channelInitializedPromise.channel();
         HelloMessage message;
 
         if (routingContext.isServerRoutingEnabled()) {
-            message = new HelloMessage(
+            message = createHelloMessage(
                     userAgent,
                     ((InternalAuthToken) authToken).toMap(),
                     routingContext.toMap(),
-                    includeDateTimeUtcPatchInHello());
+                    includeDateTimeUtcPatchInHello(),
+                    channel);
         } else {
-            message = new HelloMessage(
-                    userAgent, ((InternalAuthToken) authToken).toMap(), null, includeDateTimeUtcPatchInHello());
+            message = createHelloMessage(
+                    userAgent,
+                    ((InternalAuthToken) authToken).toMap(),
+                    null,
+                    includeDateTimeUtcPatchInHello(),
+                    channel);
         }
 
         HelloResponseHandler handler = new HelloResponseHandler(channelInitializedPromise);
 
         messageDispatcher(channel).enqueue(handler);
         channel.writeAndFlush(message, channel.voidPromise());
+    }
+
+    protected HelloMessage createHelloMessage(
+            String userAgent,
+            Map<String, Value> authToken,
+            Map<String, String> routingContext,
+            boolean includeDateTimeUtc,
+            Channel channel) {
+        return new HelloMessage(userAgent, authToken, routingContext, includeDateTimeUtc);
     }
 
     @Override
@@ -113,7 +130,11 @@ public class BoltProtocolV3 implements BoltProtocol {
 
     @Override
     public CompletionStage<Void> beginTransaction(
-            Connection connection, Set<Bookmark> bookmarks, TransactionConfig config, String txType) {
+            Connection connection,
+            Set<Bookmark> bookmarks,
+            TransactionConfig config,
+            String txType,
+            NotificationFilterConfig notificationFilterConfig) {
         try {
             verifyDatabaseNameBeforeTransaction(connection.databaseName());
         } catch (Exception error) {
@@ -122,7 +143,13 @@ public class BoltProtocolV3 implements BoltProtocol {
 
         CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
         BeginMessage beginMessage = new BeginMessage(
-                bookmarks, config, connection.databaseName(), connection.mode(), connection.impersonatedUser(), txType);
+                bookmarks,
+                config,
+                connection.databaseName(),
+                connection.mode(),
+                connection.impersonatedUser(),
+                txType,
+                toNotificationFiltersValue(notificationFilterConfig));
         connection.writeAndFlush(beginMessage, new BeginTxResponseHandler(beginTxFuture));
         return beginTxFuture;
     }
@@ -148,10 +175,17 @@ public class BoltProtocolV3 implements BoltProtocol {
             Set<Bookmark> bookmarks,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             TransactionConfig config,
-            long fetchSize) {
+            long fetchSize,
+            NotificationFilterConfig notificationFilterConfig) {
         verifyDatabaseNameBeforeTransaction(connection.databaseName());
         RunWithMetadataMessage runMessage = autoCommitTxRunMessage(
-                query, config, connection.databaseName(), connection.mode(), bookmarks, connection.impersonatedUser());
+                query,
+                config,
+                connection.databaseName(),
+                connection.mode(),
+                bookmarks,
+                connection.impersonatedUser(),
+                toNotificationFiltersValue(notificationFilterConfig));
         return buildResultCursorFactory(connection, query, bookmarkConsumer, null, runMessage, fetchSize);
     }
 
@@ -188,5 +222,9 @@ public class BoltProtocolV3 implements BoltProtocol {
 
     protected boolean includeDateTimeUtcPatchInHello() {
         return false;
+    }
+
+    protected Value toNotificationFiltersValue(NotificationFilterConfig notificationFilterConfig) {
+        return null;
     }
 }

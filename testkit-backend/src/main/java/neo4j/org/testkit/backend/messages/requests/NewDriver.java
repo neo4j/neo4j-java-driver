@@ -55,6 +55,11 @@ import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.net.ServerAddressResolver;
+import org.neo4j.driver.summary.Category;
+import org.neo4j.driver.summary.NotificationFilterConfig;
+import org.neo4j.driver.summary.NotificationFilterConfigs;
+import org.neo4j.driver.summary.NotificationFilters;
+import org.neo4j.driver.summary.Severity;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -112,6 +117,9 @@ public class NewDriver implements TestkitRequest {
         Optional.ofNullable(data.maxConnectionPoolSize).ifPresent(configBuilder::withMaxConnectionPoolSize);
         Optional.ofNullable(data.connectionAcquisitionTimeoutMs)
                 .ifPresent(timeout -> configBuilder.withConnectionAcquisitionTimeout(timeout, TimeUnit.MILLISECONDS));
+        Optional.ofNullable(data.notificationFilters)
+                .map(NewDriver::toNotificationFilter)
+                .ifPresent(configBuilder::withNotificationFilterConfig);
         configBuilder.withDriverMetrics();
         org.neo4j.driver.Driver driver;
         Config config = configBuilder.build();
@@ -130,6 +138,24 @@ public class NewDriver implements TestkitRequest {
         }
         testkitState.addDriverHolder(id, new DriverHolder(driver, config));
         return Driver.builder().data(Driver.DriverBody.builder().id(id).build()).build();
+    }
+
+    public static NotificationFilterConfig toNotificationFilter(List<String> notificationFilters) {
+        if (notificationFilters.size() == 1) {
+            var filter = notificationFilters.iterator().next();
+            if (filter.equals("NONE")) {
+                return NotificationFilterConfigs.none();
+            } else if (filter.equals("SERVER_DEFAULT")) {
+                return NotificationFilterConfigs.serverDefaults();
+            }
+        }
+        var filters = notificationFilters.stream()
+                .map(filter -> {
+                    var tokens = filter.split("\\.");
+                    return NotificationFilters.of(Severity.valueOf(tokens[0]), Category.valueOf(tokens[1]));
+                })
+                .collect(Collectors.toSet());
+        return NotificationFilterConfigs.selection(filters);
     }
 
     @Override
@@ -291,6 +317,7 @@ public class NewDriver implements TestkitRequest {
         private Long connectionAcquisitionTimeoutMs;
         private boolean encrypted;
         private List<String> trustedCertificates;
+        private List<String> notificationFilters;
     }
 
     @RequiredArgsConstructor

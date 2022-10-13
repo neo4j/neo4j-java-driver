@@ -102,6 +102,10 @@ public class NewSession implements TestkitRequest {
                 .map(testkitState::getBookmarkManager)
                 .ifPresent(builder::withBookmarkManager);
 
+        Optional.ofNullable(data.notificationFilters)
+                .map(NewDriver::toNotificationFilter)
+                .ifPresent(builder::withNotificationFilterConfig);
+
         T sessionStateHolder = sessionStateProducer.apply(driverHolder, builder.build());
         String newId = addSessionHolder.apply(sessionStateHolder);
 
@@ -148,5 +152,6 @@ public class NewSession implements TestkitRequest {
         private String impersonatedUser;
         private int fetchSize;
         private String bookmarkManagerId;
+        private List<String> notificationFilters;
     }
 }

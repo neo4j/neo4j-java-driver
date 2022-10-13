@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.BoltPatchesListener;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
+import org.neo4j.driver.summary.NotificationFilter;
 
 public final class ChannelAttributes {
     private static final AttributeKey<String> CONNECTION_ID = newInstance("connectionId");
@@ -48,6 +49,8 @@ public final class ChannelAttributes {
 
     // configuration hints provided by the server
     private static final AttributeKey<Long> CONNECTION_READ_TIMEOUT = newInstance("connectionReadTimeout");
+    private static final AttributeKey<Set<NotificationFilter>> NOTIFICATION_FILTERS =
+            newInstance("notificationFilters");
 
     private ChannelAttributes() {}
 
@@ -152,6 +155,14 @@ public final class ChannelAttributes {
     public static Set<BoltPatchesListener> boltPatchesListeners(Channel channel) {
         Set<BoltPatchesListener> boltPatchesListeners = get(channel, BOLT_PATCHES_LISTENERS);
         return boltPatchesListeners != null ? boltPatchesListeners : Collections.emptySet();
+    }
+
+    public static Set<NotificationFilter> notificationFilters(Channel channel) {
+        return get(channel, NOTIFICATION_FILTERS);
+    }
+
+    public static void setNotificationFilters(Channel channel, Set<NotificationFilter> notificationFilters) {
+        setOnce(channel, NOTIFICATION_FILTERS, notificationFilters);
     }
 
     private static <T> T get(Channel channel, AttributeKey<T> key) {

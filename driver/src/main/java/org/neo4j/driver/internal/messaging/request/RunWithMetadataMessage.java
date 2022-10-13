@@ -45,9 +45,17 @@ public class RunWithMetadataMessage extends MessageWithMetadata {
             DatabaseName databaseName,
             AccessMode mode,
             Set<Bookmark> bookmarks,
-            String impersonatedUser) {
+            String impersonatedUser,
+            Value notifications) {
         return autoCommitTxRunMessage(
-                query, config.timeout(), config.metadata(), databaseName, mode, bookmarks, impersonatedUser);
+                query,
+                config.timeout(),
+                config.metadata(),
+                databaseName,
+                mode,
+                bookmarks,
+                impersonatedUser,
+                notifications);
     }
 
     public static RunWithMetadataMessage autoCommitTxRunMessage(
@@ -57,9 +65,10 @@ public class RunWithMetadataMessage extends MessageWithMetadata {
             DatabaseName databaseName,
             AccessMode mode,
             Set<Bookmark> bookmarks,
-            String impersonatedUser) {
-        Map<String, Value> metadata =
-                buildMetadata(txTimeout, txMetadata, databaseName, mode, bookmarks, impersonatedUser, null);
+            String impersonatedUser,
+            Value notifications) {
+        Map<String, Value> metadata = buildMetadata(
+                txTimeout, txMetadata, databaseName, mode, bookmarks, impersonatedUser, null, notifications);
         return new RunWithMetadataMessage(query.text(), query.parameters().asMap(ofValue()), metadata);
     }
 

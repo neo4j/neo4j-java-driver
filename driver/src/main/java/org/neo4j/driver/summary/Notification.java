@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.summary;
 
+import java.util.Optional;
 import org.neo4j.driver.util.Immutable;
 
 /**
@@ -58,7 +59,37 @@ public interface Notification {
     /**
      * The severity level of the notification.
      *
+     * @deprecated superseded by {@link Notification#severityLevel()}
      * @return the severity level of the notification
      */
+    @Deprecated
     String severity();
+
+    /**
+     * The severity level of the notification.
+     *
+     * @return the severity level of the notification
+     */
+    Optional<Severity> severityLevel();
+
+    /**
+     * The severity level of the notification.
+     *
+     * @return the severity level of the notification
+     */
+    Optional<String> rawSeverityLevel();
+
+    /**
+     * The category of the notification.
+     *
+     * @return the category of the notification
+     */
+    Optional<Category> category();
+
+    /**
+     * The category of the notification.
+     *
+     * @return the category of the notification
+     */
+    Optional<String> rawCategory();
 }

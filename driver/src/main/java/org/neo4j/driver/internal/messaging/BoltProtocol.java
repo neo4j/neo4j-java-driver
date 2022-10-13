@@ -43,7 +43,9 @@ import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
+import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.summary.NotificationFilterConfig;
 
 public interface BoltProtocol {
     /**
@@ -80,10 +82,15 @@ public interface BoltProtocol {
      * @param bookmarks  the bookmarks. Never null, should be empty when there are no bookmarks.
      * @param config     the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
      * @param txType the Kernel transaction type
+     * @param notificationFilterConfig the notification filters config
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
      */
     CompletionStage<Void> beginTransaction(
-            Connection connection, Set<Bookmark> bookmarks, TransactionConfig config, String txType);
+            Connection connection,
+            Set<Bookmark> bookmarks,
+            TransactionConfig config,
+            String txType,
+            NotificationFilterConfig notificationFilterConfig);
 
     /**
      * Commit the unmanaged transaction.
@@ -109,6 +116,7 @@ public interface BoltProtocol {
      * @param bookmarkConsumer the database bookmark consumer.
      * @param config          the transaction config for the implicitly started auto-commit transaction.
      * @param fetchSize       the record fetch size for PULL message.
+     * @param notificationFilterConfig the notification filters config
      * @return stage with cursor.
      */
     ResultCursorFactory runInAutoCommitTransaction(
@@ -117,7 +125,8 @@ public interface BoltProtocol {
             Set<Bookmark> bookmarks,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             TransactionConfig config,
-            long fetchSize);
+            long fetchSize,
+            NotificationFilterConfig notificationFilterConfig);
 
     /**
      * Execute the given query in a running unmanaged transaction, i.e. {@link Transaction#run(Query)}.
@@ -170,6 +179,8 @@ public interface BoltProtocol {
             return BoltProtocolV44.INSTANCE;
         } else if (BoltProtocolV5.VERSION.equals(version)) {
             return BoltProtocolV5.INSTANCE;
+        } else if (BoltProtocolV51.VERSION.equals(version)) {
+            return BoltProtocolV51.INSTANCE;
         }
         throw new ClientException("Unknown protocol version: " + version);
     }

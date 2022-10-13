@@ -260,6 +260,7 @@ class MetadataExtractorTest {
         assertNull(summary.profile());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldBuildResultSummaryWithNotifications() {
         Value notification1 = parameters(

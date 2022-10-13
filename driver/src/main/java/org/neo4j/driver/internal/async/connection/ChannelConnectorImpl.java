@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.async.connection;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setNotificationFilters;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -29,6 +30,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.resolver.AddressResolverGroup;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Set;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Logging;
@@ -41,6 +43,7 @@ import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.summary.NotificationFilter;
 
 public class ChannelConnectorImpl implements ChannelConnector {
     private final String userAgent;
@@ -53,6 +56,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
     private final Clock clock;
     private final DomainNameResolver domainNameResolver;
     private final AddressResolverGroup<InetSocketAddress> addressResolverGroup;
+    private final Set<NotificationFilter> notificationFilters;
 
     public ChannelConnectorImpl(
             ConnectionSettings connectionSettings,
@@ -60,7 +64,8 @@ public class ChannelConnectorImpl implements ChannelConnector {
             Logging logging,
             Clock clock,
             RoutingContext routingContext,
-            DomainNameResolver domainNameResolver) {
+            DomainNameResolver domainNameResolver,
+            Set<NotificationFilter> notificationFilters) {
         this(
                 connectionSettings,
                 securityPlan,
@@ -68,7 +73,8 @@ public class ChannelConnectorImpl implements ChannelConnector {
                 logging,
                 clock,
                 routingContext,
-                domainNameResolver);
+                domainNameResolver,
+                notificationFilters);
     }
 
     public ChannelConnectorImpl(
@@ -78,7 +84,8 @@ public class ChannelConnectorImpl implements ChannelConnector {
             Logging logging,
             Clock clock,
             RoutingContext routingContext,
-            DomainNameResolver domainNameResolver) {
+            DomainNameResolver domainNameResolver,
+            Set<NotificationFilter> notificationFilters) {
         this.userAgent = connectionSettings.userAgent();
         this.authToken = requireValidAuthToken(connectionSettings.authToken());
         this.routingContext = routingContext;
@@ -89,6 +96,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
         this.clock = requireNonNull(clock);
         this.domainNameResolver = requireNonNull(domainNameResolver);
         this.addressResolverGroup = new NettyDomainNameResolverGroup(this.domainNameResolver);
+        this.notificationFilters = notificationFilters;
     }
 
     @Override
@@ -110,6 +118,8 @@ public class ChannelConnectorImpl implements ChannelConnector {
         Channel channel = channelConnected.channel();
         ChannelPromise handshakeCompleted = channel.newPromise();
         ChannelPromise connectionInitialized = channel.newPromise();
+
+        setNotificationFilters(channel, notificationFilters);
 
         installChannelConnectedListeners(address, channelConnected, handshakeCompleted);
         installHandshakeCompletedListeners(handshakeCompleted, connectionInitialized);

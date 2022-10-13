@@ -55,6 +55,7 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.summary.InternalNotificationFilterConfig;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddressResolver;
@@ -173,7 +174,13 @@ public class DriverFactory {
             Clock clock,
             RoutingContext routingContext) {
         return new ChannelConnectorImpl(
-                settings, securityPlan, config.logging(), clock, routingContext, getDomainNameResolver());
+                settings,
+                securityPlan,
+                config.logging(),
+                clock,
+                routingContext,
+                getDomainNameResolver(),
+                ((InternalNotificationFilterConfig) config.notificationFilterConfig()).filters());
     }
 
     private InternalDriver createDriver(

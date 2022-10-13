@@ -18,6 +18,7 @@
  */
 package neo4j.org.testkit.backend.messages.responses;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 import java.util.Map;
 import lombok.Builder;
@@ -111,6 +112,7 @@ public class Summary implements TestkitResponse {
 
     @Getter
     @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Notification {
         private String code;
 
@@ -119,8 +121,14 @@ public class Summary implements TestkitResponse {
         private String description;
 
         private InputPosition position;
-
         private String severity;
+
+        private String severityLevel;
+
+        private String rawSeverityLevel;
+        private String category;
+
+        private String rawCategory;
     }
 
     @Getter

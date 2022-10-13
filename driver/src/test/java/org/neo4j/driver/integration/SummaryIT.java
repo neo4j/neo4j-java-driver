@@ -235,6 +235,7 @@ class SummaryIT {
         assertEquals(1, profile.records());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldContainNotifications() {
         // When

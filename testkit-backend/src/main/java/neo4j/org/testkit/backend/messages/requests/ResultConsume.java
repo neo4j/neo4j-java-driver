@@ -36,10 +36,12 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.summary.Category;
 import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.QueryType;
+import org.neo4j.driver.summary.Severity;
 import org.neo4j.driver.summary.SummaryCounters;
 import reactor.core.publisher.Mono;
 
@@ -122,6 +124,7 @@ public class ResultConsume implements TestkitRequest {
                 .text(summaryQuery.text())
                 .parameters(summaryQuery.parameters().asMap(Function.identity(), null))
                 .build();
+        @SuppressWarnings("deprecation")
         List<Summary.Notification> notifications = summary.notifications().stream()
                 .map(s -> Summary.Notification.builder()
                         .code(s.code())
@@ -129,6 +132,10 @@ public class ResultConsume implements TestkitRequest {
                         .description(s.description())
                         .position(toInputPosition(s.position()))
                         .severity(s.severity())
+                        .severityLevel(s.severityLevel().map(Severity::name).orElse(null))
+                        .rawSeverityLevel(s.rawSeverityLevel().orElse(null))
+                        .category(s.category().map(Category::name).orElse(null))
+                        .rawCategory(s.rawCategory().orElse(null))
                         .build())
                 .collect(Collectors.toList());
         Summary.SummaryBody data = Summary.SummaryBody.builder()

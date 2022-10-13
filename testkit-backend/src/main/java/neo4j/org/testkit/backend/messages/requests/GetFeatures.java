@@ -39,6 +39,7 @@ public class GetFeatures implements TestkitRequest {
             "Feature:Bolt:4.3",
             "Feature:Bolt:4.4",
             "Feature:Bolt:5.0",
+            "Feature:Bolt:5.1",
             "AuthorizationExpiredTreatment",
             "ConfHint:connection.recv_timeout_seconds",
             "Feature:Auth:Bearer",
@@ -58,7 +59,9 @@ public class GetFeatures implements TestkitRequest {
             "Optimization:ImplicitDefaultArguments",
             "Feature:Bolt:Patch:UTC",
             "Feature:API:Type.Temporal",
-            "Feature:API:BookmarkManager"));
+            "Feature:API:BookmarkManager",
+            "Feature:API:Driver:NotificationFilters",
+            "Feature:API:Session:NotificationFilters"));
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:3.0",
