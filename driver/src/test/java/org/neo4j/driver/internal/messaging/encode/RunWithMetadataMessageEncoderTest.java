@@ -66,7 +66,9 @@ class RunWithMetadataMessageEncoderTest {
 
         Query query = new Query("RETURN $answer", value(params));
         encoder.encode(
-                autoCommitTxRunMessage(query, txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null), packer);
+                autoCommitTxRunMessage(
+                        query, txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null, Collections.emptySet()),
+                packer);
 
         InOrder order = inOrder(packer);
         order.verify(packer).packStructHeader(3, RunWithMetadataMessage.SIGNATURE);

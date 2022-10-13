@@ -92,7 +92,8 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
                         bookmarks,
                         (ignored) -> {},
                         TransactionConfig.empty(),
-                        UNLIMITED_FETCH_SIZE)
+                        UNLIMITED_FETCH_SIZE,
+                        Collections.emptySet())
                 .asyncResult()
                 .thenCompose(ResultCursor::listAsync);
     }

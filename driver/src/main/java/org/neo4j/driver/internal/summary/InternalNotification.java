@@ -22,8 +22,10 @@ import static org.neo4j.driver.internal.value.NullValue.NULL;
 
 import java.util.function.Function;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.summary.Category;
 import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Notification;
+import org.neo4j.driver.summary.Severity;
 
 public class InternalNotification implements Notification {
     public static final Function<Value, Notification> VALUE_TO_NOTIFICATION = new Function<Value, Notification>() {
@@ -84,8 +86,19 @@ public class InternalNotification implements Notification {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public String severity() {
         return severity;
+    }
+
+    @Override
+    public Severity severityNew() {
+        return null;
+    }
+
+    @Override
+    public Category category() {
+        return null;
     }
 
     @Override

@@ -40,6 +40,7 @@ public class TransactionMetadataBuilder {
     private static final String MODE_READ_VALUE = "r";
     private static final String IMPERSONATED_USER_KEY = "imp_user";
     private static final String TX_TYPE_KEY = "tx_type";
+    private static final String NOTIFICATIONS_KEY = "notifications";
 
     public static Map<String, Value> buildMetadata(
             Duration txTimeout,
@@ -47,8 +48,10 @@ public class TransactionMetadataBuilder {
             AccessMode mode,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
-            String txType) {
-        return buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, impersonatedUser, txType);
+            String txType,
+            Set<String> notifications) {
+        return buildMetadata(
+                txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, impersonatedUser, txType, notifications);
     }
 
     public static Map<String, Value> buildMetadata(
@@ -58,7 +61,8 @@ public class TransactionMetadataBuilder {
             AccessMode mode,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
-            String txType) {
+            String txType,
+            Set<String> notifications) {
         boolean bookmarksPresent = !bookmarks.isEmpty();
         boolean txTimeoutPresent = txTimeout != null;
         boolean txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
@@ -96,6 +100,9 @@ public class TransactionMetadataBuilder {
         }
         if (txTypePresent) {
             result.put(TX_TYPE_KEY, value(txType));
+        }
+        if (!notifications.isEmpty()) {
+            result.put(NOTIFICATIONS_KEY, value(notifications));
         }
 
         databaseName.databaseName().ifPresent(name -> result.put(DATABASE_NAME_KEY, value(name)));

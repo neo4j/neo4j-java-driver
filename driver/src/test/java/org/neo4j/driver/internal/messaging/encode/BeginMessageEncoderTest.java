@@ -62,7 +62,15 @@ class BeginMessageEncoderTest {
         Duration txTimeout = Duration.ofSeconds(1);
 
         encoder.encode(
-                new BeginMessage(bookmarks, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser, txType),
+                new BeginMessage(
+                        bookmarks,
+                        txTimeout,
+                        txMetadata,
+                        mode,
+                        defaultDatabase(),
+                        impersonatedUser,
+                        txType,
+                        Collections.emptySet()),
                 packer);
 
         InOrder order = inOrder(packer);

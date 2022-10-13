@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.util.io;
 
+import java.util.Collections;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
@@ -50,7 +51,8 @@ public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends Channe
                 config.logging(),
                 clock,
                 routingContext,
-                DefaultDomainNameResolver.getInstance());
+                DefaultDomainNameResolver.getInstance(),
+                Collections.emptySet());
     }
 
     public FailingMessageFormat getFailingMessageFormat() {

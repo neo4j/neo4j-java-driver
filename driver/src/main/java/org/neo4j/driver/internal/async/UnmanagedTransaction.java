@@ -37,6 +37,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.NotificationFilter;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
@@ -111,8 +112,11 @@ public class UnmanagedTransaction {
     }
 
     public CompletionStage<UnmanagedTransaction> beginAsync(
-            Set<Bookmark> initialBookmarks, TransactionConfig config, String txType) {
-        return protocol.beginTransaction(connection, initialBookmarks, config, txType)
+            Set<Bookmark> initialBookmarks,
+            TransactionConfig config,
+            String txType,
+            Set<NotificationFilter> notificationFilters) {
+        return protocol.beginTransaction(connection, initialBookmarks, config, txType, notificationFilters)
                 .handle((ignore, beginError) -> {
                     if (beginError != null) {
                         if (beginError instanceof AuthorizationExpiredException) {

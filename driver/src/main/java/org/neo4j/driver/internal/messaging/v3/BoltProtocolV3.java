@@ -28,12 +28,14 @@ import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.NotificationFilter;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.DatabaseBookmark;
@@ -80,7 +82,8 @@ public class BoltProtocolV3 implements BoltProtocol {
             AuthToken authToken,
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise) {
-        Channel channel = channelInitializedPromise.channel();
+        var channel = channelInitializedPromise.channel();
+        var notificationFilters = getNotificationFilters(channel);
         HelloMessage message;
 
         if (routingContext.isServerRoutingEnabled()) {
@@ -88,10 +91,15 @@ public class BoltProtocolV3 implements BoltProtocol {
                     userAgent,
                     ((InternalAuthToken) authToken).toMap(),
                     routingContext.toMap(),
-                    includeDateTimeUtcPatchInHello());
+                    includeDateTimeUtcPatchInHello(),
+                    notificationFilters);
         } else {
             message = new HelloMessage(
-                    userAgent, ((InternalAuthToken) authToken).toMap(), null, includeDateTimeUtcPatchInHello());
+                    userAgent,
+                    ((InternalAuthToken) authToken).toMap(),
+                    null,
+                    includeDateTimeUtcPatchInHello(),
+                    notificationFilters);
         }
 
         HelloResponseHandler handler = new HelloResponseHandler(channelInitializedPromise);
@@ -113,7 +121,11 @@ public class BoltProtocolV3 implements BoltProtocol {
 
     @Override
     public CompletionStage<Void> beginTransaction(
-            Connection connection, Set<Bookmark> bookmarks, TransactionConfig config, String txType) {
+            Connection connection,
+            Set<Bookmark> bookmarks,
+            TransactionConfig config,
+            String txType,
+            Set<NotificationFilter> notificationFilters) {
         try {
             verifyDatabaseNameBeforeTransaction(connection.databaseName());
         } catch (Exception error) {
@@ -122,7 +134,13 @@ public class BoltProtocolV3 implements BoltProtocol {
 
         CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
         BeginMessage beginMessage = new BeginMessage(
-                bookmarks, config, connection.databaseName(), connection.mode(), connection.impersonatedUser(), txType);
+                bookmarks,
+                config,
+                connection.databaseName(),
+                connection.mode(),
+                connection.impersonatedUser(),
+                txType,
+                mapNotificationFiltersToStrings(notificationFilters));
         connection.writeAndFlush(beginMessage, new BeginTxResponseHandler(beginTxFuture));
         return beginTxFuture;
     }
@@ -148,10 +166,18 @@ public class BoltProtocolV3 implements BoltProtocol {
             Set<Bookmark> bookmarks,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             TransactionConfig config,
-            long fetchSize) {
+            long fetchSize,
+            Set<NotificationFilter> notificationFilters) {
         verifyDatabaseNameBeforeTransaction(connection.databaseName());
+        var filters = mapNotificationFiltersToStrings(notificationFilters);
         RunWithMetadataMessage runMessage = autoCommitTxRunMessage(
-                query, config, connection.databaseName(), connection.mode(), bookmarks, connection.impersonatedUser());
+                query,
+                config,
+                connection.databaseName(),
+                connection.mode(),
+                bookmarks,
+                connection.impersonatedUser(),
+                filters);
         return buildResultCursorFactory(connection, query, bookmarkConsumer, null, runMessage, fetchSize);
     }
 
@@ -188,5 +214,13 @@ public class BoltProtocolV3 implements BoltProtocol {
 
     protected boolean includeDateTimeUtcPatchInHello() {
         return false;
+    }
+
+    protected Set<String> getNotificationFilters(Channel channel) {
+        return Collections.emptySet();
+    }
+
+    protected Set<String> mapNotificationFiltersToStrings(Set<NotificationFilter> notificationFilters) {
+        return Collections.emptySet();
     }
 }

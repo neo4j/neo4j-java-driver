@@ -173,7 +173,13 @@ public class DriverFactory {
             Clock clock,
             RoutingContext routingContext) {
         return new ChannelConnectorImpl(
-                settings, securityPlan, config.logging(), clock, routingContext, getDomainNameResolver());
+                settings,
+                securityPlan,
+                config.logging(),
+                clock,
+                routingContext,
+                getDomainNameResolver(),
+                config.notificationFilters());
     }
 
     private InternalDriver createDriver(

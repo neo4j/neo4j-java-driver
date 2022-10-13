@@ -33,6 +33,7 @@ import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Notification;
 
 class InternalNotificationTest {
+    @SuppressWarnings("deprecation")
     @Test
     void shouldHandleNotificationWithPosition() {
         // GIVEN

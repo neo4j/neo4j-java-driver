@@ -141,7 +141,8 @@ class ConnectionPoolImplIT {
                 DEV_NULL_LOGGING,
                 clock,
                 RoutingContext.EMPTY,
-                DefaultDomainNameResolver.getInstance());
+                DefaultDomainNameResolver.getInstance(),
+                Collections.emptySet());
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap(1);
         return new ConnectionPoolImpl(

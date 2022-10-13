@@ -25,6 +25,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.NotificationFilter;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -42,7 +43,8 @@ public class LeakLoggingNetworkSession extends NetworkSession {
             String impersonatedUser,
             long fetchSize,
             Logging logging,
-            BookmarkManager bookmarkManager) {
+            BookmarkManager bookmarkManager,
+            Set<NotificationFilter> notificationFilters) {
         super(
                 connectionProvider,
                 retryLogic,
@@ -52,7 +54,8 @@ public class LeakLoggingNetworkSession extends NetworkSession {
                 impersonatedUser,
                 fetchSize,
                 logging,
-                bookmarkManager);
+                bookmarkManager,
+                notificationFilters);
         this.stackTrace = captureStackTrace();
     }
 

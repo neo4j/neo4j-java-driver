@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.neo4j.driver.Value;
 
 public class HelloMessage extends MessageWithMetadata {
@@ -36,12 +37,15 @@ public class HelloMessage extends MessageWithMetadata {
 
     private static final String DATE_TIME_UTC_PATCH_VALUE = "utc";
 
+    private static final String NOTIFICATIONS_KEY = "notifications";
+
     public HelloMessage(
             String userAgent,
             Map<String, Value> authToken,
             Map<String, String> routingContext,
-            boolean includeDateTimeUtc) {
-        super(buildMetadata(userAgent, authToken, routingContext, includeDateTimeUtc));
+            boolean includeDateTimeUtc,
+            Set<String> notificationFilters) {
+        super(buildMetadata(userAgent, authToken, routingContext, includeDateTimeUtc, notificationFilters));
     }
 
     @Override
@@ -77,7 +81,8 @@ public class HelloMessage extends MessageWithMetadata {
             String userAgent,
             Map<String, Value> authToken,
             Map<String, String> routingContext,
-            boolean includeDateTimeUtc) {
+            boolean includeDateTimeUtc,
+            Set<String> notificationFilters) {
         Map<String, Value> result = new HashMap<>(authToken);
         result.put(USER_AGENT_METADATA_KEY, value(userAgent));
         if (routingContext != null) {
@@ -85,6 +90,9 @@ public class HelloMessage extends MessageWithMetadata {
         }
         if (includeDateTimeUtc) {
             result.put(PATCH_BOLT_METADATA_KEY, value(Collections.singleton(DATE_TIME_UTC_PATCH_VALUE)));
+        }
+        if (!notificationFilters.isEmpty()) {
+            result.put(NOTIFICATIONS_KEY, value(notificationFilters));
         }
         return result;
     }

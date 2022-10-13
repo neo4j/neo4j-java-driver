@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v43;
+package org.neo4j.driver.internal.messaging.v51;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyMap;
@@ -93,11 +93,12 @@ import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+import org.neo4j.driver.internal.messaging.v5.MessageFormatV5;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
-public final class BoltProtocolV43Test {
+class BoltProtocolV51Test {
     protected static final String QUERY_TEXT = "RETURN $x";
     protected static final Map<String, Value> PARAMS = singletonMap("x", value(42));
     protected static final Query QUERY = new Query(QUERY_TEXT, value(PARAMS));
@@ -112,7 +113,7 @@ public final class BoltProtocolV43Test {
             .build();
 
     protected BoltProtocol createProtocol() {
-        return BoltProtocolV43.INSTANCE;
+        return BoltProtocolV51.INSTANCE;
     }
 
     @BeforeEach
@@ -133,6 +134,7 @@ public final class BoltProtocolV43Test {
     @Test
     void shouldInitializeChannel() {
         ChannelPromise promise = channel.newPromise();
+        ChannelAttributes.setNotificationFilters(channel, Collections.emptySet());
 
         protocol.initializeChannel("MyDriver/0.0.1", dummyAuthToken(), RoutingContext.EMPTY, promise);
 
@@ -142,7 +144,7 @@ public final class BoltProtocolV43Test {
         assertFalse(promise.isDone());
 
         Map<String, Value> metadata = new HashMap<>();
-        metadata.put("server", value("Neo4j/4.3.0"));
+        metadata.put("server", value("Neo4j/4.4.0"));
         metadata.put("connection_id", value("bolt-42"));
 
         messageDispatcher.handleSuccessMessage(metadata);
@@ -163,6 +165,7 @@ public final class BoltProtocolV43Test {
     @Test
     void shouldFailToInitializeChannelWhenErrorIsReceived() {
         ChannelPromise promise = channel.newPromise();
+        ChannelAttributes.setNotificationFilters(channel, Collections.emptySet());
 
         protocol.initializeChannel("MyDriver/2.2.1", dummyAuthToken(), RoutingContext.EMPTY, promise);
 
@@ -380,7 +383,7 @@ public final class BoltProtocolV43Test {
     }
 
     private Class<? extends MessageFormat> expectedMessageFormatType() {
-        return MessageFormatV43.class;
+        return MessageFormatV5.class;
     }
 
     private void testFailedRunInAutoCommitTxWithWaitingForResponse(
@@ -485,13 +488,11 @@ public final class BoltProtocolV43Test {
 
         CompletionStage<AsyncResultCursor> cursorStage;
         if (autoCommitTx) {
-            @SuppressWarnings("unchecked")
-            Consumer<DatabaseBookmark> bookmarkConsumer = mock(Consumer.class);
             cursorStage = protocol.runInAutoCommitTransaction(
                             connection,
                             QUERY,
                             initialBookmarks,
-                            bookmarkConsumer,
+                            (ignored) -> {},
                             config,
                             UNLIMITED_FETCH_SIZE,
                             Collections.emptySet())
@@ -548,12 +549,12 @@ public final class BoltProtocolV43Test {
 
     private ResponseHandler verifySessionRunInvoked(
             Connection connection,
-            Set<Bookmark> bookmarks,
+            Set<Bookmark> bookmark,
             TransactionConfig config,
             AccessMode mode,
             DatabaseName databaseName) {
         RunWithMetadataMessage runMessage = RunWithMetadataMessage.autoCommitTxRunMessage(
-                QUERY, config, databaseName, mode, bookmarks, null, Collections.emptySet());
+                QUERY, config, databaseName, mode, bookmark, null, Collections.emptySet());
         return verifyRunInvoked(connection, runMessage);
     }
 

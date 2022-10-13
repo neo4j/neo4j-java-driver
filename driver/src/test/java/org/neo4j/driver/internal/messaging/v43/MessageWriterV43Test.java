@@ -112,7 +112,8 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         "MyDriver/1.2.3",
                         ((InternalAuthToken) basic("neo4j", "neo4j")).toMap(),
                         Collections.emptyMap(),
-                        false),
+                        false,
+                        Collections.emptySet()),
                 GOODBYE,
                 new BeginMessage(
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx123")),
@@ -121,7 +122,8 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         READ,
                         defaultDatabase(),
                         null,
-                        null),
+                        null,
+                        Collections.emptySet()),
                 new BeginMessage(
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx123")),
                         ofSeconds(5),
@@ -129,7 +131,8 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         WRITE,
                         database("foo"),
                         null,
-                        null),
+                        null,
+                        Collections.emptySet()),
                 COMMIT,
                 ROLLBACK,
                 RESET,
@@ -140,7 +143,8 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         defaultDatabase(),
                         READ,
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx1")),
-                        null),
+                        null,
+                        Collections.emptySet()),
                 autoCommitTxRunMessage(
                         new Query("RETURN 1"),
                         ofSeconds(5),
@@ -148,7 +152,8 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         database("foo"),
                         WRITE,
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx1")),
-                        null),
+                        null,
+                        Collections.emptySet()),
                 unmanagedTxRunMessage(new Query("RETURN 1")),
 
                 // Bolt V3 messages with struct values
@@ -159,7 +164,8 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         defaultDatabase(),
                         READ,
                         Collections.emptySet(),
-                        null),
+                        null,
+                        Collections.emptySet()),
                 autoCommitTxRunMessage(
                         new Query("RETURN $x", singletonMap("x", value(ZonedDateTime.now()))),
                         ofSeconds(1),
@@ -167,7 +173,8 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         database("foo"),
                         WRITE,
                         Collections.emptySet(),
-                        null),
+                        null,
+                        Collections.emptySet()),
                 unmanagedTxRunMessage(new Query("RETURN $x", singletonMap("x", point(42, 1, 2, 3)))),
 
                 // New 4.3 Messages

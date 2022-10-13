@@ -41,6 +41,7 @@ import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
+import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
@@ -218,7 +219,8 @@ class ChannelConnectorImplIT {
                 DEV_NULL_LOGGING,
                 new FakeClock(),
                 RoutingContext.EMPTY,
-                DefaultDomainNameResolver.getInstance());
+                DefaultDomainNameResolver.getInstance(),
+                Collections.emptySet());
     }
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException {

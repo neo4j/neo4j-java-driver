@@ -101,7 +101,8 @@ class LeakLoggingNetworkSessionTest {
                 null,
                 FetchSizeUtil.UNLIMITED_FETCH_SIZE,
                 logging,
-                mock(BookmarkManager.class));
+                mock(BookmarkManager.class),
+                Collections.emptySet());
     }
 
     private static ConnectionProvider connectionProviderMock(boolean openConnection) {

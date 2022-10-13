@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.MessageToMessageEncoder;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,7 +64,8 @@ public class MessageRecordingDriverFactory extends DriverFactory {
                 config.logging(),
                 clock,
                 routingContext,
-                DefaultDomainNameResolver.getInstance());
+                DefaultDomainNameResolver.getInstance(),
+                Collections.emptySet());
     }
 
     private class MessageRecordingChannelPipelineBuilder extends ChannelPipelineBuilderImpl {

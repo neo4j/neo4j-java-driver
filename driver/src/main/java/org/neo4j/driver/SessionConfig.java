@@ -24,8 +24,11 @@ import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.assertValid
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
@@ -47,6 +50,7 @@ public final class SessionConfig implements Serializable {
     private final Long fetchSize;
     private final String impersonatedUser;
     private final BookmarkManager bookmarkManager;
+    private final Set<NotificationFilter> notificationFilters;
 
     private SessionConfig(Builder builder) {
         this.bookmarks = builder.bookmarks;
@@ -55,6 +59,7 @@ public final class SessionConfig implements Serializable {
         this.fetchSize = builder.fetchSize;
         this.impersonatedUser = builder.impersonatedUser;
         this.bookmarkManager = builder.bookmarkManager;
+        this.notificationFilters = builder.notificationFilters;
     }
 
     /**
@@ -77,6 +82,7 @@ public final class SessionConfig implements Serializable {
 
     /**
      * Returns a {@link SessionConfig} for the specified database
+     *
      * @param database the database the session binds to.
      * @return a session config for a session for the specified database.
      */
@@ -143,6 +149,11 @@ public final class SessionConfig implements Serializable {
         return Optional.ofNullable(bookmarkManager);
     }
 
+    // todo
+    public Set<NotificationFilter> notificationFilters() {
+        return notificationFilters;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -169,9 +180,9 @@ public final class SessionConfig implements Serializable {
     public String toString() {
         return String.format(
                 """
-                SessionParameters{bookmarks=%s, defaultAccessMode=%s, database='%s', fetchSize=%d, impersonatedUser=%s, \
-                bookmarkManager=%s}\
-                """,
+                        SessionParameters{bookmarks=%s, defaultAccessMode=%s, database='%s', fetchSize=%d, impersonatedUser=%s, \
+                        bookmarkManager=%s}\
+                        """,
                 bookmarks, defaultAccessMode, database, fetchSize, impersonatedUser, bookmarkManager);
     }
 
@@ -185,6 +196,7 @@ public final class SessionConfig implements Serializable {
         private String database = null;
         private String impersonatedUser = null;
         private BookmarkManager bookmarkManager;
+        private Set<NotificationFilter> notificationFilters = Collections.emptySet();
 
         private Builder() {}
 
@@ -271,14 +283,15 @@ public final class SessionConfig implements Serializable {
          * Specify how many records to fetch in each batch for this session.
          * This config will overrides the default value set on {@link Config#fetchSize()}.
          * This config is only valid when the driver is used with servers that support Bolt V4 (Server version 4.0 and later).
-         *
+         * <p>
          * Bolt V4 enables pulling records in batches to allow client to take control of data population and apply back pressure to server.
          * This config specifies the default fetch size for all query runs using {@link Session} and {@link AsyncSession}.
          * By default, the value is set to {@code 1000}.
          * Use {@code -1} to disables back pressure and config client to pull all records at once after each run.
-         *
+         * <p>
          * This config only applies to run result obtained via {@link Session} and {@link AsyncSession}.
          * As with {@link RxSession}, the batch size is provided via {@link Subscription#request(long)} instead.
+         *
          * @param size the default record fetch size when pulling records in batches using Bolt V4.
          * @return this builder
          */
@@ -321,6 +334,16 @@ public final class SessionConfig implements Serializable {
         @Experimental
         public Builder withBookmarkManager(BookmarkManager bookmarkManager) {
             this.bookmarkManager = bookmarkManager;
+            return this;
+        }
+
+        // todo
+        public Builder withNotificationFilters(NotificationFilter... notificationFilters) {
+            if (notificationFilters == null) {
+                this.notificationFilters = Collections.emptySet();
+            } else {
+                this.notificationFilters = new HashSet<>(Arrays.asList(notificationFilters));
+            }
             return this;
         }
 

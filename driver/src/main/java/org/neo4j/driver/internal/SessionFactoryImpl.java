@@ -29,6 +29,7 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.NotificationFilter;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -41,6 +42,7 @@ public class SessionFactoryImpl implements SessionFactory {
     private final Logging logging;
     private final boolean leakedSessionsLoggingEnabled;
     private final long defaultFetchSize;
+    private final Set<NotificationFilter> notificationFilters;
 
     SessionFactoryImpl(ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config) {
         this.connectionProvider = connectionProvider;
@@ -48,10 +50,14 @@ public class SessionFactoryImpl implements SessionFactory {
         this.retryLogic = retryLogic;
         this.logging = config.logging();
         this.defaultFetchSize = config.fetchSize();
+        this.notificationFilters = config.notificationFilters();
     }
 
     @Override
     public NetworkSession newInstance(SessionConfig sessionConfig) {
+        var filters = notificationFilters.equals(sessionConfig.notificationFilters())
+                ? Collections.<NotificationFilter>emptySet()
+                : sessionConfig.notificationFilters();
         return createSession(
                 connectionProvider,
                 retryLogic,
@@ -61,7 +67,8 @@ public class SessionFactoryImpl implements SessionFactory {
                 parseFetchSize(sessionConfig),
                 sessionConfig.impersonatedUser().orElse(null),
                 logging,
-                sessionConfig.bookmarkManager().orElse(new NoOpBookmarkManager()));
+                sessionConfig.bookmarkManager().orElse(new NoOpBookmarkManager()),
+                filters);
     }
 
     private Set<Bookmark> toDistinctSet(Iterable<Bookmark> bookmarks) {
@@ -131,9 +138,11 @@ public class SessionFactoryImpl implements SessionFactory {
             long fetchSize,
             String impersonatedUser,
             Logging logging,
-            BookmarkManager bookmarkManager) {
+            BookmarkManager bookmarkManager,
+            Set<NotificationFilter> notificationFilters) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
+        Objects.requireNonNull(notificationFilters, "notificationFilters may not be null");
         return leakedSessionsLoggingEnabled
                 ? new LeakLoggingNetworkSession(
                         connectionProvider,
@@ -144,7 +153,8 @@ public class SessionFactoryImpl implements SessionFactory {
                         impersonatedUser,
                         fetchSize,
                         logging,
-                        bookmarkManager)
+                        bookmarkManager,
+                        notificationFilters)
                 : new NetworkSession(
                         connectionProvider,
                         retryLogic,
@@ -154,6 +164,7 @@ public class SessionFactoryImpl implements SessionFactory {
                         impersonatedUser,
                         fetchSize,
                         logging,
-                        bookmarkManager);
+                        bookmarkManager,
+                        notificationFilters);
     }
 }

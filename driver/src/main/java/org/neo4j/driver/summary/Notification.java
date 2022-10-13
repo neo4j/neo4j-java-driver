@@ -58,7 +58,15 @@ public interface Notification {
     /**
      * The severity level of the notification.
      *
+     * @deprecated superseded by {@link Notification#severityNew()}
      * @return the severity level of the notification
      */
+    @Deprecated
     String severity();
+
+    // todo document
+    Severity severityNew();
+
+    // todo document
+    Category category();
 }

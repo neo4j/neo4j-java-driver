@@ -183,8 +183,8 @@ public class BoltProtocolV3Test {
     void shouldBeginTransactionWithoutBookmark() {
         Connection connection = connectionMock(protocol);
 
-        CompletionStage<Void> stage =
-                protocol.beginTransaction(connection, Collections.emptySet(), TransactionConfig.empty(), null);
+        CompletionStage<Void> stage = protocol.beginTransaction(
+                connection, Collections.emptySet(), TransactionConfig.empty(), null, Collections.emptySet());
 
         verify(connection)
                 .writeAndFlush(
@@ -194,7 +194,8 @@ public class BoltProtocolV3Test {
                                 defaultDatabase(),
                                 WRITE,
                                 null,
-                                null)),
+                                null,
+                                Collections.emptySet())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -204,12 +205,19 @@ public class BoltProtocolV3Test {
         Connection connection = connectionMock(protocol);
         Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx100"));
 
-        CompletionStage<Void> stage = protocol.beginTransaction(connection, bookmarks, TransactionConfig.empty(), null);
+        CompletionStage<Void> stage = protocol.beginTransaction(
+                connection, bookmarks, TransactionConfig.empty(), null, Collections.emptySet());
 
         verify(connection)
                 .writeAndFlush(
                         eq(new BeginMessage(
-                                bookmarks, TransactionConfig.empty(), defaultDatabase(), WRITE, null, null)),
+                                bookmarks,
+                                TransactionConfig.empty(),
+                                defaultDatabase(),
+                                WRITE,
+                                null,
+                                null,
+                                Collections.emptySet())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -218,11 +226,19 @@ public class BoltProtocolV3Test {
     void shouldBeginTransactionWithConfig() {
         Connection connection = connectionMock(protocol);
 
-        CompletionStage<Void> stage = protocol.beginTransaction(connection, Collections.emptySet(), txConfig, null);
+        CompletionStage<Void> stage =
+                protocol.beginTransaction(connection, Collections.emptySet(), txConfig, null, Collections.emptySet());
 
         verify(connection)
                 .writeAndFlush(
-                        eq(new BeginMessage(Collections.emptySet(), txConfig, defaultDatabase(), WRITE, null, null)),
+                        eq(new BeginMessage(
+                                Collections.emptySet(),
+                                txConfig,
+                                defaultDatabase(),
+                                WRITE,
+                                null,
+                                null,
+                                Collections.emptySet())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -232,11 +248,13 @@ public class BoltProtocolV3Test {
         Connection connection = connectionMock(protocol);
         Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx4242"));
 
-        CompletionStage<Void> stage = protocol.beginTransaction(connection, bookmarks, txConfig, null);
+        CompletionStage<Void> stage =
+                protocol.beginTransaction(connection, bookmarks, txConfig, null, Collections.emptySet());
 
         verify(connection)
                 .writeAndFlush(
-                        eq(new BeginMessage(bookmarks, txConfig, defaultDatabase(), WRITE, null, null)),
+                        eq(new BeginMessage(
+                                bookmarks, txConfig, defaultDatabase(), WRITE, null, null, Collections.emptySet())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -342,7 +360,11 @@ public class BoltProtocolV3Test {
     @Test
     void shouldNotSupportDatabaseNameInBeginTransaction() {
         CompletionStage<Void> txStage = protocol.beginTransaction(
-                connectionMock("foo", protocol), Collections.emptySet(), TransactionConfig.empty(), null);
+                connectionMock("foo", protocol),
+                Collections.emptySet(),
+                TransactionConfig.empty(),
+                null,
+                Collections.emptySet());
 
         ClientException e = assertThrows(ClientException.class, () -> await(txStage));
         assertThat(e.getMessage(), startsWith("Database name parameter for selecting database is not supported"));
@@ -358,7 +380,8 @@ public class BoltProtocolV3Test {
                         Collections.emptySet(),
                         (ignored) -> {},
                         TransactionConfig.empty(),
-                        UNLIMITED_FETCH_SIZE));
+                        UNLIMITED_FETCH_SIZE,
+                        Collections.emptySet()));
         assertThat(e.getMessage(), startsWith("Database name parameter for selecting database is not supported"));
     }
 
@@ -373,10 +396,15 @@ public class BoltProtocolV3Test {
                             Collections.emptySet(),
                             (ignored) -> {},
                             TransactionConfig.empty(),
-                            UNLIMITED_FETCH_SIZE));
+                            UNLIMITED_FETCH_SIZE,
+                            Collections.emptySet()));
         } else {
             CompletionStage<Void> txStage = protocol.beginTransaction(
-                    connectionMock("foo", protocol), Collections.emptySet(), TransactionConfig.empty(), null);
+                    connectionMock("foo", protocol),
+                    Collections.emptySet(),
+                    TransactionConfig.empty(),
+                    null,
+                    Collections.emptySet());
             e = assertThrows(ClientException.class, () -> await(txStage));
         }
 
@@ -424,7 +452,13 @@ public class BoltProtocolV3Test {
         CompletionStage<AsyncResultCursor> cursorStage;
         if (autoCommitTx) {
             cursorStage = protocol.runInAutoCommitTransaction(
-                            connection, QUERY, initialBookmarks, (ignored) -> {}, config, UNLIMITED_FETCH_SIZE)
+                            connection,
+                            QUERY,
+                            initialBookmarks,
+                            (ignored) -> {},
+                            config,
+                            UNLIMITED_FETCH_SIZE,
+                            Collections.emptySet())
                     .asyncResult();
         } else {
             cursorStage = protocol.runInUnmanagedTransaction(
@@ -452,7 +486,13 @@ public class BoltProtocolV3Test {
         Consumer<DatabaseBookmark> bookmarkConsumer = mock(Consumer.class);
 
         CompletableFuture<AsyncResultCursor> cursorFuture = protocol.runInAutoCommitTransaction(
-                        connection, QUERY, bookmarks, bookmarkConsumer, config, UNLIMITED_FETCH_SIZE)
+                        connection,
+                        QUERY,
+                        bookmarks,
+                        bookmarkConsumer,
+                        config,
+                        UNLIMITED_FETCH_SIZE,
+                        Collections.emptySet())
                 .asyncResult()
                 .toCompletableFuture();
         assertFalse(cursorFuture.isDone());
@@ -475,7 +515,13 @@ public class BoltProtocolV3Test {
         Consumer<DatabaseBookmark> bookmarkConsumer = mock(Consumer.class);
 
         CompletableFuture<AsyncResultCursor> cursorFuture = protocol.runInAutoCommitTransaction(
-                        connection, QUERY, bookmarks, bookmarkConsumer, config, UNLIMITED_FETCH_SIZE)
+                        connection,
+                        QUERY,
+                        bookmarks,
+                        bookmarkConsumer,
+                        config,
+                        UNLIMITED_FETCH_SIZE,
+                        Collections.emptySet())
                 .asyncResult()
                 .toCompletableFuture();
         assertFalse(cursorFuture.isDone());
@@ -507,7 +553,7 @@ public class BoltProtocolV3Test {
         RunWithMetadataMessage expectedMessage;
         if (session) {
             expectedMessage = RunWithMetadataMessage.autoCommitTxRunMessage(
-                    QUERY, config, defaultDatabase(), mode, bookmarks, null);
+                    QUERY, config, defaultDatabase(), mode, bookmarks, null, Collections.emptySet());
         } else {
             expectedMessage = RunWithMetadataMessage.unmanagedTxRunMessage(QUERY);
         }

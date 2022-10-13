@@ -28,8 +28,10 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import org.neo4j.driver.internal.SecuritySettings;
@@ -75,7 +77,9 @@ public final class Config implements Serializable {
 
     private static final Config EMPTY = builder().build();
 
-    /** User defined logging */
+    /**
+     * User defined logging
+     */
     private final Logging logging;
 
     private final boolean logLeakedSessions;
@@ -98,6 +102,7 @@ public final class Config implements Serializable {
     private final int eventLoopThreads;
     private final String userAgent;
     private final MetricsAdapter metricsAdapter;
+    private final Set<NotificationFilter> notificationFilters;
 
     private Config(ConfigBuilder builder) {
         this.logging = builder.logging;
@@ -119,10 +124,12 @@ public final class Config implements Serializable {
 
         this.eventLoopThreads = builder.eventLoopThreads;
         this.metricsAdapter = builder.metricsAdapter;
+        this.notificationFilters = builder.notificationFilters;
     }
 
     /**
      * Logging provider
+     *
      * @return the Logging provider to use
      */
     public Logging logging() {
@@ -252,6 +259,11 @@ public final class Config implements Serializable {
         return userAgent;
     }
 
+    // todo
+    public Set<NotificationFilter> notificationFilters() {
+        return notificationFilters;
+    }
+
     /**
      * Used to build new config instances
      */
@@ -272,6 +284,7 @@ public final class Config implements Serializable {
         private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
+        private Set<NotificationFilter> notificationFilters = Collections.emptySet();
 
         private ConfigBuilder() {}
 
@@ -331,7 +344,7 @@ public final class Config implements Serializable {
          * validity and negative values mean connections will never be tested.
          *
          * @param value the minimum idle time
-         * @param unit the unit in which the duration is given
+         * @param unit  the unit in which the duration is given
          * @return this builder
          */
         public ConfigBuilder withConnectionLivenessCheckTimeout(long value, TimeUnit unit) {
@@ -356,7 +369,7 @@ public final class Config implements Serializable {
          * checked.
          *
          * @param value the maximum connection lifetime
-         * @param unit the unit in which the duration is given
+         * @param unit  the unit in which the duration is given
          * @return this builder
          */
         public ConfigBuilder withMaxConnectionLifetime(long value, TimeUnit unit) {
@@ -402,7 +415,7 @@ public final class Config implements Serializable {
          * of {@code 0} is allowed and results in no timeout and immediate failure when connection is unavailable.
          *
          * @param value the acquisition timeout
-         * @param unit the unit in which the duration is given
+         * @param unit  the unit in which the duration is given
          * @return this builder
          * @see #withMaxConnectionPoolSize(int)
          */
@@ -418,6 +431,7 @@ public final class Config implements Serializable {
 
         /**
          * Set to use encrypted traffic.
+         *
          * @return this builder
          */
         public ConfigBuilder withEncryption() {
@@ -427,6 +441,7 @@ public final class Config implements Serializable {
 
         /**
          * Set to use unencrypted traffic.
+         *
          * @return this builder
          */
         public ConfigBuilder withoutEncryption() {
@@ -461,13 +476,12 @@ public final class Config implements Serializable {
          * The routing table of a database get refreshed if the database is used frequently.
          * If the database is not used for a long time,
          * the driver use the timeout specified here to purge the stale routing table.
-         *
+         * <p>
          * After a routing table is removed, next time when using the database of the purged routing table,
          * the driver will fall back to use seed URI for a new routing table.
-         * @param delay
-         *         the amount of time to wait before purging routing tables
-         * @param unit
-         *         the unit in which the duration is given
+         *
+         * @param delay the amount of time to wait before purging routing tables
+         * @param unit  the unit in which the duration is given
          * @return this builder
          */
         public ConfigBuilder withRoutingTablePurgeDelay(long delay, TimeUnit unit) {
@@ -483,15 +497,16 @@ public final class Config implements Serializable {
         /**
          * Specify how many records to fetch in each batch.
          * This config is only valid when the driver is used with servers that support Bolt V4 (Server version 4.0 and later).
-         *
+         * <p>
          * Bolt V4 enables pulling records in batches to allow client to take control of data population and apply back pressure to server.
          * This config specifies the default fetch size for all query runs using {@link Session} and {@link org.neo4j.driver.async.AsyncSession}.
          * By default, the value is set to {@code 1000}.
          * Use {@code -1} to disables back pressure and config client to pull all records at once after each run.
-         *
+         * <p>
          * This config only applies to run result obtained via {@link Session} and {@link org.neo4j.driver.async.AsyncSession}.
          * As with {@link org.neo4j.driver.reactive.RxSession}, the batch size is provided via
          * {@link org.reactivestreams.Subscription#request(long)} instead.
+         *
          * @param size the default record fetch size when pulling records in batches using Bolt V4.
          * @return this builder
          */
@@ -512,10 +527,10 @@ public final class Config implements Serializable {
          * The default value of this parameter is {@code 30 SECONDS}.
          *
          * @param value the timeout duration
-         * @param unit the unit in which duration is given
+         * @param unit  the unit in which duration is given
          * @return this builder
          * @throws IllegalArgumentException when given value is negative or does not fit in {@code int} when
-         * converted to milliseconds.
+         *                                  converted to milliseconds.
          */
         public ConfigBuilder withConnectionTimeout(long value, TimeUnit unit) {
             long connectionTimeoutMillis = unit.toMillis(value);
@@ -543,7 +558,7 @@ public final class Config implements Serializable {
          * Default value is 30 seconds.
          *
          * @param value the timeout duration
-         * @param unit the unit in which duration is given
+         * @param unit  the unit in which duration is given
          * @return this builder
          * @throws IllegalArgumentException when given value is negative
          */
@@ -586,6 +601,7 @@ public final class Config implements Serializable {
 
         /**
          * Disable driver metrics. When disabled, driver metrics cannot be accessed via {@link Driver#metrics()}.
+         *
          * @return this builder.
          */
         public ConfigBuilder withoutDriverMetrics() {
@@ -619,6 +635,7 @@ public final class Config implements Serializable {
         /**
          * Configure the event loop thread count. This specifies how many threads the driver can use to handle network I/O events
          * and user's events in driver's I/O threads. By default, 2 * NumberOfProcessors amount of threads will be used instead.
+         *
          * @param size the thread count.
          * @return this builder.
          * @throws IllegalArgumentException if the value of the size is set to a number that is less than 1.
@@ -634,6 +651,7 @@ public final class Config implements Serializable {
 
         /**
          * Configure the user_agent field sent to the server to identify the connected client.
+         *
          * @param userAgent the string to configure user_agent.
          * @return this builder.
          */
@@ -642,6 +660,16 @@ public final class Config implements Serializable {
                 throw new IllegalArgumentException("The user_agent string must not be empty");
             }
             this.userAgent = userAgent;
+            return this;
+        }
+
+        // todo
+        public ConfigBuilder withNotificationFilters(NotificationFilter... notificationFilters) {
+            if (notificationFilters == null) {
+                this.notificationFilters = Collections.emptySet();
+            } else {
+                this.notificationFilters = new HashSet<>(Arrays.asList(notificationFilters));
+            }
             return this;
         }
 
@@ -802,6 +830,7 @@ public final class Config implements Serializable {
 
         /**
          * The revocation strategy used for verifying certificates.
+         *
          * @return this {@link TrustStrategy}'s revocation strategy
          */
         public RevocationCheckingStrategy revocationCheckingStrategy() {
@@ -811,6 +840,7 @@ public final class Config implements Serializable {
         /**
          * Configures the {@link TrustStrategy} to not carry out OCSP revocation checks on certificates. This is the
          * option that is configured by default.
+         *
          * @return the current trust strategy
          */
         public TrustStrategy withoutCertificateRevocationChecks() {
@@ -823,6 +853,7 @@ public final class Config implements Serializable {
          * stapled to the certificate. If no stapled response is found, then certificate verification continues
          * (and does not fail verification). This setting also requires the server to be configured to enable
          * OCSP stapling.
+         *
          * @return the current trust strategy
          */
         public TrustStrategy withVerifyIfPresentRevocationChecks() {
@@ -834,9 +865,10 @@ public final class Config implements Serializable {
          * Configures the {@link TrustStrategy} to carry out strict OCSP revocation checks for revocation status that
          * are stapled to the certificate. If no stapled response is found, then the driver will fail certificate verification
          * and not connect to the server. This setting also requires the server to be configured to enable OCSP stapling.
-         *
+         * <p>
          * Note: enabling this setting will prevent the driver connecting to the server when the server is unable to reach
          * the certificate's configured OCSP responder URL.
+         *
          * @return the current trust strategy
          */
         public TrustStrategy withStrictRevocationChecks() {
