@@ -18,7 +18,10 @@
  */
 package org.neo4j.driver;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.reactive.ReactiveSession;
@@ -63,6 +66,109 @@ import org.neo4j.driver.util.Experimental;
  * @since 1.0 (Modified and Added {@link AsyncSession} and {@link RxSession} since 2.0)
  */
 public interface Driver extends AutoCloseable {
+    /**
+     * Execute an idempotent query in a managed transaction with automatic retries on retryable errors.
+     * <p>
+     * This is a basic high-level API for executing idempotent queries. {@link #executeQuery(Query, QueryConfig)}
+     * documentation provides more details.
+     *
+     * @param query a query value to execute
+     * @return a query execution result value
+     */
+    default EagerResult executeQuery(Query query) {
+        var defaultConfig = QueryConfig.builder().build();
+        return executeQuery(query, defaultConfig);
+    }
+
+    /**
+     * Execute an idempotent query in a managed transaction with automatic retries on retryable errors.
+     * <p>
+     * This is a basic high-level API for executing idempotent queries. There are more advanced APIs available.
+     * For instance, {@link Session}, {@link Transaction} and transaction functions that are accessible via
+     * methods like {@link Session#executeWrite(TransactionCallback)}, {@link Session#executeWriteWithoutResult(Consumer)}
+     * and {@link Session#executeRead(TransactionCallback)} (there are also overloaded options available).
+     * <p>
+     * Sample usage:
+     * <pre>
+     * {@code
+     * var query = new Query("CREATE (n{field: $value}) RETURN n", Map.of("value", "value"));
+     * var eagerResult = driver.executeQuery(query, QueryConfig.defaultConfig());
+     * }
+     * </pre>
+     * The above sample is functionally similar to the following use of the more advanced APIs:
+     * <pre>
+     * {@code
+     * var query = new Query("CREATE (n{field: $value}) RETURN n", Map.of("value", "value"));
+     * ResultTransformer<EagerResult> resultTransformer = ResultTransformer implementation;
+     * var sessionConfig = SessionConfig.builder()
+     *         .withBookmarkManager(driverConfig.queryBookmarkManager())
+     *         .build();
+     * try (var session = driver.session(sessionConfig)) {
+     *     var eagerResult = session.executeWrite(tx -> {
+     *         var result = tx.run(query);
+     *         return resultTransformer.transform(result);
+     *     });
+     * }
+     * }
+     * </pre>
+     *
+     * @param query a query value to execute
+     * @param config a query execution config value
+     * @param <T> a type managed by {@link QueryConfig#resultTransformer()}
+     * @return a query execution result value of a type managed by {@link QueryConfig#resultTransformer()}
+     */
+    <T> T executeQuery(Query query, QueryConfig<T> config);
+
+    /**
+     * Execute an idempotent query in a managed transaction with automatic retries on retryable errors.
+     * <p>
+     * This is a basic high-level API for executing idempotent queries. {@link #executeQuery(Query, QueryConfig)}
+     * documentation provides more details.
+     *
+     * @param query a query string to execute
+     * @return a query execution result value
+     */
+    default EagerResult executeQuery(String query) {
+        return executeQuery(query, Collections.emptyMap());
+    }
+
+    /**
+     * Execute an idempotent query in a managed transaction with automatic retries on retryable errors.
+     * <p>
+     * This is a basic high-level API for executing idempotent queries. {@link #executeQuery(Query, QueryConfig)}
+     * documentation provides more details.
+     *
+     * @param query a query string to execute
+     * @param parameters a query parameters
+     * @return a query execution result value
+     */
+    default EagerResult executeQuery(String query, Map<String, Object> parameters) {
+        return executeQuery(new Query(query, parameters));
+    }
+
+    /**
+     * Execute an idempotent query in a managed transaction with automatic retries on retryable errors.
+     * <p>
+     * This is a basic high-level API for executing idempotent queries. {@link #executeQuery(Query, QueryConfig)}
+     * documentation provides more details.
+     *
+     * @param query a query string to execute
+     * @param parameters a query parameters
+     * @param config a query execution config value
+     * @param <T> a type managed by {@link QueryConfig#resultTransformer()}
+     * @return a query execution result value of a type managed by {@link QueryConfig#resultTransformer()}
+     */
+    default <T> T executeQuery(String query, Map<String, Object> parameters, QueryConfig<T> config) {
+        return executeQuery(new Query(query, parameters), config);
+    }
+
+    /**
+     * Returns an instance of {@link BookmarkManager} used by {@link #executeQuery(Query, QueryConfig)} method and its variants by default.
+     *
+     * @return bookmark manager, must not be {@code null}
+     */
+    BookmarkManager queryBookmarkManager();
+
     /**
      * Return a flag to indicate whether or not encryption is used for this driver.
      *

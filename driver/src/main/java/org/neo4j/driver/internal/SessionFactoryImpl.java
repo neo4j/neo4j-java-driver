@@ -61,7 +61,7 @@ public class SessionFactoryImpl implements SessionFactory {
                 parseFetchSize(sessionConfig),
                 sessionConfig.impersonatedUser().orElse(null),
                 logging,
-                sessionConfig.bookmarkManager().orElse(new NoOpBookmarkManager()));
+                sessionConfig.bookmarkManager().orElse(NoOpBookmarkManager.INSTANCE));
     }
 
     private Set<Bookmark> toDistinctSet(Iterable<Bookmark> bookmarks) {

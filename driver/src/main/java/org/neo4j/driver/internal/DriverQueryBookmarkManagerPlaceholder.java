@@ -19,41 +19,35 @@
 package org.neo4j.driver.internal;
 
 import java.io.Serial;
-import java.util.Collections;
 import java.util.Set;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 
-/**
- * A no-op {@link BookmarkManager} implementation.
- */
-public class NoOpBookmarkManager implements BookmarkManager {
+public class DriverQueryBookmarkManagerPlaceholder implements BookmarkManager {
     @Serial
-    private static final long serialVersionUID = 7175136719562680362L;
+    private static final long serialVersionUID = 1075016673435512326L;
 
-    public static final NoOpBookmarkManager INSTANCE = new NoOpBookmarkManager();
+    public static final DriverQueryBookmarkManagerPlaceholder INSTANCE = new DriverQueryBookmarkManagerPlaceholder();
 
-    private static final Set<Bookmark> EMPTY = Collections.emptySet();
-
-    private NoOpBookmarkManager() {}
+    private DriverQueryBookmarkManagerPlaceholder() {}
 
     @Override
     public void updateBookmarks(String database, Set<Bookmark> previousBookmarks, Set<Bookmark> newBookmarks) {
-        // ignored
+        throw new UnsupportedOperationException("operation not supported");
     }
 
     @Override
     public Set<Bookmark> getBookmarks(String database) {
-        return EMPTY;
+        throw new UnsupportedOperationException("operation not supported");
     }
 
     @Override
     public Set<Bookmark> getAllBookmarks() {
-        return EMPTY;
+        throw new UnsupportedOperationException("operation not supported");
     }
 
     @Override
     public void forget(Set<String> databases) {
-        // ignored
+        throw new UnsupportedOperationException("operation not supported");
     }
 }

@@ -53,6 +53,38 @@ import org.neo4j.driver.testutil.TestUtil;
 
 class ConfigTest {
     @Test
+    void shouldReturnDefaultBookmarkManager() {
+        // Given
+        var config = Config.defaultConfig();
+
+        // When
+        var manager = config.queryBookmarkManager();
+
+        // Then
+        assertEquals(
+                BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build())
+                        .getClass(),
+                manager.getClass());
+    }
+
+    @Test
+    void shouldUpdateBookmarkManager() {
+        // Given
+        var manager = mock(BookmarkManager.class);
+
+        // When
+        var config = Config.builder().withQueryBookmarkManager(manager).build();
+
+        // Then
+        assertEquals(manager, config.queryBookmarkManager());
+    }
+
+    @Test
+    void shouldNotAllowNullBookmarkManager() {
+        assertThrows(NullPointerException.class, () -> Config.builder().withQueryBookmarkManager(null));
+    }
+
+    @Test
     void shouldDefaultToKnownCerts() {
         // Given
         Config config = Config.defaultConfig();
