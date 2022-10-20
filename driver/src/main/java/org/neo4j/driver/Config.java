@@ -130,7 +130,8 @@ public final class Config implements Serializable {
      * A {@link BookmarkManager} implementation for the driver to use on
      * {@link Driver#executeQuery(Query, QueryConfig)} method and its variants by default.
      * <p>
-     * Please note that sessions will not use this automatically, but it is possible to enable it explicitly using {@link SessionConfig.Builder#withBookmarkManager(BookmarkManager)}.
+     * Please note that sessions will not use this automatically, but it is possible to enable it explicitly
+     * using {@link SessionConfig.Builder#withBookmarkManager(BookmarkManager)}.
      *
      * @return bookmark manager, must not be {@code null}
      */
@@ -299,7 +300,8 @@ public final class Config implements Serializable {
          * Sets a {@link BookmarkManager} implementation for the driver to use on
          * {@link Driver#executeQuery(Query, QueryConfig)} method and its variants by default.
          * <p>
-         * Please note that sessions will not use this automatically, but it is possible to enable it explicitly using {@link SessionConfig.Builder#withBookmarkManager(BookmarkManager)}.
+         * Please note that sessions will not use this automatically, but it is possible to enable it explicitly
+         * using {@link SessionConfig.Builder#withBookmarkManager(BookmarkManager)}.
          *
          * @param queryBookmarkManager bookmark manager, must not be {@code null}
          * @return this builder
