@@ -18,16 +18,12 @@
  */
 package org.neo4j.docs.driver;
 
-// tag::config-custom-resolver-import[]
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.net.ServerAddress;
 
 import java.util.Arrays;
@@ -35,13 +31,12 @@ import java.util.HashSet;
 
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.Values.parameters;
-// end::config-custom-resolver-import[]
 
 public class ConfigCustomResolverExample implements AutoCloseable {
     private final Driver driver;
 
     public ConfigCustomResolverExample(String virtualUri, AuthToken authToken, ServerAddress... addresses) {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withResolver(address -> new HashSet<>(Arrays.asList(addresses)))
                 .build();
 
@@ -50,7 +45,7 @@ public class ConfigCustomResolverExample implements AutoCloseable {
 
     // tag::config-custom-resolver[]
     private Driver createDriver(String virtualUri, String user, String password, ServerAddress... addresses) {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withResolver(address -> new HashSet<>(Arrays.asList(addresses)))
                 .build();
 
@@ -58,18 +53,17 @@ public class ConfigCustomResolverExample implements AutoCloseable {
     }
 
     private void addPerson(String name) {
-        String username = "neo4j";
-        String password = "some password";
+        var username = "neo4j";
+        var password = "some password";
 
-        try (Driver driver = createDriver(
+        try (var driver = createDriver(
                 "neo4j://x.example.com",
                 username,
                 password,
                 ServerAddress.of("a.example.com", 7676),
                 ServerAddress.of("b.example.com", 8787),
                 ServerAddress.of("c.example.com", 9898))) {
-            try (Session session = driver.session(
-                    builder().withDefaultAccessMode(AccessMode.WRITE).build())) {
+            try (var session = driver.session(builder().withDefaultAccessMode(AccessMode.WRITE).build())) {
                 session.run("CREATE (a:Person {name: $name})", parameters("name", name));
             }
         }
@@ -82,9 +76,7 @@ public class ConfigCustomResolverExample implements AutoCloseable {
     }
 
     public boolean canConnect() {
-        Result result = driver.session(
-                        builder().withDefaultAccessMode(AccessMode.READ).build())
-                .run("RETURN 1");
+        var result = driver.session(builder().withDefaultAccessMode(AccessMode.READ).build()).run("RETURN 1");
         return result.single().get(0).asInt() == 1;
     }
 }

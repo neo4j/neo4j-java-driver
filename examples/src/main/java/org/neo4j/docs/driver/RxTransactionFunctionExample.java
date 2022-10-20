@@ -18,59 +18,39 @@
  */
 package org.neo4j.docs.driver;
 
-// tag::rx-transaction-function-import[]
-
-import io.reactivex.Flowable;
-import io.reactivex.Observable;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.summary.ResultSummary;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
-import java.util.Map;
-// end::rx-transaction-function-import[]
+import java.util.concurrent.atomic.AtomicReference;
+
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
 public class RxTransactionFunctionExample extends BaseApplication {
     public RxTransactionFunctionExample(String uri, String user, String password) {
         super(uri, user, password);
     }
 
-    @SuppressWarnings("deprecation")
     // tag::rx-transaction-function[]
     public Flux<ResultSummary> printAllProducts() {
-        String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
-        Map<String, Object> parameters = Collections.singletonMap("id", 0);
+        var query = new Query("MATCH (p:Product) WHERE p.id = $id RETURN p.title", Collections.singletonMap("id", 0));
 
         return Flux.usingWhen(
-                Mono.fromSupplier(driver::rxSession),
-                session -> session.readTransaction(tx -> {
-                    RxResult result = tx.run(query, parameters);
-                    return Flux.from(result.records())
+                Mono.fromSupplier(driver::reactiveSession),
+                session -> flowPublisherToFlux(session.executeRead(tx -> {
+                    var resultRef = new AtomicReference<ReactiveResult>();
+                    var flux = flowPublisherToFlux(tx.run(query))
+                            .doOnNext(resultRef::set)
+                            .flatMap(result -> flowPublisherToFlux(result.records()))
                             .doOnNext(record -> System.out.println(record.get(0).asString()))
-                            .then(Mono.from(result.consume()));
-                }),
-                RxSession::close);
+                            .then(Mono.defer(() -> Mono.from(flowPublisherToFlux(resultRef.get().consume()))));
+                    return publisherToFlowPublisher(flux);
+                })),
+                session -> flowPublisherToFlux(session.close()));
     }
     // end::rx-transaction-function[]
-
-    @SuppressWarnings("deprecation")
-    // tag::RxJava-transaction-function[]
-    public Flowable<ResultSummary> printAllProductsRxJava() {
-        String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
-        Map<String, Object> parameters = Collections.singletonMap("id", 0);
-
-        return Flowable.using(
-                driver::rxSession,
-                session -> session.readTransaction(tx -> {
-                    RxResult result = tx.run(query, parameters);
-                    return Flowable.fromPublisher(result.records())
-                            .doOnNext(record -> System.out.println(record.get(0).asString()))
-                            .ignoreElements()
-                            .andThen(result.consume());
-                }),
-                session -> Observable.fromPublisher(session.close()).subscribe());
-    }
-    // end::RxJava-transaction-function[]
 }

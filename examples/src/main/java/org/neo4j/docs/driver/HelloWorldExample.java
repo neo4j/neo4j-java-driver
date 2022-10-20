@@ -23,8 +23,7 @@ package org.neo4j.docs.driver;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
+import org.neo4j.driver.Query;
 
 import static org.neo4j.driver.Values.parameters;
 // end::hello-world-import[]
@@ -42,22 +41,19 @@ public class HelloWorldExample implements AutoCloseable {
         driver.close();
     }
 
-    @SuppressWarnings("deprecation")
     public void printGreeting(final String message) {
-        try (Session session = driver.session()) {
-            String greeting = session.writeTransaction(tx -> {
-                Result result = tx.run(
-                        "CREATE (a:Greeting) " + "SET a.message = $message "
-                                + "RETURN a.message + ', from node ' + id(a)",
-                        parameters("message", message));
+        try (var session = driver.session()) {
+            var greeting = session.executeWrite(tx -> {
+                var query = new Query("CREATE (a:Greeting) SET a.message = $message RETURN a.message + ', from node ' + id(a)", parameters("message", message));
+                var result = tx.run(query);
                 return result.single().get(0).asString();
             });
             System.out.println(greeting);
         }
     }
 
-    public static void main(String... args) throws Exception {
-        try (HelloWorldExample greeter = new HelloWorldExample("bolt://localhost:7687", "neo4j", "password")) {
+    public static void main(String... args) {
+        try (var greeter = new HelloWorldExample("bolt://localhost:7687", "neo4j", "password")) {
             greeter.printGreeting("hello, world");
         }
     }

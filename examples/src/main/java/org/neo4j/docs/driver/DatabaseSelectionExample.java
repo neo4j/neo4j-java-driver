@@ -19,8 +19,8 @@
 package org.neo4j.docs.driver;
 
 // tag::database-selection-import[]
+
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 // end::database-selection-import[]
 
@@ -31,17 +31,16 @@ public class DatabaseSelectionExample extends BaseApplication {
 
     public void useAnotherDatabaseExample() {
         // tag::database-selection[]
-        try (Session session = driver.session(SessionConfig.forDatabase("examples"))) {
-            session.run("CREATE (a:Greeting {message: 'Hello, Example-Database'}) RETURN a")
-                    .consume();
+        try (var session = driver.session(SessionConfig.forDatabase("examples"))) {
+            session.run("CREATE (a:Greeting {message: 'Hello, Example-Database'}) RETURN a").consume();
         }
 
-        SessionConfig sessionConfig = SessionConfig.builder()
+        var sessionConfig = SessionConfig.builder()
                 .withDatabase("examples")
                 .withDefaultAccessMode(AccessMode.READ)
                 .build();
-        try (Session session = driver.session(sessionConfig)) {
-            String msg = session.run("MATCH (a:Greeting) RETURN a.message as msg")
+        try (var session = driver.session(sessionConfig)) {
+            var msg = session.run("MATCH (a:Greeting) RETURN a.message as msg")
                     .single()
                     .get("msg")
                     .asString();

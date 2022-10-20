@@ -18,14 +18,8 @@
  */
 package org.neo4j.docs.driver;
 
-// tag::result-consume-import[]
-
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-
 import java.util.ArrayList;
 import java.util.List;
-// end::result-consume-import[]
 
 public class ResultConsumeExample extends BaseApplication {
     public ResultConsumeExample(String uri, String user, String password) {
@@ -33,12 +27,11 @@ public class ResultConsumeExample extends BaseApplication {
     }
 
     // tag::result-consume[]
-    @SuppressWarnings("deprecation")
     public List<String> getPeople() {
-        try (Session session = driver.session()) {
-            return session.readTransaction(tx -> {
+        try (var session = driver.session()) {
+            return session.executeRead(tx -> {
                 List<String> names = new ArrayList<>();
-                Result result = tx.run("MATCH (a:Person) RETURN a.name ORDER BY a.name");
+                var result = tx.run("MATCH (a:Person) RETURN a.name ORDER BY a.name");
                 while (result.hasNext()) {
                     names.add(result.next().get(0).asString());
                 }

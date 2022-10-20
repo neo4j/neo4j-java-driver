@@ -19,7 +19,6 @@
 package org.neo4j.docs.driver;
 
 // tag::config-connection-timeout-import[]
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -33,7 +32,9 @@ public class ConfigConnectionTimeoutExample implements AutoCloseable {
 
     // tag::config-connection-timeout[]
     public ConfigConnectionTimeoutExample(String uri, String user, String password) {
-        Config config = Config.builder().withConnectionTimeout(15, SECONDS).build();
+        var config = Config.builder()
+                .withConnectionTimeout(15, SECONDS)
+                .build();
 
         driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }

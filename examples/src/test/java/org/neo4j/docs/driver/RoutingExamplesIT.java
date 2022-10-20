@@ -42,7 +42,7 @@ class RoutingExamplesIT {
             .withAdminPassword(null);
 
     @Test
-    void testShouldRunConfigCustomResolverExample() throws Exception {
+    void testShouldRunConfigCustomResolverExample() {
         // Given
         URI boltUri = URI.create(NEO4J_CONTAINER.getBoltUrl());
         String neo4jUrl = String.format("neo4j://%s:%d", boltUri.getHost(), boltUri.getPort());

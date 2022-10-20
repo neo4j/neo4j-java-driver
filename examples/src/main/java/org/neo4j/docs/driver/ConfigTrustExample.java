@@ -30,7 +30,7 @@ public class ConfigTrustExample implements AutoCloseable {
 
     // tag::config-trust[]
     public ConfigTrustExample(String uri, String user, String password) {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
                 .build();
 

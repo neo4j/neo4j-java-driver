@@ -19,10 +19,10 @@
 package org.neo4j.docs.driver;
 
 // tag::basic-auth-import[]
+
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
 // end::basic-auth-import[]
 
 public class BasicAuthExample implements AutoCloseable {
@@ -40,7 +40,7 @@ public class BasicAuthExample implements AutoCloseable {
     }
 
     public boolean canConnect() {
-        Result result = driver.session().run("RETURN 1");
+        var result = driver.session().run("RETURN 1");
         return result.single().get(0).asInt() == 1;
     }
 }

@@ -19,7 +19,6 @@
 package org.neo4j.docs.driver;
 
 // tag::custom-auth-import[]
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;

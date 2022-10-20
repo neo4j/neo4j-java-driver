@@ -18,38 +18,21 @@
  */
 package org.neo4j.docs.driver;
 
-// tag::result-retain-import[]
-
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.TransactionWork;
-
-import java.util.List;
-
 import static org.neo4j.driver.Values.parameters;
-// end::result-retain-import[]
 
 public class ResultRetainExample extends BaseApplication {
     public ResultRetainExample(String uri, String user, String password) {
         super(uri, user, password);
     }
 
-    @SuppressWarnings("deprecation")
     // tag::result-retain[]
     public int addEmployees(final String companyName) {
-        try (Session session = driver.session()) {
-            int employees = 0;
-            List<Record> persons = session.readTransaction(new TransactionWork<List<Record>>() {
-                @Override
-                public List<Record> execute(Transaction tx) {
-                    return matchPersonNodes(tx);
-                }
-            });
-            for (final Record person : persons) {
-                employees += session.writeTransaction(tx -> {
-                    Result result = tx.run(
+        try (var session = driver.session()) {
+            var employees = 0;
+            var persons = session.executeRead(tx -> tx.run("MATCH (a:Person) RETURN a.name AS name").list());
+            for (var person : persons) {
+                employees += session.executeWrite(tx -> {
+                    var result = tx.run(
                             "MATCH (emp:Person {name: $person_name}) " + "MERGE (com:Company {name: $company_name}) "
                                     + "MERGE (emp)-[:WORKS_FOR]->(com)",
                             parameters("person_name", person.get("name").asString(), "company_name", companyName));
@@ -60,11 +43,6 @@ public class ResultRetainExample extends BaseApplication {
             return employees;
         }
     }
-
-    private static List<Record> matchPersonNodes(Transaction tx) {
-        return tx.run("MATCH (a:Person) RETURN a.name AS name").list();
-    }
-
     // end::result-retain[]
 
 }

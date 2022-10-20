@@ -18,19 +18,14 @@
  */
 package org.neo4j.docs.driver;
 
-// tag::rx-autocommit-transaction-import[]
-
-import io.reactivex.Flowable;
-import io.reactivex.Observable;
-import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.Query;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
-import java.util.Map;
-// end::rx-autocommit-transaction-import[]
 
-@SuppressWarnings("deprecation")
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+
 public class RxAutocommitTransactionExample extends BaseApplication {
     public RxAutocommitTransactionExample(String uri, String user, String password) {
         super(uri, user, password);
@@ -38,27 +33,13 @@ public class RxAutocommitTransactionExample extends BaseApplication {
 
     // tag::rx-autocommit-transaction[]
     public Flux<String> readProductTitles() {
-        String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
-        Map<String, Object> parameters = Collections.singletonMap("id", 0);
-
+        var query = new Query("MATCH (p:Product) WHERE p.id = $id RETURN p.title", Collections.singletonMap("id", 0));
         return Flux.usingWhen(
-                Mono.fromSupplier(driver::rxSession),
-                session -> Flux.from(session.run(query, parameters).records())
+                Mono.fromSupplier(driver::reactiveSession),
+                session -> flowPublisherToFlux(session.run(query))
+                        .flatMap(result -> flowPublisherToFlux(result.records()))
                         .map(record -> record.get(0).asString()),
-                RxSession::close);
+                session -> flowPublisherToFlux(session.close()));
     }
     // end::rx-autocommit-transaction[]
-
-    // tag::RxJava-autocommit-transaction[]
-    public Flowable<String> readProductTitlesRxJava() {
-        String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
-        Map<String, Object> parameters = Collections.singletonMap("id", 0);
-
-        return Flowable.using(
-                driver::rxSession,
-                session -> Flowable.fromPublisher(session.run(query, parameters).records())
-                        .map(record -> record.get(0).asString()),
-                session -> Observable.fromPublisher(session.close()).subscribe());
-    }
-    // end::RxJava-autocommit-transaction[]
 }
