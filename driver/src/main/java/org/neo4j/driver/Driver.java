@@ -88,6 +88,11 @@ public interface Driver extends AutoCloseable {
      * methods like {@link Session#executeWrite(TransactionCallback)}, {@link Session#executeWriteWithoutResult(Consumer)}
      * and {@link Session#executeRead(TransactionCallback)} (there are also overloaded options available).
      * <p>
+     * Causal consistency is managed via driver's {@link BookmarkManager} that is enabled by default and may
+     * be replaced using {@link Config.ConfigBuilder#withQueryBookmarkManager(BookmarkManager)}. It is also possible
+     * to use a different {@link BookmarkManager} or disable it via
+     * {@link QueryConfig.Builder#withBookmarkManager(BookmarkManager)} on individual basis.
+     * <p>
      * Sample usage:
      * <pre>
      * {@code
@@ -112,9 +117,9 @@ public interface Driver extends AutoCloseable {
      * }
      * </pre>
      *
-     * @param query a query value to execute
+     * @param query  a query value to execute
      * @param config a query execution config value
-     * @param <T> a type managed by {@link QueryConfig#resultTransformer()}
+     * @param <T>    a type managed by {@link QueryConfig#resultTransformer()}
      * @return a query execution result value of a type managed by {@link QueryConfig#resultTransformer()}
      */
     <T> T executeQuery(Query query, QueryConfig<T> config);
@@ -138,7 +143,7 @@ public interface Driver extends AutoCloseable {
      * This is a basic high-level API for executing idempotent queries. {@link #executeQuery(Query, QueryConfig)}
      * documentation provides more details.
      *
-     * @param query a query string to execute
+     * @param query      a query string to execute
      * @param parameters a query parameters
      * @return a query execution result value
      */
@@ -152,10 +157,10 @@ public interface Driver extends AutoCloseable {
      * This is a basic high-level API for executing idempotent queries. {@link #executeQuery(Query, QueryConfig)}
      * documentation provides more details.
      *
-     * @param query a query string to execute
+     * @param query      a query string to execute
      * @param parameters a query parameters
-     * @param config a query execution config value
-     * @param <T> a type managed by {@link QueryConfig#resultTransformer()}
+     * @param config     a query execution config value
+     * @param <T>        a type managed by {@link QueryConfig#resultTransformer()}
      * @return a query execution result value of a type managed by {@link QueryConfig#resultTransformer()}
      */
     default <T> T executeQuery(String query, Map<String, Object> parameters, QueryConfig<T> config) {
@@ -188,6 +193,7 @@ public interface Driver extends AutoCloseable {
     /**
      * Create a new {@link Session} with a specified {@link SessionConfig session configuration}.
      * Use {@link SessionConfig#forDatabase(String)} to obtain a general purpose session configuration for the specified database.
+     *
      * @param sessionConfig specifies session configurations for this session.
      * @return a new {@link Session} object.
      * @see SessionConfig
@@ -282,6 +288,7 @@ public interface Driver extends AutoCloseable {
     /**
      * Returns the driver metrics if metrics reporting is enabled via {@link Config.ConfigBuilder#withDriverMetrics()}.
      * Otherwise, a {@link ClientException} will be thrown.
+     *
      * @return the driver metrics if enabled.
      * @throws ClientException if the driver metrics reporting is not enabled.
      */
@@ -306,7 +313,7 @@ public interface Driver extends AutoCloseable {
     /**
      * This verifies if the driver can connect to a remote server or a cluster
      * by establishing a network connection with the remote and possibly exchanging a few data before closing the connection.
-     *
+     * <p>
      * It throws exception if fails to connect. Use the exception to further understand the cause of the connectivity problem.
      * Note: Even if this method throws an exception, the driver still need to be closed via {@link #close()} to free up all resources.
      */
@@ -315,7 +322,7 @@ public interface Driver extends AutoCloseable {
     /**
      * This verifies if the driver can connect to a remote server or cluster
      * by establishing a network connection with the remote and possibly exchanging a few data before closing the connection.
-     *
+     * <p>
      * This operation is asynchronous and returns a {@link CompletionStage}. This stage is completed with
      * {@code null} when the driver connects to the remote server or cluster successfully.
      * It is completed exceptionally if the driver failed to connect the remote server or cluster.
@@ -328,12 +335,14 @@ public interface Driver extends AutoCloseable {
 
     /**
      * Returns true if the server or cluster the driver connects to supports multi-databases, otherwise false.
+     *
      * @return true if the server or cluster the driver connects to supports multi-databases, otherwise false.
      */
     boolean supportsMultiDb();
 
     /**
      * Asynchronous check if the server or cluster the driver connects to supports multi-databases.
+     *
      * @return a {@link CompletionStage completion stage} that returns true if the server or cluster
      * the driver connects to supports multi-databases, otherwise false.
      */

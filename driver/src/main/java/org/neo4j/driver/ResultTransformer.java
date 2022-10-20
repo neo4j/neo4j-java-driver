@@ -21,19 +21,19 @@ package org.neo4j.driver;
 import java.io.Serializable;
 
 /**
- * Transforms {@link Result} to a desired target type.
+ * A transformer responsible for handling {@link Result} and outputting result of desired type.
  *
- * @param <T> desired target type
+ * @param <T> output type
  */
 @FunctionalInterface
 public interface ResultTransformer<T> extends Serializable {
     /**
-     * Transforms {@link Result} to a desired target type.
+     * Transforms {@link Result} to desired output type.
      * <p>
-     * This method must never return {@link Result} object.
+     * This method must never return or proxy calls to the {@link Result} object as it is not guaranteed to be valid after this method supplies the output.
      *
      * @param result result value
-     * @return desired value
+     * @return output value
      */
     T transform(Result result);
 }
