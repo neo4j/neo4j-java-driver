@@ -391,4 +391,10 @@
         <differenceType>3003</differenceType>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/types/TypeSystem</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.types.TypeSystem getInstance()</method>
+    </difference>
+
 </differences>

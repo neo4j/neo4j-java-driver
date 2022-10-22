@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.types;
 
+import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
+
 import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
 
@@ -28,6 +30,15 @@ import org.neo4j.driver.util.Immutable;
 @Immutable
 @Experimental
 public interface TypeSystem {
+    /**
+     * Returns an instance of type system.
+     *
+     * @return instance of type system
+     */
+    static TypeSystem getInstance() {
+        return TYPE_SYSTEM;
+    }
+
     Type ANY();
 
     Type BOOLEAN();
