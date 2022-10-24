@@ -18,36 +18,25 @@
  */
 package org.neo4j.docs.driver;
 
+import org.neo4j.driver.TransactionConfig;
+
+import java.util.Map;
+
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.Values.value;
-
-import java.util.HashMap;
-import java.util.Map;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.TransactionConfig;
 
 public class TransactionMetadataConfigExample extends BaseApplication {
     public TransactionMetadataConfigExample(String uri, String user, String password) {
         super(uri, user, password);
     }
 
-    @SuppressWarnings("deprecation")
     // tag::transaction-metadata-config[]
     public void addPerson(final String name) {
-        try (Session session = driver.session()) {
-            Map<String, Object> transactionMetadata = new HashMap<>();
-            transactionMetadata.put("applicationId", value("123"));
-
-            TransactionConfig txConfig = TransactionConfig.builder()
-                    .withMetadata(transactionMetadata)
+        try (var session = driver.session()) {
+            var txConfig = TransactionConfig.builder()
+                    .withMetadata(Map.of("applicationId", value("123")))
                     .build();
-            session.writeTransaction(
-                    tx -> {
-                        tx.run("CREATE (a:Person {name: $name})", parameters("name", name))
-                                .consume();
-                        return 1;
-                    },
-                    txConfig);
+            session.executeWriteWithoutResult(tx -> tx.run("CREATE (a:Person {name: $name})", parameters("name", name)).consume(), txConfig);
         }
     }
     // end::transaction-metadata-config[]

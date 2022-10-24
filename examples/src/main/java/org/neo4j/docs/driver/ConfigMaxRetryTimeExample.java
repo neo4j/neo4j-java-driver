@@ -19,7 +19,6 @@
 package org.neo4j.docs.driver;
 
 // tag::config-max-retry-time-import[]
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -33,8 +32,9 @@ public class ConfigMaxRetryTimeExample implements AutoCloseable {
 
     // tag::config-max-retry-time[]
     public ConfigMaxRetryTimeExample(String uri, String user, String password) {
-        Config config =
-                Config.builder().withMaxTransactionRetryTime(15, SECONDS).build();
+        var config = Config.builder()
+                .withMaxTransactionRetryTime(15, SECONDS)
+                .build();
 
         driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }

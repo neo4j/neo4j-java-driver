@@ -18,10 +18,7 @@
  */
 package org.neo4j.docs.driver;
 
-// tag::async-result-consume-import[]
-
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.AsyncTransactionContext;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.SummaryCounters;
@@ -31,42 +28,32 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static org.neo4j.driver.Values.parameters;
-// end::async-result-consume-import[]
 
 public class AsyncRunMultipleTransactionExample extends BaseApplication {
     public AsyncRunMultipleTransactionExample(String uri, String user, String password) {
         super(uri, user, password);
     }
 
-    @SuppressWarnings("deprecation")
     // tag::async-multiple-tx[]
     public CompletionStage<Integer> addEmployees(final String companyName) {
-        AsyncSession session = driver.asyncSession();
-
-        return session.readTransactionAsync(AsyncRunMultipleTransactionExample::matchPersonNodes)
-                .thenCompose(
-                        personNames -> session.writeTransactionAsync(tx -> createNodes(tx, companyName, personNames)));
+        var session = driver.asyncSession();
+        return session.executeReadAsync(AsyncRunMultipleTransactionExample::matchPersonNodes)
+                .thenCompose(personNames -> session.executeWriteAsync(tx -> createNodes(tx, companyName, personNames)));
     }
 
-    private static CompletionStage<List<String>> matchPersonNodes(AsyncTransaction tx) {
+    private static CompletionStage<List<String>> matchPersonNodes(AsyncTransactionContext tx) {
         return tx.runAsync("MATCH (a:Person) RETURN a.name AS name")
-                .thenCompose(
-                        cursor -> cursor.listAsync(record -> record.get("name").asString()));
+                .thenCompose(cursor -> cursor.listAsync(record -> record.get("name").asString()));
     }
 
-    private static CompletionStage<Integer> createNodes(
-            AsyncTransaction tx, String companyName, List<String> personNames) {
+    private static CompletionStage<Integer> createNodes(AsyncTransactionContext tx, String companyName, List<String> personNames) {
         return personNames.stream()
                 .map(personName -> createNode(tx, companyName, personName))
-                .reduce(
-                        CompletableFuture.completedFuture(0),
-                        (stage1, stage2) -> stage1.thenCombine(stage2, Integer::sum));
+                .reduce(CompletableFuture.completedFuture(0), (stage1, stage2) -> stage1.thenCombine(stage2, Integer::sum));
     }
 
-    private static CompletionStage<Integer> createNode(AsyncTransaction tx, String companyName, String personName) {
-        return tx.runAsync(
-                        "MATCH (emp:Person {name: $person_name}) " + "MERGE (com:Company {name: $company_name}) "
-                                + "MERGE (emp)-[:WORKS_FOR]->(com)",
+    private static CompletionStage<Integer> createNode(AsyncTransactionContext tx, String companyName, String personName) {
+        return tx.runAsync("MATCH (emp:Person {name: $person_name}) MERGE (com:Company {name: $company_name}) MERGE (emp)-[:WORKS_FOR]->(com)",
                         parameters("person_name", personName, "company_name", companyName))
                 .thenCompose(ResultCursor::consumeAsync)
                 .thenApply(ResultSummary::counters)

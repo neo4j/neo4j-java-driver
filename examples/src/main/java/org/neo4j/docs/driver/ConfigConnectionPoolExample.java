@@ -18,23 +18,19 @@
  */
 package org.neo4j.docs.driver;
 
-// tag::config-connection-pool-import[]
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
 
 import java.util.concurrent.TimeUnit;
-// end::config-connection-pool-import[]
 
 public class ConfigConnectionPoolExample implements AutoCloseable {
     private final Driver driver;
 
     // tag::config-connection-pool[]
     public ConfigConnectionPoolExample(String uri, String user, String password) {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withMaxConnectionLifetime(30, TimeUnit.MINUTES)
                 .withMaxConnectionPoolSize(50)
                 .withConnectionAcquisitionTimeout(2, TimeUnit.MINUTES)
@@ -50,7 +46,7 @@ public class ConfigConnectionPoolExample implements AutoCloseable {
     }
 
     public boolean canConnect() {
-        Result result = driver.session().run("RETURN 1");
+        var result = driver.session().run("RETURN 1");
         return result.single().get(0).asInt() == 1;
     }
 }

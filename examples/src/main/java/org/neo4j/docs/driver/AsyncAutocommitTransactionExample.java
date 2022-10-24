@@ -18,15 +18,10 @@
  */
 package org.neo4j.docs.driver;
 
-// tag::async-autocommit-transaction-import[]
-
-import org.neo4j.driver.async.AsyncSession;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-// end::async-autocommit-transaction-import[]
 
 public class AsyncAutocommitTransactionExample extends BaseApplication {
     public AsyncAutocommitTransactionExample(String uri, String user, String password) {
@@ -35,10 +30,10 @@ public class AsyncAutocommitTransactionExample extends BaseApplication {
 
     // tag::async-autocommit-transaction[]
     public CompletionStage<List<String>> readProductTitles() {
-        String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
-        Map<String, Object> parameters = Collections.singletonMap("id", 0);
+        var query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
+        var parameters = Map.<String, Object>of("id", 0);
 
-        AsyncSession session = driver.asyncSession();
+        var session = driver.asyncSession();
 
         return session.runAsync(query, parameters)
                 .thenCompose(cursor -> cursor.listAsync(record -> record.get(0).asString()))

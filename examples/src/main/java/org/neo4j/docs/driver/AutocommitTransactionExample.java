@@ -18,12 +18,7 @@
  */
 package org.neo4j.docs.driver;
 
-// tag::autocommit-transaction-import[]
-
-import org.neo4j.driver.Session;
-
 import static org.neo4j.driver.Values.parameters;
-// end::autocommit-transaction-import[]
 
 public class AutocommitTransactionExample extends BaseApplication {
     public AutocommitTransactionExample(String uri, String user, String password) {
@@ -32,7 +27,7 @@ public class AutocommitTransactionExample extends BaseApplication {
 
     // tag::autocommit-transaction[]
     public void addPerson(String name) {
-        try (Session session = driver.session()) {
+        try (var session = driver.session()) {
             session.run("CREATE (a:Person {name: $name})", parameters("name", name));
         }
     }

@@ -18,22 +18,18 @@
  */
 package org.neo4j.docs.driver;
 
-// tag::async-transaction-function-import[]
-
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.summary.ResultSummary;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-// end::async-transaction-function-import[]
 
 public class AsyncTransactionFunctionExample extends BaseApplication {
     public AsyncTransactionFunctionExample(String uri, String user, String password) {
         super(uri, user, password);
     }
 
-    @SuppressWarnings("deprecation")
     // tag::async-transaction-function[]
     public CompletionStage<ResultSummary> printAllProducts() {
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
@@ -41,7 +37,7 @@ public class AsyncTransactionFunctionExample extends BaseApplication {
 
         AsyncSession session = driver.asyncSession();
 
-        return session.readTransactionAsync(tx -> tx.runAsync(query, parameters)
+        return session.executeReadAsync(tx -> tx.runAsync(query, parameters)
                 .thenCompose(cursor -> cursor.forEachAsync(record ->
                         // asynchronously print every record
                         System.out.println(record.get(0).asString()))));

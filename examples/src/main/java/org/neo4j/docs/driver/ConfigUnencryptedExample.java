@@ -30,7 +30,7 @@ public class ConfigUnencryptedExample implements AutoCloseable {
 
     // tag::config-unencrypted[]
     public ConfigUnencryptedExample(String uri, String user, String password) {
-        Config config = Config.builder().withoutEncryption().build();
+        var config = Config.builder().withoutEncryption().build();
 
         driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }

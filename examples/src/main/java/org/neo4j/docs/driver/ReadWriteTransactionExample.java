@@ -20,9 +20,7 @@ package org.neo4j.docs.driver;
 
 // tag::read-write-transaction-import[]
 
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionContext;
 
 import static org.neo4j.driver.Values.parameters;
 // end::read-write-transaction-import[]
@@ -32,22 +30,16 @@ public class ReadWriteTransactionExample extends BaseApplication {
         super(uri, user, password);
     }
 
-    @SuppressWarnings("deprecation")
     // tag::read-write-transaction[]
     public long addPerson(final String name) {
-        try (Session session = driver.session()) {
-            session.writeTransaction(tx -> createPersonNode(tx, name));
-            return session.readTransaction(tx -> matchPersonNode(tx, name));
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(tx -> tx.run("CREATE (a:Person {name: $name})", parameters("name", name)).consume());
+            return session.executeRead(tx -> matchPersonNode(tx, name));
         }
     }
 
-    private static Void createPersonNode(Transaction tx, String name) {
-        tx.run("CREATE (a:Person {name: $name})", parameters("name", name)).consume();
-        return null;
-    }
-
-    private static long matchPersonNode(Transaction tx, String name) {
-        Result result = tx.run("MATCH (a:Person {name: $name}) RETURN id(a)", parameters("name", name));
+    private static long matchPersonNode(TransactionContext tx, String name) {
+        var result = tx.run("MATCH (a:Person {name: $name}) RETURN id(a)", parameters("name", name));
         return result.single().get(0).asLong();
     }
     // end::read-write-transaction[]
