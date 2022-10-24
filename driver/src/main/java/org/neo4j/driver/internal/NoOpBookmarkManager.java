@@ -31,7 +31,11 @@ public class NoOpBookmarkManager implements BookmarkManager {
     @Serial
     private static final long serialVersionUID = 7175136719562680362L;
 
+    public static final NoOpBookmarkManager INSTANCE = new NoOpBookmarkManager();
+
     private static final Set<Bookmark> EMPTY = Collections.emptySet();
+
+    private NoOpBookmarkManager() {}
 
     @Override
     public void updateBookmarks(String database, Set<Bookmark> previousBookmarks, Set<Bookmark> newBookmarks) {

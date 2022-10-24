@@ -391,4 +391,40 @@
         <differenceType>3003</differenceType>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerResult executeQuery(org.neo4j.driver.Query)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Object executeQuery(org.neo4j.driver.Query, org.neo4j.driver.QueryConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerResult executeQuery(java.lang.String)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.EagerResult executeQuery(java.lang.String, java.util.Map)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Object executeQuery(java.lang.String, java.util.Map, org.neo4j.driver.QueryConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.BookmarkManager queryBookmarkManager()</method>
+    </difference>
+
 </differences>
