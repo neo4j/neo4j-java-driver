@@ -22,17 +22,12 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.Query;
-import org.neo4j.driver.QueryConfig;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -48,7 +43,6 @@ import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 
 public class InternalDriver implements Driver {
-    private final BookmarkManager queryBookmarkManager;
     private final SecurityPlan securityPlan;
     private final SessionFactory sessionFactory;
     private final Logger log;
@@ -57,45 +51,14 @@ public class InternalDriver implements Driver {
     private final MetricsProvider metricsProvider;
 
     InternalDriver(
-            BookmarkManager queryBookmarkManager,
             SecurityPlan securityPlan,
             SessionFactory sessionFactory,
             MetricsProvider metricsProvider,
             Logging logging) {
-        this.queryBookmarkManager = queryBookmarkManager;
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
         this.metricsProvider = metricsProvider;
         this.log = logging.getLog(getClass());
-    }
-
-    @Override
-    public <T> T executeQuery(Query query, QueryConfig<T> config) {
-        var sessionConfigBuilder = SessionConfig.builder();
-        config.database().ifPresent(sessionConfigBuilder::withDatabase);
-        config.impersonatedUser().ifPresent(sessionConfigBuilder::withImpersonatedUser);
-        config.bookmarkManager(queryBookmarkManager).ifPresent(sessionConfigBuilder::withBookmarkManager);
-        try (var session = session(sessionConfigBuilder.build())) {
-            TransactionCallback<T> txCallback = tx -> {
-                var result = tx.run(query);
-                var transformedResult = config.resultTransformer().transform(result);
-                if (transformedResult instanceof Result) {
-                    throw new IllegalStateException(String.format(
-                            "Illegal result returned by %s, it must never be an instance of %s",
-                            config.resultTransformer().getClass().getName(), Result.class.getName()));
-                }
-                return transformedResult;
-            };
-            return switch (config.routing()) {
-                case WRITERS -> session.executeWrite(txCallback);
-                case READERS -> session.executeRead(txCallback);
-            };
-        }
-    }
-
-    @Override
-    public BookmarkManager queryBookmarkManager() {
-        return queryBookmarkManager;
     }
 
     @Override

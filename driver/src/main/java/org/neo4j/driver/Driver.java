@@ -18,10 +18,7 @@
  */
 package org.neo4j.driver;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.reactive.ReactiveSession;
@@ -67,114 +64,6 @@ import org.neo4j.driver.util.Experimental;
  */
 public interface Driver extends AutoCloseable {
     /**
-     * Execute an idempotent query in a managed transaction with automatic retries on retryable errors.
-     * <p>
-     * This is a basic high-level API for executing idempotent queries. {@link #executeQuery(Query, QueryConfig)}
-     * documentation provides more details.
-     *
-     * @param query a query value to execute
-     * @return a query execution result value
-     */
-    default EagerResult executeQuery(Query query) {
-        var defaultConfig = QueryConfig.builder().build();
-        return executeQuery(query, defaultConfig);
-    }
-
-    /**
-     * Execute an idempotent query in a managed transaction with automatic retries on retryable errors.
-     * <p>
-     * This is a basic high-level API for executing idempotent queries. There are more advanced APIs available.
-     * For instance, {@link Session}, {@link Transaction} and transaction functions that are accessible via
-     * methods like {@link Session#executeWrite(TransactionCallback)}, {@link Session#executeWriteWithoutResult(Consumer)}
-     * and {@link Session#executeRead(TransactionCallback)} (there are also overloaded options available).
-     * <p>
-     * Causal consistency is managed via driver's {@link BookmarkManager} that is enabled by default and may
-     * be replaced using {@link Config.ConfigBuilder#withQueryBookmarkManager(BookmarkManager)}. It is also possible
-     * to use a different {@link BookmarkManager} or disable it via
-     * {@link QueryConfig.Builder#withBookmarkManager(BookmarkManager)} on individual basis.
-     * <p>
-     * Sample usage:
-     * <pre>
-     * {@code
-     * var query = new Query("CREATE (n{field: $value}) RETURN n", Map.of("value", "value"));
-     * var eagerResult = driver.executeQuery(query, QueryConfig.defaultConfig());
-     * }
-     * </pre>
-     * The above sample is functionally similar to the following use of the more advanced APIs:
-     * <pre>
-     * {@code
-     * var query = new Query("CREATE (n{field: $value}) RETURN n", Map.of("value", "value"));
-     * ResultTransformer<EagerResult> resultTransformer = ResultTransformer implementation;
-     * var sessionConfig = SessionConfig.builder()
-     *         .withBookmarkManager(driverConfig.queryBookmarkManager())
-     *         .build();
-     * try (var session = driver.session(sessionConfig)) {
-     *     var eagerResult = session.executeWrite(tx -> {
-     *         var result = tx.run(query);
-     *         return resultTransformer.transform(result);
-     *     });
-     * }
-     * }
-     * </pre>
-     *
-     * @param query  a query value to execute
-     * @param config a query execution config value
-     * @param <T>    a type managed by {@link QueryConfig#resultTransformer()}
-     * @return a query execution result value of a type managed by {@link QueryConfig#resultTransformer()}
-     */
-    <T> T executeQuery(Query query, QueryConfig<T> config);
-
-    /**
-     * Execute an idempotent query in a managed transaction with automatic retries on retryable errors.
-     * <p>
-     * This is a basic high-level API for executing idempotent queries. {@link #executeQuery(Query, QueryConfig)}
-     * documentation provides more details.
-     *
-     * @param query a query string to execute
-     * @return a query execution result value
-     */
-    default EagerResult executeQuery(String query) {
-        return executeQuery(query, Collections.emptyMap());
-    }
-
-    /**
-     * Execute an idempotent query in a managed transaction with automatic retries on retryable errors.
-     * <p>
-     * This is a basic high-level API for executing idempotent queries. {@link #executeQuery(Query, QueryConfig)}
-     * documentation provides more details.
-     *
-     * @param query      a query string to execute
-     * @param parameters a query parameters
-     * @return a query execution result value
-     */
-    default EagerResult executeQuery(String query, Map<String, Object> parameters) {
-        return executeQuery(new Query(query, parameters));
-    }
-
-    /**
-     * Execute an idempotent query in a managed transaction with automatic retries on retryable errors.
-     * <p>
-     * This is a basic high-level API for executing idempotent queries. {@link #executeQuery(Query, QueryConfig)}
-     * documentation provides more details.
-     *
-     * @param query      a query string to execute
-     * @param parameters a query parameters
-     * @param config     a query execution config value
-     * @param <T>        a type managed by {@link QueryConfig#resultTransformer()}
-     * @return a query execution result value of a type managed by {@link QueryConfig#resultTransformer()}
-     */
-    default <T> T executeQuery(String query, Map<String, Object> parameters, QueryConfig<T> config) {
-        return executeQuery(new Query(query, parameters), config);
-    }
-
-    /**
-     * Returns an instance of {@link BookmarkManager} used by {@link #executeQuery(Query, QueryConfig)} method and its variants by default.
-     *
-     * @return bookmark manager, must not be {@code null}
-     */
-    BookmarkManager queryBookmarkManager();
-
-    /**
      * Return a flag to indicate whether or not encryption is used for this driver.
      *
      * @return true if the driver requires encryption, false otherwise
@@ -193,7 +82,6 @@ public interface Driver extends AutoCloseable {
     /**
      * Create a new {@link Session} with a specified {@link SessionConfig session configuration}.
      * Use {@link SessionConfig#forDatabase(String)} to obtain a general purpose session configuration for the specified database.
-     *
      * @param sessionConfig specifies session configurations for this session.
      * @return a new {@link Session} object.
      * @see SessionConfig
@@ -288,7 +176,6 @@ public interface Driver extends AutoCloseable {
     /**
      * Returns the driver metrics if metrics reporting is enabled via {@link Config.ConfigBuilder#withDriverMetrics()}.
      * Otherwise, a {@link ClientException} will be thrown.
-     *
      * @return the driver metrics if enabled.
      * @throws ClientException if the driver metrics reporting is not enabled.
      */
@@ -313,7 +200,7 @@ public interface Driver extends AutoCloseable {
     /**
      * This verifies if the driver can connect to a remote server or a cluster
      * by establishing a network connection with the remote and possibly exchanging a few data before closing the connection.
-     * <p>
+     *
      * It throws exception if fails to connect. Use the exception to further understand the cause of the connectivity problem.
      * Note: Even if this method throws an exception, the driver still need to be closed via {@link #close()} to free up all resources.
      */
@@ -322,7 +209,7 @@ public interface Driver extends AutoCloseable {
     /**
      * This verifies if the driver can connect to a remote server or cluster
      * by establishing a network connection with the remote and possibly exchanging a few data before closing the connection.
-     * <p>
+     *
      * This operation is asynchronous and returns a {@link CompletionStage}. This stage is completed with
      * {@code null} when the driver connects to the remote server or cluster successfully.
      * It is completed exceptionally if the driver failed to connect the remote server or cluster.
@@ -335,14 +222,12 @@ public interface Driver extends AutoCloseable {
 
     /**
      * Returns true if the server or cluster the driver connects to supports multi-databases, otherwise false.
-     *
      * @return true if the server or cluster the driver connects to supports multi-databases, otherwise false.
      */
     boolean supportsMultiDb();
 
     /**
      * Asynchronous check if the server or cluster the driver connects to supports multi-databases.
-     *
      * @return a {@link CompletionStage completion stage} that returns true if the server or cluster
      * the driver connects to supports multi-databases, otherwise false.
      */

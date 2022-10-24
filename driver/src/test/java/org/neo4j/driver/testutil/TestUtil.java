@@ -267,7 +267,7 @@ public final class TestUtil {
                 null,
                 UNLIMITED_FETCH_SIZE,
                 DEV_NULL_LOGGING,
-                NoOpBookmarkManager.INSTANCE);
+                new NoOpBookmarkManager());
     }
 
     public static void verifyRunRx(Connection connection, String query) {
