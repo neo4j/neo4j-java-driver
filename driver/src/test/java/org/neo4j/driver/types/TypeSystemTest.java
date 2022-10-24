@@ -21,6 +21,7 @@ package org.neo4j.driver.types;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
@@ -73,6 +74,11 @@ class TypeSystemTest {
         allValues.add(nullValue);
         allValues.add(listValue);
         return new TypeVerifier(type, allValues);
+    }
+
+    @Test
+    void shouldReturnTypeSystem() {
+        assertEquals(TYPE_SYSTEM, TypeSystem.getDefault());
     }
 
     @Test
