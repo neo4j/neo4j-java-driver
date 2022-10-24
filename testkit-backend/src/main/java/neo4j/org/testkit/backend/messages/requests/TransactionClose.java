@@ -69,6 +69,15 @@ public class TransactionClose implements TestkitRequest {
                 .then(Mono.just(createResponse(data.getTxId())));
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return testkitState
+                .getReactiveTransactionStreamsHolder(data.getTxId())
+                .map(AbstractTransactionHolder::getTransaction)
+                .flatMap(tx -> Mono.fromDirect(tx.close()))
+                .then(Mono.just(createResponse(data.getTxId())));
+    }
+
     private Transaction createResponse(String txId) {
         return Transaction.builder()
                 .data(Transaction.TransactionBody.builder().id(txId).build())

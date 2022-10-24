@@ -52,6 +52,11 @@ public class BookmarkManagerClose implements TestkitRequest {
         return Mono.just(removeBookmarkManagerAndCreateResponse(testkitState));
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return Mono.just(removeBookmarkManagerAndCreateResponse(testkitState));
+    }
+
     private BookmarkManager removeBookmarkManagerAndCreateResponse(TestkitState testkitState) {
         var id = data.getId();
         testkitState.removeBookmarkManager(id);

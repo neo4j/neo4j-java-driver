@@ -179,6 +179,15 @@ public class StartTest implements TestkitRequest {
         return Mono.just(testkitResponse);
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        TestkitResponse testkitResponse = createSkipResponse(REACTIVE_SKIP_PATTERN_TO_REASON)
+                .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
+                        ? RunSubTests.builder().build()
+                        : RunTest.builder().build());
+        return Mono.just(testkitResponse);
+    }
+
     private Optional<TestkitResponse> createSkipResponse(Map<String, String> skipPatternToReason) {
         return skipPatternToReason.entrySet().stream()
                 .filter(entry -> data.getTestName().matches(entry.getKey()))

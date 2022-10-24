@@ -30,6 +30,7 @@ import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
+import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
@@ -117,6 +118,21 @@ public class SessionBeginTransaction implements TestkitRequest {
             return Mono.fromDirect(flowPublisherToFlux(session.beginTransaction(builder.build())))
                     .map(tx -> transaction(testkitState.addReactiveTransactionHolder(
                             new ReactiveTransactionHolder(sessionHolder, tx))));
+        });
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return testkitState.getReactiveSessionStreamsHolder(data.getSessionId()).flatMap(sessionHolder -> {
+            var session = sessionHolder.getSession();
+            TransactionConfig.Builder builder = TransactionConfig.builder();
+            Optional.ofNullable(data.txMeta).ifPresent(builder::withMetadata);
+
+            configureTimeout(builder);
+
+            return Mono.fromDirect(session.beginTransaction(builder.build()))
+                    .map(tx -> transaction(testkitState.addReactiveTransactionStreamsHolder(
+                            new ReactiveTransactionStreamsHolder(sessionHolder, tx))));
         });
     }
 

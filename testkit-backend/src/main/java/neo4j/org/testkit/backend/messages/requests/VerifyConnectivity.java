@@ -58,6 +58,11 @@ public class VerifyConnectivity implements TestkitRequest {
         return Mono.fromCompletionStage(processAsync(testkitState));
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return processReactive(testkitState);
+    }
+
     private Driver createResponse(String id) {
         return Driver.builder().data(Driver.DriverBody.builder().id(id).build()).build();
     }

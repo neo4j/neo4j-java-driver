@@ -16,15 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.reactive;
-
-import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
-import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
+package org.neo4j.driver.internal.reactivestreams;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Flow.Publisher;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -32,11 +28,13 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
+import org.neo4j.driver.internal.reactive.AbstractReactiveSession;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.ReactiveResult;
-import org.neo4j.driver.reactive.ReactiveSession;
-import org.neo4j.driver.reactive.ReactiveTransaction;
-import org.neo4j.driver.reactive.ReactiveTransactionCallback;
+import org.neo4j.driver.reactivestreams.ReactiveResult;
+import org.neo4j.driver.reactivestreams.ReactiveSession;
+import org.neo4j.driver.reactivestreams.ReactiveTransaction;
+import org.neo4j.driver.reactivestreams.ReactiveTransactionCallback;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTransaction>
@@ -46,12 +44,12 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
     }
 
     @Override
-    protected ReactiveTransaction createTransaction(UnmanagedTransaction unmanagedTransaction) {
+    public ReactiveTransaction createTransaction(UnmanagedTransaction unmanagedTransaction) {
         return new InternalReactiveTransaction(unmanagedTransaction);
     }
 
     @Override
-    protected org.reactivestreams.Publisher<Void> closeTransaction(ReactiveTransaction transaction, boolean commit) {
+    public Publisher<Void> closeTransaction(ReactiveTransaction transaction, boolean commit) {
         return ((InternalReactiveTransaction) transaction).close(commit);
     }
 
@@ -61,25 +59,21 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
     }
 
     public Publisher<ReactiveTransaction> beginTransaction(TransactionConfig config, String txType) {
-        return publisherToFlowPublisher(doBeginTransaction(config, txType));
+        return doBeginTransaction(config, txType);
     }
 
     @Override
     public <T> Publisher<T> executeRead(
             ReactiveTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config) {
-        return publisherToFlowPublisher(runTransaction(
-                AccessMode.READ,
-                tx -> flowPublisherToFlux(callback.execute(new DelegatingReactiveTransactionContext(tx))),
-                config));
+        return runTransaction(
+                AccessMode.READ, tx -> callback.execute(new DelegatingReactiveTransactionContext(tx)), config);
     }
 
     @Override
     public <T> Publisher<T> executeWrite(
             ReactiveTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config) {
-        return publisherToFlowPublisher(runTransaction(
-                AccessMode.WRITE,
-                tx -> flowPublisherToFlux(callback.execute(new DelegatingReactiveTransactionContext(tx))),
-                config));
+        return runTransaction(
+                AccessMode.WRITE, tx -> callback.execute(new DelegatingReactiveTransactionContext(tx)), config);
     }
 
     @Override
@@ -96,7 +90,7 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
             cursorStage = Futures.failedFuture(t);
         }
 
-        return publisherToFlowPublisher(Mono.fromCompletionStage(cursorStage)
+        return Mono.fromCompletionStage(cursorStage)
                 .onErrorResume(error -> Mono.fromCompletionStage(session.releaseConnectionAsync())
                         .onErrorMap(releaseError -> Futures.combineErrors(error, releaseError))
                         .then(Mono.error(error)))
@@ -112,7 +106,7 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
                     }
                     return publisher;
                 })
-                .map(InternalReactiveResult::new));
+                .map(InternalReactiveResult::new);
     }
 
     @Override
@@ -122,6 +116,6 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
 
     @Override
     public <T> Publisher<T> close() {
-        return publisherToFlowPublisher(doClose());
+        return doClose();
     }
 }

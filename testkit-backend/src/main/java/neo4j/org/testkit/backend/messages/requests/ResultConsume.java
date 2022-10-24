@@ -85,6 +85,15 @@ public class ResultConsume implements TestkitRequest {
                 .map(this::createResponse);
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return testkitState
+                .getReactiveResultStreamsHolder(data.getResultId())
+                .flatMap(
+                        resultHolder -> Mono.fromDirect(resultHolder.getResult().consume()))
+                .map(this::createResponse);
+    }
+
     private Summary createResponse(org.neo4j.driver.summary.ResultSummary summary) {
         Summary.ServerInfo serverInfo = Summary.ServerInfo.builder()
                 .address(summary.server().address())

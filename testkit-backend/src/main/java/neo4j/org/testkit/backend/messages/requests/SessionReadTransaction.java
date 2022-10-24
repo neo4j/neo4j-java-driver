@@ -27,9 +27,11 @@ import java.util.concurrent.ExecutionException;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.ReactiveTransactionContextAdapter;
+import neo4j.org.testkit.backend.ReactiveTransactionContextStreamsAdapter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
+import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
@@ -116,6 +118,26 @@ public class SessionReadTransaction implements TestkitRequest {
 
                     return Mono.fromDirect(
                             flowPublisherToFlux(sessionHolder.getSession().executeRead(workWrapper)));
+                })
+                .then(Mono.just(retryableDone()));
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return testkitState
+                .getReactiveSessionStreamsHolder(data.getSessionId())
+                .flatMap(sessionHolder -> {
+                    org.neo4j.driver.reactivestreams.ReactiveTransactionCallback<Publisher<Void>> workWrapper = tx -> {
+                        String txId =
+                                testkitState.addReactiveTransactionStreamsHolder(new ReactiveTransactionStreamsHolder(
+                                        sessionHolder, new ReactiveTransactionContextStreamsAdapter(tx)));
+                        testkitState.getResponseWriter().accept(retryableTry(txId));
+                        CompletableFuture<Void> tryResult = new CompletableFuture<>();
+                        sessionHolder.setTxWorkFuture(tryResult);
+                        return Mono.fromCompletionStage(tryResult);
+                    };
+
+                    return Mono.fromDirect(sessionHolder.getSession().executeRead(workWrapper));
                 })
                 .then(Mono.just(retryableDone()));
     }

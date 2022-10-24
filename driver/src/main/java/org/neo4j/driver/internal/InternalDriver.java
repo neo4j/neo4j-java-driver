@@ -18,10 +18,12 @@
  */
 package org.neo4j.driver.internal;
 
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.neo4j.driver.BaseReactiveSession;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -33,12 +35,10 @@ import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.internal.reactive.InternalReactiveSession;
 import org.neo4j.driver.internal.reactive.InternalRxSession;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 
@@ -62,11 +62,6 @@ public class InternalDriver implements Driver {
     }
 
     @Override
-    public Session session() {
-        return new InternalSession(newSession(SessionConfig.defaultConfig()));
-    }
-
-    @Override
     public Session session(SessionConfig sessionConfig) {
         return new InternalSession(newSession(sessionConfig));
     }
@@ -77,14 +72,19 @@ public class InternalDriver implements Driver {
         return new InternalRxSession(newSession(sessionConfig));
     }
 
+    @SuppressWarnings({"deprecation", "unchecked"})
     @Override
-    public ReactiveSession reactiveSession(SessionConfig sessionConfig) {
-        return new InternalReactiveSession(newSession(sessionConfig));
-    }
-
-    @Override
-    public AsyncSession asyncSession() {
-        return new InternalAsyncSession(newSession(SessionConfig.defaultConfig()));
+    public <T extends BaseReactiveSession> T reactiveSession(Class<T> sessionClass, SessionConfig sessionConfig) {
+        requireNonNull(sessionClass, "sessionClass must not be null");
+        requireNonNull(sessionClass, "sessionConfig must not be null");
+        if (org.neo4j.driver.reactive.ReactiveSession.class.isAssignableFrom(sessionClass)) {
+            return (T) new org.neo4j.driver.internal.reactive.InternalReactiveSession(newSession(sessionConfig));
+        } else if (org.neo4j.driver.reactivestreams.ReactiveSession.class.isAssignableFrom(sessionClass)) {
+            return (T) new org.neo4j.driver.internal.reactivestreams.InternalReactiveSession(newSession(sessionConfig));
+        } else {
+            throw new IllegalArgumentException(
+                    String.format("Unsupported session type '%s'", sessionClass.getCanonicalName()));
+        }
     }
 
     @Override

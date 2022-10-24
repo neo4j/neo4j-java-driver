@@ -38,7 +38,7 @@ import org.reactivestreams.Subscription;
  * @see Subscriber
  * @see Subscription
  * @since 4.0
- * @deprecated superseded by {@link ReactiveResult}
+ * @deprecated superseded by {@link org.neo4j.driver.reactive.ReactiveResult} and {@link org.neo4j.driver.reactivestreams.ReactiveResult}
  */
 @Deprecated
 public interface RxResult {

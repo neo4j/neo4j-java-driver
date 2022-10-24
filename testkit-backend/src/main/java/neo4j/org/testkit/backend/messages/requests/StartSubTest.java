@@ -175,6 +175,12 @@ public class StartSubTest implements TestkitRequest {
         return Mono.just(testkitResponse);
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        TestkitResponse testkitResponse = createResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_CHECK);
+        return Mono.just(testkitResponse);
+    }
+
     private TestkitResponse createResponse(Map<String, SkipDeciderInterface> skipPatternToCheck) {
         return skipPatternToCheck.entrySet().stream()
                 .filter(entry -> data.getTestName().matches(entry.getKey()))

@@ -31,6 +31,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.ReactiveResultHolder;
+import neo4j.org.testkit.backend.holder.ReactiveResultStreamsHolder;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
 import neo4j.org.testkit.backend.holder.RxResultHolder;
@@ -136,6 +137,26 @@ public class SessionRun implements TestkitRequest {
                     .map(result -> {
                         String id =
                                 testkitState.addReactiveResultHolder(new ReactiveResultHolder(sessionHolder, result));
+                        return createResponse(id, result.keys());
+                    });
+        });
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return testkitState.getReactiveSessionStreamsHolder(data.getSessionId()).flatMap(sessionHolder -> {
+            var session = sessionHolder.getSession();
+            Query query = Optional.ofNullable(data.params)
+                    .map(params -> new Query(data.cypher, data.params))
+                    .orElseGet(() -> new Query(data.cypher));
+            TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
+            Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
+            configureTimeout(transactionConfig);
+
+            return Mono.fromDirect(session.run(query, transactionConfig.build()))
+                    .map(result -> {
+                        String id = testkitState.addReactiveResultStreamsHolder(
+                                new ReactiveResultStreamsHolder(sessionHolder, result));
                         return createResponse(id, result.keys());
                     });
         });

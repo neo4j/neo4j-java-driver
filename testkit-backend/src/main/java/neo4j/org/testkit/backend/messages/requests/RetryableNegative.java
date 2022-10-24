@@ -87,6 +87,20 @@ public class RetryableNegative implements TestkitRequest {
         });
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return testkitState.getReactiveSessionStreamsHolder(data.getSessionId()).mapNotNull(sessionHolder -> {
+            Throwable throwable;
+            if (!"".equals(data.getErrorId())) {
+                throwable = testkitState.getErrors().get(data.getErrorId());
+            } else {
+                throwable = new FrontendError();
+            }
+            sessionHolder.getTxWorkFuture().completeExceptionally(throwable);
+            return null;
+        });
+    }
+
     @Setter
     @Getter
     public static class RetryableNegativeBody {

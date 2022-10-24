@@ -57,6 +57,11 @@ public class CheckMultiDBSupport implements TestkitRequest {
         return Mono.fromCompletionStage(processAsync(testkitState));
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return processReactive(testkitState);
+    }
+
     private MultiDBSupport createResponse(boolean available) {
         return MultiDBSupport.builder()
                 .data(MultiDBSupport.MultiDBSupportBody.builder()

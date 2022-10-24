@@ -89,6 +89,11 @@ public class GetRoutingTable implements TestkitRequest {
         return Mono.just(process(testkitState));
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return processReactive(testkitState);
+    }
+
     @Setter
     @Getter
     public static class GetRoutingTableBody {

@@ -53,6 +53,11 @@ public class CheckDriverIsEncrypted implements TestkitRequest {
         return Mono.just(createResponse(testkitState));
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return processReactive(testkitState);
+    }
+
     private DriverIsEncrypted createResponse(TestkitState testkitState) {
         DriverHolder driverHolder = testkitState.getDriverHolder(data.getDriverId());
         return DriverIsEncrypted.builder()

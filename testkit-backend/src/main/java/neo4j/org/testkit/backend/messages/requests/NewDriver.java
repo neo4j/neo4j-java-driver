@@ -147,6 +147,11 @@ public class NewDriver implements TestkitRequest {
         return Mono.fromCompletionStage(processAsync(testkitState));
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return processReactive(testkitState);
+    }
+
     private ServerAddressResolver callbackResolver(TestkitState testkitState) {
         return address -> {
             String callbackId = testkitState.newId();

@@ -58,6 +58,11 @@ public class GetConnectionPoolMetrics implements TestkitRequest {
         return Mono.just(getConnectionPoolMetrics(testkitState));
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return processReactive(testkitState);
+    }
+
     private ConnectionPoolMetrics getConnectionPoolMetrics(TestkitState testkitState) {
         DriverHolder driverHolder = testkitState.getDriverHolder(data.getDriverId());
         Metrics metrics = driverHolder.getDriver().metrics();

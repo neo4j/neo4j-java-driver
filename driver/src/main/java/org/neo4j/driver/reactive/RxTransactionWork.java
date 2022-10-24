@@ -24,7 +24,7 @@ package org.neo4j.driver.reactive;
  *
  * @param <T> the return type of this work
  * @since 4.0
- * @deprecated superseded by {@link ReactiveTransactionCallback}
+ * @deprecated superseded by {@link org.neo4j.driver.reactive.ReactiveTransactionCallback} and {@link org.neo4j.driver.reactivestreams.ReactiveTransactionCallback}
  */
 @Deprecated
 public interface RxTransactionWork<T> {

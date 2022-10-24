@@ -58,6 +58,11 @@ public class ResultSingle implements TestkitRequest {
         throw new UnsupportedOperationException("Single method is not supported by reactive API");
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        throw new UnsupportedOperationException("Single method is not supported by reactive API");
+    }
+
     private neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponse(Record record) {
         return neo4j.org.testkit.backend.messages.responses.Record.builder()
                 .data(neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()

@@ -43,12 +43,12 @@ public class InternalRxSession extends AbstractReactiveSession<RxTransaction> im
     }
 
     @Override
-    RxTransaction createTransaction(UnmanagedTransaction unmanagedTransaction) {
+    protected RxTransaction createTransaction(UnmanagedTransaction unmanagedTransaction) {
         return new InternalRxTransaction(unmanagedTransaction);
     }
 
     @Override
-    Publisher<Void> closeTransaction(RxTransaction transaction, boolean commit) {
+    protected Publisher<Void> closeTransaction(RxTransaction transaction, boolean commit) {
         return ((InternalRxTransaction) transaction).close(commit);
     }
 
