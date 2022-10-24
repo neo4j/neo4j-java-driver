@@ -66,8 +66,7 @@ public class GetFeatures implements TestkitRequest {
             "Feature:API:Result.List",
             "Feature:API:Result.Peek",
             "Optimization:ResultListFetchAll",
-            "Feature:API:Result.Single",
-            "Feature:API:Driver.ExecuteQuery"));
+            "Feature:API:Result.Single"));
 
     private static final Set<String> ASYNC_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:3.0",
