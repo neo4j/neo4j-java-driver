@@ -78,7 +78,7 @@ class TypeSystemTest {
 
     @Test
     void shouldReturnTypeSystem() {
-        assertEquals(TYPE_SYSTEM, TypeSystem.getInstance());
+        assertEquals(TYPE_SYSTEM, TypeSystem.getDefault());
     }
 
     @Test

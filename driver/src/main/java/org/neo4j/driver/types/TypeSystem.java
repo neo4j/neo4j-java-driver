@@ -35,7 +35,7 @@ public interface TypeSystem {
      *
      * @return instance of type system
      */
-    static TypeSystem getInstance() {
+    static TypeSystem getDefault() {
         return TYPE_SYSTEM;
     }
 
