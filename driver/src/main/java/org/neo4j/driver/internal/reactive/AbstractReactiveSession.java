@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
-abstract class AbstractReactiveSession<S> {
+public abstract class AbstractReactiveSession<S> {
     protected final NetworkSession session;
 
     public AbstractReactiveSession(NetworkSession session) {
@@ -45,15 +45,15 @@ abstract class AbstractReactiveSession<S> {
         this.session = session;
     }
 
-    abstract S createTransaction(UnmanagedTransaction unmanagedTransaction);
+    protected abstract S createTransaction(UnmanagedTransaction unmanagedTransaction);
 
-    abstract Publisher<Void> closeTransaction(S transaction, boolean commit);
+    protected abstract Publisher<Void> closeTransaction(S transaction, boolean commit);
 
     Publisher<S> doBeginTransaction(TransactionConfig config) {
         return doBeginTransaction(config, null);
     }
 
-    Publisher<S> doBeginTransaction(TransactionConfig config, String txType) {
+    protected Publisher<S> doBeginTransaction(TransactionConfig config, String txType) {
         return createSingleItemPublisher(
                 () -> {
                     CompletableFuture<S> txFuture = new CompletableFuture<>();
@@ -87,7 +87,7 @@ abstract class AbstractReactiveSession<S> {
                         "Unexpected condition, begin transaction call has completed successfully with transaction being null"));
     }
 
-    <T> Publisher<T> runTransaction(
+    protected <T> Publisher<T> runTransaction(
             AccessMode mode, Function<S, ? extends Publisher<T>> work, TransactionConfig config) {
         Flux<T> repeatableWork = Flux.usingWhen(
                 beginTransaction(mode, config),
@@ -119,7 +119,7 @@ abstract class AbstractReactiveSession<S> {
         return session.lastBookmarks();
     }
 
-    <T> Publisher<T> doClose() {
+    protected <T> Publisher<T> doClose() {
         return createEmptyPublisher(session::closeAsync);
     }
 }

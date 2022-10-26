@@ -40,6 +40,8 @@ public class Runner {
             backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE_LEGACY;
         } else if ("reactive".equals(modeArg)) {
             backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE;
+        } else if ("reactive-streams".equals(modeArg)) {
+            backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE;
         } else {
             backendMode = TestkitRequestProcessorHandler.BackendMode.SYNC;
         }

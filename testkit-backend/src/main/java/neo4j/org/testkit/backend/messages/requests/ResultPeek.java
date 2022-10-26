@@ -63,6 +63,11 @@ public class ResultPeek implements TestkitRequest {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        throw new UnsupportedOperationException("Operation not supported");
+    }
+
     private TestkitResponse createResponse(Record record) {
         return neo4j.org.testkit.backend.messages.responses.Record.builder()
                 .data(neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()

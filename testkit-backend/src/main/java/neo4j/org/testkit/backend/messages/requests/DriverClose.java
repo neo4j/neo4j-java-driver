@@ -56,6 +56,11 @@ public class DriverClose implements TestkitRequest {
         return Mono.fromCompletionStage(processAsync(testkitState));
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return processReactive(testkitState);
+    }
+
     private Driver createResponse() {
         return Driver.builder()
                 .data(Driver.DriverBody.builder().id(data.getDriverId()).build())

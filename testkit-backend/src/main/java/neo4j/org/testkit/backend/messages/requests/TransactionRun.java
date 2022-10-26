@@ -29,6 +29,7 @@ import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.ReactiveResultHolder;
+import neo4j.org.testkit.backend.holder.ReactiveResultStreamsHolder;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
 import neo4j.org.testkit.backend.holder.RxResultHolder;
@@ -93,6 +94,20 @@ public class TransactionRun implements TestkitRequest {
                                 new ReactiveResultHolder(transactionHolder, result));
                         return createResponse(id, result.keys());
                     });
+        });
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return testkitState.getReactiveTransactionStreamsHolder(data.getTxId()).flatMap(transactionHolder -> {
+            var tx = transactionHolder.getTransaction();
+            Map<String, Object> params = data.getParams() != null ? data.getParams() : Collections.emptyMap();
+
+            return Mono.fromDirect(tx.run(data.getCypher(), params)).map(result -> {
+                String id = testkitState.addReactiveResultStreamsHolder(
+                        new ReactiveResultStreamsHolder(transactionHolder, result));
+                return createResponse(id, result.keys());
+            });
         });
     }
 

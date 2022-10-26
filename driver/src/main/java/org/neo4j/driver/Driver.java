@@ -77,7 +77,9 @@ public interface Driver extends AutoCloseable {
      *
      * @return a new {@link Session} object.
      */
-    Session session();
+    default Session session() {
+        return session(SessionConfig.defaultConfig());
+    }
 
     /**
      * Create a new {@link Session} with a specified {@link SessionConfig session configuration}.
@@ -133,7 +135,41 @@ public interface Driver extends AutoCloseable {
      * @param sessionConfig used to customize the session.
      * @return a new {@link ReactiveSession} object.
      */
-    ReactiveSession reactiveSession(SessionConfig sessionConfig);
+    default ReactiveSession reactiveSession(SessionConfig sessionConfig) {
+        return reactiveSession(ReactiveSession.class, sessionConfig);
+    }
+
+    /**
+     * Create a new reactive session of supported type with default {@link SessionConfig session configuration}.
+     * <p>
+     * Supported types are:
+     * <ul>
+     *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
+     *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams API</li>
+     * </ul>
+     *
+     * @param sessionClass session type class
+     * @return session instance
+     * @param <T> session type
+     */
+    default <T extends BaseReactiveSession> T reactiveSession(Class<T> sessionClass) {
+        return reactiveSession(sessionClass, SessionConfig.defaultConfig());
+    }
+
+    /**
+     * Create a new reactive session of supported type with a specified {@link SessionConfig session configuration}.
+     * <p>
+     * Supported types are:
+     * <ul>
+     *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
+     *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams API</li>
+     * </ul>
+     *
+     * @param sessionClass session type class
+     * @return session instance
+     * @param <T> session type
+     */
+    <T extends BaseReactiveSession> T reactiveSession(Class<T> sessionClass, SessionConfig sessionConfig);
 
     /**
      * Create a new general purpose {@link AsyncSession} with default {@link SessionConfig session configuration}. The {@link AsyncSession} provides an
@@ -143,7 +179,9 @@ public interface Driver extends AutoCloseable {
      *
      * @return a new {@link AsyncSession} object.
      */
-    AsyncSession asyncSession();
+    default AsyncSession asyncSession() {
+        return asyncSession(SessionConfig.defaultConfig());
+    }
 
     /**
      * Create a new {@link AsyncSession} with a specified {@link SessionConfig session configuration}.

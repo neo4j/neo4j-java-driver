@@ -60,6 +60,11 @@ public class NewBookmarkManager implements TestkitRequest {
         return Mono.just(createBookmarkManagerAndResponse(testkitState));
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return Mono.just(createBookmarkManagerAndResponse(testkitState));
+    }
+
     private BookmarkManager createBookmarkManagerAndResponse(TestkitState testkitState) {
         var id = testkitState.newId();
         var initialBookmarks =

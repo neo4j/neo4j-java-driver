@@ -29,8 +29,11 @@ import neo4j.org.testkit.backend.holder.AsyncSessionHolder;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
 import neo4j.org.testkit.backend.holder.DriverHolder;
 import neo4j.org.testkit.backend.holder.ReactiveResultHolder;
+import neo4j.org.testkit.backend.holder.ReactiveResultStreamsHolder;
 import neo4j.org.testkit.backend.holder.ReactiveSessionHolder;
+import neo4j.org.testkit.backend.holder.ReactiveSessionStreamsHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
+import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
 import neo4j.org.testkit.backend.holder.RxResultHolder;
@@ -60,14 +63,18 @@ public class TestkitState {
     private final Map<String, AsyncSessionHolder> sessionIdToAsyncSessionHolder = new HashMap<>();
     private final Map<String, RxSessionHolder> sessionIdToRxSessionHolder = new HashMap<>();
     private final Map<String, ReactiveSessionHolder> sessionIdToReactiveSessionHolder = new HashMap<>();
+    private final Map<String, ReactiveSessionStreamsHolder> sessionIdToReactiveSessionStreamsHolder = new HashMap<>();
     private final Map<String, ResultHolder> resultIdToResultHolder = new HashMap<>();
     private final Map<String, ResultCursorHolder> resultIdToResultCursorHolder = new HashMap<>();
     private final Map<String, RxResultHolder> resultIdToRxResultHolder = new HashMap<>();
     private final Map<String, ReactiveResultHolder> resultIdToReactiveResultHolder = new HashMap<>();
+    private final Map<String, ReactiveResultStreamsHolder> resultIdToReactiveResultStreamsHolder = new HashMap<>();
     private final Map<String, TransactionHolder> transactionIdToTransactionHolder = new HashMap<>();
     private final Map<String, AsyncTransactionHolder> transactionIdToAsyncTransactionHolder = new HashMap<>();
     private final Map<String, RxTransactionHolder> transactionIdToRxTransactionHolder = new HashMap<>();
     private final Map<String, ReactiveTransactionHolder> transactionIdToReactiveTransactionHolder = new HashMap<>();
+    private final Map<String, ReactiveTransactionStreamsHolder> transactionIdToReactiveTransactionStreamsHolder =
+            new HashMap<>();
     private final Map<String, BookmarkManager> bookmarkManagerIdToBookmarkManager = new HashMap<>();
 
     @Getter
@@ -129,6 +136,14 @@ public class TestkitState {
         return getRx(id, sessionIdToReactiveSessionHolder, SESSION_NOT_FOUND_MESSAGE);
     }
 
+    public String addReactiveSessionStreamsHolder(ReactiveSessionStreamsHolder sessionHolder) {
+        return add(sessionHolder, sessionIdToReactiveSessionStreamsHolder);
+    }
+
+    public Mono<ReactiveSessionStreamsHolder> getReactiveSessionStreamsHolder(String id) {
+        return getRx(id, sessionIdToReactiveSessionStreamsHolder, SESSION_NOT_FOUND_MESSAGE);
+    }
+
     public String addTransactionHolder(TransactionHolder transactionHolder) {
         return add(transactionHolder, transactionIdToTransactionHolder);
     }
@@ -161,6 +176,14 @@ public class TestkitState {
         return getRx(id, transactionIdToReactiveTransactionHolder, TRANSACTION_NOT_FOUND_MESSAGE);
     }
 
+    public String addReactiveTransactionStreamsHolder(ReactiveTransactionStreamsHolder transactionHolder) {
+        return add(transactionHolder, transactionIdToReactiveTransactionStreamsHolder);
+    }
+
+    public Mono<ReactiveTransactionStreamsHolder> getReactiveTransactionStreamsHolder(String id) {
+        return getRx(id, transactionIdToReactiveTransactionStreamsHolder, TRANSACTION_NOT_FOUND_MESSAGE);
+    }
+
     public String addResultHolder(ResultHolder resultHolder) {
         return add(resultHolder, resultIdToResultHolder);
     }
@@ -191,6 +214,14 @@ public class TestkitState {
 
     public Mono<ReactiveResultHolder> getReactiveResultHolder(String id) {
         return getRx(id, resultIdToReactiveResultHolder, RESULT_NOT_FOUND_MESSAGE);
+    }
+
+    public String addReactiveResultStreamsHolder(ReactiveResultStreamsHolder resultHolder) {
+        return add(resultHolder, resultIdToReactiveResultStreamsHolder);
+    }
+
+    public Mono<ReactiveResultStreamsHolder> getReactiveResultStreamsHolder(String id) {
+        return getRx(id, resultIdToReactiveResultStreamsHolder, RESULT_NOT_FOUND_MESSAGE);
     }
 
     public void addBookmarkManager(String id, BookmarkManager bookmarkManager) {

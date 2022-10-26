@@ -64,6 +64,14 @@ public class TransactionCommit implements TestkitRequest {
                 .then(Mono.just(createResponse(data.getTxId())));
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return testkitState
+                .getReactiveTransactionStreamsHolder(data.getTxId())
+                .flatMap(tx -> Mono.fromDirect(tx.getTransaction().commit()))
+                .then(Mono.just(createResponse(data.getTxId())));
+    }
+
     private Transaction createResponse(String txId) {
         return Transaction.builder()
                 .data(Transaction.TransactionBody.builder().id(txId).build())

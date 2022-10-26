@@ -71,4 +71,6 @@ public interface TestkitRequest {
     Mono<TestkitResponse> processRx(TestkitState testkitState);
 
     Mono<TestkitResponse> processReactive(TestkitState testkitState);
+
+    Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState);
 }

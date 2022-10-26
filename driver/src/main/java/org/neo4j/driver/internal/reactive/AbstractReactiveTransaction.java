@@ -24,30 +24,30 @@ import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-abstract class AbstractReactiveTransaction {
+public abstract class AbstractReactiveTransaction {
     protected final UnmanagedTransaction tx;
 
     protected AbstractReactiveTransaction(UnmanagedTransaction tx) {
         this.tx = tx;
     }
 
-    <T> Publisher<T> doCommit() {
+    protected <T> Publisher<T> doCommit() {
         return createEmptyPublisher(tx::commitAsync);
     }
 
-    <T> Publisher<T> doRollback() {
+    protected <T> Publisher<T> doRollback() {
         return createEmptyPublisher(tx::rollbackAsync);
     }
 
-    Publisher<Void> doClose() {
+    protected Publisher<Void> doClose() {
         return close(false);
     }
 
-    Publisher<Boolean> doIsOpen() {
+    protected Publisher<Boolean> doIsOpen() {
         return Mono.just(tx.isOpen());
     }
 
-    Publisher<Void> close(boolean commit) {
+    public Publisher<Void> close(boolean commit) {
         return createEmptyPublisher(() -> tx.closeAsync(commit));
     }
 }

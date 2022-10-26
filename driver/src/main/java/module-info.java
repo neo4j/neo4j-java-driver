@@ -21,6 +21,7 @@ module org.neo4j.driver {
     exports org.neo4j.driver;
     exports org.neo4j.driver.async;
     exports org.neo4j.driver.reactive;
+    exports org.neo4j.driver.reactivestreams;
     exports org.neo4j.driver.types;
     exports org.neo4j.driver.summary;
     exports org.neo4j.driver.net;

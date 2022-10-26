@@ -65,6 +65,14 @@ public class RetryablePositive implements TestkitRequest {
         });
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return testkitState.getReactiveSessionStreamsHolder(data.getSessionId()).mapNotNull(sessionHolder -> {
+            sessionHolder.getTxWorkFuture().complete(null);
+            return null;
+        });
+    }
+
     @Setter
     @Getter
     public static class RetryablePositiveBody {

@@ -35,7 +35,7 @@ import org.reactivestreams.Publisher;
  * @see RxTransaction
  * @see Publisher
  * @since 4.0
- * @deprecated superseded by {@link ReactiveSession}
+ * @deprecated superseded by {@link org.neo4j.driver.reactive.ReactiveSession} and {@link org.neo4j.driver.reactivestreams.ReactiveSession}
  */
 @Deprecated
 public interface RxSession extends RxQueryRunner {

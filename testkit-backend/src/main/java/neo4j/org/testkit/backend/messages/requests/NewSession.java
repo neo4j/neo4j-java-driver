@@ -31,6 +31,7 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncSessionHolder;
 import neo4j.org.testkit.backend.holder.DriverHolder;
 import neo4j.org.testkit.backend.holder.ReactiveSessionHolder;
+import neo4j.org.testkit.backend.holder.ReactiveSessionStreamsHolder;
 import neo4j.org.testkit.backend.holder.RxSessionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.Session;
@@ -66,6 +67,12 @@ public class NewSession implements TestkitRequest {
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return Mono.just(createSessionStateAndResponse(
                 testkitState, this::createReactiveSessionState, testkitState::addReactiveSessionHolder));
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        return Mono.just(createSessionStateAndResponse(
+                testkitState, this::createReactiveSessionStreamsState, testkitState::addReactiveSessionStreamsHolder));
     }
 
     protected <T> TestkitResponse createSessionStateAndResponse(
@@ -117,6 +124,16 @@ public class NewSession implements TestkitRequest {
     private ReactiveSessionHolder createReactiveSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
         return new ReactiveSessionHolder(
                 driverHolder, driverHolder.getDriver().reactiveSession(sessionConfig), sessionConfig);
+    }
+
+    private ReactiveSessionStreamsHolder createReactiveSessionStreamsState(
+            DriverHolder driverHolder, SessionConfig sessionConfig) {
+        return new ReactiveSessionStreamsHolder(
+                driverHolder,
+                driverHolder
+                        .getDriver()
+                        .reactiveSession(org.neo4j.driver.reactivestreams.ReactiveSession.class, sessionConfig),
+                sessionConfig);
     }
 
     @Setter
