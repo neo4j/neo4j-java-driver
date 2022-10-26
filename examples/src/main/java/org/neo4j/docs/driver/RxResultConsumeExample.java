@@ -19,6 +19,7 @@
 package org.neo4j.docs.driver;
 
 import org.neo4j.driver.Query;
+import org.neo4j.driver.reactive.ReactiveSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -34,7 +35,7 @@ public class RxResultConsumeExample extends BaseApplication {
     public Flux<String> getPeople() {
         var query = new Query("MATCH (a:Person) RETURN a.name ORDER BY a.name");
         return Flux.usingWhen(
-                Mono.fromSupplier(driver::reactiveSession),
+                Mono.fromSupplier(() -> driver.session(ReactiveSession.class)),
                 session -> flowPublisherToFlux(session.executeRead(tx -> {
                     var flux = flowPublisherToFlux(tx.run(query))
                             .flatMap(result -> flowPublisherToFlux(result.records()))

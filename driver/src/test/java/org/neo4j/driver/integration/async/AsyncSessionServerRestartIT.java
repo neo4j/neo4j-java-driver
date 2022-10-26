@@ -45,7 +45,7 @@ class AsyncSessionServerRestartIT {
 
     @BeforeEach
     void setUp() {
-        session = neo4j.driver().asyncSession();
+        session = neo4j.driver().session(AsyncSession.class);
     }
 
     @AfterEach

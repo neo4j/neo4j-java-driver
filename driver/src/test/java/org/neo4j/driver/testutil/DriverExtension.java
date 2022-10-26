@@ -45,7 +45,7 @@ public class DriverExtension extends DatabaseExtension implements BeforeEachCall
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         super.beforeEach(context);
-        asyncSession = driver().asyncSession();
+        asyncSession = driver().session(AsyncSession.class);
         session = driver().session();
     }
 

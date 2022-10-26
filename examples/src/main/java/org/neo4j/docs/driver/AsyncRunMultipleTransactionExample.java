@@ -18,6 +18,7 @@
  */
 package org.neo4j.docs.driver;
 
+import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransactionContext;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
@@ -36,7 +37,7 @@ public class AsyncRunMultipleTransactionExample extends BaseApplication {
 
     // tag::async-multiple-tx[]
     public CompletionStage<Integer> addEmployees(final String companyName) {
-        var session = driver.asyncSession();
+        var session = driver.session(AsyncSession.class);
         return session.executeReadAsync(AsyncRunMultipleTransactionExample::matchPersonNodes)
                 .thenCompose(personNames -> session.executeWriteAsync(tx -> createNodes(tx, companyName, personNames)));
     }

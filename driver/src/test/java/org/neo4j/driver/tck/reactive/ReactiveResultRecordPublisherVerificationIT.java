@@ -70,14 +70,14 @@ public class ReactiveResultRecordPublisherVerificationIT extends PublisherVerifi
 
     @Override
     public Publisher<Record> createPublisher(long elements) {
-        ReactiveSession session = driver.reactiveSession();
+        ReactiveSession session = driver.session(ReactiveSession.class);
         return Mono.fromDirect(flowPublisherToFlux(session.run(QUERY, parameters("numberOfRecords", elements))))
                 .flatMapMany(r -> Flux.from(flowPublisherToFlux(r.records())));
     }
 
     @Override
     public Publisher<Record> createFailedPublisher() {
-        ReactiveSession session = driver.reactiveSession();
+        ReactiveSession session = driver.session(ReactiveSession.class);
         // Please note that this publisher fails on run stage.
         return Mono.fromDirect(flowPublisherToFlux(session.run("RETURN 5/0")))
                 .flatMapMany(r -> Flux.from(flowPublisherToFlux(r.records())));

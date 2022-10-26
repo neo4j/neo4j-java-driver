@@ -71,7 +71,7 @@ class SessionMixIT {
     }
 
     private AsyncSession newAsyncSession() {
-        return neo4j.driver().asyncSession();
+        return neo4j.driver().session(AsyncSession.class);
     }
 
     private Session newSession() {

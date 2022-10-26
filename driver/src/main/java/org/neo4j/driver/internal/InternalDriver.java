@@ -23,7 +23,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.neo4j.driver.BaseReactiveSession;
+import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -61,35 +61,28 @@ public class InternalDriver implements Driver {
         this.log = logging.getLog(getClass());
     }
 
+    @SuppressWarnings({"unchecked", "deprecation"})
     @Override
-    public Session session(SessionConfig sessionConfig) {
-        return new InternalSession(newSession(sessionConfig));
-    }
-
-    @Override
-    @Deprecated
-    public RxSession rxSession(SessionConfig sessionConfig) {
-        return new InternalRxSession(newSession(sessionConfig));
-    }
-
-    @SuppressWarnings({"deprecation", "unchecked"})
-    @Override
-    public <T extends BaseReactiveSession> T reactiveSession(Class<T> sessionClass, SessionConfig sessionConfig) {
+    public <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig) {
         requireNonNull(sessionClass, "sessionClass must not be null");
         requireNonNull(sessionClass, "sessionConfig must not be null");
-        if (org.neo4j.driver.reactive.ReactiveSession.class.isAssignableFrom(sessionClass)) {
-            return (T) new org.neo4j.driver.internal.reactive.InternalReactiveSession(newSession(sessionConfig));
+        T session;
+        if (Session.class.isAssignableFrom(sessionClass)) {
+            session = (T) new InternalSession(newSession(sessionConfig));
+        } else if (AsyncSession.class.isAssignableFrom(sessionClass)) {
+            session = (T) new InternalAsyncSession(newSession(sessionConfig));
+        } else if (org.neo4j.driver.reactive.ReactiveSession.class.isAssignableFrom(sessionClass)) {
+            session = (T) new org.neo4j.driver.internal.reactive.InternalReactiveSession(newSession(sessionConfig));
         } else if (org.neo4j.driver.reactivestreams.ReactiveSession.class.isAssignableFrom(sessionClass)) {
-            return (T) new org.neo4j.driver.internal.reactivestreams.InternalReactiveSession(newSession(sessionConfig));
+            session = (T)
+                    new org.neo4j.driver.internal.reactivestreams.InternalReactiveSession(newSession(sessionConfig));
+        } else if (RxSession.class.isAssignableFrom(sessionClass)) {
+            session = (T) new InternalRxSession(newSession(sessionConfig));
         } else {
             throw new IllegalArgumentException(
                     String.format("Unsupported session type '%s'", sessionClass.getCanonicalName()));
         }
-    }
-
-    @Override
-    public AsyncSession asyncSession(SessionConfig sessionConfig) {
-        return new InternalAsyncSession(newSession(sessionConfig));
+        return session;
     }
 
     @Override

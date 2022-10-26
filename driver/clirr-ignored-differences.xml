@@ -400,13 +400,13 @@
     <difference>
         <className>org/neo4j/driver/Driver</className>
         <differenceType>7012</differenceType>
-        <method>org.neo4j.driver.BaseReactiveSession reactiveSession(java.lang.Class)</method>
+        <method>org.neo4j.driver.BaseSession session(java.lang.Class)</method>
     </difference>
 
     <difference>
         <className>org/neo4j/driver/Driver</className>
         <differenceType>7012</differenceType>
-        <method>org.neo4j.driver.BaseReactiveSession reactiveSession(java.lang.Class, org.neo4j.driver.SessionConfig)</method>
+        <method>org.neo4j.driver.BaseSession session(java.lang.Class, org.neo4j.driver.SessionConfig)</method>
     </difference>
 
 </differences>

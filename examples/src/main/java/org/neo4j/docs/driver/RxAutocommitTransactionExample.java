@@ -19,6 +19,7 @@
 package org.neo4j.docs.driver;
 
 import org.neo4j.driver.Query;
+import org.neo4j.driver.reactive.ReactiveSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -35,7 +36,7 @@ public class RxAutocommitTransactionExample extends BaseApplication {
     public Flux<String> readProductTitles() {
         var query = new Query("MATCH (p:Product) WHERE p.id = $id RETURN p.title", Collections.singletonMap("id", 0));
         return Flux.usingWhen(
-                Mono.fromSupplier(driver::reactiveSession),
+                Mono.fromSupplier(() -> driver.session(ReactiveSession.class)),
                 session -> flowPublisherToFlux(session.run(query))
                         .flatMap(result -> flowPublisherToFlux(result.records()))
                         .map(record -> record.get(0).asString()),

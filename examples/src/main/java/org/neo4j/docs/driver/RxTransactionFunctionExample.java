@@ -20,6 +20,7 @@ package org.neo4j.docs.driver;
 
 import org.neo4j.driver.Query;
 import org.neo4j.driver.reactive.ReactiveResult;
+import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.summary.ResultSummary;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -40,7 +41,7 @@ public class RxTransactionFunctionExample extends BaseApplication {
         var query = new Query("MATCH (p:Product) WHERE p.id = $id RETURN p.title", Collections.singletonMap("id", 0));
 
         return Flux.usingWhen(
-                Mono.fromSupplier(driver::reactiveSession),
+                Mono.fromSupplier(() -> driver.session(ReactiveSession.class)),
                 session -> flowPublisherToFlux(session.executeRead(tx -> {
                     var resultRef = new AtomicReference<ReactiveResult>();
                     var flux = flowPublisherToFlux(tx.run(query))

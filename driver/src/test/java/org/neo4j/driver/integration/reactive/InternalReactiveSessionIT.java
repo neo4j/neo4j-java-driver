@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.reactive.InternalReactiveSession;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.testutil.DatabaseExtension;
@@ -47,7 +48,7 @@ class InternalReactiveSessionIT {
 
     @BeforeEach
     void setUp() {
-        session = (InternalReactiveSession) neo4j.driver().reactiveSession();
+        session = (InternalReactiveSession) neo4j.driver().session(ReactiveSession.class);
     }
 
     @ParameterizedTest

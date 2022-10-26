@@ -19,6 +19,6 @@
 package org.neo4j.driver;
 
 /**
- * A base interface for reactive sessions, used by {@link Driver#reactiveSession(Class)} and {@link Driver#reactiveSession(Class, SessionConfig)}.
+ * A base interface for sessions, used by {@link Driver#session(Class)} and {@link Driver#session(Class, SessionConfig)}.
  */
-public interface BaseReactiveSession {}
+public interface BaseSession {}
