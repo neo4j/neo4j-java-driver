@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow.Publisher;
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.BaseReactiveSession;
+import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
@@ -40,7 +40,7 @@ import org.neo4j.driver.Values;
  * @see Publisher
  * @since 5.0
  */
-public interface ReactiveSession extends BaseReactiveSession, ReactiveQueryRunner {
+public interface ReactiveSession extends BaseSession, ReactiveQueryRunner {
     /**
      * Begin a new <em>unmanaged {@linkplain ReactiveTransaction transaction}</em>. At most one transaction may exist in a session at any point in time. To
      * maintain multiple concurrent transactions, use multiple concurrent sessions.

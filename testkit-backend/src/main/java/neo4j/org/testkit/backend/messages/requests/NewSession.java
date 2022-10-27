@@ -38,7 +38,10 @@ import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.SessionConfig;
+import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.reactive.ReactiveSession;
+import org.neo4j.driver.reactive.RxSession;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -113,26 +116,25 @@ public class NewSession implements TestkitRequest {
 
     private AsyncSessionHolder createAsyncSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
         return new AsyncSessionHolder(
-                driverHolder, driverHolder.getDriver().asyncSession(sessionConfig), sessionConfig);
+                driverHolder, driverHolder.getDriver().session(AsyncSession.class, sessionConfig), sessionConfig);
     }
 
     @SuppressWarnings("deprecation")
     private RxSessionHolder createRxSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
-        return new RxSessionHolder(driverHolder, driverHolder.getDriver().rxSession(sessionConfig), sessionConfig);
+        return new RxSessionHolder(
+                driverHolder, driverHolder.getDriver().session(RxSession.class, sessionConfig), sessionConfig);
     }
 
     private ReactiveSessionHolder createReactiveSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
         return new ReactiveSessionHolder(
-                driverHolder, driverHolder.getDriver().reactiveSession(sessionConfig), sessionConfig);
+                driverHolder, driverHolder.getDriver().session(ReactiveSession.class, sessionConfig), sessionConfig);
     }
 
     private ReactiveSessionStreamsHolder createReactiveSessionStreamsState(
             DriverHolder driverHolder, SessionConfig sessionConfig) {
         return new ReactiveSessionStreamsHolder(
                 driverHolder,
-                driverHolder
-                        .getDriver()
-                        .reactiveSession(org.neo4j.driver.reactivestreams.ReactiveSession.class, sessionConfig),
+                driverHolder.getDriver().session(org.neo4j.driver.reactivestreams.ReactiveSession.class, sessionConfig),
                 sessionConfig);
     }
 

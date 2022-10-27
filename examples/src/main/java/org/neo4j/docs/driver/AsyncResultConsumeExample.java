@@ -19,6 +19,7 @@
 package org.neo4j.docs.driver;
 
 import org.neo4j.driver.Query;
+import org.neo4j.driver.async.AsyncSession;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -31,7 +32,7 @@ public class AsyncResultConsumeExample extends BaseApplication {
     // tag::async-result-consume[]
     public CompletionStage<List<String>> getPeople() {
         var query = new Query("MATCH (a:Person) RETURN a.name ORDER BY a.name");
-        var session = driver.asyncSession();
+        var session = driver.session(AsyncSession.class);
         return session.executeReadAsync(tx -> tx.runAsync(query)
                 .thenCompose(cursor -> cursor.listAsync(record -> record.get(0).asString())));
     }

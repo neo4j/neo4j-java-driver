@@ -133,7 +133,7 @@ class QueryRunnerCloseIT {
     @Test
     void shouldErrorToAccessRecordsAfterConsumeAsync() {
         // Given
-        AsyncSession session = neo4j.driver().asyncSession();
+        AsyncSession session = neo4j.driver().session(AsyncSession.class);
         ResultCursor result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
 
         // When
@@ -151,7 +151,7 @@ class QueryRunnerCloseIT {
     @Test
     void shouldErrorToAccessRecordsAfterCloseAsync() {
         // Given
-        AsyncSession session = neo4j.driver().asyncSession();
+        AsyncSession session = neo4j.driver().session(AsyncSession.class);
         ResultCursor result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
 
         // When
@@ -169,7 +169,7 @@ class QueryRunnerCloseIT {
     @Test
     void shouldAllowConsumeAndKeysAfterConsumeAsync() {
         // Given
-        AsyncSession session = neo4j.driver().asyncSession();
+        AsyncSession session = neo4j.driver().session(AsyncSession.class);
         ResultCursor result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
 
         List<String> keys = result.keys();
@@ -188,7 +188,7 @@ class QueryRunnerCloseIT {
     @Test
     void shouldAllowConsumeAndKeysAfterCloseAsync() {
         // Given
-        AsyncSession session = neo4j.driver().asyncSession();
+        AsyncSession session = neo4j.driver().session(AsyncSession.class);
         ResultCursor result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
         List<String> keys = result.keys();
         ResultSummary summary = await(result.consumeAsync());

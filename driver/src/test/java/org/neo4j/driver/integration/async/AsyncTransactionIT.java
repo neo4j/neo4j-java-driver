@@ -79,7 +79,7 @@ class AsyncTransactionIT {
 
     @BeforeEach
     void setUp() {
-        session = neo4j.driver().asyncSession();
+        session = neo4j.driver().session(AsyncSession.class);
     }
 
     @AfterEach
@@ -276,7 +276,9 @@ class AsyncTransactionIT {
     @Test
     void shouldFailBoBeginTxWithInvalidBookmark() {
         AsyncSession session = neo4j.driver()
-                .asyncSession(builder().withBookmarks(parse("InvalidBookmark")).build());
+                .session(
+                        AsyncSession.class,
+                        builder().withBookmarks(parse("InvalidBookmark")).build());
 
         ClientException e = assertThrows(ClientException.class, () -> await(session.beginTransactionAsync()));
         assertThat(e.getMessage(), containsString("InvalidBookmark"));

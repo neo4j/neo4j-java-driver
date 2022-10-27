@@ -35,11 +35,14 @@ public abstract class AbstractAsyncQuery<C extends AbstractContext> implements A
 
     public AsyncSession newSession(AccessMode mode, C context) {
         if (useBookmark) {
-            return driver.asyncSession(builder()
-                    .withDefaultAccessMode(mode)
-                    .withBookmarks(context.getBookmark())
-                    .build());
+            return driver.session(
+                    AsyncSession.class,
+                    builder()
+                            .withDefaultAccessMode(mode)
+                            .withBookmarks(context.getBookmark())
+                            .build());
         }
-        return driver.asyncSession(builder().withDefaultAccessMode(mode).build());
+        return driver.session(
+                AsyncSession.class, builder().withDefaultAccessMode(mode).build());
     }
 }

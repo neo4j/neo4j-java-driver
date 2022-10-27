@@ -64,13 +64,13 @@ public class ReactiveResultPublisherVerificationIT extends PublisherVerification
 
     @Override
     public Publisher<ReactiveResult> createPublisher(long elements) {
-        ReactiveSession session = driver.reactiveSession();
+        ReactiveSession session = driver.session(ReactiveSession.class);
         return Mono.from(flowPublisherToFlux(session.run("RETURN 1")));
     }
 
     @Override
     public Publisher<ReactiveResult> createFailedPublisher() {
-        ReactiveSession session = driver.reactiveSession();
+        ReactiveSession session = driver.session(ReactiveSession.class);
         // Please note that this publisher fails on run stage.
         return Mono.from(flowPublisherToFlux(session.run("RETURN 5/0")));
     }

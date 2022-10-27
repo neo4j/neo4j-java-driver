@@ -94,7 +94,7 @@ class AsyncSessionIT {
 
     @BeforeEach
     void setUp() {
-        session = neo4j.driver().asyncSession();
+        session = neo4j.driver().session(AsyncSession.class);
     }
 
     @AfterEach
@@ -212,7 +212,7 @@ class AsyncSessionIT {
         awaitAll(records);
 
         await(session.closeAsync());
-        session = neo4j.driver().asyncSession();
+        session = neo4j.driver().session(AsyncSession.class);
 
         ResultCursor cursor = await(session.runAsync("MATCH (p:Person) RETURN count(p)"));
         Record record = await(cursor.nextAsync());
@@ -525,7 +525,9 @@ class AsyncSessionIT {
     void shouldRunAfterBeginTxFailureOnBookmark() {
         Bookmark illegalBookmark = InternalBookmark.parse("Illegal Bookmark");
         session = neo4j.driver()
-                .asyncSession(builder().withBookmarks(illegalBookmark).build());
+                .session(
+                        AsyncSession.class,
+                        builder().withBookmarks(illegalBookmark).build());
 
         assertThrows(ClientException.class, () -> await(session.beginTransactionAsync()));
 
@@ -538,7 +540,9 @@ class AsyncSessionIT {
     void shouldNotBeginTxAfterBeginTxFailureOnBookmark() {
         Bookmark illegalBookmark = InternalBookmark.parse("Illegal Bookmark");
         session = neo4j.driver()
-                .asyncSession(builder().withBookmarks(illegalBookmark).build());
+                .session(
+                        AsyncSession.class,
+                        builder().withBookmarks(illegalBookmark).build());
         assertThrows(ClientException.class, () -> await(session.beginTransactionAsync()));
         assertThrows(ClientException.class, () -> await(session.beginTransactionAsync()));
     }
@@ -548,7 +552,9 @@ class AsyncSessionIT {
     void shouldNotRunAfterBeginTxFailureOnBookmark() {
         Bookmark illegalBookmark = InternalBookmark.parse("Illegal Bookmark");
         session = neo4j.driver()
-                .asyncSession(builder().withBookmarks(illegalBookmark).build());
+                .session(
+                        AsyncSession.class,
+                        builder().withBookmarks(illegalBookmark).build());
         assertThrows(ClientException.class, () -> await(session.beginTransactionAsync()));
         assertThrows(ClientException.class, () -> await(session.runAsync("RETURN 'Hello!'")));
     }

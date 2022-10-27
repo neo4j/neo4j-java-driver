@@ -18,6 +18,8 @@
  */
 package org.neo4j.docs.driver;
 
+import org.neo4j.driver.async.AsyncSession;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +35,7 @@ public class AsyncAutocommitTransactionExample extends BaseApplication {
         var query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         var parameters = Map.<String, Object>of("id", 0);
 
-        var session = driver.asyncSession();
+        var session = driver.session(AsyncSession.class);
 
         return session.runAsync(query, parameters)
                 .thenCompose(cursor -> cursor.listAsync(record -> record.get(0).asString()))

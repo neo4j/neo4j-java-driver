@@ -35,7 +35,7 @@ public class AsyncTransactionFunctionExample extends BaseApplication {
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String, Object> parameters = Collections.singletonMap("id", 0);
 
-        AsyncSession session = driver.asyncSession();
+        AsyncSession session = driver.session(AsyncSession.class);
 
         return session.executeReadAsync(tx -> tx.runAsync(query, parameters)
                 .thenCompose(cursor -> cursor.forEachAsync(record ->

@@ -506,7 +506,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     private static Bookmark createNodesAsync(int batchCount, int batchSize, Driver driver) throws Throwable {
         long start = System.nanoTime();
 
-        AsyncSession session = driver.asyncSession();
+        AsyncSession session = driver.session(AsyncSession.class);
         CompletableFuture<Throwable> writeTransactions = completedFuture(null);
 
         for (int i = 0; i < batchCount; i++) {
@@ -532,8 +532,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     private static void readNodesAsync(Driver driver, Bookmark bookmark, int expectedNodeCount) throws Throwable {
         long start = System.nanoTime();
 
-        AsyncSession session =
-                driver.asyncSession(builder().withBookmarks(bookmark).build());
+        AsyncSession session = driver.session(
+                AsyncSession.class, builder().withBookmarks(bookmark).build());
         AtomicInteger nodesSeen = new AtomicInteger();
 
         CompletionStage<Throwable> readQuery = session.readTransactionAsync(tx -> tx.runAsync("MATCH (n:Node) RETURN n")

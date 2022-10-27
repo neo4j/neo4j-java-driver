@@ -78,17 +78,80 @@ public interface Driver extends AutoCloseable {
      * @return a new {@link Session} object.
      */
     default Session session() {
-        return session(SessionConfig.defaultConfig());
+        return session(Session.class);
     }
 
     /**
-     * Create a new {@link Session} with a specified {@link SessionConfig session configuration}.
+     * Instantiate a new {@link Session} with a specified {@link SessionConfig session configuration}.
      * Use {@link SessionConfig#forDatabase(String)} to obtain a general purpose session configuration for the specified database.
      * @param sessionConfig specifies session configurations for this session.
      * @return a new {@link Session} object.
      * @see SessionConfig
      */
-    Session session(SessionConfig sessionConfig);
+    default Session session(SessionConfig sessionConfig) {
+        return session(Session.class, sessionConfig);
+    }
+
+    /**
+     * Instantiate a new session of supported type with default {@link SessionConfig session configuration}.
+     * <p>
+     * Supported types are:
+     * <ul>
+     *     <li>{@link org.neo4j.driver.Session} - synchronous session</li>
+     *     <li>{@link org.neo4j.driver.async.AsyncSession} - asynchronous session</li>
+     *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
+     *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams
+     * API</li>
+     *     <li>{@link org.neo4j.driver.reactive.RxSession} - deprecated reactive session using Reactive Streams
+     * API, superseded by {@link org.neo4j.driver.reactivestreams.ReactiveSession}</li>
+     * </ul>
+     * <p>
+     * Sample usage:
+     * <pre>
+     * {@code
+     * var session = driver.session(AsyncSession.class);
+     * }
+     * </pre>
+     *
+     * @param sessionClass session type class, must not be null
+     * @return session instance
+     * @param <T> session type
+     * @throws IllegalArgumentException for unsupported session types
+     * @since 5.2
+     */
+    default <T extends BaseSession> T session(Class<T> sessionClass) {
+        return session(sessionClass, SessionConfig.defaultConfig());
+    }
+
+    /**
+     * Create a new session of supported type with a specified {@link SessionConfig session configuration}.
+     * <p>
+     * Supported types are:
+     * <ul>
+     *     <li>{@link org.neo4j.driver.Session} - synchronous session</li>
+     *     <li>{@link org.neo4j.driver.async.AsyncSession} - asynchronous session</li>
+     *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
+     *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams
+     * API</li>
+     *     <li>{@link org.neo4j.driver.reactive.RxSession} - deprecated reactive session using Reactive Streams
+     * API, superseded by {@link org.neo4j.driver.reactivestreams.ReactiveSession}</li>
+     * </ul>
+     * <p>
+     * Sample usage:
+     * <pre>
+     * {@code
+     * var session = driver.session(AsyncSession.class);
+     * }
+     * </pre>
+     *
+     * @param sessionClass session type class, must not be null
+     * @param sessionConfig session config, must not be null
+     * @return session instance
+     * @param <T> session type
+     * @throws IllegalArgumentException for unsupported session types
+     * @since 5.2
+     */
+    <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig);
 
     /**
      * Create a new general purpose {@link RxSession} with default {@link SessionConfig session configuration}. The {@link RxSession} provides a reactive way to
@@ -97,11 +160,11 @@ public interface Driver extends AutoCloseable {
      * Alias to {@link #rxSession(SessionConfig)}}.
      *
      * @return a new {@link RxSession} object.
-     * @deprecated superseded by {@link #reactiveSession()}.
+     * @deprecated superseded by {@link #session(Class)}
      */
     @Deprecated
     default RxSession rxSession() {
-        return rxSession(SessionConfig.defaultConfig());
+        return session(RxSession.class);
     }
 
     /**
@@ -110,10 +173,12 @@ public interface Driver extends AutoCloseable {
      *
      * @param sessionConfig used to customize the session.
      * @return a new {@link RxSession} object.
-     * @deprecated superseded by {@link #reactiveSession(SessionConfig)}.
+     * @deprecated superseded by {@link #session(Class, SessionConfig)}
      */
     @Deprecated
-    RxSession rxSession(SessionConfig sessionConfig);
+    default RxSession rxSession(SessionConfig sessionConfig) {
+        return session(RxSession.class, sessionConfig);
+    }
 
     /**
      * Create a new general purpose {@link ReactiveSession} with default {@link SessionConfig session configuration}. The {@link ReactiveSession} provides a
@@ -122,9 +187,11 @@ public interface Driver extends AutoCloseable {
      * Alias to {@link #rxSession(SessionConfig)}}.
      *
      * @return a new {@link ReactiveSession} object.
+     * @deprecated superseded by {@link #session(Class)}
      */
+    @Deprecated
     default ReactiveSession reactiveSession() {
-        return reactiveSession(SessionConfig.defaultConfig());
+        return session(ReactiveSession.class);
     }
 
     /**
@@ -134,42 +201,12 @@ public interface Driver extends AutoCloseable {
      *
      * @param sessionConfig used to customize the session.
      * @return a new {@link ReactiveSession} object.
+     * @deprecated superseded by {@link #session(Class, SessionConfig)}
      */
+    @Deprecated
     default ReactiveSession reactiveSession(SessionConfig sessionConfig) {
-        return reactiveSession(ReactiveSession.class, sessionConfig);
+        return session(ReactiveSession.class, sessionConfig);
     }
-
-    /**
-     * Create a new reactive session of supported type with default {@link SessionConfig session configuration}.
-     * <p>
-     * Supported types are:
-     * <ul>
-     *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
-     *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams API</li>
-     * </ul>
-     *
-     * @param sessionClass session type class
-     * @return session instance
-     * @param <T> session type
-     */
-    default <T extends BaseReactiveSession> T reactiveSession(Class<T> sessionClass) {
-        return reactiveSession(sessionClass, SessionConfig.defaultConfig());
-    }
-
-    /**
-     * Create a new reactive session of supported type with a specified {@link SessionConfig session configuration}.
-     * <p>
-     * Supported types are:
-     * <ul>
-     *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
-     *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams API</li>
-     * </ul>
-     *
-     * @param sessionClass session type class
-     * @return session instance
-     * @param <T> session type
-     */
-    <T extends BaseReactiveSession> T reactiveSession(Class<T> sessionClass, SessionConfig sessionConfig);
 
     /**
      * Create a new general purpose {@link AsyncSession} with default {@link SessionConfig session configuration}. The {@link AsyncSession} provides an
@@ -178,9 +215,11 @@ public interface Driver extends AutoCloseable {
      * Alias to {@link #asyncSession(SessionConfig)}}.
      *
      * @return a new {@link AsyncSession} object.
+     * @deprecated superseded by {@link #session(Class)}
      */
+    @Deprecated
     default AsyncSession asyncSession() {
-        return asyncSession(SessionConfig.defaultConfig());
+        return session(AsyncSession.class);
     }
 
     /**
@@ -190,8 +229,12 @@ public interface Driver extends AutoCloseable {
      *
      * @param sessionConfig used to customize the session.
      * @return a new {@link AsyncSession} object.
+     * @deprecated superseded by {@link #session(Class, SessionConfig)}
      */
-    AsyncSession asyncSession(SessionConfig sessionConfig);
+    @Deprecated
+    default AsyncSession asyncSession(SessionConfig sessionConfig) {
+        return session(AsyncSession.class, sessionConfig);
+    }
 
     /**
      * Close all the resources assigned to this driver, including open connections and IO threads.
