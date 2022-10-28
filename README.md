@@ -6,6 +6,13 @@ It works with both single instance and clustered databases.
 
 Network communication is handled using [Bolt Protocol](https://7687.org/).
 
+## Versioning
+
+Starting with 5.0, the Neo4j Drivers will be moving to a monthly release cadence. A minor version will be released on 
+the last Friday of each month so as to maintain versioning consistency with the core product (Neo4j DBMS) which has also moved to a monthly cadence.
+
+As a policy, patch versions will not be released except on rare occasions. Bug fixes and updates will go into the latest minor version and users should upgrade to that. Driver upgrades within a major version will never contain breaking API changes.
+
 ## Supported Driver Series
 
 | Driver Series | Supported Java Runtime versions | Status | Changelog |
