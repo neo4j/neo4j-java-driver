@@ -29,6 +29,7 @@ import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -38,6 +39,7 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.NotificationFilter;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -83,29 +85,38 @@ public class BoltProtocolV3 implements BoltProtocol {
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise) {
         var channel = channelInitializedPromise.channel();
-        var notificationFilters = getNotificationFilters(channel);
         HelloMessage message;
 
         if (routingContext.isServerRoutingEnabled()) {
-            message = new HelloMessage(
+            message = createHelloMessage(
                     userAgent,
                     ((InternalAuthToken) authToken).toMap(),
-                    routingContext.toMap(),
+                    routingContext,
                     includeDateTimeUtcPatchInHello(),
-                    notificationFilters);
+                    channel);
         } else {
-            message = new HelloMessage(
+            message = createHelloMessage(
                     userAgent,
                     ((InternalAuthToken) authToken).toMap(),
                     null,
                     includeDateTimeUtcPatchInHello(),
-                    notificationFilters);
+                    channel);
         }
 
         HelloResponseHandler handler = new HelloResponseHandler(channelInitializedPromise);
 
         messageDispatcher(channel).enqueue(handler);
         channel.writeAndFlush(message, channel.voidPromise());
+    }
+
+    protected HelloMessage createHelloMessage(
+            String userAgent,
+            Map<String, Value> authToken,
+            RoutingContext routingContext,
+            boolean includeDateTimeUtc,
+            Channel channel) {
+        return new HelloMessage(
+                userAgent, ((InternalAuthToken) authToken).toMap(), routingContext.toMap(), includeDateTimeUtc);
     }
 
     @Override
@@ -214,10 +225,6 @@ public class BoltProtocolV3 implements BoltProtocol {
 
     protected boolean includeDateTimeUtcPatchInHello() {
         return false;
-    }
-
-    protected Set<String> getNotificationFilters(Channel channel) {
-        return Collections.emptySet();
     }
 
     protected Set<String> mapNotificationFiltersToStrings(Set<NotificationFilter> notificationFilters) {

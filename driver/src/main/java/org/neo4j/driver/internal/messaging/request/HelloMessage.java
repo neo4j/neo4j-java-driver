@@ -25,27 +25,27 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import org.neo4j.driver.Value;
 
 public class HelloMessage extends MessageWithMetadata {
     public static final byte SIGNATURE = 0x01;
 
-    private static final String USER_AGENT_METADATA_KEY = "user_agent";
-    private static final String ROUTING_CONTEXT_METADATA_KEY = "routing";
-    private static final String PATCH_BOLT_METADATA_KEY = "patch_bolt";
+    public static final String USER_AGENT_METADATA_KEY = "user_agent";
+    public static final String ROUTING_CONTEXT_METADATA_KEY = "routing";
+    public static final String PATCH_BOLT_METADATA_KEY = "patch_bolt";
 
-    private static final String DATE_TIME_UTC_PATCH_VALUE = "utc";
-
-    private static final String NOTIFICATIONS_KEY = "notifications";
+    public static final String DATE_TIME_UTC_PATCH_VALUE = "utc";
 
     public HelloMessage(
             String userAgent,
             Map<String, Value> authToken,
             Map<String, String> routingContext,
-            boolean includeDateTimeUtc,
-            Set<String> notificationFilters) {
-        super(buildMetadata(userAgent, authToken, routingContext, includeDateTimeUtc, notificationFilters));
+            boolean includeDateTimeUtc) {
+        super(buildMetadata(userAgent, authToken, routingContext, includeDateTimeUtc));
+    }
+
+    protected HelloMessage(Map<String, Value> metadata) {
+        super(metadata);
     }
 
     @Override
@@ -81,8 +81,7 @@ public class HelloMessage extends MessageWithMetadata {
             String userAgent,
             Map<String, Value> authToken,
             Map<String, String> routingContext,
-            boolean includeDateTimeUtc,
-            Set<String> notificationFilters) {
+            boolean includeDateTimeUtc) {
         Map<String, Value> result = new HashMap<>(authToken);
         result.put(USER_AGENT_METADATA_KEY, value(userAgent));
         if (routingContext != null) {
@@ -90,9 +89,6 @@ public class HelloMessage extends MessageWithMetadata {
         }
         if (includeDateTimeUtc) {
             result.put(PATCH_BOLT_METADATA_KEY, value(Collections.singleton(DATE_TIME_UTC_PATCH_VALUE)));
-        }
-        if (!notificationFilters.isEmpty()) {
-            result.put(NOTIFICATIONS_KEY, value(notificationFilters));
         }
         return result;
     }

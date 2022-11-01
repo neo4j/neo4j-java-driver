@@ -21,12 +21,19 @@ package org.neo4j.driver.internal.messaging.v51;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.notificationFilters;
 
 import io.netty.channel.Channel;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.neo4j.driver.NotificationFilter;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
+import org.neo4j.driver.internal.messaging.request.HelloMessage;
+import org.neo4j.driver.internal.messaging.request.HelloMessageV51;
 import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 
 public class BoltProtocolV51 extends BoltProtocolV5 {
     public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(5, 1);
@@ -37,14 +44,29 @@ public class BoltProtocolV51 extends BoltProtocolV5 {
         return VERSION;
     }
 
-    @Override
-    protected Set<String> getNotificationFilters(Channel channel) {
-        var filters = notificationFilters(channel);
-        return mapNotificationFiltersToStrings(filters);
+    protected HelloMessage createHelloMessage(
+            String userAgent,
+            Map<String, Value> authToken,
+            RoutingContext routingContext,
+            boolean includeDateTimeUtc,
+            Channel channel) {
+        return new HelloMessageV51(
+                userAgent,
+                ((InternalAuthToken) authToken).toMap(),
+                routingContext.toMap(),
+                getNotificationFilters(channel));
     }
 
     @Override
     protected Set<String> mapNotificationFiltersToStrings(Set<NotificationFilter> notificationFilters) {
+        if (notificationFilters.size() == 1) {
+            var filter = notificationFilters.iterator().next();
+            return switch (filter) {
+                case NONE -> Collections.emptySet();
+                case DEFAULT -> null;
+                default -> mapNotificationFiltersToStrings(Set.of(filter));
+            };
+        }
         return notificationFilters.stream()
                 .map(this::mapNotificationFilterToString)
                 .collect(Collectors.toSet());
@@ -52,18 +74,33 @@ public class BoltProtocolV51 extends BoltProtocolV5 {
 
     private String mapNotificationFilterToString(NotificationFilter filter) {
         return switch (filter) {
-            case NONE -> "NONE";
+            case NONE, DEFAULT -> throw new IllegalStateException();
             case ALL_ALL -> "*.*";
             case WARNING_ALL -> "WARNING.*";
             case WARNING_DEPRECATION -> "WARNING.DEPRECATION";
             case WARNING_HINT -> "WARNING.HINT";
-            case WARNING_QUERY -> "WARNING.QUERY";
+            case WARNING_UNRECOGNIZED -> "WARNING.UNRECOGNIZED";
             case WARNING_UNSUPPORTED -> "WARNING.UNSUPPORTED";
+            case WARNING_GENERIC -> "WARNING.GENERIC";
+            case WARNING_PERFORMANCE -> "WARNING.PERFORMANCE";
             case INFORMATION_ALL -> "INFORMATION.*";
-            case INFORMATION_RUNTIME -> "INFORMATION.RUNTIME";
-            case INFORMATION_QUERY -> "INFORMATION.QUERY";
+            case INFORMATION_DEPRECATION -> "INFORMATION.DEPRECATION";
+            case INFORMATION_HINT -> "INFORMATION.HINT";
+            case INFORMATION_UNRECOGNIZED -> "INFORMATION.UNRECOGNIZED";
+            case INFORMATION_UNSUPPORTED -> "INFORMATION.UNSUPPORTED";
+            case INFORMATION_GENERIC -> "INFORMATION.GENERIC";
             case INFORMATION_PERFORMANCE -> "INFORMATION.PERFORMANCE";
-            case ALL_QUERY -> "*.QUERY";
+            case ALL_DEPRECATION -> "*.DEPRECATION";
+            case ALL_HINT -> "*.HINT";
+            case ALL_UNRECOGNIZED -> "*.UNRECOGNIZED";
+            case ALL_UNSUPPORTED -> "*.UNSUPPORTED";
+            case ALL_GENERIC -> "*.GENERIC";
+            case ALL_PERFORMANCE -> "*.PERFORMANCE";
         };
+    }
+
+    protected Set<String> getNotificationFilters(Channel channel) {
+        var filters = notificationFilters(channel);
+        return mapNotificationFiltersToStrings(filters);
     }
 }

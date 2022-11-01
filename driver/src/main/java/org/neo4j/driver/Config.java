@@ -28,7 +28,6 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -284,7 +283,7 @@ public final class Config implements Serializable {
         private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
-        private Set<NotificationFilter> notificationFilters = Collections.emptySet();
+        private Set<NotificationFilter> notificationFilters = Set.of(NotificationFilter.DEFAULT);
 
         private ConfigBuilder() {}
 
@@ -664,11 +663,18 @@ public final class Config implements Serializable {
         }
 
         // todo
-        public ConfigBuilder withNotificationFilters(NotificationFilter... notificationFilters) {
-            if (notificationFilters == null) {
-                this.notificationFilters = Collections.emptySet();
+        public ConfigBuilder withNotificationFilters(Set<NotificationFilter> notificationFilters) {
+            Objects.requireNonNull(notificationFilters, "notificationFilters must not be null");
+            if (notificationFilters.isEmpty()) {
+                throw new IllegalArgumentException("notificationFilters must not be empty");
+            } else if (notificationFilters.contains(NotificationFilter.NONE) && notificationFilters.size() > 1) {
+                throw new IllegalArgumentException(
+                        String.format("%s may not be used with other options", NotificationFilter.NONE.name()));
+            } else if (notificationFilters.contains(NotificationFilter.DEFAULT) && notificationFilters.size() > 1) {
+                throw new IllegalArgumentException(
+                        String.format("%s may not be used with other options", NotificationFilter.DEFAULT.name()));
             } else {
-                this.notificationFilters = new HashSet<>(Arrays.asList(notificationFilters));
+                this.notificationFilters = notificationFilters;
             }
             return this;
         }

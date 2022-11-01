@@ -92,12 +92,22 @@ public class InternalNotification implements Notification {
     }
 
     @Override
-    public Severity severityNew() {
+    public Severity severityLevel() {
+        return null;
+    }
+
+    @Override
+    public String rawSeverityLevel() {
         return null;
     }
 
     @Override
     public Category category() {
+        return null;
+    }
+
+    @Override
+    public String rawCategory() {
         return null;
     }
 

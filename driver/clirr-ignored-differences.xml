@@ -418,7 +418,19 @@
     <difference>
         <className>org/neo4j/driver/summary/Notification</className>
         <differenceType>7012</differenceType>
-        <method>org.neo4j.driver.summary.Severity severityNew()</method>
+        <method>org.neo4j.driver.summary.Severity severityLevel()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/Notification</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.String rawCategory()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/Notification</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.String rawSeverityLevel()</method>
     </difference>
 
 </differences>

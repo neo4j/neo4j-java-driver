@@ -100,8 +100,7 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase {
                         "MyDriver/1.2.3",
                         ((InternalAuthToken) basic("neo4j", "neo4j")).toMap(),
                         Collections.emptyMap(),
-                        false,
-                        Collections.emptySet()),
+                        false),
                 GOODBYE,
                 new BeginMessage(
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx123")),

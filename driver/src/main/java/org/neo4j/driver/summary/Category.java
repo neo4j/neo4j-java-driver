@@ -21,10 +21,10 @@ package org.neo4j.driver.summary;
 public enum Category {
     ALL,
     HINT,
-    QUERY,
+    UNRECOGNIZED,
     UNSUPPORTED,
     PERFORMANCE,
     DEPRECATION,
-    RUNTIME,
+    GENERIC,
     UNKNOWN
 }

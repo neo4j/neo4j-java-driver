@@ -128,7 +128,7 @@ public class ResultConsume implements TestkitRequest {
                         .title(s.title())
                         .description(s.description())
                         .position(toInputPosition(s.position()))
-                        .severity(s.severityNew().toString())
+                        .severity(s.severityLevel().toString())
                         .build())
                 .collect(Collectors.toList());
         Summary.SummaryBody data = Summary.SummaryBody.builder()

@@ -24,7 +24,6 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,7 @@ class HelloMessageEncoderTest {
         authToken.put("username", value("bob"));
         authToken.put("password", value("secret"));
 
-        encoder.encode(new HelloMessage("MyDriver", authToken, null, false, Collections.emptySet()), packer);
+        encoder.encode(new HelloMessage("MyDriver", authToken, null, false), packer);
 
         InOrder order = inOrder(packer);
         order.verify(packer).packStructHeader(1, HelloMessage.SIGNATURE);
@@ -62,7 +61,7 @@ class HelloMessageEncoderTest {
         Map<String, String> routingContext = new HashMap<>();
         routingContext.put("policy", "eu-fast");
 
-        encoder.encode(new HelloMessage("MyDriver", authToken, routingContext, false, Collections.emptySet()), packer);
+        encoder.encode(new HelloMessage("MyDriver", authToken, routingContext, false), packer);
 
         InOrder order = inOrder(packer);
         order.verify(packer).packStructHeader(1, HelloMessage.SIGNATURE);

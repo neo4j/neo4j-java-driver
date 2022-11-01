@@ -25,7 +25,6 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -338,11 +337,18 @@ public final class SessionConfig implements Serializable {
         }
 
         // todo
-        public Builder withNotificationFilters(NotificationFilter... notificationFilters) {
-            if (notificationFilters == null) {
-                this.notificationFilters = Collections.emptySet();
+        public Builder withNotificationFilters(Set<NotificationFilter> notificationFilters) {
+            Objects.requireNonNull(notificationFilters, "notificationFilters must not be null");
+            if (notificationFilters.isEmpty()) {
+                throw new IllegalArgumentException("notificationFilters must not be empty");
+            } else if (notificationFilters.contains(NotificationFilter.NONE) && notificationFilters.size() > 1) {
+                throw new IllegalArgumentException(
+                        String.format("%s may not be used with other options", NotificationFilter.NONE.name()));
+            } else if (notificationFilters.contains(NotificationFilter.DEFAULT) && notificationFilters.size() > 1) {
+                throw new IllegalArgumentException(
+                        String.format("%s may not be used with other options", NotificationFilter.DEFAULT.name()));
             } else {
-                this.notificationFilters = new HashSet<>(Arrays.asList(notificationFilters));
+                this.notificationFilters = notificationFilters;
             }
             return this;
         }

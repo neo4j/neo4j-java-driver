@@ -58,15 +58,37 @@ public interface Notification {
     /**
      * The severity level of the notification.
      *
-     * @deprecated superseded by {@link Notification#severityNew()}
+     * @deprecated superseded by {@link Notification#severityLevel()}
      * @return the severity level of the notification
      */
     @Deprecated
     String severity();
 
-    // todo document
-    Severity severityNew();
+    /**
+     * The severity level of the notification.
+     *
+     * @return the severity level of the notification
+     */
+    Severity severityLevel();
 
-    // todo document
+    /**
+     * The severity level of the notification.
+     *
+     * @return the severity level of the notification
+     */
+    String rawSeverityLevel();
+
+    /**
+     * The category of the notification.
+     *
+     * @return the category of the notification
+     */
     Category category();
+
+    /**
+     * The category of the notification.
+     *
+     * @return the category of the notification
+     */
+    String rawCategory();
 }
