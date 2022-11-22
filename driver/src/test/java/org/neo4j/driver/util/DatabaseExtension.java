@@ -246,10 +246,6 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         return isNeo4jVersionOrEarlier(4, 4);
     }
 
-    public boolean isNeo4j43OrEarlier() {
-        return isNeo4jVersionOrEarlier(4, 3);
-    }
-
     private boolean isNeo4jVersionOrEarlier(int major, int minor) {
         try (Session session = driver.session()) {
             String neo4jVersion = session.readTransaction(

@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
@@ -275,7 +276,7 @@ class AsyncSessionIT {
         // server versions; that is why do fuzzy assertions in this test based on string content
         String planAsString = summary.plan().toString().toLowerCase();
         assertThat(planAsString, containsString("create"));
-        assertThat(planAsString, containsString("expand"));
+        assertThat(planAsString, containsString("apply"));
         assertNull(summary.profile());
         assertEquals(0, summary.notifications().size());
         assertThat(summary, containsResultAvailableAfterAndResultConsumedAfter());
@@ -646,6 +647,7 @@ class AsyncSessionIT {
 
     @Test
     void shouldNotPropagateRunFailureWhenClosed() {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         session.runAsync("RETURN 10 / 0");
 
         await(session.closeAsync());
@@ -653,6 +655,7 @@ class AsyncSessionIT {
 
     @Test
     void shouldPropagateRunFailureImmediately() {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         ClientException e = assertThrows(ClientException.class, () -> await(session.runAsync("RETURN 10 / 0")));
 
         assertThat(e.getMessage(), containsString("/ by zero"));

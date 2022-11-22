@@ -152,22 +152,24 @@ class ErrorIT {
 
     @Test
     void shouldHandleFailureAtRunTime() {
-        String label = UUID.randomUUID().toString(); // avoid clashes with other tests
+        if (session.isNeo4j44OrEarlier()) {
+            String label = UUID.randomUUID().toString(); // avoid clashes with other tests
 
-        // given
-        Transaction tx = session.beginTransaction();
-        tx.run("CREATE CONSTRAINT ON (a:`" + label + "`) ASSERT a.name IS UNIQUE");
-        tx.commit();
+            // given
+            Transaction tx = session.beginTransaction();
+            tx.run("CREATE CONSTRAINT ON (a:`" + label + "`) ASSERT a.name IS UNIQUE");
+            tx.commit();
 
-        // and
-        Transaction anotherTx = session.beginTransaction();
+            // and
+            Transaction anotherTx = session.beginTransaction();
 
-        // then expect
-        ClientException e =
-                assertThrows(ClientException.class, () -> anotherTx.run("CREATE INDEX ON :`" + label + "`(name)"));
-        anotherTx.rollback();
-        assertThat(e.getMessage(), containsString(label));
-        assertThat(e.getMessage(), containsString("name"));
+            // then expect
+            ClientException e =
+                    assertThrows(ClientException.class, () -> anotherTx.run("CREATE INDEX ON :`" + label + "`(name)"));
+            anotherTx.rollback();
+            assertThat(e.getMessage(), containsString(label));
+            assertThat(e.getMessage(), containsString("name"));
+        }
     }
 
     @Test

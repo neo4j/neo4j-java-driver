@@ -18,6 +18,14 @@
  */
 package org.neo4j.driver.tck.reactive;
 
+import static org.neo4j.driver.Values.parameters;
+
+import java.time.Duration;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
@@ -27,85 +35,63 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 
-import java.time.Duration;
+@Testcontainers(disabledWithoutDocker = true)
+public class RxResultRecordPublisherVerificationIT extends PublisherVerification<Record> {
+    private static final Neo4jContainer<?> NEO4J_CONTAINER = new Neo4jContainer<>("neo4j:4.4").withAdminPassword(null);
 
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxSession;
+    private static final long MAX_NUMBER_OF_RECORDS = 30000;
 
-import static org.neo4j.driver.Values.parameters;
+    private static final Duration TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration TIMEOUT_FOR_NO_SIGNALS = Duration.ofSeconds(1);
+    private static final Duration PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS = Duration.ofSeconds(1);
 
-@Testcontainers( disabledWithoutDocker = true )
-public class RxResultRecordPublisherVerificationIT extends PublisherVerification<Record>
-{
-    private static final Neo4jContainer<?> NEO4J_CONTAINER = new Neo4jContainer<>( "neo4j:4.4" )
-            .withAdminPassword( null );
-
-    private final static long MAX_NUMBER_OF_RECORDS = 30000;
-
-    private static final Duration TIMEOUT = Duration.ofSeconds( 10 );
-    private static final Duration TIMEOUT_FOR_NO_SIGNALS = Duration.ofSeconds( 1 );
-    private static final Duration PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS = Duration.ofSeconds( 1 );
-
-    private final static String QUERY = "UNWIND RANGE(1, $numberOfRecords) AS n RETURN 'String Number' + n";
+    private static final String QUERY = "UNWIND RANGE(1, $numberOfRecords) AS n RETURN 'String Number' + n";
 
     private Driver driver;
 
-    public RxResultRecordPublisherVerificationIT()
-    {
-        super( new TestEnvironment( TIMEOUT.toMillis(), TIMEOUT_FOR_NO_SIGNALS.toMillis() ),
-               PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS.toMillis() );
+    public RxResultRecordPublisherVerificationIT() {
+        super(
+                new TestEnvironment(TIMEOUT.toMillis(), TIMEOUT_FOR_NO_SIGNALS.toMillis()),
+                PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS.toMillis());
     }
 
     @BeforeClass
-    public void beforeClass()
-    {
-        if ( !isDockerAvailable() )
-        {
-            throw new SkipException( "Docker is unavailable" );
+    public void beforeClass() {
+        if (!isDockerAvailable()) {
+            throw new SkipException("Docker is unavailable");
         }
         NEO4J_CONTAINER.start();
-        driver = GraphDatabase.driver( NEO4J_CONTAINER.getBoltUrl() );
+        driver = GraphDatabase.driver(NEO4J_CONTAINER.getBoltUrl());
     }
 
-    public void afterClass()
-    {
+    public void afterClass() {
         NEO4J_CONTAINER.stop();
     }
 
     @Override
-    public long maxElementsFromPublisher()
-    {
+    public long maxElementsFromPublisher() {
         return MAX_NUMBER_OF_RECORDS;
     }
 
     @Override
-    public Publisher<Record> createPublisher( long elements )
-    {
+    public Publisher<Record> createPublisher(long elements) {
         RxSession session = driver.rxSession();
-        RxResult result = session.run( QUERY, parameters( "numberOfRecords", elements ) );
+        RxResult result = session.run(QUERY, parameters("numberOfRecords", elements));
         return result.records();
     }
 
     @Override
-    public Publisher<Record> createFailedPublisher()
-    {
+    public Publisher<Record> createFailedPublisher() {
         RxSession session = driver.rxSession();
-        RxResult result = session.run( "INVALID" );
+        RxResult result = session.run("INVALID");
         return result.records();
     }
 
-    boolean isDockerAvailable()
-    {
-        try
-        {
+    boolean isDockerAvailable() {
+        try {
             DockerClientFactory.instance().client();
             return true;
-        }
-        catch ( Throwable ex )
-        {
+        } catch (Throwable ex) {
             return false;
         }
     }

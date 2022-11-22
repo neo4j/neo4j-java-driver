@@ -19,7 +19,7 @@
         <rootDir>${project.basedir}/..</rootDir>
 
         <testkit.url>https://github.com/neo4j-drivers/testkit.git</testkit.url>
-        <testkit.version>5.0</testkit.version>
+        <testkit.version>4.4</testkit.version>
         <!-- See the testkit-custom-args profile if you want to customize this on individual runs. -->
         <testkit.args>--tests TESTKIT_TESTS INTEGRATION_TESTS STUB_TESTS STRESS_TESTS TLS_TESTS</testkit.args>
         <testkit.timeout>7200000</testkit.timeout>

@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.InternalBookmark.parse;
@@ -610,6 +611,7 @@ class AsyncTransactionIT {
 
     @Test
     void shouldFailToCommitWhenQueriesFail() {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         AsyncTransaction tx = await(session.beginTransactionAsync());
 
         tx.runAsync("CREATE (:TestNode)");
@@ -637,6 +639,7 @@ class AsyncTransactionIT {
 
     @Test
     void shouldFailToCommitWhenBlockedRunFailed() {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         AsyncTransaction tx = await(session.beginTransactionAsync());
 
         ClientException runException = assertThrows(ClientException.class, () -> await(tx.runAsync("RETURN 42 / 0")));
@@ -658,6 +661,7 @@ class AsyncTransactionIT {
 
     @Test
     void shouldRollbackSuccessfullyWhenBlockedRunFailed() {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         AsyncTransaction tx = await(session.beginTransactionAsync());
 
         assertThrows(ClientException.class, () -> await(tx.runAsync("RETURN 42 / 0")));

@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.SessionConfig.forDatabase;
 
 import java.util.List;
@@ -106,55 +107,64 @@ class SummaryIT {
 
     @Test
     void shouldContainCorrectStatistics() {
-        assertThat(session.run("CREATE (n)").consume().counters().nodesCreated(), equalTo(1));
-        assertThat(session.run("MATCH (n) DELETE (n)").consume().counters().nodesDeleted(), equalTo(1));
+        if (neo4j.isNeo4j44OrEarlier()) {
+            assertThat(session.run("CREATE (n)").consume().counters().nodesCreated(), equalTo(1));
+            assertThat(session.run("MATCH (n) DELETE (n)").consume().counters().nodesDeleted(), equalTo(1));
 
-        assertThat(session.run("CREATE ()-[:KNOWS]->()").consume().counters().relationshipsCreated(), equalTo(1));
-        assertThat(
-                session.run("MATCH ()-[r:KNOWS]->() DELETE r")
-                        .consume()
-                        .counters()
-                        .relationshipsDeleted(),
-                equalTo(1));
+            assertThat(
+                    session.run("CREATE ()-[:KNOWS]->()").consume().counters().relationshipsCreated(), equalTo(1));
+            assertThat(
+                    session.run("MATCH ()-[r:KNOWS]->() DELETE r")
+                            .consume()
+                            .counters()
+                            .relationshipsDeleted(),
+                    equalTo(1));
 
-        assertThat(session.run("CREATE (n:ALabel)").consume().counters().labelsAdded(), equalTo(1));
-        assertThat(session.run("CREATE (n {magic: 42})").consume().counters().propertiesSet(), equalTo(1));
-        assertTrue(session.run("CREATE (n {magic: 42})").consume().counters().containsUpdates());
-        assertThat(
-                session.run("MATCH (n:ALabel) REMOVE n:ALabel ")
-                        .consume()
-                        .counters()
-                        .labelsRemoved(),
-                equalTo(1));
+            assertThat(session.run("CREATE (n:ALabel)").consume().counters().labelsAdded(), equalTo(1));
+            assertThat(
+                    session.run("CREATE (n {magic: 42})").consume().counters().propertiesSet(), equalTo(1));
+            assertTrue(
+                    session.run("CREATE (n {magic: 42})").consume().counters().containsUpdates());
+            assertThat(
+                    session.run("MATCH (n:ALabel) REMOVE n:ALabel ")
+                            .consume()
+                            .counters()
+                            .labelsRemoved(),
+                    equalTo(1));
 
-        assertThat(
-                session.run("CREATE INDEX ON :ALabel(prop)")
-                        .consume()
-                        .counters()
-                        .indexesAdded(),
-                equalTo(1));
-        assertThat(
-                session.run("DROP INDEX ON :ALabel(prop)").consume().counters().indexesRemoved(), equalTo(1));
+            assertThat(
+                    session.run("CREATE INDEX ON :ALabel(prop)")
+                            .consume()
+                            .counters()
+                            .indexesAdded(),
+                    equalTo(1));
+            assertThat(
+                    session.run("DROP INDEX ON :ALabel(prop)")
+                            .consume()
+                            .counters()
+                            .indexesRemoved(),
+                    equalTo(1));
 
-        assertThat(
-                session.run("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
-                        .consume()
-                        .counters()
-                        .constraintsAdded(),
-                equalTo(1));
-        assertThat(
-                session.run("DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
-                        .consume()
-                        .counters()
-                        .constraintsRemoved(),
-                equalTo(1));
+            assertThat(
+                    session.run("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
+                            .consume()
+                            .counters()
+                            .constraintsAdded(),
+                    equalTo(1));
+            assertThat(
+                    session.run("DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
+                            .consume()
+                            .counters()
+                            .constraintsRemoved(),
+                    equalTo(1));
+        }
     }
 
     @Test
     @EnabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
     void shouldGetSystemUpdates() throws Throwable {
         try (Session session = neo4j.driver().session(forDatabase("system"))) {
-            Result result = session.run("CREATE USER foo SET PASSWORD 'bar'");
+            Result result = session.run("CREATE USER foo SET PASSWORD 'Testing5'");
             assertThat(result.consume().counters().containsUpdates(), equalTo(false));
             assertThat(result.consume().counters().containsSystemUpdates(), equalTo(true));
         }
@@ -162,6 +172,7 @@ class SummaryIT {
 
     @Test
     void shouldContainCorrectQueryType() {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         assertThat(session.run("MATCH (n) RETURN 1").consume().queryType(), equalTo(QueryType.READ_ONLY));
         assertThat(session.run("CREATE (n)").consume().queryType(), equalTo(QueryType.WRITE_ONLY));
         assertThat(session.run("CREATE (n) RETURN (n)").consume().queryType(), equalTo(QueryType.READ_WRITE));
