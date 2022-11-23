@@ -29,27 +29,33 @@ import java.util.Set;
 public class Neo4jSettings {
     public static final String DATA_DIR = "dbms.directories.data";
     public static final String IMPORT_DIR = "dbms.directories.import";
-    public static final String LISTEN_ADDR = "dbms.connectors.default_listen_address";
+    public static final String SSL_POLICY_BOLT_ENABLED = "dbms.ssl.policy.bolt.enabled";
+    public static final String SSL_POLICY_BOLT_CLIENT_AUTH = "dbms.ssl.policy.bolt.client_auth";
+    // 5.0
+    public static final String LISTEN_ADDR = "dbms.default_listen_address";
     public static final String IPV6_ENABLED_ADDR = "::";
     public static final String BOLT_TLS_LEVEL = "dbms.connector.bolt.tls_level";
 
     private static final String DEFAULT_IMPORT_DIR = "import";
-    private static final String DEFAULT_CERT_DIR = "certificates";
-    public static final String DEFAULT_TLS_CERT_PATH = DEFAULT_CERT_DIR + "/neo4j.cert";
-    public static final String DEFAULT_TLS_KEY_PATH = DEFAULT_CERT_DIR + "/neo4j.key";
     public static final String DEFAULT_BOLT_TLS_LEVEL = BoltTlsLevel.OPTIONAL.toString();
 
     public static final String DEFAULT_DATA_DIR = "data";
 
     static final int TEST_JVM_ID = Integer.getInteger("testJvmId", 0);
 
-    private static final int DEFAULT_HTTP_PORT = 7000;
-    private static final int DEFAULT_HTTPS_PORT = 8000;
-    private static final int DEFAULT_BOLT_PORT = 9000;
+    private static final int DEFAULT_HTTP_PORT = 12000;
+    private static final int DEFAULT_HTTPS_PORT = 13000;
+    private static final int DEFAULT_BOLT_PORT = 14000;
+    private static final int DEFAULT_DISCOVERY_LISTEN_PORT = 15000;
+    private static final int DEFAULT_RAFT_ADVERTISED_PORT = 16000;
+    private static final int DEFAULT_TX_LISTEN_PORT = 17000;
 
     static final int CURRENT_HTTP_PORT = DEFAULT_HTTP_PORT + TEST_JVM_ID;
     private static final int CURRENT_HTTPS_PORT = DEFAULT_HTTPS_PORT + TEST_JVM_ID;
     static final int CURRENT_BOLT_PORT = DEFAULT_BOLT_PORT + TEST_JVM_ID;
+    static final int CURRENT_DISCOVERY_LISTEN_PORT = DEFAULT_DISCOVERY_LISTEN_PORT + TEST_JVM_ID;
+    static final int CURRENT_RAFT_ADVERTISED_PORT = DEFAULT_RAFT_ADVERTISED_PORT + TEST_JVM_ID;
+    static final int CURRENT_TX_LISTEN_PORT = DEFAULT_TX_LISTEN_PORT + TEST_JVM_ID;
 
     private static final String WINDOWS_SERVICE_NAME = "neo4j-" + TEST_JVM_ID;
 
@@ -64,6 +70,20 @@ public class Neo4jSettings {
                     ":" + CURRENT_HTTPS_PORT,
                     "dbms.connector.bolt.listen_address",
                     ":" + CURRENT_BOLT_PORT,
+                    "dbms.cluster.discovery.initial_members",
+                    "localhost:" + CURRENT_DISCOVERY_LISTEN_PORT,
+                    "server.discovery.listen_address",
+                    ":" + CURRENT_DISCOVERY_LISTEN_PORT,
+                    "cluster.raft_advertised_address",
+                    ":" + CURRENT_RAFT_ADVERTISED_PORT,
+                    "cluster.raft_listen_address",
+                    ":" + CURRENT_RAFT_ADVERTISED_PORT,
+                    "cluster.transaction_listen_address",
+                    ":" + CURRENT_TX_LISTEN_PORT,
+                    "cluster.transaction_advertised_address",
+                    ":" + CURRENT_TX_LISTEN_PORT,
+                    "server.cluster.advertised_address",
+                    ":" + CURRENT_TX_LISTEN_PORT,
                     "dbms.windows_service_name",
                     WINDOWS_SERVICE_NAME,
                     DATA_DIR,
@@ -74,7 +94,7 @@ public class Neo4jSettings {
                     DEFAULT_BOLT_TLS_LEVEL,
                     LISTEN_ADDR,
                     IPV6_ENABLED_ADDR),
-            Collections.<String>emptySet());
+            Collections.emptySet());
 
     public enum BoltTlsLevel {
         OPTIONAL,
@@ -89,21 +109,6 @@ public class Neo4jSettings {
 
     public Map<String, String> propertiesMap() {
         return settings;
-    }
-
-    public Neo4jSettings updateWith(String key, String value) {
-        return updateWith(map(key, value), excludes);
-    }
-
-    private Neo4jSettings updateWith(Map<String, String> updates, Set<String> excludes) {
-        HashMap<String, String> newSettings = new HashMap<>(settings);
-        for (Map.Entry<String, String> entry : updates.entrySet()) {
-            newSettings.put(entry.getKey(), entry.getValue());
-        }
-        for (String exclude : excludes) {
-            newSettings.remove(exclude);
-        }
-        return new Neo4jSettings(newSettings, excludes);
     }
 
     public Neo4jSettings without(String key) {

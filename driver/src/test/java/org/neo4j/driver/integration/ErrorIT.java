@@ -152,32 +152,33 @@ class ErrorIT {
 
     @Test
     void shouldHandleFailureAtRunTime() {
-        String label = UUID.randomUUID().toString(); // avoid clashes with other tests
+        if (session.isNeo4j44OrEarlier()) {
+            String label = UUID.randomUUID().toString(); // avoid clashes with other tests
 
-        // given
-        Transaction tx = session.beginTransaction();
-        tx.run("CREATE CONSTRAINT ON (a:`" + label + "`) ASSERT a.name IS UNIQUE");
-        tx.commit();
+            // given
+            Transaction tx = session.beginTransaction();
+            tx.run("CREATE CONSTRAINT ON (a:`" + label + "`) ASSERT a.name IS UNIQUE");
+            tx.commit();
 
-        // and
-        Transaction anotherTx = session.beginTransaction();
+            // and
+            Transaction anotherTx = session.beginTransaction();
 
-        // then expect
-        ClientException e =
-                assertThrows(ClientException.class, () -> anotherTx.run("CREATE INDEX ON :`" + label + "`(name)"));
-        anotherTx.rollback();
-        assertThat(e.getMessage(), containsString(label));
-        assertThat(e.getMessage(), containsString("name"));
+            // then expect
+            ClientException e =
+                    assertThrows(ClientException.class, () -> anotherTx.run("CREATE INDEX ON :`" + label + "`(name)"));
+            anotherTx.rollback();
+            assertThat(e.getMessage(), containsString(label));
+            assertThat(e.getMessage(), containsString("name"));
+        }
     }
 
     @Test
-    void shouldGetHelpfulErrorWhenTryingToConnectToHttpPort() throws Throwable {
-        // the http server needs some time to start up
-        Thread.sleep(2000);
-
+    void shouldGetHelpfulErrorWhenTryingToConnectToHttpPort() {
         Config config = Config.builder().withoutEncryption().build();
 
-        final Driver driver = GraphDatabase.driver("bolt://localhost:" + session.httpPort(), config);
+        URI boltUri = session.uri();
+        URI uri = URI.create(String.format("%s://%s:%d", boltUri.getScheme(), boltUri.getHost(), session.httpPort()));
+        final Driver driver = GraphDatabase.driver(uri, config);
         ClientException e = assertThrows(ClientException.class, driver::verifyConnectivity);
         assertEquals(
                 "Server responded HTTP. Make sure you are not trying to connect to the http endpoint "

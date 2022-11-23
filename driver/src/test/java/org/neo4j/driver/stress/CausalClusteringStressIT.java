@@ -27,7 +27,9 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.util.cc.LocalOrRemoteClusterExtension;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers(disabledWithoutDocker = true)
 class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context> {
     @RegisterExtension
     static final LocalOrRemoteClusterExtension clusterRule = new LocalOrRemoteClusterExtension();
@@ -71,11 +73,6 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
 
         System.out.println("Leader switches: " + context.getLeaderSwitchCount());
         System.out.println("Bookmark failures: " + context.getBookmarkFailures());
-    }
-
-    @Override
-    void dumpLogs() {
-        clusterRule.dumpClusterLogs();
     }
 
     @Override

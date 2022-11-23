@@ -22,10 +22,10 @@
     <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
 
     <rootDir>${project.basedir}</rootDir>
-    <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
+    <parallelizable.it.forkCount>2</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
-    <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
+    <surefire.and.failsafe.version>3.0.0-M6</surefire.and.failsafe.version>
     <!-- Skip deployment by default for everything in this project. -->
     <maven.deploy.skip>true</maven.deploy.skip>
 
@@ -44,6 +44,7 @@
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
     <mockito-core.version>4.6.1</mockito-core.version>
     <junit.version>5.8.2</junit.version>
+    <testng-engine.version>1.0.2</testng-engine.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.70</bouncycastle-jdk15on.version>
     <logback-classic.version>1.2.11</logback-classic.version>
@@ -51,7 +52,8 @@
     <lombok.version>1.18.24</lombok.version>
     <svm.version>21.3.2.1</svm.version>
     <micrometer.version>1.9.1</micrometer.version>
-    <build-resources.version>4.4.8</build-resources.version>
+    <testcontainers.version>1.17.1</testcontainers.version>
+    <build-resources.version>4.4.14</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
@@ -150,6 +152,12 @@
         <scope>test</scope>
       </dependency>
       <dependency>
+        <groupId>org.junit.support</groupId>
+        <artifactId>testng-engine</artifactId>
+        <version>${testng-engine.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
         <groupId>org.rauschig</groupId>
         <artifactId>jarchivelib</artifactId>
         <version>${jarchivelib.version}</version>
@@ -172,6 +180,19 @@
         <artifactId>logback-classic</artifactId>
         <version>${logback-classic.version}</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.reactivestreams</groupId>
+        <artifactId>reactive-streams-tck</artifactId>
+        <version>${reactive-streams.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <!-- Testkit Backend Dependencies -->

@@ -25,13 +25,8 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.AuthTokens.basic;
 import static org.neo4j.driver.AuthTokens.custom;
-import static org.neo4j.driver.Values.ofValue;
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.util.Neo4jRunner.PASSWORD;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -44,11 +39,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.SecurityException;
-import org.neo4j.driver.internal.security.InternalAuthToken;
-import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
-import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.Neo4jSettings;
 import org.neo4j.driver.util.ParallelizableIT;
 
 @ParallelizableIT
@@ -57,45 +48,9 @@ class CredentialsIT {
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
-    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
-    // This feature is removed in 4.0
-    void shouldBePossibleToChangePassword() throws Exception {
-        String newPassword = "secret";
-        String tmpDataDir = Files.createTempDirectory(Paths.get("target"), "tmp")
-                .toAbsolutePath()
-                .toString()
-                .replace("\\", "/");
-
-        neo4j.restartDb(Neo4jSettings.TEST_SETTINGS.updateWith(Neo4jSettings.DATA_DIR, tmpDataDir));
-
-        AuthToken authToken = new InternalAuthToken(parameters(
-                        "scheme", "basic",
-                        "principal", "neo4j",
-                        "credentials", "neo4j",
-                        "new_credentials", newPassword)
-                .asMap(ofValue()));
-
-        // change the password
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), authToken);
-                Session session = driver.session()) {
-            session.run("RETURN 1").consume();
-        }
-
-        // verify old password does not work
-        final Driver badDriver = GraphDatabase.driver(CredentialsIT.neo4j.uri(), basic("neo4j", PASSWORD));
-        assertThrows(AuthenticationException.class, badDriver::verifyConnectivity);
-
-        // verify new password works
-        try (Driver driver = GraphDatabase.driver(CredentialsIT.neo4j.uri(), AuthTokens.basic("neo4j", newPassword));
-                Session session = driver.session()) {
-            session.run("RETURN 2").consume();
-        }
-    }
-
-    @Test
     void basicCredentialsShouldWork() {
         // When & Then
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), basic("neo4j", PASSWORD));
+        try (Driver driver = GraphDatabase.driver(neo4j.uri(), basic("neo4j", neo4j.adminPassword()));
                 Session session = driver.session()) {
             Value single = session.run("RETURN 1").single().get(0);
             assertThat(single.asLong(), equalTo(1L));
@@ -105,7 +60,8 @@ class CredentialsIT {
     @Test
     void shouldGetHelpfulErrorOnInvalidCredentials() {
         SecurityException e = assertThrows(SecurityException.class, () -> {
-            try (Driver driver = GraphDatabase.driver(neo4j.uri(), basic("thisisnotthepassword", PASSWORD));
+            try (Driver driver =
+                            GraphDatabase.driver(neo4j.uri(), basic("thisisnotthepassword", neo4j.adminPassword()));
                     Session session = driver.session()) {
                 session.run("RETURN 1");
             }
@@ -116,7 +72,7 @@ class CredentialsIT {
     @Test
     void shouldBeAbleToProvideRealmWithBasicAuth() {
         // When & Then
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), basic("neo4j", PASSWORD, "native"));
+        try (Driver driver = GraphDatabase.driver(neo4j.uri(), basic("neo4j", neo4j.adminPassword(), "native"));
                 Session session = driver.session()) {
             Value single = session.run("CREATE () RETURN 1").single().get(0);
             assertThat(single.asLong(), equalTo(1L));
@@ -126,7 +82,8 @@ class CredentialsIT {
     @Test
     void shouldBeAbleToConnectWithCustomToken() {
         // When & Then
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), custom("neo4j", PASSWORD, "native", "basic"));
+        try (Driver driver =
+                        GraphDatabase.driver(neo4j.uri(), custom("neo4j", neo4j.adminPassword(), "native", "basic"));
                 Session session = driver.session()) {
             Value single = session.run("CREATE () RETURN 1").single().get(0);
             assertThat(single.asLong(), equalTo(1L));
@@ -138,7 +95,8 @@ class CredentialsIT {
         Map<String, Object> params = singletonMap("secret", 16);
 
         // When & Then
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), custom("neo4j", PASSWORD, "native", "basic", params));
+        try (Driver driver = GraphDatabase.driver(
+                        neo4j.uri(), custom("neo4j", neo4j.adminPassword(), "native", "basic", params));
                 Session session = driver.session()) {
             Value single = session.run("CREATE () RETURN 1").single().get(0);
             assertThat(single.asLong(), equalTo(1L));
@@ -147,12 +105,12 @@ class CredentialsIT {
 
     @Test
     void directDriverShouldFailEarlyOnWrongCredentials() {
-        testDriverFailureOnWrongCredentials("bolt://localhost:" + neo4j.boltPort());
+        testDriverFailureOnWrongCredentials(neo4j.uri().toString());
     }
 
     @Test
     void routingDriverShouldFailEarlyOnWrongCredentials() {
-        testDriverFailureOnWrongCredentials("neo4j://localhost:" + neo4j.boltPort());
+        testDriverFailureOnWrongCredentials(neo4j.uri().toString());
     }
 
     private void testDriverFailureOnWrongCredentials(String uri) {

@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -50,7 +51,6 @@ import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
-import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
 import java.util.HashSet;
 import java.util.List;
@@ -678,6 +678,7 @@ class SessionIT {
 
     @Test
     void shouldThrowRunFailureImmediatelyAndCloseSuccessfully() {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         try (Session session = neo4j.driver().session()) {
             ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN 10 / 0"));
 
@@ -707,6 +708,7 @@ class SessionIT {
 
     @Test
     void shouldThrowRunFailureImmediatelyAfterMultipleSuccessfulRunsAndCloseSuccessfully() {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         try (Session session = neo4j.driver().session()) {
             session.run("CREATE ()");
             session.run("CREATE ()");
@@ -718,6 +720,7 @@ class SessionIT {
 
     @Test
     void shouldThrowRunFailureImmediatelyAndAcceptSubsequentRun() {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         try (Session session = neo4j.driver().session()) {
             session.run("CREATE ()");
             session.run("CREATE ()");
@@ -1246,10 +1249,9 @@ class SessionIT {
 
     private Driver newDriverWithFixedRetries(int maxRetriesCount) {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic(maxRetriesCount);
-        AuthToken auth = DEFAULT_AUTH_TOKEN;
         return driverFactory.newInstance(
                 neo4j.uri(),
-                auth,
+                neo4j.authToken(),
                 RoutingSettings.DEFAULT,
                 RetrySettings.DEFAULT,
                 noLoggingConfig(),

@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -243,6 +244,7 @@ class ConnectionHandlingIT {
 
     @Test
     void connectionUsedForTransactionReturnedToThePoolWhenTransactionFailsToCommitted() {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         try (Session session = driver.session()) {
             session.run("CREATE CONSTRAINT ON (book:Library) ASSERT exists(book.isbn)");
         }

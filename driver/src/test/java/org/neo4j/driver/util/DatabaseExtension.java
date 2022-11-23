@@ -18,141 +18,338 @@
  */
 package org.neo4j.driver.util;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
-import static org.neo4j.driver.util.Neo4jRunner.HOME_DIR;
-import static org.neo4j.driver.util.Neo4jRunner.debug;
-import static org.neo4j.driver.util.Neo4jRunner.getOrCreateGlobalRunner;
-import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_TLS_CERT_PATH;
-import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_TLS_KEY_PATH;
+import static java.lang.Integer.parseInt;
+import static org.neo4j.driver.util.Neo4jSettings.BOLT_TLS_LEVEL;
+import static org.neo4j.driver.util.Neo4jSettings.BoltTlsLevel.OPTIONAL;
+import static org.neo4j.driver.util.Neo4jSettings.BoltTlsLevel.REQUIRED;
+import static org.neo4j.driver.util.Neo4jSettings.SSL_POLICY_BOLT_CLIENT_AUTH;
+import static org.neo4j.driver.util.Neo4jSettings.SSL_POLICY_BOLT_ENABLED;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
-import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import org.bouncycastle.asn1.x509.GeneralName;
 import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
+import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.types.TypeSystem;
+import org.neo4j.driver.util.CertificateUtil.CertificateKeyPair;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Neo4jContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
-public class DatabaseExtension implements BeforeEachCallback, AfterAllCallback {
-    static final String TEST_RESOURCE_FOLDER_PATH = "src/test/resources";
+public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
+    private static final int BOLT_PORT = 7687;
+    private static final int HTTP_PORT = 7474;
 
-    private final Neo4jSettings settings;
-    private Neo4jRunner runner;
+    private static final boolean dockerAvailable;
+    private static final DatabaseExtension instance;
+    private static final URI boltUri;
+    private static final URI httpUri;
+    private static final AuthToken authToken;
+    private static final File cert;
+    private static final File key;
+    private static final Network network;
+    private static final GenericContainer<?> nginx;
+    private static final Map<String, String> defaultConfig;
 
-    public DatabaseExtension() {
-        this(Neo4jSettings.TEST_SETTINGS);
+    private static Neo4jContainer<?> neo4jContainer;
+    private static Driver driver;
+    private static boolean nginxRunning;
+
+    static {
+        dockerAvailable = isDockerAvailable();
+        instance = new DatabaseExtension();
+        defaultConfig = new HashMap<>();
+        defaultConfig.put(SSL_POLICY_BOLT_ENABLED, "true");
+        defaultConfig.put(SSL_POLICY_BOLT_CLIENT_AUTH, "NONE");
+        defaultConfig.put(BOLT_TLS_LEVEL, OPTIONAL.toString());
+
+        if (dockerAvailable) {
+            CertificateKeyPair<File, File> pair = generateCertificateAndKey();
+            cert = pair.cert();
+            key = pair.key();
+
+            network = Network.newNetwork();
+            neo4jContainer = setupNeo4jContainer(cert, key, defaultConfig);
+            neo4jContainer.start();
+            nginx = setupNginxContainer();
+            nginx.start();
+            nginxRunning = true;
+
+            URI neo4jBoltUri = URI.create(neo4jContainer.getBoltUrl());
+            URI neo4jHttpUri = URI.create(neo4jContainer.getHttpUrl());
+
+            boltUri = URI.create(String.format(
+                    "%s://%s:%d", neo4jBoltUri.getScheme(), neo4jBoltUri.getHost(), nginx.getMappedPort(BOLT_PORT)));
+            httpUri = URI.create(String.format(
+                    "%s://%s:%d", neo4jHttpUri.getScheme(), neo4jHttpUri.getHost(), nginx.getMappedPort(HTTP_PORT)));
+
+            authToken = AuthTokens.basic("neo4j", neo4jContainer.getAdminPassword());
+            driver = GraphDatabase.driver(boltUri, authToken);
+            waitForBoltAvailability();
+        } else {
+            // stub init, this is not usable when Docker is unavailable
+            boltUri = URI.create("");
+            httpUri = URI.create("");
+            authToken = AuthTokens.none();
+            cert = new File("");
+            key = new File("");
+            network = null;
+            nginx = new GenericContainer<>(DockerImageName.parse("alpine:latest"));
+        }
     }
 
-    public DatabaseExtension(Neo4jSettings settings) {
-        this.settings = settings;
+    @Override
+    public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+        return dockerAvailable
+                ? ConditionEvaluationResult.enabled("Docker is available")
+                : ConditionEvaluationResult.disabled("Docker is unavailable");
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        runner = getOrCreateGlobalRunner();
-        runner.ensureRunning(settings);
-        TestUtil.cleanDb(driver());
+        TestUtil.cleanDb(driver);
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) throws Exception {
+        if (!nginxRunning) {
+            startProxy();
+        }
     }
 
     @Override
     public void afterAll(ExtensionContext context) {
-        if (runner != null) {
-            runner.stopNeo4j();
-        }
+        deleteAndStartNeo4j(Collections.emptyMap());
     }
 
     public Driver driver() {
-        return runner.driver();
+        return driver;
     }
 
     public TypeSystem typeSystem() {
-        return driver().defaultTypeSystem();
+        return driver.defaultTypeSystem();
     }
 
-    public void forceRestartDb() {
-        runner.forceToRestart();
+    public void deleteAndStartNeo4j(Map<String, String> config) {
+        Map<String, String> updatedConfig = new HashMap<>(defaultConfig);
+        updatedConfig.putAll(config);
+
+        neo4jContainer.stop();
+        neo4jContainer = setupNeo4jContainer(cert, key, updatedConfig);
+        neo4jContainer.start();
+        if (REQUIRED.toString().equals(config.get(BOLT_TLS_LEVEL))) {
+            driver = GraphDatabase.driver(
+                    boltUri,
+                    authToken,
+                    Config.builder()
+                            .withTrustStrategy(Config.TrustStrategy.trustCustomCertificateSignedBy(cert))
+                            .withEncryption()
+                            .build());
+        } else {
+            driver = GraphDatabase.driver(boltUri, authToken);
+        }
+        waitForBoltAvailability();
     }
 
-    public void restartDb(Neo4jSettings neo4jSettings) {
-        runner.restartNeo4j(neo4jSettings);
-    }
-
-    public URL putTmpFile(String prefix, String suffix, String contents) throws IOException {
+    public String addImportFile(String prefix, String suffix, String contents) throws IOException {
         File tmpFile = File.createTempFile(prefix, suffix, null);
         tmpFile.deleteOnExit();
         try (PrintWriter out = new PrintWriter(tmpFile)) {
             out.println(contents);
         }
-        return tmpFile.toURI().toURL();
+        Path tmpFilePath = tmpFile.toPath();
+        Path targetPath =
+                Paths.get("/var/lib/neo4j/import", tmpFilePath.getFileName().toString());
+        neo4jContainer.copyFileToContainer(MountableFile.forHostPath(tmpFilePath), targetPath.toString());
+        return String.format("file:///%s", tmpFile.getName());
     }
 
     public URI uri() {
-        return runner.boltUri();
+        return boltUri;
     }
 
     public int httpPort() {
-        return runner.httpPort();
+        return httpUri.getPort();
     }
 
     public int boltPort() {
-        return runner.boltPort();
+        return boltUri.getPort();
     }
 
     public AuthToken authToken() {
-        return DEFAULT_AUTH_TOKEN;
+        return authToken;
+    }
+
+    public String adminPassword() {
+        return neo4jContainer.getAdminPassword();
     }
 
     public BoltServerAddress address() {
-        return runner.boltAddress();
+        return new BoltServerAddress(boltUri);
     }
 
-    public void updateEncryptionKeyAndCert(File key, File cert) throws Exception {
-        FileTools.copyFile(key, tlsKeyFile());
-        FileTools.copyFile(cert, tlsCertFile());
-        debug("Updated neo4j key and certificate file.");
-        runner.forceToRestart(); // needs to force to restart as no configuration changed
+    public void updateEncryptionKeyAndCert(File key, File cert) {
+        System.out.println("Updated neo4j key and certificate file.");
+        neo4jContainer.stop();
+        neo4jContainer = setupNeo4jContainer(cert, key, defaultConfig);
+        neo4jContainer.start();
+        driver = GraphDatabase.driver(boltUri, authToken);
+        waitForBoltAvailability();
     }
 
     public File tlsCertFile() {
-        return new File(HOME_DIR, DEFAULT_TLS_CERT_PATH);
+        return cert;
     }
 
-    public File tlsKeyFile() {
-        return new File(HOME_DIR, DEFAULT_TLS_KEY_PATH);
+    public void startProxy() {
+        try {
+            nginx.execInContainer("nginx");
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        nginxRunning = true;
     }
 
-    public void ensureProcedures(String jarName) throws IOException {
-        // These procedures was written against 3.x API.
-        // As graph database service API is totally changed since 4.0. These procedures are no long valid.
-        assumeTrue(version().lessThan(ServerVersion.v4_0_0));
-        File procedureJar = new File(HOME_DIR, "plugins/" + jarName);
-        if (!procedureJar.exists()) {
-            FileTools.copyFile(new File(TEST_RESOURCE_FOLDER_PATH, jarName), procedureJar);
-            debug("Added a new procedure `%s`", jarName);
-            runner.forceToRestart(); // needs to force to restart as no configuration changed
+    public void stopProxy() {
+        try {
+            nginx.execInContainer("nginx", "-s", "stop");
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        nginxRunning = false;
+    }
+
+    public boolean isNeo4j44OrEarlier() {
+        return isNeo4jVersionOrEarlier(4, 4);
+    }
+
+    private boolean isNeo4jVersionOrEarlier(int major, int minor) {
+        try (Session session = driver.session()) {
+            String neo4jVersion = session.readTransaction(
+                    tx -> tx.run("CALL dbms.components() YIELD versions " + "RETURN versions[0] AS version")
+                            .single()
+                            .get("version")
+                            .asString());
+            String[] versions = neo4jVersion.split("\\.");
+            return parseInt(versions[0]) <= major && parseInt(versions[1]) <= minor;
         }
     }
 
-    public void startDb() {
-        runner.startNeo4j();
+    public static DatabaseExtension getInstance() {
+        return instance;
     }
 
-    public void stopDb() {
-        runner.stopNeo4j();
+    public static GeneralName getDockerHostGeneralName() {
+        String host = DockerClientFactory.instance().dockerHostIpAddress();
+        GeneralName generalName;
+        try {
+            generalName = new GeneralName(GeneralName.iPAddress, host);
+        } catch (IllegalArgumentException e) {
+            generalName = new GeneralName(GeneralName.dNSName, host);
+        }
+        return generalName;
     }
 
-    public ServerVersion version() {
-        return ServerVersion.version(driver());
+    private static CertificateKeyPair<File, File> generateCertificateAndKey() {
+        try {
+            return CertificateUtil.createNewCertificateAndKey(getDockerHostGeneralName());
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public void dumpLogs() {
-        runner.dumpDebugLog();
+    private static Neo4jContainer<?> setupNeo4jContainer(File cert, File key, Map<String, String> config) {
+        String neo4JVersion =
+                Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
+
+        ImageFromDockerfile extendedNeo4jImage = new ImageFromDockerfile()
+                .withDockerfileFromBuilder(builder -> builder.from(String.format("neo4j:%s-enterprise", neo4JVersion))
+                        .run("mkdir /var/lib/neo4j/certificates/bolt")
+                        .copy("public.crt", "/var/lib/neo4j/certificates/bolt/")
+                        .copy("private.key", "/var/lib/neo4j/certificates/bolt/")
+                        .build())
+                .withFileFromPath("public.crt", cert.toPath())
+                .withFileFromPath("private.key", key.toPath());
+
+        DockerImageName extendedNeo4jImageAsSubstitute =
+                DockerImageName.parse(extendedNeo4jImage.get()).asCompatibleSubstituteFor("neo4j");
+
+        neo4jContainer = new Neo4jContainer<>(extendedNeo4jImageAsSubstitute)
+                .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
+                .withNetwork(network)
+                .withNetworkAliases("neo4j");
+        for (Map.Entry<String, String> entry : config.entrySet()) {
+            neo4jContainer.withNeo4jConfig(entry.getKey(), entry.getValue());
+        }
+
+        return neo4jContainer;
+    }
+
+    private static GenericContainer<?> setupNginxContainer() {
+        ImageFromDockerfile extendedNginxImage = new ImageFromDockerfile()
+                .withDockerfileFromBuilder(builder -> builder.from("nginx:1.23.0-alpine")
+                        .copy("nginx.conf", "/etc/nginx/")
+                        .build())
+                .withFileFromClasspath("nginx.conf", "nginx.conf");
+
+        //noinspection rawtypes
+        return new GenericContainer(extendedNginxImage.get())
+                .withNetwork(network)
+                .withExposedPorts(BOLT_PORT, HTTP_PORT)
+                .withCommand("sh", "-c", "nginx && while sleep 3600; do :; done");
+    }
+
+    private static void waitForBoltAvailability() {
+        int maxAttempts = 600;
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+                driver.verifyConnectivity();
+                return;
+            } catch (RuntimeException verificationException) {
+                if (attempt == maxAttempts - 1) {
+                    throw new RuntimeException(
+                            "Timed out waiting for Neo4j to become available over Bolt", verificationException);
+                }
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException interruptedException) {
+                    interruptedException.addSuppressed(verificationException);
+                    throw new RuntimeException(
+                            "Interrupted while waiting for Neo4j to become available over Bolt", interruptedException);
+                }
+            }
+        }
+    }
+
+    private static boolean isDockerAvailable() {
+        try {
+            DockerClientFactory.instance().client();
+            return true;
+        } catch (Throwable ex) {
+            return false;
+        }
     }
 }

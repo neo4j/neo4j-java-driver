@@ -75,37 +75,42 @@ class SessionBoltV3IT {
 
     @Test
     void shouldSetTransactionMetadata() {
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("a", "hello world");
-        metadata.put("b", LocalDate.now());
-        metadata.put("c", asList(true, false, true));
+        if (driver.isNeo4j44OrEarlier()) {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("a", "hello world");
+            metadata.put("b", LocalDate.now());
+            metadata.put("c", asList(true, false, true));
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+            TransactionConfig config =
+                    TransactionConfig.builder().withMetadata(metadata).build();
 
-        // call listTransactions procedure that should list itself with the specified metadata
-        Result result = driver.session().run("CALL dbms.listTransactions()", config);
-        Map<String, Object> receivedMetadata = result.single().get("metaData").asMap();
+            // call listTransactions procedure that should list itself with the specified metadata
+            Result result = driver.session().run("CALL dbms.listTransactions()", config);
+            Map<String, Object> receivedMetadata =
+                    result.single().get("metaData").asMap();
 
-        assertEquals(metadata, receivedMetadata);
+            assertEquals(metadata, receivedMetadata);
+        }
     }
 
     @Test
     void shouldSetTransactionMetadataAsync() {
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("key1", "value1");
-        metadata.put("key2", 42L);
+        if (driver.isNeo4j44OrEarlier()) {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("key1", "value1");
+            metadata.put("key2", 42L);
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+            TransactionConfig config =
+                    TransactionConfig.builder().withMetadata(metadata).build();
 
-        // call listTransactions procedure that should list itself with the specified metadata
-        CompletionStage<Map<String, Object>> metadataFuture = driver.asyncSession()
-                .runAsync("CALL dbms.listTransactions()", config)
-                .thenCompose(ResultCursor::singleAsync)
-                .thenApply(record -> record.get("metaData").asMap());
+            // call listTransactions procedure that should list itself with the specified metadata
+            CompletionStage<Map<String, Object>> metadataFuture = driver.asyncSession()
+                    .runAsync("CALL dbms.listTransactions()", config)
+                    .thenCompose(ResultCursor::singleAsync)
+                    .thenApply(record -> record.get("metaData").asMap());
 
-        assertEquals(metadata, await(metadataFuture));
+            assertEquals(metadata, await(metadataFuture));
+        }
     }
 
     @Test
@@ -300,50 +305,54 @@ class SessionBoltV3IT {
     }
 
     private static void testTransactionMetadataWithAsyncTransactionFunctions(boolean read) {
-        AsyncSession asyncSession = driver.asyncSession();
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("foo", "bar");
-        metadata.put("baz", true);
-        metadata.put("qux", 12345L);
+        if (driver.isNeo4j44OrEarlier()) {
+            AsyncSession asyncSession = driver.asyncSession();
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("foo", "bar");
+            metadata.put("baz", true);
+            metadata.put("qux", 12345L);
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+            TransactionConfig config =
+                    TransactionConfig.builder().withMetadata(metadata).build();
 
-        // call listTransactions procedure that should list itself with the specified metadata
-        CompletionStage<Record> singleFuture = read
-                ? asyncSession.readTransactionAsync(
-                        tx -> tx.runAsync("CALL dbms.listTransactions()").thenCompose(ResultCursor::singleAsync),
-                        config)
-                : asyncSession.writeTransactionAsync(
-                        tx -> tx.runAsync("CALL dbms.listTransactions()").thenCompose(ResultCursor::singleAsync),
-                        config);
+            // call listTransactions procedure that should list itself with the specified metadata
+            CompletionStage<Record> singleFuture = read
+                    ? asyncSession.readTransactionAsync(
+                            tx -> tx.runAsync("CALL dbms.listTransactions()").thenCompose(ResultCursor::singleAsync),
+                            config)
+                    : asyncSession.writeTransactionAsync(
+                            tx -> tx.runAsync("CALL dbms.listTransactions()").thenCompose(ResultCursor::singleAsync),
+                            config);
 
-        CompletionStage<Map<String, Object>> metadataFuture =
-                singleFuture.thenApply(record -> record.get("metaData").asMap());
+            CompletionStage<Map<String, Object>> metadataFuture =
+                    singleFuture.thenApply(record -> record.get("metaData").asMap());
 
-        assertEquals(metadata, await(metadataFuture));
+            assertEquals(metadata, await(metadataFuture));
+        }
     }
 
     private static void testTransactionMetadataWithTransactionFunctions(boolean read) {
-        Session session = driver.session();
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("foo", "bar");
-        metadata.put("baz", true);
-        metadata.put("qux", 12345L);
+        if (driver.isNeo4j44OrEarlier()) {
+            Session session = driver.session();
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("foo", "bar");
+            metadata.put("baz", true);
+            metadata.put("qux", 12345L);
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+            TransactionConfig config =
+                    TransactionConfig.builder().withMetadata(metadata).build();
 
-        // call listTransactions procedure that should list itself with the specified metadata
-        Record single = read
-                ? session.readTransaction(
-                        tx -> tx.run("CALL dbms.listTransactions()").single(), config)
-                : session.writeTransaction(
-                        tx -> tx.run("CALL dbms.listTransactions()").single(), config);
+            // call listTransactions procedure that should list itself with the specified metadata
+            Record single = read
+                    ? session.readTransaction(
+                            tx -> tx.run("CALL dbms.listTransactions()").single(), config)
+                    : session.writeTransaction(
+                            tx -> tx.run("CALL dbms.listTransactions()").single(), config);
 
-        Map<String, Object> receivedMetadata = single.get("metaData").asMap();
+            Map<String, Object> receivedMetadata = single.get("metaData").asMap();
 
-        assertEquals(metadata, receivedMetadata);
+            assertEquals(metadata, receivedMetadata);
+        }
     }
 
     private static void verifyValidException(Exception error) {

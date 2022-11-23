@@ -27,37 +27,27 @@ import static java.util.stream.IntStream.range;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
-import static org.neo4j.driver.util.Neo4jRunner.HOME_DIR;
-import static org.neo4j.driver.util.Neo4jSettings.IMPORT_DIR;
-import static org.neo4j.driver.util.Neo4jSettings.TEST_SETTINGS;
 import static org.neo4j.driver.util.TestUtil.activeQueryCount;
 import static org.neo4j.driver.util.TestUtil.activeQueryNames;
-import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.awaitAllFutures;
 import static org.neo4j.driver.util.TestUtil.awaitCondition;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.nio.channels.ClosedChannelException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -68,10 +58,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -140,6 +129,7 @@ class SessionResetIT {
      */
     @Test
     void shouldTerminatePeriodicCommitQueryRandomly() {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         Future<Void> queryResult = runQueryInDifferentThreadAndResetSession(longPeriodicCommitQuery(), true);
 
         ExecutionException e = assertThrows(ExecutionException.class, () -> queryResult.get(1, MINUTES));
@@ -158,137 +148,6 @@ class SessionResetIT {
     @Test
     void shouldTerminateQueriesInUnmanagedTransactionsRandomly() throws Exception {
         testRandomQueryTermination(false);
-    }
-
-    @Test
-    void shouldRejectNewTransactionWhenOpenTransactionExistsAndShouldFailRunResultOnSessionReset() throws Throwable {
-        neo4j.ensureProcedures("longRunningStatement.jar");
-
-        try (Session session = neo4j.driver().session()) {
-            Transaction tx1 = session.beginTransaction();
-
-            CompletableFuture<Void> txRunFuture = CompletableFuture.runAsync(
-                    () -> tx1.run("CALL test.driver.longRunningStatement({seconds})", parameters("seconds", 10)));
-
-            awaitActiveQueriesToContain("CALL test.driver.longRunningStatement");
-            session.reset();
-
-            ClientException e1 = assertThrows(ClientException.class, session::beginTransaction);
-            assertThat(
-                    e1.getMessage(),
-                    containsString("You cannot begin a transaction on a session with an open transaction"));
-
-            ClientException e2 = assertThrows(ClientException.class, () -> tx1.run("RETURN 1"));
-            assertThat(e2.getMessage(), containsString("Cannot run more queries in this transaction"));
-
-            // Make sure failure from the terminated long running query is propagated
-            Neo4jException e3 = assertThrows(Neo4jException.class, () -> await(txRunFuture));
-            assertThat(e3.getMessage(), containsString("The transaction has been terminated"));
-        }
-    }
-
-    @Test
-    void shouldSuccessfullyCloseAfterSessionReset() throws Throwable {
-        neo4j.ensureProcedures("longRunningStatement.jar");
-
-        try (Session session = neo4j.driver().session()) {
-            CompletableFuture.runAsync(
-                    () -> session.run("CALL test.driver.longRunningStatement({seconds})", parameters("seconds", 10)));
-
-            awaitActiveQueriesToContain("CALL test.driver.longRunningStatement");
-            session.reset();
-        }
-    }
-
-    @Test
-    void shouldBeAbleToBeginNewTransactionAfterFirstTransactionInterruptedBySessionResetIsClosed() throws Throwable {
-        neo4j.ensureProcedures("longRunningStatement.jar");
-
-        try (Session session = neo4j.driver().session()) {
-            Transaction tx1 = session.beginTransaction();
-
-            CompletableFuture<Void> txRunFuture = runAsync(
-                    () -> tx1.run("CALL test.driver.longRunningStatement({seconds})", parameters("seconds", 10)));
-
-            awaitActiveQueriesToContain("CALL test.driver.longRunningStatement");
-            session.reset();
-
-            Neo4jException e = assertThrows(Neo4jException.class, () -> await(txRunFuture));
-            assertThat(e.getMessage(), containsString("The transaction has been terminated"));
-            tx1.close();
-
-            try (Transaction tx2 = session.beginTransaction()) {
-                tx2.run("CREATE (n:FirstNode)");
-                tx2.commit();
-            }
-
-            Result result = session.run("MATCH (n) RETURN count(n)");
-            long nodes = result.single().get("count(n)").asLong();
-            MatcherAssert.assertThat(nodes, equalTo(1L));
-        }
-    }
-
-    @Test
-    void shouldKillLongRunningQuery() throws Throwable {
-        neo4j.ensureProcedures("longRunningStatement.jar");
-
-        final int executionTimeout = 10; // 10s
-        final int killTimeout = 1; // 1s
-        final AtomicLong startTime = new AtomicLong(-1);
-        long endTime;
-
-        try (Session session = neo4j.driver().session()) {
-            CompletableFuture<Void> sessionRunFuture = CompletableFuture.runAsync(() -> {
-                // When
-                startTime.set(System.currentTimeMillis());
-                session.run(
-                        "CALL test.driver.longRunningStatement({seconds})", parameters("seconds", executionTimeout));
-            });
-
-            resetSessionAfterTimeout(session, killTimeout);
-
-            assertThrows(Neo4jException.class, () -> await(sessionRunFuture));
-        }
-
-        endTime = System.currentTimeMillis();
-        assertTrue(startTime.get() > 0);
-        assertTrue(endTime - startTime.get() > killTimeout * 1000); // get reset by session.reset
-        assertTrue(endTime - startTime.get() < executionTimeout * 1000 / 2); // finished before execution finished
-    }
-
-    @Test
-    void shouldKillLongStreamingResult() throws Throwable {
-        neo4j.ensureProcedures("longRunningStatement.jar");
-        // Given
-        final int executionTimeout = 10; // 10s
-        final int killTimeout = 1; // 1s
-        final AtomicInteger recordCount = new AtomicInteger();
-        final AtomicLong startTime = new AtomicLong(-1);
-        long endTime;
-
-        Neo4jException e = assertThrows(Neo4jException.class, () -> {
-            try (Session session = neo4j.driver().session()) {
-                Result result = session.run(
-                        "CALL test.driver.longStreamingResult({seconds})", parameters("seconds", executionTimeout));
-
-                resetSessionAfterTimeout(session, killTimeout);
-
-                // When
-                startTime.set(System.currentTimeMillis());
-                while (result.hasNext()) {
-                    result.next();
-                    recordCount.incrementAndGet();
-                }
-            }
-        });
-
-        endTime = System.currentTimeMillis();
-        assertThat(e.getMessage(), containsString("The transaction has been terminated"));
-        assertThat(recordCount.get(), greaterThan(1));
-
-        assertTrue(startTime.get() > 0);
-        assertTrue(endTime - startTime.get() > killTimeout * 1000); // get reset by session.reset
-        assertTrue(endTime - startTime.get() < executionTimeout * 1000 / 2); // finished before execution finished
     }
 
     private void resetSessionAfterTimeout(Session session, int timeout) {
@@ -518,6 +377,7 @@ class SessionResetIT {
     }
 
     private void testResetOfQueryWaitingForLock(NodeIdUpdater nodeIdUpdater) throws Exception {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         int nodeId = 42;
         int newNodeId1 = 4242;
         int newNodeId2 = 424242;
@@ -568,6 +428,7 @@ class SessionResetIT {
     }
 
     private void testRandomQueryTermination(boolean autoCommit) throws Exception {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         Set<Session> runningSessions = newSetFromMap(new ConcurrentHashMap<>());
         AtomicBoolean stop = new AtomicBoolean();
         List<Future<?>> futures = new ArrayList<>();
@@ -618,6 +479,7 @@ class SessionResetIT {
     }
 
     private void testQueryTermination(String query, boolean autoCommit) {
+        assumeTrue(neo4j.isNeo4j44OrEarlier());
         Future<Void> queryResult = runQueryInDifferentThreadAndResetSession(query, autoCommit);
         ExecutionException e = assertThrows(ExecutionException.class, () -> queryResult.get(10, SECONDS));
         assertThat(e.getCause(), instanceOf(Neo4jException.class));
@@ -713,16 +575,16 @@ class SessionResetIT {
     }
 
     private static String longPeriodicCommitQuery() {
-        URI fileUri = createTmpCsvFile();
+        String fileUri = createTmpCsvFile();
         return String.format(LONG_PERIODIC_COMMIT_QUERY_TEMPLATE, fileUri);
     }
 
-    private static URI createTmpCsvFile() {
+    private static String createTmpCsvFile() {
+        String lines = range(0, CSV_FILE_SIZE)
+                .mapToObj(i -> "Foo-" + i + ", Bar-" + i)
+                .collect(Collectors.joining(System.lineSeparator()));
         try {
-            Path importDir = Paths.get(HOME_DIR, TEST_SETTINGS.propertiesMap().get(IMPORT_DIR));
-            Path csvFile = Files.createTempFile(importDir, "test", ".csv");
-            Iterable<String> lines = range(0, CSV_FILE_SIZE).mapToObj(i -> "Foo-" + i + ", Bar-" + i)::iterator;
-            return URI.create("file:///" + Files.write(csvFile, lines).getFileName());
+            return neo4j.addImportFile("iris", ".csv", lines);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

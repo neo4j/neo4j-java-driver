@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Config.TrustStrategy.trustCustomCertificateSignedBy;
 import static org.neo4j.driver.util.CertificateUtil.createNewCertificateAndKey;
 import static org.neo4j.driver.util.CertificateUtil.createNewCertificateAndKeySignedBy;
+import static org.neo4j.driver.util.DatabaseExtension.getDockerHostGeneralName;
 
 import java.io.File;
 import java.util.function.Supplier;
@@ -35,7 +36,6 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.SecurityException;
-import org.neo4j.driver.util.CertificateExtension;
 import org.neo4j.driver.util.CertificateUtil.CertificateKeyPair;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -43,7 +43,7 @@ import org.neo4j.driver.util.ParallelizableIT;
 @ParallelizableIT
 class TrustCustomCertificateIT {
     @RegisterExtension
-    static final DatabaseExtension neo4j = new CertificateExtension();
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
     void shouldAcceptServerWithCertificateSignedByDriverCertificate() throws Throwable {
@@ -51,7 +51,7 @@ class TrustCustomCertificateIT {
         CertificateKeyPair<File, File> root = createNewCertificateAndKey();
 
         // When
-        CertificateKeyPair<File, File> server = createNewCertificateAndKeySignedBy(root);
+        CertificateKeyPair<File, File> server = createNewCertificateAndKeySignedBy(root, getDockerHostGeneralName());
         neo4j.updateEncryptionKeyAndCert(server.key(), server.cert());
 
         // Then
@@ -59,7 +59,7 @@ class TrustCustomCertificateIT {
     }
 
     @Test
-    void shouldAcceptServerWithSameCertificate() throws Throwable {
+    void shouldAcceptServerWithSameCertificate() {
         shouldBeAbleToRunCypher(() -> createDriverWithCustomCertificate(neo4j.tlsCertFile()));
     }
 
@@ -70,7 +70,7 @@ class TrustCustomCertificateIT {
 
         // When & Then
         final Driver driver = createDriverWithCustomCertificate(certificateAndKey.cert());
-        SecurityException error = assertThrows(SecurityException.class, driver::verifyConnectivity);
+        assertThrows(SecurityException.class, driver::verifyConnectivity);
     }
 
     private void shouldBeAbleToRunCypher(Supplier<Driver> driverSupplier) {

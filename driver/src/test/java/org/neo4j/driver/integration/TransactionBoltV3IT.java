@@ -57,41 +57,45 @@ class TransactionBoltV3IT {
 
     @Test
     void shouldSetTransactionMetadata() {
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("key1", "value1");
-        metadata.put("key2", 42L);
-        metadata.put("key3", false);
+        if (driver.isNeo4j44OrEarlier()) {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("key1", "value1");
+            metadata.put("key2", 42L);
+            metadata.put("key3", false);
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+            TransactionConfig config =
+                    TransactionConfig.builder().withMetadata(metadata).build();
 
-        try (Transaction tx = driver.session().beginTransaction(config)) {
-            tx.run("RETURN 1").consume();
+            try (Transaction tx = driver.session().beginTransaction(config)) {
+                tx.run("RETURN 1").consume();
 
-            verifyTransactionMetadata(metadata);
+                verifyTransactionMetadata(metadata);
+            }
         }
     }
 
     @Test
     void shouldSetTransactionMetadataAsync() {
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("hello", "world");
-        metadata.put("key", ZonedDateTime.now());
+        if (driver.isNeo4j44OrEarlier()) {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("hello", "world");
+            metadata.put("key", ZonedDateTime.now());
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+            TransactionConfig config =
+                    TransactionConfig.builder().withMetadata(metadata).build();
 
-        CompletionStage<AsyncTransaction> txFuture = driver.asyncSession()
-                .beginTransactionAsync(config)
-                .thenCompose(tx -> tx.runAsync("RETURN 1")
-                        .thenCompose(ResultCursor::consumeAsync)
-                        .thenApply(ignore -> tx));
+            CompletionStage<AsyncTransaction> txFuture = driver.asyncSession()
+                    .beginTransactionAsync(config)
+                    .thenCompose(tx -> tx.runAsync("RETURN 1")
+                            .thenCompose(ResultCursor::consumeAsync)
+                            .thenApply(ignore -> tx));
 
-        AsyncTransaction transaction = await(txFuture);
-        try {
-            verifyTransactionMetadata(metadata);
-        } finally {
-            await(transaction.rollbackAsync());
+            AsyncTransaction transaction = await(txFuture);
+            try {
+                verifyTransactionMetadata(metadata);
+            } finally {
+                await(transaction.rollbackAsync());
+            }
         }
     }
 
