@@ -34,22 +34,16 @@ public class NoOpBookmarkManager implements BookmarkManager {
     private static final Set<Bookmark> EMPTY = Collections.emptySet();
 
     @Override
-    public void updateBookmarks(String database, Set<Bookmark> previousBookmarks, Set<Bookmark> newBookmarks) {
+    public void updateBookmarks(Set<Bookmark> previousBookmarks, Set<Bookmark> newBookmarks) {
         // ignored
     }
 
     @Override
-    public Set<Bookmark> getBookmarks(String database) {
+    public Set<Bookmark> getBookmarks() {
         return EMPTY;
     }
 
-    @Override
-    public Set<Bookmark> getAllBookmarks() {
+    private Set<Bookmark> getAllBookmarks() {
         return EMPTY;
-    }
-
-    @Override
-    public void forget(Set<String> databases) {
-        // ignored
     }
 }

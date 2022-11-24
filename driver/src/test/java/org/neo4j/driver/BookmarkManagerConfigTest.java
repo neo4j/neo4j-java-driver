@@ -23,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
 class BookmarkManagerConfigTest {
@@ -46,7 +46,7 @@ class BookmarkManagerConfigTest {
     @Test
     void shouldReturnInitialBookmarks() {
         // GIVEN
-        var bookmarks = Map.of("neo4j", Set.of(Bookmark.from("TS:000001")));
+        var bookmarks = Set.of(Bookmark.from("TS:000001"));
 
         // WHEN
         config = BookmarkManagerConfig.builder().withInitialBookmarks(bookmarks).build();
@@ -60,7 +60,7 @@ class BookmarkManagerConfigTest {
     @Test
     void shouldReturnUpdateListener() {
         // GIVEN
-        BiConsumer<String, Set<Bookmark>> updateListener = (d, b) -> {};
+        Consumer<Set<Bookmark>> updateListener = (b) -> {};
 
         // WHEN
         config = BookmarkManagerConfig.builder()
@@ -77,7 +77,8 @@ class BookmarkManagerConfigTest {
     @Test
     void shouldReturnBookmarkSupplier() {
         // GIVEN
-        var bookmarkSupplier = mock(BookmarksSupplier.class);
+        @SuppressWarnings("unchecked")
+        Supplier<Set<Bookmark>> bookmarkSupplier = mock(Supplier.class);
 
         // WHEN
         config = BookmarkManagerConfig.builder()

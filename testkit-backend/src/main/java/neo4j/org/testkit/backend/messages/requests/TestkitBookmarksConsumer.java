@@ -20,8 +20,8 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import neo4j.org.testkit.backend.TestkitState;
@@ -30,18 +30,17 @@ import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import org.neo4j.driver.Bookmark;
 
 @RequiredArgsConstructor
-class TestkitBookmarksConsumer implements BiConsumer<String, Set<Bookmark>> {
+class TestkitBookmarksConsumer implements Consumer<Set<Bookmark>> {
     private final String bookmarkManagerId;
     private final TestkitState testkitState;
     private final BiFunction<TestkitState, TestkitCallback, CompletionStage<TestkitCallbackResult>> dispatchFunction;
 
     @Override
-    public void accept(String database, Set<Bookmark> bookmarks) {
+    public void accept(Set<Bookmark> bookmarks) {
         var callbackId = testkitState.newId();
         var body = BookmarksConsumerRequest.BookmarksConsumerRequestBody.builder()
                 .id(callbackId)
                 .bookmarkManagerId(bookmarkManagerId)
-                .database(database)
                 .bookmarks(bookmarks.stream().map(Bookmark::value).collect(Collectors.toUnmodifiableSet()))
                 .build();
         var callback = BookmarksConsumerRequest.builder().data(body).build();

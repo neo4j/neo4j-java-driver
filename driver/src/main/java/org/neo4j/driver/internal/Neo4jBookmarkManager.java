@@ -21,20 +21,16 @@ package org.neo4j.driver.internal;
 import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
 
 import java.io.Serial;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
-import org.neo4j.driver.BookmarksSupplier;
 
 /**
  * A basic {@link BookmarkManager} implementation.
@@ -45,66 +41,40 @@ public final class Neo4jBookmarkManager implements BookmarkManager {
 
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
-    private final Map<String, Set<Bookmark>> databaseToBookmarks = new HashMap<>();
-    private final BiConsumer<String, Set<Bookmark>> updateListener;
-    private final BookmarksSupplier bookmarksSupplier;
+    private final Set<Bookmark> bookmarks;
+    private final Consumer<Set<Bookmark>> updateListener;
+    private final Supplier<Set<Bookmark>> bookmarksSupplier;
 
     public Neo4jBookmarkManager(
-            Map<String, Set<Bookmark>> initialBookmarks,
-            BiConsumer<String, Set<Bookmark>> updateListener,
-            BookmarksSupplier bookmarksSupplier) {
+            Set<Bookmark> initialBookmarks,
+            Consumer<Set<Bookmark>> updateListener,
+            Supplier<Set<Bookmark>> bookmarksSupplier) {
         Objects.requireNonNull(initialBookmarks, "initialBookmarks must not be null");
-        this.databaseToBookmarks.putAll(initialBookmarks);
+        this.bookmarks = new HashSet<>(initialBookmarks);
         this.updateListener = updateListener;
         this.bookmarksSupplier = bookmarksSupplier;
     }
 
     @Override
-    public void updateBookmarks(String database, Set<Bookmark> previousBookmarks, Set<Bookmark> newBookmarks) {
-        var immutableBookmarks = executeWithLock(
-                rwLock.writeLock(),
-                () -> databaseToBookmarks.compute(database, (ignored, bookmarks) -> {
-                    var updatedBookmarks = new HashSet<Bookmark>();
-                    if (bookmarks != null) {
-                        bookmarks.stream()
-                                .filter(bookmark -> !previousBookmarks.contains(bookmark))
-                                .forEach(updatedBookmarks::add);
-                    }
-                    updatedBookmarks.addAll(newBookmarks);
-                    return Collections.unmodifiableSet(updatedBookmarks);
-                }));
+    public void updateBookmarks(Set<Bookmark> previousBookmarks, Set<Bookmark> newBookmarks) {
+        var immutableBookmarks = executeWithLock(rwLock.writeLock(), () -> {
+            this.bookmarks.removeAll(previousBookmarks);
+            this.bookmarks.addAll(newBookmarks);
+            return Collections.unmodifiableSet(this.bookmarks);
+        });
         if (updateListener != null) {
-            updateListener.accept(database, immutableBookmarks);
+            updateListener.accept(immutableBookmarks);
         }
     }
 
     @Override
-    public Set<Bookmark> getBookmarks(String database) {
-        var immutableBookmarks = executeWithLock(
-                rwLock.readLock(), () -> databaseToBookmarks.getOrDefault(database, Collections.emptySet()));
+    public Set<Bookmark> getBookmarks() {
+        var immutableBookmarks = executeWithLock(rwLock.readLock(), () -> Collections.unmodifiableSet(this.bookmarks));
         if (bookmarksSupplier != null) {
             var bookmarks = new HashSet<>(immutableBookmarks);
-            bookmarks.addAll(bookmarksSupplier.getBookmarks(database));
+            bookmarks.addAll(bookmarksSupplier.get());
             immutableBookmarks = Collections.unmodifiableSet(bookmarks);
         }
         return immutableBookmarks;
-    }
-
-    @Override
-    public Set<Bookmark> getAllBookmarks() {
-        var immutableBookmarks = executeWithLock(rwLock.readLock(), () -> databaseToBookmarks.values().stream()
-                        .flatMap(Collection::stream))
-                .collect(Collectors.toUnmodifiableSet());
-        if (bookmarksSupplier != null) {
-            var bookmarks = new HashSet<>(immutableBookmarks);
-            bookmarks.addAll(bookmarksSupplier.getAllBookmarks());
-            immutableBookmarks = Collections.unmodifiableSet(bookmarks);
-        }
-        return immutableBookmarks;
-    }
-
-    @Override
-    public void forget(Set<String> databases) {
-        executeWithLock(rwLock.writeLock(), () -> databases.forEach(databaseToBookmarks::remove));
     }
 }
