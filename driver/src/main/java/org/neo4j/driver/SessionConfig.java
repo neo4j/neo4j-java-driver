@@ -246,16 +246,37 @@ public final class SessionConfig implements Serializable {
         }
 
         /**
-         * Set the database that the newly created session is going to connect to.
+         * Sets target database name for queries executed within session.
          * <p>
-         * For connecting to servers that support multi-databases,
-         * it is highly recommended to always set the database explicitly in the {@link SessionConfig} for each session.
-         * If the database name is not set, then session defaults to connecting to the default database configured in server configuration.
+         * This option has no explicit value by default, but it is recommended to set one if the target database is
+         * known in advance. This has the benefit of ensuring a consistent target database name throughout the session
+         * in a straightforward way and potentially simplifies driver logic as well as reduces network communication
+         * resulting in better performance.
          * <p>
-         * For servers that do not support multi-databases, leave this database value unset. The only database will be used instead.
+         * When no explicit name is set, the driver behavior depends on the connection URI scheme supplied to the driver
+         * on instantiation and Bolt protocol version.
+         * <p>
+         * Specifically, the following applies:
+         * <ul>
+         * <li><b>bolt schemes</b> - queries are dispatched to the server for execution without explicit database name
+         * supplied, meaning that the target database name for query execution is determined by the server. It is
+         * important to note that the target database may change (even within the same session), for instance if the
+         * user's home database is changed on the server.</li>
+         * <li><b>neo4j schemes</b> - providing that Bolt protocol version 4.4, which was introduced with Neo4j server
+         * 4.4, or above is available, the driver fetches the user's home database name from the server on first query
+         * execution within the session and uses the fetched database name explicitly for all queries executed within
+         * the session. This ensures that the database name remains consistent within the given session. For instance,
+         * if the user's home database name is 'movies' and the server supplies it to the driver upon database name
+         * fetching for the session, all queries within that session are executed with the explicit database name
+         * 'movies' supplied. Any change to the user’s home database is reflected only in sessions created after such
+         * change takes effect. This behavior requires additional network communication. In clustered environments, it
+         * is strongly recommended to avoid a single point of failure. For instance, by ensuring that the connection URI
+         * resolves to multiple endpoints. For older Bolt protocol versions the behavior is the same as described for
+         * the <b>bolt</b> schemes above.</li>
+         * </ul>
          *
-         * @param database the database the session going to connect to. Provided value should not be {@code null}.
-         * @return this builder.
+         * @param database the target database name, must not be {@code null}
+         * @return this builder
          */
         public Builder withDatabase(String database) {
             requireNonNull(database, "Database name should not be null.");
