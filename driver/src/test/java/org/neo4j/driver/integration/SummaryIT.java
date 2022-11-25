@@ -179,9 +179,9 @@ class SummaryIT {
 
     @Test
     @EnabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
-    void shouldGetSystemUpdates() throws Throwable {
+    void shouldGetSystemUpdates() {
         try (Session session = neo4j.driver().session(forDatabase("system"))) {
-            Result result = session.run("CREATE USER foo SET PASSWORD 'bar'");
+            Result result = session.run("CREATE USER foo SET PASSWORD 'Testing0'");
             assertThat(result.consume().counters().containsUpdates(), equalTo(false));
             assertThat(result.consume().counters().containsSystemUpdates(), equalTo(true));
         }
