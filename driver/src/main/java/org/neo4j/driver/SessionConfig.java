@@ -226,12 +226,13 @@ public class SessionConfig implements Serializable {
         /**
          * Sets target database name for queries executed within session.
          * <p>
-         * This option has no explicit value by default, but it is recommended to set one if the target database is
-         * known in advance. This has the benefit of ensuring a consistent target database name throughout the session
-         * in a straightforward way and potentially simplifies driver logic as well as reduces network communication
-         * resulting in better performance.
+         * This option has no explicit value by default, as such it is recommended to set a value if the target database
+         * is known in advance. This has the benefit of ensuring a consistent target database name throughout the
+         * session in a straightforward way and potentially simplifies driver logic, which reduces network communication
+         * and might result in better performance.
          * <p>
-         * Usage of Cypher clauses like USE is not a replacement for this option. Driver sends Cypher to the server for processing.
+         * Cypher clauses such as USE are not a replacement for this option as Cypher is handled by the server and not
+         * the driver.
          * <p>
          * When no explicit name is set, the driver behavior depends on the connection URI scheme supplied to the driver
          * on instantiation and Bolt protocol version.
