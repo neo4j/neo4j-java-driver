@@ -40,7 +40,7 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2022.0.0</reactor-bom.version>
+    <reactor-bom.version>2020.0.25</reactor-bom.version>
     <rxjava.version>2.2.21</rxjava.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
