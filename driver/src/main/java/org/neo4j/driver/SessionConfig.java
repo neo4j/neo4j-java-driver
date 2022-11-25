@@ -231,6 +231,8 @@ public class SessionConfig implements Serializable {
          * in a straightforward way and potentially simplifies driver logic as well as reduces network communication
          * resulting in better performance.
          * <p>
+         * Usage of Cypher clauses like USE is not a replacement for this option. Driver sends Cypher to the server for processing.
+         * <p>
          * When no explicit name is set, the driver behavior depends on the connection URI scheme supplied to the driver
          * on instantiation and Bolt protocol version.
          * <p>
