@@ -18,43 +18,29 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.BookmarksSupplierRequest;
 import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.BookmarksSupplier;
 
 @RequiredArgsConstructor
-class TestkitBookmarksSupplier implements BookmarksSupplier {
+class TestkitBookmarksSupplier implements Supplier<Set<Bookmark>> {
     private final String bookmarkManagerId;
     private final TestkitState testkitState;
     private final BiFunction<TestkitState, TestkitCallback, CompletionStage<TestkitCallbackResult>> dispatchFunction;
 
-    @Override
-    public Set<Bookmark> getBookmarks(String database) {
-        Objects.requireNonNull(database, "database must not be null");
-        return getBookmarksFromTestkit(database);
-    }
-
-    @Override
-    public Set<Bookmark> getAllBookmarks() {
-        return getBookmarksFromTestkit(null);
-    }
-
-    private Set<Bookmark> getBookmarksFromTestkit(String database) {
+    public Set<Bookmark> get() {
         var callbackId = testkitState.newId();
         var bodyBuilder = BookmarksSupplierRequest.BookmarksSupplierRequestBody.builder()
                 .id(callbackId)
                 .bookmarkManagerId(bookmarkManagerId);
-        if (database != null) {
-            bodyBuilder = bodyBuilder.database(database);
-        }
+
         var callback =
                 BookmarksSupplierRequest.builder().data(bodyBuilder.build()).build();
 

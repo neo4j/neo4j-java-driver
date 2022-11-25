@@ -23,7 +23,7 @@ import java.util.Set;
 import org.neo4j.driver.util.Experimental;
 
 /**
- * Keeps track of database bookmarks and is used by the driver to ensure causal consistency between sessions and query executions.
+ * Keeps track of bookmarks and is used by the driver to ensure causal consistency between sessions and query executions.
  * <p>
  * Please note that implementations of this interface MUST NOT block for extended periods of time.
  * <p>
@@ -34,35 +34,17 @@ import org.neo4j.driver.util.Experimental;
 @Experimental
 public interface BookmarkManager extends Serializable {
     /**
-     * Updates database bookmarks by deleting the given previous bookmarks and adding the new bookmarks.
+     * Updates bookmarks by deleting the given previous bookmarks and adding the new bookmarks.
      *
-     * @param database          the database name, this might be an empty string when session has no database name configured and database discovery is unavailable
      * @param previousBookmarks the previous bookmarks
      * @param newBookmarks      the new bookmarks
      */
-    void updateBookmarks(String database, Set<Bookmark> previousBookmarks, Set<Bookmark> newBookmarks);
+    void updateBookmarks(Set<Bookmark> previousBookmarks, Set<Bookmark> newBookmarks);
 
     /**
-     * Gets an immutable set of bookmarks for a given database.
+     * Gets an immutable set of bookmarks.
      *
-     * @param database the database name
-     * @return the set of bookmarks or an empty set if the database name is unknown to the bookmark manager
+     * @return the set of bookmarks.
      */
-    Set<Bookmark> getBookmarks(String database);
-
-    /**
-     * Gets an immutable set of bookmarks for all databases.
-     *
-     * @return the set of bookmarks or an empty set
-     */
-    Set<Bookmark> getAllBookmarks();
-
-    /**
-     * Deletes bookmarks for the given databases.
-     * <p>
-     * This method should be called by driver users if data deletion is desired when bookmarks for the given databases are no longer needed.
-     *
-     * @param databases the set of database names
-     */
-    void forget(Set<String> databases);
+    Set<Bookmark> getBookmarks();
 }

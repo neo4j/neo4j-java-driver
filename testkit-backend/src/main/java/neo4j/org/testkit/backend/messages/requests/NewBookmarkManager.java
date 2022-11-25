@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -67,11 +66,9 @@ public class NewBookmarkManager implements TestkitRequest {
 
     private BookmarkManager createBookmarkManagerAndResponse(TestkitState testkitState) {
         var id = testkitState.newId();
-        var initialBookmarks =
-                Optional.ofNullable(data.getInitialBookmarks()).orElseGet(Collections::emptyMap).entrySet().stream()
-                        .collect(Collectors.toMap(
-                                Map.Entry::getKey,
-                                e -> e.getValue().stream().map(Bookmark::from).collect(Collectors.toSet())));
+        var initialBookmarks = Optional.ofNullable(data.getInitialBookmarks()).orElseGet(Collections::emptySet).stream()
+                .map(Bookmark::from)
+                .collect(Collectors.toSet());
         var managerConfigBuilder =
                 org.neo4j.driver.BookmarkManagerConfig.builder().withInitialBookmarks(initialBookmarks);
         if (data.isBookmarksSupplierRegistered()) {
@@ -102,7 +99,7 @@ public class NewBookmarkManager implements TestkitRequest {
     @Setter
     @Getter
     public static class NewBookmarkManagerBody {
-        private Map<String, Set<String>> initialBookmarks;
+        private Set<String> initialBookmarks;
         private boolean bookmarksSupplierRegistered;
         private boolean bookmarksConsumerRegistered;
     }

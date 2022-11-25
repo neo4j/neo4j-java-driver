@@ -43,7 +43,6 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.ImpersonationUtil;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
@@ -100,7 +99,7 @@ public class NetworkSession {
         this.bookmarkManager = bookmarkManager;
         this.lastReceivedBookmarks = bookmarks;
         this.connectionContext =
-                new NetworkSessionConnectionContext(databaseNameFuture, determineBookmarks(true), impersonatedUser);
+                new NetworkSessionConnectionContext(databaseNameFuture, determineBookmarks(false), impersonatedUser);
         this.fetchSize = fetchSize;
     }
 
@@ -145,7 +144,7 @@ public class NetworkSession {
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
                     UnmanagedTransaction tx = new UnmanagedTransaction(connection, this::handleNewBookmark, fetchSize);
-                    return tx.beginAsync(determineBookmarks(false), config, txType);
+                    return tx.beginAsync(determineBookmarks(true), config, txType);
                 });
 
         // update the reference to the only known transaction
@@ -240,7 +239,7 @@ public class NetworkSession {
                                 .runInAutoCommitTransaction(
                                         connection,
                                         query,
-                                        determineBookmarks(false),
+                                        determineBookmarks(true),
                                         this::handleNewBookmark,
                                         config,
                                         fetchSize);
@@ -342,21 +341,14 @@ public class NetworkSession {
         var bookmark = databaseBookmark.bookmark();
         if (bookmark != null) {
             var bookmarks = Set.of(bookmark);
-            String databaseName = databaseBookmark.databaseName();
-            if (databaseName == null || databaseName.isEmpty()) {
-                databaseName = getDatabaseNameNow().orElse(FALLBACK_DATABASE_NAME);
-            }
             lastReceivedBookmarks = bookmarks;
-            bookmarkManager.updateBookmarks(databaseName, lastUsedBookmarks, bookmarks);
+            bookmarkManager.updateBookmarks(lastUsedBookmarks, bookmarks);
         }
     }
 
-    private Set<Bookmark> determineBookmarks(boolean useSystemOnly) {
-        var bookmarks = new HashSet<Bookmark>();
-        if (useSystemOnly) {
-            bookmarks.addAll(bookmarkManager.getBookmarks(DatabaseNameUtil.SYSTEM_DATABASE_NAME));
-        } else {
-            bookmarks.addAll(bookmarkManager.getAllBookmarks());
+    private Set<Bookmark> determineBookmarks(boolean updateLastUsed) {
+        var bookmarks = new HashSet<>(bookmarkManager.getBookmarks());
+        if (updateLastUsed) {
             lastUsedBookmarks = Collections.unmodifiableSet(bookmarks);
         }
         bookmarks.addAll(lastReceivedBookmarks);

@@ -19,19 +19,19 @@
 package org.neo4j.driver;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Bookmark configuration used to configure bookmark manager supplied by {@link BookmarkManagers#defaultManager(BookmarkManagerConfig)}.
  */
 public final class BookmarkManagerConfig {
-    private final Map<String, Set<Bookmark>> initialBookmarks;
-    private final BiConsumer<String, Set<Bookmark>> bookmarksConsumer;
-    private final BookmarksSupplier bookmarksSupplier;
+    private final Set<Bookmark> initialBookmarks;
+    private final Consumer<Set<Bookmark>> bookmarksConsumer;
+    private final Supplier<Set<Bookmark>> bookmarksSupplier;
 
     private BookmarkManagerConfig(BookmarkManagerConfigBuilder builder) {
         this.initialBookmarks = builder.initialBookmarks;
@@ -53,16 +53,16 @@ public final class BookmarkManagerConfig {
      *
      * @return the map of bookmarks
      */
-    public Map<String, Set<Bookmark>> initialBookmarks() {
+    public Set<Bookmark> initialBookmarks() {
         return initialBookmarks;
     }
 
     /**
-     * Returns bookmarks consumer that will be notified when database bookmarks are updated.
+     * Returns bookmarks consumer that will be notified when bookmarks are updated.
      *
      * @return the bookmarks consumer
      */
-    public Optional<BiConsumer<String, Set<Bookmark>>> bookmarksConsumer() {
+    public Optional<Consumer<Set<Bookmark>>> bookmarksConsumer() {
         return Optional.ofNullable(bookmarksConsumer);
     }
 
@@ -71,7 +71,7 @@ public final class BookmarkManagerConfig {
      *
      * @return the bookmark supplier
      */
-    public Optional<BookmarksSupplier> bookmarksSupplier() {
+    public Optional<Supplier<Set<Bookmark>>> bookmarksSupplier() {
         return Optional.ofNullable(bookmarksSupplier);
     }
 
@@ -79,21 +79,21 @@ public final class BookmarkManagerConfig {
      * Builder used to configure {@link BookmarkManagerConfig} which will be used to create a bookmark manager.
      */
     public static final class BookmarkManagerConfigBuilder {
-        private Map<String, Set<Bookmark>> initialBookmarks = Collections.emptyMap();
-        private BiConsumer<String, Set<Bookmark>> bookmarksConsumer;
-        private BookmarksSupplier bookmarksSupplier;
+        private Set<Bookmark> initialBookmarks = Collections.emptySet();
+        private Consumer<Set<Bookmark>> bookmarksConsumer;
+        private Supplier<Set<Bookmark>> bookmarksSupplier;
 
         private BookmarkManagerConfigBuilder() {}
 
         /**
          * Provide a map of initial bookmarks to initialise the bookmark manager.
          *
-         * @param databaseToBookmarks database to bookmarks map
+         * @param initialBookmarks initial set of bookmarks
          * @return this builder
          */
-        public BookmarkManagerConfigBuilder withInitialBookmarks(Map<String, Set<Bookmark>> databaseToBookmarks) {
-            Objects.requireNonNull(databaseToBookmarks, "databaseToBookmarks must not be null");
-            this.initialBookmarks = databaseToBookmarks;
+        public BookmarkManagerConfigBuilder withInitialBookmarks(Set<Bookmark> initialBookmarks) {
+            Objects.requireNonNull(initialBookmarks, "initialBookmarks must not be null");
+            this.initialBookmarks = initialBookmarks;
             return this;
         }
 
@@ -105,7 +105,7 @@ public final class BookmarkManagerConfig {
          * @param bookmarksConsumer bookmarks consumer
          * @return this builder
          */
-        public BookmarkManagerConfigBuilder withBookmarksConsumer(BiConsumer<String, Set<Bookmark>> bookmarksConsumer) {
+        public BookmarkManagerConfigBuilder withBookmarksConsumer(Consumer<Set<Bookmark>> bookmarksConsumer) {
             this.bookmarksConsumer = bookmarksConsumer;
             return this;
         }
@@ -113,14 +113,15 @@ public final class BookmarkManagerConfig {
         /**
          * Provide bookmarks supplier.
          * <p>
-         * The supplied bookmarks will be served alongside the bookmarks served by the bookmark manager. The supplied bookmarks will not be stored nor managed by the bookmark manager.
+         * The supplied bookmarks will be served alongside the bookmarks served by the bookmark manager. The supplied bookmarks will not be stored nor managed
+         * by the bookmark manager.
          * <p>
          * The supplier will be called outside bookmark manager's synchronisation lock.
          *
          * @param bookmarksSupplier the bookmarks supplier
          * @return this builder
          */
-        public BookmarkManagerConfigBuilder withBookmarksSupplier(BookmarksSupplier bookmarksSupplier) {
+        public BookmarkManagerConfigBuilder withBookmarksSupplier(Supplier<Set<Bookmark>> bookmarksSupplier) {
             this.bookmarksSupplier = bookmarksSupplier;
             return this;
         }

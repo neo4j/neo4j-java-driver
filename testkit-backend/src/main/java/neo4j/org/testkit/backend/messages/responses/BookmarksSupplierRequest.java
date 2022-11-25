@@ -41,6 +41,5 @@ public class BookmarksSupplierRequest implements TestkitCallback {
     public static class BookmarksSupplierRequestBody {
         private String id;
         private String bookmarkManagerId;
-        private String database;
     }
 }

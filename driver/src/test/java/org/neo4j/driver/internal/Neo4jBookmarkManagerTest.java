@@ -25,13 +25,11 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.BookmarksSupplier;
 
 class Neo4jBookmarkManagerTest {
     Neo4jBookmarkManager manager;
@@ -44,34 +42,26 @@ class Neo4jBookmarkManagerTest {
     @Test
     void shouldAddInitialBookmarks() {
         // GIVEN
-        var systemBookmarks = Set.of(Bookmark.from("SY:000001"));
-        var neo4jDatabase = "neo4j";
-        var neo4jBookmarks = Set.of(Bookmark.from("NE:000001"));
-        var initialBookmarks =
-                Map.of(DatabaseNameUtil.SYSTEM_DATABASE_NAME, systemBookmarks, neo4jDatabase, neo4jBookmarks);
+        var initialBookmarks = Set.of(Bookmark.from("SY:000001"));
         manager = new Neo4jBookmarkManager(initialBookmarks, null, null);
 
         // WHEN & THEN
-        assertEquals(
-                initialBookmarks.values().stream().flatMap(Set::stream).collect(Collectors.toSet()),
-                manager.getAllBookmarks());
-        assertEquals(systemBookmarks, manager.getBookmarks(DatabaseNameUtil.SYSTEM_DATABASE_NAME));
-        assertEquals(neo4jBookmarks, manager.getBookmarks(neo4jDatabase));
+        assertEquals(initialBookmarks, manager.getBookmarks());
     }
 
     @Test
     void shouldNotifyUpdateListener() {
         // GIVEN
         @SuppressWarnings("unchecked")
-        BiConsumer<String, Set<Bookmark>> updateListener = mock(BiConsumer.class);
-        manager = new Neo4jBookmarkManager(Collections.emptyMap(), updateListener, null);
+        Consumer<Set<Bookmark>> updateListener = mock(Consumer.class);
+        manager = new Neo4jBookmarkManager(Collections.emptySet(), updateListener, null);
         var bookmark = Bookmark.from("SY:000001");
 
         // WHEN
-        manager.updateBookmarks(DatabaseNameUtil.SYSTEM_DATABASE_NAME, Collections.emptySet(), Set.of(bookmark));
+        manager.updateBookmarks(Collections.emptySet(), Set.of(bookmark));
 
         // THEN
-        then(updateListener).should().accept(DatabaseNameUtil.SYSTEM_DATABASE_NAME, Set.of(bookmark));
+        then(updateListener).should().accept(Set.of(bookmark));
     }
 
     @Test
@@ -82,16 +72,14 @@ class Neo4jBookmarkManagerTest {
         var initialBookmark2 = Bookmark.from("SY:000003");
         var initialBookmark3 = Bookmark.from("SY:000004");
         var initialBookmark4 = Bookmark.from("SY:000005");
-        var initialBookmarks = Map.of(
-                DatabaseNameUtil.SYSTEM_DATABASE_NAME,
-                Set.of(initialBookmark0, initialBookmark1, initialBookmark2, initialBookmark3, initialBookmark4));
+        var initialBookmarks =
+                Set.of(initialBookmark0, initialBookmark1, initialBookmark2, initialBookmark3, initialBookmark4);
         manager = new Neo4jBookmarkManager(initialBookmarks, null, null);
         var newBookmark = Bookmark.from("SY:000007");
 
         // WHEN
-        manager.updateBookmarks(
-                DatabaseNameUtil.SYSTEM_DATABASE_NAME, Set.of(initialBookmark2, initialBookmark3), Set.of(newBookmark));
-        var bookmarks = manager.getBookmarks(DatabaseNameUtil.SYSTEM_DATABASE_NAME);
+        manager.updateBookmarks(Set.of(initialBookmark2, initialBookmark3), Set.of(newBookmark));
+        var bookmarks = manager.getBookmarks();
 
         // THEN
         assertEquals(Set.of(initialBookmark0, initialBookmark1, initialBookmark4, newBookmark), bookmarks);
@@ -101,36 +89,18 @@ class Neo4jBookmarkManagerTest {
     void shouldGetBookmarksFromBookmarkSupplier() {
         // GIVEN
         var initialBookmark = Bookmark.from("SY:000001");
-        var initialBookmarks = Map.of(DatabaseNameUtil.SYSTEM_DATABASE_NAME, Set.of(initialBookmark));
-        var bookmarkSupplier = mock(BookmarksSupplier.class);
+        var initialBookmarks = Set.of(initialBookmark);
+        @SuppressWarnings("unchecked")
+        Supplier<Set<Bookmark>> bookmarkSupplier = mock(Supplier.class);
         var supplierBookmark = Bookmark.from("SY:000002");
-        given(bookmarkSupplier.getBookmarks(DatabaseNameUtil.SYSTEM_DATABASE_NAME))
-                .willReturn(Set.of(supplierBookmark));
+        given(bookmarkSupplier.get()).willReturn(Set.of(supplierBookmark));
         manager = new Neo4jBookmarkManager(initialBookmarks, null, bookmarkSupplier);
 
         // WHEN
-        var bookmarks = manager.getBookmarks(DatabaseNameUtil.SYSTEM_DATABASE_NAME);
+        var bookmarks = manager.getBookmarks();
 
         // THEN
-        then(bookmarkSupplier).should().getBookmarks(DatabaseNameUtil.SYSTEM_DATABASE_NAME);
-        assertEquals(Set.of(initialBookmark, supplierBookmark), bookmarks);
-    }
-
-    @Test
-    void shouldGetAllBookmarksFromBookmarkSupplier() {
-        // GIVEN
-        var initialBookmark = Bookmark.from("SY:000001");
-        var initialBookmarks = Map.of(DatabaseNameUtil.SYSTEM_DATABASE_NAME, Set.of(initialBookmark));
-        var bookmarkSupplier = mock(BookmarksSupplier.class);
-        var supplierBookmark = Bookmark.from("SY:000002");
-        given(bookmarkSupplier.getAllBookmarks()).willReturn(Set.of(supplierBookmark));
-        manager = new Neo4jBookmarkManager(initialBookmarks, null, bookmarkSupplier);
-
-        // WHEN
-        var bookmarks = manager.getAllBookmarks();
-
-        // THEN
-        then(bookmarkSupplier).should().getAllBookmarks();
+        then(bookmarkSupplier).should().get();
         assertEquals(Set.of(initialBookmark, supplierBookmark), bookmarks);
     }
 }
