@@ -99,7 +99,7 @@ public class NetworkSession {
         this.bookmarkManager = bookmarkManager;
         this.lastReceivedBookmarks = bookmarks;
         this.connectionContext =
-                new NetworkSessionConnectionContext(databaseNameFuture, determineBookmarks(true), impersonatedUser);
+                new NetworkSessionConnectionContext(databaseNameFuture, determineBookmarks(false), impersonatedUser);
         this.fetchSize = fetchSize;
     }
 
@@ -144,7 +144,7 @@ public class NetworkSession {
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
                     UnmanagedTransaction tx = new UnmanagedTransaction(connection, this::handleNewBookmark, fetchSize);
-                    return tx.beginAsync(determineBookmarks(false), config, txType);
+                    return tx.beginAsync(determineBookmarks(true), config, txType);
                 });
 
         // update the reference to the only known transaction
@@ -239,7 +239,7 @@ public class NetworkSession {
                                 .runInAutoCommitTransaction(
                                         connection,
                                         query,
-                                        determineBookmarks(false),
+                                        determineBookmarks(true),
                                         this::handleNewBookmark,
                                         config,
                                         fetchSize);
@@ -346,9 +346,9 @@ public class NetworkSession {
         }
     }
 
-    private Set<Bookmark> determineBookmarks(boolean dontUpdateLastUsedBookmarks) {
+    private Set<Bookmark> determineBookmarks(boolean updateLastUsed) {
         var bookmarks = new HashSet<>(bookmarkManager.getBookmarks());
-        if (!dontUpdateLastUsedBookmarks) {
+        if (updateLastUsed) {
             lastUsedBookmarks = Collections.unmodifiableSet(bookmarks);
         }
         bookmarks.addAll(lastReceivedBookmarks);
