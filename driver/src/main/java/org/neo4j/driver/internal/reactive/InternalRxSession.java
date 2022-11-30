@@ -37,6 +37,7 @@ import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.reactive.RxTransactionWork;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public class InternalRxSession extends AbstractRxQueryRunner implements RxSession {
     private final NetworkSession session;
@@ -69,7 +70,8 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
                     return txFuture;
                 },
                 () -> new IllegalStateException(
-                        "Unexpected condition, begin transaction call has completed successfully with transaction being null"));
+                        "Unexpected condition, begin transaction call has completed successfully with transaction being null"),
+                (tx) -> Mono.fromDirect(tx.close()).subscribe());
     }
 
     private Publisher<InternalRxTransaction> beginTransaction(AccessMode mode, TransactionConfig config) {
@@ -86,7 +88,8 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
                     return txFuture;
                 },
                 () -> new IllegalStateException(
-                        "Unexpected condition, begin transaction call has completed successfully with transaction being null"));
+                        "Unexpected condition, begin transaction call has completed successfully with transaction being null"),
+                (tx) -> Mono.fromDirect(tx.close()).subscribe());
     }
 
     @Override
