@@ -18,8 +18,11 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.neo4j.driver.internal.util.Futures;
 import org.reactivestreams.Publisher;
@@ -28,6 +31,7 @@ import reactor.core.publisher.Mono;
 public class RxUtils {
     /**
      * The publisher created by this method will either succeed without publishing anything or fail with an error.
+     *
      * @param supplier supplies a {@link CompletionStage<Void>}.
      * @return A publisher that publishes nothing on completion or fails with an error.
      */
@@ -48,23 +52,79 @@ public class RxUtils {
      * @param supplier                    supplies a {@link CompletionStage<T>} that MUST produce a non-null result when completed successfully.
      * @param nullResultThrowableSupplier supplies a {@link Throwable} that is used as an error when the supplied completion stage completes successfully with
      *                                    null.
+     * @param cancellationHandler handles cancellation, may be used to release associated resources
      * @param <T>                         the type of the item to publish.
      * @return A publisher that succeeds exactly one item or fails with an error.
      */
     public static <T> Publisher<T> createSingleItemPublisher(
-            Supplier<CompletionStage<T>> supplier, Supplier<Throwable> nullResultThrowableSupplier) {
-        return Mono.create(sink -> supplier.get().whenComplete((item, completionError) -> {
-            if (completionError == null) {
-                if (item != null) {
-                    sink.success(item);
-                } else {
-                    sink.error(nullResultThrowableSupplier.get());
+            Supplier<CompletionStage<T>> supplier,
+            Supplier<Throwable> nullResultThrowableSupplier,
+            Consumer<T> cancellationHandler) {
+        requireNonNull(supplier, "supplier must not be null");
+        requireNonNull(nullResultThrowableSupplier, "nullResultThrowableSupplier must not be null");
+        requireNonNull(cancellationHandler, "cancellationHandler must not be null");
+        return Mono.create(sink -> {
+            var state = new SinkState<T>();
+            sink.onRequest(ignored -> {
+                CompletionStage<T> stage;
+                synchronized (state) {
+                    if (state.isCancelled()) {
+                        return;
+                    }
+                    if (state.getStage() != null) {
+                        return;
+                    }
+                    stage = supplier.get();
+                    state.setStage(stage);
                 }
-            } else {
-                Throwable error = Optional.ofNullable(Futures.completionExceptionCause(completionError))
-                        .orElse(completionError);
-                sink.error(error);
-            }
-        }));
+                stage.whenComplete((item, completionError) -> {
+                    if (completionError == null) {
+                        if (item != null) {
+                            sink.success(item);
+                        } else {
+                            sink.error(nullResultThrowableSupplier.get());
+                        }
+                    } else {
+                        Throwable error = Optional.ofNullable(Futures.completionExceptionCause(completionError))
+                                .orElse(completionError);
+                        sink.error(error);
+                    }
+                });
+            });
+            sink.onCancel(() -> {
+                CompletionStage<T> stage;
+                synchronized (state) {
+                    if (state.isCancelled()) {
+                        return;
+                    }
+                    state.setCancelled(true);
+                    stage = state.getStage();
+                }
+                if (stage != null) {
+                    stage.whenComplete((value, ignored) -> cancellationHandler.accept(value));
+                }
+            });
+        });
+    }
+
+    private static class SinkState<T> {
+        private CompletionStage<T> stage;
+        private boolean cancelled;
+
+        public CompletionStage<T> getStage() {
+            return stage;
+        }
+
+        public void setStage(CompletionStage<T> stage) {
+            this.stage = stage;
+        }
+
+        public boolean isCancelled() {
+            return cancelled;
+        }
+
+        public void setCancelled(boolean cancelled) {
+            this.cancelled = cancelled;
+        }
     }
 }

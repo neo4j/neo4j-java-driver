@@ -18,16 +18,22 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
 import static org.neo4j.driver.internal.reactive.RxUtils.createSingleItemPublisher;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.util.Futures;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscription;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.test.StepVerifier;
 
 class RxUtilsTest {
@@ -47,15 +53,16 @@ class RxUtilsTest {
 
     @Test
     void singleItemPublisherShouldCompleteWithValue() {
-        Publisher<String> publisher =
-                createSingleItemPublisher(() -> CompletableFuture.completedFuture("One"), () -> mock(Throwable.class));
+        Publisher<String> publisher = createSingleItemPublisher(
+                () -> CompletableFuture.completedFuture("One"), () -> mock(Throwable.class), (ignored) -> {});
         StepVerifier.create(publisher).expectNext("One").verifyComplete();
     }
 
     @Test
     void singleItemPublisherShouldErrorWhenFutureCompletesWithNull() {
         Throwable error = mock(Throwable.class);
-        Publisher<String> publisher = createSingleItemPublisher(Futures::completedWithNull, () -> error);
+        Publisher<String> publisher =
+                createSingleItemPublisher(Futures::completedWithNull, () -> error, (ignored) -> {});
 
         StepVerifier.create(publisher).verifyErrorMatches(actualError -> error == actualError);
     }
@@ -63,8 +70,41 @@ class RxUtilsTest {
     @Test
     void singleItemPublisherShouldErrorWhenSupplierErrors() {
         RuntimeException error = mock(RuntimeException.class);
-        Publisher<String> publisher = createSingleItemPublisher(() -> failedFuture(error), () -> mock(Throwable.class));
+        Publisher<String> publisher =
+                createSingleItemPublisher(() -> failedFuture(error), () -> mock(Throwable.class), (ignored) -> {});
 
         StepVerifier.create(publisher).verifyErrorMatches(actualError -> error == actualError);
+    }
+
+    @Test
+    void singleItemPublisherShouldHandleCancellationAfterRequestProcessingBegins() {
+        // GIVEN
+        var value = "value";
+        var valueFuture = new CompletableFuture<String>();
+        var supplierInvokedFuture = new CompletableFuture<Void>();
+        Supplier<CompletionStage<String>> valueFutureSupplier = () -> {
+            supplierInvokedFuture.complete(null);
+            return valueFuture;
+        };
+        @SuppressWarnings("unchecked")
+        Consumer<String> cancellationHandler = mock(Consumer.class);
+        var publisher =
+                createSingleItemPublisher(valueFutureSupplier, () -> mock(Throwable.class), cancellationHandler);
+
+        // WHEN
+        publisher.subscribe(new BaseSubscriber<>() {
+            @Override
+            protected void hookOnSubscribe(Subscription subscription) {
+                subscription.request(1);
+                supplierInvokedFuture.thenAccept(ignored -> {
+                    subscription.cancel();
+                    valueFuture.complete(value);
+                });
+            }
+        });
+
+        // THEN
+        valueFuture.join();
+        then(cancellationHandler).should().accept(value);
     }
 }

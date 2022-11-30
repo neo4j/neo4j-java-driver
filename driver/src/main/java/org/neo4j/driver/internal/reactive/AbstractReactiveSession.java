@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.util.Futures;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public abstract class AbstractReactiveSession<S> {
     protected final NetworkSession session;
@@ -67,10 +68,11 @@ public abstract class AbstractReactiveSession<S> {
                     return txFuture;
                 },
                 () -> new IllegalStateException(
-                        "Unexpected condition, begin transaction call has completed successfully with transaction being null"));
+                        "Unexpected condition, begin transaction call has completed successfully with transaction being null"),
+                tx -> Mono.fromDirect(closeTransaction(tx, false)).subscribe());
     }
 
-    Publisher<S> beginTransaction(AccessMode mode, TransactionConfig config) {
+    private Publisher<S> beginTransaction(AccessMode mode, TransactionConfig config) {
         return createSingleItemPublisher(
                 () -> {
                     CompletableFuture<S> txFuture = new CompletableFuture<>();
@@ -84,7 +86,8 @@ public abstract class AbstractReactiveSession<S> {
                     return txFuture;
                 },
                 () -> new IllegalStateException(
-                        "Unexpected condition, begin transaction call has completed successfully with transaction being null"));
+                        "Unexpected condition, begin transaction call has completed successfully with transaction being null"),
+                tx -> Mono.fromDirect(closeTransaction(tx, false)).subscribe());
     }
 
     protected <T> Publisher<T> runTransaction(
