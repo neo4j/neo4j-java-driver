@@ -22,6 +22,6 @@ Apache Software License, Version 2.0
   Non-Blocking Reactive Foundation for the JVM
   RxJava
 
-Creative Commons 0
+MIT No Attribution License
   reactive-streams
 
