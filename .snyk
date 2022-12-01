@@ -1,7 +1,0 @@
-# Snyk (https://snyk.io) policy file
-exclude:
- code:
-  - testkit/**
-  - testkit-backend/**
-  - testkit-tests/**
-  - */src/test/**
