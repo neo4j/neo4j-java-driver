@@ -32,11 +32,13 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.InternalDriver;
+import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -147,6 +149,7 @@ class GraphDatabaseTest {
                 RoutingSettings routingSettings,
                 RetryLogic retryLogic,
                 MetricsProvider metricsProvider,
+                Supplier<Rediscovery> rediscoverySupplier,
                 Config config) {
             return driverIterator.next();
         }

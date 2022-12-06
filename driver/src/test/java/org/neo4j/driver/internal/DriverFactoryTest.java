@@ -41,6 +41,7 @@ import static org.neo4j.driver.internal.util.Matchers.directDriver;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutorGroup;
 import java.net.URI;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,6 +56,7 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
+import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
@@ -239,6 +241,7 @@ class DriverFactoryTest {
                 RoutingSettings routingSettings,
                 RetryLogic retryLogic,
                 MetricsProvider metricsProvider,
+                Supplier<Rediscovery> rediscoverySupplier,
                 Config config) {
             throw new UnsupportedOperationException("Can't create routing driver");
         }
@@ -276,7 +279,8 @@ class DriverFactoryTest {
                 ConnectionPool connectionPool,
                 EventExecutorGroup eventExecutorGroup,
                 Config config,
-                RoutingSettings routingSettings) {
+                RoutingSettings routingSettings,
+                Supplier<Rediscovery> rediscoverySupplier) {
             return null;
         }
 

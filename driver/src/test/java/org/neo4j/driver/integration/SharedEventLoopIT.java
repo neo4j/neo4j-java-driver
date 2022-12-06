@@ -89,7 +89,8 @@ class SharedEventLoopIT {
                 RetrySettings.DEFAULT,
                 Config.defaultConfig(),
                 eventLoopGroup,
-                SecurityPlanImpl.insecure());
+                SecurityPlanImpl.insecure(),
+                null);
     }
 
     private void testConnection(Driver driver) {
