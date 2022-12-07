@@ -21,6 +21,7 @@ package neo4j.org.testkit.backend.messages.requests;
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -36,6 +37,7 @@ import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.RetryableDone;
 import neo4j.org.testkit.backend.messages.responses.RetryableTry;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -50,7 +52,7 @@ import reactor.core.publisher.Mono;
 
 @Setter
 @Getter
-public class SessionWriteTransaction implements TestkitRequest {
+public class SessionWriteTransaction extends WithTxConfig {
     private SessionWriteTransactionBody data;
 
     @Override
@@ -58,7 +60,7 @@ public class SessionWriteTransaction implements TestkitRequest {
     public TestkitResponse process(TestkitState testkitState) {
         SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         Session session = sessionHolder.getSession();
-        session.writeTransaction(handle(testkitState, sessionHolder));
+        session.writeTransaction(handle(testkitState, sessionHolder), getTxConfig());
         return retryableDone();
     }
 
@@ -79,7 +81,7 @@ public class SessionWriteTransaction implements TestkitRequest {
                         return tryResult;
                     };
 
-                    return session.writeTransactionAsync(workWrapper);
+                    return session.writeTransactionAsync(workWrapper, getTxConfig());
                 })
                 .thenApply(nothing -> retryableDone());
     }
@@ -98,7 +100,7 @@ public class SessionWriteTransaction implements TestkitRequest {
                         return Mono.fromCompletionStage(tryResult);
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().writeTransaction(workWrapper));
+                    return Mono.fromDirect(sessionHolder.getSession().writeTransaction(workWrapper, getTxConfig()));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -118,7 +120,7 @@ public class SessionWriteTransaction implements TestkitRequest {
                     };
 
                     return Mono.fromDirect(
-                            flowPublisherToFlux(sessionHolder.getSession().executeWrite(workWrapper)));
+                            flowPublisherToFlux(sessionHolder.getSession().executeWrite(workWrapper, getTxConfig())));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -138,7 +140,7 @@ public class SessionWriteTransaction implements TestkitRequest {
                         return Mono.fromCompletionStage(tryResult);
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().executeWrite(workWrapper));
+                    return Mono.fromDirect(sessionHolder.getSession().executeWrite(workWrapper, getTxConfig()));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -178,9 +180,18 @@ public class SessionWriteTransaction implements TestkitRequest {
 
     @Setter
     @Getter
-    public static class SessionWriteTransactionBody {
+    public static class SessionWriteTransactionBody implements ITxConfigBody {
         private String sessionId;
-        private Map<String, String> txMeta;
-        private String timeout;
+
+        @JsonDeserialize(using = TestkitCypherParamDeserializer.class)
+        private Map<String, Object> txMeta;
+
+        private Integer timeout;
+        private Boolean timeoutPresent = false;
+
+        public void setTimeout(Integer timeout) {
+            this.timeout = timeout;
+            timeoutPresent = true;
+        }
     }
 }

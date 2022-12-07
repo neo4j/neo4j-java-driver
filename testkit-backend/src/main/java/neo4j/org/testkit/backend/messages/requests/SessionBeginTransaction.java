@@ -20,13 +20,11 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 
-import java.time.Duration;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
-import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
@@ -34,6 +32,7 @@ import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
 import org.neo4j.driver.Session;
@@ -45,33 +44,15 @@ import reactor.core.publisher.Mono;
 
 @Setter
 @Getter
-public class SessionBeginTransaction implements TestkitRequest {
+public class SessionBeginTransaction extends WithTxConfig {
     private SessionBeginTransactionBody data;
-
-    private void configureTimeout(TransactionConfig.Builder builder) {
-        if (data.getTimeoutPresent()) {
-            try {
-                if (data.getTimeout() != null) {
-                    builder.withTimeout(Duration.ofMillis(data.getTimeout()));
-                } else {
-                    builder.withDefaultTimeout();
-                }
-            } catch (IllegalArgumentException e) {
-                throw new CustomDriverError(e);
-            }
-        }
-    }
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         Session session = sessionHolder.getSession();
-        TransactionConfig.Builder builder = TransactionConfig.builder();
-        Optional.ofNullable(data.txMeta).ifPresent(builder::withMetadata);
 
-        configureTimeout(builder);
-
-        org.neo4j.driver.Transaction transaction = session.beginTransaction(builder.build());
+        org.neo4j.driver.Transaction transaction = session.beginTransaction(getTxConfig());
         return transaction(testkitState.addTransactionHolder(new TransactionHolder(sessionHolder, transaction)));
     }
 
@@ -80,11 +61,8 @@ public class SessionBeginTransaction implements TestkitRequest {
         return testkitState.getAsyncSessionHolder(data.getSessionId()).thenCompose(sessionHolder -> {
             AsyncSession session = sessionHolder.getSession();
             TransactionConfig.Builder builder = TransactionConfig.builder();
-            Optional.ofNullable(data.txMeta).ifPresent(builder::withMetadata);
 
-            configureTimeout(builder);
-
-            return session.beginTransactionAsync(builder.build())
+            return session.beginTransactionAsync(getTxConfig())
                     .thenApply(tx -> transaction(
                             testkitState.addAsyncTransactionHolder(new AsyncTransactionHolder(sessionHolder, tx))));
         });
@@ -96,11 +74,8 @@ public class SessionBeginTransaction implements TestkitRequest {
         return testkitState.getRxSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
             RxSession session = sessionHolder.getSession();
             TransactionConfig.Builder builder = TransactionConfig.builder();
-            Optional.ofNullable(data.txMeta).ifPresent(builder::withMetadata);
 
-            configureTimeout(builder);
-
-            return Mono.fromDirect(session.beginTransaction(builder.build()))
+            return Mono.fromDirect(session.beginTransaction(getTxConfig()))
                     .map(tx -> transaction(
                             testkitState.addRxTransactionHolder(new RxTransactionHolder(sessionHolder, tx))));
         });
@@ -111,11 +86,8 @@ public class SessionBeginTransaction implements TestkitRequest {
         return testkitState.getReactiveSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
             ReactiveSession session = sessionHolder.getSession();
             TransactionConfig.Builder builder = TransactionConfig.builder();
-            Optional.ofNullable(data.txMeta).ifPresent(builder::withMetadata);
 
-            configureTimeout(builder);
-
-            return Mono.fromDirect(flowPublisherToFlux(session.beginTransaction(builder.build())))
+            return Mono.fromDirect(flowPublisherToFlux(session.beginTransaction(getTxConfig())))
                     .map(tx -> transaction(testkitState.addReactiveTransactionHolder(
                             new ReactiveTransactionHolder(sessionHolder, tx))));
         });
@@ -126,11 +98,8 @@ public class SessionBeginTransaction implements TestkitRequest {
         return testkitState.getReactiveSessionStreamsHolder(data.getSessionId()).flatMap(sessionHolder -> {
             var session = sessionHolder.getSession();
             TransactionConfig.Builder builder = TransactionConfig.builder();
-            Optional.ofNullable(data.txMeta).ifPresent(builder::withMetadata);
 
-            configureTimeout(builder);
-
-            return Mono.fromDirect(session.beginTransaction(builder.build()))
+            return Mono.fromDirect(session.beginTransaction(getTxConfig()))
                     .map(tx -> transaction(testkitState.addReactiveTransactionStreamsHolder(
                             new ReactiveTransactionStreamsHolder(sessionHolder, tx))));
         });
@@ -144,9 +113,12 @@ public class SessionBeginTransaction implements TestkitRequest {
 
     @Getter
     @Setter
-    public static class SessionBeginTransactionBody {
+    public static class SessionBeginTransactionBody implements WithTxConfig.ITxConfigBody {
         private String sessionId;
+
+        @JsonDeserialize(using = TestkitCypherParamDeserializer.class)
         private Map<String, Object> txMeta;
+
         private Integer timeout;
         private Boolean timeoutPresent = false;
 

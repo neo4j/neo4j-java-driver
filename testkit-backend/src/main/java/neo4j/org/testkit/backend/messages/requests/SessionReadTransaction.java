@@ -21,6 +21,8 @@ package neo4j.org.testkit.backend.messages.requests;
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -35,6 +37,7 @@ import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.RetryableDone;
 import neo4j.org.testkit.backend.messages.responses.RetryableTry;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -49,7 +52,7 @@ import reactor.core.publisher.Mono;
 
 @Setter
 @Getter
-public class SessionReadTransaction implements TestkitRequest {
+public class SessionReadTransaction extends WithTxConfig {
     private SessionReadTransactionBody data;
 
     @Override
@@ -57,7 +60,7 @@ public class SessionReadTransaction implements TestkitRequest {
     public TestkitResponse process(TestkitState testkitState) {
         SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         Session session = sessionHolder.getSession();
-        session.readTransaction(handle(testkitState, sessionHolder));
+        session.readTransaction(handle(testkitState, sessionHolder), getTxConfig());
         return retryableDone();
     }
 
@@ -78,7 +81,7 @@ public class SessionReadTransaction implements TestkitRequest {
                         return txWorkFuture;
                     };
 
-                    return session.readTransactionAsync(workWrapper);
+                    return session.readTransactionAsync(workWrapper, getTxConfig());
                 })
                 .thenApply(nothing -> retryableDone());
     }
@@ -97,7 +100,7 @@ public class SessionReadTransaction implements TestkitRequest {
                         return Mono.fromCompletionStage(tryResult);
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().readTransaction(workWrapper));
+                    return Mono.fromDirect(sessionHolder.getSession().readTransaction(workWrapper, getTxConfig()));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -117,7 +120,7 @@ public class SessionReadTransaction implements TestkitRequest {
                     };
 
                     return Mono.fromDirect(
-                            flowPublisherToFlux(sessionHolder.getSession().executeRead(workWrapper)));
+                            flowPublisherToFlux(sessionHolder.getSession().executeRead(workWrapper, getTxConfig())));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -137,7 +140,7 @@ public class SessionReadTransaction implements TestkitRequest {
                         return Mono.fromCompletionStage(tryResult);
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().executeRead(workWrapper));
+                    return Mono.fromDirect(sessionHolder.getSession().executeRead(workWrapper, getTxConfig()));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -177,7 +180,18 @@ public class SessionReadTransaction implements TestkitRequest {
 
     @Setter
     @Getter
-    public static class SessionReadTransactionBody {
+    public static class SessionReadTransactionBody implements WithTxConfig.ITxConfigBody {
         private String sessionId;
+
+        @JsonDeserialize(using = TestkitCypherParamDeserializer.class)
+        private Map<String, Object> txMeta;
+
+        private Integer timeout;
+        private Boolean timeoutPresent = false;
+
+        public void setTimeout(Integer timeout) {
+            this.timeout = timeout;
+            timeoutPresent = true;
+        }
     }
 }
