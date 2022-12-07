@@ -218,6 +218,43 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.moditect</groupId>
+        <artifactId>moditect-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-module-infos</id>
+            <phase>package</phase>
+            <goals>
+              <goal>add-module-info</goal>
+            </goals>
+            <configuration>
+              <overwriteExistingFiles>true</overwriteExistingFiles>
+              <module>
+                <moduleInfoSource><![CDATA[
+                  module org.neo4j.driver {
+                    exports org.neo4j.driver;
+                    exports org.neo4j.driver.async;
+                    exports org.neo4j.driver.reactive;
+                    exports org.neo4j.driver.reactivestreams;
+                    exports org.neo4j.driver.types;
+                    exports org.neo4j.driver.summary;
+                    exports org.neo4j.driver.net;
+                    exports org.neo4j.driver.util;
+                    exports org.neo4j.driver.exceptions;
+
+                    requires transitive java.logging;
+                    requires transitive org.reactivestreams;
+                    requires static micrometer.core;
+                    requires static org.graalvm.nativeimage.builder;
+                    requires static org.slf4j;
+                  }
+                ]]></moduleInfoSource>
+              </module>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
