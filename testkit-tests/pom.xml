@@ -30,7 +30,7 @@
         <!-- Debug logging for backend messages. Empty string - off, Non-empty string - on. -->
         <testkit.debug.reqres></testkit.debug.reqres>
 
-        <docker-maven-plugin.version>0.36.1</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
         <docker.showLogs>true</docker.showLogs>
     </properties>
 
