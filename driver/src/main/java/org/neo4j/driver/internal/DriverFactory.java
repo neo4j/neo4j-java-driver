@@ -27,6 +27,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.net.URI;
+import java.util.Objects;
+import java.util.function.Supplier;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
@@ -39,11 +41,13 @@ import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
+import org.neo4j.driver.internal.cluster.Rediscovery;
+import org.neo4j.driver.internal.cluster.RediscoveryImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
+import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
-import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
 import org.neo4j.driver.internal.logging.NettyLogging;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
@@ -70,7 +74,7 @@ public class DriverFactory {
             RetrySettings retrySettings,
             Config config,
             SecurityPlan securityPlan) {
-        return newInstance(uri, authToken, routingSettings, retrySettings, config, null, securityPlan);
+        return newInstance(uri, authToken, routingSettings, retrySettings, config, null, securityPlan, null);
     }
 
     public final Driver newInstance(
@@ -80,7 +84,8 @@ public class DriverFactory {
             RetrySettings retrySettings,
             Config config,
             EventLoopGroup eventLoopGroup,
-            SecurityPlan securityPlan) {
+            SecurityPlan securityPlan,
+            Supplier<Rediscovery> rediscoverySupplier) {
         Bootstrap bootstrap;
         boolean ownsEventLoopGroup;
         if (eventLoopGroup == null) {
@@ -119,6 +124,7 @@ public class DriverFactory {
                 newRoutingSettings,
                 retryLogic,
                 metricsProvider,
+                rediscoverySupplier,
                 config);
     }
 
@@ -185,6 +191,7 @@ public class DriverFactory {
             RoutingSettings routingSettings,
             RetryLogic retryLogic,
             MetricsProvider metricsProvider,
+            Supplier<Rediscovery> rediscoverySupplier,
             Config config) {
         try {
             String scheme = uri.getScheme().toLowerCase();
@@ -198,6 +205,7 @@ public class DriverFactory {
                         routingSettings,
                         retryLogic,
                         metricsProvider,
+                        rediscoverySupplier,
                         config);
             } else {
                 assertNoRoutingContext(uri, routingSettings);
@@ -243,9 +251,10 @@ public class DriverFactory {
             RoutingSettings routingSettings,
             RetryLogic retryLogic,
             MetricsProvider metricsProvider,
+            Supplier<Rediscovery> rediscoverySupplier,
             Config config) {
-        ConnectionProvider connectionProvider =
-                createLoadBalancer(address, connectionPool, eventExecutorGroup, config, routingSettings);
+        ConnectionProvider connectionProvider = createLoadBalancer(
+                address, connectionPool, eventExecutorGroup, config, routingSettings, rediscoverySupplier);
         SessionFactory sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
         InternalDriver driver = createDriver(securityPlan, sessionFactory, metricsProvider, config);
         Logger log = config.logging().getLog(getClass());
@@ -273,22 +282,39 @@ public class DriverFactory {
             ConnectionPool connectionPool,
             EventExecutorGroup eventExecutorGroup,
             Config config,
-            RoutingSettings routingSettings) {
-        LoadBalancingStrategy loadBalancingStrategy =
-                new LeastConnectedLoadBalancingStrategy(connectionPool, config.logging());
-        ServerAddressResolver resolver = createResolver(config);
-        LoadBalancer loadBalancer = new LoadBalancer(
-                address,
-                routingSettings,
+            RoutingSettings routingSettings,
+            Supplier<Rediscovery> rediscoverySupplier) {
+        var loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(connectionPool, config.logging());
+        var resolver = createResolver(config);
+        var domainNameResolver = Objects.requireNonNull(getDomainNameResolver(), "domainNameResolver must not be null");
+        var clock = createClock();
+        var logging = config.logging();
+        if (rediscoverySupplier == null) {
+            rediscoverySupplier =
+                    () -> createRediscovery(address, resolver, routingSettings, clock, logging, domainNameResolver);
+        }
+        var loadBalancer = new LoadBalancer(
                 connectionPool,
-                eventExecutorGroup,
-                createClock(),
-                config.logging(),
+                rediscoverySupplier.get(),
+                routingSettings,
                 loadBalancingStrategy,
-                resolver,
-                getDomainNameResolver());
+                eventExecutorGroup,
+                clock,
+                logging);
         handleNewLoadBalancer(loadBalancer);
         return loadBalancer;
+    }
+
+    protected Rediscovery createRediscovery(
+            BoltServerAddress initialRouter,
+            ServerAddressResolver resolver,
+            RoutingSettings settings,
+            Clock clock,
+            Logging logging,
+            DomainNameResolver domainNameResolver) {
+        var clusterCompositionProvider =
+                new RoutingProcedureClusterCompositionProvider(clock, settings.routingContext());
+        return new RediscoveryImpl(initialRouter, clusterCompositionProvider, resolver, logging, domainNameResolver);
     }
 
     /**
@@ -307,8 +333,6 @@ public class DriverFactory {
 
     /**
      * Creates new {@link Clock}.
-     * <p>
-     * <b>This method is protected only for testing</b>
      */
     protected Clock createClock() {
         return Clock.SYSTEM;

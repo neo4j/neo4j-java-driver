@@ -51,7 +51,8 @@ class CustomSecurityPlanTest {
                 RetrySettings.DEFAULT,
                 Config.defaultConfig(),
                 null,
-                securityPlan);
+                securityPlan,
+                null);
 
         assertFalse(driverFactory.capturedSecurityPlans.isEmpty());
         assertTrue(driverFactory.capturedSecurityPlans.stream().allMatch(capturePlan -> capturePlan == securityPlan));

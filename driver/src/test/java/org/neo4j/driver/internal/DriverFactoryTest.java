@@ -24,9 +24,13 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -41,6 +45,7 @@ import static org.neo4j.driver.internal.util.Matchers.directDriver;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutorGroup;
 import java.net.URI;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,6 +60,8 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
+import org.neo4j.driver.internal.cluster.Rediscovery;
+import org.neo4j.driver.internal.cluster.RediscoveryImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
@@ -191,6 +198,61 @@ class DriverFactoryTest {
         }
     }
 
+    @Test
+    void shouldUseBuiltInRediscoveryByDefault() {
+        // GIVEN
+        var driverFactory = new DriverFactory();
+        var securityPlan =
+                new SecuritySettings.SecuritySettingsBuilder().build().createSecurityPlan("neo4j");
+
+        // WHEN
+        var driver = driverFactory.newInstance(
+                URI.create("neo4j://localhost:7687"),
+                AuthTokens.none(),
+                RoutingSettings.DEFAULT,
+                RetrySettings.DEFAULT,
+                Config.defaultConfig(),
+                null,
+                securityPlan,
+                null);
+
+        // THEN
+        var sessionFactory = ((InternalDriver) driver).getSessionFactory();
+        var connectionProvider = ((SessionFactoryImpl) sessionFactory).getConnectionProvider();
+        var rediscovery = ((LoadBalancer) connectionProvider).getRediscovery();
+        assertTrue(rediscovery instanceof RediscoveryImpl);
+    }
+
+    @Test
+    void shouldUseSuppliedRediscovery() {
+        // GIVEN
+        var driverFactory = new DriverFactory();
+        var securityPlan =
+                new SecuritySettings.SecuritySettingsBuilder().build().createSecurityPlan("neo4j");
+        @SuppressWarnings("unchecked")
+        Supplier<Rediscovery> rediscoverySupplier = mock(Supplier.class);
+        var rediscovery = mock(Rediscovery.class);
+        given(rediscoverySupplier.get()).willReturn(rediscovery);
+
+        // WHEN
+        var driver = driverFactory.newInstance(
+                URI.create("neo4j://localhost:7687"),
+                AuthTokens.none(),
+                RoutingSettings.DEFAULT,
+                RetrySettings.DEFAULT,
+                Config.defaultConfig(),
+                null,
+                securityPlan,
+                rediscoverySupplier);
+
+        // THEN
+        var sessionFactory = ((InternalDriver) driver).getSessionFactory();
+        var connectionProvider = ((SessionFactoryImpl) sessionFactory).getConnectionProvider();
+        var actualRediscovery = ((LoadBalancer) connectionProvider).getRediscovery();
+        then(rediscoverySupplier).should().get();
+        assertEquals(rediscovery, actualRediscovery);
+    }
+
     private Driver createDriver(String uri, DriverFactory driverFactory) {
         return createDriver(uri, driverFactory, defaultConfig());
     }
@@ -239,6 +301,7 @@ class DriverFactoryTest {
                 RoutingSettings routingSettings,
                 RetryLogic retryLogic,
                 MetricsProvider metricsProvider,
+                Supplier<Rediscovery> rediscoverySupplier,
                 Config config) {
             throw new UnsupportedOperationException("Can't create routing driver");
         }
@@ -276,7 +339,8 @@ class DriverFactoryTest {
                 ConnectionPool connectionPool,
                 EventExecutorGroup eventExecutorGroup,
                 Config config,
-                RoutingSettings routingSettings) {
+                RoutingSettings routingSettings,
+                Supplier<Rediscovery> rediscoverySupplier) {
             return null;
         }
 

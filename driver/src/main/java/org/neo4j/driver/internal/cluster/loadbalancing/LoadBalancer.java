@@ -40,13 +40,9 @@ import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.RoutingConnection;
-import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.Rediscovery;
-import org.neo4j.driver.internal.cluster.RediscoveryImpl;
-import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
@@ -56,7 +52,6 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.net.ServerAddressResolver;
 
 public class LoadBalancer implements ConnectionProvider {
     private static final String CONNECTION_ACQUISITION_COMPLETION_FAILURE_MESSAGE =
@@ -73,27 +68,6 @@ public class LoadBalancer implements ConnectionProvider {
     private final Rediscovery rediscovery;
 
     public LoadBalancer(
-            BoltServerAddress initialRouter,
-            RoutingSettings settings,
-            ConnectionPool connectionPool,
-            EventExecutorGroup eventExecutorGroup,
-            Clock clock,
-            Logging logging,
-            LoadBalancingStrategy loadBalancingStrategy,
-            ServerAddressResolver resolver,
-            DomainNameResolver domainNameResolver) {
-        this(
-                connectionPool,
-                createRediscovery(
-                        initialRouter, resolver, settings, clock, logging, requireNonNull(domainNameResolver)),
-                settings,
-                loadBalancingStrategy,
-                eventExecutorGroup,
-                clock,
-                logging);
-    }
-
-    private LoadBalancer(
             ConnectionPool connectionPool,
             Rediscovery rediscovery,
             RoutingSettings settings,
@@ -117,6 +91,7 @@ public class LoadBalancer implements ConnectionProvider {
             LoadBalancingStrategy loadBalancingStrategy,
             EventExecutorGroup eventExecutorGroup,
             Logging logging) {
+        requireNonNull(rediscovery, "rediscovery must not be null");
         this.connectionPool = connectionPool;
         this.routingTables = routingTables;
         this.rediscovery = rediscovery;
@@ -281,19 +256,14 @@ public class LoadBalancer implements ConnectionProvider {
                 connectionPool, rediscovery, clock, logging, settings.routingTablePurgeDelayMs());
     }
 
-    private static Rediscovery createRediscovery(
-            BoltServerAddress initialRouter,
-            ServerAddressResolver resolver,
-            RoutingSettings settings,
-            Clock clock,
-            Logging logging,
-            DomainNameResolver domainNameResolver) {
-        ClusterCompositionProvider clusterCompositionProvider =
-                new RoutingProcedureClusterCompositionProvider(clock, settings.routingContext());
-        return new RediscoveryImpl(initialRouter, clusterCompositionProvider, resolver, logging, domainNameResolver);
-    }
-
     private static RuntimeException unknownMode(AccessMode mode) {
         return new IllegalArgumentException("Mode '" + mode + "' is not supported");
+    }
+
+    /**
+     * <b>This method is only for testing</b>
+     */
+    public Rediscovery getRediscovery() {
+        return rediscovery;
     }
 }
