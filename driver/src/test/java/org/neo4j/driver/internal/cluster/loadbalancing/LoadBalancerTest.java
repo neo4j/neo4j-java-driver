@@ -406,6 +406,24 @@ class LoadBalancerTest {
         }
     }
 
+    @Test
+    void shouldNotAcceptNullRediscovery() {
+        // GIVEN
+        var connectionPool = mock(ConnectionPool.class);
+        var routingTables = mock(RoutingTableRegistry.class);
+
+        // WHEN & THEN
+        assertThrows(
+                NullPointerException.class,
+                () -> new LoadBalancer(
+                        connectionPool,
+                        routingTables,
+                        null,
+                        new LeastConnectedLoadBalancingStrategy(connectionPool, DEV_NULL_LOGGING),
+                        GlobalEventExecutor.INSTANCE,
+                        DEV_NULL_LOGGING));
+    }
+
     private static ConnectionPool newConnectionPoolMock() {
         return newConnectionPoolMockWithFailures(emptySet());
     }

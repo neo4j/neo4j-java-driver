@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
 import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
@@ -90,6 +91,7 @@ public class LoadBalancer implements ConnectionProvider {
             LoadBalancingStrategy loadBalancingStrategy,
             EventExecutorGroup eventExecutorGroup,
             Logging logging) {
+        requireNonNull(rediscovery, "rediscovery must not be null");
         this.connectionPool = connectionPool;
         this.routingTables = routingTables;
         this.rediscovery = rediscovery;

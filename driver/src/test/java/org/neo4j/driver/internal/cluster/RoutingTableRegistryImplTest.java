@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -64,7 +65,7 @@ import org.neo4j.driver.internal.util.Clock;
 
 class RoutingTableRegistryImplTest {
     @Test
-    void factoryShouldCreateARoutingTableWithSameDatabaseName() throws Throwable {
+    void factoryShouldCreateARoutingTableWithSameDatabaseName() {
         Clock clock = Clock.SYSTEM;
         RoutingTableHandlerFactory factory = new RoutingTableHandlerFactory(
                 mock(ConnectionPool.class),
@@ -88,7 +89,7 @@ class RoutingTableRegistryImplTest {
 
     @ParameterizedTest
     @ValueSource(strings = {SYSTEM_DATABASE_NAME, "", "database", " molly "})
-    void shouldCreateRoutingTableHandlerIfAbsentWhenFreshRoutingTable(String databaseName) throws Throwable {
+    void shouldCreateRoutingTableHandlerIfAbsentWhenFreshRoutingTable(String databaseName) {
         // Given
         ConcurrentMap<DatabaseName, RoutingTableHandler> map = new ConcurrentHashMap<>();
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
@@ -106,7 +107,7 @@ class RoutingTableRegistryImplTest {
 
     @ParameterizedTest
     @ValueSource(strings = {SYSTEM_DATABASE_NAME, "", "database", " molly "})
-    void shouldReturnExistingRoutingTableHandlerWhenFreshRoutingTable(String databaseName) throws Throwable {
+    void shouldReturnExistingRoutingTableHandlerWhenFreshRoutingTable(String databaseName) {
         // Given
         ConcurrentMap<DatabaseName, RoutingTableHandler> map = new ConcurrentHashMap<>();
         RoutingTableHandler handler = mockedRoutingTableHandler();
@@ -129,13 +130,13 @@ class RoutingTableRegistryImplTest {
 
     @ParameterizedTest
     @EnumSource(AccessMode.class)
-    void shouldReturnFreshRoutingTable(AccessMode mode) throws Throwable {
+    void shouldReturnFreshRoutingTable(AccessMode mode) {
         // Given
         ConcurrentMap<DatabaseName, RoutingTableHandler> map = new ConcurrentHashMap<>();
         RoutingTableHandler handler = mockedRoutingTableHandler();
         RoutingTableHandlerFactory factory = mockedHandlerFactory(handler);
         RoutingTableRegistryImpl routingTables =
-                new RoutingTableRegistryImpl(map, factory, null, null, null, DEV_NULL_LOGGING);
+                new RoutingTableRegistryImpl(map, factory, null, null, mock(Rediscovery.class), DEV_NULL_LOGGING);
 
         ImmutableConnectionContext context =
                 new ImmutableConnectionContext(defaultDatabase(), Collections.emptySet(), mode);
@@ -147,7 +148,7 @@ class RoutingTableRegistryImplTest {
     }
 
     @Test
-    void shouldReturnServersInAllRoutingTables() throws Throwable {
+    void shouldReturnServersInAllRoutingTables() {
         // Given
         ConcurrentMap<DatabaseName, RoutingTableHandler> map = new ConcurrentHashMap<>();
         map.put(database("Apple"), mockedRoutingTableHandler(A, B, C));
@@ -155,7 +156,7 @@ class RoutingTableRegistryImplTest {
         map.put(database("Orange"), mockedRoutingTableHandler(E, F, C));
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
         RoutingTableRegistryImpl routingTables =
-                new RoutingTableRegistryImpl(map, factory, null, null, null, DEV_NULL_LOGGING);
+                new RoutingTableRegistryImpl(map, factory, null, null, mock(Rediscovery.class), DEV_NULL_LOGGING);
 
         // When
         Set<BoltServerAddress> servers = routingTables.allServers();
@@ -165,7 +166,7 @@ class RoutingTableRegistryImplTest {
     }
 
     @Test
-    void shouldRemoveRoutingTableHandler() throws Throwable {
+    void shouldRemoveRoutingTableHandler() {
         // Given
         ConcurrentMap<DatabaseName, RoutingTableHandler> map = new ConcurrentHashMap<>();
         map.put(database("Apple"), mockedRoutingTableHandler(A));
@@ -183,7 +184,7 @@ class RoutingTableRegistryImplTest {
     }
 
     @Test
-    void shouldRemoveStaleRoutingTableHandlers() throws Throwable {
+    void shouldRemoveStaleRoutingTableHandlers() {
         ConcurrentMap<DatabaseName, RoutingTableHandler> map = new ConcurrentHashMap<>();
         map.put(database("Apple"), mockedRoutingTableHandler(A));
         map.put(database("Banana"), mockedRoutingTableHandler(B));
@@ -198,6 +199,20 @@ class RoutingTableRegistryImplTest {
         assertThat(routingTables.allServers(), empty());
     }
 
+    @Test
+    void shouldNotAcceptNullRediscovery() {
+        // GIVEN
+        var factory = mockedHandlerFactory();
+        var clock = mock(Clock.class);
+        var connectionPool = mock(ConnectionPool.class);
+
+        // WHEN & THEN
+        assertThrows(
+                NullPointerException.class,
+                () -> new RoutingTableRegistryImpl(
+                        new ConcurrentHashMap<>(), factory, clock, connectionPool, null, DEV_NULL_LOGGING));
+    }
+
     private RoutingTableHandler mockedRoutingTableHandler(BoltServerAddress... servers) {
         RoutingTableHandler handler = mock(RoutingTableHandler.class);
         when(handler.servers()).thenReturn(new HashSet<>(Arrays.asList(servers)));
@@ -207,7 +222,7 @@ class RoutingTableRegistryImplTest {
 
     private RoutingTableRegistryImpl newRoutingTables(
             ConcurrentMap<DatabaseName, RoutingTableHandler> handlers, RoutingTableHandlerFactory factory) {
-        return new RoutingTableRegistryImpl(handlers, factory, null, null, null, DEV_NULL_LOGGING);
+        return new RoutingTableRegistryImpl(handlers, factory, null, null, mock(Rediscovery.class), DEV_NULL_LOGGING);
     }
 
     private RoutingTableHandlerFactory mockedHandlerFactory(RoutingTableHandler handler) {

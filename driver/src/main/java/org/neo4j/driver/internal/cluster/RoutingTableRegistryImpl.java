@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
 
 import java.util.HashMap;
@@ -72,6 +73,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
             ConnectionPool connectionPool,
             Rediscovery rediscovery,
             Logging logging) {
+        requireNonNull(rediscovery, "rediscovery must not be null");
         this.factory = factory;
         this.routingTableHandlers = routingTableHandlers;
         this.principalToDatabaseNameStage = new HashMap<>();
