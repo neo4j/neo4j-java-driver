@@ -20,8 +20,6 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,7 +30,6 @@ import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
-import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
 import org.neo4j.driver.Session;
@@ -42,17 +39,14 @@ import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 import reactor.core.publisher.Mono;
 
-@Setter
-@Getter
-public class SessionBeginTransaction extends WithTxConfig {
-    private SessionBeginTransactionBody data;
-
+public class SessionBeginTransaction
+        extends AbstractTestkitRequestWithTransactionConfig<SessionBeginTransaction.SessionBeginTransactionBody> {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         Session session = sessionHolder.getSession();
 
-        org.neo4j.driver.Transaction transaction = session.beginTransaction(getTxConfig());
+        org.neo4j.driver.Transaction transaction = session.beginTransaction(buildTxConfig());
         return transaction(testkitState.addTransactionHolder(new TransactionHolder(sessionHolder, transaction)));
     }
 
@@ -62,7 +56,7 @@ public class SessionBeginTransaction extends WithTxConfig {
             AsyncSession session = sessionHolder.getSession();
             TransactionConfig.Builder builder = TransactionConfig.builder();
 
-            return session.beginTransactionAsync(getTxConfig())
+            return session.beginTransactionAsync(buildTxConfig())
                     .thenApply(tx -> transaction(
                             testkitState.addAsyncTransactionHolder(new AsyncTransactionHolder(sessionHolder, tx))));
         });
@@ -75,7 +69,7 @@ public class SessionBeginTransaction extends WithTxConfig {
             RxSession session = sessionHolder.getSession();
             TransactionConfig.Builder builder = TransactionConfig.builder();
 
-            return Mono.fromDirect(session.beginTransaction(getTxConfig()))
+            return Mono.fromDirect(session.beginTransaction(buildTxConfig()))
                     .map(tx -> transaction(
                             testkitState.addRxTransactionHolder(new RxTransactionHolder(sessionHolder, tx))));
         });
@@ -87,7 +81,7 @@ public class SessionBeginTransaction extends WithTxConfig {
             ReactiveSession session = sessionHolder.getSession();
             TransactionConfig.Builder builder = TransactionConfig.builder();
 
-            return Mono.fromDirect(flowPublisherToFlux(session.beginTransaction(getTxConfig())))
+            return Mono.fromDirect(flowPublisherToFlux(session.beginTransaction(buildTxConfig())))
                     .map(tx -> transaction(testkitState.addReactiveTransactionHolder(
                             new ReactiveTransactionHolder(sessionHolder, tx))));
         });
@@ -99,7 +93,7 @@ public class SessionBeginTransaction extends WithTxConfig {
             var session = sessionHolder.getSession();
             TransactionConfig.Builder builder = TransactionConfig.builder();
 
-            return Mono.fromDirect(session.beginTransaction(getTxConfig()))
+            return Mono.fromDirect(session.beginTransaction(buildTxConfig()))
                     .map(tx -> transaction(testkitState.addReactiveTransactionStreamsHolder(
                             new ReactiveTransactionStreamsHolder(sessionHolder, tx))));
         });
@@ -113,18 +107,8 @@ public class SessionBeginTransaction extends WithTxConfig {
 
     @Getter
     @Setter
-    public static class SessionBeginTransactionBody implements WithTxConfig.ITxConfigBody {
+    public static class SessionBeginTransactionBody
+            extends AbstractTestkitRequestWithTransactionConfig.TransactionConfigBody {
         private String sessionId;
-
-        @JsonDeserialize(using = TestkitCypherParamDeserializer.class)
-        private Map<String, Object> txMeta;
-
-        private Integer timeout;
-        private Boolean timeoutPresent = false;
-
-        public void setTimeout(Integer timeout) {
-            this.timeout = timeout;
-            timeoutPresent = true;
-        }
     }
 }

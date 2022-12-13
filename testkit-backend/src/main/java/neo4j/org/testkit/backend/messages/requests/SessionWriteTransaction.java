@@ -21,8 +21,6 @@ package neo4j.org.testkit.backend.messages.requests;
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -37,7 +35,6 @@ import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
-import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.RetryableDone;
 import neo4j.org.testkit.backend.messages.responses.RetryableTry;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -50,17 +47,14 @@ import org.neo4j.driver.reactive.RxTransactionWork;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-@Setter
-@Getter
-public class SessionWriteTransaction extends WithTxConfig {
-    private SessionWriteTransactionBody data;
-
+public class SessionWriteTransaction
+        extends AbstractTestkitRequestWithTransactionConfig<SessionWriteTransaction.SessionWriteTransactionBody> {
     @Override
     @SuppressWarnings("deprecation")
     public TestkitResponse process(TestkitState testkitState) {
         SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         Session session = sessionHolder.getSession();
-        session.writeTransaction(handle(testkitState, sessionHolder), getTxConfig());
+        session.writeTransaction(handle(testkitState, sessionHolder), buildTxConfig());
         return retryableDone();
     }
 
@@ -81,7 +75,7 @@ public class SessionWriteTransaction extends WithTxConfig {
                         return tryResult;
                     };
 
-                    return session.writeTransactionAsync(workWrapper, getTxConfig());
+                    return session.writeTransactionAsync(workWrapper, buildTxConfig());
                 })
                 .thenApply(nothing -> retryableDone());
     }
@@ -100,7 +94,7 @@ public class SessionWriteTransaction extends WithTxConfig {
                         return Mono.fromCompletionStage(tryResult);
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().writeTransaction(workWrapper, getTxConfig()));
+                    return Mono.fromDirect(sessionHolder.getSession().writeTransaction(workWrapper, buildTxConfig()));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -120,7 +114,7 @@ public class SessionWriteTransaction extends WithTxConfig {
                     };
 
                     return Mono.fromDirect(
-                            flowPublisherToFlux(sessionHolder.getSession().executeWrite(workWrapper, getTxConfig())));
+                            flowPublisherToFlux(sessionHolder.getSession().executeWrite(workWrapper, buildTxConfig())));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -140,7 +134,7 @@ public class SessionWriteTransaction extends WithTxConfig {
                         return Mono.fromCompletionStage(tryResult);
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().executeWrite(workWrapper, getTxConfig()));
+                    return Mono.fromDirect(sessionHolder.getSession().executeWrite(workWrapper, buildTxConfig()));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -180,18 +174,8 @@ public class SessionWriteTransaction extends WithTxConfig {
 
     @Setter
     @Getter
-    public static class SessionWriteTransactionBody implements ITxConfigBody {
+    public static class SessionWriteTransactionBody
+            extends AbstractTestkitRequestWithTransactionConfig.TransactionConfigBody {
         private String sessionId;
-
-        @JsonDeserialize(using = TestkitCypherParamDeserializer.class)
-        private Map<String, Object> txMeta;
-
-        private Integer timeout;
-        private Boolean timeoutPresent = false;
-
-        public void setTimeout(Integer timeout) {
-            this.timeout = timeout;
-            timeoutPresent = true;
-        }
     }
 }

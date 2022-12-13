@@ -45,11 +45,7 @@ import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import reactor.core.publisher.Mono;
 
-@Setter
-@Getter
-public class SessionRun extends WithTxConfig {
-    private SessionRunBody data;
-
+public class SessionRun extends AbstractTestkitRequestWithTransactionConfig<SessionRun.SessionRunBody> {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
@@ -57,7 +53,7 @@ public class SessionRun extends WithTxConfig {
         Query query = Optional.ofNullable(data.params)
                 .map(params -> new Query(data.cypher, data.params))
                 .orElseGet(() -> new Query(data.cypher));
-        org.neo4j.driver.Result result = session.run(query, getTxConfig());
+        org.neo4j.driver.Result result = session.run(query, buildTxConfig());
         String id = testkitState.addResultHolder(new ResultHolder(sessionHolder, result));
 
         return createResponse(id, result.keys());
@@ -71,7 +67,7 @@ public class SessionRun extends WithTxConfig {
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
 
-            return session.runAsync(query, getTxConfig()).thenApply(resultCursor -> {
+            return session.runAsync(query, buildTxConfig()).thenApply(resultCursor -> {
                 String id = testkitState.addAsyncResultHolder(new ResultCursorHolder(sessionHolder, resultCursor));
                 return createResponse(id, resultCursor.keys());
             });
@@ -87,7 +83,7 @@ public class SessionRun extends WithTxConfig {
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
 
-            RxResult result = session.run(query, getTxConfig());
+            RxResult result = session.run(query, buildTxConfig());
             String id = testkitState.addRxResultHolder(new RxResultHolder(sessionHolder, result));
 
             // The keys() method causes RUN message exchange.
@@ -104,7 +100,7 @@ public class SessionRun extends WithTxConfig {
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
 
-            return Mono.fromDirect(flowPublisherToFlux(session.run(query, getTxConfig())))
+            return Mono.fromDirect(flowPublisherToFlux(session.run(query, buildTxConfig())))
                     .map(result -> {
                         String id =
                                 testkitState.addReactiveResultHolder(new ReactiveResultHolder(sessionHolder, result));
@@ -121,7 +117,7 @@ public class SessionRun extends WithTxConfig {
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
 
-            return Mono.fromDirect(session.run(query, getTxConfig())).map(result -> {
+            return Mono.fromDirect(session.run(query, buildTxConfig())).map(result -> {
                 String id = testkitState.addReactiveResultStreamsHolder(
                         new ReactiveResultStreamsHolder(sessionHolder, result));
                 return createResponse(id, result.keys());
@@ -137,22 +133,11 @@ public class SessionRun extends WithTxConfig {
 
     @Setter
     @Getter
-    public static class SessionRunBody implements ITxConfigBody {
+    public static class SessionRunBody extends AbstractTestkitRequestWithTransactionConfig.TransactionConfigBody {
         @JsonDeserialize(using = TestkitCypherParamDeserializer.class)
         private Map<String, Object> params;
 
         private String sessionId;
         private String cypher;
-
-        @JsonDeserialize(using = TestkitCypherParamDeserializer.class)
-        private Map<String, Object> txMeta;
-
-        private Integer timeout;
-        private Boolean timeoutPresent = false;
-
-        public void setTimeout(Integer timeout) {
-            this.timeout = timeout;
-            timeoutPresent = true;
-        }
     }
 }
