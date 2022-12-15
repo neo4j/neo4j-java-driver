@@ -22,7 +22,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RoutingSettings {
     public static final long STALE_ROUTING_TABLE_PURGE_DELAY_MS = SECONDS.toMillis(30);
-    public static final RoutingSettings DEFAULT = new RoutingSettings(STALE_ROUTING_TABLE_PURGE_DELAY_MS);
 
     private final RoutingContext routingContext;
     private final long routingTablePurgeDelayMs;
@@ -34,10 +33,6 @@ public class RoutingSettings {
     public RoutingSettings(long routingTablePurgeDelayMs, RoutingContext routingContext) {
         this.routingContext = routingContext;
         this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;
-    }
-
-    public RoutingSettings withRoutingContext(RoutingContext newRoutingContext) {
-        return new RoutingSettings(routingTablePurgeDelayMs, newRoutingContext);
     }
 
     public RoutingContext routingContext() {

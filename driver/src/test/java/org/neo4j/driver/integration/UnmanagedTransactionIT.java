@@ -49,8 +49,6 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
@@ -201,12 +199,7 @@ class UnmanagedTransactionIT {
         Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
 
         try (Driver driver = driverFactory.newInstance(
-                neo4j.uri(),
-                neo4j.authToken(),
-                RoutingSettings.DEFAULT,
-                RetrySettings.DEFAULT,
-                config,
-                SecurityPlanImpl.insecure())) {
+                neo4j.uri(), neo4j.authToken(), config, SecurityPlanImpl.insecure(), null, null)) {
             NetworkSession session = ((InternalDriver) driver).newSession(SessionConfig.defaultConfig());
             {
                 UnmanagedTransaction tx = beginTransaction(session);

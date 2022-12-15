@@ -751,7 +751,7 @@ class ExponentialBackoffRetryLogicTest {
         Logger logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean exceptionThrown = new AtomicBoolean(false);
         String result = logic.retry(() -> {
@@ -771,7 +771,7 @@ class ExponentialBackoffRetryLogicTest {
         Logger logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean exceptionThrown = new AtomicBoolean(false);
         String result = logic.retry(() -> {
@@ -791,7 +791,7 @@ class ExponentialBackoffRetryLogicTest {
         Logger logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean exceptionThrown = new AtomicBoolean(false);
         String result = logic.retry(() -> {
@@ -811,7 +811,7 @@ class ExponentialBackoffRetryLogicTest {
         Logger logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean exceptionThrown = new AtomicBoolean(false);
         ClientException exception = Assertions.assertThrows(
@@ -834,7 +834,7 @@ class ExponentialBackoffRetryLogicTest {
         Logger logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         retry(logic, retries);
 
@@ -850,7 +850,7 @@ class ExponentialBackoffRetryLogicTest {
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean exceptionThrown = new AtomicBoolean(false);
         String result = await(logic.retryAsync(() -> {
@@ -870,7 +870,7 @@ class ExponentialBackoffRetryLogicTest {
         Logger logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean exceptionThrown = new AtomicBoolean(false);
         String result = await(logic.retryAsync(() -> {
@@ -891,7 +891,7 @@ class ExponentialBackoffRetryLogicTest {
         when(logging.getLog(anyString())).thenReturn(logger);
 
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean exceptionThrown = new AtomicBoolean(false);
         ClientException exception = Assertions.assertThrows(
@@ -916,7 +916,7 @@ class ExponentialBackoffRetryLogicTest {
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         assertEquals(result, await(retryAsync(logic, retries, result)));
 
@@ -934,7 +934,7 @@ class ExponentialBackoffRetryLogicTest {
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean exceptionThrown = new AtomicBoolean(false);
         String result = await(Mono.from(logic.retryRx(Mono.fromSupplier(() -> {
@@ -954,7 +954,7 @@ class ExponentialBackoffRetryLogicTest {
         Logger logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean exceptionThrown = new AtomicBoolean(false);
         String result = await(Mono.from(logic.retryRx(Mono.fromSupplier(() -> {
@@ -974,7 +974,7 @@ class ExponentialBackoffRetryLogicTest {
         Logger logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean exceptionThrown = new AtomicBoolean(false);
         String result = await(Mono.from(logic.retryRx(Mono.fromSupplier(() -> {
@@ -995,7 +995,7 @@ class ExponentialBackoffRetryLogicTest {
         when(logging.getLog(anyString())).thenReturn(logger);
 
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean exceptionThrown = new AtomicBoolean(false);
         ClientException exception = Assertions.assertThrows(
@@ -1020,7 +1020,7 @@ class ExponentialBackoffRetryLogicTest {
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
         ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, clock, logging);
+                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         assertEquals(result, await(Flux.from(retryRx(logic, retries, result)).single()));
 
@@ -1035,8 +1035,8 @@ class ExponentialBackoffRetryLogicTest {
         Logging logging = mock(Logging.class);
         Logger logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, mock(Clock.class), logging);
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic(
+                RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, mock(Clock.class), logging);
 
         RuntimeException error = assertThrows(
                 RuntimeException.class,
@@ -1052,8 +1052,8 @@ class ExponentialBackoffRetryLogicTest {
         Logging logging = mock(Logging.class);
         Logger logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, mock(Clock.class), logging);
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic(
+                RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, mock(Clock.class), logging);
 
         RuntimeException error = assertThrows(
                 RuntimeException.class,
@@ -1068,8 +1068,8 @@ class ExponentialBackoffRetryLogicTest {
         Logging logging = mock(Logging.class);
         Logger logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic =
-                new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT, eventExecutor, mock(Clock.class), logging);
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic(
+                RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, mock(Clock.class), logging);
 
         Publisher<Object> retryRx = logic.retryRx(Mono.error(new RuntimeException("Fatal rx")));
         RuntimeException error = assertThrows(RuntimeException.class, () -> await(retryRx));
@@ -1085,7 +1085,7 @@ class ExponentialBackoffRetryLogicTest {
         Logger logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         RetrySettings settings = RetrySettings.DEFAULT;
-        RetryLogic logic = new ExponentialBackoffRetryLogic(settings, eventExecutor, clock, logging);
+        RetryLogic logic = new ExponentialBackoffRetryLogic(settings.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         ServiceUnavailableException error = assertThrows(
                 ServiceUnavailableException.class,
@@ -1116,7 +1116,7 @@ class ExponentialBackoffRetryLogicTest {
         Logger logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         RetrySettings settings = RetrySettings.DEFAULT;
-        RetryLogic logic = new ExponentialBackoffRetryLogic(settings, eventExecutor, clock, logging);
+        RetryLogic logic = new ExponentialBackoffRetryLogic(settings.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         SessionExpiredException error = assertThrows(
                 SessionExpiredException.class,
@@ -1149,7 +1149,7 @@ class ExponentialBackoffRetryLogicTest {
         Logger logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         RetrySettings settings = RetrySettings.DEFAULT;
-        RetryLogic logic = new ExponentialBackoffRetryLogic(settings, eventExecutor, clock, logging);
+        RetryLogic logic = new ExponentialBackoffRetryLogic(settings.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         AtomicBoolean invoked = new AtomicBoolean(false);
         SessionExpiredException error = assertThrows(

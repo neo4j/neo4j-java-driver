@@ -21,7 +21,6 @@ package org.neo4j.driver;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -196,7 +195,7 @@ class ConfigTest {
                 .withMaxTransactionRetryTime(0, TimeUnit.SECONDS)
                 .build();
 
-        assertEquals(0, config.retrySettings().maxRetryTimeMs());
+        assertEquals(0, config.maxTransactionRetryTimeMillis());
     }
 
     @Test
@@ -205,7 +204,7 @@ class ConfigTest {
                 .withMaxTransactionRetryTime(42, TimeUnit.SECONDS)
                 .build();
 
-        assertEquals(TimeUnit.SECONDS.toMillis(42), config.retrySettings().maxRetryTimeMs());
+        assertEquals(TimeUnit.SECONDS.toMillis(42), config.maxTransactionRetryTimeMillis());
     }
 
     @Test
@@ -384,6 +383,34 @@ class ConfigTest {
         assertTrue(config.isMetricsEnabled());
     }
 
+    @Test
+    void shouldSetRoutingTablePurgeDelayMillis() {
+        // GIVEN
+        var delay = 1000L;
+
+        // WHEN
+        var config = Config.builder()
+                .withRoutingTablePurgeDelay(delay, TimeUnit.MILLISECONDS)
+                .build();
+
+        // THEN
+        assertEquals(delay, config.routingTablePurgeDelayMillis());
+    }
+
+    @Test
+    void shouldMaxTransactionRetryTimeMillis() {
+        // GIVEN
+        var retryTime = 1000L;
+
+        // WHEN
+        var config = Config.builder()
+                .withMaxTransactionRetryTime(retryTime, TimeUnit.MILLISECONDS)
+                .build();
+
+        // THEN
+        assertEquals(retryTime, config.maxTransactionRetryTimeMillis());
+    }
+
     @Nested
     class SerializationTest {
         @Test
@@ -413,11 +440,8 @@ class ConfigTest {
             assertEquals(config.connectionAcquisitionTimeoutMillis(), verify.connectionAcquisitionTimeoutMillis());
             assertEquals(config.idleTimeBeforeConnectionTest(), verify.idleTimeBeforeConnectionTest());
             assertEquals(config.maxConnectionLifetimeMillis(), verify.maxConnectionLifetimeMillis());
-            assertNotNull(verify.retrySettings());
             assertSame(DevNullLogging.DEV_NULL_LOGGING, verify.logging());
-            assertEquals(
-                    config.retrySettings().maxRetryTimeMs(),
-                    verify.retrySettings().maxRetryTimeMs());
+            assertEquals(config.maxTransactionRetryTimeMillis(), verify.maxTransactionRetryTimeMillis());
             assertEquals(config.fetchSize(), verify.fetchSize());
             assertEquals(config.eventLoopThreads(), verify.eventLoopThreads());
             assertEquals(config.encrypted(), verify.encrypted());
@@ -434,9 +458,7 @@ class ConfigTest {
             assertEquals(config.userAgent(), verify.userAgent());
             assertEquals(config.isMetricsEnabled(), verify.isMetricsEnabled());
             assertEquals(config.metricsAdapter(), verify.metricsAdapter());
-            assertEquals(
-                    config.routingSettings().routingTablePurgeDelayMs(),
-                    verify.routingSettings().routingTablePurgeDelayMs());
+            assertEquals(config.maxTransactionRetryTimeMillis(), verify.maxTransactionRetryTimeMillis());
             assertEquals(config.logLeakedSessions(), verify.logLeakedSessions());
         }
 

@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.retry.RetrySettings.DEFAULT;
 import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 
 import io.netty.channel.Channel;
@@ -46,7 +45,6 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
@@ -352,12 +350,7 @@ class TransactionIT {
         Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
 
         try (Driver driver = factory.newInstance(
-                session.uri(),
-                session.authToken(),
-                RoutingSettings.DEFAULT,
-                DEFAULT,
-                config,
-                SecurityPlanImpl.insecure())) {
+                session.uri(), session.authToken(), config, SecurityPlanImpl.insecure(), null, null)) {
             ServiceUnavailableException e = assertThrows(ServiceUnavailableException.class, () -> {
                 try (Session session1 = driver.session();
                         Transaction tx = session1.beginTransaction()) {

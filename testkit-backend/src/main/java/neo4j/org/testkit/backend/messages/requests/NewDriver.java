@@ -50,10 +50,9 @@ import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.SecuritySettings;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
-import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.security.SecurityPlans;
 import org.neo4j.driver.net.ServerAddressResolver;
 import reactor.core.publisher.Mono;
 
@@ -104,9 +103,9 @@ public class NewDriver implements TestkitRequest {
         Optional.ofNullable(data.connectionTimeoutMs)
                 .ifPresent(timeout -> configBuilder.withConnectionTimeout(timeout, TimeUnit.MILLISECONDS));
         Optional.ofNullable(data.fetchSize).ifPresent(configBuilder::withFetchSize);
-        RetrySettings retrySettings = Optional.ofNullable(data.maxTxRetryTimeMs)
-                .map(RetrySettings::new)
-                .orElse(RetrySettings.DEFAULT);
+        Optional.ofNullable(data.maxTxRetryTimeMs)
+                .ifPresent(
+                        retryTimeMs -> configBuilder.withMaxTransactionRetryTime(retryTimeMs, TimeUnit.MILLISECONDS));
         Optional.ofNullable(data.livenessCheckTimeoutMs)
                 .ifPresent(timeout -> configBuilder.withConnectionLivenessCheckTimeout(timeout, TimeUnit.MILLISECONDS));
         Optional.ofNullable(data.maxConnectionPoolSize).ifPresent(configBuilder::withMaxConnectionPoolSize);
@@ -120,7 +119,6 @@ public class NewDriver implements TestkitRequest {
                     URI.create(data.uri),
                     authToken,
                     config,
-                    retrySettings,
                     domainNameResolver,
                     configureSecuritySettingsBuilder(),
                     testkitState,
@@ -220,16 +218,14 @@ public class NewDriver implements TestkitRequest {
             URI uri,
             AuthToken authToken,
             Config config,
-            RetrySettings retrySettings,
             DomainNameResolver domainNameResolver,
             SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder,
             TestkitState testkitState,
             String driverId) {
-        RoutingSettings routingSettings = RoutingSettings.DEFAULT;
         SecuritySettings securitySettings = securitySettingsBuilder.build();
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan(uri.getScheme());
+        SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, uri.getScheme());
         return new DriverFactoryWithDomainNameResolver(domainNameResolver, testkitState, driverId)
-                .newInstance(uri, authToken, routingSettings, retrySettings, config, securityPlan);
+                .newInstance(uri, authToken, config, securityPlan, null, null);
     }
 
     private Optional<TestkitResponse> handleExceptionAsErrorResponse(TestkitState testkitState, RuntimeException e) {

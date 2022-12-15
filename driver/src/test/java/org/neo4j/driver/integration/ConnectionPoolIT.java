@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.driver.internal.retry.RetrySettings.DEFAULT;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 
 import io.netty.channel.Channel;
@@ -44,7 +43,6 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
@@ -97,7 +95,7 @@ class ConnectionPoolIT {
                 .withMaxConnectionLifetime(maxConnLifetimeHours, TimeUnit.HOURS)
                 .build();
         driver = driverFactory.newInstance(
-                neo4j.uri(), neo4j.authToken(), RoutingSettings.DEFAULT, DEFAULT, config, SecurityPlanImpl.insecure());
+                neo4j.uri(), neo4j.authToken(), config, SecurityPlanImpl.insecure(), null, null);
 
         // force driver create channel and return it to the pool
         startAndCloseTransactions(driver, 1);

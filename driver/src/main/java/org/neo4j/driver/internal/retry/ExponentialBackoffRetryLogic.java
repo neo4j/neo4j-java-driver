@@ -45,7 +45,7 @@ import reactor.util.context.Context;
 import reactor.util.retry.Retry;
 
 public class ExponentialBackoffRetryLogic implements RetryLogic {
-    static final long DEFAULT_MAX_RETRY_TIME_MS = SECONDS.toMillis(30);
+    public static final long DEFAULT_MAX_RETRY_TIME_MS = SECONDS.toMillis(30);
 
     private static final long INITIAL_RETRY_DELAY_MS = SECONDS.toMillis(1);
     private static final double RETRY_DELAY_MULTIPLIER = 2.0;
@@ -61,9 +61,9 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
     private final Logger log;
 
     public ExponentialBackoffRetryLogic(
-            RetrySettings settings, EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging) {
+            long maxTransactionRetryTime, EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging) {
         this(
-                settings.maxRetryTimeMs(),
+                maxTransactionRetryTime,
                 INITIAL_RETRY_DELAY_MS,
                 RETRY_DELAY_MULTIPLIER,
                 RETRY_DELAY_JITTER_FACTOR,

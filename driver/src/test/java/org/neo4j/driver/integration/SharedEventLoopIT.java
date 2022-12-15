@@ -29,8 +29,6 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -85,11 +83,9 @@ class SharedEventLoopIT {
         return driverFactory.newInstance(
                 neo4j.uri(),
                 neo4j.authToken(),
-                RoutingSettings.DEFAULT,
-                RetrySettings.DEFAULT,
                 Config.defaultConfig(),
-                eventLoopGroup,
                 SecurityPlanImpl.insecure(),
+                eventLoopGroup,
                 null);
     }
 

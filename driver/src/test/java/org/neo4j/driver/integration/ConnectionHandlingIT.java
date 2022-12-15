@@ -62,10 +62,8 @@ import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingContext;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.spi.Connection;
@@ -95,15 +93,8 @@ class ConnectionHandlingIT {
     void createDriver() {
         DriverFactoryWithConnectionPool driverFactory = new DriverFactoryWithConnectionPool();
         AuthToken auth = neo4j.authToken();
-        RoutingSettings routingSettings = RoutingSettings.DEFAULT;
-        RetrySettings retrySettings = RetrySettings.DEFAULT;
         driver = driverFactory.newInstance(
-                neo4j.uri(),
-                auth,
-                routingSettings,
-                retrySettings,
-                Config.builder().withFetchSize(1).build(),
-                SecurityPlanImpl.insecure());
+                neo4j.uri(), auth, Config.builder().withFetchSize(1).build(), SecurityPlanImpl.insecure(), null, null);
         connectionPool = driverFactory.connectionPool;
         connectionPool.startMemorizing(); // start memorizing connections after driver creation
     }
