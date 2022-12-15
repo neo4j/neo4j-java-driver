@@ -21,14 +21,12 @@ package neo4j.org.testkit.backend.messages.requests;
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
-import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.ReactiveResultHolder;
 import neo4j.org.testkit.backend.holder.ReactiveResultStreamsHolder;
@@ -41,32 +39,13 @@ import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import reactor.core.publisher.Mono;
 
-@Setter
-@Getter
-public class SessionRun implements TestkitRequest {
-    private SessionRunBody data;
-
-    private void configureTimeout(TransactionConfig.Builder builder) {
-        if (data.getTimeoutPresent()) {
-            try {
-                if (data.getTimeout() != null) {
-                    builder.withTimeout(Duration.ofMillis(data.getTimeout()));
-                } else {
-                    builder.withDefaultTimeout();
-                }
-            } catch (IllegalArgumentException e) {
-                throw new CustomDriverError(e);
-            }
-        }
-    }
-
+public class SessionRun extends AbstractTestkitRequestWithTransactionConfig<SessionRun.SessionRunBody> {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
@@ -74,10 +53,7 @@ public class SessionRun implements TestkitRequest {
         Query query = Optional.ofNullable(data.params)
                 .map(params -> new Query(data.cypher, data.params))
                 .orElseGet(() -> new Query(data.cypher));
-        TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
-        Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
-        configureTimeout(transactionConfig);
-        org.neo4j.driver.Result result = session.run(query, transactionConfig.build());
+        org.neo4j.driver.Result result = session.run(query, buildTxConfig());
         String id = testkitState.addResultHolder(new ResultHolder(sessionHolder, result));
 
         return createResponse(id, result.keys());
@@ -90,11 +66,8 @@ public class SessionRun implements TestkitRequest {
             Query query = Optional.ofNullable(data.params)
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
-            TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
-            Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
-            configureTimeout(transactionConfig);
 
-            return session.runAsync(query, transactionConfig.build()).thenApply(resultCursor -> {
+            return session.runAsync(query, buildTxConfig()).thenApply(resultCursor -> {
                 String id = testkitState.addAsyncResultHolder(new ResultCursorHolder(sessionHolder, resultCursor));
                 return createResponse(id, resultCursor.keys());
             });
@@ -109,11 +82,8 @@ public class SessionRun implements TestkitRequest {
             Query query = Optional.ofNullable(data.params)
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
-            TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
-            Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
-            configureTimeout(transactionConfig);
 
-            RxResult result = session.run(query, transactionConfig.build());
+            RxResult result = session.run(query, buildTxConfig());
             String id = testkitState.addRxResultHolder(new RxResultHolder(sessionHolder, result));
 
             // The keys() method causes RUN message exchange.
@@ -129,11 +99,8 @@ public class SessionRun implements TestkitRequest {
             Query query = Optional.ofNullable(data.params)
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
-            TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
-            Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
-            configureTimeout(transactionConfig);
 
-            return Mono.fromDirect(flowPublisherToFlux(session.run(query, transactionConfig.build())))
+            return Mono.fromDirect(flowPublisherToFlux(session.run(query, buildTxConfig())))
                     .map(result -> {
                         String id =
                                 testkitState.addReactiveResultHolder(new ReactiveResultHolder(sessionHolder, result));
@@ -149,16 +116,12 @@ public class SessionRun implements TestkitRequest {
             Query query = Optional.ofNullable(data.params)
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
-            TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
-            Optional.ofNullable(data.getTxMeta()).ifPresent(transactionConfig::withMetadata);
-            configureTimeout(transactionConfig);
 
-            return Mono.fromDirect(session.run(query, transactionConfig.build()))
-                    .map(result -> {
-                        String id = testkitState.addReactiveResultStreamsHolder(
-                                new ReactiveResultStreamsHolder(sessionHolder, result));
-                        return createResponse(id, result.keys());
-                    });
+            return Mono.fromDirect(session.run(query, buildTxConfig())).map(result -> {
+                String id = testkitState.addReactiveResultStreamsHolder(
+                        new ReactiveResultStreamsHolder(sessionHolder, result));
+                return createResponse(id, result.keys());
+            });
         });
     }
 
@@ -170,19 +133,11 @@ public class SessionRun implements TestkitRequest {
 
     @Setter
     @Getter
-    public static class SessionRunBody {
+    public static class SessionRunBody extends AbstractTestkitRequestWithTransactionConfig.TransactionConfigBody {
         @JsonDeserialize(using = TestkitCypherParamDeserializer.class)
         private Map<String, Object> params;
 
         private String sessionId;
         private String cypher;
-        private Map<String, Object> txMeta;
-        private Integer timeout;
-        private Boolean timeoutPresent = false;
-
-        public void setTimeout(Integer timeout) {
-            this.timeout = timeout;
-            timeoutPresent = true;
-        }
     }
 }

@@ -47,17 +47,14 @@ import org.neo4j.driver.reactive.RxTransactionWork;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-@Setter
-@Getter
-public class SessionReadTransaction implements TestkitRequest {
-    private SessionReadTransactionBody data;
-
+public class SessionReadTransaction
+        extends AbstractTestkitRequestWithTransactionConfig<SessionReadTransaction.SessionReadTransactionBody> {
     @Override
     @SuppressWarnings("deprecation")
     public TestkitResponse process(TestkitState testkitState) {
         SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         Session session = sessionHolder.getSession();
-        session.readTransaction(handle(testkitState, sessionHolder));
+        session.readTransaction(handle(testkitState, sessionHolder), buildTxConfig());
         return retryableDone();
     }
 
@@ -78,7 +75,7 @@ public class SessionReadTransaction implements TestkitRequest {
                         return txWorkFuture;
                     };
 
-                    return session.readTransactionAsync(workWrapper);
+                    return session.readTransactionAsync(workWrapper, buildTxConfig());
                 })
                 .thenApply(nothing -> retryableDone());
     }
@@ -97,7 +94,7 @@ public class SessionReadTransaction implements TestkitRequest {
                         return Mono.fromCompletionStage(tryResult);
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().readTransaction(workWrapper));
+                    return Mono.fromDirect(sessionHolder.getSession().readTransaction(workWrapper, buildTxConfig()));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -117,7 +114,7 @@ public class SessionReadTransaction implements TestkitRequest {
                     };
 
                     return Mono.fromDirect(
-                            flowPublisherToFlux(sessionHolder.getSession().executeRead(workWrapper)));
+                            flowPublisherToFlux(sessionHolder.getSession().executeRead(workWrapper, buildTxConfig())));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -137,7 +134,7 @@ public class SessionReadTransaction implements TestkitRequest {
                         return Mono.fromCompletionStage(tryResult);
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().executeRead(workWrapper));
+                    return Mono.fromDirect(sessionHolder.getSession().executeRead(workWrapper, buildTxConfig()));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -177,7 +174,8 @@ public class SessionReadTransaction implements TestkitRequest {
 
     @Setter
     @Getter
-    public static class SessionReadTransactionBody {
+    public static class SessionReadTransactionBody
+            extends AbstractTestkitRequestWithTransactionConfig.TransactionConfigBody {
         private String sessionId;
     }
 }

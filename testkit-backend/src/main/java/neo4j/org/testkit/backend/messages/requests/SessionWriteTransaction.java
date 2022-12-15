@@ -21,7 +21,6 @@ package neo4j.org.testkit.backend.messages.requests;
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -48,17 +47,14 @@ import org.neo4j.driver.reactive.RxTransactionWork;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-@Setter
-@Getter
-public class SessionWriteTransaction implements TestkitRequest {
-    private SessionWriteTransactionBody data;
-
+public class SessionWriteTransaction
+        extends AbstractTestkitRequestWithTransactionConfig<SessionWriteTransaction.SessionWriteTransactionBody> {
     @Override
     @SuppressWarnings("deprecation")
     public TestkitResponse process(TestkitState testkitState) {
         SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         Session session = sessionHolder.getSession();
-        session.writeTransaction(handle(testkitState, sessionHolder));
+        session.writeTransaction(handle(testkitState, sessionHolder), buildTxConfig());
         return retryableDone();
     }
 
@@ -79,7 +75,7 @@ public class SessionWriteTransaction implements TestkitRequest {
                         return tryResult;
                     };
 
-                    return session.writeTransactionAsync(workWrapper);
+                    return session.writeTransactionAsync(workWrapper, buildTxConfig());
                 })
                 .thenApply(nothing -> retryableDone());
     }
@@ -98,7 +94,7 @@ public class SessionWriteTransaction implements TestkitRequest {
                         return Mono.fromCompletionStage(tryResult);
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().writeTransaction(workWrapper));
+                    return Mono.fromDirect(sessionHolder.getSession().writeTransaction(workWrapper, buildTxConfig()));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -118,7 +114,7 @@ public class SessionWriteTransaction implements TestkitRequest {
                     };
 
                     return Mono.fromDirect(
-                            flowPublisherToFlux(sessionHolder.getSession().executeWrite(workWrapper)));
+                            flowPublisherToFlux(sessionHolder.getSession().executeWrite(workWrapper, buildTxConfig())));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -138,7 +134,7 @@ public class SessionWriteTransaction implements TestkitRequest {
                         return Mono.fromCompletionStage(tryResult);
                     };
 
-                    return Mono.fromDirect(sessionHolder.getSession().executeWrite(workWrapper));
+                    return Mono.fromDirect(sessionHolder.getSession().executeWrite(workWrapper, buildTxConfig()));
                 })
                 .then(Mono.just(retryableDone()));
     }
@@ -178,9 +174,8 @@ public class SessionWriteTransaction implements TestkitRequest {
 
     @Setter
     @Getter
-    public static class SessionWriteTransactionBody {
+    public static class SessionWriteTransactionBody
+            extends AbstractTestkitRequestWithTransactionConfig.TransactionConfigBody {
         private String sessionId;
-        private Map<String, String> txMeta;
-        private String timeout;
     }
 }
