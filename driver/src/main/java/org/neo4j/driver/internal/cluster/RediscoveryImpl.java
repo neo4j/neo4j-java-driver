@@ -60,8 +60,12 @@ public class RediscoveryImpl implements Rediscovery {
             "Received a recoverable discovery error with server '%s', "
                     + "will continue discovery with other routing servers if available. "
                     + "Complete failure is reported separately from this entry.";
-    private static final String INVALID_BOOKMARK_CODE = "Neo.ClientError.Transaction.InvalidBookmark";
-    private static final String INVALID_BOOKMARK_MIXTURE_CODE = "Neo.ClientError.Transaction.InvalidBookmarkMixture";
+    private static final String TRANSACTION_INVALID_BOOKMARK_CODE = "Neo.ClientError.Transaction.InvalidBookmark";
+    private static final String TRANSACTION_INVALID_BOOKMARK_MIXTURE_CODE =
+            "Neo.ClientError.Transaction.InvalidBookmarkMixture";
+    private static final String STATEMENT_ARGUMENT_ERROR_CODE = "Neo.ClientError.Statement.ArgumentError";
+    private static final String REQUEST_INVALID_CODE = "Neo.ClientError.Request.Invalid";
+    private static final String STATEMENT_TYPE_ERROR_CODE = "Neo.ClientError.Statement.TypeError";
 
     private final BoltServerAddress initialRouter;
     private final Logger log;
@@ -294,7 +298,13 @@ public class RediscoveryImpl implements Rediscovery {
             abort = true;
         } else if (throwable instanceof ClientException) {
             String code = ((ClientException) throwable).code();
-            abort = INVALID_BOOKMARK_CODE.equals(code) || INVALID_BOOKMARK_MIXTURE_CODE.equals(code);
+            abort = switch (code) {
+                case TRANSACTION_INVALID_BOOKMARK_CODE,
+                        TRANSACTION_INVALID_BOOKMARK_MIXTURE_CODE,
+                        STATEMENT_ARGUMENT_ERROR_CODE,
+                        REQUEST_INVALID_CODE,
+                        STATEMENT_TYPE_ERROR_CODE -> true;
+                default -> false;};
         }
 
         return abort;
