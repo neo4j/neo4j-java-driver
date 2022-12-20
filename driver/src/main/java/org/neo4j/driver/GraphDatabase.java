@@ -20,10 +20,6 @@ package org.neo4j.driver;
 
 import java.net.URI;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.SecuritySettings;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.security.SecurityPlan;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
@@ -123,11 +119,7 @@ public final class GraphDatabase {
 
     static Driver driver(URI uri, AuthToken authToken, Config config, DriverFactory driverFactory) {
         config = getOrDefault(config);
-        RoutingSettings routingSettings = config.routingSettings();
-        RetrySettings retrySettings = config.retrySettings();
-        SecuritySettings securitySettings = config.securitySettings();
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan(uri.getScheme());
-        return driverFactory.newInstance(uri, authToken, routingSettings, retrySettings, config, securityPlan);
+        return driverFactory.newInstance(uri, authToken, config);
     }
 
     private static Config getOrDefault(Config config) {

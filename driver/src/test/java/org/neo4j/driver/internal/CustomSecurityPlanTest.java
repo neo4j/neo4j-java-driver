@@ -31,9 +31,7 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.cluster.RoutingContext;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
@@ -47,11 +45,9 @@ class CustomSecurityPlanTest {
         driverFactory.newInstance(
                 URI.create("neo4j://somewhere:1234"),
                 AuthTokens.none(),
-                RoutingSettings.DEFAULT,
-                RetrySettings.DEFAULT,
                 Config.defaultConfig(),
-                null,
                 securityPlan,
+                null,
                 null);
 
         assertFalse(driverFactory.capturedSecurityPlans.isEmpty());

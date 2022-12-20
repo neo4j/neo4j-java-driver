@@ -36,8 +36,6 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
@@ -129,9 +127,6 @@ class ServerKilledIT {
 
     private Driver createDriver(Clock clock, Config config) {
         DriverFactory factory = new DriverFactoryWithClock(clock);
-        RoutingSettings routingSettings = RoutingSettings.DEFAULT;
-        RetrySettings retrySettings = RetrySettings.DEFAULT;
-        return factory.newInstance(
-                neo4j.uri(), neo4j.authToken(), routingSettings, retrySettings, config, SecurityPlanImpl.insecure());
+        return factory.newInstance(neo4j.uri(), neo4j.authToken(), config, SecurityPlanImpl.insecure(), null, null);
     }
 }

@@ -70,9 +70,7 @@ import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -202,19 +200,10 @@ class DriverFactoryTest {
     void shouldUseBuiltInRediscoveryByDefault() {
         // GIVEN
         var driverFactory = new DriverFactory();
-        var securityPlan =
-                new SecuritySettings.SecuritySettingsBuilder().build().createSecurityPlan("neo4j");
 
         // WHEN
         var driver = driverFactory.newInstance(
-                URI.create("neo4j://localhost:7687"),
-                AuthTokens.none(),
-                RoutingSettings.DEFAULT,
-                RetrySettings.DEFAULT,
-                Config.defaultConfig(),
-                null,
-                securityPlan,
-                null);
+                URI.create("neo4j://localhost:7687"), AuthTokens.none(), Config.defaultConfig(), null, null, null);
 
         // THEN
         var sessionFactory = ((InternalDriver) driver).getSessionFactory();
@@ -227,8 +216,6 @@ class DriverFactoryTest {
     void shouldUseSuppliedRediscovery() {
         // GIVEN
         var driverFactory = new DriverFactory();
-        var securityPlan =
-                new SecuritySettings.SecuritySettingsBuilder().build().createSecurityPlan("neo4j");
         @SuppressWarnings("unchecked")
         Supplier<Rediscovery> rediscoverySupplier = mock(Supplier.class);
         var rediscovery = mock(Rediscovery.class);
@@ -238,11 +225,9 @@ class DriverFactoryTest {
         var driver = driverFactory.newInstance(
                 URI.create("neo4j://localhost:7687"),
                 AuthTokens.none(),
-                RoutingSettings.DEFAULT,
-                RetrySettings.DEFAULT,
                 Config.defaultConfig(),
                 null,
-                securityPlan,
+                null,
                 rediscoverySupplier);
 
         // THEN
@@ -259,13 +244,7 @@ class DriverFactoryTest {
 
     private Driver createDriver(String uri, DriverFactory driverFactory, Config config) {
         AuthToken auth = AuthTokens.none();
-        return driverFactory.newInstance(
-                URI.create(uri),
-                auth,
-                RoutingSettings.DEFAULT,
-                RetrySettings.DEFAULT,
-                config,
-                SecurityPlanImpl.insecure());
+        return driverFactory.newInstance(URI.create(uri), auth, config);
     }
 
     private static ConnectionPool connectionPoolMock() {

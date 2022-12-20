@@ -55,8 +55,8 @@ import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.security.SecurityPlans;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Clock;
@@ -67,25 +67,18 @@ public class DriverFactory {
     public static final String NO_ROUTING_CONTEXT_ERROR_MESSAGE =
             "Routing parameters are not supported with scheme 'bolt'. Given URI: ";
 
-    public final Driver newInstance(
-            URI uri,
-            AuthToken authToken,
-            RoutingSettings routingSettings,
-            RetrySettings retrySettings,
-            Config config,
-            SecurityPlan securityPlan) {
-        return newInstance(uri, authToken, routingSettings, retrySettings, config, null, securityPlan, null);
+    public final Driver newInstance(URI uri, AuthToken authToken, Config config) {
+        return newInstance(uri, authToken, config, null, null, null);
     }
 
     public final Driver newInstance(
             URI uri,
             AuthToken authToken,
-            RoutingSettings routingSettings,
-            RetrySettings retrySettings,
             Config config,
-            EventLoopGroup eventLoopGroup,
             SecurityPlan securityPlan,
+            EventLoopGroup eventLoopGroup,
             Supplier<Rediscovery> rediscoverySupplier) {
+
         Bootstrap bootstrap;
         boolean ownsEventLoopGroup;
         if (eventLoopGroup == null) {
@@ -96,14 +89,21 @@ public class DriverFactory {
             ownsEventLoopGroup = false;
         }
 
+        if (securityPlan == null) {
+            var settings = new SecuritySettings(config.encrypted(), config.trustStrategy());
+            securityPlan = SecurityPlans.createSecurityPlan(settings, uri.getScheme());
+        }
+
         authToken = authToken == null ? AuthTokens.none() : authToken;
 
         BoltServerAddress address = new BoltServerAddress(uri);
-        RoutingSettings newRoutingSettings = routingSettings.withRoutingContext(new RoutingContext(uri));
+        RoutingSettings routingSettings =
+                new RoutingSettings(config.routingTablePurgeDelayMillis(), new RoutingContext(uri));
 
         InternalLoggerFactory.setDefaultFactory(new NettyLogging(config.logging()));
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
-        RetryLogic retryLogic = createRetryLogic(retrySettings, eventExecutorGroup, config.logging());
+        RetryLogic retryLogic =
+                createRetryLogic(config.maxTransactionRetryTimeMillis(), eventExecutorGroup, config.logging());
 
         MetricsProvider metricsProvider = getOrCreateMetricsProvider(config, createClock());
         ConnectionPool connectionPool = createConnectionPool(
@@ -113,7 +113,7 @@ public class DriverFactory {
                 metricsProvider,
                 config,
                 ownsEventLoopGroup,
-                newRoutingSettings.routingContext());
+                routingSettings.routingContext());
 
         return createDriver(
                 uri,
@@ -121,7 +121,7 @@ public class DriverFactory {
                 address,
                 connectionPool,
                 eventExecutorGroup,
-                newRoutingSettings,
+                routingSettings,
                 retryLogic,
                 metricsProvider,
                 rediscoverySupplier,
@@ -354,8 +354,8 @@ public class DriverFactory {
      * <b>This method is protected only for testing</b>
      */
     protected RetryLogic createRetryLogic(
-            RetrySettings settings, EventExecutorGroup eventExecutorGroup, Logging logging) {
-        return new ExponentialBackoffRetryLogic(settings, eventExecutorGroup, createClock(), logging);
+            long maxTransactionRetryTime, EventExecutorGroup eventExecutorGroup, Logging logging) {
+        return new ExponentialBackoffRetryLogic(maxTransactionRetryTime, eventExecutorGroup, createClock(), logging);
     }
 
     /**

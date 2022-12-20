@@ -56,11 +56,9 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.MessageRecordingDriverFactory;
@@ -275,12 +273,7 @@ class SessionBoltV3IT {
         MessageRecordingDriverFactory driverFactory = new MessageRecordingDriverFactory();
 
         try (Driver otherDriver = driverFactory.newInstance(
-                driver.uri(),
-                driver.authToken(),
-                RoutingSettings.DEFAULT,
-                RetrySettings.DEFAULT,
-                defaultConfig(),
-                SecurityPlanImpl.insecure())) {
+                driver.uri(), driver.authToken(), defaultConfig(), SecurityPlanImpl.insecure(), null, null)) {
             List<Session> sessions = new ArrayList<>();
             List<Transaction> txs = new ArrayList<>();
             for (int i = 0; i < txCount; i++) {

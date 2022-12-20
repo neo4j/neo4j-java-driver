@@ -22,7 +22,6 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.retry.RetrySettings;
 
 public class DriverFactoryWithFixedRetryLogic extends DriverFactory {
     private final int retryCount;
@@ -33,7 +32,7 @@ public class DriverFactoryWithFixedRetryLogic extends DriverFactory {
 
     @Override
     protected RetryLogic createRetryLogic(
-            RetrySettings settings, EventExecutorGroup eventExecutorGroup, Logging logging) {
+            long maxTransactionRetryTime, EventExecutorGroup eventExecutorGroup, Logging logging) {
         return new FixedRetryLogic(retryCount);
     }
 }
