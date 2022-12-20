@@ -34,9 +34,9 @@ import org.neo4j.driver.testutil.DatabaseExtension;
 
 public class Neo4jWithFeatureCondition implements ExecutionCondition {
     private static final ConditionEvaluationResult ENABLED_NOT_ANNOTATED =
-            enabled("Neither @EnabledOnNeo4jWith nor @DisabledOnNeo4jWith is present");
+            ConditionEvaluationResult.enabled("Neither @EnabledOnNeo4jWith nor @DisabledOnNeo4jWith is present");
     private static final ConditionEvaluationResult ENABLED_UNKNOWN_DB_VERSION =
-            enabled("Shared neo4j is not running, unable to check version");
+            ConditionEvaluationResult.enabled("Shared neo4j is not running, unable to check version");
 
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
@@ -96,11 +96,11 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition {
                         .asString();
                 boolean editionMatches = edition.matches(value);
                 return editionMatches
-                        ? enabled(previousResult
+                        ? ConditionEvaluationResult.enabled(previousResult
                                         .getReason()
                                         .map(v -> v + " and enabled")
                                         .orElse("Enabled") + " on " + value + "-edition")
-                        : disabled(previousResult
+                        : ConditionEvaluationResult.disabled(previousResult
                                         .getReason()
                                         .map(v -> v + " but disabled")
                                         .orElse("Disabled") + " on " + value + "-edition");
@@ -113,12 +113,12 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition {
             Neo4jFeature.Version version, Neo4jFeature feature, boolean negated) {
         if (feature.availableIn(version)) {
             return negated
-                    ? disabled("Disabled on neo4j " + version + " because it supports " + feature)
-                    : enabled("Enabled on neo4j " + version + " because it supports " + feature);
+                    ? ConditionEvaluationResult.disabled("Disabled on neo4j " + version + " because it supports " + feature)
+                    : ConditionEvaluationResult.enabled("Enabled on neo4j " + version + " because it supports " + feature);
         } else {
             return negated
-                    ? enabled("Enabled on neo4j " + version + " because it does not support " + feature)
-                    : disabled("Disabled on neo4j " + version + " because it does not support " + feature);
+                    ? ConditionEvaluationResult.enabled("Enabled on neo4j " + version + " because it does not support " + feature)
+                    : ConditionEvaluationResult.disabled("Disabled on neo4j " + version + " because it does not support " + feature);
         }
     }
 }

@@ -1,0 +1,66 @@
+Copyright (c) "Neo4j"
+Neo4j Sweden AB [http://neo4j.com]
+
+This file is part of Neo4j.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Full license texts are found in LICENSES.txt.
+
+
+Third-party licenses
+--------------------
+
+Apache Software License, Version 2.0
+  Apache Commons Compress
+  Byte Buddy (without dependencies)
+  Byte Buddy agent
+  docker-java-api
+  docker-java-transport
+  docker-java-transport-zerodep
+  Jackson-annotations
+  JetBrains Java Annotations
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/TomcatNative [OpenSSL - Classes]
+  Netty/Transport
+  Netty/Transport/Native/Unix/Common
+  Non-Blocking Reactive Foundation for the JVM
+  org.apiguardian:apiguardian-api
+  org.opentest4j:opentest4j
+
+BSD License
+  Hamcrest Core
+
+Bouncy Castle License
+  Bouncy Castle ASN.1 Extension and Utility APIs
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
+
+Eclipse Public License v2.0
+  JUnit Jupiter (Aggregator)
+  JUnit Jupiter API
+  JUnit Jupiter Params
+  JUnit Platform Commons
+
+MIT License
+  Duct Tape
+  mockito-core
+  SLF4J API Module
+  Testcontainers :: JUnit Jupiter Extension
+  TestContainers :: Neo4j
+  Testcontainers Core
+
+MIT No Attribution License
+  reactive-streams
+

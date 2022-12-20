@@ -50,6 +50,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.testutil.CertificateUtil.CertificateKeyPair;
+import org.neo4j.driver.testutil.Neo4jSettings.BoltTlsLevel;
 import org.neo4j.driver.types.TypeSystem;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -82,9 +83,9 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         dockerAvailable = isDockerAvailable();
         instance = new DatabaseExtension();
         defaultConfig = new HashMap<>();
-        defaultConfig.put(SSL_POLICY_BOLT_ENABLED, "true");
-        defaultConfig.put(SSL_POLICY_BOLT_CLIENT_AUTH, "NONE");
-        defaultConfig.put(BOLT_TLS_LEVEL, OPTIONAL.toString());
+        defaultConfig.put(Neo4jSettings.SSL_POLICY_BOLT_ENABLED, "true");
+        defaultConfig.put(Neo4jSettings.SSL_POLICY_BOLT_CLIENT_AUTH, "NONE");
+        defaultConfig.put(Neo4jSettings.BOLT_TLS_LEVEL, BoltTlsLevel.OPTIONAL.toString());
 
         if (dockerAvailable) {
             CertificateKeyPair<File, File> pair = generateCertificateAndKey();
@@ -160,7 +161,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         neo4jContainer.stop();
         neo4jContainer = setupNeo4jContainer(cert, key, updatedConfig);
         neo4jContainer.start();
-        if (REQUIRED.toString().equals(config.get(BOLT_TLS_LEVEL))) {
+        if (BoltTlsLevel.REQUIRED.toString().equals(config.get(Neo4jSettings.BOLT_TLS_LEVEL))) {
             driver = GraphDatabase.driver(
                     boltUri,
                     authToken,

@@ -42,9 +42,8 @@
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-java-driver</artifactId>
+      <artifactId>neo4j-java-driver-testing</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>

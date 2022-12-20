@@ -61,6 +61,7 @@
   </properties>
 
   <modules>
+    <module>driver-testing</module>
     <module>driver</module>
     <module>bundle</module>
     <module>examples</module>
