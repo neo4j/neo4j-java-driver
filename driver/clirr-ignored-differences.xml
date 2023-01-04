@@ -409,4 +409,10 @@
         <method>org.neo4j.driver.BaseSession session(java.lang.Class, org.neo4j.driver.SessionConfig)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Logging</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.Logging javaPlatformLogging()</method>
+    </difference>
+
 </differences>

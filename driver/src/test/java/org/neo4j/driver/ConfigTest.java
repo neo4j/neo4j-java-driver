@@ -47,6 +47,7 @@ import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.logging.Slf4jLogging;
+import org.neo4j.driver.internal.logging.JavaPlatformLogging;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.testutil.TestUtil;
 
@@ -486,7 +487,7 @@ class ConfigTest {
         }
 
         @ParameterizedTest
-        @ValueSource(classes = {DevNullLogging.class, JULogging.class, ConsoleLogging.class, Slf4jLogging.class})
+        @ValueSource(classes = {DevNullLogging.class, JULogging.class, ConsoleLogging.class, Slf4jLogging.class, JavaPlatformLogging.class})
         void officialLoggingProvidersShouldBeSerializable(Class<? extends Logging> loggingClass) {
             assertTrue(Serializable.class.isAssignableFrom(loggingClass));
         }

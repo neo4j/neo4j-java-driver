@@ -18,39 +18,25 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import java.io.Serializable;
-import java.util.logging.Level;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 
+import java.io.Serializable;
+
 /**
- * Internal implementation of the JUL.
- * <b>This class should not be used directly.</b> Please use {@link Logging#javaUtilLogging(Level)} factory method instead.
+ * Internal implementation of the java platform logging module.
+ * <b>This class should not be used directly.</b> Please use {@link Logging#javaPlatformLogging()} factory method instead.
  *
- * @see Logging#javaUtilLogging(Level)
+ * @see Logging#javaPlatformLogging()
  */
-public class JULogging implements Logging, Serializable {
+public class JavaPlatformLogging implements Logging, Serializable {
     private static final long serialVersionUID = -1145576859241657833L;
 
-    private final Level loggingLevel;
-
-    public JULogging(Level loggingLevel) {
-        this.loggingLevel = loggingLevel;
+    public JavaPlatformLogging() {
     }
 
     @Override
     public Logger getLog(String name) {
-        return new JULogger(name, loggingLevel);
-    }
-
-    public static IllegalStateException checkAvailability() {
-        try {
-            Class.forName("java.util.logging.Logger");
-            return null;
-        } catch (Throwable error) {
-            return new IllegalStateException(
-                    "java.util.logging is not available. Please add the java.logging module.",
-                    error);
-        }
+        return new JavaPlatformLogger(System.getLogger(name));
     }
 }

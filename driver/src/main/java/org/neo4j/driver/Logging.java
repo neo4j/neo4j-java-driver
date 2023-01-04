@@ -24,6 +24,7 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.JULogging;
+import org.neo4j.driver.internal.logging.JavaPlatformLogging;
 import org.neo4j.driver.internal.logging.Slf4jLogging;
 
 /**
@@ -33,6 +34,9 @@ import org.neo4j.driver.internal.logging.Slf4jLogging;
  * <li>{@link #slf4j() SLF4J logging} - uses available SLF4J binding (Logback, Log4j, etc.) fails when no SLF4J implementation is available. Uses
  * application's logging configuration from XML or other type of configuration file. This logging method is the preferred one and relies on the SLF4J
  * implementation available in the classpath or modulepath.</li>
+ * <li>{@link #javaPlatformLogging() Java Logging API} - uses {@link java.lang.System.Logger} created via
+ * {@link java.lang.System#getLogger(String)}. This logging method is suitable when application
+ * uses the java system logger api for logging and provides the appropriate implementation (Logback, Log4j, etc.)</li>
  * <li>{@link #javaUtilLogging(Level) Java Logging API (JUL)} - uses {@link java.util.logging.Logger} created via
  * {@link java.util.logging.Logger#getLogger(String)}. Global java util logging configuration applies. This logging method is suitable when application
  * uses JUL for logging and explicitly configures it.</li>
@@ -119,12 +123,26 @@ public interface Logging {
     }
 
     /**
+     * Create logging implementation that uses {@link java.lang.System.Logger}.
+     *
+     * @return new logging implementation.
+     */
+    static Logging javaPlatformLogging() {
+        return new JavaPlatformLogging();
+    }
+
+    /**
      * Create logging implementation that uses {@link java.util.logging}.
      *
      * @param level the log level.
      * @return new logging implementation.
+     * @throws IllegalStateException if java.logging is not available.
      */
     static Logging javaUtilLogging(Level level) {
+        IllegalStateException unavailabilityError = JULogging.checkAvailability();
+        if (unavailabilityError != null) {
+            throw unavailabilityError;
+        }
         return new JULogging(level);
     }
 
