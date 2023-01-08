@@ -19,9 +19,6 @@ As a policy, patch versions will not be released except on rare occasions. Bug f
 | --- | --- | --- | --- |
 | 5.x | 17 | Primary development branch. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/5.x-changelog) |
 | 4.4 | 8, 11 | Maintenance. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.4-changelog) |
-| 4.3 | 8, 11 | Maintenance. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.3-changelog) |
-| 4.2 | 8, 11 | Maintenance. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.2-changelog) |
-| 4.1 | 8, 11 | Maintenance. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.1-changelog) |
 
 ## Server Compatibility
 
