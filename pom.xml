@@ -44,7 +44,7 @@
     <rxjava.version>2.2.21</rxjava.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
-    <mockito-core.version>4.10.0</mockito-core.version>
+    <mockito-core.version>4.11.0</mockito-core.version>
     <junit.version>5.9.1</junit.version>
     <testng-engine.version>1.0.4</testng-engine.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
