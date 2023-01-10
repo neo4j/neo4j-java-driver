@@ -75,6 +75,8 @@ public final class Config implements Serializable {
 
     private static final Config EMPTY = builder().build();
 
+    private final BookmarkManager queryBookmarkManager;
+
     /**
      * User defined logging
      */
@@ -102,6 +104,7 @@ public final class Config implements Serializable {
     private final MetricsAdapter metricsAdapter;
 
     private Config(ConfigBuilder builder) {
+        this.queryBookmarkManager = builder.queryBookmarkManager;
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
 
@@ -121,6 +124,21 @@ public final class Config implements Serializable {
 
         this.eventLoopThreads = builder.eventLoopThreads;
         this.metricsAdapter = builder.metricsAdapter;
+    }
+
+    /**
+     * A {@link BookmarkManager} implementation for the driver to use on
+     * {@link Driver#queryTask(String)} method and its variants by default.
+     * <p>
+     * Please note that sessions will not use this automatically, but it is possible to enable it explicitly
+     * using {@link SessionConfig.Builder#withBookmarkManager(BookmarkManager)}.
+     *
+     * @return bookmark manager, must not be {@code null}
+     * @since 5.5
+     */
+    @Experimental
+    public BookmarkManager queryBookmarkManager() {
+        return queryBookmarkManager;
     }
 
     /**
@@ -262,6 +280,8 @@ public final class Config implements Serializable {
      * Used to build new config instances
      */
     public static final class ConfigBuilder {
+        private BookmarkManager queryBookmarkManager =
+                BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build());
         private Logging logging = DEV_NULL_LOGGING;
         private boolean logLeakedSessions;
         private int maxConnectionPoolSize = PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
@@ -280,6 +300,24 @@ public final class Config implements Serializable {
         private int eventLoopThreads = 0;
 
         private ConfigBuilder() {}
+
+        /**
+         * Sets a {@link BookmarkManager} implementation for the driver to use on
+         * {@link Driver#queryTask(String)} method and its variants by default.
+         * <p>
+         * Please note that sessions will not use this automatically, but it is possible to enable it explicitly
+         * using {@link SessionConfig.Builder#withBookmarkManager(BookmarkManager)}.
+         *
+         * @param queryBookmarkManager bookmark manager, must not be {@code null}
+         * @return this builder
+         * @since 5.5
+         */
+        @Experimental
+        public ConfigBuilder withQueryBookmarkManager(BookmarkManager queryBookmarkManager) {
+            Objects.requireNonNull(queryBookmarkManager, "queryBookmarkManager must not be null");
+            this.queryBookmarkManager = queryBookmarkManager;
+            return this;
+        }
 
         /**
          * Provide a logging implementation for the driver to use. Java logging framework {@link java.util.logging} with {@link Level#INFO} is used by default.
