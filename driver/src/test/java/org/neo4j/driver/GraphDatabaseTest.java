@@ -93,7 +93,6 @@ class GraphDatabaseTest {
         final Driver driver = GraphDatabase.driver("neo4j://localhost:" + localPort, INSECURE_CONFIG);
         final ServiceUnavailableException error =
                 assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
-        error.printStackTrace();
         assertThat(error.getMessage(), containsString("Unable to connect to"));
     }
 
