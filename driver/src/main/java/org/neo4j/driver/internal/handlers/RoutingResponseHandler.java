@@ -109,10 +109,10 @@ public class RoutingResponseHandler implements ResponseHandler {
             // In the future, we might be able to move this logic to the server.
             switch (accessMode) {
                 case READ:
-                    return new ClientException("Write queries cannot be performed in READ access mode.");
+                    return new ClientException(e.code(), "Write queries cannot be performed in READ access mode.");
                 case WRITE:
                     errorHandler.onWriteFailure(address);
-                    return new SessionExpiredException(format("Server at %s no longer accepts writes", address));
+                    return new SessionExpiredException(format("Server at %s no longer accepts writes", address), e);
                 default:
                     throw new IllegalArgumentException(accessMode + " not supported.");
             }
