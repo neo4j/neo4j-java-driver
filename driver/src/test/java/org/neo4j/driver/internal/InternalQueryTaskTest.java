@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -39,6 +40,7 @@ import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.QueryConfig;
+import org.neo4j.driver.QueryTask;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.RoutingControl;
@@ -131,6 +133,8 @@ class InternalQueryTaskTest {
         });
         var result = mock(Result.class);
         given(txContext.run(any(Query.class))).willReturn(result);
+        var keys = List.of("key");
+        given(result.keys()).willReturn(keys);
         given(result.hasNext()).willReturn(true, false);
         var record = mock(Record.class);
         given(result.next()).willReturn(record);
@@ -152,9 +156,9 @@ class InternalQueryTaskTest {
         Function<Object, String> finisher = mock(Function.class);
         given(finisher.apply(resultContainer)).willReturn(collectorResult);
         given(recordCollector.finisher()).willReturn(finisher);
-        BiFunction<String, ResultSummary, String> finisherWithSummary = mock(BiFunction.class);
+        QueryTask.ResultFinisher<String, String> finisherWithSummary = mock(QueryTask.ResultFinisher.class);
         var expectedExecuteResult = "1";
-        given(finisherWithSummary.apply(any(String.class), any(ResultSummary.class)))
+        given(finisherWithSummary.finish(any(List.class), any(String.class), any(ResultSummary.class)))
                 .willReturn(expectedExecuteResult);
         var queryTask = new InternalQueryTask(driver, query, config).withParameters(params);
 
@@ -181,7 +185,7 @@ class InternalQueryTaskTest {
         then(accumulator).should().accept(resultContainer, record);
         then(recordCollector).should().finisher();
         then(finisher).should().apply(resultContainer);
-        then(finisherWithSummary).should().apply(collectorResult, summary);
+        then(finisherWithSummary).should().finish(keys, collectorResult, summary);
         assertEquals(expectedExecuteResult, executeResult);
     }
 }
