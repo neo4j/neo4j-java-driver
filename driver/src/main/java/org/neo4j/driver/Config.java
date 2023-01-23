@@ -137,7 +137,7 @@ public final class Config implements Serializable {
      * @since 5.5
      */
     @Experimental
-    public BookmarkManager queryBookmarkManager() {
+    public BookmarkManager queryTaskBookmarkManager() {
         return queryBookmarkManager;
     }
 
@@ -308,14 +308,14 @@ public final class Config implements Serializable {
          * Please note that sessions will not use this automatically, but it is possible to enable it explicitly
          * using {@link SessionConfig.Builder#withBookmarkManager(BookmarkManager)}.
          *
-         * @param queryBookmarkManager bookmark manager, must not be {@code null}
+         * @param bookmarkManager bookmark manager, must not be {@code null}
          * @return this builder
          * @since 5.5
          */
         @Experimental
-        public ConfigBuilder withQueryBookmarkManager(BookmarkManager queryBookmarkManager) {
-            Objects.requireNonNull(queryBookmarkManager, "queryBookmarkManager must not be null");
-            this.queryBookmarkManager = queryBookmarkManager;
+        public ConfigBuilder withQueryTaskBookmarkManager(BookmarkManager bookmarkManager) {
+            Objects.requireNonNull(bookmarkManager, "bookmarkManager must not be null");
+            this.queryBookmarkManager = bookmarkManager;
             return this;
         }
 

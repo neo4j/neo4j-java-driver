@@ -57,7 +57,7 @@ class ConfigTest {
         var config = Config.defaultConfig();
 
         // When
-        var manager = config.queryBookmarkManager();
+        var manager = config.queryTaskBookmarkManager();
 
         // Then
         assertEquals(
@@ -72,15 +72,15 @@ class ConfigTest {
         var manager = mock(BookmarkManager.class);
 
         // When
-        var config = Config.builder().withQueryBookmarkManager(manager).build();
+        var config = Config.builder().withQueryTaskBookmarkManager(manager).build();
 
         // Then
-        assertEquals(manager, config.queryBookmarkManager());
+        assertEquals(manager, config.queryTaskBookmarkManager());
     }
 
     @Test
     void shouldNotAllowNullBookmarkManager() {
-        assertThrows(NullPointerException.class, () -> Config.builder().withQueryBookmarkManager(null));
+        assertThrows(NullPointerException.class, () -> Config.builder().withQueryTaskBookmarkManager(null));
     }
 
     @Test
