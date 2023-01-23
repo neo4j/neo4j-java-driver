@@ -64,6 +64,26 @@ import org.neo4j.driver.util.Experimental;
  */
 public interface Driver extends AutoCloseable {
     /**
+     * Creates a new {@link QueryTask} instance that executes an idempotent query in a managed transaction with
+     * automatic retries on retryable errors.
+     *
+     * @param query query string
+     * @return new query task instance
+     * @since 5.5
+     */
+    @Experimental
+    QueryTask queryTask(String query);
+
+    /**
+     * Returns an instance of {@link BookmarkManager} used by {@link QueryTask} instances by default.
+     *
+     * @return bookmark manager, must not be {@code null}
+     * @since 5.5
+     */
+    @Experimental
+    BookmarkManager queryBookmarkManager();
+
+    /**
      * Return a flag to indicate whether or not encryption is used for this driver.
      *
      * @return true if the driver requires encryption, false otherwise
@@ -84,6 +104,7 @@ public interface Driver extends AutoCloseable {
     /**
      * Instantiate a new {@link Session} with a specified {@link SessionConfig session configuration}.
      * Use {@link SessionConfig#forDatabase(String)} to obtain a general purpose session configuration for the specified database.
+     *
      * @param sessionConfig specifies session configurations for this session.
      * @return a new {@link Session} object.
      * @see SessionConfig
@@ -257,6 +278,7 @@ public interface Driver extends AutoCloseable {
     /**
      * Returns the driver metrics if metrics reporting is enabled via {@link Config.ConfigBuilder#withDriverMetrics()}.
      * Otherwise, a {@link ClientException} will be thrown.
+     *
      * @return the driver metrics if enabled.
      * @throws ClientException if the driver metrics reporting is not enabled.
      */
@@ -281,7 +303,7 @@ public interface Driver extends AutoCloseable {
     /**
      * This verifies if the driver can connect to a remote server or a cluster
      * by establishing a network connection with the remote and possibly exchanging a few data before closing the connection.
-     *
+     * <p>
      * It throws exception if fails to connect. Use the exception to further understand the cause of the connectivity problem.
      * Note: Even if this method throws an exception, the driver still need to be closed via {@link #close()} to free up all resources.
      */
@@ -290,7 +312,7 @@ public interface Driver extends AutoCloseable {
     /**
      * This verifies if the driver can connect to a remote server or cluster
      * by establishing a network connection with the remote and possibly exchanging a few data before closing the connection.
-     *
+     * <p>
      * This operation is asynchronous and returns a {@link CompletionStage}. This stage is completed with
      * {@code null} when the driver connects to the remote server or cluster successfully.
      * It is completed exceptionally if the driver failed to connect the remote server or cluster.
@@ -303,12 +325,14 @@ public interface Driver extends AutoCloseable {
 
     /**
      * Returns true if the server or cluster the driver connects to supports multi-databases, otherwise false.
+     *
      * @return true if the server or cluster the driver connects to supports multi-databases, otherwise false.
      */
     boolean supportsMultiDb();
 
     /**
      * Asynchronous check if the server or cluster the driver connects to supports multi-databases.
+     *
      * @return a {@link CompletionStage completion stage} that returns true if the server or cluster
      * the driver connects to supports multi-databases, otherwise false.
      */

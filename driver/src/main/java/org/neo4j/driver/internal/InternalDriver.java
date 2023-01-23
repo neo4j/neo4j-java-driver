@@ -24,10 +24,14 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.BaseSession;
+import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.QueryConfig;
+import org.neo4j.driver.QueryTask;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
@@ -43,6 +47,7 @@ import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 
 public class InternalDriver implements Driver {
+    private final BookmarkManager queryBookmarkManager;
     private final SecurityPlan securityPlan;
     private final SessionFactory sessionFactory;
     private final Logger log;
@@ -51,14 +56,26 @@ public class InternalDriver implements Driver {
     private final MetricsProvider metricsProvider;
 
     InternalDriver(
+            BookmarkManager queryBookmarkManager,
             SecurityPlan securityPlan,
             SessionFactory sessionFactory,
             MetricsProvider metricsProvider,
             Logging logging) {
+        this.queryBookmarkManager = queryBookmarkManager;
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
         this.metricsProvider = metricsProvider;
         this.log = logging.getLog(getClass());
+    }
+
+    @Override
+    public QueryTask queryTask(String query) {
+        return new InternalQueryTask(this, new Query(query), QueryConfig.defaultConfig());
+    }
+
+    @Override
+    public BookmarkManager queryBookmarkManager() {
+        return queryBookmarkManager;
     }
 
     @SuppressWarnings({"unchecked", "deprecation"})

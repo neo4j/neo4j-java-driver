@@ -61,7 +61,8 @@ import reactor.core.publisher.Mono;
     @JsonSubTypes.Type(BookmarksSupplierCompleted.class),
     @JsonSubTypes.Type(BookmarksConsumerCompleted.class),
     @JsonSubTypes.Type(NewBookmarkManager.class),
-    @JsonSubTypes.Type(BookmarkManagerClose.class)
+    @JsonSubTypes.Type(BookmarkManagerClose.class),
+    @JsonSubTypes.Type(ExecuteQuery.class)
 })
 public interface TestkitRequest {
     TestkitResponse process(TestkitState testkitState);
