@@ -18,10 +18,13 @@
  */
 package org.neo4j.driver;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import org.neo4j.driver.internal.EagerResultValue;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.Experimental;
 
@@ -79,12 +82,13 @@ import org.neo4j.driver.util.Experimental;
  *         .execute(mapping(record -> record.get("N").asLong(), maxBy(Long::compare)));
  * }
  * </pre>
- * If there is a need to access {@link ResultSummary} value, another method option is available:
+ * If there is a need to access {@link Result#keys()} and/or {@link ResultSummary} value, another method option is
+ * available:
  * <pre>
  * {@code
  * import static java.util.stream.Collectors.*;
  *
- * private record ResultValue(Set<Long> values, ResultSummary summary) {}
+ * private record ResultValue(List<String> keys, Set<Long> values, ResultSummary summary) {}
  *
  * var result = driver.queryTask("UNWIND range(0, 5) as N RETURN N")
  *                     .execute(Collectors.mapping(record -> record.get("N").asLong(), toSet()), ResultValue::new);
@@ -118,7 +122,9 @@ public interface QueryTask {
      *
      * @return an instance of result containing all records, keys and result summary
      */
-    EagerResult execute();
+    default EagerResult execute() {
+        return execute(Collectors.toList(), EagerResultValue::new);
+    }
 
     /**
      * Executes query, collects {@link Record} values using the provided {@link Collector} and produces a final result.
@@ -129,22 +135,49 @@ public interface QueryTask {
      * @return the final result value
      */
     default <T> T execute(Collector<Record, ?, T> recordCollector) {
-        return execute(recordCollector, (collectorResult, ignored) -> collectorResult);
+        return execute(recordCollector, (ignoredKeys, collectorResult, ignoredSummary) -> collectorResult);
     }
 
     /**
      * Executes query, collects {@link Record} values using the provided {@link Collector} and produces a final result
      * by invoking the provided {@link BiFunction} with the collected result and {@link ResultSummary} values.
+     * <p>
+     * If any of the arguments throws an exception implementing the
+     * {@link org.neo4j.driver.exceptions.RetryableException} marker interface, the query is retried automatically in
+     * the same way as in the transaction functions. Exceptions not implementing the interface trigger transaction
+     * rollback and are then propagated to the user.
      *
      * @param recordCollector collector instance responsible for processing {@link Record} values and producing a
      *                        collected result, the collector may be used multiple times if query is retried
-     * @param finisherWithSummary function accepting both the collected result and {@link ResultSummary} values to
-     *                            output the final result, the function may be invoked multiple times if query is
-     *                            retried
+     * @param resultFinisher function accepting the {@link Result#keys()}, collected result and {@link ResultSummary}
+     *                       values to output the final result value, the function may be invoked multiple times if
+     *                       query is retried
      * @param <A> the mutable accumulation type of the collector's reduction operation
      * @param <R> the collector's result type
      * @param <T> the final result type
      * @return the final result value
      */
-    <A, R, T> T execute(Collector<Record, A, R> recordCollector, BiFunction<R, ResultSummary, T> finisherWithSummary);
+    <A, R, T> T execute(Collector<Record, A, R> recordCollector, ResultFinisher<R, T> resultFinisher);
+
+    /**
+     * A function accepting the {@link Result#keys()}, collected result and {@link ResultSummary} values to produce a
+     * final result value.
+     *
+     * @param <S> the collected value type
+     * @param <T> the final value type
+     * @since 5.5
+     */
+    @Experimental
+    @FunctionalInterface
+    interface ResultFinisher<S, T> {
+        /**
+         * Accepts the {@link Result#keys()}, collected result and {@link ResultSummary} values to produce the final
+         * result value.
+         * @param value the collected value
+         * @param keys the {@link Result#keys()} value
+         * @param summary the {@link ResultSummary} value
+         * @return the final value
+         */
+        T finish(List<String> keys, S value, ResultSummary summary);
+    }
 }

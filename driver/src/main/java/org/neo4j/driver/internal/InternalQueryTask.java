@@ -20,28 +20,17 @@ package org.neo4j.driver.internal;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.EagerResult;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.QueryTask;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
-import org.neo4j.driver.summary.ResultSummary;
 
 public class InternalQueryTask implements QueryTask {
-    private static final BiFunction<List<Record>, ResultSummary, EagerResult> EAGER_RESULT_FINISHER =
-            (records, summary) -> {
-                var keys = records.stream().findFirst().map(Record::keys).orElseGet(Collections::emptyList);
-                return new EagerResultValue(keys, records, summary);
-            };
     private final Driver driver;
     private final Query query;
     private final QueryConfig config;
@@ -68,13 +57,7 @@ public class InternalQueryTask implements QueryTask {
     }
 
     @Override
-    public EagerResult execute() {
-        return execute(Collectors.toList(), EAGER_RESULT_FINISHER);
-    }
-
-    @Override
-    public <A, R, T> T execute(
-            Collector<Record, A, R> recordCollector, BiFunction<R, ResultSummary, T> finisherWithSummary) {
+    public <A, R, T> T execute(Collector<Record, A, R> recordCollector, ResultFinisher<R, T> resultFinisher) {
         var sessionConfigBuilder = SessionConfig.builder();
         config.database().ifPresent(sessionConfigBuilder::withDatabase);
         config.impersonatedUser().ifPresent(sessionConfigBuilder::withImpersonatedUser);
@@ -91,7 +74,7 @@ public class InternalQueryTask implements QueryTask {
                 }
                 var finishedValue = finisher.apply(container);
                 var summary = result.consume();
-                return finisherWithSummary.apply(finishedValue, summary);
+                return resultFinisher.finish(result.keys(), finishedValue, summary);
             };
             return switch (config.routing()) {
                 case WRITERS -> session.executeWrite(txCallback);
