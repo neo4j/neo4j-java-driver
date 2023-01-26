@@ -36,26 +36,25 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.86.Final</netty-bom.version>
+    <netty-bom.version>4.1.87.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2020.0.26</reactor-bom.version>
-    <rxjava.version>2.2.21</rxjava.version>
+    <reactor-bom.version>2020.0.27</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
-    <mockito-core.version>4.11.0</mockito-core.version>
-    <junit.version>5.9.1</junit.version>
+    <mockito-core.version>5.0.0</mockito-core.version>
+    <junit.version>5.9.2</junit.version>
     <testng-engine.version>1.0.4</testng-engine.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.70</bouncycastle-jdk15on.version>
     <logback-classic.version>1.4.5</logback-classic.version>
     <jackson.version>2.14.1</jackson.version>
     <lombok.version>1.18.24</lombok.version>
-    <svm.version>22.2.0.1</svm.version>
-    <micrometer.version>1.10.2</micrometer.version>
+    <svm.version>22.3.1</svm.version>
+    <micrometer.version>1.10.3</micrometer.version>
     <testcontainers.version>1.17.6</testcontainers.version>
-    <build-resources.version>5.3.0</build-resources.version>
+    <build-resources.version>5.4.0</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
@@ -112,13 +111,6 @@
         <version>${reactor-bom.version}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-
-      <!--Compile dependencies only used by Examples-->
-      <dependency>
-        <groupId>io.reactivex.rxjava2</groupId>
-        <artifactId>rxjava</artifactId>
-        <version>${rxjava.version}</version>
       </dependency>
 
       <!-- Optional dependencies -->
