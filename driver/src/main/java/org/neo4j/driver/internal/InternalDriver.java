@@ -19,10 +19,14 @@
 package org.neo4j.driver.internal;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.security.AuthTokenUtil.requireValidAuthToken;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Driver;
@@ -35,6 +39,8 @@ import org.neo4j.driver.QueryTask;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
@@ -47,6 +53,11 @@ import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 
 public class InternalDriver implements Driver {
+    private static final Set<String> INVALID_TOKEN_CODES = Set.of(
+            "Neo.ClientError.Security.CredentialsExpired",
+            "Neo.ClientError.Security.Forbidden",
+            "Neo.ClientError.Security.TokenExpired",
+            "Neo.ClientError.Security.Unauthorized");
     private final BookmarkManager queryBookmarkManager;
     private final SecurityPlan securityPlan;
     private final SessionFactory sessionFactory;
@@ -80,21 +91,26 @@ public class InternalDriver implements Driver {
 
     @SuppressWarnings({"unchecked", "deprecation"})
     @Override
-    public <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig) {
+    public <T extends BaseSession> T session(
+            Class<T> sessionClass, SessionConfig sessionConfig, AuthToken sessionAuthToken) {
         requireNonNull(sessionClass, "sessionClass must not be null");
         requireNonNull(sessionClass, "sessionConfig must not be null");
+        if (sessionAuthToken != null) {
+            requireValidAuthToken(sessionAuthToken);
+        }
         T session;
         if (Session.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalSession(newSession(sessionConfig));
+            session = (T) new InternalSession(newSession(sessionConfig, sessionAuthToken));
         } else if (AsyncSession.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalAsyncSession(newSession(sessionConfig));
+            session = (T) new InternalAsyncSession(newSession(sessionConfig, sessionAuthToken));
         } else if (org.neo4j.driver.reactive.ReactiveSession.class.isAssignableFrom(sessionClass)) {
-            session = (T) new org.neo4j.driver.internal.reactive.InternalReactiveSession(newSession(sessionConfig));
+            session = (T) new org.neo4j.driver.internal.reactive.InternalReactiveSession(
+                    newSession(sessionConfig, sessionAuthToken));
         } else if (org.neo4j.driver.reactivestreams.ReactiveSession.class.isAssignableFrom(sessionClass)) {
-            session = (T)
-                    new org.neo4j.driver.internal.reactivestreams.InternalReactiveSession(newSession(sessionConfig));
+            session = (T) new org.neo4j.driver.internal.reactivestreams.InternalReactiveSession(
+                    newSession(sessionConfig, sessionAuthToken));
         } else if (RxSession.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalRxSession(newSession(sessionConfig));
+            session = (T) new InternalRxSession(newSession(sessionConfig, sessionAuthToken));
         } else {
             throw new IllegalArgumentException(
                     String.format("Unsupported session type '%s'", sessionClass.getCanonicalName()));
@@ -144,6 +160,33 @@ public class InternalDriver implements Driver {
     }
 
     @Override
+    public boolean verifyAuthentication(AuthToken authToken) {
+        var config = SessionConfig.builder()
+                .withDatabase("system")
+                .withDefaultAccessMode(AccessMode.READ)
+                .build();
+        try (var session = session(Session.class, config, authToken)) {
+            session.run("RETURN 1").consume();
+            return true;
+        } catch (RuntimeException e) {
+            if (e instanceof Neo4jException neo4jException) {
+                if (e instanceof UnsupportedFeatureException) {
+                    throw new UnsupportedFeatureException(
+                            "Unable to verify authentication due to an unsupported feature", e);
+                } else if (INVALID_TOKEN_CODES.contains(neo4jException.code())) {
+                    return false;
+                }
+            }
+            throw e;
+        }
+    }
+
+    @Override
+    public boolean supportsSessionAuth() {
+        return Futures.blockingGet(sessionFactory.supportsSessionAuth());
+    }
+
+    @Override
     public boolean supportsMultiDb() {
         return Futures.blockingGet(supportsMultiDbAsync());
     }
@@ -173,9 +216,9 @@ public class InternalDriver implements Driver {
         return new IllegalStateException("This driver instance has already been closed");
     }
 
-    public NetworkSession newSession(SessionConfig config) {
+    public NetworkSession newSession(SessionConfig config, AuthToken overrideAuthToken) {
         assertOpen();
-        NetworkSession session = sessionFactory.newInstance(config);
+        NetworkSession session = sessionFactory.newInstance(config, overrideAuthToken);
         if (closed.get()) {
             // session does not immediately acquire connection, it is fine to just throw
             throw driverCloseException();

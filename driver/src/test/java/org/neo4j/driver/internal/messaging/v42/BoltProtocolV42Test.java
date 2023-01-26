@@ -50,6 +50,7 @@ import static org.neo4j.driver.testutil.TestUtil.connectionMock;
 
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.time.Clock;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,6 +77,7 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -134,8 +136,14 @@ public final class BoltProtocolV42Test {
     @Test
     void shouldInitializeChannel() {
         ChannelPromise promise = channel.newPromise();
+        var clock = mock(Clock.class);
+        var time = 1L;
+        when(clock.millis()).thenReturn(time);
+        var authContext = mock(AuthContext.class);
+        when(authContext.getAuthToken()).thenReturn(dummyAuthToken());
+        ChannelAttributes.setAuthContext(channel, authContext);
 
-        protocol.initializeChannel("MyDriver/0.0.1", dummyAuthToken(), RoutingContext.EMPTY, promise);
+        protocol.initializeChannel("MyDriver/0.0.1", dummyAuthToken(), RoutingContext.EMPTY, promise, clock);
 
         assertThat(channel.outboundMessages(), hasSize(1));
         assertThat(channel.outboundMessages().poll(), instanceOf(HelloMessage.class));
@@ -150,6 +158,8 @@ public final class BoltProtocolV42Test {
 
         assertTrue(promise.isDone());
         assertTrue(promise.isSuccess());
+        verify(clock).millis();
+        verify(authContext).finishAuth(time);
     }
 
     @Test
@@ -165,7 +175,8 @@ public final class BoltProtocolV42Test {
     void shouldFailToInitializeChannelWhenErrorIsReceived() {
         ChannelPromise promise = channel.newPromise();
 
-        protocol.initializeChannel("MyDriver/2.2.1", dummyAuthToken(), RoutingContext.EMPTY, promise);
+        protocol.initializeChannel(
+                "MyDriver/2.2.1", dummyAuthToken(), RoutingContext.EMPTY, promise, mock(Clock.class));
 
         assertThat(channel.outboundMessages(), hasSize(1));
         assertThat(channel.outboundMessages().poll(), instanceOf(HelloMessage.class));

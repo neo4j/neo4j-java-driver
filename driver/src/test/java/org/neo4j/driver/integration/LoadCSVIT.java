@@ -40,7 +40,7 @@ class LoadCSVIT {
 
     @Test
     void shouldLoadCSV() throws Throwable {
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authToken());
+        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager());
                 Session session = driver.session()) {
             String csvFileUrl = createLocalIrisData(session);
 

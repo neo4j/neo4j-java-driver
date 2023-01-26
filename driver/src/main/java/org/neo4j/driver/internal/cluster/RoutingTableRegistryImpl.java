@@ -121,7 +121,11 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
                                 new ClusterRoutingTable(DatabaseNameUtil.defaultDatabase(), clock);
                         rediscovery
                                 .lookupClusterComposition(
-                                        routingTable, connectionPool, context.rediscoveryBookmarks(), impersonatedUser)
+                                        routingTable,
+                                        connectionPool,
+                                        context.rediscoveryBookmarks(),
+                                        impersonatedUser,
+                                        context.overrideAuthToken())
                                 .thenCompose(compositionLookupResult -> {
                                     DatabaseName databaseName = DatabaseNameUtil.database(compositionLookupResult
                                             .getClusterComposition()

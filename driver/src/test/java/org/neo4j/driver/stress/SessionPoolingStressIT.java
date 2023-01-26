@@ -76,7 +76,7 @@ class SessionPoolingStressIT {
     void shouldWorkFine() throws Throwable {
         Config config = Config.builder().withoutEncryption().build();
 
-        driver = driver(neo4j.uri(), neo4j.authToken(), config);
+        driver = driver(neo4j.uri(), neo4j.authTokenManager(), config);
 
         AtomicBoolean stop = new AtomicBoolean();
         AtomicReference<Throwable> failureReference = new AtomicReference<>();

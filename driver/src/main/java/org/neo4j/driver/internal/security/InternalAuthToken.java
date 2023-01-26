@@ -26,7 +26,7 @@ import org.neo4j.driver.Value;
  * A simple common token for authentication schemes that easily convert to
  * an auth token map
  */
-public class InternalAuthToken implements AuthToken {
+public final class InternalAuthToken implements AuthToken {
     public static final String SCHEME_KEY = "scheme";
     public static final String PRINCIPAL_KEY = "principal";
     public static final String CREDENTIALS_KEY = "credentials";

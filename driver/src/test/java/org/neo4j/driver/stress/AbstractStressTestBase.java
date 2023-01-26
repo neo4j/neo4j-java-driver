@@ -66,7 +66,7 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -120,7 +120,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     void setUp() {
         logging = new LoggerNameTrackingLogging();
 
-        driver = (InternalDriver) GraphDatabase.driver(databaseUri(), authToken(), config());
+        driver = (InternalDriver) GraphDatabase.driver(databaseUri(), authTokenProvider(), config());
 
         ThreadFactory threadFactory = new DaemonThreadFactory(getClass().getSimpleName() + "-worker-");
         executor = Executors.newCachedThreadPool(threadFactory);
@@ -200,7 +200,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     abstract URI databaseUri();
 
-    abstract AuthToken authToken();
+    abstract AuthTokenManager authTokenProvider();
 
     abstract Config.ConfigBuilder config(Config.ConfigBuilder builder);
 

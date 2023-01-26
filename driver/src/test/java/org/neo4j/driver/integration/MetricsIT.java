@@ -49,7 +49,7 @@ class MetricsIT {
     void createDriver() {
         driver = GraphDatabase.driver(
                 neo4j.uri(),
-                neo4j.authToken(),
+                neo4j.authTokenManager(),
                 Config.builder().withMetricsAdapter(MetricsAdapter.MICROMETER).build());
     }
 

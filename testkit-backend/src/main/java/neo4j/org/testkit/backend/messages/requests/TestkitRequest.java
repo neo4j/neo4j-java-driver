@@ -62,7 +62,13 @@ import reactor.core.publisher.Mono;
     @JsonSubTypes.Type(BookmarksConsumerCompleted.class),
     @JsonSubTypes.Type(NewBookmarkManager.class),
     @JsonSubTypes.Type(BookmarkManagerClose.class),
-    @JsonSubTypes.Type(ExecuteQuery.class)
+    @JsonSubTypes.Type(ExecuteQuery.class),
+    @JsonSubTypes.Type(NewAuthTokenProvider.class),
+    @JsonSubTypes.Type(AuthTokenProviderCompleted.class),
+    @JsonSubTypes.Type(AuthTokenProviderClose.class),
+    @JsonSubTypes.Type(FakeTimeInstall.class),
+    @JsonSubTypes.Type(FakeTimeTick.class),
+    @JsonSubTypes.Type(FakeTimeUninstall.class)
 })
 public interface TestkitRequest {
     TestkitResponse process(TestkitState testkitState);

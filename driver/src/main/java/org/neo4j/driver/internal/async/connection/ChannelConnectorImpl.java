@@ -31,6 +31,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Clock;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
@@ -44,7 +45,7 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 
 public class ChannelConnectorImpl implements ChannelConnector {
     private final String userAgent;
-    private final AuthToken authToken;
+    private final AuthTokenManager authTokenManager;
     private final RoutingContext routingContext;
     private final SecurityPlan securityPlan;
     private final ChannelPipelineBuilder pipelineBuilder;
@@ -80,7 +81,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
             RoutingContext routingContext,
             DomainNameResolver domainNameResolver) {
         this.userAgent = connectionSettings.userAgent();
-        this.authToken = requireValidAuthToken(connectionSettings.authToken());
+        this.authTokenManager = connectionSettings.authTokenProvider();
         this.routingContext = routingContext;
         this.connectTimeoutMillis = connectionSettings.connectTimeoutMillis();
         this.securityPlan = requireNonNull(securityPlan);
@@ -94,7 +95,8 @@ public class ChannelConnectorImpl implements ChannelConnector {
     @Override
     public ChannelFuture connect(BoltServerAddress address, Bootstrap bootstrap) {
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis);
-        bootstrap.handler(new NettyChannelInitializer(address, securityPlan, connectTimeoutMillis, clock, logging));
+        bootstrap.handler(new NettyChannelInitializer(
+                address, securityPlan, connectTimeoutMillis, authTokenManager, clock, logging));
         bootstrap.resolver(addressResolverGroup);
 
         SocketAddress socketAddress;
@@ -141,7 +143,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
         // add listener that sends an INIT message. connection is now fully established. channel pipeline if fully
         // set to send/receive messages for a selected protocol version
         handshakeCompleted.addListener(
-                new HandshakeCompletedListener(userAgent, authToken, routingContext, connectionInitialized));
+                new HandshakeCompletedListener(userAgent, routingContext, connectionInitialized, clock));
     }
 
     private static AuthToken requireValidAuthToken(AuthToken token) {

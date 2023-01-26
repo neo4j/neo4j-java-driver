@@ -30,20 +30,25 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthContext;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.DefaultChannelId;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.Attribute;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,12 +57,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.TokenExpiredException;
+import org.neo4j.driver.exceptions.TokenExpiredRetryableException;
+import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.logging.ChannelErrorLogger;
 import org.neo4j.driver.internal.messaging.Message;
@@ -65,6 +75,7 @@ import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.messaging.response.SuccessMessage;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.value.IntegerValue;
 
@@ -428,11 +439,74 @@ class InboundMessageDispatcherTest {
         verify(errorLogger).debug(contains(throwable.getClass().toString()));
     }
 
+    @Test
+    void shouldEmitTokenExpiredRetryableExceptionAndNotifyAuthTokenManager() {
+        // given
+        var channel = new EmbeddedChannel();
+        var authTokenManager = mock(AuthTokenManager.class);
+        var authContext = mock(AuthContext.class);
+        given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
+        var authToken = mock(AuthToken.class);
+        given(authContext.getAuthToken()).willReturn(authToken);
+        setAuthContext(channel, authContext);
+        var dispatcher = newDispatcher(channel);
+        var handler = mock(ResponseHandler.class);
+        dispatcher.enqueue(handler);
+        var code = "Neo.ClientError.Security.TokenExpired";
+        var message = "message";
+
+        // when
+        dispatcher.handleFailureMessage(code, message);
+
+        // then
+        assertEquals(0, dispatcher.queuedHandlersCount());
+        verifyFailure(handler, code, message, TokenExpiredRetryableException.class);
+        assertEquals(code, ((Neo4jException) dispatcher.currentError()).code());
+        assertEquals(message, dispatcher.currentError().getMessage());
+        then(authTokenManager).should().onExpired(authToken);
+    }
+
+    @Test
+    void shouldEmitTokenExpiredExceptionAndNotifyAuthTokenManager() {
+        // given
+        var channel = new EmbeddedChannel();
+        var authToken = mock(AuthToken.class);
+        var authTokenManager = spy(new StaticAuthTokenManager(authToken));
+        var authContext = mock(AuthContext.class);
+        given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
+        given(authContext.getAuthToken()).willReturn(authToken);
+        setAuthContext(channel, authContext);
+        var dispatcher = newDispatcher(channel);
+        var handler = mock(ResponseHandler.class);
+        dispatcher.enqueue(handler);
+        var code = "Neo.ClientError.Security.TokenExpired";
+        var message = "message";
+
+        // when
+        dispatcher.handleFailureMessage(code, message);
+
+        // then
+        assertEquals(0, dispatcher.queuedHandlersCount());
+        verifyFailure(handler, code, message, TokenExpiredException.class);
+        assertEquals(code, ((Neo4jException) dispatcher.currentError()).code());
+        assertEquals(message, dispatcher.currentError().getMessage());
+        then(authTokenManager).should().onExpired(authToken);
+    }
+
     private static void verifyFailure(ResponseHandler handler) {
+        verifyFailure(handler, FAILURE_CODE, FAILURE_MESSAGE, null);
+    }
+
+    private static void verifyFailure(
+            ResponseHandler handler, String code, String message, Class<? extends Neo4jException> exceptionCls) {
         ArgumentCaptor<Neo4jException> captor = ArgumentCaptor.forClass(Neo4jException.class);
         verify(handler).onFailure(captor.capture());
-        assertEquals(FAILURE_CODE, captor.getValue().code());
-        assertEquals(FAILURE_MESSAGE, captor.getValue().getMessage());
+        var value = captor.getValue();
+        assertEquals(code, value.code());
+        assertEquals(message, value.getMessage());
+        if (exceptionCls != null) {
+            assertEquals(exceptionCls, value.getClass());
+        }
     }
 
     private static InboundMessageDispatcher newDispatcher() {

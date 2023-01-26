@@ -97,7 +97,7 @@ class EncryptionIT {
         URI uri = URI.create(String.format(
                 "%s://%s:%s", scheme, neo4j.uri().getHost(), neo4j.uri().getPort()));
 
-        try (Driver driver = GraphDatabase.driver(uri, neo4j.authToken(), config)) {
+        try (Driver driver = GraphDatabase.driver(uri, neo4j.authTokenManager(), config)) {
             assertThat(driver.isEncrypted(), equalTo(driverEncrypted));
 
             try (Session session = driver.session()) {
@@ -116,9 +116,9 @@ class EncryptionIT {
         neo4j.deleteAndStartNeo4j(tlsConfig);
         Config config = newConfig(driverEncrypted);
 
-        ServiceUnavailableException e = assertThrows(
-                ServiceUnavailableException.class, () -> GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), config)
-                        .verifyConnectivity());
+        ServiceUnavailableException e = assertThrows(ServiceUnavailableException.class, () -> GraphDatabase.driver(
+                        neo4j.uri(), neo4j.authTokenManager(), config)
+                .verifyConnectivity());
 
         assertThat(e.getMessage(), startsWith("Connection to the database terminated"));
     }

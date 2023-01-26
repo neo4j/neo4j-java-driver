@@ -18,13 +18,23 @@
  */
 package org.neo4j.driver.internal.async.pool;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authContext;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthContext;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setLastUsedTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setProtocolVersion;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
@@ -33,22 +43,35 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.Future;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
+import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
+import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
+import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
+import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
+import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 
 class NettyChannelHealthCheckerTest {
     private final EmbeddedChannel channel = new EmbeddedChannel();
@@ -57,6 +80,10 @@ class NettyChannelHealthCheckerTest {
     @BeforeEach
     void setUp() {
         setMessageDispatcher(channel, dispatcher);
+        var authContext = new AuthContext(new StaticAuthTokenManager(AuthTokens.none()));
+        authContext.initiateAuth(AuthTokens.none());
+        authContext.finishAuth(Clock.systemUTC().millis());
+        setAuthContext(channel, authContext);
     }
 
     @AfterEach
@@ -92,38 +119,107 @@ class NettyChannelHealthCheckerTest {
 
         setCreationTimestamp(channel, 0);
         Future<Boolean> healthy = healthChecker.isHealthy(channel);
+        channel.runPendingTasks();
 
         assertThat(await(healthy), is(true));
     }
 
-    @Test
-    void shouldFailAllConnectionsCreatedOnOrBeforeExpirationTimestamp() {
+    public static List<BoltProtocolVersion> boltVersionsBefore51() {
+        return List.of(
+                BoltProtocolV3.VERSION,
+                BoltProtocolV4.VERSION,
+                BoltProtocolV41.VERSION,
+                BoltProtocolV42.VERSION,
+                BoltProtocolV43.VERSION,
+                BoltProtocolV44.VERSION,
+                BoltProtocolV5.VERSION);
+    }
+
+    @ParameterizedTest
+    @MethodSource("boltVersionsBefore51")
+    void shouldFailAllConnectionsCreatedOnOrBeforeExpirationTimestamp(BoltProtocolVersion boltProtocolVersion) {
         PoolSettings settings = new PoolSettings(
                 DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        Clock clock = Clock.systemUTC();
+        Clock clock = mock(Clock.class);
         NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
 
-        long initialTimestamp = clock.millis();
-        List<Channel> channels = IntStream.range(0, 100)
+        var authToken = mock(AuthToken.class);
+        var authTokenManager = mock(AuthTokenManager.class);
+        given(authTokenManager.getToken()).willReturn(completedFuture(authToken));
+        List<EmbeddedChannel> channels = IntStream.range(0, 100)
                 .mapToObj(i -> {
-                    Channel channel = new EmbeddedChannel();
-                    setCreationTimestamp(channel, initialTimestamp + i);
+                    var channel = new EmbeddedChannel();
+                    setProtocolVersion(channel, boltProtocolVersion);
+                    setCreationTimestamp(channel, i);
+                    var authContext = mock(AuthContext.class);
+                    setAuthContext(channel, authContext);
+                    given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
+                    given(authContext.getAuthToken()).willReturn(authToken);
+                    given(authContext.getAuthTimestamp()).willReturn((long) i);
                     return channel;
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         int authorizationExpiredChannelIndex = channels.size() / 2 - 1;
+        given(clock.millis()).willReturn((long) authorizationExpiredChannelIndex);
         healthChecker.onExpired(
                 new AuthorizationExpiredException("", ""), channels.get(authorizationExpiredChannelIndex));
 
         for (int i = 0; i < channels.size(); i++) {
-            Channel channel = channels.get(i);
-            boolean health = Objects.requireNonNull(await(healthChecker.isHealthy(channel)));
+            var channel = channels.get(i);
+            var future = healthChecker.isHealthy(channel);
+            channel.runPendingTasks();
+            boolean health = Objects.requireNonNull(await(future));
             boolean expectedHealth = i > authorizationExpiredChannelIndex;
             assertEquals(expectedHealth, health, String.format("Channel %d has failed the check", i));
+        }
+    }
+
+    @Test
+    void shouldMarkForLogoffAllConnectionsCreatedOnOrBeforeExpirationTimestamp() {
+        PoolSettings settings = new PoolSettings(
+                DEFAULT_MAX_CONNECTION_POOL_SIZE,
+                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
+                NOT_CONFIGURED,
+                DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
+        Clock clock = mock(Clock.class);
+        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
+
+        var authToken = mock(AuthToken.class);
+        var authTokenManager = mock(AuthTokenManager.class);
+        given(authTokenManager.getToken()).willReturn(completedFuture(authToken));
+        List<EmbeddedChannel> channels = IntStream.range(0, 100)
+                .mapToObj(i -> {
+                    var channel = new EmbeddedChannel();
+                    setProtocolVersion(channel, BoltProtocolV51.VERSION);
+                    setCreationTimestamp(channel, i);
+                    var authContext = mock(AuthContext.class);
+                    setAuthContext(channel, authContext);
+                    given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
+                    given(authContext.getAuthToken()).willReturn(authToken);
+                    given(authContext.getAuthTimestamp()).willReturn((long) i);
+                    return channel;
+                })
+                .toList();
+
+        int authorizationExpiredChannelIndex = channels.size() / 2 - 1;
+        given(clock.millis()).willReturn((long) authorizationExpiredChannelIndex);
+        healthChecker.onExpired(
+                new AuthorizationExpiredException("", ""), channels.get(authorizationExpiredChannelIndex));
+
+        for (int i = 0; i < channels.size(); i++) {
+            var channel = channels.get(i);
+            var future = healthChecker.isHealthy(channel);
+            channel.runPendingTasks();
+            boolean health = Objects.requireNonNull(await(future));
+            assertTrue(health, String.format("Channel %d has failed the check", i));
+            boolean pendingLogoff = i <= authorizationExpiredChannelIndex;
+            then(authContext(channel))
+                    .should(pendingLogoff ? times(1) : never())
+                    .markPendingLogoff();
         }
     }
 
@@ -138,16 +234,22 @@ class NettyChannelHealthCheckerTest {
         NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
 
         long initialTimestamp = clock.millis();
-        Channel channel1 = new EmbeddedChannel();
-        Channel channel2 = new EmbeddedChannel();
+        var channel1 = new EmbeddedChannel();
+        var channel2 = new EmbeddedChannel();
         setCreationTimestamp(channel1, initialTimestamp);
         setCreationTimestamp(channel2, initialTimestamp + 100);
+        setAuthContext(channel1, new AuthContext(new StaticAuthTokenManager(AuthTokens.none())));
+        setAuthContext(channel2, new AuthContext(new StaticAuthTokenManager(AuthTokens.none())));
 
         healthChecker.onExpired(new AuthorizationExpiredException("", ""), channel2);
         healthChecker.onExpired(new AuthorizationExpiredException("", ""), channel1);
 
-        assertFalse(Objects.requireNonNull(await(healthChecker.isHealthy(channel1))));
-        assertFalse(Objects.requireNonNull(await(healthChecker.isHealthy(channel2))));
+        var healthy = healthChecker.isHealthy(channel1);
+        channel1.runPendingTasks();
+        assertFalse(Objects.requireNonNull(await(healthy)));
+        healthy = healthChecker.isHealthy(channel2);
+        channel2.runPendingTasks();
+        assertFalse(Objects.requireNonNull(await(healthy)));
     }
 
     @Test
@@ -184,6 +286,7 @@ class NettyChannelHealthCheckerTest {
         setLastUsedTimestamp(channel, clock.millis() - idleTimeBeforeConnectionTest * 2);
 
         Future<Boolean> healthy = healthChecker.isHealthy(channel);
+        channel.runPendingTasks();
 
         assertEquals(ResetMessage.RESET, single(channel.outboundMessages()));
         assertFalse(healthy.isDone());
@@ -210,10 +313,12 @@ class NettyChannelHealthCheckerTest {
 
         if (channelActive) {
             Future<Boolean> healthy = healthChecker.isHealthy(channel);
+            channel.runPendingTasks();
             assertThat(await(healthy), is(true));
         } else {
             channel.close().syncUninterruptibly();
             Future<Boolean> healthy = healthChecker.isHealthy(channel);
+            channel.runPendingTasks();
             assertThat(await(healthy), is(false));
         }
     }

@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
@@ -34,6 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
@@ -104,6 +106,83 @@ class GraphDatabaseTest {
     @Test
     void shouldFailToCreateEncryptedDriverWhenServerDoesNotRespond() throws IOException {
         testFailureWhenServerDoesNotRespond(true);
+    }
+
+    @Test
+    void shouldRejectUnrecognisedTokenOnFactoryWithString() {
+        assertThrows(ClientException.class, () -> GraphDatabase.driver("neo4j://host", mock(AuthToken.class)));
+    }
+
+    @Test
+    void shouldRejectUnrecognisedTokenOnFactoryWithUri() {
+        assertThrows(
+                ClientException.class, () -> GraphDatabase.driver(URI.create("neo4j://host"), mock(AuthToken.class)));
+    }
+
+    @Test
+    void shouldRejectUnrecognisedTokenOnFactoryWithStringAndConfig() {
+        assertThrows(
+                ClientException.class,
+                () -> GraphDatabase.driver("neo4j://host", mock(AuthToken.class), Config.defaultConfig()));
+    }
+
+    @Test
+    void shouldRejectUnrecognisedTokenOnFactoryWithUriAndConfig() {
+        assertThrows(
+                ClientException.class,
+                () -> GraphDatabase.driver(URI.create("neo4j://host"), mock(AuthToken.class), Config.defaultConfig()));
+    }
+
+    @Test
+    void shouldAcceptNullTokenOnFactoryWithString() {
+        AuthToken token = null;
+        GraphDatabase.driver("neo4j://host", token);
+    }
+
+    @Test
+    void shouldAcceptNullTokenOnFactoryWithUri() {
+        AuthToken token = null;
+        GraphDatabase.driver(URI.create("neo4j://host"), token);
+    }
+
+    @Test
+    void shouldAcceptNullTokenOnFactoryWithStringAndConfig() {
+        AuthToken token = null;
+        GraphDatabase.driver("neo4j://host", token, Config.defaultConfig());
+    }
+
+    @Test
+    void shouldAcceptNullTokenOnFactoryWithUriAndConfig() {
+        AuthToken token = null;
+        GraphDatabase.driver(URI.create("neo4j://host"), token, Config.defaultConfig());
+    }
+
+    @Test
+    void shouldRejectNullAuthTokenManagerOnFactoryWithString() {
+        AuthTokenManager manager = null;
+        assertThrows(NullPointerException.class, () -> GraphDatabase.driver("neo4j://host", manager));
+    }
+
+    @Test
+    void shouldRejectNullAuthTokenManagerOnFactoryWithUri() {
+        AuthTokenManager manager = null;
+        assertThrows(NullPointerException.class, () -> GraphDatabase.driver(URI.create("neo4j://host"), manager));
+    }
+
+    @Test
+    void shouldRejectNullAuthTokenManagerOnFactoryWithStringAndConfig() {
+        AuthTokenManager manager = null;
+        assertThrows(
+                NullPointerException.class,
+                () -> GraphDatabase.driver("neo4j://host", manager, Config.defaultConfig()));
+    }
+
+    @Test
+    void shouldRejectNullAuthTokenManagerOnFactoryWithUriAndConfig() {
+        AuthTokenManager manager = null;
+        assertThrows(
+                NullPointerException.class,
+                () -> GraphDatabase.driver(URI.create("neo4j://host"), manager, Config.defaultConfig()));
     }
 
     private static void testFailureWhenServerDoesNotRespond(boolean encrypted) throws IOException {

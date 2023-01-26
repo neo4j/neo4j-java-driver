@@ -145,6 +145,42 @@ public interface Driver extends AutoCloseable {
     }
 
     /**
+     * Instantiate a new session of a supported type with the supplied {@link AuthToken}.
+     * <p>
+     * This method allows creating a session with a different {@link AuthToken} to the one used on the driver level.
+     * The minimum Bolt protocol version is 5.1. An {@link IllegalStateException} will be emitted on session interaction
+     * for previous Bolt versions.
+     * <p>
+     * Supported types are:
+     * <ul>
+     *     <li>{@link org.neo4j.driver.Session} - synchronous session</li>
+     *     <li>{@link org.neo4j.driver.async.AsyncSession} - asynchronous session</li>
+     *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
+     *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams
+     * API</li>
+     *     <li>{@link org.neo4j.driver.reactive.RxSession} - deprecated reactive session using Reactive Streams
+     * API, superseded by {@link org.neo4j.driver.reactivestreams.ReactiveSession}</li>
+     * </ul>
+     * <p>
+     * Sample usage:
+     * <pre>
+     * {@code
+     * var session = driver.session(AsyncSession.class);
+     * }
+     * </pre>
+     *
+     * @param sessionClass session type class, must not be null
+     * @param sessionAuthToken a token, null will result in driver-level configuration being used
+     * @return session instance
+     * @param <T> session type
+     * @throws IllegalArgumentException for unsupported session types
+     * @since 5.7
+     */
+    default <T extends BaseSession> T session(Class<T> sessionClass, AuthToken sessionAuthToken) {
+        return session(sessionClass, SessionConfig.defaultConfig(), sessionAuthToken);
+    }
+
+    /**
      * Create a new session of supported type with a specified {@link SessionConfig session configuration}.
      * <p>
      * Supported types are:
@@ -172,7 +208,45 @@ public interface Driver extends AutoCloseable {
      * @throws IllegalArgumentException for unsupported session types
      * @since 5.2
      */
-    <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig);
+    default <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig) {
+        return session(sessionClass, sessionConfig, null);
+    }
+
+    /**
+     * Instantiate a new session of a supported type with the supplied {@link SessionConfig session configuration} and
+     * {@link AuthToken}.
+     * <p>
+     * This method allows creating a session with a different {@link AuthToken} to the one used on the driver level.
+     * The minimum Bolt protocol version is 5.1. An {@link IllegalStateException} will be emitted on session interaction
+     * for previous Bolt versions.
+     * <p>
+     * Supported types are:
+     * <ul>
+     *     <li>{@link org.neo4j.driver.Session} - synchronous session</li>
+     *     <li>{@link org.neo4j.driver.async.AsyncSession} - asynchronous session</li>
+     *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
+     *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams
+     * API</li>
+     *     <li>{@link org.neo4j.driver.reactive.RxSession} - deprecated reactive session using Reactive Streams
+     * API, superseded by {@link org.neo4j.driver.reactivestreams.ReactiveSession}</li>
+     * </ul>
+     * <p>
+     * Sample usage:
+     * <pre>
+     * {@code
+     * var session = driver.session(AsyncSession.class);
+     * }
+     * </pre>
+     *
+     * @param sessionClass session type class, must not be null
+     * @param sessionConfig session config, must not be null
+     * @param sessionAuthToken a token, null will result in driver-level configuration being used
+     * @return session instance
+     * @param <T> session type
+     * @throws IllegalArgumentException for unsupported session types
+     * @since 5.7
+     */
+    <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig, AuthToken sessionAuthToken);
 
     /**
      * Create a new general purpose {@link RxSession} with default {@link SessionConfig session configuration}. The {@link RxSession} provides a reactive way to
@@ -324,6 +398,24 @@ public interface Driver extends AutoCloseable {
      * @return a {@link CompletionStage completion stage} that represents the asynchronous verification.
      */
     CompletionStage<Void> verifyConnectivityAsync();
+
+    /**
+     * Verifies if the given {@link AuthToken} is valid.
+     * <p>
+     * This check works on Bolt 5.1 version or above only.
+     * @param authToken the token
+     * @return the verification outcome
+     * @since 5.7
+     */
+    boolean verifyAuthentication(AuthToken authToken);
+
+    /**
+     * Checks if session auth is supported.
+     * @return the check outcome
+     * @since 5.7
+     * @see Driver#session(Class, SessionConfig, AuthToken)
+     */
+    boolean supportsSessionAuth();
 
     /**
      * Returns true if the server or cluster the driver connects to supports multi-databases, otherwise false.

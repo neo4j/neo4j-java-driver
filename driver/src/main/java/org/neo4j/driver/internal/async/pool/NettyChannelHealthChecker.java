@@ -18,37 +18,40 @@
  */
 package org.neo4j.driver.internal.async.pool;
 
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authContext;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.lastUsedTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.protocolVersion;
 
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelHealthChecker;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.PromiseNotifier;
 import java.time.Clock;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.internal.async.connection.AuthorizationStateListener;
 import org.neo4j.driver.internal.handlers.PingResponseHandler;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
+import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
 
 public class NettyChannelHealthChecker implements ChannelHealthChecker, AuthorizationStateListener {
     private final PoolSettings poolSettings;
     private final Clock clock;
     private final Logging logging;
     private final Logger log;
-    private final AtomicReference<Optional<Long>> minCreationTimestampMillisOpt;
+    private final AtomicLong minAuthTimestamp;
 
     public NettyChannelHealthChecker(PoolSettings poolSettings, Clock clock, Logging logging) {
         this.poolSettings = poolSettings;
         this.clock = clock;
         this.logging = logging;
         this.log = logging.getLog(getClass());
-        this.minCreationTimestampMillisOpt = new AtomicReference<>(Optional.empty());
+        this.minAuthTimestamp = new AtomicLong(-1);
     }
 
     @Override
@@ -56,31 +59,58 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker, Authoriz
         if (isTooOld(channel)) {
             return channel.eventLoop().newSucceededFuture(Boolean.FALSE);
         }
-        if (hasBeenIdleForTooLong(channel)) {
-            return ping(channel);
-        }
-        return ACTIVE.isHealthy(channel);
+        Promise<Boolean> result = channel.eventLoop().newPromise();
+        authContext(channel)
+                .getAuthTokenManager()
+                .getToken()
+                .whenCompleteAsync(
+                        (authToken, throwable) -> {
+                            if (throwable != null || authToken == null) {
+                                result.setSuccess(Boolean.FALSE);
+                            } else {
+                                var authContext = authContext(channel);
+                                if (authContext.getAuthTimestamp() != null) {
+                                    var equal = authToken.equals(authContext.getAuthToken());
+                                    if (isAuthExpiredByFailure(channel) || !equal) {
+                                        // Bolt versions prior to 5.1 do not support auth renewal
+                                        if (BoltProtocolV51.VERSION.compareTo(protocolVersion(channel)) > 0) {
+                                            result.setSuccess(Boolean.FALSE);
+                                        } else {
+                                            authContext.markPendingLogoff();
+                                            var downstreamCheck = hasBeenIdleForTooLong(channel)
+                                                    ? ping(channel)
+                                                    : ACTIVE.isHealthy(channel);
+                                            downstreamCheck.addListener(new PromiseNotifier<>(result));
+                                        }
+                                    } else {
+                                        var downstreamCheck = hasBeenIdleForTooLong(channel)
+                                                ? ping(channel)
+                                                : ACTIVE.isHealthy(channel);
+                                        downstreamCheck.addListener(new PromiseNotifier<>(result));
+                                    }
+                                } else {
+                                    result.setSuccess(Boolean.FALSE);
+                                }
+                            }
+                        },
+                        channel.eventLoop());
+        return result;
+    }
+
+    private boolean isAuthExpiredByFailure(Channel channel) {
+        var authTimestamp = authContext(channel).getAuthTimestamp();
+        return authTimestamp != null && authTimestamp <= minAuthTimestamp.get();
     }
 
     @Override
     public void onExpired(AuthorizationExpiredException e, Channel channel) {
-        long ts = creationTimestamp(channel);
-        // Override current value ONLY if the new one is greater
-        minCreationTimestampMillisOpt.getAndUpdate(
-                prev -> Optional.of(prev.filter(prevTs -> ts <= prevTs).orElse(ts)));
+        var now = clock.millis();
+        minAuthTimestamp.getAndUpdate(prev -> Math.max(prev, now));
     }
 
     private boolean isTooOld(Channel channel) {
-        long creationTimestampMillis = creationTimestamp(channel);
-        Optional<Long> minCreationTimestampMillisOpt = this.minCreationTimestampMillisOpt.get();
-
-        if (minCreationTimestampMillisOpt.isPresent()
-                && creationTimestampMillis <= minCreationTimestampMillisOpt.get()) {
-            log.trace(
-                    "The channel %s is marked for closure as its creation timestamp is older than or equal to the acceptable minimum timestamp: %s <= %s",
-                    channel, creationTimestampMillis, minCreationTimestampMillisOpt.get());
-            return true;
-        } else if (poolSettings.maxConnectionLifetimeEnabled()) {
+        if (poolSettings.maxConnectionLifetimeEnabled()) {
+            long creationTimestampMillis = creationTimestamp(channel);
             long currentTimestampMillis = clock.millis();
 
             long ageMillis = currentTimestampMillis - creationTimestampMillis;
@@ -92,7 +122,6 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker, Authoriz
                         "Failed acquire channel %s from the pool because it is too old: %s > %s",
                         channel, ageMillis, maxAgeMillis);
             }
-
             return tooOld;
         }
         return false;

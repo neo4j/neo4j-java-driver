@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.async.inbound;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authContext;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authorizationStateListener;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
@@ -33,10 +34,13 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.TokenExpiredException;
+import org.neo4j.driver.exceptions.TokenExpiredRetryableException;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.logging.ChannelErrorLogger;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
 
@@ -114,8 +118,19 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         }
 
         Throwable currentError = this.currentError;
-        if (currentError instanceof AuthorizationExpiredException) {
-            authorizationStateListener(channel).onExpired((AuthorizationExpiredException) currentError, channel);
+        if (currentError instanceof AuthorizationExpiredException authorizationExpiredException) {
+            authorizationStateListener(channel).onExpired(authorizationExpiredException, channel);
+        } else if (currentError instanceof TokenExpiredException tokenExpiredException) {
+            var authContext = authContext(channel);
+            var authTokenProvider = authContext.getAuthTokenManager();
+            if (!(authTokenProvider instanceof StaticAuthTokenManager)) {
+                currentError = new TokenExpiredRetryableException(
+                        tokenExpiredException.code(), tokenExpiredException.getMessage());
+            }
+            var authToken = authContext.getAuthToken();
+            if (authToken != null) {
+                authTokenProvider.onExpired(authToken);
+            }
         } else {
             // write a RESET to "acknowledge" the failure
             enqueue(new ResetResponseHandler(this));

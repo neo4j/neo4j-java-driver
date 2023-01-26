@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Config;
@@ -51,7 +52,7 @@ public class SessionFactoryImpl implements SessionFactory {
     }
 
     @Override
-    public NetworkSession newInstance(SessionConfig sessionConfig) {
+    public NetworkSession newInstance(SessionConfig sessionConfig, AuthToken overrideAuthToken) {
         return createSession(
                 connectionProvider,
                 retryLogic,
@@ -61,7 +62,8 @@ public class SessionFactoryImpl implements SessionFactory {
                 parseFetchSize(sessionConfig),
                 sessionConfig.impersonatedUser().orElse(null),
                 logging,
-                sessionConfig.bookmarkManager().orElse(NoOpBookmarkManager.INSTANCE));
+                sessionConfig.bookmarkManager().orElse(NoOpBookmarkManager.INSTANCE),
+                overrideAuthToken);
     }
 
     private Set<Bookmark> toDistinctSet(Iterable<Bookmark> bookmarks) {
@@ -111,6 +113,11 @@ public class SessionFactoryImpl implements SessionFactory {
         return connectionProvider.supportsMultiDb();
     }
 
+    @Override
+    public CompletionStage<Boolean> supportsSessionAuth() {
+        return connectionProvider.supportsSessionAuth();
+    }
+
     /**
      * Get the underlying connection provider.
      * <p>
@@ -131,7 +138,8 @@ public class SessionFactoryImpl implements SessionFactory {
             long fetchSize,
             String impersonatedUser,
             Logging logging,
-            BookmarkManager bookmarkManager) {
+            BookmarkManager bookmarkManager,
+            AuthToken authToken) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         return leakedSessionsLoggingEnabled
@@ -144,7 +152,8 @@ public class SessionFactoryImpl implements SessionFactory {
                         impersonatedUser,
                         fetchSize,
                         logging,
-                        bookmarkManager)
+                        bookmarkManager,
+                        authToken)
                 : new NetworkSession(
                         connectionProvider,
                         retryLogic,
@@ -154,6 +163,7 @@ public class SessionFactoryImpl implements SessionFactory {
                         impersonatedUser,
                         fetchSize,
                         logging,
-                        bookmarkManager);
+                        bookmarkManager,
+                        authToken);
     }
 }

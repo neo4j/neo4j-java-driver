@@ -22,11 +22,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import neo4j.org.testkit.backend.AuthTokenUtil;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncSessionHolder;
 import neo4j.org.testkit.backend.holder.DriverHolder;
@@ -37,6 +37,7 @@ import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -80,7 +81,7 @@ public class NewSession implements TestkitRequest {
 
     protected <T> TestkitResponse createSessionStateAndResponse(
             TestkitState testkitState,
-            BiFunction<DriverHolder, SessionConfig, T> sessionStateProducer,
+            SessionStateProducer<T> sessionStateProducer,
             Function<T, String> addSessionHolder) {
         DriverHolder driverHolder = testkitState.getDriverHolder(data.getDriverId());
         AccessMode formattedAccessMode = data.getAccessMode().equals("r") ? AccessMode.READ : AccessMode.WRITE;
@@ -102,7 +103,11 @@ public class NewSession implements TestkitRequest {
                 .map(testkitState::getBookmarkManager)
                 .ifPresent(builder::withBookmarkManager);
 
-        T sessionStateHolder = sessionStateProducer.apply(driverHolder, builder.build());
+        var userSwitchAuthToken = data.getAuthorizationToken() != null
+                ? AuthTokenUtil.parseAuthToken(data.getAuthorizationToken())
+                : null;
+
+        T sessionStateHolder = sessionStateProducer.apply(driverHolder, builder.build(), userSwitchAuthToken);
         String newId = addSessionHolder.apply(sessionStateHolder);
 
         return Session.builder()
@@ -110,31 +115,49 @@ public class NewSession implements TestkitRequest {
                 .build();
     }
 
-    private SessionHolder createSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
-        return new SessionHolder(driverHolder, driverHolder.getDriver().session(sessionConfig), sessionConfig);
+    private SessionHolder createSessionState(
+            DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
+        return new SessionHolder(
+                driverHolder,
+                driverHolder.getDriver().session(org.neo4j.driver.Session.class, sessionConfig, userSwitchAuthToken),
+                sessionConfig);
     }
 
-    private AsyncSessionHolder createAsyncSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
+    private AsyncSessionHolder createAsyncSessionState(
+            DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new AsyncSessionHolder(
-                driverHolder, driverHolder.getDriver().session(AsyncSession.class, sessionConfig), sessionConfig);
+                driverHolder,
+                driverHolder.getDriver().session(AsyncSession.class, sessionConfig, userSwitchAuthToken),
+                sessionConfig);
     }
 
     @SuppressWarnings("deprecation")
-    private RxSessionHolder createRxSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
+    private RxSessionHolder createRxSessionState(
+            DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new RxSessionHolder(
-                driverHolder, driverHolder.getDriver().session(RxSession.class, sessionConfig), sessionConfig);
+                driverHolder,
+                driverHolder.getDriver().session(RxSession.class, sessionConfig, userSwitchAuthToken),
+                sessionConfig);
     }
 
-    private ReactiveSessionHolder createReactiveSessionState(DriverHolder driverHolder, SessionConfig sessionConfig) {
+    private ReactiveSessionHolder createReactiveSessionState(
+            DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new ReactiveSessionHolder(
-                driverHolder, driverHolder.getDriver().session(ReactiveSession.class, sessionConfig), sessionConfig);
+                driverHolder,
+                driverHolder.getDriver().session(ReactiveSession.class, sessionConfig, userSwitchAuthToken),
+                sessionConfig);
     }
 
     private ReactiveSessionStreamsHolder createReactiveSessionStreamsState(
-            DriverHolder driverHolder, SessionConfig sessionConfig) {
+            DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new ReactiveSessionStreamsHolder(
                 driverHolder,
-                driverHolder.getDriver().session(org.neo4j.driver.reactivestreams.ReactiveSession.class, sessionConfig),
+                driverHolder
+                        .getDriver()
+                        .session(
+                                org.neo4j.driver.reactivestreams.ReactiveSession.class,
+                                sessionConfig,
+                                userSwitchAuthToken),
                 sessionConfig);
     }
 
@@ -148,5 +171,11 @@ public class NewSession implements TestkitRequest {
         private String impersonatedUser;
         private int fetchSize;
         private String bookmarkManagerId;
+        private AuthorizationToken authorizationToken;
+    }
+
+    @FunctionalInterface
+    private interface SessionStateProducer<T> {
+        T apply(DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken);
     }
 }

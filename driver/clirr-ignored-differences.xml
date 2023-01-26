@@ -433,4 +433,28 @@
         <method>org.neo4j.driver.BookmarkManager queryTaskBookmarkManager()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.BaseSession session(java.lang.Class, org.neo4j.driver.AuthToken)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.BaseSession session(java.lang.Class, org.neo4j.driver.SessionConfig, org.neo4j.driver.AuthToken)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>boolean verifyAuthentication(org.neo4j.driver.AuthToken)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>boolean supportsSessionAuth()</method>
+    </difference>
+
 </differences>

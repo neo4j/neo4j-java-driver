@@ -22,6 +22,7 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.proto
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
+import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -43,6 +44,7 @@ import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
+import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
 import org.neo4j.driver.internal.spi.Connection;
 
 public interface BoltProtocol {
@@ -60,12 +62,14 @@ public interface BoltProtocol {
      * @param authToken the authentication token.
      * @param routingContext the configured routing context
      * @param channelInitializedPromise the promise to be notified when initialization is completed.
+     * @param clock the clock to use
      */
     void initializeChannel(
             String userAgent,
             AuthToken authToken,
             RoutingContext routingContext,
-            ChannelPromise channelInitializedPromise);
+            ChannelPromise channelInitializedPromise,
+            Clock clock);
 
     /**
      * Prepare to close channel before it is closed.
@@ -170,6 +174,8 @@ public interface BoltProtocol {
             return BoltProtocolV44.INSTANCE;
         } else if (BoltProtocolV5.VERSION.equals(version)) {
             return BoltProtocolV5.INSTANCE;
+        } else if (BoltProtocolV51.VERSION.equals(version)) {
+            return BoltProtocolV51.INSTANCE;
         }
         throw new ClientException("Unknown protocol version: " + version);
     }

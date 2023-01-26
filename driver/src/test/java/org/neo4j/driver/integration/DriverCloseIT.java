@@ -85,6 +85,6 @@ class DriverCloseIT {
     }
 
     private static Driver createDriver() {
-        return GraphDatabase.driver(neo4j.uri(), neo4j.authToken());
+        return GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager());
     }
 }

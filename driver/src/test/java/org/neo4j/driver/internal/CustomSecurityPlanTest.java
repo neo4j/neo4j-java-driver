@@ -27,12 +27,13 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
 class CustomSecurityPlanTest {
@@ -44,7 +45,7 @@ class CustomSecurityPlanTest {
 
         driverFactory.newInstance(
                 URI.create("neo4j://somewhere:1234"),
-                AuthTokens.none(),
+                new StaticAuthTokenManager(AuthTokens.none()),
                 Config.defaultConfig(),
                 securityPlan,
                 null,
@@ -69,7 +70,7 @@ class CustomSecurityPlanTest {
 
         @Override
         protected ConnectionPool createConnectionPool(
-                AuthToken authToken,
+                AuthTokenManager authTokenManager,
                 SecurityPlan securityPlan,
                 Bootstrap bootstrap,
                 MetricsProvider metricsProvider,
@@ -78,7 +79,13 @@ class CustomSecurityPlanTest {
                 RoutingContext routingContext) {
             capturedSecurityPlans.add(securityPlan);
             return super.createConnectionPool(
-                    authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext);
+                    authTokenManager,
+                    securityPlan,
+                    bootstrap,
+                    metricsProvider,
+                    config,
+                    ownsEventLoopGroup,
+                    routingContext);
         }
     }
 }

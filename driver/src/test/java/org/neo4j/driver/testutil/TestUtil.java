@@ -94,6 +94,7 @@ import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
+import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -267,7 +268,8 @@ public final class TestUtil {
                 null,
                 UNLIMITED_FETCH_SIZE,
                 DEV_NULL_LOGGING,
-                NoOpBookmarkManager.INSTANCE);
+                NoOpBookmarkManager.INSTANCE,
+                null);
     }
 
     public static void verifyRunRx(Connection connection, String query) {
@@ -453,7 +455,8 @@ public final class TestUtil {
                 || version.equals(BoltProtocolV42.VERSION)
                 || version.equals(BoltProtocolV43.VERSION)
                 || version.equals(BoltProtocolV44.VERSION)
-                || version.equals(BoltProtocolV5.VERSION)) {
+                || version.equals(BoltProtocolV5.VERSION)
+                || version.equals(BoltProtocolV51.VERSION)) {
             setupSuccessResponse(connection, CommitMessage.class);
             setupSuccessResponse(connection, RollbackMessage.class);
             setupSuccessResponse(connection, BeginMessage.class);

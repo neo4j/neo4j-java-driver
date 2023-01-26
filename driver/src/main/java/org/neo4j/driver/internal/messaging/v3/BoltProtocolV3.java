@@ -28,6 +28,7 @@ import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
+import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -79,7 +80,8 @@ public class BoltProtocolV3 implements BoltProtocol {
             String userAgent,
             AuthToken authToken,
             RoutingContext routingContext,
-            ChannelPromise channelInitializedPromise) {
+            ChannelPromise channelInitializedPromise,
+            Clock clock) {
         Channel channel = channelInitializedPromise.channel();
         HelloMessage message;
 
@@ -94,7 +96,7 @@ public class BoltProtocolV3 implements BoltProtocol {
                     userAgent, ((InternalAuthToken) authToken).toMap(), null, includeDateTimeUtcPatchInHello());
         }
 
-        HelloResponseHandler handler = new HelloResponseHandler(channelInitializedPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelInitializedPromise, clock);
 
         messageDispatcher(channel).enqueue(handler);
         channel.writeAndFlush(message, channel.voidPromise());

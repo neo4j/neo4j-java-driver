@@ -48,6 +48,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.exceptions.AuthenticationException;
@@ -62,6 +63,7 @@ import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -87,7 +89,7 @@ class ChannelConnectorImplIT {
 
     @Test
     void shouldConnect() throws Exception {
-        ChannelConnector connector = newConnector(neo4j.authToken());
+        ChannelConnector connector = newConnector(neo4j.authTokenManager());
 
         ChannelFuture channelFuture = connector.connect(neo4j.address(), bootstrap);
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
@@ -99,7 +101,7 @@ class ChannelConnectorImplIT {
 
     @Test
     void shouldSetupHandlers() throws Exception {
-        ChannelConnector connector = newConnector(neo4j.authToken(), trustAllCertificates(), 10_000);
+        ChannelConnector connector = newConnector(neo4j.authTokenManager(), trustAllCertificates(), 10_000);
 
         ChannelFuture channelFuture = connector.connect(neo4j.address(), bootstrap);
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
@@ -114,7 +116,7 @@ class ChannelConnectorImplIT {
 
     @Test
     void shouldFailToConnectToWrongAddress() throws Exception {
-        ChannelConnector connector = newConnector(neo4j.authToken());
+        ChannelConnector connector = newConnector(neo4j.authTokenManager());
 
         ChannelFuture channelFuture = connector.connect(new BoltServerAddress("wrong-localhost"), bootstrap);
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
@@ -130,7 +132,7 @@ class ChannelConnectorImplIT {
     @Test
     void shouldFailToConnectWithWrongCredentials() throws Exception {
         AuthToken authToken = AuthTokens.basic("neo4j", "wrong-password");
-        ChannelConnector connector = newConnector(authToken);
+        ChannelConnector connector = newConnector(new StaticAuthTokenManager(authToken));
 
         ChannelFuture channelFuture = connector.connect(neo4j.address(), bootstrap);
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
@@ -143,7 +145,7 @@ class ChannelConnectorImplIT {
 
     @Test
     void shouldEnforceConnectTimeout() throws Exception {
-        ChannelConnector connector = newConnector(neo4j.authToken(), 1000);
+        ChannelConnector connector = newConnector(neo4j.authTokenManager(), 1000);
 
         // try connect to a non-routable ip address 10.0.0.0, it will never respond
         ChannelFuture channelFuture = connector.connect(new BoltServerAddress("10.0.0.0"), bootstrap);
@@ -180,7 +182,7 @@ class ChannelConnectorImplIT {
             }
         });
 
-        ChannelConnector connector = newConnector(neo4j.authToken());
+        ChannelConnector connector = newConnector(neo4j.authTokenManager());
         ChannelFuture channelFuture = connector.connect(address, bootstrap);
 
         // connect operation should fail with ServiceUnavailableException
@@ -192,7 +194,7 @@ class ChannelConnectorImplIT {
         {
             int timeoutMillis = 1_000;
             BoltServerAddress address = new BoltServerAddress("localhost", server.getLocalPort());
-            ChannelConnector connector = newConnector(neo4j.authToken(), securityPlan, timeoutMillis);
+            ChannelConnector connector = newConnector(neo4j.authTokenManager(), securityPlan, timeoutMillis);
 
             ChannelFuture channelFuture = connector.connect(address, bootstrap);
 
@@ -201,17 +203,18 @@ class ChannelConnectorImplIT {
         }
     }
 
-    private ChannelConnectorImpl newConnector(AuthToken authToken) throws Exception {
-        return newConnector(authToken, Integer.MAX_VALUE);
+    private ChannelConnectorImpl newConnector(AuthTokenManager authTokenManager) throws Exception {
+        return newConnector(authTokenManager, Integer.MAX_VALUE);
     }
 
-    private ChannelConnectorImpl newConnector(AuthToken authToken, int connectTimeoutMillis) throws Exception {
-        return newConnector(authToken, trustAllCertificates(), connectTimeoutMillis);
+    private ChannelConnectorImpl newConnector(AuthTokenManager authTokenManager, int connectTimeoutMillis)
+            throws Exception {
+        return newConnector(authTokenManager, trustAllCertificates(), connectTimeoutMillis);
     }
 
     private ChannelConnectorImpl newConnector(
-            AuthToken authToken, SecurityPlan securityPlan, int connectTimeoutMillis) {
-        ConnectionSettings settings = new ConnectionSettings(authToken, "test", connectTimeoutMillis);
+            AuthTokenManager authTokenManager, SecurityPlan securityPlan, int connectTimeoutMillis) {
+        ConnectionSettings settings = new ConnectionSettings(authTokenManager, "test", connectTimeoutMillis);
         return new ChannelConnectorImpl(
                 settings,
                 securityPlan,

@@ -84,7 +84,7 @@ class TrustCustomCertificateIT {
     private Driver createDriverWithCustomCertificate(File cert) {
         return GraphDatabase.driver(
                 neo4j.uri(),
-                neo4j.authToken(),
+                neo4j.authTokenManager(),
                 Config.builder()
                         .withEncryption()
                         .withTrustStrategy(trustCustomCertificateSignedBy(cert))

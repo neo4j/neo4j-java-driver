@@ -22,7 +22,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -38,8 +38,8 @@ class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStress
     }
 
     @Override
-    AuthToken authToken() {
-        return neo4j.authToken();
+    AuthTokenManager authTokenProvider() {
+        return neo4j.authTokenManager();
     }
 
     @Override

@@ -273,7 +273,7 @@ class SessionBoltV3IT {
         MessageRecordingDriverFactory driverFactory = new MessageRecordingDriverFactory();
 
         try (Driver otherDriver = driverFactory.newInstance(
-                driver.uri(), driver.authToken(), defaultConfig(), SecurityPlanImpl.insecure(), null, null)) {
+                driver.uri(), driver.authTokenManager(), defaultConfig(), SecurityPlanImpl.insecure(), null, null)) {
             List<Session> sessions = new ArrayList<>();
             List<Transaction> txs = new ArrayList<>();
             for (int i = 0; i < txCount; i++) {
