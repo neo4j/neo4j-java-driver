@@ -82,7 +82,7 @@ class SharedEventLoopIT {
     private Driver createDriver(EventLoopGroup eventLoopGroup) {
         return driverFactory.newInstance(
                 neo4j.uri(),
-                neo4j.authToken(),
+                neo4j.authTokenManager(),
                 Config.defaultConfig(),
                 SecurityPlanImpl.insecure(),
                 eventLoopGroup,

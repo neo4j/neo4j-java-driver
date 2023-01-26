@@ -66,7 +66,7 @@ class ServerKilledIT {
     @MethodSource("data")
     void shouldRecoverFromServerRestart(String name, Config.ConfigBuilder configBuilder) {
         // Given config with sessionLivenessCheckTimeout not set, i.e. turned off
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), configBuilder.build())) {
+        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), configBuilder.build())) {
             acquireAndReleaseConnections(4, driver);
 
             // When
@@ -127,6 +127,7 @@ class ServerKilledIT {
 
     private Driver createDriver(Clock clock, Config config) {
         DriverFactory factory = new DriverFactoryWithClock(clock);
-        return factory.newInstance(neo4j.uri(), neo4j.authToken(), config, SecurityPlanImpl.insecure(), null, null);
+        return factory.newInstance(
+                neo4j.uri(), neo4j.authTokenManager(), config, SecurityPlanImpl.insecure(), null, null);
     }
 }

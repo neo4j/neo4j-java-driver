@@ -24,11 +24,12 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.testutil.TestUtil;
 import org.testcontainers.containers.Neo4jContainer;
 
@@ -47,11 +48,11 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
         return clusterUri;
     }
 
-    public AuthToken getAuthToken() {
+    public AuthTokenManager getAuthToken() {
         if (remoteClusterExists()) {
-            return AuthTokens.basic("neo4j", neo4jUserPasswordFromSystemProperty());
+            return new StaticAuthTokenManager(AuthTokens.basic("neo4j", neo4jUserPasswordFromSystemProperty()));
         }
-        return AuthTokens.basic("neo4j", neo4jContainer.getAdminPassword());
+        return new StaticAuthTokenManager(AuthTokens.basic("neo4j", neo4jContainer.getAdminPassword()));
     }
 
     @Override

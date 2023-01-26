@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.concurrent.CompletionStage;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.messages.responses.NewExpirationBasedAuthTokenManager;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
@@ -62,7 +63,18 @@ import reactor.core.publisher.Mono;
     @JsonSubTypes.Type(BookmarksConsumerCompleted.class),
     @JsonSubTypes.Type(NewBookmarkManager.class),
     @JsonSubTypes.Type(BookmarkManagerClose.class),
-    @JsonSubTypes.Type(ExecuteQuery.class)
+    @JsonSubTypes.Type(ExecuteQuery.class),
+    @JsonSubTypes.Type(NewAuthTokenManager.class),
+    @JsonSubTypes.Type(NewExpirationBasedAuthTokenManager.class),
+    @JsonSubTypes.Type(AuthTokenManagerGetAuthCompleted.class),
+    @JsonSubTypes.Type(ExpirationBasedAuthTokenProviderCompleted.class),
+    @JsonSubTypes.Type(AuthTokenManagerOnAuthExpiredCompleted.class),
+    @JsonSubTypes.Type(AuthTokenManagerClose.class),
+    @JsonSubTypes.Type(FakeTimeInstall.class),
+    @JsonSubTypes.Type(FakeTimeTick.class),
+    @JsonSubTypes.Type(FakeTimeUninstall.class),
+    @JsonSubTypes.Type(CheckSessionAuthSupport.class),
+    @JsonSubTypes.Type(VerifyAuthentication.class)
 })
 public interface TestkitRequest {
     TestkitResponse process(TestkitState testkitState);

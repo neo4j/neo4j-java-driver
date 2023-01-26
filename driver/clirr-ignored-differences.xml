@@ -538,4 +538,34 @@
         <to>java/lang/Enum</to>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.BaseSession session(java.lang.Class, org.neo4j.driver.AuthToken)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.BaseSession session(java.lang.Class, org.neo4j.driver.SessionConfig, org.neo4j.driver.AuthToken)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>boolean verifyAuthentication(org.neo4j.driver.AuthToken)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>boolean supportsSessionAuth()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/AuthToken</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.AuthTokenAndExpiration expiringAt(long)</method>
+    </difference>
+
 </differences>

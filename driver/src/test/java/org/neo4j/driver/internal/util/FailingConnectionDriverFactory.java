@@ -24,6 +24,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
@@ -42,7 +43,7 @@ public class FailingConnectionDriverFactory extends DriverFactory {
 
     @Override
     protected ConnectionPool createConnectionPool(
-            AuthToken authToken,
+            AuthTokenManager authTokenManager,
             SecurityPlan securityPlan,
             Bootstrap bootstrap,
             MetricsProvider metricsProvider,
@@ -50,7 +51,7 @@ public class FailingConnectionDriverFactory extends DriverFactory {
             boolean ownsEventLoopGroup,
             RoutingContext routingContext) {
         ConnectionPool pool = super.createConnectionPool(
-                authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext);
+                authTokenManager, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext);
         return new ConnectionPoolWithFailingConnections(pool, nextRunFailure);
     }
 
@@ -68,8 +69,9 @@ public class FailingConnectionDriverFactory extends DriverFactory {
         }
 
         @Override
-        public CompletionStage<Connection> acquire(BoltServerAddress address) {
-            return delegate.acquire(address).thenApply(connection -> new FailingConnection(connection, nextRunFailure));
+        public CompletionStage<Connection> acquire(BoltServerAddress address, AuthToken overrideAuthToken) {
+            return delegate.acquire(address, overrideAuthToken)
+                    .thenApply(connection -> new FailingConnection(connection, nextRunFailure));
         }
 
         @Override

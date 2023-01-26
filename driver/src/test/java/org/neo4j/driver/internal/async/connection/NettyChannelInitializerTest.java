@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authContext;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAddress;
@@ -44,10 +45,12 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.util.FakeClock;
 
 class NettyChannelInitializerTest {
@@ -103,13 +106,19 @@ class NettyChannelInitializerTest {
         assertEquals(LOCAL_DEFAULT, serverAddress(channel));
         assertEquals(42L, creationTimestamp(channel));
         assertNotNull(messageDispatcher(channel));
+        assertNotNull(authContext(channel));
     }
 
     @Test
     void shouldIncludeSniHostName() throws Exception {
         BoltServerAddress address = new BoltServerAddress("database.neo4j.com", 8989);
         NettyChannelInitializer initializer = new NettyChannelInitializer(
-                address, trustAllCertificates(), 10000, Clock.systemUTC(), DEV_NULL_LOGGING);
+                address,
+                trustAllCertificates(),
+                10000,
+                new StaticAuthTokenManager(AuthTokens.none()),
+                Clock.systemUTC(),
+                DEV_NULL_LOGGING);
 
         initializer.initChannel(channel);
 
@@ -154,7 +163,13 @@ class NettyChannelInitializerTest {
 
     private static NettyChannelInitializer newInitializer(
             SecurityPlan securityPlan, int connectTimeoutMillis, Clock clock) {
-        return new NettyChannelInitializer(LOCAL_DEFAULT, securityPlan, connectTimeoutMillis, clock, DEV_NULL_LOGGING);
+        return new NettyChannelInitializer(
+                LOCAL_DEFAULT,
+                securityPlan,
+                connectTimeoutMillis,
+                new StaticAuthTokenManager(AuthTokens.none()),
+                clock,
+                DEV_NULL_LOGGING);
     }
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException {

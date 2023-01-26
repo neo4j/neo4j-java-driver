@@ -55,6 +55,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
@@ -99,7 +100,8 @@ class RoutingTableAndConnectionPoolTest {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock(Rediscovery.class);
-        when(rediscovery.lookupClusterComposition(any(), any(), any(), any())).thenReturn(clusterComposition(A));
+        when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
+                .thenReturn(clusterComposition(A));
         RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
         LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
 
@@ -118,7 +120,7 @@ class RoutingTableAndConnectionPoolTest {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock(Rediscovery.class);
-        when(rediscovery.lookupClusterComposition(any(), any(), any(), any()))
+        when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(Futures.failedFuture(new FatalDiscoveryException("No database found")));
         RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
         LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
@@ -139,7 +141,7 @@ class RoutingTableAndConnectionPoolTest {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock(Rediscovery.class);
-        when(rediscovery.lookupClusterComposition(any(), any(), any(), any()))
+        when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(Futures.failedFuture(new ProtocolException("No database found")));
         RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
         LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
@@ -159,7 +161,7 @@ class RoutingTableAndConnectionPoolTest {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock(Rediscovery.class);
-        when(rediscovery.lookupClusterComposition(any(), any(), any(), any()))
+        when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(Futures.failedFuture(new SecurityException("No database found")));
         RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
         LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
@@ -179,7 +181,8 @@ class RoutingTableAndConnectionPoolTest {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock(Rediscovery.class);
-        when(rediscovery.lookupClusterComposition(any(), any(), any(), any())).thenReturn(expiredClusterComposition(A));
+        when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
+                .thenReturn(expiredClusterComposition(A));
         RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
         LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
 
@@ -201,7 +204,7 @@ class RoutingTableAndConnectionPoolTest {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock(Rediscovery.class);
-        when(rediscovery.lookupClusterComposition(any(), any(), any(), any()))
+        when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(expiredClusterComposition(A))
                 .thenReturn(clusterComposition(B));
         RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
@@ -227,7 +230,7 @@ class RoutingTableAndConnectionPoolTest {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock(Rediscovery.class);
-        when(rediscovery.lookupClusterComposition(any(), any(), any(), any()))
+        when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(expiredClusterComposition(A))
                 .thenReturn(clusterComposition(B));
         RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
@@ -360,7 +363,8 @@ class RoutingTableAndConnectionPoolTest {
                 RoutingTable routingTable,
                 ConnectionPool connectionPool,
                 Set<Bookmark> bookmarks,
-                String impersonatedUser) {
+                String impersonatedUser,
+                AuthToken overrideAuthToken) {
             // when looking up a new routing table, we return a valid random routing table back
             Set<BoltServerAddress> servers = new HashSet<>();
             for (int i = 0; i < 3; i++) {

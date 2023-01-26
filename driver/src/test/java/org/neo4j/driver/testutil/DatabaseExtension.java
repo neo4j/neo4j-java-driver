@@ -43,12 +43,14 @@ import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.testutil.CertificateUtil.CertificateKeyPair;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -194,8 +196,8 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         return boltUri.getPort();
     }
 
-    public AuthToken authToken() {
-        return authToken;
+    public AuthTokenManager authTokenManager() {
+        return new StaticAuthTokenManager(authToken);
     }
 
     public String adminPassword() {

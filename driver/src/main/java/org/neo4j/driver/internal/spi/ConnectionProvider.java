@@ -36,4 +36,6 @@ public interface ConnectionProvider {
     CompletionStage<Void> close();
 
     CompletionStage<Boolean> supportsMultiDb();
+
+    CompletionStage<Boolean> supportsSessionAuth();
 }

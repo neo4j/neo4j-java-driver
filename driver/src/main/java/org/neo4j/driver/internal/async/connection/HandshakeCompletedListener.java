@@ -19,41 +19,70 @@
 package org.neo4j.driver.internal.async.connection;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authContext;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromise;
-import org.neo4j.driver.AuthToken;
+import java.time.Clock;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
 
 public class HandshakeCompletedListener implements ChannelFutureListener {
     private final String userAgent;
-    private final AuthToken authToken;
     private final RoutingContext routingContext;
     private final ChannelPromise connectionInitializedPromise;
     private final NotificationConfig notificationConfig;
+    private final Clock clock;
 
     public HandshakeCompletedListener(
             String userAgent,
-            AuthToken authToken,
             RoutingContext routingContext,
             ChannelPromise connectionInitializedPromise,
-            NotificationConfig notificationConfig) {
+            NotificationConfig notificationConfig,
+            Clock clock) {
+        requireNonNull(clock, "clock must not be null");
         this.userAgent = requireNonNull(userAgent);
-        this.authToken = requireNonNull(authToken);
         this.routingContext = routingContext;
         this.connectionInitializedPromise = requireNonNull(connectionInitializedPromise);
         this.notificationConfig = notificationConfig;
+        this.clock = clock;
     }
 
     @Override
     public void operationComplete(ChannelFuture future) {
         if (future.isSuccess()) {
             BoltProtocol protocol = BoltProtocol.forChannel(future.channel());
-            protocol.initializeChannel(
-                    userAgent, authToken, routingContext, connectionInitializedPromise, notificationConfig);
+            // pre Bolt 5.1
+            if (BoltProtocolV51.VERSION.compareTo(protocol.version()) > 0) {
+                var channel = connectionInitializedPromise.channel();
+                var authContext = authContext(channel);
+                authContext
+                        .getAuthTokenManager()
+                        .getToken()
+                        .whenCompleteAsync(
+                                (authToken, throwable) -> {
+                                    if (throwable != null) {
+                                        connectionInitializedPromise.setFailure(throwable);
+                                    } else {
+                                        authContext.initiateAuth(authToken);
+                                        authContext.setValidToken(authToken);
+                                        protocol.initializeChannel(
+                                                userAgent,
+                                                authToken,
+                                                routingContext,
+                                                connectionInitializedPromise,
+                                                notificationConfig,
+                                                clock);
+                                    }
+                                },
+                                channel.eventLoop());
+            } else {
+                protocol.initializeChannel(
+                        userAgent, null, routingContext, connectionInitializedPromise, notificationConfig, clock);
+            }
         } else {
             connectionInitializedPromise.setFailure(future.cause());
         }

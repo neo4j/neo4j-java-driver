@@ -25,7 +25,7 @@ import java.io.Serial;
  * While this error is not fatal and we might be able to recover if we continue trying on another server.
  * If we fail to get a valid routing table from all routing servers known to this driver,
  * then we will end up with a fatal error {@link ServiceUnavailableException}.
- *
+ * <p>
  * If you see this error in your logs, it is safe to ignore if your cluster is temporarily changing structure during that time.
  */
 public class DiscoveryException extends Neo4jException {

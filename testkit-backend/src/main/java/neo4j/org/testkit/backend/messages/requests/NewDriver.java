@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Clock;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,8 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import neo4j.org.testkit.backend.AuthTokenUtil;
+import neo4j.org.testkit.backend.TestkitClock;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.DriverHolder;
 import neo4j.org.testkit.backend.messages.responses.DomainNameResolutionRequired;
@@ -43,8 +46,7 @@ import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.ResolverResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -57,6 +59,7 @@ import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlans;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.net.ServerAddressResolver;
 import reactor.core.publisher.Mono;
 
@@ -69,30 +72,12 @@ public class NewDriver implements TestkitRequest {
     public TestkitResponse process(TestkitState testkitState) {
         String id = testkitState.newId();
 
-        AuthToken authToken;
-        switch (data.getAuthorizationToken().getTokens().getScheme()) {
-            case "basic":
-                authToken = AuthTokens.basic(
-                        data.authorizationToken.getTokens().getPrincipal(),
-                        data.authorizationToken.getTokens().getCredentials(),
-                        data.authorizationToken.getTokens().getRealm());
-                break;
-            case "bearer":
-                authToken =
-                        AuthTokens.bearer(data.authorizationToken.getTokens().getCredentials());
-                break;
-            case "kerberos":
-                authToken =
-                        AuthTokens.kerberos(data.authorizationToken.getTokens().getCredentials());
-                break;
-            default:
-                authToken = AuthTokens.custom(
-                        data.authorizationToken.getTokens().getPrincipal(),
-                        data.authorizationToken.getTokens().getCredentials(),
-                        data.authorizationToken.getTokens().getRealm(),
-                        data.authorizationToken.getTokens().getScheme(),
-                        data.authorizationToken.getTokens().getParameters());
-                break;
+        AuthTokenManager authTokenManager;
+        if (data.getAuthTokenManagerId() != null) {
+            authTokenManager = testkitState.getAuthProvider(data.getAuthTokenManagerId());
+        } else {
+            var authToken = AuthTokenUtil.parseAuthToken(data.getAuthorizationToken());
+            authTokenManager = new StaticAuthTokenManager(authToken);
         }
 
         Config.ConfigBuilder configBuilder = Config.builder();
@@ -124,7 +109,7 @@ public class NewDriver implements TestkitRequest {
         try {
             driver = driver(
                     URI.create(data.uri),
-                    authToken,
+                    authTokenManager,
                     config,
                     domainNameResolver,
                     configureSecuritySettingsBuilder(),
@@ -223,7 +208,7 @@ public class NewDriver implements TestkitRequest {
 
     private org.neo4j.driver.Driver driver(
             URI uri,
-            AuthToken authToken,
+            AuthTokenManager authTokenManager,
             Config config,
             DomainNameResolver domainNameResolver,
             SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder,
@@ -232,7 +217,7 @@ public class NewDriver implements TestkitRequest {
         SecuritySettings securitySettings = securitySettingsBuilder.build();
         SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, uri.getScheme());
         return new DriverFactoryWithDomainNameResolver(domainNameResolver, testkitState, driverId)
-                .newInstance(uri, authToken, config, securityPlan, null, null);
+                .newInstance(uri, authTokenManager, config, securityPlan, null, null);
     }
 
     private Optional<TestkitResponse> handleExceptionAsErrorResponse(TestkitState testkitState, RuntimeException e) {
@@ -300,6 +285,7 @@ public class NewDriver implements TestkitRequest {
     public static class NewDriverBody {
         private String uri;
         private AuthorizationToken authorizationToken;
+        private String authTokenManagerId;
         private String userAgent;
         private boolean resolverRegistered;
         private boolean domainNameResolverRegistered;
@@ -329,6 +315,11 @@ public class NewDriver implements TestkitRequest {
         @Override
         protected void handleNewLoadBalancer(LoadBalancer loadBalancer) {
             testkitState.getRoutingTableRegistry().put(driverId, loadBalancer.getRoutingTableRegistry());
+        }
+
+        @Override
+        protected Clock createClock() {
+            return TestkitClock.INSTANCE;
         }
     }
 }

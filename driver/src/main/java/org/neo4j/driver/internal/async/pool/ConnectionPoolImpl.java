@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.async.pool;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthorizationStateListener;
 import static org.neo4j.driver.internal.util.Futures.combineErrors;
 import static org.neo4j.driver.internal.util.Futures.completeWithNullIfNoError;
@@ -41,6 +42,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
@@ -58,7 +61,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
     private final ChannelConnector connector;
     private final Bootstrap bootstrap;
     private final NettyChannelTracker nettyChannelTracker;
-    private final NettyChannelHealthChecker channelHealthChecker;
+    private final Supplier<NettyChannelHealthChecker> channelHealthCheckerSupplier;
     private final PoolSettings settings;
     private final Logger log;
     private final MetricsListener metricsListener;
@@ -69,6 +72,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
     private final ConnectionFactory connectionFactory;
+    private final Clock clock;
 
     public ConnectionPoolImpl(
             ChannelConnector connector,
@@ -83,7 +87,6 @@ public class ConnectionPoolImpl implements ConnectionPool {
                 bootstrap,
                 new NettyChannelTracker(
                         metricsListener, bootstrap.config().group().next(), logging),
-                new NettyChannelHealthChecker(settings, clock, logging),
                 settings,
                 metricsListener,
                 logging,
@@ -96,26 +99,27 @@ public class ConnectionPoolImpl implements ConnectionPool {
             ChannelConnector connector,
             Bootstrap bootstrap,
             NettyChannelTracker nettyChannelTracker,
-            NettyChannelHealthChecker nettyChannelHealthChecker,
             PoolSettings settings,
             MetricsListener metricsListener,
             Logging logging,
             Clock clock,
             boolean ownsEventLoopGroup,
             ConnectionFactory connectionFactory) {
+        requireNonNull(clock, "clock must not be null");
         this.connector = connector;
         this.bootstrap = bootstrap;
         this.nettyChannelTracker = nettyChannelTracker;
-        this.channelHealthChecker = nettyChannelHealthChecker;
+        this.channelHealthCheckerSupplier = () -> new NettyChannelHealthChecker(settings, clock, logging);
         this.settings = settings;
         this.metricsListener = metricsListener;
         this.log = logging.getLog(getClass());
         this.ownsEventLoopGroup = ownsEventLoopGroup;
         this.connectionFactory = connectionFactory;
+        this.clock = clock;
     }
 
     @Override
-    public CompletionStage<Connection> acquire(BoltServerAddress address) {
+    public CompletionStage<Connection> acquire(BoltServerAddress address, AuthToken overrideAuthToken) {
         log.trace("Acquiring a connection from pool towards %s", address);
 
         assertNotClosed();
@@ -123,13 +127,13 @@ public class ConnectionPoolImpl implements ConnectionPool {
 
         ListenerEvent<?> acquireEvent = metricsListener.createListenerEvent();
         metricsListener.beforeAcquiringOrCreating(pool.id(), acquireEvent);
-        CompletionStage<Channel> channelFuture = pool.acquire();
+        CompletionStage<Channel> channelFuture = pool.acquire(overrideAuthToken);
 
         return channelFuture.handle((channel, error) -> {
             try {
                 processAcquisitionError(pool, address, error);
                 assertNotClosed(address, channel, pool);
-                setAuthorizationStateListener(channel, channelHealthChecker);
+                setAuthorizationStateListener(channel, pool.healthChecker());
                 Connection connection = connectionFactory.createConnection(channel, pool);
 
                 metricsListener.afterAcquiredOrCreated(pool.id(), acquireEvent);
@@ -261,9 +265,10 @@ public class ConnectionPoolImpl implements ConnectionPool {
                 connector,
                 bootstrap,
                 nettyChannelTracker,
-                channelHealthChecker,
+                channelHealthCheckerSupplier.get(),
                 settings.connectionAcquisitionTimeout(),
-                settings.maxConnectionPoolSize());
+                settings.maxConnectionPoolSize(),
+                clock);
     }
 
     private ExtendedChannelPool getOrCreatePool(BoltServerAddress address) {

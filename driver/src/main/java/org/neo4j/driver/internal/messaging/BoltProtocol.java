@@ -22,6 +22,7 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.proto
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
+import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -64,13 +65,15 @@ public interface BoltProtocol {
      * @param routingContext            the configured routing context
      * @param channelInitializedPromise the promise to be notified when initialization is completed.
      * @param notificationConfig the notification configuration
+     * @param clock the clock to use
      */
     void initializeChannel(
             String userAgent,
             AuthToken authToken,
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise,
-            NotificationConfig notificationConfig);
+            NotificationConfig notificationConfig,
+            Clock clock);
 
     /**
      * Prepare to close channel before it is closed.

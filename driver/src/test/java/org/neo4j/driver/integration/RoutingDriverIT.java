@@ -47,7 +47,7 @@ class RoutingDriverIT {
         URI uri = URI.create(String.format(
                 "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort()));
 
-        try (Driver driver = GraphDatabase.driver(uri, neo4j.authToken());
+        try (Driver driver = GraphDatabase.driver(uri, neo4j.authTokenManager());
                 Session session = driver.session()) {
             assertThat(driver, is(clusterDriver()));
 
@@ -60,7 +60,7 @@ class RoutingDriverIT {
     void shouldBeAbleToRunQueryOnNeo4j() throws Throwable {
         URI uri = URI.create(String.format(
                 "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort()));
-        try (Driver driver = GraphDatabase.driver(uri, neo4j.authToken());
+        try (Driver driver = GraphDatabase.driver(uri, neo4j.authTokenManager());
                 Session session = driver.session(forDatabase("neo4j"))) {
             assertThat(driver, is(clusterDriver()));
 

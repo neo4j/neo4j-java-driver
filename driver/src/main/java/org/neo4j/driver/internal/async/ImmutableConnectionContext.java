@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.Connection;
@@ -65,6 +66,11 @@ public class ImmutableConnectionContext implements ConnectionContext {
 
     @Override
     public String impersonatedUser() {
+        return null;
+    }
+
+    @Override
+    public AuthToken overrideAuthToken() {
         return null;
     }
 

@@ -18,6 +18,7 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.Map;
@@ -33,6 +34,7 @@ public class AuthorizationToken {
 
     @Getter
     @Setter
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Tokens {
         private String scheme;
         private String principal;

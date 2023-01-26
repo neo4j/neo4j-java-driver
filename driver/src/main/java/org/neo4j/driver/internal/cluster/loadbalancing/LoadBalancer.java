@@ -22,7 +22,6 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
 import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.completionExceptionCause;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
@@ -34,7 +33,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.SecurityException;
@@ -48,10 +49,12 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl;
+import org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.internal.util.SessionAuthUtil;
 
 public class LoadBalancer implements ConnectionProvider {
     private static final String CONNECTION_ACQUISITION_COMPLETION_FAILURE_MESSAGE =
@@ -103,7 +106,7 @@ public class LoadBalancer implements ConnectionProvider {
     @Override
     public CompletionStage<Connection> acquireConnection(ConnectionContext context) {
         return routingTables.ensureRoutingTable(context).thenCompose(handler -> acquire(
-                        context.mode(), handler.routingTable())
+                        context.mode(), handler.routingTable(), context.overrideAuthToken())
                 .thenApply(connection -> new RoutingConnection(
                         connection,
                         Futures.joinNowOrElseThrow(
@@ -138,6 +141,20 @@ public class LoadBalancer implements ConnectionProvider {
 
     @Override
     public CompletionStage<Boolean> supportsMultiDb() {
+        return detectFeature(
+                "Failed to perform multi-databases feature detection with the following servers: ",
+                MultiDatabaseUtil::supportsMultiDatabase);
+    }
+
+    @Override
+    public CompletionStage<Boolean> supportsSessionAuth() {
+        return detectFeature(
+                "Failed to perform session auth feature detection with the following servers: ",
+                SessionAuthUtil::supportsSessionAuth);
+    }
+
+    private CompletionStage<Boolean> detectFeature(
+            String baseErrorMessagePrefix, Function<Connection, Boolean> featureDetectionFunction) {
         List<BoltServerAddress> addresses;
 
         try {
@@ -146,8 +163,7 @@ public class LoadBalancer implements ConnectionProvider {
             return failedFuture(error);
         }
         CompletableFuture<Boolean> result = completedWithNull();
-        Throwable baseError = new ServiceUnavailableException(
-                "Failed to perform multi-databases feature detection with the following servers: " + addresses);
+        Throwable baseError = new ServiceUnavailableException(baseErrorMessagePrefix + addresses);
 
         for (BoltServerAddress address : addresses) {
             result = onErrorContinue(result, baseError, completionError -> {
@@ -156,7 +172,10 @@ public class LoadBalancer implements ConnectionProvider {
                 if (error instanceof SecurityException) {
                     return failedFuture(error);
                 }
-                return supportsMultiDb(address);
+                return connectionPool.acquire(address, null).thenCompose(conn -> {
+                    boolean featureDetected = featureDetectionFunction.apply(conn);
+                    return conn.release().thenApply(ignored -> featureDetected);
+                });
             });
         }
         return onErrorContinue(result, baseError, completionError -> {
@@ -174,17 +193,11 @@ public class LoadBalancer implements ConnectionProvider {
         return routingTables;
     }
 
-    private CompletionStage<Boolean> supportsMultiDb(BoltServerAddress address) {
-        return connectionPool.acquire(address).thenCompose(conn -> {
-            boolean supportsMultiDatabase = supportsMultiDatabase(conn);
-            return conn.release().thenApply(ignored -> supportsMultiDatabase);
-        });
-    }
-
-    private CompletionStage<Connection> acquire(AccessMode mode, RoutingTable routingTable) {
+    private CompletionStage<Connection> acquire(
+            AccessMode mode, RoutingTable routingTable, AuthToken overrideAuthToken) {
         CompletableFuture<Connection> result = new CompletableFuture<>();
         List<Throwable> attemptExceptions = new ArrayList<>();
-        acquire(mode, routingTable, result, attemptExceptions);
+        acquire(mode, routingTable, result, overrideAuthToken, attemptExceptions);
         return result;
     }
 
@@ -192,6 +205,7 @@ public class LoadBalancer implements ConnectionProvider {
             AccessMode mode,
             RoutingTable routingTable,
             CompletableFuture<Connection> result,
+            AuthToken overrideAuthToken,
             List<Throwable> attemptErrors) {
         List<BoltServerAddress> addresses = getAddressesByMode(mode, routingTable);
         BoltServerAddress address = selectAddress(mode, addresses);
@@ -205,7 +219,7 @@ public class LoadBalancer implements ConnectionProvider {
             return;
         }
 
-        connectionPool.acquire(address).whenComplete((connection, completionError) -> {
+        connectionPool.acquire(address, overrideAuthToken).whenComplete((connection, completionError) -> {
             Throwable error = completionExceptionCause(completionError);
             if (error != null) {
                 if (error instanceof ServiceUnavailableException) {
@@ -214,7 +228,9 @@ public class LoadBalancer implements ConnectionProvider {
                     log.debug(attemptMessage, error);
                     attemptErrors.add(error);
                     routingTable.forget(address);
-                    eventExecutorGroup.next().execute(() -> acquire(mode, routingTable, result, attemptErrors));
+                    eventExecutorGroup
+                            .next()
+                            .execute(() -> acquire(mode, routingTable, result, overrideAuthToken, attemptErrors));
                 } else {
                     result.completeExceptionally(error);
                 }

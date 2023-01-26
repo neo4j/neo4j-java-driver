@@ -18,7 +18,9 @@
  */
 package org.neo4j.driver;
 
+import java.util.function.Supplier;
 import org.neo4j.driver.internal.security.InternalAuthToken;
+import org.neo4j.driver.internal.security.InternalAuthTokenAndExpiration;
 
 /**
  * Token for holding authentication details, such as <em>user name</em> and <em>password</em>.
@@ -29,4 +31,20 @@ import org.neo4j.driver.internal.security.InternalAuthToken;
  * @see GraphDatabase#driver(String, AuthToken)
  * @since 1.0
  */
-public sealed interface AuthToken permits InternalAuthToken {}
+public sealed interface AuthToken permits InternalAuthToken {
+    /**
+     * Returns a new instance of a type holding both the token and its UTC expiration timestamp.
+     * <p>
+     * This is used by the expiration-based implementation of the {@link AuthTokenManager} supplied by the
+     * {@link AuthTokenManagers}.
+     *
+     * @param utcExpirationTimestamp the UTC expiration timestamp
+     * @return a new instance of a type holding both the token and its UTC expiration timestamp
+     * @since 5.8
+     * @see AuthTokenManagers#expirationBased(Supplier)
+     * @see AuthTokenManagers#expirationBasedAsync(Supplier)
+     */
+    default AuthTokenAndExpiration expiringAt(long utcExpirationTimestamp) {
+        return new InternalAuthTokenAndExpiration(this, utcExpirationTimestamp);
+    }
+}

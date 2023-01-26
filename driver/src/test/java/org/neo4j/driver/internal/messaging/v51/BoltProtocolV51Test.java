@@ -50,6 +50,7 @@ import static org.neo4j.driver.testutil.TestUtil.connectionMock;
 
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.time.Clock;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -133,18 +134,18 @@ public class BoltProtocolV51Test {
     void shouldInitializeChannel() {
         ChannelPromise promise = channel.newPromise();
 
-        protocol.initializeChannel("MyDriver/0.0.1", dummyAuthToken(), RoutingContext.EMPTY, promise, null);
+        protocol.initializeChannel(
+                "MyDriver/0.0.1", dummyAuthToken(), RoutingContext.EMPTY, promise, null, mock(Clock.class));
 
-        assertThat(channel.outboundMessages(), hasSize(2));
-        assertEquals(2, messageDispatcher.queuedHandlersCount());
-        assertFalse(promise.isDone());
+        assertThat(channel.outboundMessages(), hasSize(0));
+        assertEquals(1, messageDispatcher.queuedHandlersCount());
+        assertTrue(promise.isDone());
 
         Map<String, Value> metadata = new HashMap<>();
         metadata.put("server", value("Neo4j/4.4.0"));
         metadata.put("connection_id", value("bolt-42"));
 
         messageDispatcher.handleSuccessMessage(metadata);
-        messageDispatcher.handleSuccessMessage(Map.of());
 
         channel.flush();
         assertTrue(promise.isDone());

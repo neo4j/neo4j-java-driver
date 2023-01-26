@@ -22,6 +22,7 @@ import static java.lang.System.lineSeparator;
 
 import java.util.Set;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logging;
@@ -44,7 +45,8 @@ public class LeakLoggingNetworkSession extends NetworkSession {
             long fetchSize,
             Logging logging,
             BookmarkManager bookmarkManager,
-            NotificationConfig notificationConfig) {
+            NotificationConfig notificationConfig,
+            AuthToken overrideAuthToken) {
         super(
                 connectionProvider,
                 retryLogic,
@@ -55,7 +57,8 @@ public class LeakLoggingNetworkSession extends NetworkSession {
                 fetchSize,
                 logging,
                 bookmarkManager,
-                notificationConfig);
+                notificationConfig,
+                overrideAuthToken);
         this.stackTrace = captureStackTrace();
     }
 

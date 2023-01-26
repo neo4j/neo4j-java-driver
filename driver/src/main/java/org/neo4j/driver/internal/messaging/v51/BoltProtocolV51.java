@@ -19,21 +19,21 @@
 package org.neo4j.driver.internal.messaging.v51;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setHelloStage;
 
 import io.netty.channel.ChannelPromise;
+import java.time.Clock;
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.cluster.RoutingContext;
-import org.neo4j.driver.internal.handlers.HelloResponseHandler;
-import org.neo4j.driver.internal.handlers.LogonResponseHandler;
+import org.neo4j.driver.internal.handlers.HelloV51ResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.internal.messaging.request.LogonMessage;
 import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
-import org.neo4j.driver.internal.security.InternalAuthToken;
 
 public class BoltProtocolV51 extends BoltProtocolV5 {
     public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(5, 1);
@@ -45,7 +45,8 @@ public class BoltProtocolV51 extends BoltProtocolV5 {
             AuthToken authToken,
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise,
-            NotificationConfig notificationConfig) {
+            NotificationConfig notificationConfig,
+            Clock clock) {
         var exception = verifyNotificationConfigSupported(notificationConfig);
         if (exception != null) {
             channelInitializedPromise.setFailure(exception);
@@ -61,10 +62,11 @@ public class BoltProtocolV51 extends BoltProtocolV5 {
             message = new HelloMessage(userAgent, Collections.emptyMap(), null, false, notificationConfig);
         }
 
-        messageDispatcher(channel).enqueue(new HelloResponseHandler(channel.voidPromise()));
-        messageDispatcher(channel).enqueue(new LogonResponseHandler(channelInitializedPromise));
+        var helloFuture = new CompletableFuture<Void>();
+        setHelloStage(channel, helloFuture);
+        messageDispatcher(channel).enqueue(new HelloV51ResponseHandler(channel, helloFuture));
         channel.write(message, channel.voidPromise());
-        channel.writeAndFlush(new LogonMessage(((InternalAuthToken) authToken).toMap()));
+        channelInitializedPromise.setSuccess();
     }
 
     @Override

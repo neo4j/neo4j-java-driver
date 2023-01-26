@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.Scheme.isRoutingScheme;
 import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
 import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
@@ -28,9 +29,8 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.net.URI;
 import java.time.Clock;
-import java.util.Objects;
 import java.util.function.Supplier;
-import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -58,6 +58,7 @@ import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlans;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
@@ -67,17 +68,18 @@ public class DriverFactory {
     public static final String NO_ROUTING_CONTEXT_ERROR_MESSAGE =
             "Routing parameters are not supported with scheme 'bolt'. Given URI: ";
 
-    public final Driver newInstance(URI uri, AuthToken authToken, Config config) {
-        return newInstance(uri, authToken, config, null, null, null);
+    public final Driver newInstance(URI uri, AuthTokenManager authTokenManager, Config config) {
+        return newInstance(uri, authTokenManager, config, null, null, null);
     }
 
     public final Driver newInstance(
             URI uri,
-            AuthToken authToken,
+            AuthTokenManager authTokenManager,
             Config config,
             SecurityPlan securityPlan,
             EventLoopGroup eventLoopGroup,
             Supplier<Rediscovery> rediscoverySupplier) {
+        requireNonNull(authTokenManager, "authTokenProvider must not be null");
 
         Bootstrap bootstrap;
         boolean ownsEventLoopGroup;
@@ -94,7 +96,7 @@ public class DriverFactory {
             securityPlan = SecurityPlans.createSecurityPlan(settings, uri.getScheme());
         }
 
-        authToken = authToken == null ? AuthTokens.none() : authToken;
+        authTokenManager = authTokenManager == null ? new StaticAuthTokenManager(AuthTokens.none()) : authTokenManager;
 
         BoltServerAddress address = new BoltServerAddress(uri);
         RoutingSettings routingSettings =
@@ -107,7 +109,7 @@ public class DriverFactory {
 
         MetricsProvider metricsProvider = getOrCreateMetricsProvider(config, createClock());
         ConnectionPool connectionPool = createConnectionPool(
-                authToken,
+                authTokenManager,
                 securityPlan,
                 bootstrap,
                 metricsProvider,
@@ -129,7 +131,7 @@ public class DriverFactory {
     }
 
     protected ConnectionPool createConnectionPool(
-            AuthToken authToken,
+            AuthTokenManager authTokenManager,
             SecurityPlan securityPlan,
             Bootstrap bootstrap,
             MetricsProvider metricsProvider,
@@ -138,7 +140,7 @@ public class DriverFactory {
             RoutingContext routingContext) {
         Clock clock = createClock();
         ConnectionSettings settings =
-                new ConnectionSettings(authToken, config.userAgent(), config.connectionTimeoutMillis());
+                new ConnectionSettings(authTokenManager, config.userAgent(), config.connectionTimeoutMillis());
         ChannelConnector connector = createConnector(settings, securityPlan, config, clock, routingContext);
         PoolSettings poolSettings = new PoolSettings(
                 config.maxConnectionPoolSize(),
@@ -292,7 +294,7 @@ public class DriverFactory {
             Supplier<Rediscovery> rediscoverySupplier) {
         var loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(connectionPool, config.logging());
         var resolver = createResolver(config);
-        var domainNameResolver = Objects.requireNonNull(getDomainNameResolver(), "domainNameResolver must not be null");
+        var domainNameResolver = requireNonNull(getDomainNameResolver(), "domainNameResolver must not be null");
         var clock = createClock();
         var logging = config.logging();
         if (rediscoverySupplier == null) {

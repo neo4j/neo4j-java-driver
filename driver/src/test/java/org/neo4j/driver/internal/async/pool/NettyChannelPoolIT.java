@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.testutil.TestUtil.await;
@@ -33,6 +34,7 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelHealthChecker;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -40,7 +42,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.AuthToken;
+import org.mockito.invocation.InvocationOnMock;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthenticationException;
@@ -52,8 +55,12 @@ import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
+import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
@@ -65,6 +72,10 @@ class NettyChannelPoolIT {
     private Bootstrap bootstrap;
     private NettyChannelTracker poolHandler;
     private NettyChannelPool pool;
+
+    private static Object answer(InvocationOnMock a) {
+        return ChannelHealthChecker.ACTIVE.isHealthy(a.getArgument(0));
+    }
 
     @BeforeEach
     void setUp() {
@@ -83,10 +94,10 @@ class NettyChannelPoolIT {
     }
 
     @Test
-    void shouldAcquireAndReleaseWithCorrectCredentials() throws Exception {
-        pool = newPool(neo4j.authToken());
+    void shouldAcquireAndReleaseWithCorrectCredentials() {
+        pool = newPool(neo4j.authTokenManager());
 
-        Channel channel = await(pool.acquire());
+        Channel channel = await(pool.acquire(null));
         assertNotNull(channel);
         verify(poolHandler).channelCreated(eq(channel), any());
         verify(poolHandler, never()).channelReleased(channel);
@@ -95,14 +106,26 @@ class NettyChannelPoolIT {
         verify(poolHandler).channelReleased(channel);
     }
 
+    @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V51)
     @Test
-    void shouldFailToAcquireWithWrongCredentials() throws Exception {
-        pool = newPool(AuthTokens.basic("wrong", "wrong"));
+    void shouldFailToAcquireWithWrongCredentialsBolt50AndBelow() {
+        pool = newPool(new StaticAuthTokenManager(AuthTokens.basic("wrong", "wrong")));
 
-        assertThrows(AuthenticationException.class, () -> await(pool.acquire()));
+        assertThrows(AuthenticationException.class, () -> await(pool.acquire(null)));
 
         verify(poolHandler, never()).channelCreated(any());
         verify(poolHandler, never()).channelReleased(any());
+    }
+
+    @EnabledOnNeo4jWith(Neo4jFeature.BOLT_V51)
+    @Test
+    void shouldFailToAcquireWithWrongCredentials() {
+        pool = newPool(new StaticAuthTokenManager(AuthTokens.basic("wrong", "wrong")));
+
+        assertThrows(AuthenticationException.class, () -> await(pool.acquire(null)));
+
+        verify(poolHandler).channelCreated(any(), any());
+        verify(poolHandler).channelReleased(any());
     }
 
     @Test
@@ -115,7 +138,7 @@ class NettyChannelPoolIT {
         authTokenMap.put("credentials", value("wrong"));
         InternalAuthToken authToken = new InternalAuthToken(authTokenMap);
 
-        pool = newPool(authToken, maxConnections);
+        pool = newPool(new StaticAuthTokenManager(authToken), maxConnections);
 
         for (int i = 0; i < maxConnections; i++) {
             AuthenticationException e = assertThrows(AuthenticationException.class, () -> acquire(pool));
@@ -129,7 +152,7 @@ class NettyChannelPoolIT {
     @Test
     void shouldLimitNumberOfConcurrentConnections() throws Exception {
         int maxConnections = 5;
-        pool = newPool(neo4j.authToken(), maxConnections);
+        pool = newPool(neo4j.authTokenManager(), maxConnections);
 
         for (int i = 0; i < maxConnections; i++) {
             assertNotNull(acquire(pool));
@@ -145,7 +168,7 @@ class NettyChannelPoolIT {
                 DevNullMetricsListener.INSTANCE, new ImmediateSchedulingEventExecutor(), DEV_NULL_LOGGING);
 
         poolHandler = tracker;
-        pool = newPool(neo4j.authToken());
+        pool = newPool(neo4j.authTokenManager());
 
         Channel channel1 = acquire(pool);
         Channel channel2 = acquire(pool);
@@ -162,12 +185,12 @@ class NettyChannelPoolIT {
         assertEquals(2, tracker.inUseChannelCount(neo4j.address()));
     }
 
-    private NettyChannelPool newPool(AuthToken authToken) {
-        return newPool(authToken, 100);
+    private NettyChannelPool newPool(AuthTokenManager authTokenManager) {
+        return newPool(authTokenManager, 100);
     }
 
-    private NettyChannelPool newPool(AuthToken authToken, int maxConnections) {
-        ConnectionSettings settings = new ConnectionSettings(authToken, "test", 5_000);
+    private NettyChannelPool newPool(AuthTokenManager authTokenManager, int maxConnections) {
+        ConnectionSettings settings = new ConnectionSettings(authTokenManager, "test", 5_000);
         ChannelConnectorImpl connector = new ChannelConnectorImpl(
                 settings,
                 SecurityPlanImpl.insecure(),
@@ -176,15 +199,24 @@ class NettyChannelPoolIT {
                 RoutingContext.EMPTY,
                 DefaultDomainNameResolver.getInstance(),
                 null);
+        var nettyChannelHealthChecker = mock(NettyChannelHealthChecker.class);
+        when(nettyChannelHealthChecker.isHealthy(any())).thenAnswer(NettyChannelPoolIT::answer);
         return new NettyChannelPool(
-                neo4j.address(), connector, bootstrap, poolHandler, ChannelHealthChecker.ACTIVE, 1_000, maxConnections);
+                neo4j.address(),
+                connector,
+                bootstrap,
+                poolHandler,
+                nettyChannelHealthChecker,
+                1_000,
+                maxConnections,
+                Clock.systemUTC());
     }
 
-    private static Channel acquire(NettyChannelPool pool) throws Exception {
-        return await(pool.acquire());
+    private static Channel acquire(NettyChannelPool pool) {
+        return await(pool.acquire(null));
     }
 
-    private void release(Channel channel) throws Exception {
+    private void release(Channel channel) {
         await(pool.release(channel));
     }
 }
