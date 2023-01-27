@@ -122,11 +122,7 @@
           <configuration>
             <compilerArgs combine.children="append">
               <arg>--add-exports</arg>
-              <arg>jdk.internal.vm.ci/jdk.vm.ci.code=org.graalvm.nativeimage.builder</arg>
-              <arg>--add-exports</arg>
-              <arg>org.graalvm.nativeimage.builder/com.oracle.svm.core.annotate=org.neo4j.driver</arg>
-              <arg>--add-exports</arg>
-              <arg>org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=org.neo4j.driver</arg>
+              <arg>org.graalvm.sdk/com.oracle.svm.core.annotate=org.neo4j.driver</arg>
             </compilerArgs>
           </configuration>
         </plugin>
@@ -135,9 +131,7 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <configuration>
             <additionalOptions combine.children="append">
-              <option>--add-exports jdk.internal.vm.ci/jdk.vm.ci.code=org.graalvm.nativeimage.builder</option>
-              <option>--add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.annotate=org.neo4j.driver</option>
-              <option>--add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=org.neo4j.driver</option>
+              <option>--add-exports org.graalvm.sdk/com.oracle.svm.core.annotate=org.neo4j.driver</option>
             </additionalOptions>
           </configuration>
         </plugin>

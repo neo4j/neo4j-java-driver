@@ -34,6 +34,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
@@ -365,16 +366,33 @@ class InboundMessageDispatcherTest {
         InboundMessageDispatcher dispatcher = new InboundMessageDispatcher(channel, logging);
         ResponseHandler handler = mock(ResponseHandler.class);
         dispatcher.enqueue(handler);
+        Runnable loggerVerification = () -> {};
 
         // WHEN
         if (SuccessMessage.class.isAssignableFrom(message)) {
             dispatcher.handleSuccessMessage(new HashMap<>());
+            loggerVerification = () -> {
+                verify(logger).isDebugEnabled();
+                verify(logger).debug(anyString(), any(Map.class));
+            };
         } else if (FailureMessage.class.isAssignableFrom(message)) {
             dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
+            loggerVerification = () -> {
+                verify(logger).isDebugEnabled();
+                verify(logger).debug(anyString(), anyString(), anyString());
+            };
         } else if (RecordMessage.class.isAssignableFrom(message)) {
             dispatcher.handleRecordMessage(Values.values());
+            loggerVerification = () -> {
+                verify(logger, times(2)).isDebugEnabled();
+                verify(logger).debug(anyString(), anyString());
+            };
         } else if (IgnoredMessage.class.isAssignableFrom(message)) {
             dispatcher.handleIgnoredMessage();
+            loggerVerification = () -> {
+                verify(logger).isDebugEnabled();
+                verify(logger).debug(anyString());
+            };
         } else {
             fail("Unexpected message type parameter provided");
         }
@@ -382,7 +400,7 @@ class InboundMessageDispatcherTest {
         // THEN
         assertTrue(dispatcher.getLog() instanceof ChannelActivityLogger);
         assertTrue(dispatcher.getErrorLog() instanceof ChannelErrorLogger);
-        verify(logger).debug(anyString(), any(Object.class));
+        loggerVerification.run();
     }
 
     @Test

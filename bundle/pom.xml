@@ -69,9 +69,7 @@
               </goals>
               <configuration>
                 <additionalOptions combine.children="append">
-                  <option>--add-exports jdk.internal.vm.ci/jdk.vm.ci.code=org.graalvm.nativeimage.builder</option>
-                  <option>--add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.annotate=org.neo4j.driver</option>
-                  <option>--add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=org.neo4j.driver</option>
+                  <option>--add-exports org.graalvm.sdk/com.oracle.svm.core.annotate=org.neo4j.driver</option>
                 </additionalOptions>
               </configuration>
             </execution>
