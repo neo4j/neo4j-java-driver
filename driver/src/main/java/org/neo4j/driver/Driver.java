@@ -64,8 +64,8 @@ import org.neo4j.driver.util.Experimental;
  */
 public interface Driver extends AutoCloseable {
     /**
-     * Creates a new {@link QueryTask} instance that executes an idempotent query in a managed transaction with
-     * automatic retries on retryable errors.
+     * Creates a new {@link QueryTask} instance that executes a query in a managed transaction with automatic retries on
+     * retryable errors.
      *
      * @param query query string
      * @return new query task instance

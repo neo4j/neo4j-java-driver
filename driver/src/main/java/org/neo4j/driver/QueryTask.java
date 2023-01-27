@@ -29,9 +29,9 @@ import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.Experimental;
 
 /**
- * A task that executes an idempotent query in a managed transaction with automatic retries on retryable errors.
+ * A task that executes a query in a managed transaction with automatic retries on retryable errors.
  * <p>
- * This is a high-level API for executing an idempotent query. There are more advanced APIs available.
+ * This is a high-level API for executing a query. There are more advanced APIs available.
  * For instance, {@link Session}, {@link Transaction} and transaction functions that are accessible via
  * methods like {@link Session#executeWrite(TransactionCallback)}, {@link Session#executeWriteWithoutResult(Consumer)}
  * and {@link Session#executeRead(TransactionCallback)} (there are also overloaded options available).
