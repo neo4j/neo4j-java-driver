@@ -45,14 +45,14 @@ import org.neo4j.driver.util.Experimental;
  * <pre>
  * {@code
  * var eagerResult = driver.queryTask("CREATE (n{field: $value}) RETURN n")
- *         .withParameters(Map.of("$value", "5"))
+ *         .withParameters(Map.of("value", "5"))
  *         .execute();
  * }
  * </pre>
  * The above sample is functionally similar to the following use of the more advanced APIs:
  * <pre>
  * {@code
- * var query = new Query("CREATE (n{field: $value}) RETURN n", Map.of("$value", "5"));
+ * var query = new Query("CREATE (n{field: $value}) RETURN n", Map.of("value", "5"));
  * var sessionConfig = SessionConfig.builder()
  *         .withBookmarkManager(driverConfig.queryBookmarkManager())
  *         .build();
