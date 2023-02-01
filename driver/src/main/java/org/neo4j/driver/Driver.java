@@ -75,13 +75,15 @@ public interface Driver extends AutoCloseable {
     QueryTask queryTask(String query);
 
     /**
-     * Returns an instance of {@link BookmarkManager} used by {@link QueryTask} instances by default.
+     * Returns a {@link BookmarkManager} that is used by default in {@link QueryTask} instances.
+     * <p>
+     * It is always an instance of {@link BookmarkManagers#defaultManager(BookmarkManagerConfig)}.
      *
-     * @return bookmark manager, must not be {@code null}
+     * @return the bookmark manager
      * @since 5.5
      */
     @Experimental
-    BookmarkManager queryBookmarkManager();
+    BookmarkManager queryTaskBookmarkManager();
 
     /**
      * Return a flag to indicate whether or not encryption is used for this driver.

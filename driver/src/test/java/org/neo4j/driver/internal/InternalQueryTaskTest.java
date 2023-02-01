@@ -118,7 +118,7 @@ class InternalQueryTaskTest {
         // GIVEN
         var driver = mock(Driver.class);
         var bookmarkManager = mock(BookmarkManager.class);
-        given(driver.queryBookmarkManager()).willReturn(bookmarkManager);
+        given(driver.queryTaskBookmarkManager()).willReturn(bookmarkManager);
         var session = mock(Session.class);
         given(driver.session(any(SessionConfig.class))).willReturn(session);
         var txContext = mock(TransactionContext.class);

@@ -36,8 +36,7 @@ import org.neo4j.driver.util.Experimental;
  * methods like {@link Session#executeWrite(TransactionCallback)}, {@link Session#executeWriteWithoutResult(Consumer)}
  * and {@link Session#executeRead(TransactionCallback)} (there are also overloaded options available).
  * <p>
- * Causal consistency is managed via driver's {@link BookmarkManager} that is enabled by default and may
- * be replaced using {@link Config.ConfigBuilder#withQueryTaskBookmarkManager(BookmarkManager)}. It is also possible
+ * Causal consistency is managed via driver's {@link BookmarkManager} that is enabled by default. It is also possible
  * to use a different {@link BookmarkManager} or disable it via
  * {@link QueryConfig.Builder#withBookmarkManager(BookmarkManager)} on individual basis.
  * <p>
