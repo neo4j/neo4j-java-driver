@@ -80,7 +80,7 @@ public interface Driver extends AutoCloseable {
      * It is always an instance of {@link BookmarkManagers#defaultManager(BookmarkManagerConfig)}.
      *
      * @return the bookmark manager
-     * @since 5.5
+     * @since 5.6
      */
     @Experimental
     BookmarkManager queryTaskBookmarkManager();
