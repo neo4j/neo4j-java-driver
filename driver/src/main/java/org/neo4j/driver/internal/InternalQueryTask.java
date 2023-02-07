@@ -61,7 +61,7 @@ public class InternalQueryTask implements QueryTask {
         var sessionConfigBuilder = SessionConfig.builder();
         config.database().ifPresent(sessionConfigBuilder::withDatabase);
         config.impersonatedUser().ifPresent(sessionConfigBuilder::withImpersonatedUser);
-        config.bookmarkManager(driver.queryBookmarkManager()).ifPresent(sessionConfigBuilder::withBookmarkManager);
+        config.bookmarkManager(driver.queryTaskBookmarkManager()).ifPresent(sessionConfigBuilder::withBookmarkManager);
         var supplier = recordCollector.supplier();
         var accumulator = recordCollector.accumulator();
         var finisher = recordCollector.finisher();
