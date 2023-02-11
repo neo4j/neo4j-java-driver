@@ -19,11 +19,11 @@
 package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
+import java.time.Clock;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.async.NetworkConnection;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Clock;
 
 public class NetworkConnectionFactory implements ConnectionFactory {
     private final Clock clock;

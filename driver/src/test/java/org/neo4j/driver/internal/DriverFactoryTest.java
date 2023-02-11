@@ -45,6 +45,7 @@ import static org.neo4j.driver.internal.util.Matchers.directDriver;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutorGroup;
 import java.net.URI;
+import java.time.Clock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -74,7 +75,6 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.util.Clock;
 
 class DriverFactoryTest {
     private static Stream<String> testUris() {
@@ -151,7 +151,7 @@ class DriverFactoryTest {
         // Given
         Config config = Config.builder().withoutDriverMetrics().build();
         // When
-        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.SYSTEM);
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
         // Then
         assertThat(provider, is(equalTo(DevNullMetricsProvider.INSTANCE)));
     }
@@ -162,7 +162,7 @@ class DriverFactoryTest {
         Config config =
                 Config.builder().withDriverMetrics().withLogging(Logging.none()).build();
         // When
-        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.SYSTEM);
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
         // Then
         assertThat(provider instanceof InternalMetricsProvider, is(true));
     }
@@ -176,7 +176,7 @@ class DriverFactoryTest {
                 .withLogging(Logging.none())
                 .build();
         // When
-        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.SYSTEM);
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
         // Then
         assertThat(provider instanceof MicrometerMetricsProvider, is(true));
     }

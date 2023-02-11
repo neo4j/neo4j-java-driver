@@ -26,6 +26,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelHealthChecker;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
+import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.Logger;
@@ -34,7 +35,6 @@ import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.internal.async.connection.AuthorizationStateListener;
 import org.neo4j.driver.internal.handlers.PingResponseHandler;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
-import org.neo4j.driver.internal.util.Clock;
 
 public class NettyChannelHealthChecker implements ChannelHealthChecker, AuthorizationStateListener {
     private final PoolSettings poolSettings;

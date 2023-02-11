@@ -35,6 +35,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
+import java.time.Clock;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,7 +54,6 @@ import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.value.StringValue;
 
 class RoutingProcedureClusterCompositionProviderTest {

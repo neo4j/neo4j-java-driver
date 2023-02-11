@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.util;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 import io.netty.util.concurrent.EventExecutorGroup;
+import java.time.Clock;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 
 public class FixedRetryLogic extends ExponentialBackoffRetryLogic {
@@ -32,7 +33,7 @@ public class FixedRetryLogic extends ExponentialBackoffRetryLogic {
     }
 
     public FixedRetryLogic(int retryCount, EventExecutorGroup eventExecutorGroup) {
-        super(Long.MAX_VALUE, eventExecutorGroup, new SleeplessClock(), DEV_NULL_LOGGING);
+        super(Long.MAX_VALUE, eventExecutorGroup, Clock.systemUTC(), DEV_NULL_LOGGING, (ignored) -> {});
         this.retryCount = retryCount;
     }
 

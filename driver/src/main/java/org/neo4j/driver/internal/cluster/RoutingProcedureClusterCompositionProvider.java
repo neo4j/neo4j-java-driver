@@ -22,6 +22,7 @@ import static java.lang.String.format;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsRouteMessage;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
@@ -33,7 +34,6 @@ import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.value.ValueException;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Clock;
 
 public class RoutingProcedureClusterCompositionProvider implements ClusterCompositionProvider {
     private static final String PROTOCOL_ERROR_MESSAGE = "Failed to parse '%s' result received from server due to ";

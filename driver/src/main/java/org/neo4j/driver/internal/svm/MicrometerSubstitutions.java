@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.svm;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+import java.time.Clock;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.internal.DriverFactory;
@@ -27,7 +28,6 @@ import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
-import org.neo4j.driver.internal.util.Clock;
 
 @TargetClass(DriverFactory.class)
 final class Target_org_neo4j_driver_internal_DriverFactory {

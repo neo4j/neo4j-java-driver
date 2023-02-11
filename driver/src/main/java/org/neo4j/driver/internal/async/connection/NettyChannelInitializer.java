@@ -25,6 +25,7 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setSe
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.ssl.SslHandler;
+import java.time.Clock;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
@@ -32,7 +33,6 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.util.Clock;
 
 public class NettyChannelInitializer extends ChannelInitializer<Channel> {
     private final BoltServerAddress address;

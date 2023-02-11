@@ -37,13 +37,13 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.EMPTY;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.createClusterComposition;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
 
 class ClusterRoutingTableTest {
@@ -205,13 +205,13 @@ class ClusterRoutingTableTest {
 
     @Test
     void shouldHaveBeStaleForExpiredTime() throws Throwable {
-        ClusterRoutingTable routingTable = newRoutingTable(Clock.SYSTEM);
+        ClusterRoutingTable routingTable = newRoutingTable(Clock.systemUTC());
         assertTrue(routingTable.hasBeenStaleFor(0));
     }
 
     @Test
     void shouldNotHaveBeStaleForUnexpiredTime() throws Throwable {
-        ClusterRoutingTable routingTable = newRoutingTable(Clock.SYSTEM);
+        ClusterRoutingTable routingTable = newRoutingTable(Clock.systemUTC());
         assertFalse(routingTable.hasBeenStaleFor(Duration.ofSeconds(30).toMillis()));
     }
 

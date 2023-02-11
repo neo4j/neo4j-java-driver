@@ -45,6 +45,7 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -61,12 +62,11 @@ import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.ImmutableConnectionContext;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl.RoutingTableHandlerFactory;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.util.Clock;
 
 class RoutingTableRegistryImplTest {
     @Test
     void factoryShouldCreateARoutingTableWithSameDatabaseName() {
-        Clock clock = Clock.SYSTEM;
+        Clock clock = Clock.systemUTC();
         RoutingTableHandlerFactory factory = new RoutingTableHandlerFactory(
                 mock(ConnectionPool.class),
                 mock(RediscoveryImpl.class),

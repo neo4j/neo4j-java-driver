@@ -22,6 +22,7 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,7 +35,6 @@ import java.util.stream.Stream;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.util.Clock;
 
 public class ClusterRoutingTable implements RoutingTable {
     private static final int MIN_ROUTERS = 1;

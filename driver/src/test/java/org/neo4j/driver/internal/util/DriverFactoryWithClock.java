@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.util;
 
+import java.time.Clock;
 import org.neo4j.driver.internal.DriverFactory;
 
 public class DriverFactoryWithClock extends DriverFactory {

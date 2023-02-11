@@ -31,6 +31,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 
 import io.netty.channel.Channel;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -46,7 +47,6 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.neo4j.driver.testutil.SessionExtension;
@@ -346,7 +346,7 @@ class TransactionIT {
 
     @Test
     void shouldThrowWhenConnectionKilledDuringTransaction() {
-        ChannelTrackingDriverFactory factory = new ChannelTrackingDriverFactory(1, Clock.SYSTEM);
+        ChannelTrackingDriverFactory factory = new ChannelTrackingDriverFactory(1, Clock.systemUTC());
         Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
 
         try (Driver driver = factory.newInstance(

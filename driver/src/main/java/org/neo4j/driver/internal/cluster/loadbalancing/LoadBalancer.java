@@ -29,6 +29,7 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.onErrorContinue;
 
 import io.netty.util.concurrent.EventExecutorGroup;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -50,7 +51,6 @@ import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 
 public class LoadBalancer implements ConnectionProvider {

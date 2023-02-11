@@ -33,6 +33,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.concurrent.Future;
 import java.io.IOException;
+import java.time.Clock;
 import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +51,6 @@ import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -195,7 +195,7 @@ class UnmanagedTransactionIT {
     }
 
     private void testCommitAndRollbackFailurePropagation(boolean commit) {
-        ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory(1, Clock.SYSTEM);
+        ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory(1, Clock.systemUTC());
         Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
 
         try (Driver driver = driverFactory.newInstance(

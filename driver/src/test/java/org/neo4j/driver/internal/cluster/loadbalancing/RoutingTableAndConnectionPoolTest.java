@@ -36,6 +36,7 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,7 +76,6 @@ import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 
 class RoutingTableAndConnectionPoolTest {
@@ -91,7 +91,7 @@ class RoutingTableAndConnectionPoolTest {
     private static final String[] DATABASES = new String[] {"", SYSTEM_DATABASE_NAME, "my database"};
 
     private final Random random = new Random();
-    private final Clock clock = Clock.SYSTEM;
+    private final Clock clock = Clock.systemUTC();
     private final Logging logging = none();
 
     @Test

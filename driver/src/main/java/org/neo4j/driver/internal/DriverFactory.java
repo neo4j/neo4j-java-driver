@@ -27,6 +27,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.net.URI;
+import java.time.Clock;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.neo4j.driver.AuthToken;
@@ -59,7 +60,6 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlans;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddressResolver;
 
@@ -336,7 +336,7 @@ public class DriverFactory {
      * Creates new {@link Clock}.
      */
     protected Clock createClock() {
-        return Clock.SYSTEM;
+        return Clock.systemUTC();
     }
 
     /**

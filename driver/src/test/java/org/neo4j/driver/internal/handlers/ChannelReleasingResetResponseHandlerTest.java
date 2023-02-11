@@ -31,12 +31,12 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.lastU
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.time.Clock;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
 
 class ChannelReleasingResetResponseHandlerTest {
