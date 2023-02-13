@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.cluster;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -39,7 +40,6 @@ import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 
 public class RoutingTableRegistryImpl implements RoutingTableRegistry {

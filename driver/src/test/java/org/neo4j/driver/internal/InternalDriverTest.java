@@ -31,6 +31,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
+import java.time.Clock;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,6 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
-import org.neo4j.driver.internal.util.Clock;
 
 class InternalDriverTest {
     @Test
@@ -154,7 +154,7 @@ class InternalDriverTest {
             config = Config.builder().withDriverMetrics().build();
         }
 
-        MetricsProvider metricsProvider = DriverFactory.getOrCreateMetricsProvider(config, Clock.SYSTEM);
+        MetricsProvider metricsProvider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
         return new InternalDriver(
                 BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build()),
                 SecurityPlanImpl.insecure(),

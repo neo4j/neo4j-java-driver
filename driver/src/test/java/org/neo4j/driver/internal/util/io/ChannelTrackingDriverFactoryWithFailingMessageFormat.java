@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.util.io;
 
+import java.time.Clock;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
@@ -25,7 +26,6 @@ import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FailingMessageFormat;
 
 public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends ChannelTrackingDriverFactory {

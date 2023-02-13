@@ -28,6 +28,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -38,7 +39,6 @@ import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Clock;
 
 public class TestConnectionPool extends ConnectionPoolImpl {
     final Map<BoltServerAddress, ExtendedChannelPool> channelPoolsByAddress = new HashMap<>();

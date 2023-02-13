@@ -25,6 +25,7 @@ import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
+import java.time.Clock;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +46,6 @@ import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.util.Clock;
 
 /**
  * This connection represents a simple network connection to a remote server. It wraps a channel obtained from a connection pool. The life cycle of this

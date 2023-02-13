@@ -36,6 +36,7 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.Future;
+import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -48,7 +49,6 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
-import org.neo4j.driver.internal.util.Clock;
 
 class NettyChannelHealthCheckerTest {
     private final EmbeddedChannel channel = new EmbeddedChannel();
@@ -72,7 +72,7 @@ class NettyChannelHealthCheckerTest {
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 maxLifetime,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        Clock clock = Clock.SYSTEM;
+        Clock clock = Clock.systemUTC();
         NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
 
         setCreationTimestamp(channel, clock.millis() - maxLifetime * 2);
@@ -88,7 +88,7 @@ class NettyChannelHealthCheckerTest {
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, Clock.SYSTEM);
+        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, Clock.systemUTC());
 
         setCreationTimestamp(channel, 0);
         Future<Boolean> healthy = healthChecker.isHealthy(channel);
@@ -103,7 +103,7 @@ class NettyChannelHealthCheckerTest {
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        Clock clock = Clock.SYSTEM;
+        Clock clock = Clock.systemUTC();
         NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
 
         long initialTimestamp = clock.millis();
@@ -134,7 +134,7 @@ class NettyChannelHealthCheckerTest {
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        Clock clock = Clock.SYSTEM;
+        Clock clock = Clock.systemUTC();
         NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
 
         long initialTimestamp = clock.millis();
@@ -177,7 +177,7 @@ class NettyChannelHealthCheckerTest {
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 idleTimeBeforeConnectionTest);
-        Clock clock = Clock.SYSTEM;
+        Clock clock = Clock.systemUTC();
         NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
 
         setCreationTimestamp(channel, clock.millis());
@@ -203,7 +203,7 @@ class NettyChannelHealthCheckerTest {
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        Clock clock = Clock.SYSTEM;
+        Clock clock = Clock.systemUTC();
         NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
 
         setCreationTimestamp(channel, clock.millis());

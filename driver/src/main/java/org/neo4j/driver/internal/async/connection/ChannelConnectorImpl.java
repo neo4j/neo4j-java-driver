@@ -29,6 +29,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.resolver.AddressResolverGroup;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Clock;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Logging;
@@ -40,7 +41,6 @@ import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.util.Clock;
 
 public class ChannelConnectorImpl implements ChannelConnector {
     private final String userAgent;

@@ -23,11 +23,11 @@ import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import io.netty.channel.Channel;
+import java.time.Clock;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
-import org.neo4j.driver.internal.util.Clock;
 
 public class ChannelReleasingResetResponseHandler extends ResetResponseHandler {
     private final Channel channel;

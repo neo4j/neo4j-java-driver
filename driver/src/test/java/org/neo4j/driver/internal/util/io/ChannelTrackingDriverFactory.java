@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.util.io;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -33,7 +34,6 @@ import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 
 public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
@@ -42,7 +42,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
     private ConnectionPool pool;
 
     public ChannelTrackingDriverFactory() {
-        this(0, Clock.SYSTEM);
+        this(0, Clock.systemUTC());
     }
 
     public ChannelTrackingDriverFactory(Clock clock) {

@@ -22,6 +22,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +36,6 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.RetryableException;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -58,10 +58,20 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
     private final double jitterFactor;
     private final EventExecutorGroup eventExecutorGroup;
     private final Clock clock;
+    private final SleepTask sleepTask;
     private final Logger log;
 
     public ExponentialBackoffRetryLogic(
             long maxTransactionRetryTime, EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging) {
+        this(maxTransactionRetryTime, eventExecutorGroup, clock, logging, Thread::sleep);
+    }
+
+    protected ExponentialBackoffRetryLogic(
+            long maxTransactionRetryTime,
+            EventExecutorGroup eventExecutorGroup,
+            Clock clock,
+            Logging logging,
+            SleepTask sleepTask) {
         this(
                 maxTransactionRetryTime,
                 INITIAL_RETRY_DELAY_MS,
@@ -69,7 +79,8 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
                 RETRY_DELAY_JITTER_FACTOR,
                 eventExecutorGroup,
                 clock,
-                logging);
+                logging,
+                sleepTask);
     }
 
     ExponentialBackoffRetryLogic(
@@ -79,13 +90,15 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
             double jitterFactor,
             EventExecutorGroup eventExecutorGroup,
             Clock clock,
-            Logging logging) {
+            Logging logging,
+            SleepTask sleepTask) {
         this.maxRetryTimeMs = maxRetryTimeMs;
         this.initialRetryDelayMs = initialRetryDelayMs;
         this.multiplier = multiplier;
         this.jitterFactor = jitterFactor;
         this.eventExecutorGroup = eventExecutorGroup;
         this.clock = clock;
+        this.sleepTask = sleepTask;
         this.log = logging.getLog(getClass());
 
         verifyAfterConstruction();
@@ -300,7 +313,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
 
     private void sleep(long delayMs) {
         try {
-            clock.sleep(delayMs);
+            sleepTask.sleep(delayMs);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Retries interrupted", e);
@@ -341,5 +354,10 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
                 }
             }
         }
+    }
+
+    @FunctionalInterface
+    public interface SleepTask {
+        void sleep(long millis) throws InterruptedException;
     }
 }

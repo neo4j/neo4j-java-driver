@@ -36,6 +36,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.ssl.SslHandler;
 import java.security.GeneralSecurityException;
+import java.time.Clock;
 import java.util.List;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
@@ -47,7 +48,6 @@ import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
 
 class NettyChannelInitializerTest {
@@ -108,8 +108,8 @@ class NettyChannelInitializerTest {
     @Test
     void shouldIncludeSniHostName() throws Exception {
         BoltServerAddress address = new BoltServerAddress("database.neo4j.com", 8989);
-        NettyChannelInitializer initializer =
-                new NettyChannelInitializer(address, trustAllCertificates(), 10000, Clock.SYSTEM, DEV_NULL_LOGGING);
+        NettyChannelInitializer initializer = new NettyChannelInitializer(
+                address, trustAllCertificates(), 10000, Clock.systemUTC(), DEV_NULL_LOGGING);
 
         initializer.initChannel(channel);
 
