@@ -42,7 +42,6 @@ import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.Type;
 import org.neo4j.driver.types.TypeSystem;
-import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
 
 /**
@@ -140,7 +139,6 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     Value get(int index);
 
     /** @return The type of this value as defined in the Neo4j type system */
-    @Experimental
     Type type();
 
     /**
@@ -149,7 +147,6 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
      * @param type the given type
      * @return type.isTypeOf( this )
      */
-    @Experimental
     boolean hasType(Type type);
 
     /**

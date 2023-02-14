@@ -296,8 +296,10 @@ public interface Driver extends AutoCloseable {
      * The types supported on a particular server a session is connected against might not contain all of the types defined here.
      *
      * @return type system used by this query runner for classifying values
+     * @deprecated superseded by {@link TypeSystem#getDefault()}
      */
     @Experimental
+    @Deprecated
     TypeSystem defaultTypeSystem();
 
     /**

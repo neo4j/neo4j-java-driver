@@ -19,7 +19,6 @@
 package org.neo4j.driver.types;
 
 import org.neo4j.driver.Value;
-import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
 
 /**
@@ -27,7 +26,6 @@ import org.neo4j.driver.util.Immutable;
  * @since 1.0
  */
 @Immutable
-@Experimental
 public interface Type {
     /**
      * @return the name of the Cypher type (as defined by Cypher)

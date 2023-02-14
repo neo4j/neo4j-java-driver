@@ -132,6 +132,7 @@ public class InternalDriver implements Driver {
         return completedWithNull();
     }
 
+    @Deprecated
     @Override
     public final TypeSystem defaultTypeSystem() {
         return InternalTypeSystem.TYPE_SYSTEM;
