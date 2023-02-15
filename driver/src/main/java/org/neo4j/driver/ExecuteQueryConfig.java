@@ -27,7 +27,7 @@ import java.util.Optional;
 import org.neo4j.driver.util.Experimental;
 
 /**
- * Query configuration used by {@link Driver#executeQueryBuilder(String)} and its variants.
+ * Query configuration used by {@link Driver#executeQueryTemplate(String)} and its variants.
  * @since 5.5
  */
 @Experimental

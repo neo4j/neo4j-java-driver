@@ -33,7 +33,7 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.ExecuteQueryConfig;
-import org.neo4j.driver.ExecuteQueryBuilder;
+import org.neo4j.driver.ExecuteQueryTemplate;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
@@ -69,8 +69,8 @@ public class InternalDriver implements Driver {
     }
 
     @Override
-    public ExecuteQueryBuilder executeQueryBuilder(String query) {
-        return new InternalExecuteQueryBuilder(this, new Query(query), ExecuteQueryConfig.defaultConfig());
+    public ExecuteQueryTemplate executeQueryTemplate(String query) {
+        return new InternalExecuteQueryTemplate(this, new Query(query), ExecuteQueryConfig.defaultConfig());
     }
 
     @Override

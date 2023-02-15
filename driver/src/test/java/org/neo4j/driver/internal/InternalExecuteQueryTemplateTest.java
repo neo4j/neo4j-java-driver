@@ -40,7 +40,7 @@ import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.ExecuteQueryConfig;
-import org.neo4j.driver.ExecuteQueryBuilder;
+import org.neo4j.driver.ExecuteQueryTemplate;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.RoutingControl;
@@ -50,30 +50,30 @@ import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionContext;
 import org.neo4j.driver.summary.ResultSummary;
 
-class InternalExecuteQueryBuilderTest {
+class InternalExecuteQueryTemplateTest {
     @Test
     void shouldNotAcceptNullDriverOnInstantiation() {
         assertThrows(
                 NullPointerException.class,
-                () -> new InternalExecuteQueryBuilder(null, new Query("string"), ExecuteQueryConfig.defaultConfig()));
+                () -> new InternalExecuteQueryTemplate(null, new Query("string"), ExecuteQueryConfig.defaultConfig()));
     }
 
     @Test
     void shouldNotAcceptNullQueryOnInstantiation() {
         assertThrows(
                 NullPointerException.class,
-                () -> new InternalExecuteQueryBuilder(mock(Driver.class), null, ExecuteQueryConfig.defaultConfig()));
+                () -> new InternalExecuteQueryTemplate(mock(Driver.class), null, ExecuteQueryConfig.defaultConfig()));
     }
 
     @Test
     void shouldNotAcceptNullConfigOnInstantiation() {
         assertThrows(
-                NullPointerException.class, () -> new InternalExecuteQueryBuilder(mock(Driver.class), new Query("string"), null));
+                NullPointerException.class, () -> new InternalExecuteQueryTemplate(mock(Driver.class), new Query("string"), null));
     }
 
     @Test
     void shouldNotAcceptNullParameters() {
-        var queryTask = new InternalExecuteQueryBuilder(mock(Driver.class), new Query("string"), ExecuteQueryConfig.defaultConfig());
+        var queryTask = new InternalExecuteQueryTemplate(mock(Driver.class), new Query("string"), ExecuteQueryConfig.defaultConfig());
         assertThrows(NullPointerException.class, () -> queryTask.withParameters(null));
     }
 
@@ -82,10 +82,10 @@ class InternalExecuteQueryBuilderTest {
         // GIVEN
         var query = new Query("string");
         var params = Map.<String, Object>of("$param", "value");
-        var queryTask = new InternalExecuteQueryBuilder(mock(Driver.class), query, ExecuteQueryConfig.defaultConfig());
+        var queryTask = new InternalExecuteQueryTemplate(mock(Driver.class), query, ExecuteQueryConfig.defaultConfig());
 
         // WHEN
-        queryTask = (InternalExecuteQueryBuilder) queryTask.withParameters(params);
+        queryTask = (InternalExecuteQueryTemplate) queryTask.withParameters(params);
 
         // THEN
         assertEquals(params, queryTask.parameters());
@@ -93,7 +93,7 @@ class InternalExecuteQueryBuilderTest {
 
     @Test
     void shouldNotAcceptNullConfig() {
-        var queryTask = new InternalExecuteQueryBuilder(mock(Driver.class), new Query("string"), ExecuteQueryConfig.defaultConfig());
+        var queryTask = new InternalExecuteQueryTemplate(mock(Driver.class), new Query("string"), ExecuteQueryConfig.defaultConfig());
         assertThrows(NullPointerException.class, () -> queryTask.withConfig(null));
     }
 
@@ -101,11 +101,11 @@ class InternalExecuteQueryBuilderTest {
     void shouldUpdateConfig() {
         // GIVEN
         var query = new Query("string");
-        var queryTask = new InternalExecuteQueryBuilder(mock(Driver.class), query, ExecuteQueryConfig.defaultConfig());
+        var queryTask = new InternalExecuteQueryTemplate(mock(Driver.class), query, ExecuteQueryConfig.defaultConfig());
         var config = ExecuteQueryConfig.builder().withDatabase("database").build();
 
         // WHEN
-        queryTask = (InternalExecuteQueryBuilder) queryTask.withConfig(config);
+        queryTask = (InternalExecuteQueryTemplate) queryTask.withConfig(config);
 
         // THEN
         assertEquals(config, queryTask.config());
@@ -156,11 +156,11 @@ class InternalExecuteQueryBuilderTest {
         Function<Object, String> finisher = mock(Function.class);
         given(finisher.apply(resultContainer)).willReturn(collectorResult);
         given(recordCollector.finisher()).willReturn(finisher);
-        ExecuteQueryBuilder.ResultFinisher<String, String> finisherWithSummary = mock(ExecuteQueryBuilder.ResultFinisher.class);
+        ExecuteQueryTemplate.ResultFinisher<String, String> finisherWithSummary = mock(ExecuteQueryTemplate.ResultFinisher.class);
         var expectedExecuteResult = "1";
         given(finisherWithSummary.finish(any(List.class), any(String.class), any(ResultSummary.class)))
                 .willReturn(expectedExecuteResult);
-        var queryTask = new InternalExecuteQueryBuilder(driver, query, config).withParameters(params);
+        var queryTask = new InternalExecuteQueryTemplate(driver, query, config).withParameters(params);
 
         // WHEN
         var executeResult = queryTask.execute(recordCollector, finisherWithSummary);

@@ -97,24 +97,24 @@ import org.neo4j.driver.util.Experimental;
  * @since 5.5
  */
 @Experimental
-public interface ExecuteQueryBuilder {
+public interface ExecuteQueryTemplate {
     /**
      * Sets query parameters.
      *
      * @param parameters parameters map, must not be {@code null}
      * @return a new query task
      */
-    ExecuteQueryBuilder withParameters(Map<String, Object> parameters);
+    ExecuteQueryTemplate withParameters(Map<String, Object> parameters);
 
     /**
      * Sets {@link ExecuteQueryConfig}.
      * <p>
-     * By default, {@link ExecuteQueryBuilder} has {@link ExecuteQueryConfig#defaultConfig()} value.
+     * By default, {@link ExecuteQueryTemplate} has {@link ExecuteQueryConfig#defaultConfig()} value.
      *
      * @param config query config, must not be {@code null}
      * @return a new query task
      */
-    ExecuteQueryBuilder withConfig(ExecuteQueryConfig config);
+    ExecuteQueryTemplate withConfig(ExecuteQueryConfig config);
 
     /**
      * Executes query, collects all results eagerly and returns a result.

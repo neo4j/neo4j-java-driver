@@ -120,7 +120,7 @@ class InternalDriverTest {
         var query = "string";
 
         // When
-        var queryTask = (InternalExecuteQueryBuilder) driver.executeQueryBuilder(query);
+        var queryTask = (InternalExecuteQueryTemplate) driver.executeQueryTemplate(query);
 
         // Then
         assertNotNull(queryTask);

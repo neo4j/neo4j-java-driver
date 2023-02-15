@@ -25,17 +25,17 @@ import java.util.stream.Collector;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.ExecuteQueryConfig;
-import org.neo4j.driver.ExecuteQueryBuilder;
+import org.neo4j.driver.ExecuteQueryTemplate;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
 
-public class InternalExecuteQueryBuilder implements ExecuteQueryBuilder {
+public class InternalExecuteQueryTemplate implements ExecuteQueryTemplate {
     private final Driver driver;
     private final Query query;
     private final ExecuteQueryConfig config;
 
-    public InternalExecuteQueryBuilder(Driver driver, Query query, ExecuteQueryConfig config) {
+    public InternalExecuteQueryTemplate(Driver driver, Query query, ExecuteQueryConfig config) {
         requireNonNull(driver, "driver must not be null");
         requireNonNull(query, "query must not be null");
         requireNonNull(config, "config must not be null");
@@ -45,15 +45,15 @@ public class InternalExecuteQueryBuilder implements ExecuteQueryBuilder {
     }
 
     @Override
-    public ExecuteQueryBuilder withParameters(Map<String, Object> parameters) {
+    public ExecuteQueryTemplate withParameters(Map<String, Object> parameters) {
         requireNonNull(parameters, "parameters must not be null");
-        return new InternalExecuteQueryBuilder(driver, query.withParameters(parameters), config);
+        return new InternalExecuteQueryTemplate(driver, query.withParameters(parameters), config);
     }
 
     @Override
-    public ExecuteQueryBuilder withConfig(ExecuteQueryConfig config) {
+    public ExecuteQueryTemplate withConfig(ExecuteQueryConfig config) {
         requireNonNull(config, "config must not be null");
-        return new InternalExecuteQueryBuilder(driver, query, config);
+        return new InternalExecuteQueryTemplate(driver, query, config);
     }
 
     @Override
