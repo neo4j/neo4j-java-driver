@@ -50,7 +50,6 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.testutil.CertificateUtil.CertificateKeyPair;
-import org.neo4j.driver.types.TypeSystem;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Neo4jContainer;
@@ -147,10 +146,6 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
 
     public Driver driver() {
         return driver;
-    }
-
-    public TypeSystem typeSystem() {
-        return driver.defaultTypeSystem();
     }
 
     public void deleteAndStartNeo4j(Map<String, String> config) {

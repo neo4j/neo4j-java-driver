@@ -20,7 +20,6 @@ package org.neo4j.driver.types;
 
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
-import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
 
 /**
@@ -28,7 +27,6 @@ import org.neo4j.driver.util.Immutable;
  * @since 1.0
  */
 @Immutable
-@Experimental
 public interface TypeSystem {
     /**
      * Returns an instance of type system.

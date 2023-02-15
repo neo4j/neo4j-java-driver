@@ -33,6 +33,7 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
+import static org.neo4j.driver.types.TypeSystem.getDefault;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -67,7 +68,7 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().BOOLEAN()), equalTo(true));
+            assertThat(value.hasType(getDefault().BOOLEAN()), equalTo(true));
             assertThat(value.asBoolean(), equalTo(true));
         }
     }
@@ -80,7 +81,7 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().INTEGER()), equalTo(true));
+            assertThat(value.hasType(getDefault().INTEGER()), equalTo(true));
             assertThat(value.asLong(), equalTo(1L));
         }
     }
@@ -93,7 +94,7 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().INTEGER()), equalTo(true));
+            assertThat(value.hasType(getDefault().INTEGER()), equalTo(true));
             assertThat(value.asLong(), equalTo(1L));
         }
     }
@@ -106,7 +107,7 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().INTEGER()), equalTo(true));
+            assertThat(value.hasType(getDefault().INTEGER()), equalTo(true));
             assertThat(value.asLong(), equalTo(1L));
         }
     }
@@ -119,7 +120,7 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().INTEGER()), equalTo(true));
+            assertThat(value.hasType(getDefault().INTEGER()), equalTo(true));
             assertThat(value.asLong(), equalTo(1L));
         }
     }
@@ -132,7 +133,7 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().FLOAT()), equalTo(true));
+            assertThat(value.hasType(getDefault().FLOAT()), equalTo(true));
             assertThat(value.asDouble(), equalTo(6.28));
         }
     }
@@ -164,10 +165,10 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().LIST()), equalTo(true));
+            assertThat(value.hasType(getDefault().LIST()), equalTo(true));
             assertThat(value.size(), equalTo(3));
             for (Value item : value.asList(ofValue())) {
-                assertThat(item.hasType(session.typeSystem().BOOLEAN()), equalTo(true));
+                assertThat(item.hasType(getDefault().BOOLEAN()), equalTo(true));
                 assertThat(item.asBoolean(), equalTo(true));
             }
         }
@@ -182,10 +183,10 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().LIST()), equalTo(true));
+            assertThat(value.hasType(getDefault().LIST()), equalTo(true));
             assertThat(value.size(), equalTo(3));
             for (Value item : value.asList(ofValue())) {
-                assertThat(item.hasType(session.typeSystem().INTEGER()), equalTo(true));
+                assertThat(item.hasType(getDefault().INTEGER()), equalTo(true));
                 assertThat(item.asLong(), equalTo(42L));
             }
         }
@@ -200,10 +201,10 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().LIST()), equalTo(true));
+            assertThat(value.hasType(getDefault().LIST()), equalTo(true));
             assertThat(value.size(), equalTo(3));
             for (Value item : value.asList(ofValue())) {
-                assertThat(item.hasType(session.typeSystem().FLOAT()), equalTo(true));
+                assertThat(item.hasType(getDefault().FLOAT()), equalTo(true));
                 assertThat(item.asDouble(), equalTo(6.28));
             }
         }
@@ -223,10 +224,10 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().LIST()), equalTo(true));
+            assertThat(value.hasType(getDefault().LIST()), equalTo(true));
             assertThat(value.size(), equalTo(3));
             for (Value item : value.asList(ofValue())) {
-                assertThat(item.hasType(session.typeSystem().STRING()), equalTo(true));
+                assertThat(item.hasType(getDefault().STRING()), equalTo(true));
                 assertThat(item.asString(), equalTo(str));
             }
         }
@@ -262,7 +263,7 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().BOOLEAN()), equalTo(true));
+            assertThat(value.hasType(getDefault().BOOLEAN()), equalTo(true));
             assertThat(value.asBoolean(), equalTo(true));
         }
     }
@@ -276,7 +277,7 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().INTEGER()), equalTo(true));
+            assertThat(value.hasType(getDefault().INTEGER()), equalTo(true));
             assertThat(value.asLong(), equalTo(42L));
         }
     }
@@ -290,7 +291,7 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().FLOAT()), equalTo(true));
+            assertThat(value.hasType(getDefault().FLOAT()), equalTo(true));
             assertThat(value.asDouble(), equalTo(6.28));
         }
     }
@@ -304,7 +305,7 @@ class ParametersIT {
         // Then
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().STRING()), equalTo(true));
+            assertThat(value.hasType(getDefault().STRING()), equalTo(true));
             assertThat(value.asString(), equalTo("Mjölnir"));
         }
     }
@@ -397,7 +398,7 @@ class ParametersIT {
 
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().BYTES()), equalTo(true));
+            assertThat(value.hasType(getDefault().BYTES()), equalTo(true));
             assertThat(value.asByteArray(), equalTo(array));
         }
     }
@@ -407,7 +408,7 @@ class ParametersIT {
 
         for (Record record : result.list()) {
             Value value = record.get("a.value");
-            assertThat(value.hasType(session.typeSystem().STRING()), equalTo(true));
+            assertThat(value.hasType(getDefault().STRING()), equalTo(true));
             assertThat(value.asString(), equalTo(string));
         }
     }
