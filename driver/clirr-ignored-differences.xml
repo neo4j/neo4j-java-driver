@@ -412,19 +412,13 @@
     <difference>
         <className>org/neo4j/driver/Driver</className>
         <differenceType>7012</differenceType>
-        <method>org.neo4j.driver.QueryTask queryTask(java.lang.String)</method>
+        <method>org.neo4j.driver.ExecuteQueryBuilder executeQueryBuilder(java.lang.String)</method>
     </difference>
 
     <difference>
         <className>org/neo4j/driver/Driver</className>
         <differenceType>7012</differenceType>
-        <method>org.neo4j.driver.BookmarkManager queryBookmarkManager()</method>
-    </difference>
-
-    <difference>
-        <className>org/neo4j/driver/Driver</className>
-        <differenceType>7012</differenceType>
-        <method>org.neo4j.driver.BookmarkManager queryTaskBookmarkManager()</method>
+        <method>org.neo4j.driver.BookmarkManager defaultExecuteQueryBookmarkManager()</method>
     </difference>
 
 </differences>

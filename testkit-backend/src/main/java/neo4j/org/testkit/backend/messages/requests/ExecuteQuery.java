@@ -29,7 +29,7 @@ import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherPar
 import neo4j.org.testkit.backend.messages.responses.EagerResult;
 import neo4j.org.testkit.backend.messages.responses.Record;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.QueryConfig;
+import org.neo4j.driver.ExecuteQueryConfig;
 import org.neo4j.driver.RoutingControl;
 import reactor.core.publisher.Mono;
 
@@ -41,7 +41,7 @@ public class ExecuteQuery implements TestkitRequest {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         var driver = testkitState.getDriverHolder(data.getDriverId()).getDriver();
-        var configBuilder = QueryConfig.builder();
+        var configBuilder = ExecuteQueryConfig.builder();
         var routing = data.getConfig().getRouting();
         if (data.getConfig().getRouting() != null) {
             switch (routing) {
@@ -65,7 +65,7 @@ public class ExecuteQuery implements TestkitRequest {
             configBuilder.withBookmarkManager(bookmarkManager);
         }
         var params = data.getParams() != null ? data.getParams() : Collections.<String, Object>emptyMap();
-        var eagerResult = driver.queryTask(data.getCypher())
+        var eagerResult = driver.executeQueryBuilder(data.getCypher())
                 .withParameters(params)
                 .withConfig(configBuilder.build())
                 .execute();

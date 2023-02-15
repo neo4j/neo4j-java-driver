@@ -36,10 +36,9 @@ import org.neo4j.driver.util.Experimental;
  * methods like {@link Session#executeWrite(TransactionCallback)}, {@link Session#executeWriteWithoutResult(Consumer)}
  * and {@link Session#executeRead(TransactionCallback)} (there are also overloaded options available).
  * <p>
- * Causal consistency is managed via driver's {@link BookmarkManager} that is enabled by default and may
- * be replaced using {@link Config.ConfigBuilder#withQueryTaskBookmarkManager(BookmarkManager)}. It is also possible
+ * Causal consistency is managed via driver's {@link BookmarkManager} that is enabled by default. It is possible
  * to use a different {@link BookmarkManager} or disable it via
- * {@link QueryConfig.Builder#withBookmarkManager(BookmarkManager)} on individual basis.
+ * {@link ExecuteQueryConfig.Builder#withBookmarkManager(BookmarkManager)} on individual basis.
  * <p>
  * Sample usage:
  * <pre>
@@ -98,24 +97,24 @@ import org.neo4j.driver.util.Experimental;
  * @since 5.5
  */
 @Experimental
-public interface QueryTask {
+public interface ExecuteQueryBuilder {
     /**
      * Sets query parameters.
      *
      * @param parameters parameters map, must not be {@code null}
      * @return a new query task
      */
-    QueryTask withParameters(Map<String, Object> parameters);
+    ExecuteQueryBuilder withParameters(Map<String, Object> parameters);
 
     /**
-     * Sets {@link QueryConfig}.
+     * Sets {@link ExecuteQueryConfig}.
      * <p>
-     * By default, {@link QueryTask} has {@link QueryConfig#defaultConfig()} value.
+     * By default, {@link ExecuteQueryBuilder} has {@link ExecuteQueryConfig#defaultConfig()} value.
      *
      * @param config query config, must not be {@code null}
      * @return a new query task
      */
-    QueryTask withConfig(QueryConfig config);
+    ExecuteQueryBuilder withConfig(ExecuteQueryConfig config);
 
     /**
      * Executes query, collects all results eagerly and returns a result.

@@ -27,15 +27,15 @@ import java.util.Optional;
 import org.neo4j.driver.util.Experimental;
 
 /**
- * Query configuration used by {@link Driver#queryTask(String)} and its variants.
+ * Query configuration used by {@link Driver#executeQueryBuilder(String)} and its variants.
  * @since 5.5
  */
 @Experimental
-public final class QueryConfig implements Serializable {
+public final class ExecuteQueryConfig implements Serializable {
     @Serial
     private static final long serialVersionUID = -2632780731598141754L;
 
-    private static final QueryConfig DEFAULT = builder().build();
+    private static final ExecuteQueryConfig DEFAULT = builder().build();
 
     private final RoutingControl routing;
     private final String database;
@@ -48,11 +48,11 @@ public final class QueryConfig implements Serializable {
      *
      * @return config value
      */
-    public static QueryConfig defaultConfig() {
+    public static ExecuteQueryConfig defaultConfig() {
         return DEFAULT;
     }
 
-    private QueryConfig(Builder builder) {
+    private ExecuteQueryConfig(Builder builder) {
         this.routing = builder.routing;
         this.database = builder.database;
         this.impersonatedUser = builder.impersonatedUser;
@@ -113,7 +113,7 @@ public final class QueryConfig implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        QueryConfig that = (QueryConfig) o;
+        ExecuteQueryConfig that = (ExecuteQueryConfig) o;
         return useDefaultBookmarkManager == that.useDefaultBookmarkManager
                 && routing == that.routing
                 && Objects.equals(database, that.database)
@@ -137,7 +137,7 @@ public final class QueryConfig implements Serializable {
     }
 
     /**
-     * Builder used to configure {@link QueryConfig} which will be used to execute a query.
+     * Builder used to configure {@link ExecuteQueryConfig} which will be used to execute a query.
      */
     public static final class Builder {
         private RoutingControl routing = RoutingControl.WRITERS;
@@ -207,10 +207,10 @@ public final class QueryConfig implements Serializable {
         /**
          * Create a config instance from this builder.
          *
-         * @return a new {@link QueryConfig} instance.
+         * @return a new {@link ExecuteQueryConfig} instance.
          */
-        public QueryConfig build() {
-            return new QueryConfig(this);
+        public ExecuteQueryConfig build() {
+            return new ExecuteQueryConfig(this);
         }
     }
 }

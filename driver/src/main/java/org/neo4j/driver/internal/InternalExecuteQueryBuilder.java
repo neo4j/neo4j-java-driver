@@ -24,18 +24,18 @@ import java.util.Map;
 import java.util.stream.Collector;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.QueryConfig;
-import org.neo4j.driver.QueryTask;
+import org.neo4j.driver.ExecuteQueryConfig;
+import org.neo4j.driver.ExecuteQueryBuilder;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
 
-public class InternalQueryTask implements QueryTask {
+public class InternalExecuteQueryBuilder implements ExecuteQueryBuilder {
     private final Driver driver;
     private final Query query;
-    private final QueryConfig config;
+    private final ExecuteQueryConfig config;
 
-    public InternalQueryTask(Driver driver, Query query, QueryConfig config) {
+    public InternalExecuteQueryBuilder(Driver driver, Query query, ExecuteQueryConfig config) {
         requireNonNull(driver, "driver must not be null");
         requireNonNull(query, "query must not be null");
         requireNonNull(config, "config must not be null");
@@ -45,15 +45,15 @@ public class InternalQueryTask implements QueryTask {
     }
 
     @Override
-    public QueryTask withParameters(Map<String, Object> parameters) {
+    public ExecuteQueryBuilder withParameters(Map<String, Object> parameters) {
         requireNonNull(parameters, "parameters must not be null");
-        return new InternalQueryTask(driver, query.withParameters(parameters), config);
+        return new InternalExecuteQueryBuilder(driver, query.withParameters(parameters), config);
     }
 
     @Override
-    public QueryTask withConfig(QueryConfig config) {
+    public ExecuteQueryBuilder withConfig(ExecuteQueryConfig config) {
         requireNonNull(config, "config must not be null");
-        return new InternalQueryTask(driver, query, config);
+        return new InternalExecuteQueryBuilder(driver, query, config);
     }
 
     @Override
@@ -61,7 +61,7 @@ public class InternalQueryTask implements QueryTask {
         var sessionConfigBuilder = SessionConfig.builder();
         config.database().ifPresent(sessionConfigBuilder::withDatabase);
         config.impersonatedUser().ifPresent(sessionConfigBuilder::withImpersonatedUser);
-        config.bookmarkManager(driver.queryTaskBookmarkManager()).ifPresent(sessionConfigBuilder::withBookmarkManager);
+        config.bookmarkManager(driver.defaultExecuteQueryBookmarkManager()).ifPresent(sessionConfigBuilder::withBookmarkManager);
         var supplier = recordCollector.supplier();
         var accumulator = recordCollector.accumulator();
         var finisher = recordCollector.finisher();
@@ -99,7 +99,7 @@ public class InternalQueryTask implements QueryTask {
     }
 
     // For testing only
-    public QueryConfig config() {
+    public ExecuteQueryConfig config() {
         return config;
     }
 }

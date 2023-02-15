@@ -30,10 +30,10 @@ import org.mockito.Mockito;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.testutil.TestUtil;
 
-class QueryConfigTest {
+class ExecuteQueryConfigTest {
     @Test
     void shouldReturnDefaultValues() {
-        var config = QueryConfig.defaultConfig();
+        var config = ExecuteQueryConfig.defaultConfig();
         var manager = Mockito.mock(BookmarkManager.class);
 
         assertEquals(RoutingControl.WRITERS, config.routing());
@@ -45,60 +45,60 @@ class QueryConfigTest {
     @ParameterizedTest
     @EnumSource(RoutingControl.class)
     void shouldUpdateRouting(RoutingControl routing) {
-        var config = QueryConfig.builder().withRouting(routing).build();
+        var config = ExecuteQueryConfig.builder().withRouting(routing).build();
         assertEquals(routing, config.routing());
     }
 
     @Test
     void shouldNotAllowNullRouting() {
-        assertThrows(NullPointerException.class, () -> QueryConfig.builder().withRouting(null));
+        assertThrows(NullPointerException.class, () -> ExecuteQueryConfig.builder().withRouting(null));
     }
 
     @Test
     void shouldUpdateDatabaseName() {
         var database = "testing";
-        var config = QueryConfig.builder().withDatabase(database).build();
+        var config = ExecuteQueryConfig.builder().withDatabase(database).build();
         assertTrue(config.database().isPresent());
         assertEquals(database, config.database().get());
     }
 
     @Test
     void shouldNotAllowNullDatabaseName() {
-        assertThrows(NullPointerException.class, () -> QueryConfig.builder().withDatabase(null));
+        assertThrows(NullPointerException.class, () -> ExecuteQueryConfig.builder().withDatabase(null));
     }
 
     @Test
     void shouldUpdateImpersonatedUser() {
         var user = "testing";
-        var config = QueryConfig.builder().withImpersonatedUser(user).build();
+        var config = ExecuteQueryConfig.builder().withImpersonatedUser(user).build();
         assertTrue(config.impersonatedUser().isPresent());
         assertEquals(user, config.impersonatedUser().get());
     }
 
     @Test
     void shouldAllowNotNullImpersonatedUser() {
-        assertThrows(NullPointerException.class, () -> QueryConfig.builder().withImpersonatedUser(null));
+        assertThrows(NullPointerException.class, () -> ExecuteQueryConfig.builder().withImpersonatedUser(null));
     }
 
     @Test
     void shouldUpdateBookmarkManager() {
         var defaultManager = mock(BookmarkManager.class);
         var manager = mock(BookmarkManager.class);
-        var config = QueryConfig.builder().withBookmarkManager(manager).build();
+        var config = ExecuteQueryConfig.builder().withBookmarkManager(manager).build();
         assertTrue(config.bookmarkManager(defaultManager).isPresent());
         assertEquals(manager, config.bookmarkManager(defaultManager).get());
     }
 
     @Test
     void shouldAllowNullBookmarkManager() {
-        var config = QueryConfig.builder().withBookmarkManager(null).build();
+        var config = ExecuteQueryConfig.builder().withBookmarkManager(null).build();
         assertTrue(config.bookmarkManager(mock(BookmarkManager.class)).isEmpty());
     }
 
     @Test
     void shouldSerialize() throws Exception {
-        var originalConfig = QueryConfig.defaultConfig();
-        var deserializedConfig = TestUtil.serializeAndReadBack(originalConfig, QueryConfig.class);
+        var originalConfig = ExecuteQueryConfig.defaultConfig();
+        var deserializedConfig = TestUtil.serializeAndReadBack(originalConfig, ExecuteQueryConfig.class);
         var defaultManager = mock(BookmarkManager.class);
 
         assertEquals(originalConfig.routing(), deserializedConfig.routing());

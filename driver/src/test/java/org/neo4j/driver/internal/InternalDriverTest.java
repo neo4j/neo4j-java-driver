@@ -35,11 +35,9 @@ import java.time.Clock;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.BookmarkManagerConfig;
-import org.neo4j.driver.BookmarkManagers;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.QueryConfig;
+import org.neo4j.driver.ExecuteQueryConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
@@ -122,19 +120,18 @@ class InternalDriverTest {
         var query = "string";
 
         // When
-        var queryTask = (InternalQueryTask) driver.queryTask(query);
+        var queryTask = (InternalExecuteQueryBuilder) driver.executeQueryBuilder(query);
 
         // Then
         assertNotNull(queryTask);
         assertEquals(driver, queryTask.driver());
         assertEquals(query, queryTask.query());
         assertEquals(Collections.emptyMap(), queryTask.parameters());
-        assertEquals(QueryConfig.defaultConfig(), queryTask.config());
+        assertEquals(ExecuteQueryConfig.defaultConfig(), queryTask.config());
     }
 
     private static InternalDriver newDriver(SessionFactory sessionFactory) {
         return new InternalDriver(
-                BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build()),
                 SecurityPlanImpl.insecure(),
                 sessionFactory,
                 DevNullMetricsProvider.INSTANCE,
@@ -156,7 +153,6 @@ class InternalDriverTest {
 
         MetricsProvider metricsProvider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
         return new InternalDriver(
-                BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build()),
                 SecurityPlanImpl.insecure(),
                 sessionFactory,
                 metricsProvider,

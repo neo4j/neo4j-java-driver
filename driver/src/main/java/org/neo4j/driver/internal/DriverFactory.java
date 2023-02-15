@@ -32,6 +32,9 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.BookmarkManager;
+import org.neo4j.driver.BookmarkManagerConfig;
+import org.neo4j.driver.BookmarkManagers;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
@@ -269,8 +272,7 @@ public class DriverFactory {
      */
     protected InternalDriver createDriver(
             SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config) {
-        return new InternalDriver(
-                config.queryTaskBookmarkManager(), securityPlan, sessionFactory, metricsProvider, config.logging());
+        return new InternalDriver(securityPlan, sessionFactory, metricsProvider, config.logging());
     }
 
     /**
