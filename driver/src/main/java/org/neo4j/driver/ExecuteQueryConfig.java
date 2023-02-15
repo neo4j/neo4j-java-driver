@@ -101,7 +101,6 @@ public final class ExecuteQueryConfig implements Serializable {
      * Returns bookmark manager for the query.
      *
      * @param defaultBookmarkManager default bookmark manager to use when none has been configured explicitly,
-     * {@link Config#queryTaskBookmarkManager()} as a default value by the driver
      * @return bookmark manager
      */
     public Optional<BookmarkManager> bookmarkManager(BookmarkManager defaultBookmarkManager) {
