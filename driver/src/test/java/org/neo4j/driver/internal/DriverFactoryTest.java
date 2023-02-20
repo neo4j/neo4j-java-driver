@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -65,7 +66,9 @@ import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RediscoveryImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
+import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
@@ -238,6 +241,31 @@ class DriverFactoryTest {
         assertEquals(rediscovery, actualRediscovery);
     }
 
+    @Test
+    void shouldUseBuiltInLoadBalancingStrategyByDefault() {
+        // GIVEN
+        var driverFactory = new DriverFactory();
+
+        // WHEN
+        var lbs = driverFactory.createLoadBalancingStrategy(null, null);
+
+        // THEN
+        assertInstanceOf(LeastConnectedLoadBalancingStrategy.class, lbs);
+    }
+
+    @Test
+    void shouldUseSuppliedLoadBalancingStrategy() {
+        // GIVEN
+        var expectedLBS = mock(LoadBalancingStrategy.class);
+        var driverFactory = new DriverFactoryWithLBStrategy(expectedLBS);
+
+        // WHEN
+        var actualLBS = driverFactory.createLoadBalancingStrategy(null, null);
+
+        // THEN
+        assertEquals(expectedLBS, actualLBS);
+    }
+
     private Driver createDriver(String uri, DriverFactory driverFactory) {
         return createDriver(uri, driverFactory, defaultConfig());
     }
@@ -372,6 +400,21 @@ class DriverFactoryTest {
         protected SessionFactory createSessionFactory(
                 ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config) {
             return sessionFactory;
+        }
+    }
+
+    private static class DriverFactoryWithLBStrategy extends DriverFactory {
+
+        private final LoadBalancingStrategy lb;
+
+        DriverFactoryWithLBStrategy(LoadBalancingStrategy lb) {
+            this.lb = lb;
+        }
+
+        @Override
+        protected LoadBalancingStrategy createLoadBalancingStrategy(ConnectionPool connectionPool, Logging logging) {
+
+            return super.createLoadBalancingStrategy(connectionPool, logging);
         }
     }
 }

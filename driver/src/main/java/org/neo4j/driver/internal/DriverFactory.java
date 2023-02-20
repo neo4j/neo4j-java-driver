@@ -47,8 +47,9 @@ import org.neo4j.driver.internal.cluster.RediscoveryImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
+import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
+import org.neo4j.driver.internal.cluster.loadbalancing.NRandomChoicesLoadBalancingStrategy;
 import org.neo4j.driver.internal.logging.NettyLogging;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
@@ -274,6 +275,17 @@ public class DriverFactory {
     }
 
     /**
+     * Creates a new {@link LoadBalancingStrategy} for the {@link LoadBalancer} in the routing driver.
+     * <p>
+     * <b>This method is protected only for use in testing and internal tooling</b>
+     */
+    protected LoadBalancingStrategy createLoadBalancingStrategy(ConnectionPool connectionPool, Logging logging) {
+        // We change the default load balancing strategy for the spike
+        return new NRandomChoicesLoadBalancingStrategy(2, connectionPool, logging);
+        // return new LeastConnectedLoadBalancingStrategy(connectionPool, logging);
+    }
+
+    /**
      * Creates new {@link LoadBalancer} for the routing driver.
      * <p>
      * <b>This method is protected only for testing</b>
@@ -285,7 +297,7 @@ public class DriverFactory {
             Config config,
             RoutingSettings routingSettings,
             Supplier<Rediscovery> rediscoverySupplier) {
-        var loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(connectionPool, config.logging());
+        var loadBalancingStrategy = createLoadBalancingStrategy(connectionPool, config.logging());
         var resolver = createResolver(config);
         var domainNameResolver = Objects.requireNonNull(getDomainNameResolver(), "domainNameResolver must not be null");
         var clock = createClock();
