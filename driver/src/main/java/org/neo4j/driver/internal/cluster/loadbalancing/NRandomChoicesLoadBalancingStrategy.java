@@ -63,7 +63,7 @@ public class NRandomChoicesLoadBalancingStrategy implements LoadBalancingStrateg
         }
         var shuffledCandidates = new ArrayList<>(candidates);
         Collections.shuffle(shuffledCandidates);
-        var choice = leastConnected.leastConnected(candidates.subList(0, n));
+        var choice = leastConnected.leastConnected(candidates.subList(0, Math.min(candidates.size(), n)));
         choice.ifPresent(c -> log.trace(
                 "Selected %s with address: '%s' and active connections: %s",
                 addressType, c.address(), c.numInUseConnections()));
