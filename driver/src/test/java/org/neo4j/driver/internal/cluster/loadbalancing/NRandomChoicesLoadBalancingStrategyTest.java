@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 class NRandomChoicesLoadBalancingStrategyTest {
 
-    //TODO: Add tests
+    // TODO: Add tests
     @Test
     void shouldSometimesNotSelectLeastConnectedIfNSmallerThanList() {
         assertTrue(true);
