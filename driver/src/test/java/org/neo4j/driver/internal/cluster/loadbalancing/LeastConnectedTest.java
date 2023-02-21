@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,6 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
 class LeastConnectedTest {
-
     @Test
     void shouldSelectTheAddressWithTheLeastActiveConnections() {
         // GIVEN
@@ -43,6 +43,7 @@ class LeastConnectedTest {
         var selected = leastConnected.leastConnected(List.of(boltAddressA, boltAddressB));
 
         // THEN
-        assertEquals(selected, boltAddressB);
+        assertTrue(selected.isPresent());
+        assertEquals(selected.get().address(), boltAddressB);
     }
 }

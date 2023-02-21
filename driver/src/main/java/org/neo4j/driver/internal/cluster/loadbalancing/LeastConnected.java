@@ -35,13 +35,12 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
  * Note that if many addresses have the same smallest number of active connections, the address returned is random.
  */
 class LeastConnected {
-
     private final ConnectionPool connectionPool;
     private final Comparator<AddressChoice> comparingNumberOfConnections;
 
     LeastConnected(ConnectionPool connectionPool) {
         this.connectionPool = connectionPool;
-        this.comparingNumberOfConnections = Comparator.comparing(choice -> choice.numInUseConnections());
+        this.comparingNumberOfConnections = Comparator.comparing(AddressChoice::numInUseConnections);
     }
 
     Optional<AddressChoice> leastConnected(Collection<BoltServerAddress> candidates) {
