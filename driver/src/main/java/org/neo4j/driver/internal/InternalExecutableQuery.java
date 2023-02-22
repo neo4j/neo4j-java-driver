@@ -23,19 +23,19 @@ import static java.util.Objects.requireNonNull;
 import java.util.Map;
 import java.util.stream.Collector;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.ExecutableQuery;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.ExecuteQueryConfig;
-import org.neo4j.driver.ExecuteQueryTemplate;
+import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
 
-public class InternalExecuteQueryTemplate implements ExecuteQueryTemplate {
+public class InternalExecutableQuery implements ExecutableQuery {
     private final Driver driver;
     private final Query query;
-    private final ExecuteQueryConfig config;
+    private final QueryConfig config;
 
-    public InternalExecuteQueryTemplate(Driver driver, Query query, ExecuteQueryConfig config) {
+    public InternalExecutableQuery(Driver driver, Query query, QueryConfig config) {
         requireNonNull(driver, "driver must not be null");
         requireNonNull(query, "query must not be null");
         requireNonNull(config, "config must not be null");
@@ -45,15 +45,15 @@ public class InternalExecuteQueryTemplate implements ExecuteQueryTemplate {
     }
 
     @Override
-    public ExecuteQueryTemplate withParameters(Map<String, Object> parameters) {
+    public ExecutableQuery withParameters(Map<String, Object> parameters) {
         requireNonNull(parameters, "parameters must not be null");
-        return new InternalExecuteQueryTemplate(driver, query.withParameters(parameters), config);
+        return new InternalExecutableQuery(driver, query.withParameters(parameters), config);
     }
 
     @Override
-    public ExecuteQueryTemplate withConfig(ExecuteQueryConfig config) {
+    public ExecutableQuery withConfig(QueryConfig config) {
         requireNonNull(config, "config must not be null");
-        return new InternalExecuteQueryTemplate(driver, query, config);
+        return new InternalExecutableQuery(driver, query, config);
     }
 
     @Override
@@ -61,7 +61,8 @@ public class InternalExecuteQueryTemplate implements ExecuteQueryTemplate {
         var sessionConfigBuilder = SessionConfig.builder();
         config.database().ifPresent(sessionConfigBuilder::withDatabase);
         config.impersonatedUser().ifPresent(sessionConfigBuilder::withImpersonatedUser);
-        config.bookmarkManager(driver.defaultExecuteQueryBookmarkManager()).ifPresent(sessionConfigBuilder::withBookmarkManager);
+        config.bookmarkManager(driver.defaultExecuteQueryBookmarkManager())
+                .ifPresent(sessionConfigBuilder::withBookmarkManager);
         var supplier = recordCollector.supplier();
         var accumulator = recordCollector.accumulator();
         var finisher = recordCollector.finisher();
@@ -99,7 +100,7 @@ public class InternalExecuteQueryTemplate implements ExecuteQueryTemplate {
     }
 
     // For testing only
-    public ExecuteQueryConfig config() {
+    public QueryConfig config() {
         return config;
     }
 }

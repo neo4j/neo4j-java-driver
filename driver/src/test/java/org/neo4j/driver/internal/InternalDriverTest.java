@@ -37,7 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.ExecuteQueryConfig;
+import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
@@ -120,22 +120,19 @@ class InternalDriverTest {
         var query = "string";
 
         // When
-        var queryTask = (InternalExecuteQueryTemplate) driver.executeQueryTemplate(query);
+        var queryTask = (InternalExecutableQuery) driver.executableQuery(query);
 
         // Then
         assertNotNull(queryTask);
         assertEquals(driver, queryTask.driver());
         assertEquals(query, queryTask.query());
         assertEquals(Collections.emptyMap(), queryTask.parameters());
-        assertEquals(ExecuteQueryConfig.defaultConfig(), queryTask.config());
+        assertEquals(QueryConfig.defaultConfig(), queryTask.config());
     }
 
     private static InternalDriver newDriver(SessionFactory sessionFactory) {
         return new InternalDriver(
-                SecurityPlanImpl.insecure(),
-                sessionFactory,
-                DevNullMetricsProvider.INSTANCE,
-                DEV_NULL_LOGGING);
+                SecurityPlanImpl.insecure(), sessionFactory, DevNullMetricsProvider.INSTANCE, DEV_NULL_LOGGING);
     }
 
     private static SessionFactory sessionFactoryMock() {
@@ -152,10 +149,6 @@ class InternalDriverTest {
         }
 
         MetricsProvider metricsProvider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
-        return new InternalDriver(
-                SecurityPlanImpl.insecure(),
-                sessionFactory,
-                metricsProvider,
-                DEV_NULL_LOGGING);
+        return new InternalDriver(SecurityPlanImpl.insecure(), sessionFactory, metricsProvider, DEV_NULL_LOGGING);
     }
 }

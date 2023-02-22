@@ -27,15 +27,15 @@ import java.util.Optional;
 import org.neo4j.driver.util.Experimental;
 
 /**
- * Query configuration used by {@link Driver#executeQueryTemplate(String)} and its variants.
+ * Query configuration used by {@link Driver#executableQuery(String)} and its variants.
  * @since 5.5
  */
 @Experimental
-public final class ExecuteQueryConfig implements Serializable {
+public final class QueryConfig implements Serializable {
     @Serial
     private static final long serialVersionUID = -2632780731598141754L;
 
-    private static final ExecuteQueryConfig DEFAULT = builder().build();
+    private static final QueryConfig DEFAULT = builder().build();
 
     private final RoutingControl routing;
     private final String database;
@@ -48,11 +48,11 @@ public final class ExecuteQueryConfig implements Serializable {
      *
      * @return config value
      */
-    public static ExecuteQueryConfig defaultConfig() {
+    public static QueryConfig defaultConfig() {
         return DEFAULT;
     }
 
-    private ExecuteQueryConfig(Builder builder) {
+    private QueryConfig(Builder builder) {
         this.routing = builder.routing;
         this.database = builder.database;
         this.impersonatedUser = builder.impersonatedUser;
@@ -112,7 +112,7 @@ public final class ExecuteQueryConfig implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ExecuteQueryConfig that = (ExecuteQueryConfig) o;
+        QueryConfig that = (QueryConfig) o;
         return useDefaultBookmarkManager == that.useDefaultBookmarkManager
                 && routing == that.routing
                 && Objects.equals(database, that.database)
@@ -136,7 +136,7 @@ public final class ExecuteQueryConfig implements Serializable {
     }
 
     /**
-     * Builder used to configure {@link ExecuteQueryConfig} which will be used to execute a query.
+     * Builder used to configure {@link QueryConfig} which will be used to execute a query.
      */
     public static final class Builder {
         private RoutingControl routing = RoutingControl.WRITERS;
@@ -206,10 +206,10 @@ public final class ExecuteQueryConfig implements Serializable {
         /**
          * Create a config instance from this builder.
          *
-         * @return a new {@link ExecuteQueryConfig} instance.
+         * @return a new {@link QueryConfig} instance.
          */
-        public ExecuteQueryConfig build() {
-            return new ExecuteQueryConfig(this);
+        public QueryConfig build() {
+            return new QueryConfig(this);
         }
     }
 }

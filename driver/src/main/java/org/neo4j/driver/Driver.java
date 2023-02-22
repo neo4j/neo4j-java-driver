@@ -64,18 +64,18 @@ import org.neo4j.driver.util.Experimental;
  */
 public interface Driver extends AutoCloseable {
     /**
-     * Creates a new {@link ExecuteQueryTemplate} instance that executes a query in a managed transaction with automatic retries on
+     * Creates a new {@link ExecutableQuery} instance that executes a query in a managed transaction with automatic retries on
      * retryable errors.
      *
      * @param query query string
      * @return new query task instance
-     * @since 5.5
+     * @since 5.6
      */
     @Experimental
-    ExecuteQueryTemplate executeQueryTemplate(String query);
+    ExecutableQuery executableQuery(String query);
 
     /**
-     * Returns an instance of {@link BookmarkManager} used by {@link ExecuteQueryTemplate} instances by default.
+     * Returns an instance of {@link BookmarkManager} used by {@link ExecutableQuery} instances by default.
      *
      * @return bookmark manager, must not be {@code null}
      * @since 5.6

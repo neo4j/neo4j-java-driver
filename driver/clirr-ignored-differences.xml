@@ -412,7 +412,7 @@
     <difference>
         <className>org/neo4j/driver/Driver</className>
         <differenceType>7012</differenceType>
-        <method>org.neo4j.driver.ExecuteQueryTemplate executeQueryTemplate(java.lang.String)</method>
+        <method>org.neo4j.driver.ExecutableQuery executableQuery(java.lang.String)</method>
     </difference>
 
     <difference>

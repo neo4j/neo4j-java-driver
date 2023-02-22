@@ -38,7 +38,7 @@ import org.neo4j.driver.util.Experimental;
  * <p>
  * Causal consistency is managed via driver's {@link BookmarkManager} that is enabled by default. It is possible
  * to use a different {@link BookmarkManager} or disable it via
- * {@link ExecuteQueryConfig.Builder#withBookmarkManager(BookmarkManager)} on individual basis.
+ * {@link QueryConfig.Builder#withBookmarkManager(BookmarkManager)} on individual basis.
  * <p>
  * Sample usage:
  * <pre>
@@ -94,27 +94,27 @@ import org.neo4j.driver.util.Experimental;
  * }
  * </pre>
  *
- * @since 5.5
+ * @since 5.6
  */
 @Experimental
-public interface ExecuteQueryTemplate {
+public interface ExecutableQuery {
     /**
      * Sets query parameters.
      *
      * @param parameters parameters map, must not be {@code null}
      * @return a new query task
      */
-    ExecuteQueryTemplate withParameters(Map<String, Object> parameters);
+    ExecutableQuery withParameters(Map<String, Object> parameters);
 
     /**
-     * Sets {@link ExecuteQueryConfig}.
+     * Sets {@link QueryConfig}.
      * <p>
-     * By default, {@link ExecuteQueryTemplate} has {@link ExecuteQueryConfig#defaultConfig()} value.
+     * By default, {@link ExecutableQuery} has {@link QueryConfig#defaultConfig()} value.
      *
      * @param config query config, must not be {@code null}
      * @return a new query task
      */
-    ExecuteQueryTemplate withConfig(ExecuteQueryConfig config);
+    ExecutableQuery withConfig(QueryConfig config);
 
     /**
      * Executes query, collects all results eagerly and returns a result.

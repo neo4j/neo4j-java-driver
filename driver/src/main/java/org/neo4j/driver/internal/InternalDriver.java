@@ -28,12 +28,12 @@ import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.BookmarkManagerConfig;
 import org.neo4j.driver.BookmarkManagers;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.ExecutableQuery;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.ExecuteQueryConfig;
-import org.neo4j.driver.ExecuteQueryTemplate;
+import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
@@ -49,7 +49,8 @@ import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 
 public class InternalDriver implements Driver {
-    private final BookmarkManager queryBookmarkManager = BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build());
+    private final BookmarkManager queryBookmarkManager =
+            BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build());
     private final SecurityPlan securityPlan;
     private final SessionFactory sessionFactory;
     private final Logger log;
@@ -69,8 +70,8 @@ public class InternalDriver implements Driver {
     }
 
     @Override
-    public ExecuteQueryTemplate executeQueryTemplate(String query) {
-        return new InternalExecuteQueryTemplate(this, new Query(query), ExecuteQueryConfig.defaultConfig());
+    public ExecutableQuery executableQuery(String query) {
+        return new InternalExecutableQuery(this, new Query(query), QueryConfig.defaultConfig());
     }
 
     @Override
