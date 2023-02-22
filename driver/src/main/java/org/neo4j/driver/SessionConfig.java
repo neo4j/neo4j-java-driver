@@ -41,11 +41,29 @@ public final class SessionConfig implements Serializable {
 
     private static final SessionConfig EMPTY = builder().build();
 
+    /**
+     * The initial bookmarks.
+     */
     private final Iterable<Bookmark> bookmarks;
+    /**
+     * The default type of access.
+     */
     private final AccessMode defaultAccessMode;
+    /**
+     * The target database name.
+     */
     private final String database;
+    /**
+     * The fetch size.
+     */
     private final Long fetchSize;
+    /**
+     * The impersonated user.
+     */
     private final String impersonatedUser;
+    /**
+     * The bookmark manager.
+     */
     private final BookmarkManager bookmarkManager;
 
     private SessionConfig(Builder builder) {
@@ -348,6 +366,10 @@ public final class SessionConfig implements Serializable {
             return this;
         }
 
+        /**
+         * Builds the {@link SessionConfig}.
+         * @return the config
+         */
         public SessionConfig build() {
             return new SessionConfig(this);
         }

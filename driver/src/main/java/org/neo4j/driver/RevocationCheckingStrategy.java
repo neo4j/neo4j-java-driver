@@ -29,6 +29,11 @@ public enum RevocationCheckingStrategy {
     /** Require stapled revocation status and verify OCSP revocation checks, fail if no revocation status is stapled to the certificate. */
     STRICT;
 
+    /**
+     * Returns whether a given strategy requires revocation checking.
+     * @param revocationCheckingStrategy the strategy
+     * @return whether revocation checking is required
+     */
     public static boolean requiresRevocationChecking(RevocationCheckingStrategy revocationCheckingStrategy) {
         return revocationCheckingStrategy.equals(STRICT) || revocationCheckingStrategy.equals(VERIFY_IF_PRESENT);
     }

@@ -30,6 +30,10 @@ public class ResultConsumedException extends ClientException {
     @Serial
     private static final long serialVersionUID = 944999841543178703L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public ResultConsumedException(String message) {
         super(message);
     }

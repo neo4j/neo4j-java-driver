@@ -29,6 +29,10 @@ public class NotMultiValued extends ValueException {
     @Serial
     private static final long serialVersionUID = -7380569883011364090L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public NotMultiValued(String message) {
         super(message);
     }

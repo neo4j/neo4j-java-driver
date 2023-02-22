@@ -32,6 +32,10 @@ public class NoSuchRecordException extends NoSuchElementException {
     @Serial
     private static final long serialVersionUID = 9091962868264042491L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public NoSuchRecordException(String message) {
         super(message);
     }

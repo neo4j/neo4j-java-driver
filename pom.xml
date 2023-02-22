@@ -588,6 +588,7 @@
             <additionalOptions>
               <!-- Required for Java 8u121 or later. See https://github.com/neo4j/neo4j-java-driver/pull/318  -->
               <option>--allow-script-in-comments</option>
+              <option>-Xdoclint/package:-org.neo4j.driver.internal,-org.neo4j.driver.internal.*</option>
             </additionalOptions>
             <sourceFileIncludes>
               <sourceFileInclude>org/neo4j/driver/**/*.java</sourceFileInclude>
@@ -601,6 +602,9 @@
               <goals>
                 <goal>jar</goal>
               </goals>
+              <configuration>
+                <failOnWarnings>true</failOnWarnings>
+              </configuration>
             </execution>
             <execution>
               <id>aggregate</id>

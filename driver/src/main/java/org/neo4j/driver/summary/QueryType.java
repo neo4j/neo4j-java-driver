@@ -28,35 +28,63 @@ import org.neo4j.driver.exceptions.Neo4jException;
  * @since 1.0
  */
 public enum QueryType {
+    /**
+     * Read only.
+     */
     READ_ONLY,
+    /**
+     * Read write.
+     */
     READ_WRITE,
+    /**
+     * Write only.
+     */
     WRITE_ONLY,
+    /**
+     * Schema write.
+     */
     SCHEMA_WRITE;
 
     private static final String UNEXPECTED_TYPE_MSG_FMT = "Unknown query type: `%s`.";
     private static final Function<String, ClientException> UNEXPECTED_TYPE_EXCEPTION_SUPPLIER =
             (type) -> new ClientException(String.format(UNEXPECTED_TYPE_MSG_FMT, type));
 
+    /**
+     * Creates a query type from a {@link String} value.
+     * @param type the type string value
+     * @return the query type
+     */
     public static QueryType fromCode(String type) {
         return fromCode(type, UNEXPECTED_TYPE_EXCEPTION_SUPPLIER);
     }
 
+    /**
+     * Creates a query type from a {@link String} value and exception function.
+     * @param type the type string value
+     * @param exceptionFunction the function producing exception if no mapping is found
+     * @return the query type
+     */
     public static QueryType fromCode(String type, Function<String, ? extends Neo4jException> exceptionFunction) {
         switch (type) {
-            case "r":
+            case "r" -> {
                 return QueryType.READ_ONLY;
-            case "rw":
+            }
+            case "rw" -> {
                 return QueryType.READ_WRITE;
-            case "w":
+            }
+            case "w" -> {
                 return QueryType.WRITE_ONLY;
-            case "s":
+            }
+            case "s" -> {
                 return QueryType.SCHEMA_WRITE;
-            default:
+            }
+            default -> {
                 if (exceptionFunction != null) {
                     throw exceptionFunction.apply(type);
                 } else {
                     return null;
                 }
+            }
         }
     }
 }

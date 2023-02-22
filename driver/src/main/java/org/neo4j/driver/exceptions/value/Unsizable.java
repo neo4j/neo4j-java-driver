@@ -28,6 +28,10 @@ public class Unsizable extends ValueException {
     @Serial
     private static final long serialVersionUID = 741487155344252339L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public Unsizable(String message) {
         super(message);
     }

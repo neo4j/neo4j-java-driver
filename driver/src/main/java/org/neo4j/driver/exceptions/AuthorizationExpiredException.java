@@ -29,9 +29,17 @@ public class AuthorizationExpiredException extends SecurityException implements 
     @Serial
     private static final long serialVersionUID = 5688002170978405558L;
 
+    /**
+     * The description for {@link AuthorizationExpiredException}.
+     */
     public static final String DESCRIPTION =
             "Authorization information kept on the server has expired, this connection is no longer valid.";
 
+    /**
+     * Creates a new instance.
+     * @param code the code
+     * @param message the message
+     */
     public AuthorizationExpiredException(String code, String message) {
         super(code, message);
     }

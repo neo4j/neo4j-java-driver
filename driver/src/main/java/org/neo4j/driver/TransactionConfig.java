@@ -69,7 +69,13 @@ public final class TransactionConfig implements Serializable {
 
     private static final TransactionConfig EMPTY = builder().build();
 
+    /**
+     * the transaction timeout
+     */
     private final Duration timeout;
+    /**
+     * The transaction metadata.
+     */
     private final Map<String, Object> metadata;
 
     // Values are not serializable, hence, we keep a transient volatile map of them around

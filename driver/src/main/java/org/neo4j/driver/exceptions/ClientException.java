@@ -29,14 +29,28 @@ public class ClientException extends Neo4jException {
     @Serial
     private static final long serialVersionUID = -6732913155228185887L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public ClientException(String message) {
         super(message);
     }
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     * @param cause the cause
+     */
     public ClientException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Creates a new instance.
+     * @param code the code
+     * @param message the message
+     */
     public ClientException(String code, String message) {
         super(code, message);
     }

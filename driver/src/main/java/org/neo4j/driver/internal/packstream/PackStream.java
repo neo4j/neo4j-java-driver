@@ -36,7 +36,7 @@ import java.util.Map;
  * Extra markers should <em>not</em> be added casually and such additions must be follow a strict process involving both client and server software.
  *
  * The table below shows all allocated marker byte values.
- * <p>
+ * <br>
  * <table>
  * <caption>Allocated marker byte values.</caption>
  * <tr><th>Marker</th><th>Binary</th><th>Type</th><th>Description</th></tr>

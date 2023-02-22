@@ -30,10 +30,19 @@ public class SessionExpiredException extends Neo4jException implements Retryable
     @Serial
     private static final long serialVersionUID = 843176371236755724L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public SessionExpiredException(String message) {
         super(message);
     }
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     * @param throwable the throwable
+     */
     public SessionExpiredException(String message, Throwable throwable) {
         super(message, throwable);
     }

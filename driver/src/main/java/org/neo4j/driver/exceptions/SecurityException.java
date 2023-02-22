@@ -30,10 +30,20 @@ public class SecurityException extends ClientException {
     @Serial
     private static final long serialVersionUID = -5964665406806523214L;
 
+    /**
+     * Creates a new instance.
+     * @param code the code
+     * @param message the message
+     */
     public SecurityException(String code, String message) {
         super(code, message);
     }
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     * @param t the throwable
+     */
     public SecurityException(String message, Throwable t) {
         super(message, t);
     }
