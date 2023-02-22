@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.neo4j.driver</groupId>
     <artifactId>neo4j-java-driver-parent</artifactId>
-    <version>5.5-SNAPSHOT</version>
+    <version>5.6-SNAPSHOT</version>
   </parent>
 
   <artifactId>neo4j-java-driver</artifactId>
@@ -164,17 +164,17 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>clirr-maven-plugin</artifactId>
           <configuration>
-            <comparisonArtifacts>
-              <comparisonArtifact>
-                <groupId>org.neo4j.driver</groupId>
-                <artifactId>neo4j-java-driver</artifactId>
-                <version>4.0.0</version>
-              </comparisonArtifact>
-            </comparisonArtifacts>
             <classesDirectory>${api.classes.directory}</classesDirectory>
             <excludes>org/neo4j/driver/internal/**</excludes>
             <ignoredDifferencesFile>clirr-ignored-differences.xml</ignoredDifferencesFile>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.bcel</groupId>
+              <artifactId>bcel</artifactId>
+              <version>6.7.0</version>
+            </dependency>
+          </dependencies>
         </plugin>
       </plugins>
     </pluginManagement>

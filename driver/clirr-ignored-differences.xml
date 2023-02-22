@@ -423,6 +423,12 @@
 
     <difference>
         <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.BookmarkManager queryBookmarkManager()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
         <differenceType>7012</differenceType>
         <method>org.neo4j.driver.BookmarkManager queryTaskBookmarkManager()</method>
     </difference>
