@@ -27,6 +27,10 @@ public class TransactionNestingException extends ClientException {
     @Serial
     private static final long serialVersionUID = -8264319542004457065L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public TransactionNestingException(String message) {
         super(message);
     }

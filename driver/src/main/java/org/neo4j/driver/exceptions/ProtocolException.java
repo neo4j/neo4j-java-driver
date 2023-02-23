@@ -30,10 +30,19 @@ public class ProtocolException extends Neo4jException {
 
     private static final String CODE = "Protocol violation: ";
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public ProtocolException(String message) {
         super(CODE + message);
     }
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     * @param e the throwable
+     */
     public ProtocolException(String message, Throwable e) {
         super(CODE + message, e);
     }

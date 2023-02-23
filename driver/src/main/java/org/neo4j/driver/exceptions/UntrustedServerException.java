@@ -27,6 +27,10 @@ public class UntrustedServerException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 3196604305660766197L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public UntrustedServerException(String message) {
         super(message);
     }

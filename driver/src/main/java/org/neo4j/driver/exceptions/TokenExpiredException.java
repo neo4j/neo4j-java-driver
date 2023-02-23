@@ -31,6 +31,11 @@ public class TokenExpiredException extends SecurityException {
     @Serial
     private static final long serialVersionUID = -5593851859769531234L;
 
+    /**
+     * Creates a new instance.
+     * @param code the code
+     * @param message the message
+     */
     public TokenExpiredException(String code, String message) {
         super(code, message);
     }

@@ -29,9 +29,18 @@ public class ConnectionReadTimeoutException extends ServiceUnavailableException 
     @Serial
     private static final long serialVersionUID = -9222586212813330140L;
 
+    /**
+     * An instance of {@link ConnectionReadTimeoutException}.
+     */
     public static final ConnectionReadTimeoutException INSTANCE = new ConnectionReadTimeoutException(
             "Connection read timed out due to it taking longer than the server-supplied timeout value via configuration hint.");
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     * @deprecated superseded by the {@link ConnectionReadTimeoutException#INSTANCE} value
+     */
+    @Deprecated
     public ConnectionReadTimeoutException(String message) {
         super(message);
     }

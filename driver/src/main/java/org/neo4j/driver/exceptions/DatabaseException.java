@@ -29,6 +29,11 @@ public class DatabaseException extends Neo4jException {
     @Serial
     private static final long serialVersionUID = 4591061578560201032L;
 
+    /**
+     * Creates a new instance.
+     * @param code the code
+     * @param message the message
+     */
     public DatabaseException(String code, String message) {
         super(code, message);
     }

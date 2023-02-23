@@ -29,6 +29,10 @@ public class ValueException extends ClientException {
     @Serial
     private static final long serialVersionUID = -1269336313727174998L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public ValueException(String message) {
         super(message);
     }

@@ -29,10 +29,19 @@ public class ServiceUnavailableException extends Neo4jException implements Retry
     @Serial
     private static final long serialVersionUID = 8316077882191697974L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public ServiceUnavailableException(String message) {
         super(message);
     }
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     * @param throwable the throwable
+     */
     public ServiceUnavailableException(String message, Throwable throwable) {
         super(message, throwable);
     }

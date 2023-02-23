@@ -37,10 +37,25 @@ public final class QueryConfig implements Serializable {
 
     private static final QueryConfig DEFAULT = builder().build();
 
+    /**
+     * The routing mode.
+     */
     private final RoutingControl routing;
+    /**
+     * The target database.
+     */
     private final String database;
+    /**
+     * The impersonated user.
+     */
     private final String impersonatedUser;
+    /**
+     * The bookmark manager.
+     */
     private final BookmarkManager bookmarkManager;
+    /**
+     * The flag indicating if default bookmark manager should be used.
+     */
     private final boolean useDefaultBookmarkManager;
 
     /**
