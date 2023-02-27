@@ -14,6 +14,7 @@
 
     <name>Neo4j Java Driver Testkit Backend</name>
     <description>Integration component for use with Testkit</description>
+    <url>https://github.com/neo4j/neo4j-java-driver</url>
 
     <properties>
         <rootDir>${project.basedir}/..</rootDir>
@@ -80,5 +81,11 @@
             </plugin>
         </plugins>
     </build>
+
+    <scm>
+        <connection>scm:git:git://github.com/neo4j/neo4j-java-driver.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j-java-driver.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j-java-driver</url>
+    </scm>
 
 </project>
