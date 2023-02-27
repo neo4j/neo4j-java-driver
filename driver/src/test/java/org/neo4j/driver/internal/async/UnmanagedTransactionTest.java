@@ -216,7 +216,7 @@ class UnmanagedTransactionTest {
         ClientException terminationCause = new ClientException("Custom exception");
         ResultCursorsHolder resultCursorsHolder = mockResultCursorWith(terminationCause);
         UnmanagedTransaction tx =
-                new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, resultCursorsHolder);
+                new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, resultCursorsHolder, null);
 
         tx.markTerminated(terminationCause);
 
@@ -231,7 +231,7 @@ class UnmanagedTransactionTest {
         ClientException terminationCause = new ClientException("Custom exception");
         ResultCursorsHolder resultCursorsHolder = mockResultCursorWith(new ClientException("Cursor error"));
         UnmanagedTransaction tx =
-                new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, resultCursorsHolder);
+                new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, resultCursorsHolder, null);
 
         tx.markTerminated(terminationCause);
 

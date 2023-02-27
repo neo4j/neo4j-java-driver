@@ -143,7 +143,8 @@ public class NetworkSession {
                 .thenApply(connection ->
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
-                    UnmanagedTransaction tx = new UnmanagedTransaction(connection, this::handleNewBookmark, fetchSize);
+                    UnmanagedTransaction tx =
+                            new UnmanagedTransaction(connection, this::handleNewBookmark, fetchSize, getDatabase());
                     return tx.beginAsync(determineBookmarks(true), config, txType);
                 });
 
@@ -162,6 +163,14 @@ public class NetworkSession {
                 });
 
         return newTransactionStage;
+    }
+
+    public String getDatabase() {
+        var databaseName = connectionContext.databaseNameFuture().getNow(null);
+        if (databaseName == null) {
+            throw new IllegalStateException("unexpected state, database name should have been resolved");
+        }
+        return databaseName.databaseName().orElse("<default database>");
     }
 
     public RetryLogic retryLogic() {

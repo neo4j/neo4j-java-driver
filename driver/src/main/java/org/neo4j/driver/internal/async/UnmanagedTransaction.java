@@ -25,6 +25,10 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.futureCompletingConsumer;
 import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
@@ -93,21 +97,31 @@ public class UnmanagedTransaction {
     private CompletableFuture<Void> rollbackFuture;
     private Throwable causeOfTermination;
     private CompletionStage<Void> interruptStage;
+    private final MeterRegistry registry = io.micrometer.core.instrument.Metrics.globalRegistry;
+    private Timer.Sample txTimerSample;
+    private String database;
 
     public UnmanagedTransaction(Connection connection, Consumer<DatabaseBookmark> bookmarkConsumer, long fetchSize) {
-        this(connection, bookmarkConsumer, fetchSize, new ResultCursorsHolder());
+        this(connection, bookmarkConsumer, fetchSize, null);
+    }
+
+    public UnmanagedTransaction(
+            Connection connection, Consumer<DatabaseBookmark> bookmarkConsumer, long fetchSize, String database) {
+        this(connection, bookmarkConsumer, fetchSize, new ResultCursorsHolder(), database);
     }
 
     protected UnmanagedTransaction(
             Connection connection,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             long fetchSize,
-            ResultCursorsHolder resultCursors) {
+            ResultCursorsHolder resultCursors,
+            String database) {
         this.connection = connection;
         this.protocol = connection.protocol();
         this.bookmarkConsumer = bookmarkConsumer;
         this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
+        this.database = database;
     }
 
     public CompletionStage<UnmanagedTransaction> beginAsync(
@@ -124,6 +138,7 @@ public class UnmanagedTransaction {
                         }
                         throw asCompletionException(beginError);
                     }
+                    txTimerSample = Timer.start(registry);
                     return this;
                 });
     }
@@ -248,6 +263,8 @@ public class UnmanagedTransaction {
                 state = State.ROLLED_BACK;
             }
         });
+        txTimerSample.stop(registry.timer(
+                "neo4j.driver.transactions", Tags.of(Tag.of("database", database), Tag.of("state", state.toString()))));
         if (throwable instanceof AuthorizationExpiredException) {
             connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
         } else if (throwable instanceof ConnectionReadTimeoutException) {
