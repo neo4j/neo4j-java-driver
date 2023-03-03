@@ -18,13 +18,14 @@
  */
 package org.neo4j.driver;
 
-/**
- * Token for holding authentication details, such as <em>user name</em> and <em>password</em>.
- * Such a token is required by a {@link Driver} to authenticate with a Neo4j
- * instance.
- *
- * @see AuthTokens
- * @see GraphDatabase#driver(String, AuthToken)
- * @since 1.0
- */
-public interface AuthToken {}
+public interface AuthToken {
+    // option 1
+    // is most likely re-usable for other auth manager implementations that need an additional metadata
+    // for now, we only have one temporal implementation that would use something like AuthData<Long>
+    <T> AuthData<T> toAuthData(T metadata);
+
+    // option 2
+    // this approach will require similar methods and types should we provide other manager implementations requiring
+    // another type of metadata
+    AuthTokenWithExpiration withExpirationAt(long expirationTimestamp);
+}
