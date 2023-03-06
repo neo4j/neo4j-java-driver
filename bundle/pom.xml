@@ -100,9 +100,6 @@
                   <includes>
                     <include>**\/*.java</include>
                   </includes>
-                  <excludes>
-                    <exclude>module-info.java</exclude>
-                  </excludes>
                 </resource>
               </resources>
             </configuration>
@@ -210,9 +207,35 @@
                     <exclude>META-INF/native-image/**</exclude>
                   </excludes>
                 </filter>
+                <filter>
+                  <artifact>${groupId}:${artifactId}</artifact>
+                  <excludes>
+                    <exclude>module-info.java</exclude>
+                  </excludes>
+                </filter>
               </filters>
               <shadeTestJar>true</shadeTestJar>
               <createSourcesJar>true</createSourcesJar>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-module-info-to-sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <unzip src="${project.build.directory}/${artifactId}-${version}-sources.jar" dest="${project.build.directory}/sources-with-module"/>
+                <copy file="${project.basedir}/src/main/jpms/module-info.java" tofile="${project.build.directory}/sources-with-module/module-info.java" />
+                <zip basedir="${project.build.directory}/sources-with-module" destfile="${project.build.directory}/${artifactId}-${version}-sources.jar"/>
+              </target>
             </configuration>
           </execution>
         </executions>
@@ -230,26 +253,9 @@
             <configuration>
               <overwriteExistingFiles>true</overwriteExistingFiles>
               <module>
-                <moduleInfoSource><![CDATA[
-                  module org.neo4j.driver {
-                    exports org.neo4j.driver;
-                    exports org.neo4j.driver.async;
-                    exports org.neo4j.driver.reactive;
-                    exports org.neo4j.driver.reactivestreams;
-                    exports org.neo4j.driver.types;
-                    exports org.neo4j.driver.summary;
-                    exports org.neo4j.driver.net;
-                    exports org.neo4j.driver.util;
-                    exports org.neo4j.driver.exceptions;
-
-                    requires transitive java.logging;
-                    requires transitive org.reactivestreams;
-                    requires static micrometer.core;
-                    requires static org.graalvm.sdk;
-                    requires static org.slf4j;
-                    requires static java.management;
-                  }
-                ]]></moduleInfoSource>
+                <moduleInfoFile>
+                  ${basedir}/src/main/jpms/module-info.java
+                </moduleInfoFile>
               </module>
             </configuration>
           </execution>
