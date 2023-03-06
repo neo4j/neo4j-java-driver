@@ -50,7 +50,9 @@ All available versions of this driver can be found at
 
 Both `neo4j-java-driver` and `neo4j-java-driver-all` artifacts have `org.neo4j.driver` module name.
 
-Starting from version 5.0 the `neo4j-java-driver` includes an explicit module declaration ([module-info.java](driver/src/main/java/module-info.java)). The `neo4j-java-driver-all` stays unchanged and is shipped as an automatic module.
+Starting from version 5.0 the `neo4j-java-driver` includes an explicit module declaration ([module-info.java](driver/src/main/java/module-info.java)).
+
+The `neo4j-java-driver-all` includes an explicit module declaration ([module-info.java](bundle/src/main/jpms/module-info.java)) starting from version 5.7.
 
 ### Example
 
