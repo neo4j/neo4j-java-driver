@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver;
 
+import org.neo4j.driver.internal.security.InternalAuthToken;
+
 /**
  * Token for holding authentication details, such as <em>user name</em> and <em>password</em>.
  * Such a token is required by a {@link Driver} to authenticate with a Neo4j
@@ -27,4 +29,4 @@ package org.neo4j.driver;
  * @see GraphDatabase#driver(String, AuthToken)
  * @since 1.0
  */
-public interface AuthToken {}
+public sealed interface AuthToken permits InternalAuthToken {}

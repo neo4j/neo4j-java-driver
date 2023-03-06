@@ -31,15 +31,12 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Clock;
 import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.cluster.RoutingContext;
-import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
 public class ChannelConnectorImpl implements ChannelConnector {
@@ -80,7 +77,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
             RoutingContext routingContext,
             DomainNameResolver domainNameResolver) {
         this.userAgent = connectionSettings.userAgent();
-        this.authToken = requireValidAuthToken(connectionSettings.authToken());
+        this.authToken = connectionSettings.authToken();
         this.routingContext = routingContext;
         this.connectTimeoutMillis = connectionSettings.connectTimeoutMillis();
         this.securityPlan = requireNonNull(securityPlan);
@@ -142,14 +139,5 @@ public class ChannelConnectorImpl implements ChannelConnector {
         // set to send/receive messages for a selected protocol version
         handshakeCompleted.addListener(
                 new HandshakeCompletedListener(userAgent, authToken, routingContext, connectionInitialized));
-    }
-
-    private static AuthToken requireValidAuthToken(AuthToken token) {
-        if (token instanceof InternalAuthToken) {
-            return token;
-        } else {
-            throw new ClientException("Unknown authentication token, `" + token + "`. Please use one of the supported "
-                    + "tokens from `" + AuthTokens.class.getSimpleName() + "`.");
-        }
     }
 }
