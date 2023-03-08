@@ -296,6 +296,22 @@ class InternalRxSessionTest {
     }
 
     @Test
+    void shouldDelegateReset() throws Throwable {
+        // Given
+        NetworkSession session = mock(NetworkSession.class);
+        when(session.resetAsync()).thenReturn(completedWithNull());
+        InternalRxSession rxSession = new InternalRxSession(session);
+
+        // When
+        Publisher<Void> mono = rxSession.reset();
+
+        // Then
+        StepVerifier.create(mono).verifyComplete();
+        verify(session).resetAsync();
+        verifyNoMoreInteractions(session);
+    }
+
+    @Test
     void shouldDelegateClose() {
         // Given
         NetworkSession session = mock(NetworkSession.class);

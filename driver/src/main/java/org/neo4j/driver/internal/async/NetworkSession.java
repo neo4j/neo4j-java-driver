@@ -164,6 +164,24 @@ public class NetworkSession {
         return newTransactionStage;
     }
 
+    // Private API
+    public CompletionStage<Void> resetAsync() {
+        return existingTransactionOrNull()
+                .thenAccept(tx -> {
+                    if (tx != null) {
+                        tx.markTerminated(null);
+                    }
+                })
+                .thenCompose(ignore -> connectionStage)
+                .thenCompose(connection -> {
+                    if (connection != null) {
+                        // there exists an active connection, send a RESET message over it
+                        return connection.reset();
+                    }
+                    return completedWithNull();
+                });
+    }
+
     public RetryLogic retryLogic() {
         return retryLogic;
     }

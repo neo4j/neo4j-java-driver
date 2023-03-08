@@ -21,6 +21,8 @@ package org.neo4j.driver.internal.async;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -53,11 +55,13 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -116,6 +120,18 @@ class InternalAsyncTransactionTest {
         await(tx.rollbackAsync());
 
         verifyRollbackTx(connection);
+        verify(connection).release();
+        assertFalse(tx.isOpen());
+    }
+
+    @Test
+    void shouldRollbackWhenFailedRun() {
+        Futures.blockingGet(networkSession.resetAsync());
+        ClientException clientException = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+
+        assertThat(
+                clientException.getMessage(),
+                containsString("It has been rolled back either because of an error or explicit termination"));
         verify(connection).release();
         assertFalse(tx.isOpen());
     }

@@ -24,6 +24,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -61,7 +62,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
@@ -483,6 +486,41 @@ public final class TestUtil {
 
             thread.interrupt();
         });
+    }
+
+    public static int activeQueryCount(DatabaseExtension db) {
+        return activeQueryNames(db).size();
+    }
+
+    public static List<String> activeQueryNames(DatabaseExtension db) {
+        try (Session session = db.driver().session()) {
+            final var query = db.isNeo4j44OrEarlier()
+                    ? "CALL dbms.listQueries() YIELD query RETURN query"
+                    : "SHOW TRANSACTIONS YIELD currentQuery";
+            return session.run(query).stream()
+                    .map(record -> record.get(0).asString())
+                    .filter(q -> !q.contains(query)) // do not include show transactions query
+                    .collect(toList());
+        }
+    }
+
+    public static void awaitCondition(BooleanSupplier condition) {
+        awaitCondition(condition, DEFAULT_WAIT_TIME_MS, MILLISECONDS);
+    }
+
+    public static void awaitCondition(BooleanSupplier condition, long value, TimeUnit unit) {
+        long deadline = System.currentTimeMillis() + unit.toMillis(value);
+        while (!condition.getAsBoolean()) {
+            if (System.currentTimeMillis() > deadline) {
+                fail("Condition was not met in time");
+            }
+            try {
+                MILLISECONDS.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail("Interrupted while waiting");
+            }
+        }
     }
 
     public static String randomString(int size) {

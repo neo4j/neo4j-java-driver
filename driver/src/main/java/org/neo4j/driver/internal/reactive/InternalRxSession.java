@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
+
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.AccessMode;
@@ -127,6 +129,10 @@ public class InternalRxSession extends AbstractReactiveSession<RxTransaction> im
     @Override
     public Bookmark lastBookmark() {
         return InternalBookmark.from(session.lastBookmarks());
+    }
+
+    public Publisher<Void> reset() {
+        return createEmptyPublisher(session::resetAsync);
     }
 
     @Override

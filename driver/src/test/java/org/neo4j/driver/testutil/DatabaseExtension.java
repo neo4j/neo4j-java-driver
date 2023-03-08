@@ -182,6 +182,16 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         return String.format("file:///%s", tmpFile.getName());
     }
 
+    public DatabaseExtension installPlugin(MountableFile plugin) {
+        if (driver != null) driver.close();
+        if (neo4jContainer != null) neo4jContainer.close();
+        neo4jContainer = setupNeo4jContainer(cert, key, defaultConfig).withPlugins(plugin);
+        neo4jContainer.start();
+        driver = GraphDatabase.driver(boltUri, authToken);
+        waitForBoltAvailability();
+        return this;
+    }
+
     public URI uri() {
         return boltUri;
     }

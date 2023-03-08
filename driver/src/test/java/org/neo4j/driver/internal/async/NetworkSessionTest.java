@@ -72,6 +72,7 @@ import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.testutil.TestUtil;
 
 class NetworkSessionTest {
     private static final String DATABASE = "neo4j";
@@ -198,6 +199,13 @@ class NetworkSessionTest {
     }
 
     @Test
+    void resetDoesNothingWhenNoTransactionAndNoConnection() {
+        TestUtil.await(session.resetAsync());
+
+        verify(connectionProvider, never()).acquireConnection(any(ConnectionContext.class));
+    }
+
+    @Test
     void closeWithoutConnection() {
         NetworkSession session = newSession(connectionProvider);
 
@@ -310,6 +318,22 @@ class NetworkSessionTest {
         NetworkSession session = newSession(connectionProvider, bookmarks);
         beginTransaction(session);
         assertThat(session.lastBookmarks(), equalTo(bookmarks));
+    }
+
+    @Test
+    void connectionShouldBeResetAfterSessionReset() {
+        String query = "RETURN 1";
+        setupSuccessfulRunAndPull(connection, query);
+
+        run(session, query);
+
+        InOrder connectionInOrder = inOrder(connection);
+        connectionInOrder.verify(connection, never()).reset();
+        connectionInOrder.verify(connection).release();
+
+        await(session.resetAsync());
+        connectionInOrder.verify(connection).reset();
+        connectionInOrder.verify(connection, never()).release();
     }
 
     @Test
@@ -436,6 +460,18 @@ class NetworkSessionTest {
 
         verify(connectionProvider, times(2)).acquireConnection(any(ConnectionContext.class));
         verifyBeginTx(connection);
+    }
+
+    @Test
+    void shouldMarkTransactionAsTerminatedAndThenResetConnectionOnReset() {
+        UnmanagedTransaction tx = beginTransaction(session);
+
+        assertTrue(tx.isOpen());
+        verify(connection, never()).reset();
+
+        TestUtil.await(session.resetAsync());
+
+        verify(connection).reset();
     }
 
     private static ResultCursor run(NetworkSession session, String query) {
