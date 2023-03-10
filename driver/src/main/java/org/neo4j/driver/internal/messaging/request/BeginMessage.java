@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
@@ -39,8 +40,17 @@ public class BeginMessage extends MessageWithMetadata {
             DatabaseName databaseName,
             AccessMode mode,
             String impersonatedUser,
-            String txType) {
-        this(bookmarks, config.timeout(), config.metadata(), mode, databaseName, impersonatedUser, txType);
+            String txType,
+            NotificationConfig notificationConfig) {
+        this(
+                bookmarks,
+                config.timeout(),
+                config.metadata(),
+                mode,
+                databaseName,
+                impersonatedUser,
+                txType,
+                notificationConfig);
     }
 
     public BeginMessage(
@@ -50,8 +60,10 @@ public class BeginMessage extends MessageWithMetadata {
             AccessMode mode,
             DatabaseName databaseName,
             String impersonatedUser,
-            String txType) {
-        super(buildMetadata(txTimeout, txMetadata, databaseName, mode, bookmarks, impersonatedUser, txType));
+            String txType,
+            NotificationConfig notificationConfig) {
+        super(buildMetadata(
+                txTimeout, txMetadata, databaseName, mode, bookmarks, impersonatedUser, txType, notificationConfig));
     }
 
     @Override

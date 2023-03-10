@@ -184,6 +184,9 @@ class SessionConfigTest {
                 .withFetchSize(54321L)
                 .withDatabase("testing")
                 .withImpersonatedUser("impersonator")
+                .withNotificationConfig(NotificationConfig.defaultConfig()
+                        .enableMinimumSeverity(NotificationSeverity.WARNING)
+                        .disableCategories(Set.of(NotificationCategory.UNSUPPORTED, NotificationCategory.UNRECOGNIZED)))
                 .build();
 
         SessionConfig verify = TestUtil.serializeAndReadBack(config, SessionConfig.class);
@@ -200,5 +203,10 @@ class SessionConfigTest {
         assertEquals(config.fetchSize(), verify.fetchSize());
         assertEquals(config.database(), verify.database());
         assertEquals(config.impersonatedUser(), verify.impersonatedUser());
+        assertEquals(
+                NotificationConfig.defaultConfig()
+                        .enableMinimumSeverity(NotificationSeverity.WARNING)
+                        .disableCategories(Set.of(NotificationCategory.UNSUPPORTED, NotificationCategory.UNRECOGNIZED)),
+                config.notificationConfig());
     }
 }

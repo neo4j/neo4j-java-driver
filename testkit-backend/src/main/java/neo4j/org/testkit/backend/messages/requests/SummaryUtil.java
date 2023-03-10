@@ -24,12 +24,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import neo4j.org.testkit.backend.messages.responses.Summary;
+import org.neo4j.driver.internal.InternalNotificationCategory;
+import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.QueryType;
 
 public class SummaryUtil {
+    @SuppressWarnings("deprecation")
     public static Summary.SummaryBody toSummaryBody(org.neo4j.driver.summary.ResultSummary summary) {
         var serverInfo = Summary.ServerInfo.builder()
                 .address(summary.server().address())
@@ -65,6 +68,18 @@ public class SummaryUtil {
                         .description(s.description())
                         .position(toInputPosition(s.position()))
                         .severity(s.severity())
+                        .severityLevel(s.severityLevel()
+                                .map(InternalNotificationSeverity.class::cast)
+                                .map(InternalNotificationSeverity::type)
+                                .map(InternalNotificationSeverity.Type::toString)
+                                .orElse("UNKNOWN"))
+                        .rawSeverityLevel(s.rawSeverityLevel().orElse(null))
+                        .category(s.category()
+                                .map(InternalNotificationCategory.class::cast)
+                                .map(InternalNotificationCategory::type)
+                                .map(InternalNotificationCategory.Type::toString)
+                                .orElse("UNKNOWN"))
+                        .rawCategory(s.rawCategory().orElse(null))
                         .build())
                 .collect(Collectors.toList());
         return Summary.SummaryBody.builder()

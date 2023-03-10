@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.util.Iterables;
@@ -48,7 +49,7 @@ public class TransactionMetadataBuilder {
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             String txType) {
-        return buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, impersonatedUser, txType);
+        return buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, impersonatedUser, txType, null);
     }
 
     public static Map<String, Value> buildMetadata(
@@ -58,7 +59,8 @@ public class TransactionMetadataBuilder {
             AccessMode mode,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
-            String txType) {
+            String txType,
+            NotificationConfig notificationConfig) {
         boolean bookmarksPresent = !bookmarks.isEmpty();
         boolean txTimeoutPresent = txTimeout != null;
         boolean txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
@@ -97,6 +99,7 @@ public class TransactionMetadataBuilder {
         if (txTypePresent) {
             result.put(TX_TYPE_KEY, value(txType));
         }
+        MessageWithMetadata.appendNotificationConfig(result, notificationConfig);
 
         databaseName.databaseName().ifPresent(name -> result.put(DATABASE_NAME_KEY, value(name)));
 

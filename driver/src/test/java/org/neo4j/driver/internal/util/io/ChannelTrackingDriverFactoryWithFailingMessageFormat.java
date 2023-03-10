@@ -50,7 +50,8 @@ public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends Channe
                 config.logging(),
                 clock,
                 routingContext,
-                DefaultDomainNameResolver.getInstance());
+                DefaultDomainNameResolver.getInstance(),
+                null);
     }
 
     public FailingMessageFormat getFailingMessageFormat() {

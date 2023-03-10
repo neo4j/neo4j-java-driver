@@ -64,7 +64,8 @@ public class MessageRecordingDriverFactory extends DriverFactory {
                 config.logging(),
                 clock,
                 routingContext,
-                DefaultDomainNameResolver.getInstance());
+                DefaultDomainNameResolver.getInstance(),
+                null);
     }
 
     private class MessageRecordingChannelPipelineBuilder extends ChannelPipelineBuilderImpl {

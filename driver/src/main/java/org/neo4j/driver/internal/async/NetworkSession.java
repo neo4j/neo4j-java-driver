@@ -36,6 +36,7 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
@@ -75,6 +76,7 @@ public class NetworkSession {
     private final BookmarkManager bookmarkManager;
     private volatile Set<Bookmark> lastUsedBookmarks = Collections.emptySet();
     private volatile Set<Bookmark> lastReceivedBookmarks;
+    private final NotificationConfig notificationConfig;
 
     public NetworkSession(
             ConnectionProvider connectionProvider,
@@ -85,7 +87,8 @@ public class NetworkSession {
             String impersonatedUser,
             long fetchSize,
             Logging logging,
-            BookmarkManager bookmarkManager) {
+            BookmarkManager bookmarkManager,
+            NotificationConfig notificationConfig) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         this.connectionProvider = connectionProvider;
@@ -101,6 +104,7 @@ public class NetworkSession {
         this.connectionContext =
                 new NetworkSessionConnectionContext(databaseNameFuture, determineBookmarks(false), impersonatedUser);
         this.fetchSize = fetchSize;
+        this.notificationConfig = notificationConfig;
     }
 
     public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config) {
@@ -143,7 +147,8 @@ public class NetworkSession {
                 .thenApply(connection ->
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
-                    UnmanagedTransaction tx = new UnmanagedTransaction(connection, this::handleNewBookmark, fetchSize);
+                    UnmanagedTransaction tx = new UnmanagedTransaction(
+                            connection, this::handleNewBookmark, fetchSize, notificationConfig);
                     return tx.beginAsync(determineBookmarks(true), config, txType);
                 });
 
@@ -259,7 +264,8 @@ public class NetworkSession {
                                         determineBookmarks(true),
                                         this::handleNewBookmark,
                                         config,
-                                        fetchSize);
+                                        fetchSize,
+                                        notificationConfig);
                         return completedFuture(factory);
                     } catch (Throwable e) {
                         return Futures.failedFuture(e);
