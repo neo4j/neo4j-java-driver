@@ -73,6 +73,8 @@ public class StartTest implements TestkitRequest {
                 skipMessage);
         skipMessage = "This test needs updating to implement expected behaviour";
         COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.TestAuthenticationSchemes\\.test_custom_scheme_empty$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestAuthenticationSchemes[^.]+\\.test_custom_scheme_empty$", skipMessage);
         skipMessage = "Driver does not implement optimization for qid in explicit transaction";
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments$", skipMessage);
