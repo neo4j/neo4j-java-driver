@@ -63,7 +63,10 @@ public final class TemporalUtil {
             "US/Pacific-New", // Appeared out of nowhere in windows, does not test reliable
             // "org.neo4j.driver.exceptions.ClientException: Unable to construct ZonedDateTime value:
             // `Unknown time-zone ID: US/Pacific-New`"
-            "Pacific/Easter");
+            "Pacific/Easter",
+            "America/Ciudad_Juarez",
+            "Europe/Kyiv" // might have issues when running with dated TZ db
+            );
 
     private TemporalUtil() {}
 
