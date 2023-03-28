@@ -37,6 +37,8 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -82,6 +84,11 @@ public class BoltProtocolV3 implements BoltProtocol {
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise,
             NotificationConfig notificationConfig) {
+        var exception = verifyNotificationConfigSupported(notificationConfig);
+        if (exception != null) {
+            channelInitializedPromise.setFailure(exception);
+            return;
+        }
         Channel channel = channelInitializedPromise.channel();
         HelloMessage message;
 
@@ -91,14 +98,14 @@ public class BoltProtocolV3 implements BoltProtocol {
                     ((InternalAuthToken) authToken).toMap(),
                     routingContext.toMap(),
                     includeDateTimeUtcPatchInHello(),
-                    includeNotificationSettings() ? notificationConfig : null);
+                    notificationConfig);
         } else {
             message = new HelloMessage(
                     userAgent,
                     ((InternalAuthToken) authToken).toMap(),
                     null,
                     includeDateTimeUtcPatchInHello(),
-                    includeNotificationSettings() ? notificationConfig : null);
+                    notificationConfig);
         }
 
         HelloResponseHandler handler = new HelloResponseHandler(channelInitializedPromise);
@@ -125,6 +132,10 @@ public class BoltProtocolV3 implements BoltProtocol {
             TransactionConfig config,
             String txType,
             NotificationConfig notificationConfig) {
+        var exception = verifyNotificationConfigSupported(notificationConfig);
+        if (exception != null) {
+            return CompletableFuture.failedStage(exception);
+        }
         try {
             verifyDatabaseNameBeforeTransaction(connection.databaseName());
         } catch (Exception error) {
@@ -139,7 +150,7 @@ public class BoltProtocolV3 implements BoltProtocol {
                 connection.mode(),
                 connection.impersonatedUser(),
                 txType,
-                includeNotificationSettings() ? notificationConfig : null);
+                notificationConfig);
         connection.writeAndFlush(beginMessage, new BeginTxResponseHandler(beginTxFuture));
         return beginTxFuture;
     }
@@ -167,6 +178,10 @@ public class BoltProtocolV3 implements BoltProtocol {
             TransactionConfig config,
             long fetchSize,
             NotificationConfig notificationConfig) {
+        var exception = verifyNotificationConfigSupported(notificationConfig);
+        if (exception != null) {
+            throw exception;
+        }
         verifyDatabaseNameBeforeTransaction(connection.databaseName());
         RunWithMetadataMessage runMessage = autoCommitTxRunMessage(
                 query,
@@ -175,7 +190,7 @@ public class BoltProtocolV3 implements BoltProtocol {
                 connection.mode(),
                 bookmarks,
                 connection.impersonatedUser(),
-                includeNotificationSettings() ? notificationConfig : null);
+                notificationConfig);
         return buildResultCursorFactory(connection, query, bookmarkConsumer, null, runMessage, fetchSize);
     }
 
@@ -214,7 +229,13 @@ public class BoltProtocolV3 implements BoltProtocol {
         return false;
     }
 
-    protected boolean includeNotificationSettings() {
-        return false;
+    protected Neo4jException verifyNotificationConfigSupported(NotificationConfig notificationConfig) {
+        Neo4jException exception = null;
+        if (notificationConfig != null && !notificationConfig.equals(NotificationConfig.defaultConfig())) {
+            exception = new UnsupportedFeatureException(String.format(
+                    "Notification configuration is not supported on Bolt %s",
+                    version().toString()));
+        }
+        return exception;
     }
 }

@@ -22,21 +22,31 @@ import java.io.Serializable;
 import java.util.Set;
 import org.neo4j.driver.internal.InternalNotificationConfig;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
+import org.neo4j.driver.summary.ResultSummary;
 
 /**
- * Notification configuration that defines what notifications the server should supply to the driver.
+ * A notification configuration defining what notifications should be supplied by the server.
  * <p>
- * This configuration is only supported over Bolt protocol version 5.2 and above. It is effectively ignored on the previous versions.
+ * There are currently 2 optional settings that may be activated:
+ * <ul>
+ *     <li>Minimum notification severity - sets a baseline severity for notifications, similar to the logging levels.</li>
+ *     <li>A set of disabled notification categories - explicitly disables a set of notification categories.</li>
+ * </ul>
+ * <p>
+ * By default, both options are not activated.
  *
  * @since 5.7
+ * @see ResultSummary#notifications()
+ * @see org.neo4j.driver.summary.Notification
  */
 public sealed interface NotificationConfig extends Serializable permits InternalNotificationConfig {
     /**
-     * Returns a default notification config.
+     * Returns a default notification configuration.
      * <p>
-     * It has no options activated, meaning the resulting behaviour depends on an upstream entity. For instance,
-     * when this config is set on the session level, the resulting behaviour depends on the driver's config.
-     * Likewise, when this config is set on the driver level, the resulting behaviour depends on the server.
+     * The default configuration has no settings activated, meaning the resulting behaviour depends on an upstream
+     * context. For instance, when this config is set on the session level, the resulting behaviour depends on the
+     * driver's config. Likewise, when this config is set on the driver level, the resulting behaviour depends on the
+     * server.
      *
      * @return the default config
      */
@@ -49,7 +59,7 @@ public sealed interface NotificationConfig extends Serializable permits Internal
      *
      * @return the config that disables all notifications
      */
-    static NotificationConfig disableAll() {
+    static NotificationConfig disableAllConfig() {
         return new InternalNotificationConfig(InternalNotificationSeverity.OFF, null);
     }
 

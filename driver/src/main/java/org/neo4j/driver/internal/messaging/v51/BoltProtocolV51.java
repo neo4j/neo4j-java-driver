@@ -46,6 +46,11 @@ public class BoltProtocolV51 extends BoltProtocolV5 {
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise,
             NotificationConfig notificationConfig) {
+        var exception = verifyNotificationConfigSupported(notificationConfig);
+        if (exception != null) {
+            channelInitializedPromise.setFailure(exception);
+            return;
+        }
         var channel = channelInitializedPromise.channel();
         HelloMessage message;
 

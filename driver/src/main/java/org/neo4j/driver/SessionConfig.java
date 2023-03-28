@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.Experimental;
@@ -385,7 +386,10 @@ public final class SessionConfig implements Serializable {
         /**
          * Sets notification config.
          * <p>
-         * This configuration is supported over Bolt protocol version 5.2 and above.
+         * Any configuration other than the {@link NotificationConfig#defaultConfig()} requires a minimum Bolt protocol
+         * version 5.2. Otherwise, an {@link UnsupportedFeatureException} will be emitted when the driver comes across a
+         * Bolt connection that does not support this feature. For instance, when running a query.
+         *
          * @param notificationConfig the notification config
          * @return this builder
          * @since 5.7

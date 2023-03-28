@@ -24,6 +24,7 @@ import io.netty.channel.ChannelPromise;
 import java.util.Collections;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.NotificationConfig;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.handlers.HelloResponseHandler;
 import org.neo4j.driver.internal.handlers.LogonResponseHandler;
@@ -62,8 +63,8 @@ public class BoltProtocolV52 extends BoltProtocolV51 {
     }
 
     @Override
-    protected boolean includeNotificationSettings() {
-        return true;
+    protected Neo4jException verifyNotificationConfigSupported(NotificationConfig notificationConfig) {
+        return null;
     }
 
     @Override

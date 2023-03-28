@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -775,7 +776,10 @@ public final class Config implements Serializable {
         /**
          * Sets notification config.
          * <p>
-         * This configuration is supported over Bolt protocol version 5.2 and above.
+         * Any configuration other than the {@link NotificationConfig#defaultConfig()} requires a minimum Bolt protocol
+         * version 5.2. Otherwise, an {@link UnsupportedFeatureException} will be emitted when the driver comes across a
+         * Bolt connection that does not support this feature. For instance, when running a query.
+         *
          * @param notificationConfig the notification config
          * @return this builder
          * @since 5.7
