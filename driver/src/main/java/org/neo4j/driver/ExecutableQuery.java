@@ -29,7 +29,7 @@ import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.Experimental;
 
 /**
- * A task that executes a query in a managed transaction with automatic retries on retryable errors.
+ * An executable query that executes a query in a managed transaction with automatic retries on retryable errors.
  * <p>
  * This is a high-level API for executing a query. There are more advanced APIs available.
  * For instance, {@link Session}, {@link Transaction} and transaction functions that are accessible via
@@ -94,7 +94,7 @@ import org.neo4j.driver.util.Experimental;
  * }
  * </pre>
  *
- * @since 5.6
+ * @since 5.7
  */
 @Experimental
 public interface ExecutableQuery {

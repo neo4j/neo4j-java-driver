@@ -459,6 +459,40 @@
 
     <difference>
         <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.QueryTask queryTask(java.lang.String)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.BookmarkManager queryTaskBookmarkManager()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Config</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.BookmarkManager queryTaskBookmarkManager()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Config$ConfigBuilder</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.Config$ConfigBuilder withQueryTaskBookmarkManager(org.neo4j.driver.BookmarkManager)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/QueryTask</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/QueryTask$ResultFinisher</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
         <differenceType>7012</differenceType>
         <method>org.neo4j.driver.ExecutableQuery executableQuery(java.lang.String)</method>
     </difference>

@@ -68,8 +68,8 @@ public interface Driver extends AutoCloseable {
      * retryable errors.
      *
      * @param query query string
-     * @return new query task instance
-     * @since 5.6
+     * @return new executable query instance
+     * @since 5.7
      */
     @Experimental
     ExecutableQuery executableQuery(String query);
@@ -78,7 +78,7 @@ public interface Driver extends AutoCloseable {
      * Returns an instance of {@link BookmarkManager} used by {@link ExecutableQuery} instances by default.
      *
      * @return bookmark manager, must not be {@code null}
-     * @since 5.6
+     * @since 5.7
      */
     @Experimental
     BookmarkManager defaultExecuteQueryBookmarkManager();
