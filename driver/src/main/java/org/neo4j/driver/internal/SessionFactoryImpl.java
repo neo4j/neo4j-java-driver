@@ -29,6 +29,7 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -41,6 +42,7 @@ public class SessionFactoryImpl implements SessionFactory {
     private final Logging logging;
     private final boolean leakedSessionsLoggingEnabled;
     private final long defaultFetchSize;
+    private final NotificationConfig driverNotificationConfig;
 
     SessionFactoryImpl(ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config) {
         this.connectionProvider = connectionProvider;
@@ -48,6 +50,7 @@ public class SessionFactoryImpl implements SessionFactory {
         this.retryLogic = retryLogic;
         this.logging = config.logging();
         this.defaultFetchSize = config.fetchSize();
+        this.driverNotificationConfig = config.notificationConfig();
     }
 
     @Override
@@ -61,7 +64,8 @@ public class SessionFactoryImpl implements SessionFactory {
                 parseFetchSize(sessionConfig),
                 sessionConfig.impersonatedUser().orElse(null),
                 logging,
-                sessionConfig.bookmarkManager().orElse(NoOpBookmarkManager.INSTANCE));
+                sessionConfig.bookmarkManager().orElse(NoOpBookmarkManager.INSTANCE),
+                sessionConfig.notificationConfig());
     }
 
     private Set<Bookmark> toDistinctSet(Iterable<Bookmark> bookmarks) {
@@ -131,7 +135,8 @@ public class SessionFactoryImpl implements SessionFactory {
             long fetchSize,
             String impersonatedUser,
             Logging logging,
-            BookmarkManager bookmarkManager) {
+            BookmarkManager bookmarkManager,
+            NotificationConfig notificationConfig) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         return leakedSessionsLoggingEnabled
@@ -144,7 +149,8 @@ public class SessionFactoryImpl implements SessionFactory {
                         impersonatedUser,
                         fetchSize,
                         logging,
-                        bookmarkManager)
+                        bookmarkManager,
+                        notificationConfig)
                 : new NetworkSession(
                         connectionProvider,
                         retryLogic,
@@ -154,6 +160,7 @@ public class SessionFactoryImpl implements SessionFactory {
                         impersonatedUser,
                         fetchSize,
                         logging,
-                        bookmarkManager);
+                        bookmarkManager,
+                        notificationConfig);
     }
 }

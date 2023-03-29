@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -144,6 +145,10 @@ public final class Config implements Serializable {
      */
     private final String userAgent;
     /**
+     * The notification config.
+     */
+    private final NotificationConfig notificationConfig;
+    /**
      * The {@link MetricsAdapter}.
      */
     private final MetricsAdapter metricsAdapter;
@@ -166,6 +171,7 @@ public final class Config implements Serializable {
         this.maxTransactionRetryTimeMillis = builder.maxTransactionRetryTimeMillis;
         this.resolver = builder.resolver;
         this.fetchSize = builder.fetchSize;
+        this.notificationConfig = builder.notificationConfig;
 
         this.eventLoopThreads = builder.eventLoopThreads;
         this.metricsAdapter = builder.metricsAdapter;
@@ -312,6 +318,15 @@ public final class Config implements Serializable {
     }
 
     /**
+     * Returns notification config.
+     * @return the notification config
+     * @since 5.7
+     */
+    public NotificationConfig notificationConfig() {
+        return notificationConfig;
+    }
+
+    /**
      * Returns the number of {@link io.netty.channel.EventLoop} threads.
      * @return the number of threads
      */
@@ -363,6 +378,7 @@ public final class Config implements Serializable {
         private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
+        private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
 
         private ConfigBuilder() {}
 
@@ -754,6 +770,22 @@ public final class Config implements Serializable {
                 throw new IllegalArgumentException("The user_agent string must not be empty");
             }
             this.userAgent = userAgent;
+            return this;
+        }
+
+        /**
+         * Sets notification config.
+         * <p>
+         * Any configuration other than the {@link NotificationConfig#defaultConfig()} requires a minimum Bolt protocol
+         * version 5.2. Otherwise, an {@link UnsupportedFeatureException} will be emitted when the driver comes across a
+         * Bolt connection that does not support this feature. For instance, when running a query.
+         *
+         * @param notificationConfig the notification config
+         * @return this builder
+         * @since 5.7
+         */
+        public ConfigBuilder withNotificationConfig(NotificationConfig notificationConfig) {
+            this.notificationConfig = Objects.requireNonNull(notificationConfig, "notificationConfig must not be null");
             return this;
         }
 

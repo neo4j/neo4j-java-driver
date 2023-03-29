@@ -20,46 +20,66 @@ package org.neo4j.driver.internal.summary;
 
 import static org.neo4j.driver.internal.value.NullValue.NULL;
 
+import java.util.Optional;
 import java.util.function.Function;
+import org.neo4j.driver.NotificationCategory;
+import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.InternalNotificationCategory;
+import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Notification;
 
 public class InternalNotification implements Notification {
-    public static final Function<Value, Notification> VALUE_TO_NOTIFICATION = new Function<Value, Notification>() {
-        @Override
-        public Notification apply(Value value) {
-            String code = value.get("code").asString();
-            String title = value.get("title").asString();
-            String description = value.get("description").asString();
-            String severity =
-                    value.containsKey("severity") ? value.get("severity").asString() : "N/A";
+    public static final Function<Value, Notification> VALUE_TO_NOTIFICATION = value -> {
+        String code = value.get("code").asString();
+        String title = value.get("title").asString();
+        String description = value.get("description").asString();
+        var rawSeverityLevel =
+                value.containsKey("severity") ? value.get("severity").asString() : null;
+        var severityLevel =
+                InternalNotificationSeverity.valueOf(rawSeverityLevel).orElse(null);
+        var rawCategory = value.containsKey("category") ? value.get("category").asString() : null;
+        var category = InternalNotificationCategory.valueOf(rawCategory).orElse(null);
 
-            Value posValue = value.get("position");
-            InputPosition position = null;
-            if (posValue != NULL) {
-                position = new InternalInputPosition(
-                        posValue.get("offset").asInt(),
-                        posValue.get("line").asInt(),
-                        posValue.get("column").asInt());
-            }
-
-            return new InternalNotification(code, title, description, severity, position);
+        Value posValue = value.get("position");
+        InputPosition position = null;
+        if (posValue != NULL) {
+            position = new InternalInputPosition(
+                    posValue.get("offset").asInt(),
+                    posValue.get("line").asInt(),
+                    posValue.get("column").asInt());
         }
+
+        return new InternalNotification(
+                code, title, description, severityLevel, rawSeverityLevel, category, rawCategory, position);
     };
 
     private final String code;
     private final String title;
     private final String description;
-    private final String severity;
+    private final NotificationSeverity severityLevel;
+    private final String rawSeverityLevel;
+    private final NotificationCategory category;
+    private final String rawCategory;
     private final InputPosition position;
 
     public InternalNotification(
-            String code, String title, String description, String severity, InputPosition position) {
+            String code,
+            String title,
+            String description,
+            NotificationSeverity severityLevel,
+            String rawSeverityLevel,
+            NotificationCategory category,
+            String rawCategory,
+            InputPosition position) {
         this.code = code;
         this.title = title;
         this.description = description;
-        this.severity = severity;
+        this.severityLevel = severityLevel;
+        this.rawSeverityLevel = rawSeverityLevel;
+        this.category = category;
+        this.rawCategory = rawCategory;
         this.position = position;
     }
 
@@ -84,13 +104,30 @@ public class InternalNotification implements Notification {
     }
 
     @Override
-    public String severity() {
-        return severity;
+    public Optional<NotificationSeverity> severityLevel() {
+        return Optional.ofNullable(severityLevel);
+    }
+
+    @Override
+    public Optional<String> rawSeverityLevel() {
+        return Optional.ofNullable(rawSeverityLevel);
+    }
+
+    @Override
+    public Optional<NotificationCategory> category() {
+        return Optional.ofNullable(category);
+    }
+
+    @Override
+    public Optional<String> rawCategory() {
+        return Optional.ofNullable(rawCategory);
     }
 
     @Override
     public String toString() {
-        String info = "code=" + code + ", title=" + title + ", description=" + description + ", severity=" + severity;
+        var info = "code=" + code + ", title=" + title + ", description=" + description + ", severityLevel="
+                + severityLevel + ", rawSeverityLevel=" + rawSeverityLevel + ", category=" + category + ", rawCategory="
+                + rawCategory;
         return position == null ? info : info + ", position={" + position + "}";
     }
 }

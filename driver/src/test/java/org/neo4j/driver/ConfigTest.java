@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import org.junit.jupiter.api.Nested;
@@ -463,6 +464,10 @@ class ConfigTest {
                     .withRoutingTablePurgeDelay(50000, TimeUnit.MILLISECONDS)
                     .withLeakedSessionsLogging()
                     .withMetricsAdapter(MetricsAdapter.MICROMETER)
+                    .withNotificationConfig(NotificationConfig.defaultConfig()
+                            .enableMinimumSeverity(NotificationSeverity.WARNING)
+                            .disableCategories(
+                                    Set.of(NotificationCategory.UNSUPPORTED, NotificationCategory.UNRECOGNIZED)))
                     .build();
 
             Config verify = TestUtil.serializeAndReadBack(config, Config.class);
@@ -492,6 +497,12 @@ class ConfigTest {
             assertEquals(config.metricsAdapter(), verify.metricsAdapter());
             assertEquals(config.maxTransactionRetryTimeMillis(), verify.maxTransactionRetryTimeMillis());
             assertEquals(config.logLeakedSessions(), verify.logLeakedSessions());
+            assertEquals(
+                    NotificationConfig.defaultConfig()
+                            .enableMinimumSeverity(NotificationSeverity.WARNING)
+                            .disableCategories(
+                                    Set.of(NotificationCategory.UNSUPPORTED, NotificationCategory.UNRECOGNIZED)),
+                    config.notificationConfig());
         }
 
         @Test

@@ -174,7 +174,8 @@ class NettyChannelPoolIT {
                 DEV_NULL_LOGGING,
                 new FakeClock(),
                 RoutingContext.EMPTY,
-                DefaultDomainNameResolver.getInstance());
+                DefaultDomainNameResolver.getInstance(),
+                null);
         return new NettyChannelPool(
                 neo4j.address(), connector, bootstrap, poolHandler, ChannelHealthChecker.ACTIVE, 1_000, maxConnections);
     }

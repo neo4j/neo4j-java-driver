@@ -59,7 +59,7 @@ class HandshakeCompletedListenerTest {
     void shouldFailConnectionInitializedPromiseWhenHandshakeFails() {
         ChannelPromise channelInitializedPromise = channel.newPromise();
         HandshakeCompletedListener listener = new HandshakeCompletedListener(
-                "user-agent", authToken(), RoutingContext.EMPTY, channelInitializedPromise);
+                "user-agent", authToken(), RoutingContext.EMPTY, channelInitializedPromise, null);
 
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         IOException cause = new IOException("Bad handshake");
@@ -75,7 +75,7 @@ class HandshakeCompletedListenerTest {
     void shouldWriteInitializationMessageInBoltV3WhenHandshakeCompleted() {
         testWritingOfInitializationMessage(
                 BoltProtocolV3.VERSION,
-                new HelloMessage(USER_AGENT, authToken().toMap(), Collections.emptyMap(), false),
+                new HelloMessage(USER_AGENT, authToken().toMap(), Collections.emptyMap(), false, null),
                 HelloResponseHandler.class);
     }
 
@@ -89,7 +89,7 @@ class HandshakeCompletedListenerTest {
 
         ChannelPromise channelInitializedPromise = channel.newPromise();
         HandshakeCompletedListener listener = new HandshakeCompletedListener(
-                USER_AGENT, authToken(), RoutingContext.EMPTY, channelInitializedPromise);
+                USER_AGENT, authToken(), RoutingContext.EMPTY, channelInitializedPromise, null);
 
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         handshakeCompletedPromise.setSuccess();

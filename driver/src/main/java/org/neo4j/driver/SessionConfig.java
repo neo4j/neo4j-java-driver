@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.Experimental;
@@ -65,6 +66,10 @@ public final class SessionConfig implements Serializable {
      * The bookmark manager.
      */
     private final BookmarkManager bookmarkManager;
+    /**
+     * The notification config.
+     */
+    private final NotificationConfig notificationConfig;
 
     private SessionConfig(Builder builder) {
         this.bookmarks = builder.bookmarks;
@@ -73,6 +78,7 @@ public final class SessionConfig implements Serializable {
         this.fetchSize = builder.fetchSize;
         this.impersonatedUser = builder.impersonatedUser;
         this.bookmarkManager = builder.bookmarkManager;
+        this.notificationConfig = builder.notificationConfig;
     }
 
     /**
@@ -161,6 +167,15 @@ public final class SessionConfig implements Serializable {
         return Optional.ofNullable(bookmarkManager);
     }
 
+    /**
+     * Returns notification config.
+     * @return the notification config
+     * @since 5.7
+     */
+    public NotificationConfig notificationConfig() {
+        return notificationConfig;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -175,7 +190,8 @@ public final class SessionConfig implements Serializable {
                 && Objects.equals(database, that.database)
                 && Objects.equals(fetchSize, that.fetchSize)
                 && Objects.equals(impersonatedUser, that.impersonatedUser)
-                && Objects.equals(bookmarkManager, that.bookmarkManager);
+                && Objects.equals(bookmarkManager, that.bookmarkManager)
+                && Objects.equals(notificationConfig, that.notificationConfig);
     }
 
     @Override
@@ -203,6 +219,7 @@ public final class SessionConfig implements Serializable {
         private String database = null;
         private String impersonatedUser = null;
         private BookmarkManager bookmarkManager;
+        private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
 
         private Builder() {}
 
@@ -363,6 +380,22 @@ public final class SessionConfig implements Serializable {
         @Experimental
         public Builder withBookmarkManager(BookmarkManager bookmarkManager) {
             this.bookmarkManager = bookmarkManager;
+            return this;
+        }
+
+        /**
+         * Sets notification config.
+         * <p>
+         * Any configuration other than the {@link NotificationConfig#defaultConfig()} requires a minimum Bolt protocol
+         * version 5.2. Otherwise, an {@link UnsupportedFeatureException} will be emitted when the driver comes across a
+         * Bolt connection that does not support this feature. For instance, when running a query.
+         *
+         * @param notificationConfig the notification config
+         * @return this builder
+         * @since 5.7
+         */
+        public Builder withNotificationConfig(NotificationConfig notificationConfig) {
+            this.notificationConfig = Objects.requireNonNull(notificationConfig, "notificationConfig must not be null");
             return this;
         }
 

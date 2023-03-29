@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Value;
 
 public class HelloMessage extends MessageWithMetadata {
@@ -40,8 +41,9 @@ public class HelloMessage extends MessageWithMetadata {
             String userAgent,
             Map<String, Value> authToken,
             Map<String, String> routingContext,
-            boolean includeDateTimeUtc) {
-        super(buildMetadata(userAgent, authToken, routingContext, includeDateTimeUtc));
+            boolean includeDateTimeUtc,
+            NotificationConfig notificationConfig) {
+        super(buildMetadata(userAgent, authToken, routingContext, includeDateTimeUtc, notificationConfig));
     }
 
     @Override
@@ -77,7 +79,8 @@ public class HelloMessage extends MessageWithMetadata {
             String userAgent,
             Map<String, Value> authToken,
             Map<String, String> routingContext,
-            boolean includeDateTimeUtc) {
+            boolean includeDateTimeUtc,
+            NotificationConfig notificationConfig) {
         Map<String, Value> result = new HashMap<>(authToken);
         result.put(USER_AGENT_METADATA_KEY, value(userAgent));
         if (routingContext != null) {
@@ -86,6 +89,7 @@ public class HelloMessage extends MessageWithMetadata {
         if (includeDateTimeUtc) {
             result.put(PATCH_BOLT_METADATA_KEY, value(Collections.singleton(DATE_TIME_UTC_PATCH_VALUE)));
         }
+        MessageWithMetadata.appendNotificationConfig(result, notificationConfig);
         return result;
     }
 }
