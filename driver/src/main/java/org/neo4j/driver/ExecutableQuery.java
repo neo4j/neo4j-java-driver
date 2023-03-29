@@ -102,7 +102,7 @@ public interface ExecutableQuery {
      * Sets query parameters.
      *
      * @param parameters parameters map, must not be {@code null}
-     * @return a new query task
+     * @return a new executable query
      */
     ExecutableQuery withParameters(Map<String, Object> parameters);
 
@@ -112,7 +112,7 @@ public interface ExecutableQuery {
      * By default, {@link ExecutableQuery} has {@link QueryConfig#defaultConfig()} value.
      *
      * @param config query config, must not be {@code null}
-     * @return a new query task
+     * @return a new executable query
      */
     ExecutableQuery withConfig(QueryConfig config);
 
