@@ -114,7 +114,7 @@ class InternalDriverTest {
     }
 
     @Test
-    void shouldCreateexecutableQuery() {
+    void shouldCreateExecutableQuery() {
         // Given
         var driver = newDriver(true);
         var query = "string";
