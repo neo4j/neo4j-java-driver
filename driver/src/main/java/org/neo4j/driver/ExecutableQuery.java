@@ -43,7 +43,7 @@ import org.neo4j.driver.util.Experimental;
  * Sample usage:
  * <pre>
  * {@code
- * var eagerResult = driver.queryTask("CREATE (n{field: $value}) RETURN n")
+ * var eagerResult = driver.executableQuery("CREATE (n{field: $value}) RETURN n")
  *         .withParameters(Map.of("value", "5"))
  *         .execute();
  * }
@@ -71,13 +71,13 @@ import org.neo4j.driver.util.Experimental;
  * {@code
  * import static java.util.stream.Collectors.*;
  *
- * var averagingLong = driver.queryTask("UNWIND range(0, 5) as N RETURN N")
+ * var averagingLong = driver.executableQuery("UNWIND range(0, 5) as N RETURN N")
  *         .execute(averagingLong(record -> record.get("N").asLong()));
  *
- * var filteredValues = driver.queryTask("UNWIND range(0, 5) as N RETURN N")
+ * var filteredValues = driver.executableQuery("UNWIND range(0, 5) as N RETURN N")
  *         .execute(mapping(record -> record.get("N").asLong(), filtering(value -> value > 2, toList())));
  *
- * var maxValue = driver.queryTask("UNWIND range(0, 5) as N RETURN N")
+ * var maxValue = driver.executableQuery("UNWIND range(0, 5) as N RETURN N")
  *         .execute(mapping(record -> record.get("N").asLong(), maxBy(Long::compare)));
  * }
  * </pre>
@@ -89,7 +89,7 @@ import org.neo4j.driver.util.Experimental;
  *
  * private record ResultValue(List<String> keys, Set<Long> values, ResultSummary summary) {}
  *
- * var result = driver.queryTask("UNWIND range(0, 5) as N RETURN N")
+ * var result = driver.executableQuery("UNWIND range(0, 5) as N RETURN N")
  *                     .execute(Collectors.mapping(record -> record.get("N").asLong(), toSet()), ResultValue::new);
  * }
  * </pre>

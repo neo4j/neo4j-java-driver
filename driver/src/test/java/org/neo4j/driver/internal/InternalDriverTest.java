@@ -114,20 +114,20 @@ class InternalDriverTest {
     }
 
     @Test
-    void shouldCreateQueryTask() {
+    void shouldCreateexecutableQuery() {
         // Given
         var driver = newDriver(true);
         var query = "string";
 
         // When
-        var queryTask = (InternalExecutableQuery) driver.executableQuery(query);
+        var executableQuery = (InternalExecutableQuery) driver.executableQuery(query);
 
         // Then
-        assertNotNull(queryTask);
-        assertEquals(driver, queryTask.driver());
-        assertEquals(query, queryTask.query());
-        assertEquals(Collections.emptyMap(), queryTask.parameters());
-        assertEquals(QueryConfig.defaultConfig(), queryTask.config());
+        assertNotNull(executableQuery);
+        assertEquals(driver, executableQuery.driver());
+        assertEquals(query, executableQuery.query());
+        assertEquals(Collections.emptyMap(), executableQuery.parameters());
+        assertEquals(QueryConfig.defaultConfig(), executableQuery.config());
     }
 
     private static InternalDriver newDriver(SessionFactory sessionFactory) {
