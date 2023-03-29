@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -45,10 +46,13 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.InternalNotificationCategory;
+import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -111,6 +115,8 @@ public class NewDriver implements TestkitRequest {
         Optional.ofNullable(data.maxConnectionPoolSize).ifPresent(configBuilder::withMaxConnectionPoolSize);
         Optional.ofNullable(data.connectionAcquisitionTimeoutMs)
                 .ifPresent(timeout -> configBuilder.withConnectionAcquisitionTimeout(timeout, TimeUnit.MILLISECONDS));
+        configBuilder.withNotificationConfig(
+                toNotificationConfig(data.notificationsMinSeverity, data.notificationsDisabledCategories));
         configBuilder.withDriverMetrics();
         org.neo4j.driver.Driver driver;
         Config config = configBuilder.build();
@@ -271,6 +277,23 @@ public class NewDriver implements TestkitRequest {
         return securitySettingsBuilder;
     }
 
+    public static NotificationConfig toNotificationConfig(
+            String minimumSeverityString, Set<String> disabledCategoryStrings) {
+        var config = NotificationConfig.defaultConfig();
+        config = Optional.ofNullable(minimumSeverityString)
+                .flatMap(InternalNotificationSeverity::valueOf)
+                .map(config::enableMinimumSeverity)
+                .orElse(config);
+        config = Optional.ofNullable(disabledCategoryStrings)
+                .map(categories -> categories.stream()
+                        .map(InternalNotificationCategory::valueOf)
+                        .map(opt -> opt.orElse(null))
+                        .collect(Collectors.toSet()))
+                .map(config::disableCategories)
+                .orElse(config);
+        return config;
+    }
+
     @Setter
     @Getter
     public static class NewDriverBody {
@@ -281,6 +304,8 @@ public class NewDriver implements TestkitRequest {
         private boolean domainNameResolverRegistered;
         private Long connectionTimeoutMs;
         private Integer fetchSize;
+        private String notificationsMinSeverity;
+        private Set<String> notificationsDisabledCategories;
         private Long maxTxRetryTimeMs;
         private Long livenessCheckTimeoutMs;
         private Integer maxConnectionPoolSize;

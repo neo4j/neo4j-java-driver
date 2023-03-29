@@ -29,10 +29,19 @@ public class FatalDiscoveryException extends ClientException {
     @Serial
     private static final long serialVersionUID = -2831830142554054420L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public FatalDiscoveryException(String message) {
         super(message);
     }
 
+    /**
+     * Creates a new instance.
+     * @param code the code
+     * @param message the message
+     */
     public FatalDiscoveryException(String code, String message) {
         super(code, message);
     }

@@ -18,11 +18,14 @@
  */
 package org.neo4j.driver.summary;
 
+import java.util.Optional;
+import org.neo4j.driver.NotificationCategory;
+import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.util.Immutable;
 
 /**
  * Representation for notifications found when executing a query.
- *
+ * <p>
  * A notification can be visualized in a client pinpointing problems or other information about the query.
  * @since 1.0
  */
@@ -58,7 +61,51 @@ public interface Notification {
     /**
      * The severity level of the notification.
      *
+     * @deprecated superseded by {@link #severityLevel()} and {@link #rawSeverityLevel()}
      * @return the severity level of the notification
      */
-    String severity();
+    @Deprecated
+    default String severity() {
+        return rawSeverityLevel().orElse("N/A");
+    }
+
+    /**
+     * Returns the severity level of the notification.
+     *
+     * @return the severity level of the notification
+     * @since 5.7
+     */
+    default Optional<NotificationSeverity> severityLevel() {
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the raw severity level of the notification as a String returned by the server.
+     *
+     * @return the severity level of the notification
+     * @since 5.7
+     */
+    default Optional<String> rawSeverityLevel() {
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the category of the notification.
+     *
+     * @return the category of the notification
+     * @since 5.7
+     */
+    default Optional<NotificationCategory> category() {
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the raw category of the notification as a String returned by the server.
+     *
+     * @return the category of the notification
+     * @since 5.7
+     */
+    default Optional<String> rawCategory() {
+        return Optional.empty();
+    }
 }

@@ -31,6 +31,11 @@ public class AuthenticationException extends SecurityException {
     @Serial
     private static final long serialVersionUID = 1324352999966240271L;
 
+    /**
+     * Creates a new instance.
+     * @param code the code
+     * @param message the message
+     */
     public AuthenticationException(String code, String message) {
         super(code, message);
     }

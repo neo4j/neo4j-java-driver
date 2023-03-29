@@ -31,15 +31,13 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Clock;
 import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.cluster.RoutingContext;
-import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
 public class ChannelConnectorImpl implements ChannelConnector {
@@ -53,6 +51,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
     private final Clock clock;
     private final DomainNameResolver domainNameResolver;
     private final AddressResolverGroup<InetSocketAddress> addressResolverGroup;
+    private final NotificationConfig notificationConfig;
 
     public ChannelConnectorImpl(
             ConnectionSettings connectionSettings,
@@ -60,7 +59,8 @@ public class ChannelConnectorImpl implements ChannelConnector {
             Logging logging,
             Clock clock,
             RoutingContext routingContext,
-            DomainNameResolver domainNameResolver) {
+            DomainNameResolver domainNameResolver,
+            NotificationConfig notificationConfig) {
         this(
                 connectionSettings,
                 securityPlan,
@@ -68,7 +68,8 @@ public class ChannelConnectorImpl implements ChannelConnector {
                 logging,
                 clock,
                 routingContext,
-                domainNameResolver);
+                domainNameResolver,
+                notificationConfig);
     }
 
     public ChannelConnectorImpl(
@@ -78,9 +79,10 @@ public class ChannelConnectorImpl implements ChannelConnector {
             Logging logging,
             Clock clock,
             RoutingContext routingContext,
-            DomainNameResolver domainNameResolver) {
+            DomainNameResolver domainNameResolver,
+            NotificationConfig notificationConfig) {
         this.userAgent = connectionSettings.userAgent();
-        this.authToken = requireValidAuthToken(connectionSettings.authToken());
+        this.authToken = connectionSettings.authToken();
         this.routingContext = routingContext;
         this.connectTimeoutMillis = connectionSettings.connectTimeoutMillis();
         this.securityPlan = requireNonNull(securityPlan);
@@ -89,6 +91,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
         this.clock = requireNonNull(clock);
         this.domainNameResolver = requireNonNull(domainNameResolver);
         this.addressResolverGroup = new NettyDomainNameResolverGroup(this.domainNameResolver);
+        this.notificationConfig = notificationConfig;
     }
 
     @Override
@@ -140,16 +143,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
 
         // add listener that sends an INIT message. connection is now fully established. channel pipeline if fully
         // set to send/receive messages for a selected protocol version
-        handshakeCompleted.addListener(
-                new HandshakeCompletedListener(userAgent, authToken, routingContext, connectionInitialized));
-    }
-
-    private static AuthToken requireValidAuthToken(AuthToken token) {
-        if (token instanceof InternalAuthToken) {
-            return token;
-        } else {
-            throw new ClientException("Unknown authentication token, `" + token + "`. Please use one of the supported "
-                    + "tokens from `" + AuthTokens.class.getSimpleName() + "`.");
-        }
+        handshakeCompleted.addListener(new HandshakeCompletedListener(
+                userAgent, authToken, routingContext, connectionInitialized, notificationConfig));
     }
 }

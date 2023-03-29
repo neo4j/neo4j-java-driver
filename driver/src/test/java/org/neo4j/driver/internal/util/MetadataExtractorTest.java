@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.NotificationCategory;
+import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
@@ -261,12 +263,14 @@ class MetadataExtractorTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void shouldBuildResultSummaryWithNotifications() {
         Value notification1 = parameters(
                 "description", "Almost bad thing",
                 "code", "Neo.DummyNotification",
                 "title", "A title",
                 "severity", "WARNING",
+                "category", "DEPRECATION",
                 "position",
                         parameters(
                                 "offset", 42,
@@ -295,6 +299,12 @@ class MetadataExtractorTest {
         assertEquals("Neo.DummyNotification", firstNotification.code());
         assertEquals("A title", firstNotification.title());
         assertEquals("WARNING", firstNotification.severity());
+        assertEquals(
+                NotificationSeverity.WARNING, firstNotification.severityLevel().get());
+        assertEquals("WARNING", firstNotification.rawSeverityLevel().get());
+        assertEquals(
+                NotificationCategory.DEPRECATION, firstNotification.category().get());
+        assertEquals("DEPRECATION", firstNotification.rawCategory().get());
         assertEquals(new InternalInputPosition(42, 4242, 424242), firstNotification.position());
 
         assertEquals("Almost good thing", secondNotification.description());

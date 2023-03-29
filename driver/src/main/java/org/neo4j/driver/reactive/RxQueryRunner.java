@@ -123,10 +123,20 @@ public interface RxQueryRunner {
      */
     RxResult run(Query query);
 
+    /**
+     * Creates a value from a record instance.
+     * @param record the record
+     * @return the value
+     */
     static Value parameters(Record record) {
         return record == null ? Values.EmptyMap : parameters(record.asMap());
     }
 
+    /**
+     * Creates a value from a map instance.
+     * @param map the map
+     * @return the value
+     */
     static Value parameters(Map<String, Object> map) {
         if (map == null || map.isEmpty()) {
             return Values.EmptyMap;

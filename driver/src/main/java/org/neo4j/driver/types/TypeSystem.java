@@ -37,43 +37,123 @@ public interface TypeSystem {
         return TYPE_SYSTEM;
     }
 
+    /**
+     * Returns a {@link Type} instance representing any type.
+     * @return the type instance
+     */
     Type ANY();
 
+    /**
+     * Returns a {@link Type} instance representing boolean.
+     * @return the type instance
+     */
     Type BOOLEAN();
 
+    /**
+     * Returns a {@link Type} instance representing bytes.
+     * @return the type instance
+     */
     Type BYTES();
 
+    /**
+     * Returns a {@link Type} instance representing string.
+     * @return the type instance
+     */
     Type STRING();
 
+    /**
+     * Returns a {@link Type} instance representing number.
+     * @return the type instance
+     */
     Type NUMBER();
 
+    /**
+     * Returns a {@link Type} instance representing integer.
+     * @return the type instance
+     */
     Type INTEGER();
 
+    /**
+     * Returns a {@link Type} instance representing float.
+     * @return the type instance
+     */
     Type FLOAT();
 
+    /**
+     * Returns a {@link Type} instance representing list.
+     * @return the type instance
+     */
     Type LIST();
 
+    /**
+     * Returns a {@link Type} instance representing map.
+     * @return the type instance
+     */
     Type MAP();
 
+    /**
+     * Returns a {@link Type} instance representing node.
+     * @return the type instance
+     */
     Type NODE();
 
+    /**
+     * Returns a {@link Type} instance representing relationship.
+     * @return the type instance
+     */
     Type RELATIONSHIP();
 
+    /**
+     * Returns a {@link Type} instance representing path.
+     * @return the type instance
+     */
     Type PATH();
 
+    /**
+     * Returns a {@link Type} instance representing point.
+     * @return the type instance
+     */
     Type POINT();
 
+    /**
+     * Returns a {@link Type} instance representing date.
+     * @return the type instance
+     */
     Type DATE();
 
+    /**
+     * Returns a {@link Type} instance representing time.
+     * @return the type instance
+     */
     Type TIME();
 
+    /**
+     * Returns a {@link Type} instance representing local time.
+     * @return the type instance
+     */
     Type LOCAL_TIME();
 
+    /**
+     * Returns a {@link Type} instance representing local date time.
+     * @return the type instance
+     */
     Type LOCAL_DATE_TIME();
 
+    /**
+     * Returns a {@link Type} instance representing date time.
+     * @return the type instance
+     */
     Type DATE_TIME();
 
+    /**
+     * Returns a {@link Type} instance representing duration.
+     * @return the type instance
+     */
     Type DURATION();
 
+    /**
+     * Returns a {@link Type} instance representing NULL.
+     * @return the type instance
+     */
     Type NULL();
 }

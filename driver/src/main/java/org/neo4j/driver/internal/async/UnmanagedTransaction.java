@@ -37,6 +37,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
@@ -93,26 +94,33 @@ public class UnmanagedTransaction {
     private CompletableFuture<Void> rollbackFuture;
     private Throwable causeOfTermination;
     private CompletionStage<Void> interruptStage;
+    private final NotificationConfig notificationConfig;
 
-    public UnmanagedTransaction(Connection connection, Consumer<DatabaseBookmark> bookmarkConsumer, long fetchSize) {
-        this(connection, bookmarkConsumer, fetchSize, new ResultCursorsHolder());
+    public UnmanagedTransaction(
+            Connection connection,
+            Consumer<DatabaseBookmark> bookmarkConsumer,
+            long fetchSize,
+            NotificationConfig notificationConfig) {
+        this(connection, bookmarkConsumer, fetchSize, new ResultCursorsHolder(), notificationConfig);
     }
 
     protected UnmanagedTransaction(
             Connection connection,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             long fetchSize,
-            ResultCursorsHolder resultCursors) {
+            ResultCursorsHolder resultCursors,
+            NotificationConfig notificationConfig) {
         this.connection = connection;
         this.protocol = connection.protocol();
         this.bookmarkConsumer = bookmarkConsumer;
         this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
+        this.notificationConfig = notificationConfig;
     }
 
     public CompletionStage<UnmanagedTransaction> beginAsync(
             Set<Bookmark> initialBookmarks, TransactionConfig config, String txType) {
-        return protocol.beginTransaction(connection, initialBookmarks, config, txType)
+        return protocol.beginTransaction(connection, initialBookmarks, config, txType, notificationConfig)
                 .handle((ignore, beginError) -> {
                     if (beginError != null) {
                         if (beginError instanceof AuthorizationExpiredException) {
@@ -171,7 +179,7 @@ public class UnmanagedTransaction {
     public void markTerminated(Throwable cause) {
         executeWithLock(lock, () -> {
             if (state == State.TERMINATED) {
-                if (causeOfTermination != null) {
+                if (causeOfTermination != null && cause != null) {
                     addSuppressedWhenNotCaptured(causeOfTermination, cause);
                 }
             } else {

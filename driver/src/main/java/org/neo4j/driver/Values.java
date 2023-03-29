@@ -79,13 +79,24 @@ import org.neo4j.driver.types.TypeSystem;
  * @since 1.0
  */
 public final class Values {
+    /**
+     * The value instance of an empty map.
+     */
     public static final Value EmptyMap = value(Collections.emptyMap());
+    /**
+     * The value instance of {@code NULL}.
+     */
     public static final Value NULL = NullValue.NULL;
 
     private Values() {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Returns a value from object.
+     * @param value the object value
+     * @return the array of values
+     */
     @SuppressWarnings("unchecked")
     public static Value value(Object value) {
         if (value == null) {
@@ -206,6 +217,11 @@ public final class Values {
         throw new ClientException("Unable to convert " + value.getClass().getName() + " to Neo4j Value.");
     }
 
+    /**
+     * Returns an array of values from object vararg.
+     * @param input the object value(s)
+     * @return the array of values
+     */
     public static Value[] values(final Object... input) {
         Value[] values = new Value[input.length];
         for (int i = 0; i < input.length; i++) {
@@ -214,6 +230,11 @@ public final class Values {
         return values;
     }
 
+    /**
+     * Returns a value from value vararg.
+     * @param input the value(s)
+     * @return the value
+     */
     public static Value value(Value... input) {
         int size = input.length;
         Value[] values = new Value[size];
@@ -221,10 +242,20 @@ public final class Values {
         return new ListValue(values);
     }
 
+    /**
+     * Returns a value from byte vararg.
+     * @param input the byte value(s)
+     * @return the value
+     */
     public static Value value(byte... input) {
         return new BytesValue(input);
     }
 
+    /**
+     * Returns a value from string vararg.
+     * @param input the string value(s)
+     * @return the value
+     */
     public static Value value(String... input) {
         StringValue[] values = new StringValue[input.length];
         for (int i = 0; i < input.length; i++) {
@@ -233,6 +264,11 @@ public final class Values {
         return new ListValue(values);
     }
 
+    /**
+     * Returns a value from boolean vararg.
+     * @param input the boolean value(s)
+     * @return the value
+     */
     public static Value value(boolean... input) {
         Value[] values = new Value[input.length];
         for (int i = 0; i < input.length; i++) {
@@ -241,6 +277,11 @@ public final class Values {
         return new ListValue(values);
     }
 
+    /**
+     * Returns a value from char vararg.
+     * @param input the char value(s)
+     * @return the value
+     */
     public static Value value(char... input) {
         Value[] values = new Value[input.length];
         for (int i = 0; i < input.length; i++) {
@@ -249,6 +290,11 @@ public final class Values {
         return new ListValue(values);
     }
 
+    /**
+     * Returns a value from long vararg.
+     * @param input the long value(s)
+     * @return the value
+     */
     public static Value value(long... input) {
         Value[] values = new Value[input.length];
         for (int i = 0; i < input.length; i++) {
@@ -257,6 +303,11 @@ public final class Values {
         return new ListValue(values);
     }
 
+    /**
+     * Returns a value from short vararg.
+     * @param input the short value(s)
+     * @return the value
+     */
     public static Value value(short... input) {
         Value[] values = new Value[input.length];
         for (int i = 0; i < input.length; i++) {
@@ -264,7 +315,11 @@ public final class Values {
         }
         return new ListValue(values);
     }
-
+    /**
+     * Returns a value from int vararg.
+     * @param input the int value(s)
+     * @return the value
+     */
     public static Value value(int... input) {
         Value[] values = new Value[input.length];
         for (int i = 0; i < input.length; i++) {
@@ -272,7 +327,11 @@ public final class Values {
         }
         return new ListValue(values);
     }
-
+    /**
+     * Returns a value from double vararg.
+     * @param input the double value(s)
+     * @return the value
+     */
     public static Value value(double... input) {
         Value[] values = new Value[input.length];
         for (int i = 0; i < input.length; i++) {
@@ -281,6 +340,11 @@ public final class Values {
         return new ListValue(values);
     }
 
+    /**
+     * Returns a value from float vararg.
+     * @param input the float value(s)
+     * @return the value
+     */
     public static Value value(float... input) {
         Value[] values = new Value[input.length];
         for (int i = 0; i < input.length; i++) {
@@ -289,6 +353,11 @@ public final class Values {
         return new ListValue(values);
     }
 
+    /**
+     * Returns a value from list of objects.
+     * @param vals the list of objects
+     * @return the value
+     */
     public static Value value(List<Object> vals) {
         Value[] values = new Value[vals.size()];
         int i = 0;
@@ -298,10 +367,20 @@ public final class Values {
         return new ListValue(values);
     }
 
+    /**
+     * Returns a value from iterable of objects.
+     * @param val the iterable of objects
+     * @return the value
+     */
     public static Value value(Iterable<Object> val) {
         return value(val.iterator());
     }
 
+    /**
+     * Returns a value from iterator of objects.
+     * @param val the iterator of objects
+     * @return the value
+     */
     public static Value value(Iterator<Object> val) {
         List<Value> values = new ArrayList<>();
         while (val.hasNext()) {
@@ -310,35 +389,75 @@ public final class Values {
         return new ListValue(values.toArray(new Value[0]));
     }
 
+    /**
+     * Returns a value from stream of objects.
+     * @param stream the stream of objects
+     * @return the value
+     */
     public static Value value(Stream<Object> stream) {
         Value[] values = stream.map(Values::value).toArray(Value[]::new);
         return new ListValue(values);
     }
 
+    /**
+     * Returns a value from char.
+     * @param val the char value
+     * @return the value
+     */
     public static Value value(final char val) {
         return new StringValue(String.valueOf(val));
     }
 
+    /**
+     * Returns a value from string.
+     * @param val the string value
+     * @return the value
+     */
     public static Value value(final String val) {
         return new StringValue(val);
     }
 
+    /**
+     * Returns a value from long.
+     * @param val the long value
+     * @return the value
+     */
     public static Value value(final long val) {
         return new IntegerValue(val);
     }
 
+    /**
+     * Returns a value from int.
+     * @param val the int value
+     * @return the value
+     */
     public static Value value(final int val) {
         return new IntegerValue(val);
     }
 
+    /**
+     * Returns a value from double.
+     * @param val the double value
+     * @return the value
+     */
     public static Value value(final double val) {
         return new FloatValue(val);
     }
 
+    /**
+     * Returns a value from boolean.
+     * @param val the boolean value
+     * @return the value
+     */
     public static Value value(final boolean val) {
         return BooleanValue.fromBoolean(val);
     }
 
+    /**
+     * Returns a value from string to object map.
+     * @param val the string to object map
+     * @return the value
+     */
     public static Value value(final Map<String, Object> val) {
         Map<String, Value> asValues = newHashMapWithSize(val.size());
         for (Map.Entry<String, Object> entry : val.entrySet()) {
@@ -347,54 +466,127 @@ public final class Values {
         return new MapValue(asValues);
     }
 
+    /**
+     * Returns a value from local date.
+     * @param localDate the local date value
+     * @return the value
+     */
     public static Value value(LocalDate localDate) {
         return new DateValue(localDate);
     }
 
+    /**
+     * Returns a value from offset time.
+     * @param offsetTime the offset time value
+     * @return the value
+     */
     public static Value value(OffsetTime offsetTime) {
         return new TimeValue(offsetTime);
     }
 
+    /**
+     * Returns a value from local time.
+     * @param localTime the local time value
+     * @return the value
+     */
     public static Value value(LocalTime localTime) {
         return new LocalTimeValue(localTime);
     }
 
+    /**
+     * Returns a value from local date time.
+     * @param localDateTime the local date time value
+     * @return the value
+     */
     public static Value value(LocalDateTime localDateTime) {
         return new LocalDateTimeValue(localDateTime);
     }
 
+    /**
+     * Returns a value from offset date time.
+     * @param offsetDateTime the offset date time value
+     * @return the value
+     */
     public static Value value(OffsetDateTime offsetDateTime) {
         return new DateTimeValue(offsetDateTime.toZonedDateTime());
     }
 
+    /**
+     * Returns a value from zoned date time.
+     * @param zonedDateTime the zoned date time value
+     * @return the value
+     */
     public static Value value(ZonedDateTime zonedDateTime) {
         return new DateTimeValue(zonedDateTime);
     }
 
+    /**
+     * Returns a value from period.
+     * @param period the period value
+     * @return the value
+     */
     public static Value value(Period period) {
         return value(new InternalIsoDuration(period));
     }
 
+    /**
+     * Returns a value from duration.
+     * @param duration the duration value
+     * @return the value
+     */
     public static Value value(Duration duration) {
         return value(new InternalIsoDuration(duration));
     }
 
+    /**
+     * Returns a value from month, day, seconds and nanoseconds values.
+     * @param months the month value
+     * @param days the day value
+     * @param seconds the seconds value
+     * @param nanoseconds the nanoseconds value
+     * @return the value
+     */
     public static Value isoDuration(long months, long days, long seconds, int nanoseconds) {
         return value(new InternalIsoDuration(months, days, seconds, nanoseconds));
     }
 
+    /**
+     * Returns a value from ISO duration.
+     * @param duration the ISO duration value
+     * @return the value
+     */
     private static Value value(IsoDuration duration) {
         return new DurationValue(duration);
     }
 
+    /**
+     * Returns a value from SRID, x and y values.
+     * @param srid the SRID value
+     * @param x the x value
+     * @param y the y value
+     * @return the value
+     */
     public static Value point(int srid, double x, double y) {
         return value(new InternalPoint2D(srid, x, y));
     }
 
+    /**
+     * Returns a value from point.
+     * @param point the point value
+     * @return the value
+     */
     private static Value value(Point point) {
         return new PointValue(point);
     }
 
+    /**
+     * Returns a value from SRID, x ,y and z values.
+     * @param srid the SRID value
+     * @param x the x value
+     * @param y the y value
+     * @param z the z value
+     * @return the value
+     */
     public static Value point(int srid, double x, double y, double z) {
         return value(new InternalPoint3D(srid, x, y, z));
     }

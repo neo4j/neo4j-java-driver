@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.neo4j.driver</groupId>
     <artifactId>neo4j-java-driver-parent</artifactId>
-    <version>5.5-SNAPSHOT</version>
+    <version>5.7-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
@@ -15,6 +15,7 @@
   <packaging>jar</packaging>
   <name>Neo4j Java Driver (shaded package)</name>
   <description>Access to the Neo4j graph database through Java</description>
+  <url>https://github.com/neo4j/neo4j-java-driver</url>
 
   <properties>
     <moduleName>org.neo4j.driver</moduleName>
@@ -99,9 +100,6 @@
                   <includes>
                     <include>**\/*.java</include>
                   </includes>
-                  <excludes>
-                    <exclude>module-info.java</exclude>
-                  </excludes>
                 </resource>
               </resources>
             </configuration>
@@ -209,6 +207,12 @@
                     <exclude>META-INF/native-image/**</exclude>
                   </excludes>
                 </filter>
+                <filter>
+                  <artifact>${groupId}:${artifactId}</artifact>
+                  <excludes>
+                    <exclude>module-info.java</exclude>
+                  </excludes>
+                </filter>
               </filters>
               <shadeTestJar>true</shadeTestJar>
               <createSourcesJar>true</createSourcesJar>
@@ -216,7 +220,54 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-module-info-to-sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <unzip src="${project.build.directory}/${artifactId}-${version}-sources.jar" dest="${project.build.directory}/sources-with-module"/>
+                <copy file="${project.basedir}/src/main/jpms/module-info.java" tofile="${project.build.directory}/sources-with-module/module-info.java" />
+                <zip basedir="${project.build.directory}/sources-with-module" destfile="${project.build.directory}/${artifactId}-${version}-sources.jar"/>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.moditect</groupId>
+        <artifactId>moditect-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-module-infos</id>
+            <phase>package</phase>
+            <goals>
+              <goal>add-module-info</goal>
+            </goals>
+            <configuration>
+              <overwriteExistingFiles>true</overwriteExistingFiles>
+              <module>
+                <moduleInfoFile>
+                  ${basedir}/src/main/jpms/module-info.java
+                </moduleInfoFile>
+              </module>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/neo4j-java-driver.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j-java-driver.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j-java-driver</url>
+  </scm>
 
 </project>

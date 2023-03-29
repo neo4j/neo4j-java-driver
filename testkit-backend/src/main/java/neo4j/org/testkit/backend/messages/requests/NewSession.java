@@ -18,8 +18,11 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import static neo4j.org.testkit.backend.messages.requests.NewDriver.toNotificationConfig;
+
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
@@ -102,6 +105,9 @@ public class NewSession implements TestkitRequest {
                 .map(testkitState::getBookmarkManager)
                 .ifPresent(builder::withBookmarkManager);
 
+        builder.withNotificationConfig(
+                toNotificationConfig(data.notificationsMinSeverity, data.notificationsDisabledCategories));
+
         T sessionStateHolder = sessionStateProducer.apply(driverHolder, builder.build());
         String newId = addSessionHolder.apply(sessionStateHolder);
 
@@ -148,5 +154,7 @@ public class NewSession implements TestkitRequest {
         private String impersonatedUser;
         private int fetchSize;
         private String bookmarkManagerId;
+        private String notificationsMinSeverity;
+        private Set<String> notificationsDisabledCategories;
     }
 }

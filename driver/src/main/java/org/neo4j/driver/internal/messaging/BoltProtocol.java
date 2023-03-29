@@ -27,6 +27,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
@@ -43,6 +44,8 @@ import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
+import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
+import org.neo4j.driver.internal.messaging.v52.BoltProtocolV52;
 import org.neo4j.driver.internal.spi.Connection;
 
 public interface BoltProtocol {
@@ -56,16 +59,18 @@ public interface BoltProtocol {
     /**
      * Initialize channel after it is connected and handshake selected this protocol version.
      *
-     * @param userAgent the user agent string.
-     * @param authToken the authentication token.
-     * @param routingContext the configured routing context
+     * @param userAgent                 the user agent string.
+     * @param authToken                 the authentication token.
+     * @param routingContext            the configured routing context
      * @param channelInitializedPromise the promise to be notified when initialization is completed.
+     * @param notificationConfig the notification configuration
      */
     void initializeChannel(
             String userAgent,
             AuthToken authToken,
             RoutingContext routingContext,
-            ChannelPromise channelInitializedPromise);
+            ChannelPromise channelInitializedPromise,
+            NotificationConfig notificationConfig);
 
     /**
      * Prepare to close channel before it is closed.
@@ -76,14 +81,19 @@ public interface BoltProtocol {
     /**
      * Begin an unmanaged transaction.
      *
-     * @param connection the connection to use.
-     * @param bookmarks  the bookmarks. Never null, should be empty when there are no bookmarks.
-     * @param config     the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
-     * @param txType the Kernel transaction type
+     * @param connection         the connection to use.
+     * @param bookmarks          the bookmarks. Never null, should be empty when there are no bookmarks.
+     * @param config             the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
+     * @param txType             the Kernel transaction type
+     * @param notificationConfig the notification configuration
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
      */
     CompletionStage<Void> beginTransaction(
-            Connection connection, Set<Bookmark> bookmarks, TransactionConfig config, String txType);
+            Connection connection,
+            Set<Bookmark> bookmarks,
+            TransactionConfig config,
+            String txType,
+            NotificationConfig notificationConfig);
 
     /**
      * Commit the unmanaged transaction.
@@ -104,11 +114,12 @@ public interface BoltProtocol {
     /**
      * Execute the given query in an auto-commit transaction, i.e. {@link Session#run(Query)}.
      *
-     * @param connection      the network connection to use.
-     * @param query           the cypher to execute.
-     * @param bookmarkConsumer the database bookmark consumer.
-     * @param config          the transaction config for the implicitly started auto-commit transaction.
-     * @param fetchSize       the record fetch size for PULL message.
+     * @param connection         the network connection to use.
+     * @param query              the cypher to execute.
+     * @param bookmarkConsumer   the database bookmark consumer.
+     * @param config             the transaction config for the implicitly started auto-commit transaction.
+     * @param fetchSize          the record fetch size for PULL message.
+     * @param notificationConfig the notification configuration
      * @return stage with cursor.
      */
     ResultCursorFactory runInAutoCommitTransaction(
@@ -117,7 +128,8 @@ public interface BoltProtocol {
             Set<Bookmark> bookmarks,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             TransactionConfig config,
-            long fetchSize);
+            long fetchSize,
+            NotificationConfig notificationConfig);
 
     /**
      * Execute the given query in a running unmanaged transaction, i.e. {@link Transaction#run(Query)}.
@@ -170,6 +182,10 @@ public interface BoltProtocol {
             return BoltProtocolV44.INSTANCE;
         } else if (BoltProtocolV5.VERSION.equals(version)) {
             return BoltProtocolV5.INSTANCE;
+        } else if (BoltProtocolV51.VERSION.equals(version)) {
+            return BoltProtocolV51.INSTANCE;
+        } else if (BoltProtocolV52.VERSION.equals(version)) {
+            return BoltProtocolV52.INSTANCE;
         }
         throw new ClientException("Unknown protocol version: " + version);
     }

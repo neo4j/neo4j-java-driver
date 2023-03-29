@@ -30,6 +30,11 @@ public class TransientException extends Neo4jException implements RetryableExcep
     @Serial
     private static final long serialVersionUID = -2744576986358599923L;
 
+    /**
+     * Creates a new instance.
+     * @param code the code
+     * @param message the message
+     */
     public TransientException(String code, String message) {
         super(code, message);
     }

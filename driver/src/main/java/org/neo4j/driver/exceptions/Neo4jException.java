@@ -29,20 +29,43 @@ public class Neo4jException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = -80579062276712566L;
 
+    /**
+     * The code value.
+     */
     private final String code;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     */
     public Neo4jException(String message) {
         this("N/A", message);
     }
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     * @param cause the cause
+     */
     public Neo4jException(String message, Throwable cause) {
         this("N/A", message, cause);
     }
 
+    /**
+     * Creates a new instance.
+     * @param code the code
+     * @param message the message
+     */
     public Neo4jException(String code, String message) {
         this(code, message, null);
     }
 
+    /**
+     * Creates a new instance.
+     * @param code the code
+     * @param message the message
+     * @param cause the cause
+     */
     public Neo4jException(String code, String message, Throwable cause) {
         super(message, cause);
         this.code = code;

@@ -412,6 +412,54 @@
     <difference>
         <className>org/neo4j/driver/Driver</className>
         <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.QueryTask queryTask(java.lang.String)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.BookmarkManager queryBookmarkManager()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.BookmarkManager queryBookmarkManager()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.BookmarkManager queryTaskBookmarkManager()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/Notification</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.Optional severityLevel()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/Notification</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.Optional rawSeverityLevel()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/Notification</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.Optional category()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/Notification</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.Optional rawCategory()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
         <method>org.neo4j.driver.ExecutableQuery executableQuery(java.lang.String)</method>
     </difference>
 

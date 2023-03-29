@@ -16,6 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * The Neo4j Java Driver module.
+ */
 @SuppressWarnings({"requires-automatic", "requires-transitive-automatic"})
 module org.neo4j.driver {
     exports org.neo4j.driver;
@@ -27,6 +30,7 @@ module org.neo4j.driver {
     exports org.neo4j.driver.net;
     exports org.neo4j.driver.util;
     exports org.neo4j.driver.exceptions;
+    exports org.neo4j.driver.exceptions.value;
 
     requires reactor.core;
     requires io.netty.common;

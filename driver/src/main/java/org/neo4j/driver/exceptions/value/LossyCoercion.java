@@ -30,6 +30,11 @@ public class LossyCoercion extends ValueException {
     @Serial
     private static final long serialVersionUID = -6259981390929065201L;
 
+    /**
+     * Creates a new instance.
+     * @param sourceTypeName the source type name
+     * @param destinationTypeName the destination type name
+     */
     public LossyCoercion(String sourceTypeName, String destinationTypeName) {
         super(format("Cannot coerce %s to %s without losing precision", sourceTypeName, destinationTypeName));
     }

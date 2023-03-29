@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver-parent</artifactId>
-        <version>5.5-SNAPSHOT</version>
+        <version>5.7-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -14,6 +14,7 @@
 
     <name>Neo4j Java Driver Testkit Tests</name>
     <description>Tests this driver using Testkit.</description>
+    <url>https://github.com/neo4j/neo4j-java-driver</url>
 
     <properties>
         <rootDir>${project.basedir}/..</rootDir>
@@ -303,4 +304,11 @@
             </properties>
         </profile>
     </profiles>
+
+    <scm>
+        <connection>scm:git:git://github.com/neo4j/neo4j-java-driver.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j-java-driver.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j-java-driver</url>
+    </scm>
+    
 </project>

@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -80,25 +81,71 @@ public final class Config implements Serializable {
      */
     private final Logging logging;
 
+    /**
+     * The flag indicating if leaked sessions logging is enabled.
+     */
     private final boolean logLeakedSessions;
 
+    /**
+     * The maximum connection pool size.
+     */
     private final int maxConnectionPoolSize;
 
+    /**
+     * The idle time that defines if connection should be tested before being handed out by the connection pool.
+     */
     private final long idleTimeBeforeConnectionTest;
+    /**
+     * The maximum connection lifetime in milliseconds.
+     */
     private final long maxConnectionLifetimeMillis;
+    /**
+     * The maximum amount of time connection acquisition will attempt to acquire a connection from the connection pool.
+     */
     private final long connectionAcquisitionTimeoutMillis;
 
+    /**
+     * The security settings.
+     */
     private final SecuritySettings securitySettings;
 
+    /**
+     * The fetch size.
+     */
     private final long fetchSize;
+    /**
+     * The stale routing table purge delay in milliseconds.
+     */
     private final long routingTablePurgeDelayMillis;
+    /**
+     * The managed transactions maximum retry time.
+     */
     private final long maxTransactionRetryTimeMillis;
 
+    /**
+     * The configured connection timeout value in milliseconds.
+     */
     private final int connectionTimeoutMillis;
+    /**
+     * The server address resolver.
+     */
     private final ServerAddressResolver resolver;
 
+    /**
+     * The event loop thread count.
+     */
     private final int eventLoopThreads;
+    /**
+     * The user_agent configured for this driver.
+     */
     private final String userAgent;
+    /**
+     * The notification config.
+     */
+    private final NotificationConfig notificationConfig;
+    /**
+     * The {@link MetricsAdapter}.
+     */
     private final MetricsAdapter metricsAdapter;
 
     private Config(ConfigBuilder builder) {
@@ -118,6 +165,7 @@ public final class Config implements Serializable {
         this.maxTransactionRetryTimeMillis = builder.maxTransactionRetryTimeMillis;
         this.resolver = builder.resolver;
         this.fetchSize = builder.fetchSize;
+        this.notificationConfig = builder.notificationConfig;
 
         this.eventLoopThreads = builder.eventLoopThreads;
         this.metricsAdapter = builder.metricsAdapter;
@@ -167,10 +215,18 @@ public final class Config implements Serializable {
         return connectionTimeoutMillis;
     }
 
+    /**
+     * Returns the maximum connection pool size.
+     * @return the maximum size
+     */
     public int maxConnectionPoolSize() {
         return maxConnectionPoolSize;
     }
 
+    /**
+     * Returns the connection acquisition timeout in milliseconds.
+     * @return the acquisition timeout
+     */
     public long connectionAcquisitionTimeoutMillis() {
         return connectionAcquisitionTimeoutMillis;
     }
@@ -232,10 +288,27 @@ public final class Config implements Serializable {
         return maxTransactionRetryTimeMillis;
     }
 
+    /**
+     * Returns the fetch size.
+     * @return the fetch size
+     */
     public long fetchSize() {
         return fetchSize;
     }
 
+    /**
+     * Returns notification config.
+     * @return the notification config
+     * @since 5.7
+     */
+    public NotificationConfig notificationConfig() {
+        return notificationConfig;
+    }
+
+    /**
+     * Returns the number of {@link io.netty.channel.EventLoop} threads.
+     * @return the number of threads
+     */
     public int eventLoopThreads() {
         return eventLoopThreads;
     }
@@ -247,6 +320,10 @@ public final class Config implements Serializable {
         return this.metricsAdapter != MetricsAdapter.DEV_NULL;
     }
 
+    /**
+     * Returns the {@link MetricsAdapter}.
+     * @return the metrics adapter
+     */
     public MetricsAdapter metricsAdapter() {
         return this.metricsAdapter;
     }
@@ -278,6 +355,7 @@ public final class Config implements Serializable {
         private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
+        private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
 
         private ConfigBuilder() {}
 
@@ -655,6 +733,22 @@ public final class Config implements Serializable {
         }
 
         /**
+         * Sets notification config.
+         * <p>
+         * Any configuration other than the {@link NotificationConfig#defaultConfig()} requires a minimum Bolt protocol
+         * version 5.2. Otherwise, an {@link UnsupportedFeatureException} will be emitted when the driver comes across a
+         * Bolt connection that does not support this feature. For instance, when running a query.
+         *
+         * @param notificationConfig the notification config
+         * @return this builder
+         * @since 5.7
+         */
+        public ConfigBuilder withNotificationConfig(NotificationConfig notificationConfig) {
+            this.notificationConfig = Objects.requireNonNull(notificationConfig, "notificationConfig must not be null");
+            return this;
+        }
+
+        /**
          * Extracts the driver version from the driver jar MANIFEST.MF file.
          */
         private static String driverVersion() {
@@ -692,14 +786,35 @@ public final class Config implements Serializable {
          * The trust strategy that the driver supports
          */
         public enum Strategy {
+            /**
+             * Trust all certificates.
+             */
             TRUST_ALL_CERTIFICATES,
+            /**
+             * Trust custom CA-signed certificates.
+             */
             TRUST_CUSTOM_CA_SIGNED_CERTIFICATES,
+            /**
+             * Trust system CA-signed certificates.
+             */
             TRUST_SYSTEM_CA_SIGNED_CERTIFICATES
         }
 
+        /**
+         * The strategy type.
+         */
         private final Strategy strategy;
+        /**
+         * The configured certificate files.
+         */
         private final List<File> certFiles;
+        /**
+         * The flag indicating if hostname verification is enabled for this trust strategy.
+         */
         private boolean hostnameVerificationEnabled = true;
+        /**
+         * The revocation strategy used for verifying certificates.
+         */
         private RevocationCheckingStrategy revocationCheckingStrategy = RevocationCheckingStrategy.NO_CHECKS;
 
         private TrustStrategy(Strategy strategy) {

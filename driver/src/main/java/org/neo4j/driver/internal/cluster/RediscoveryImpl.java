@@ -43,6 +43,7 @@ import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.ImpersonationUtil;
@@ -295,6 +296,8 @@ public class RediscoveryImpl implements Rediscovery {
             abort = true;
         } else if (throwable instanceof IllegalStateException
                 && ConnectionPool.CONNECTION_POOL_CLOSED_ERROR_MESSAGE.equals(throwable.getMessage())) {
+            abort = true;
+        } else if (throwable instanceof UnsupportedFeatureException) {
             abort = true;
         } else if (throwable instanceof ClientException) {
             String code = ((ClientException) throwable).code();

@@ -126,6 +126,10 @@ public final class BookmarkManagerConfig {
             return this;
         }
 
+        /**
+         * Builds an instance of {@link BookmarkManagerConfig}.
+         * @return the config
+         */
         public BookmarkManagerConfig build() {
             return new BookmarkManagerConfig(this);
         }

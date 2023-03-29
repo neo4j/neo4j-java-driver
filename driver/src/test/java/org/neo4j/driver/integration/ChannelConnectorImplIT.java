@@ -218,7 +218,8 @@ class ChannelConnectorImplIT {
                 DEV_NULL_LOGGING,
                 new FakeClock(),
                 RoutingContext.EMPTY,
-                DefaultDomainNameResolver.getInstance());
+                DefaultDomainNameResolver.getInstance(),
+                null);
     }
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException {

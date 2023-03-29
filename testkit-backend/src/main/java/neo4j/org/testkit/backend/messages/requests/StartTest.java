@@ -72,7 +72,8 @@ public class StartTest implements TestkitRequest {
                 "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_fail_when_acquisition_timeout_is_reached_first.*$",
                 skipMessage);
         skipMessage = "This test needs updating to implement expected behaviour";
-        COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.TestAuthenticationSchemes\\.test_custom_scheme_empty$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestAuthenticationSchemes[^.]+\\.test_custom_scheme_empty$", skipMessage);
         skipMessage = "Driver does not implement optimization for qid in explicit transaction";
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments$", skipMessage);
@@ -80,6 +81,12 @@ public class StartTest implements TestkitRequest {
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query$", skipMessage);
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query_nested$", skipMessage);
+        skipMessage =
+                "Tests for driver with types.Feature.OPT_IMPLICIT_DEFAULT_ARGUMENTS but without types.Feature.OPT_AUTH_PIPELINING are (currently) missing when logon is supported";
+        COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.TestAuthenticationSchemes[^.]+\\.test_basic_scheme$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.TestAuthenticationSchemes[^.]+\\.test_bearer_scheme$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.TestAuthenticationSchemes[^.]+\\.test_custom_scheme$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.TestAuthenticationSchemes[^.]+\\.test_kerberos_scheme$", skipMessage);
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
 

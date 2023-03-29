@@ -32,6 +32,11 @@ public class DiscoveryException extends Neo4jException {
     @Serial
     private static final long serialVersionUID = 6711564351333659090L;
 
+    /**
+     * Creates a new instance.
+     * @param message the message
+     * @param cause the cause
+     */
     public DiscoveryException(String message, Throwable cause) {
         super(message, cause);
     }
