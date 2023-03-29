@@ -43,6 +43,7 @@ import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 import static org.neo4j.driver.testutil.TestUtil.await;
 import static org.neo4j.driver.testutil.TestUtil.beginMessage;
 import static org.neo4j.driver.testutil.TestUtil.connectionMock;
+import static org.neo4j.driver.testutil.TestUtil.setupFailingRun;
 import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunAndPull;
 import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunRx;
 import static org.neo4j.driver.testutil.TestUtil.verifyBeginTx;
@@ -69,6 +70,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -454,6 +456,27 @@ class UnmanagedTransactionTest {
 
         // Then
         assertEquals(stage0, stage1);
+    }
+
+    @Test
+    void shouldHandleInterruptionWhenAlreadyInterrupted() throws ExecutionException, InterruptedException {
+        // Given
+        var connection = connectionMock(BoltProtocolV4.INSTANCE);
+        var exception = new Neo4jException("message");
+        setupFailingRun(connection, exception);
+        var tx = beginTx(connection);
+        Throwable actualException = null;
+
+        // When
+        try {
+            tx.runAsync(new Query("RETURN 1")).toCompletableFuture().get();
+        } catch (ExecutionException e) {
+            actualException = e.getCause();
+        }
+        tx.interruptAsync().toCompletableFuture().get();
+
+        // Then
+        assertEquals(exception, actualException);
     }
 
     private static UnmanagedTransaction beginTx(Connection connection) {

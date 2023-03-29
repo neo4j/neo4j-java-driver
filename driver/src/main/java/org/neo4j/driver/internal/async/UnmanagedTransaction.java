@@ -179,7 +179,7 @@ public class UnmanagedTransaction {
     public void markTerminated(Throwable cause) {
         executeWithLock(lock, () -> {
             if (state == State.TERMINATED) {
-                if (causeOfTermination != null) {
+                if (causeOfTermination != null && cause != null) {
                     addSuppressedWhenNotCaptured(causeOfTermination, cause);
                 }
             } else {
