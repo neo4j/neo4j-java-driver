@@ -75,7 +75,7 @@ public class InternalDriver implements Driver {
     }
 
     @Override
-    public BookmarkManager defaultExecuteQueryBookmarkManager() {
+    public BookmarkManager defaultExecutableQueryBookmarkManager() {
         return queryBookmarkManager;
     }
 

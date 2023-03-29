@@ -121,7 +121,7 @@ class InternalExecutableQueryTest {
         // GIVEN
         var driver = mock(Driver.class);
         var bookmarkManager = mock(BookmarkManager.class);
-        given(driver.defaultExecuteQueryBookmarkManager()).willReturn(bookmarkManager);
+        given(driver.defaultExecutableQueryBookmarkManager()).willReturn(bookmarkManager);
         var session = mock(Session.class);
         given(driver.session(any(SessionConfig.class))).willReturn(session);
         var txContext = mock(TransactionContext.class);
