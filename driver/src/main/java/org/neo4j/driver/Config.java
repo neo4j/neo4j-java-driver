@@ -41,6 +41,7 @@ import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
+import org.neo4j.driver.util.Preview;
 
 /**
  * A configuration class to config driver properties.
@@ -187,7 +188,7 @@ public final class Config implements Serializable {
      * @return bookmark manager, must not be {@code null}
      * @since 5.5
      */
-    @Experimental
+    @Preview(name = "Driver Level Queries")
     public BookmarkManager queryTaskBookmarkManager() {
         return queryBookmarkManager;
     }
@@ -393,7 +394,7 @@ public final class Config implements Serializable {
          * @return this builder
          * @since 5.5
          */
-        @Experimental
+        @Preview(name = "Driver Level Queries")
         public ConfigBuilder withQueryTaskBookmarkManager(BookmarkManager bookmarkManager) {
             Objects.requireNonNull(bookmarkManager, "bookmarkManager must not be null");
             this.queryBookmarkManager = bookmarkManager;

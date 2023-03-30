@@ -24,13 +24,13 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
-import org.neo4j.driver.util.Experimental;
+import org.neo4j.driver.util.Preview;
 
 /**
  * Query configuration used by {@link Driver#queryTask(String)} and its variants.
  * @since 5.5
  */
-@Experimental
+@Preview(name = "Driver Level Queries")
 public final class QueryConfig implements Serializable {
     @Serial
     private static final long serialVersionUID = -2632780731598141754L;
