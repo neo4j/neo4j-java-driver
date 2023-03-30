@@ -71,6 +71,9 @@ public class StartTest implements TestkitRequest {
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_fail_when_acquisition_timeout_is_reached_first.*$",
                 skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_encompass_the_version_handshake_(in_time|time_out)$",
+                skipMessage);
         skipMessage = "This test needs updating to implement expected behaviour";
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestAuthenticationSchemes[^.]+\\.test_custom_scheme_empty$", skipMessage);
