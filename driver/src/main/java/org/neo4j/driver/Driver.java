@@ -25,6 +25,7 @@ import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 import org.neo4j.driver.util.Experimental;
+import org.neo4j.driver.util.Preview;
 
 /**
  * Accessor for a specific Neo4j graph database.
@@ -71,7 +72,7 @@ public interface Driver extends AutoCloseable {
      * @return new executable query instance
      * @since 5.7
      */
-    @Experimental
+    @Preview(name = "Driver Level Queries")
     ExecutableQuery executableQuery(String query);
 
     /**
@@ -80,7 +81,7 @@ public interface Driver extends AutoCloseable {
      * @return bookmark manager, must not be {@code null}
      * @since 5.7
      */
-    @Experimental
+    @Preview(name = "Driver Level Queries")
     BookmarkManager defaultExecutableQueryBookmarkManager();
 
     /**
