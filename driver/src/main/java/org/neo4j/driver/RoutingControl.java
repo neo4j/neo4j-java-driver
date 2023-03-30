@@ -18,13 +18,13 @@
  */
 package org.neo4j.driver;
 
-import org.neo4j.driver.util.Experimental;
+import org.neo4j.driver.util.Preview;
 
 /**
  * Defines routing mode for query.
  * @since 5.5
  */
-@Experimental
+@Preview(name = "Driver Level Queries")
 public enum RoutingControl {
     /**
      * Routes to the leader of the cluster.

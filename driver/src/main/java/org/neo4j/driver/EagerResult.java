@@ -20,13 +20,13 @@ package org.neo4j.driver;
 
 import java.util.List;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.util.Experimental;
+import org.neo4j.driver.util.Preview;
 
 /**
  * An in-memory result of executing a Cypher query that has been consumed in full.
  * @since 5.5
  */
-@Experimental
+@Preview(name = "Driver Level Queries")
 public interface EagerResult {
     /**
      * Returns the keys of the records this result contains.

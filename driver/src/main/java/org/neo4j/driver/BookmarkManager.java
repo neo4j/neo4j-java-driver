@@ -20,7 +20,7 @@ package org.neo4j.driver;
 
 import java.io.Serializable;
 import java.util.Set;
-import org.neo4j.driver.util.Experimental;
+import org.neo4j.driver.util.Preview;
 
 /**
  * Keeps track of bookmarks and is used by the driver to ensure causal consistency between sessions and query executions.
@@ -31,7 +31,7 @@ import org.neo4j.driver.util.Experimental;
  *
  * @see org.neo4j.driver.SessionConfig.Builder#withBookmarkManager(BookmarkManager)
  */
-@Experimental
+@Preview(name = "Bookmark Manager")
 public interface BookmarkManager extends Serializable {
     /**
      * Updates bookmarks by deleting the given previous bookmarks and adding the new bookmarks.

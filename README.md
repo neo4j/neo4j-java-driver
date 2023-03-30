@@ -24,6 +24,25 @@ As a policy, patch versions will not be released except on rare occasions. Bug f
 
 The compatibility with Neo4j Server versions is documented in the [Neo4j Knowledge Base](https://neo4j.com/developer/kb/neo4j-supported-versions/).
 
+## Preview features
+
+The preview feature is a new feature that is a candidate for a future <abbr title="Generally Available">GA</abbr> 
+status.
+
+It enables users to try the feature out and maintainers to refine and update it.
+
+The preview features are not considered to be experimental, temporary or unstable.
+
+However, they may change more rapidly, without following the usual deprecation cycle.
+
+Most preview features are expected to be granted the GA status unless some unexpected conditions arise.
+
+Due to the increased flexibility of the preview status, user feedback is encouraged so that it can be considered before
+the GA status.
+
+Every feature gets a dedicated [GitHub Discussion](https://github.com/neo4j/neo4j-java-driver/discussions/categories/preview-features) 
+where feedback may be shared.
+
 ## Usage
 
 This section provides general information for engineers who are building Neo4j-backed applications.
