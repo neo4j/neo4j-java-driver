@@ -35,8 +35,6 @@ import java.time.Clock;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.BookmarkManagerConfig;
-import org.neo4j.driver.BookmarkManagers;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.QueryConfig;
@@ -116,29 +114,25 @@ class InternalDriverTest {
     }
 
     @Test
-    void shouldCreateQueryTask() {
+    void shouldCreateExecutableQuery() {
         // Given
         var driver = newDriver(true);
         var query = "string";
 
         // When
-        var queryTask = (InternalQueryTask) driver.queryTask(query);
+        var executableQuery = (InternalExecutableQuery) driver.executableQuery(query);
 
         // Then
-        assertNotNull(queryTask);
-        assertEquals(driver, queryTask.driver());
-        assertEquals(query, queryTask.query());
-        assertEquals(Collections.emptyMap(), queryTask.parameters());
-        assertEquals(QueryConfig.defaultConfig(), queryTask.config());
+        assertNotNull(executableQuery);
+        assertEquals(driver, executableQuery.driver());
+        assertEquals(query, executableQuery.query());
+        assertEquals(Collections.emptyMap(), executableQuery.parameters());
+        assertEquals(QueryConfig.defaultConfig(), executableQuery.config());
     }
 
     private static InternalDriver newDriver(SessionFactory sessionFactory) {
         return new InternalDriver(
-                BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build()),
-                SecurityPlanImpl.insecure(),
-                sessionFactory,
-                DevNullMetricsProvider.INSTANCE,
-                DEV_NULL_LOGGING);
+                SecurityPlanImpl.insecure(), sessionFactory, DevNullMetricsProvider.INSTANCE, DEV_NULL_LOGGING);
     }
 
     private static SessionFactory sessionFactoryMock() {
@@ -155,11 +149,6 @@ class InternalDriverTest {
         }
 
         MetricsProvider metricsProvider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
-        return new InternalDriver(
-                BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build()),
-                SecurityPlanImpl.insecure(),
-                sessionFactory,
-                metricsProvider,
-                DEV_NULL_LOGGING);
+        return new InternalDriver(SecurityPlanImpl.insecure(), sessionFactory, metricsProvider, DEV_NULL_LOGGING);
     }
 }

@@ -65,24 +65,24 @@ import org.neo4j.driver.util.Preview;
  */
 public interface Driver extends AutoCloseable {
     /**
-     * Creates a new {@link QueryTask} instance that executes a query in a managed transaction with automatic retries on
+     * Creates a new {@link ExecutableQuery} instance that executes a query in a managed transaction with automatic retries on
      * retryable errors.
      *
      * @param query query string
-     * @return new query task instance
-     * @since 5.5
+     * @return new executable query instance
+     * @since 5.7
      */
     @Preview(name = "Driver Level Queries")
-    QueryTask queryTask(String query);
+    ExecutableQuery executableQuery(String query);
 
     /**
-     * Returns an instance of {@link BookmarkManager} used by {@link QueryTask} instances by default.
+     * Returns an instance of {@link BookmarkManager} used by {@link ExecutableQuery} instances by default.
      *
      * @return bookmark manager, must not be {@code null}
-     * @since 5.6
+     * @since 5.7
      */
     @Preview(name = "Driver Level Queries")
-    BookmarkManager queryTaskBookmarkManager();
+    BookmarkManager executableQueryBookmarkManager();
 
     /**
      * Return a flag to indicate whether or not encryption is used for this driver.

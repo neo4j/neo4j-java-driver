@@ -41,7 +41,6 @@ import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
-import org.neo4j.driver.util.Preview;
 
 /**
  * A configuration class to config driver properties.
@@ -76,11 +75,6 @@ public final class Config implements Serializable {
     private static final long serialVersionUID = -4496545746399601108L;
 
     private static final Config EMPTY = builder().build();
-
-    /**
-     * The {@link QueryTask} {@link BookmarkManager}.
-     */
-    private final BookmarkManager queryBookmarkManager;
 
     /**
      * User defined logging
@@ -155,7 +149,6 @@ public final class Config implements Serializable {
     private final MetricsAdapter metricsAdapter;
 
     private Config(ConfigBuilder builder) {
-        this.queryBookmarkManager = builder.queryBookmarkManager;
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
 
@@ -176,21 +169,6 @@ public final class Config implements Serializable {
 
         this.eventLoopThreads = builder.eventLoopThreads;
         this.metricsAdapter = builder.metricsAdapter;
-    }
-
-    /**
-     * A {@link BookmarkManager} implementation for the driver to use on
-     * {@link Driver#queryTask(String)} method and its variants by default.
-     * <p>
-     * Please note that sessions will not use this automatically, but it is possible to enable it explicitly
-     * using {@link SessionConfig.Builder#withBookmarkManager(BookmarkManager)}.
-     *
-     * @return bookmark manager, must not be {@code null}
-     * @since 5.5
-     */
-    @Preview(name = "Driver Level Queries")
-    public BookmarkManager queryTaskBookmarkManager() {
-        return queryBookmarkManager;
     }
 
     /**
@@ -361,8 +339,6 @@ public final class Config implements Serializable {
      * Used to build new config instances
      */
     public static final class ConfigBuilder {
-        private BookmarkManager queryBookmarkManager =
-                BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build());
         private Logging logging = DEV_NULL_LOGGING;
         private boolean logLeakedSessions;
         private int maxConnectionPoolSize = PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
@@ -382,24 +358,6 @@ public final class Config implements Serializable {
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
 
         private ConfigBuilder() {}
-
-        /**
-         * Sets a {@link BookmarkManager} implementation for the driver to use on
-         * {@link Driver#queryTask(String)} method and its variants by default.
-         * <p>
-         * Please note that sessions will not use this automatically, but it is possible to enable it explicitly
-         * using {@link SessionConfig.Builder#withBookmarkManager(BookmarkManager)}.
-         *
-         * @param bookmarkManager bookmark manager, must not be {@code null}
-         * @return this builder
-         * @since 5.5
-         */
-        @Preview(name = "Driver Level Queries")
-        public ConfigBuilder withQueryTaskBookmarkManager(BookmarkManager bookmarkManager) {
-            Objects.requireNonNull(bookmarkManager, "bookmarkManager must not be null");
-            this.queryBookmarkManager = bookmarkManager;
-            return this;
-        }
 
         /**
          * Provide a logging implementation for the driver to use. Java logging framework {@link java.util.logging} with {@link Level#INFO} is used by default.

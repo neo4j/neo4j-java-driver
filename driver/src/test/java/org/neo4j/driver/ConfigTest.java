@@ -52,37 +52,6 @@ import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.testutil.TestUtil;
 
 class ConfigTest {
-    @Test
-    void shouldReturnDefaultBookmarkManager() {
-        // Given
-        var config = Config.defaultConfig();
-
-        // When
-        var manager = config.queryTaskBookmarkManager();
-
-        // Then
-        assertEquals(
-                BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build())
-                        .getClass(),
-                manager.getClass());
-    }
-
-    @Test
-    void shouldUpdateBookmarkManager() {
-        // Given
-        var manager = mock(BookmarkManager.class);
-
-        // When
-        var config = Config.builder().withQueryTaskBookmarkManager(manager).build();
-
-        // Then
-        assertEquals(manager, config.queryTaskBookmarkManager());
-    }
-
-    @Test
-    void shouldNotAllowNullBookmarkManager() {
-        assertThrows(NullPointerException.class, () -> Config.builder().withQueryTaskBookmarkManager(null));
-    }
 
     @Test
     void shouldDefaultToKnownCerts() {

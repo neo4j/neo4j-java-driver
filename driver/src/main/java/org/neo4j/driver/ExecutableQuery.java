@@ -29,22 +29,21 @@ import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.Preview;
 
 /**
- * A task that executes a query in a managed transaction with automatic retries on retryable errors.
+ * An executable query that executes a query in a managed transaction with automatic retries on retryable errors.
  * <p>
  * This is a high-level API for executing a query. There are more advanced APIs available.
  * For instance, {@link Session}, {@link Transaction} and transaction functions that are accessible via
  * methods like {@link Session#executeWrite(TransactionCallback)}, {@link Session#executeWriteWithoutResult(Consumer)}
  * and {@link Session#executeRead(TransactionCallback)} (there are also overloaded options available).
  * <p>
- * Causal consistency is managed via driver's {@link BookmarkManager} that is enabled by default and may
- * be replaced using {@link Config.ConfigBuilder#withQueryTaskBookmarkManager(BookmarkManager)}. It is also possible
+ * Causal consistency is managed via driver's {@link BookmarkManager} that is enabled by default. It is possible
  * to use a different {@link BookmarkManager} or disable it via
  * {@link QueryConfig.Builder#withBookmarkManager(BookmarkManager)} on individual basis.
  * <p>
  * Sample usage:
  * <pre>
  * {@code
- * var eagerResult = driver.queryTask("CREATE (n{field: $value}) RETURN n")
+ * var eagerResult = driver.executableQuery("CREATE (n{field: $value}) RETURN n")
  *         .withParameters(Map.of("value", "5"))
  *         .execute();
  * }
@@ -72,13 +71,13 @@ import org.neo4j.driver.util.Preview;
  * {@code
  * import static java.util.stream.Collectors.*;
  *
- * var averagingLong = driver.queryTask("UNWIND range(0, 5) as N RETURN N")
+ * var averagingLong = driver.executableQuery("UNWIND range(0, 5) as N RETURN N")
  *         .execute(averagingLong(record -> record.get("N").asLong()));
  *
- * var filteredValues = driver.queryTask("UNWIND range(0, 5) as N RETURN N")
+ * var filteredValues = driver.executableQuery("UNWIND range(0, 5) as N RETURN N")
  *         .execute(mapping(record -> record.get("N").asLong(), filtering(value -> value > 2, toList())));
  *
- * var maxValue = driver.queryTask("UNWIND range(0, 5) as N RETURN N")
+ * var maxValue = driver.executableQuery("UNWIND range(0, 5) as N RETURN N")
  *         .execute(mapping(record -> record.get("N").asLong(), maxBy(Long::compare)));
  * }
  * </pre>
@@ -90,32 +89,32 @@ import org.neo4j.driver.util.Preview;
  *
  * private record ResultValue(List<String> keys, Set<Long> values, ResultSummary summary) {}
  *
- * var result = driver.queryTask("UNWIND range(0, 5) as N RETURN N")
+ * var result = driver.executableQuery("UNWIND range(0, 5) as N RETURN N")
  *                     .execute(Collectors.mapping(record -> record.get("N").asLong(), toSet()), ResultValue::new);
  * }
  * </pre>
  *
- * @since 5.5
+ * @since 5.7
  */
 @Preview(name = "Driver Level Queries")
-public interface QueryTask {
+public interface ExecutableQuery {
     /**
      * Sets query parameters.
      *
      * @param parameters parameters map, must not be {@code null}
-     * @return a new query task
+     * @return a new executable query
      */
-    QueryTask withParameters(Map<String, Object> parameters);
+    ExecutableQuery withParameters(Map<String, Object> parameters);
 
     /**
      * Sets {@link QueryConfig}.
      * <p>
-     * By default, {@link QueryTask} has {@link QueryConfig#defaultConfig()} value.
+     * By default, {@link ExecutableQuery} has {@link QueryConfig#defaultConfig()} value.
      *
      * @param config query config, must not be {@code null}
-     * @return a new query task
+     * @return a new executable query
      */
-    QueryTask withConfig(QueryConfig config);
+    ExecutableQuery withConfig(QueryConfig config);
 
     /**
      * Executes query, collects all results eagerly and returns a result.

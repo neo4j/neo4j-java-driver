@@ -65,7 +65,7 @@ public class ExecuteQuery implements TestkitRequest {
             configBuilder.withBookmarkManager(bookmarkManager);
         }
         var params = data.getParams() != null ? data.getParams() : Collections.<String, Object>emptyMap();
-        var eagerResult = driver.queryTask(data.getCypher())
+        var eagerResult = driver.executableQuery(data.getCypher())
                 .withParameters(params)
                 .withConfig(configBuilder.build())
                 .execute();

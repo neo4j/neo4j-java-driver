@@ -27,7 +27,7 @@ import java.util.Optional;
 import org.neo4j.driver.util.Preview;
 
 /**
- * Query configuration used by {@link Driver#queryTask(String)} and its variants.
+ * Query configuration used by {@link Driver#executableQuery(String)} and its variants.
  * @since 5.5
  */
 @Preview(name = "Driver Level Queries")
@@ -116,7 +116,6 @@ public final class QueryConfig implements Serializable {
      * Returns bookmark manager for the query.
      *
      * @param defaultBookmarkManager default bookmark manager to use when none has been configured explicitly,
-     * {@link Config#queryTaskBookmarkManager()} as a default value by the driver
      * @return bookmark manager
      */
     public Optional<BookmarkManager> bookmarkManager(BookmarkManager defaultBookmarkManager) {
