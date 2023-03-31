@@ -61,7 +61,7 @@ public class InternalExecutableQuery implements ExecutableQuery {
         var sessionConfigBuilder = SessionConfig.builder();
         config.database().ifPresent(sessionConfigBuilder::withDatabase);
         config.impersonatedUser().ifPresent(sessionConfigBuilder::withImpersonatedUser);
-        config.bookmarkManager(driver.defaultExecutableQueryBookmarkManager())
+        config.bookmarkManager(driver.executableQueryBookmarkManager())
                 .ifPresent(sessionConfigBuilder::withBookmarkManager);
         var supplier = recordCollector.supplier();
         var accumulator = recordCollector.accumulator();

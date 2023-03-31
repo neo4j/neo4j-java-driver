@@ -82,7 +82,7 @@ public interface Driver extends AutoCloseable {
      * @since 5.7
      */
     @Preview(name = "Driver Level Queries")
-    BookmarkManager defaultExecutableQueryBookmarkManager();
+    BookmarkManager executableQueryBookmarkManager();
 
     /**
      * Return a flag to indicate whether or not encryption is used for this driver.
