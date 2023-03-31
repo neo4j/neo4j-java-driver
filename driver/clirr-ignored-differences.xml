@@ -500,7 +500,7 @@
     <difference>
         <className>org/neo4j/driver/Driver</className>
         <differenceType>7012</differenceType>
-        <method>org.neo4j.driver.BookmarkManager defaultExecutableQueryBookmarkManager()</method>
+        <method>org.neo4j.driver.BookmarkManager executableQueryBookmarkManager()</method>
     </difference>
 
 </differences>
