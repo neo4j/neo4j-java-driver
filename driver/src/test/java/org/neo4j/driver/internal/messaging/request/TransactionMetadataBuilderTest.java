@@ -42,6 +42,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.NotificationCategory;
+import org.neo4j.driver.NotificationConfig;
+import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
 
@@ -105,5 +108,25 @@ public class TransactionMetadataBuilderTest {
         Map<String, Value> metadata =
                 buildMetadata(null, null, defaultDatabase(), WRITE, Collections.emptySet(), null, null, null);
         assertTrue(metadata.isEmpty());
+    }
+
+    @Test
+    void shouldIncludeNotificationConfig() {
+        var metadata = buildMetadata(
+                null,
+                null,
+                defaultDatabase(),
+                WRITE,
+                Collections.emptySet(),
+                null,
+                null,
+                NotificationConfig.defaultConfig()
+                        .enableMinimumSeverity(NotificationSeverity.WARNING)
+                        .disableCategories(Set.of(NotificationCategory.UNSUPPORTED)));
+
+        var expectedMetadata = new HashMap<String, Value>();
+        expectedMetadata.put("notifications_minimum_severity", value("WARNING"));
+        expectedMetadata.put("notifications_disabled_categories", value(Set.of("UNSUPPORTED")));
+        assertEquals(expectedMetadata, metadata);
     }
 }
