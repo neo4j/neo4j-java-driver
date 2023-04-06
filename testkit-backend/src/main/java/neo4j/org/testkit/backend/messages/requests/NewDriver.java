@@ -118,6 +118,7 @@ public class NewDriver implements TestkitRequest {
         configBuilder.withNotificationConfig(
                 toNotificationConfig(data.notificationsMinSeverity, data.notificationsDisabledCategories));
         configBuilder.withDriverMetrics();
+        configBuilder.withLogging(testkitState.getLogging());
         org.neo4j.driver.Driver driver;
         Config config = configBuilder.build();
         try {

@@ -44,6 +44,7 @@ import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.BookmarkManager;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import reactor.core.publisher.Mono;
 
@@ -76,6 +77,7 @@ public class TestkitState {
     private final Map<String, ReactiveTransactionStreamsHolder> transactionIdToReactiveTransactionStreamsHolder =
             new HashMap<>();
     private final Map<String, BookmarkManager> bookmarkManagerIdToBookmarkManager = new HashMap<>();
+    private final Logging logging;
 
     @Getter
     private final Map<String, Exception> errors = new HashMap<>();
@@ -88,8 +90,9 @@ public class TestkitState {
     @Getter
     private final Map<String, CompletableFuture<TestkitCallbackResult>> callbackIdToFuture = new HashMap<>();
 
-    public TestkitState(Consumer<TestkitResponse> responseWriter) {
+    public TestkitState(Consumer<TestkitResponse> responseWriter, Logging logging) {
         this.responseWriter = responseWriter;
+        this.logging = logging;
     }
 
     public String newId() {
@@ -236,6 +239,10 @@ public class TestkitState {
         if (bookmarkManagerIdToBookmarkManager.remove(id) == null) {
             throw new RuntimeException(BOOKMARK_MANAGER_NOT_FOUND_MESSAGE);
         }
+    }
+
+    public Logging getLogging() {
+        return logging;
     }
 
     private <T> String add(T value, Map<String, T> idToT) {
