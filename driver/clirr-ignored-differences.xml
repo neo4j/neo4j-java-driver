@@ -503,4 +503,39 @@
         <method>org.neo4j.driver.BookmarkManager executableQueryBookmarkManager()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/RoutingControl</className>
+        <differenceType>6001</differenceType>
+        <field>WRITERS</field>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/RoutingControl</className>
+        <differenceType>6001</differenceType>
+        <field>READERS</field>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/RoutingControl</className>
+        <differenceType>2000</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/RoutingControl</className>
+        <differenceType>4001</differenceType>
+        <to>java/lang/Comparable</to>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/RoutingControl</className>
+        <differenceType>4001</differenceType>
+        <to>java/lang/constant/Constable</to>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/RoutingControl</className>
+        <differenceType>5001</differenceType>
+        <to>java/lang/Enum</to>
+    </difference>
+
 </differences>

@@ -27,6 +27,7 @@ import org.neo4j.driver.ExecutableQuery;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.RoutingControl;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
 
@@ -77,10 +78,9 @@ public class InternalExecutableQuery implements ExecutableQuery {
                 var summary = result.consume();
                 return resultFinisher.finish(result.keys(), finishedValue, summary);
             };
-            return switch (config.routing()) {
-                case WRITERS -> session.executeWrite(txCallback);
-                case READERS -> session.executeRead(txCallback);
-            };
+            return config.routing().equals(RoutingControl.READ)
+                    ? session.executeRead(txCallback)
+                    : session.executeWrite(txCallback);
         }
     }
 

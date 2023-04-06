@@ -16,24 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver;
+package org.neo4j.driver.internal;
 
-import java.io.Serializable;
-import org.neo4j.driver.internal.InternalRoutingControl;
+import org.neo4j.driver.RoutingControl;
 
-/**
- * Defines routing mode for query.
- * @since 5.5
- */
-public sealed interface RoutingControl extends Serializable permits InternalRoutingControl {
-    /**
-     * Routes to the leader of the cluster.
-     * @since 5.8
-     */
-    RoutingControl WRITE = new InternalRoutingControl("WRITE");
-    /**
-     * Routes to the followers in the cluster.
-     * @since 5.8
-     */
-    RoutingControl READ = new InternalRoutingControl("READ");
-}
+public record InternalRoutingControl(String mode) implements RoutingControl {}

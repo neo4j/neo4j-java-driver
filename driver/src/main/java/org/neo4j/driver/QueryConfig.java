@@ -24,13 +24,11 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Query configuration used by {@link Driver#executableQuery(String)} and its variants.
  * @since 5.5
  */
-@Preview(name = "Driver Level Queries")
 public final class QueryConfig implements Serializable {
     @Serial
     private static final long serialVersionUID = -2632780731598141754L;
@@ -154,7 +152,7 @@ public final class QueryConfig implements Serializable {
      * Builder used to configure {@link QueryConfig} which will be used to execute a query.
      */
     public static final class Builder {
-        private RoutingControl routing = RoutingControl.WRITERS;
+        private RoutingControl routing = RoutingControl.WRITE;
         private String database;
         private String impersonatedUser;
         private BookmarkManager bookmarkManager;

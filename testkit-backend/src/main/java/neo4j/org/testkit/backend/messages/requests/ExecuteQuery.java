@@ -45,8 +45,8 @@ public class ExecuteQuery implements TestkitRequest {
         var routing = data.getConfig().getRouting();
         if (data.getConfig().getRouting() != null) {
             switch (routing) {
-                case "w" -> configBuilder.withRouting(RoutingControl.WRITERS);
-                case "r" -> configBuilder.withRouting(RoutingControl.READERS);
+                case "w" -> configBuilder.withRouting(RoutingControl.WRITE);
+                case "r" -> configBuilder.withRouting(RoutingControl.READ);
                 default -> throw new IllegalArgumentException();
             }
         }

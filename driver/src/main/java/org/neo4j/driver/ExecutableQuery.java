@@ -26,7 +26,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import org.neo4j.driver.internal.EagerResultValue;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.util.Preview;
 
 /**
  * An executable query that executes a query in a managed transaction with automatic retries on retryable errors.
@@ -96,7 +95,6 @@ import org.neo4j.driver.util.Preview;
  *
  * @since 5.7
  */
-@Preview(name = "Driver Level Queries")
 public interface ExecutableQuery {
     /**
      * Sets query parameters.
@@ -166,7 +164,6 @@ public interface ExecutableQuery {
      * @param <T> the final value type
      * @since 5.5
      */
-    @Preview(name = "Driver Level Queries")
     @FunctionalInterface
     interface ResultFinisher<S, T> {
         /**
