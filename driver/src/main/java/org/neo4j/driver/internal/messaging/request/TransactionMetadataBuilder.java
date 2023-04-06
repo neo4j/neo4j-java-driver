@@ -68,6 +68,7 @@ public class TransactionMetadataBuilder {
         boolean databaseNamePresent = databaseName.databaseName().isPresent();
         boolean impersonatedUserPresent = impersonatedUser != null;
         boolean txTypePresent = txType != null;
+        boolean notificationConfigPresent = notificationConfig != null;
 
         if (!bookmarksPresent
                 && !txTimeoutPresent
@@ -75,7 +76,8 @@ public class TransactionMetadataBuilder {
                 && !accessModePresent
                 && !databaseNamePresent
                 && !impersonatedUserPresent
-                && !txTypePresent) {
+                && !txTypePresent
+                && !notificationConfigPresent) {
             return emptyMap();
         }
 
