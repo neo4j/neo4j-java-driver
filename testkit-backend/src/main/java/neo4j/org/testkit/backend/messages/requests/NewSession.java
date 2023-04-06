@@ -85,9 +85,12 @@ public class NewSession implements TestkitRequest {
             TestkitState testkitState,
             BiFunction<DriverHolder, SessionConfig, T> sessionStateProducer,
             Function<T, String> addSessionHolder) {
-        DriverHolder driverHolder = testkitState.getDriverHolder(data.getDriverId());
-        AccessMode formattedAccessMode = data.getAccessMode().equals("r") ? AccessMode.READ : AccessMode.WRITE;
-        SessionConfig.Builder builder = SessionConfig.builder().withDefaultAccessMode(formattedAccessMode);
+        var driverHolder = testkitState.getDriverHolder(data.getDriverId());
+
+        var builder = SessionConfig.builder();
+        Optional.ofNullable(data.getAccessMode())
+                .map(mode -> mode.equals("r") ? AccessMode.READ : AccessMode.WRITE)
+                .ifPresent(builder::withDefaultAccessMode);
 
         Optional.ofNullable(data.bookmarks)
                 .map(bookmarks ->
