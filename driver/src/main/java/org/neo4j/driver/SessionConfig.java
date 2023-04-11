@@ -30,7 +30,6 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.util.Preview;
 import org.reactivestreams.Subscription;
 
 /**
@@ -162,7 +161,6 @@ public final class SessionConfig implements Serializable {
      *
      * @return bookmark implementation
      */
-    @Preview(name = "Bookmark Manager")
     public Optional<BookmarkManager> bookmarkManager() {
         return Optional.ofNullable(bookmarkManager);
     }
@@ -377,7 +375,6 @@ public final class SessionConfig implements Serializable {
          * @param bookmarkManager bookmark manager implementation. Providing {@code null} effectively disables bookmark manager.
          * @return this builder.
          */
-        @Preview(name = "Bookmark Manager")
         public Builder withBookmarkManager(BookmarkManager bookmarkManager) {
             this.bookmarkManager = bookmarkManager;
             return this;
