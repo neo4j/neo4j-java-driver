@@ -19,12 +19,10 @@
 package org.neo4j.driver;
 
 import org.neo4j.driver.internal.Neo4jBookmarkManager;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Setups new instances of {@link BookmarkManager}.
  */
-@Preview(name = "Bookmark Manager")
 public final class BookmarkManagers {
     private BookmarkManagers() {}
     /**
