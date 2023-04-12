@@ -30,10 +30,10 @@ public sealed interface RoutingControl extends Serializable permits InternalRout
      * Routes to the leader of the cluster.
      * @since 5.8
      */
-    RoutingControl WRITE = new InternalRoutingControl("WRITE");
+    RoutingControl WRITE = InternalRoutingControl.WRITE;
     /**
      * Routes to the followers in the cluster.
      * @since 5.8
      */
-    RoutingControl READ = new InternalRoutingControl("READ");
+    RoutingControl READ = InternalRoutingControl.READ;
 }

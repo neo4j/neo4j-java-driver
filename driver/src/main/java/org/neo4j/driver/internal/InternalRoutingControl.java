@@ -18,6 +18,34 @@
  */
 package org.neo4j.driver.internal;
 
+import java.io.Serial;
+import java.util.Objects;
 import org.neo4j.driver.RoutingControl;
 
-public record InternalRoutingControl(String mode) implements RoutingControl {}
+public final class InternalRoutingControl implements RoutingControl {
+    public static final RoutingControl WRITE = new InternalRoutingControl("WRITE");
+    public static final RoutingControl READ = new InternalRoutingControl("READ");
+
+    @Serial
+    private static final long serialVersionUID = 6766432177358809940L;
+
+    private final String mode;
+
+    private InternalRoutingControl(String mode) {
+        Objects.requireNonNull(mode, "mode must not be null");
+        this.mode = mode;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        InternalRoutingControl that = (InternalRoutingControl) o;
+        return mode.equals(that.mode);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(mode);
+    }
+}
