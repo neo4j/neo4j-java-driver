@@ -213,6 +213,10 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return Collections.emptyList();
     }
 
+    List<AsyncCommand<C>> createTestSpecificAsyncCommands() {
+        return Collections.emptyList();
+    }
+
     List<RxCommand<C>> createTestSpecificRxCommands() {
         return Collections.emptyList();
     }
@@ -329,6 +333,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         commands.add(new AsyncWrongQueryWithRetries<>(driver));
 
         commands.add(new AsyncFailingQueryWithRetries<>(driver));
+
+        commands.addAll(createTestSpecificAsyncCommands());
 
         return commands;
     }

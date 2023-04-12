@@ -84,6 +84,23 @@ class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStress
     }
 
     @Override
+    List<AsyncCommand<Context>> createTestSpecificAsyncCommands() {
+        return Arrays.asList(
+                new AsyncReadQuery<>(driver, false),
+                new AsyncReadQuery<>(driver, true),
+                new AsyncReadQueryInTx<>(driver, false),
+                new AsyncReadQueryInTx<>(driver, true),
+                new AsyncWriteQuery<>(this, driver, false),
+                new AsyncWriteQuery<>(this, driver, true),
+                new AsyncWriteQueryInTx<>(this, driver, false),
+                new AsyncWriteQueryInTx<>(this, driver, true),
+                new AsyncWrongQuery<>(driver),
+                new AsyncWrongQueryInTx<>(driver),
+                new AsyncFailingQuery<>(driver),
+                new AsyncFailingQueryInTx<>(driver));
+    }
+
+    @Override
     List<RxCommand<Context>> createTestSpecificRxCommands() {
         return Arrays.asList(
                 new RxReadQuery<>(driver, false),
