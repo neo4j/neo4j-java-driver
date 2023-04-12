@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
-import org.neo4j.driver.internal.messaging.v52.BoltProtocolV52;
+import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
 
 class BoltProtocolUtilTest {
     @Test
@@ -41,7 +41,7 @@ class BoltProtocolUtilTest {
         assertByteBufContains(
                 handshakeBuf(),
                 BOLT_MAGIC_PREAMBLE,
-                (2 << 16) | BoltProtocolV52.VERSION.toInt(),
+                (3 << 16) | BoltProtocolV53.VERSION.toInt(),
                 (2 << 16) | BoltProtocolV44.VERSION.toInt(),
                 BoltProtocolV41.VERSION.toInt(),
                 BoltProtocolV3.VERSION.toInt());
@@ -49,7 +49,7 @@ class BoltProtocolUtilTest {
 
     @Test
     void shouldReturnHandshakeString() {
-        assertEquals("[0x6060b017, 131589, 132100, 260, 3]", handshakeString());
+        assertEquals("[0x6060b017, 197381, 132100, 260, 3]", handshakeString());
     }
 
     @Test

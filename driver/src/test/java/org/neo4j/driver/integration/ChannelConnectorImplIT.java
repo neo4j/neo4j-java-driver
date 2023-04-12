@@ -226,6 +226,7 @@ class ChannelConnectorImplIT {
                 new FakeClock(),
                 RoutingContext.EMPTY,
                 DefaultDomainNameResolver.getInstance(),
+                null,
                 null);
     }
 

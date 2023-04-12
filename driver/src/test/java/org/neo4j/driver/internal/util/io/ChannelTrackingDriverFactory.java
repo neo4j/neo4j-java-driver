@@ -65,7 +65,8 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
             SecurityPlan securityPlan,
             Config config,
             Clock clock,
-            RoutingContext routingContext) {
+            RoutingContext routingContext,
+            String boltAgent) {
         return createChannelTrackingConnector(
                 createRealConnector(settings, securityPlan, config, clock, routingContext));
     }
@@ -90,7 +91,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
             Config config,
             Clock clock,
             RoutingContext routingContext) {
-        return super.createConnector(settings, securityPlan, config, clock, routingContext);
+        return super.createConnector(settings, securityPlan, config, clock, routingContext, null);
     }
 
     private ChannelTrackingConnector createChannelTrackingConnector(ChannelConnector connector) {

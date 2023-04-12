@@ -135,7 +135,7 @@ public class BoltProtocolV51Test {
         ChannelPromise promise = channel.newPromise();
 
         protocol.initializeChannel(
-                "MyDriver/0.0.1", dummyAuthToken(), RoutingContext.EMPTY, promise, null, mock(Clock.class));
+                "MyDriver/0.0.1", null, dummyAuthToken(), RoutingContext.EMPTY, promise, null, mock(Clock.class));
 
         assertThat(channel.outboundMessages(), hasSize(0));
         assertEquals(1, messageDispatcher.queuedHandlersCount());

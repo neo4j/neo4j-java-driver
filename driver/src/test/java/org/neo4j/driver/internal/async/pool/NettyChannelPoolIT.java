@@ -198,6 +198,7 @@ class NettyChannelPoolIT {
                 new FakeClock(),
                 RoutingContext.EMPTY,
                 DefaultDomainNameResolver.getInstance(),
+                null,
                 null);
         var nettyChannelHealthChecker = mock(NettyChannelHealthChecker.class);
         when(nettyChannelHealthChecker.isHealthy(any())).thenAnswer(NettyChannelPoolIT::answer);
