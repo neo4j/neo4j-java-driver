@@ -23,9 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.testutil.TestUtil;
@@ -36,14 +37,18 @@ class QueryConfigTest {
         var config = QueryConfig.defaultConfig();
         var manager = Mockito.mock(BookmarkManager.class);
 
-        assertEquals(RoutingControl.WRITERS, config.routing());
+        assertEquals(RoutingControl.WRITE, config.routing());
         assertTrue(config.database().isEmpty());
         assertTrue(config.impersonatedUser().isEmpty());
         assertEquals(manager, config.bookmarkManager(manager).get());
     }
 
+    static List<RoutingControl> routingControls() {
+        return List.of(RoutingControl.READ, RoutingControl.WRITE);
+    }
+
     @ParameterizedTest
-    @EnumSource(RoutingControl.class)
+    @MethodSource("routingControls")
     void shouldUpdateRouting(RoutingControl routing) {
         var config = QueryConfig.builder().withRouting(routing).build();
         assertEquals(routing, config.routing());

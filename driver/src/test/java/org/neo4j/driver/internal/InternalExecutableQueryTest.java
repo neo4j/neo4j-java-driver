@@ -34,7 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Driver;
@@ -114,8 +114,12 @@ class InternalExecutableQueryTest {
         assertEquals(config, executableQuery.config());
     }
 
+    static List<RoutingControl> routingControls() {
+        return List.of(RoutingControl.READ, RoutingControl.WRITE);
+    }
+
     @ParameterizedTest
-    @EnumSource(RoutingControl.class)
+    @MethodSource("routingControls")
     @SuppressWarnings("unchecked")
     void shouldExecuteAndReturnResult(RoutingControl routingControl) {
         // GIVEN
@@ -126,10 +130,7 @@ class InternalExecutableQueryTest {
         given(driver.session(any(SessionConfig.class))).willReturn(session);
         var txContext = mock(TransactionContext.class);
         BiFunction<Session, TransactionCallback<Object>, Object> executeMethod =
-                switch (routingControl) {
-                    case WRITERS -> Session::executeWrite;
-                    case READERS -> Session::executeRead;
-                };
+                routingControl.equals(RoutingControl.READ) ? Session::executeRead : Session::executeWrite;
         given(executeMethod.apply(session, any())).willAnswer(answer -> {
             TransactionCallback<?> txCallback = answer.getArgument(0);
             return txCallback.execute(txContext);

@@ -78,10 +78,9 @@ The `neo4j-java-driver-all` includes an explicit module declaration ([module-inf
 To run a simple query, the following can be used:
 ```java
 var authToken = AuthTokens.basic("neo4j", "password");
-try (var driver = GraphDatabase.driver("bolt://localhost:7687", authToken); var session = driver.session()) {
-    var result = session.run("CREATE (n)");
-    var summary = result.consume();
-    System.out.println(summary.counters().nodesCreated());
+try (var driver = GraphDatabase.driver("bolt://localhost:7687", authToken)) {
+    var result = driver.executableQuery("CREATE (n)").execute();
+    System.out.println(result.summary().counters().nodesCreated());
 }
 ```
 

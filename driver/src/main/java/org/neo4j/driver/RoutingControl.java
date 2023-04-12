@@ -18,20 +18,22 @@
  */
 package org.neo4j.driver;
 
-import org.neo4j.driver.util.Preview;
+import java.io.Serializable;
+import org.neo4j.driver.internal.InternalRoutingControl;
 
 /**
  * Defines routing mode for query.
  * @since 5.5
  */
-@Preview(name = "Driver Level Queries")
-public enum RoutingControl {
+public sealed interface RoutingControl extends Serializable permits InternalRoutingControl {
     /**
      * Routes to the leader of the cluster.
+     * @since 5.8
      */
-    WRITERS,
+    RoutingControl WRITE = InternalRoutingControl.WRITE;
     /**
      * Routes to the followers in the cluster.
+     * @since 5.8
      */
-    READERS
+    RoutingControl READ = InternalRoutingControl.READ;
 }
