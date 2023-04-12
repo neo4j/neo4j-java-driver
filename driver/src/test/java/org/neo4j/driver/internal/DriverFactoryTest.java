@@ -110,7 +110,7 @@ class DriverFactoryTest {
         createDriver(uri, factory, config);
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
-        assertThat(capturedFactory.newInstance(SessionConfig.defaultConfig()), instanceOf(NetworkSession.class));
+        assertThat(capturedFactory.newInstance(SessionConfig.defaultConfig(), null), instanceOf(NetworkSession.class));
     }
 
     @ParameterizedTest
@@ -123,7 +123,7 @@ class DriverFactoryTest {
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
         assertThat(
-                capturedFactory.newInstance(SessionConfig.defaultConfig()),
+                capturedFactory.newInstance(SessionConfig.defaultConfig(), null),
                 instanceOf(LeakLoggingNetworkSession.class));
     }
 
@@ -210,7 +210,7 @@ class DriverFactoryTest {
     private static ConnectionPool connectionPoolMock() {
         ConnectionPool pool = mock(ConnectionPool.class);
         Connection connection = mock(Connection.class);
-        when(pool.acquire(any(BoltServerAddress.class))).thenReturn(completedFuture(connection));
+        when(pool.acquire(any(BoltServerAddress.class), any())).thenReturn(completedFuture(connection));
         when(pool.close()).thenReturn(completedWithNull());
         return pool;
     }

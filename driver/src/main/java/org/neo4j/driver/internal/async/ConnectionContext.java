@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -39,4 +40,6 @@ public interface ConnectionContext {
     Bookmark rediscoveryBookmark();
 
     String impersonatedUser();
+
+    AuthToken overrideAuthToken();
 }

@@ -51,7 +51,7 @@ import org.neo4j.driver.util.Resource;
  *
  * @since 1.0 (Removed async API to {@link AsyncSession} in 4.0)
  */
-public interface Session extends Resource, QueryRunner {
+public interface Session extends BaseSession, Resource, QueryRunner {
     /**
      * Begin a new <em>unmanaged {@linkplain Transaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To

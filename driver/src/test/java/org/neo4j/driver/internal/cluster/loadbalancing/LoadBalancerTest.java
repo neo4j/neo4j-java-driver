@@ -125,7 +125,7 @@ class LoadBalancerTest {
 
         assertThat(acquired, instanceOf(RoutingConnection.class));
         assertThat(acquired.databaseName().description(), equalTo(databaseName));
-        verify(connectionPool).acquire(A);
+        verify(connectionPool).acquire(A, null);
     }
 
     @Test
@@ -238,7 +238,7 @@ class LoadBalancerTest {
         assertThat(suppressed.length, equalTo(2)); // one for A, one for B
         assertThat(suppressed[0].getMessage(), containsString(A.toString()));
         assertThat(suppressed[1].getMessage(), containsString(B.toString()));
-        verify(connectionPool, times(2)).acquire(any());
+        verify(connectionPool, times(2)).acquire(any(), any());
     }
 
     @Test
@@ -255,7 +255,7 @@ class LoadBalancerTest {
         SecurityException exception =
                 assertThrows(SecurityException.class, () -> await(loadBalancer.supportsMultiDb()));
         assertThat(exception.getMessage(), startsWith("hi there"));
-        verify(connectionPool, times(1)).acquire(any());
+        verify(connectionPool, times(1)).acquire(any(), any());
     }
 
     @Test
@@ -269,7 +269,7 @@ class LoadBalancerTest {
         LoadBalancer loadBalancer = newLoadBalancer(connectionPool, rediscovery);
 
         assertTrue(await(loadBalancer.supportsMultiDb()));
-        verify(connectionPool, times(3)).acquire(any());
+        verify(connectionPool, times(3)).acquire(any(), any());
     }
 
     @Test
@@ -419,7 +419,7 @@ class LoadBalancerTest {
     private static ConnectionPool newConnectionPoolMockWithFailures(
             Set<BoltServerAddress> unavailableAddresses, Function<BoltServerAddress, Throwable> errorAction) {
         ConnectionPool pool = mock(ConnectionPool.class);
-        when(pool.acquire(any(BoltServerAddress.class))).then(invocation -> {
+        when(pool.acquire(any(BoltServerAddress.class), any())).then(invocation -> {
             BoltServerAddress requestedAddress = invocation.getArgument(0);
             if (unavailableAddresses.contains(requestedAddress)) {
                 return Futures.failedFuture(errorAction.apply(requestedAddress));

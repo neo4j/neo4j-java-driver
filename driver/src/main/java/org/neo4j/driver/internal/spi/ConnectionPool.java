@@ -20,13 +20,14 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.net.ServerAddress;
 
 public interface ConnectionPool {
     String CONNECTION_POOL_CLOSED_ERROR_MESSAGE = "Pool closed";
 
-    CompletionStage<Connection> acquire(BoltServerAddress address);
+    CompletionStage<Connection> acquire(BoltServerAddress address, AuthToken overrideAuthToken);
 
     void retainAll(Set<BoltServerAddress> addressesToRetain);
 

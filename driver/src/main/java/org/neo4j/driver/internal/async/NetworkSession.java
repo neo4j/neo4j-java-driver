@@ -26,6 +26,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -70,7 +71,8 @@ public class NetworkSession {
             BookmarkHolder bookmarkHolder,
             String impersonatedUser,
             long fetchSize,
-            Logging logging) {
+            Logging logging,
+            AuthToken overrideAuthToken) {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
@@ -80,8 +82,8 @@ public class NetworkSession {
                 .databaseName()
                 .map(ignored -> CompletableFuture.completedFuture(databaseName))
                 .orElse(new CompletableFuture<>());
-        this.connectionContext =
-                new NetworkSessionConnectionContext(databaseNameFuture, bookmarkHolder.getBookmark(), impersonatedUser);
+        this.connectionContext = new NetworkSessionConnectionContext(
+                databaseNameFuture, bookmarkHolder.getBookmark(), impersonatedUser, overrideAuthToken);
         this.fetchSize = fetchSize;
     }
 
@@ -332,12 +334,17 @@ public class NetworkSession {
         // As only that bookmark could carry extra system bookmarks
         private final Bookmark rediscoveryBookmark;
         private final String impersonatedUser;
+        private final AuthToken authToken;
 
         private NetworkSessionConnectionContext(
-                CompletableFuture<DatabaseName> databaseNameFuture, Bookmark bookmark, String impersonatedUser) {
+                CompletableFuture<DatabaseName> databaseNameFuture,
+                Bookmark bookmark,
+                String impersonatedUser,
+                AuthToken authToken) {
             this.databaseNameFuture = databaseNameFuture;
             this.rediscoveryBookmark = bookmark;
             this.impersonatedUser = impersonatedUser;
+            this.authToken = authToken;
         }
 
         private ConnectionContext contextWithMode(AccessMode mode) {
@@ -363,6 +370,11 @@ public class NetworkSession {
         @Override
         public String impersonatedUser() {
             return impersonatedUser;
+        }
+
+        @Override
+        public AuthToken overrideAuthToken() {
+            return authToken;
         }
     }
 }

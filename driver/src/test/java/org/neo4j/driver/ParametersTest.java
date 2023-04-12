@@ -110,7 +110,8 @@ class ParametersTest {
                 new DefaultBookmarkHolder(),
                 null,
                 UNLIMITED_FETCH_SIZE,
-                DEV_NULL_LOGGING);
+                DEV_NULL_LOGGING,
+                null);
         return new InternalSession(session);
     }
 }

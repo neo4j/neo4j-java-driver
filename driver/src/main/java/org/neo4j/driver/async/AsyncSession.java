@@ -24,6 +24,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Transaction;
@@ -68,7 +69,7 @@ import org.neo4j.driver.Values;
  *
  * @since 4.0
  */
-public interface AsyncSession extends AsyncQueryRunner {
+public interface AsyncSession extends BaseSession, AsyncQueryRunner {
     /**
      * Begin a new <em>unmanaged {@linkplain Transaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To

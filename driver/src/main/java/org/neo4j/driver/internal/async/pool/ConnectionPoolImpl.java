@@ -40,6 +40,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
@@ -115,7 +116,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
     }
 
     @Override
-    public CompletionStage<Connection> acquire(BoltServerAddress address) {
+    public CompletionStage<Connection> acquire(BoltServerAddress address, AuthToken overrideAuthToken) {
         log.trace("Acquiring a connection from pool towards %s", address);
 
         assertNotClosed();
@@ -123,6 +124,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
 
         ListenerEvent acquireEvent = metricsListener.createListenerEvent();
         metricsListener.beforeAcquiringOrCreating(pool.id(), acquireEvent);
+        // todo pass token?
         CompletionStage<Channel> channelFuture = pool.acquire();
 
         return channelFuture.handle((channel, error) -> {

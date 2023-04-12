@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.SessionConfig;
@@ -45,7 +46,7 @@ public class SessionFactoryImpl implements SessionFactory {
     }
 
     @Override
-    public NetworkSession newInstance(SessionConfig sessionConfig) {
+    public NetworkSession newInstance(SessionConfig sessionConfig, AuthToken overrideAuthToken) {
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder(InternalBookmark.from(sessionConfig.bookmarks()));
         return createSession(
                 connectionProvider,
@@ -55,7 +56,8 @@ public class SessionFactoryImpl implements SessionFactory {
                 bookmarkHolder,
                 parseFetchSize(sessionConfig),
                 sessionConfig.impersonatedUser().orElse(null),
-                logging);
+                logging,
+                overrideAuthToken);
     }
 
     private long parseFetchSize(SessionConfig sessionConfig) {
@@ -103,7 +105,8 @@ public class SessionFactoryImpl implements SessionFactory {
             BookmarkHolder bookmarkHolder,
             long fetchSize,
             String impersonatedUser,
-            Logging logging) {
+            Logging logging,
+            AuthToken authToken) {
         return leakedSessionsLoggingEnabled
                 ? new LeakLoggingNetworkSession(
                         connectionProvider,
@@ -113,7 +116,8 @@ public class SessionFactoryImpl implements SessionFactory {
                         bookmarkHolder,
                         impersonatedUser,
                         fetchSize,
-                        logging)
+                        logging,
+                        authToken)
                 : new NetworkSession(
                         connectionProvider,
                         retryLogic,
@@ -122,6 +126,7 @@ public class SessionFactoryImpl implements SessionFactory {
                         bookmarkHolder,
                         impersonatedUser,
                         fetchSize,
-                        logging);
+                        logging,
+                        authToken);
     }
 }

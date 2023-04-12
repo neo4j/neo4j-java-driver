@@ -70,24 +70,24 @@ class ConnectionPoolImplIT {
 
     @Test
     void shouldAcquireConnectionWhenPoolIsEmpty() {
-        Connection connection = await(pool.acquire(neo4j.address()));
+        Connection connection = await(pool.acquire(neo4j.address(), null));
 
         assertNotNull(connection);
     }
 
     @Test
     void shouldAcquireIdleConnection() {
-        Connection connection1 = await(pool.acquire(neo4j.address()));
+        Connection connection1 = await(pool.acquire(neo4j.address(), null));
         await(connection1.release());
 
-        Connection connection2 = await(pool.acquire(neo4j.address()));
+        Connection connection2 = await(pool.acquire(neo4j.address(), null));
         assertNotNull(connection2);
     }
 
     @Test
     void shouldBeAbleToClosePoolInIOWorkerThread() throws Throwable {
         // In the IO worker thread of a channel obtained from a pool, we shall be able to close the pool.
-        CompletionStage<Void> future = pool.acquire(neo4j.address())
+        CompletionStage<Void> future = pool.acquire(neo4j.address(), null)
                 .thenCompose(Connection::release)
                 // This shall close all pools
                 .whenComplete((ignored, error) -> pool.retainAll(Collections.emptySet()));
@@ -99,18 +99,19 @@ class ConnectionPoolImplIT {
     @Test
     void shouldFailToAcquireConnectionToWrongAddress() {
         ServiceUnavailableException e = assertThrows(
-                ServiceUnavailableException.class, () -> await(pool.acquire(new BoltServerAddress("wrong-localhost"))));
+                ServiceUnavailableException.class,
+                () -> await(pool.acquire(new BoltServerAddress("wrong-localhost"), null)));
 
         assertThat(e.getMessage(), startsWith("Unable to connect"));
     }
 
     @Test
     void shouldFailToAcquireWhenPoolClosed() {
-        Connection connection = await(pool.acquire(neo4j.address()));
+        Connection connection = await(pool.acquire(neo4j.address(), null));
         await(connection.release());
         await(pool.close());
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> pool.acquire(neo4j.address()));
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> pool.acquire(neo4j.address(), null));
         assertThat(e.getMessage(), startsWith("Pool closed"));
     }
 
@@ -122,11 +123,11 @@ class ConnectionPoolImplIT {
 
     @Test
     void shouldFailToAcquireConnectionWhenPoolIsClosed() {
-        await(pool.acquire(neo4j.address()));
+        await(pool.acquire(neo4j.address(), null));
         ExtendedChannelPool channelPool = this.pool.getPool(neo4j.address());
         await(channelPool.close());
         ServiceUnavailableException error =
-                assertThrows(ServiceUnavailableException.class, () -> await(pool.acquire(neo4j.address())));
+                assertThrows(ServiceUnavailableException.class, () -> await(pool.acquire(neo4j.address(), null)));
         assertThat(error.getMessage(), containsString("closed while acquiring a connection"));
         assertThat(error.getCause(), instanceOf(IllegalStateException.class));
         assertThat(error.getCause().getMessage(), containsString("FixedChannelPool was closed"));

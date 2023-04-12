@@ -76,7 +76,9 @@ public interface Driver extends AutoCloseable {
      *
      * @return a new {@link Session} object.
      */
-    Session session();
+    default Session session() {
+        return session(Session.class);
+    }
 
     /**
      * Create a new {@link Session} with a specified {@link SessionConfig session configuration}.
@@ -85,7 +87,128 @@ public interface Driver extends AutoCloseable {
      * @return a new {@link Session} object.
      * @see SessionConfig
      */
-    Session session(SessionConfig sessionConfig);
+    default Session session(SessionConfig sessionConfig) {
+        return session(Session.class, sessionConfig);
+    }
+
+    /**
+     * Instantiate a new session of supported type with default {@link SessionConfig session configuration}.
+     * <p>
+     * Supported types are:
+     * <ul>
+     *     <li>{@link org.neo4j.driver.Session} - synchronous session</li>
+     *     <li>{@link org.neo4j.driver.async.AsyncSession} - asynchronous session</li>
+     *     <li>{@link org.neo4j.driver.reactive.RxSession} - reactive session using Reactive Streams API</li>
+     * </ul>
+     * <p>
+     * Sample usage:
+     * <pre>
+     * {@code
+     * var session = driver.session(AsyncSession.class);
+     * }
+     * </pre>
+     *
+     * @param sessionClass session type class, must not be null
+     * @return session instance
+     * @param <T> session type
+     * @throws IllegalArgumentException for unsupported session types
+     * @since 5.2
+     */
+    default <T extends BaseSession> T session(Class<T> sessionClass) {
+        return session(sessionClass, SessionConfig.defaultConfig());
+    }
+
+    /**
+     * Instantiate a new session of a supported type with the supplied {@link AuthToken}.
+     * <p>
+     * This method allows creating a session with a different {@link AuthToken} to the one used on the driver level.
+     * The minimum Bolt protocol version is 5.1. An {@link IllegalStateException} will be emitted on session interaction
+     * for previous Bolt versions.
+     * <p>
+     * Supported types are:
+     * <ul>
+     *     <li>{@link org.neo4j.driver.Session} - synchronous session</li>
+     *     <li>{@link org.neo4j.driver.async.AsyncSession} - asynchronous session</li>
+     *     <li>{@link org.neo4j.driver.reactive.RxSession} - reactive session using Reactive Streams API</li>
+     * </ul>
+     * <p>
+     * Sample usage:
+     * <pre>
+     * {@code
+     * var session = driver.session(AsyncSession.class);
+     * }
+     * </pre>
+     *
+     * @param sessionClass session type class, must not be null
+     * @param sessionAuthToken a token, null will result in driver-level configuration being used
+     * @return session instance
+     * @param <T> session type
+     * @throws IllegalArgumentException for unsupported session types
+     * @since 5.8
+     */
+    default <T extends BaseSession> T session(Class<T> sessionClass, AuthToken sessionAuthToken) {
+        return session(sessionClass, SessionConfig.defaultConfig(), sessionAuthToken);
+    }
+
+    /**
+     * Create a new session of supported type with a specified {@link SessionConfig session configuration}.
+     * <p>
+     * Supported types are:
+     * <ul>
+     *     <li>{@link org.neo4j.driver.Session} - synchronous session</li>
+     *     <li>{@link org.neo4j.driver.async.AsyncSession} - asynchronous session</li>
+     *     <li>{@link org.neo4j.driver.reactive.RxSession} - reactive session using Reactive Streams API</li>
+     * </ul>
+     * <p>
+     * Sample usage:
+     * <pre>
+     * {@code
+     * var session = driver.session(AsyncSession.class);
+     * }
+     * </pre>
+     *
+     * @param sessionClass session type class, must not be null
+     * @param sessionConfig session config, must not be null
+     * @return session instance
+     * @param <T> session type
+     * @throws IllegalArgumentException for unsupported session types
+     * @since 5.2
+     */
+    default <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig) {
+        return session(sessionClass, sessionConfig, null);
+    }
+
+    /**
+     * Instantiate a new session of a supported type with the supplied {@link SessionConfig session configuration} and
+     * {@link AuthToken}.
+     * <p>
+     * This method allows creating a session with a different {@link AuthToken} to the one used on the driver level.
+     * The minimum Bolt protocol version is 5.1. An {@link IllegalStateException} will be emitted on session interaction
+     * for previous Bolt versions.
+     * <p>
+     * Supported types are:
+     * <ul>
+     *     <li>{@link org.neo4j.driver.Session} - synchronous session</li>
+     *     <li>{@link org.neo4j.driver.async.AsyncSession} - asynchronous session</li>
+     *     <li>{@link org.neo4j.driver.reactive.RxSession} - reactive session using Reactive Streams API</li>
+     * </ul>
+     * <p>
+     * Sample usage:
+     * <pre>
+     * {@code
+     * var session = driver.session(AsyncSession.class);
+     * }
+     * </pre>
+     *
+     * @param sessionClass session type class, must not be null
+     * @param sessionConfig session config, must not be null
+     * @param sessionAuthToken a token, null will result in driver-level configuration being used
+     * @return session instance
+     * @param <T> session type
+     * @throws IllegalArgumentException for unsupported session types
+     * @since 5.8
+     */
+    <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig, AuthToken sessionAuthToken);
 
     /**
      * Create a new general purpose {@link RxSession} with default {@link SessionConfig session configuration}.
@@ -95,7 +218,9 @@ public interface Driver extends AutoCloseable {
      *
      * @return a new {@link RxSession} object.
      */
-    RxSession rxSession();
+    default RxSession rxSession() {
+        return session(RxSession.class);
+    }
 
     /**
      * Create a new {@link RxSession} with a specified {@link SessionConfig session configuration}.
@@ -104,7 +229,9 @@ public interface Driver extends AutoCloseable {
      * @param sessionConfig used to customize the session.
      * @return a new {@link RxSession} object.
      */
-    RxSession rxSession(SessionConfig sessionConfig);
+    default RxSession rxSession(SessionConfig sessionConfig) {
+        return session(RxSession.class, sessionConfig);
+    }
 
     /**
      * Create a new general purpose {@link AsyncSession} with default {@link SessionConfig session configuration}.
@@ -114,7 +241,9 @@ public interface Driver extends AutoCloseable {
      *
      * @return a new {@link AsyncSession} object.
      */
-    AsyncSession asyncSession();
+    default AsyncSession asyncSession() {
+        return session(AsyncSession.class);
+    }
 
     /**
      * Create a new {@link AsyncSession} with a specified {@link SessionConfig session configuration}.
@@ -124,7 +253,9 @@ public interface Driver extends AutoCloseable {
      * @param sessionConfig used to customize the session.
      * @return a new {@link AsyncSession} object.
      */
-    AsyncSession asyncSession(SessionConfig sessionConfig);
+    default AsyncSession asyncSession(SessionConfig sessionConfig) {
+        return session(AsyncSession.class, sessionConfig);
+    }
 
     /**
      * Close all the resources assigned to this driver, including open connections and IO threads.

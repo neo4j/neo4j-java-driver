@@ -99,7 +99,8 @@ class LeakLoggingNetworkSessionTest {
                 new DefaultBookmarkHolder(),
                 null,
                 FetchSizeUtil.UNLIMITED_FETCH_SIZE,
-                logging);
+                logging,
+                null);
     }
 
     private static ConnectionProvider connectionProviderMock(boolean openConnection) {

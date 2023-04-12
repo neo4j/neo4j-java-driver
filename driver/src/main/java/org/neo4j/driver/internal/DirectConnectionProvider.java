@@ -19,12 +19,14 @@
 package org.neo4j.driver.internal;
 
 import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
+import org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -46,7 +48,7 @@ public class DirectConnectionProvider implements ConnectionProvider {
     public CompletionStage<Connection> acquireConnection(ConnectionContext context) {
         CompletableFuture<DatabaseName> databaseNameFuture = context.databaseNameFuture();
         databaseNameFuture.complete(DatabaseNameUtil.defaultDatabase());
-        return acquireConnection()
+        return acquirePooledConnection(context.overrideAuthToken())
                 .thenApply(connection -> new DirectConnection(
                         connection,
                         Futures.joinNowOrElseThrow(databaseNameFuture, PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER),
@@ -56,7 +58,7 @@ public class DirectConnectionProvider implements ConnectionProvider {
 
     @Override
     public CompletionStage<Void> verifyConnectivity() {
-        return acquireConnection().thenCompose(Connection::release);
+        return acquirePooledConnection(null).thenCompose(Connection::release);
     }
 
     @Override
@@ -66,9 +68,13 @@ public class DirectConnectionProvider implements ConnectionProvider {
 
     @Override
     public CompletionStage<Boolean> supportsMultiDb() {
-        return acquireConnection().thenCompose(conn -> {
-            boolean supportsMultiDatabase = supportsMultiDatabase(conn);
-            return conn.release().thenApply(ignored -> supportsMultiDatabase);
+        return detectFeature(MultiDatabaseUtil::supportsMultiDatabase);
+    }
+
+    private CompletionStage<Boolean> detectFeature(Function<Connection, Boolean> featureDetectionFunction) {
+        return acquirePooledConnection(null).thenCompose(conn -> {
+            boolean featureDetected = featureDetectionFunction.apply(conn);
+            return conn.release().thenApply(ignored -> featureDetected);
         });
     }
 
@@ -80,7 +86,7 @@ public class DirectConnectionProvider implements ConnectionProvider {
      * Used only for grabbing a connection with the server after hello message.
      * This connection cannot be directly used for running any queries as it is missing necessary connection context
      */
-    private CompletionStage<Connection> acquireConnection() {
-        return connectionPool.acquire(address);
+    private CompletionStage<Connection> acquirePooledConnection(AuthToken authToken) {
+        return connectionPool.acquire(address, authToken);
     }
 }

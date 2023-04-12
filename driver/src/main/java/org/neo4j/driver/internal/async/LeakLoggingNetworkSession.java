@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async;
 import static java.lang.System.lineSeparator;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
@@ -39,8 +40,18 @@ public class LeakLoggingNetworkSession extends NetworkSession {
             BookmarkHolder bookmarkHolder,
             String impersonatedUser,
             long fetchSize,
-            Logging logging) {
-        super(connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, impersonatedUser, fetchSize, logging);
+            Logging logging,
+            AuthToken overrideAuthToken) {
+        super(
+                connectionProvider,
+                retryLogic,
+                databaseName,
+                mode,
+                bookmarkHolder,
+                impersonatedUser,
+                fetchSize,
+                logging,
+                overrideAuthToken);
         this.stackTrace = captureStackTrace();
     }
 

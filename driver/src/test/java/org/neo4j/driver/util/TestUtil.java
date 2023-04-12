@@ -280,7 +280,8 @@ public final class TestUtil {
                 new DefaultBookmarkHolder(bookmark),
                 null,
                 UNLIMITED_FETCH_SIZE,
-                DEV_NULL_LOGGING);
+                DEV_NULL_LOGGING,
+                null);
     }
 
     public static void verifyRunRx(Connection connection, String query) {

@@ -68,8 +68,9 @@ public class FailingConnectionDriverFactory extends DriverFactory {
         }
 
         @Override
-        public CompletionStage<Connection> acquire(BoltServerAddress address) {
-            return delegate.acquire(address).thenApply(connection -> new FailingConnection(connection, nextRunFailure));
+        public CompletionStage<Connection> acquire(BoltServerAddress address, AuthToken overrideAuthToken) {
+            return delegate.acquire(address, overrideAuthToken)
+                    .thenApply(connection -> new FailingConnection(connection, nextRunFailure));
         }
 
         @Override

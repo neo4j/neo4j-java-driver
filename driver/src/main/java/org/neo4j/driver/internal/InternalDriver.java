@@ -18,10 +18,13 @@
  */
 package org.neo4j.driver.internal;
 
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -59,34 +62,24 @@ public class InternalDriver implements Driver {
         this.log = logging.getLog(getClass());
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Session session() {
-        return new InternalSession(newSession(SessionConfig.defaultConfig()));
-    }
-
-    @Override
-    public Session session(SessionConfig sessionConfig) {
-        return new InternalSession(newSession(sessionConfig));
-    }
-
-    @Override
-    public RxSession rxSession() {
-        return new InternalRxSession(newSession(SessionConfig.defaultConfig()));
-    }
-
-    @Override
-    public RxSession rxSession(SessionConfig sessionConfig) {
-        return new InternalRxSession(newSession(sessionConfig));
-    }
-
-    @Override
-    public AsyncSession asyncSession() {
-        return new InternalAsyncSession(newSession(SessionConfig.defaultConfig()));
-    }
-
-    @Override
-    public AsyncSession asyncSession(SessionConfig sessionConfig) {
-        return new InternalAsyncSession(newSession(sessionConfig));
+    public <T extends BaseSession> T session(
+            Class<T> sessionClass, SessionConfig sessionConfig, AuthToken sessionAuthToken) {
+        requireNonNull(sessionClass, "sessionClass must not be null");
+        requireNonNull(sessionClass, "sessionConfig must not be null");
+        T session;
+        if (Session.class.isAssignableFrom(sessionClass)) {
+            session = (T) new InternalSession(newSession(sessionConfig, sessionAuthToken));
+        } else if (AsyncSession.class.isAssignableFrom(sessionClass)) {
+            session = (T) new InternalAsyncSession(newSession(sessionConfig, sessionAuthToken));
+        } else if (RxSession.class.isAssignableFrom(sessionClass)) {
+            session = (T) new InternalRxSession(newSession(sessionConfig, sessionAuthToken));
+        } else {
+            throw new IllegalArgumentException(
+                    String.format("Unsupported session type '%s'", sessionClass.getCanonicalName()));
+        }
+        return session;
     }
 
     @Override
@@ -159,9 +152,9 @@ public class InternalDriver implements Driver {
         return new IllegalStateException("This driver instance has already been closed");
     }
 
-    public NetworkSession newSession(SessionConfig config) {
+    public NetworkSession newSession(SessionConfig config, AuthToken overrideAuthToken) {
         assertOpen();
-        NetworkSession session = sessionFactory.newInstance(config);
+        NetworkSession session = sessionFactory.newInstance(config, overrideAuthToken);
         if (closed.get()) {
             // session does not immediately acquire connection, it is fine to just throw
             throw driverCloseException();

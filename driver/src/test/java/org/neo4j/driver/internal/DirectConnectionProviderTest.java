@@ -110,7 +110,7 @@ class DirectConnectionProviderTest {
         assertThat(acquired1, instanceOf(DirectConnection.class));
         assertSame(connection, ((DirectConnection) acquired1).connection());
 
-        verify(pool).acquire(address);
+        verify(pool).acquire(address, null);
     }
 
     @ParameterizedTest
@@ -155,7 +155,7 @@ class DirectConnectionProviderTest {
         CompletableFuture<Connection>[] otherConnectionFutures = Stream.of(otherConnections)
                 .map(CompletableFuture::completedFuture)
                 .toArray(CompletableFuture[]::new);
-        when(pool.acquire(address)).thenReturn(completedFuture(connection), otherConnectionFutures);
+        when(pool.acquire(address, null)).thenReturn(completedFuture(connection), otherConnectionFutures);
         return pool;
     }
 }

@@ -489,8 +489,8 @@ class ConnectionHandlingIT {
         }
 
         @Override
-        public CompletionStage<Connection> acquire(final BoltServerAddress address) {
-            Connection connection = await(super.acquire(address));
+        public CompletionStage<Connection> acquire(final BoltServerAddress address, AuthToken overrideAuthToken) {
+            Connection connection = await(super.acquire(address, overrideAuthToken));
 
             if (memorize) {
                 // this connection pool returns spies so spies will be returned to the pool

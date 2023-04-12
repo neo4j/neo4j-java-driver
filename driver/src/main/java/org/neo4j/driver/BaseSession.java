@@ -16,19 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver;
 
-import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.async.NetworkSession;
-
-public interface SessionFactory {
-    NetworkSession newInstance(SessionConfig sessionConfig, AuthToken overrideAuthToken);
-
-    CompletionStage<Void> verifyConnectivity();
-
-    CompletionStage<Void> close();
-
-    CompletionStage<Boolean> supportsMultiDb();
-}
+/**
+ * A base interface for sessions, used by {@link Driver#session(Class)} and {@link Driver#session(Class, SessionConfig)}.
+ */
+public interface BaseSession {}

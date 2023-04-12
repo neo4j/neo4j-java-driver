@@ -66,7 +66,7 @@ class UnmanagedTransactionIT {
 
     @BeforeEach
     void setUp() {
-        session = ((InternalDriver) neo4j.driver()).newSession(SessionConfig.defaultConfig());
+        session = ((InternalDriver) neo4j.driver()).newSession(SessionConfig.defaultConfig(), null);
     }
 
     @AfterEach
@@ -207,7 +207,7 @@ class UnmanagedTransactionIT {
                 RetrySettings.DEFAULT,
                 config,
                 SecurityPlanImpl.insecure())) {
-            NetworkSession session = ((InternalDriver) driver).newSession(SessionConfig.defaultConfig());
+            NetworkSession session = ((InternalDriver) driver).newSession(SessionConfig.defaultConfig(), null);
             {
                 UnmanagedTransaction tx = beginTransaction(session);
 

@@ -21,6 +21,7 @@ package org.neo4j.driver.reactive;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
@@ -36,7 +37,7 @@ import org.reactivestreams.Publisher;
  * @see Publisher
  * @since 4.0
  */
-public interface RxSession extends RxQueryRunner {
+public interface RxSession extends BaseSession, RxQueryRunner {
     /**
      * Begin a new <em>unmanaged {@linkplain RxTransaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To
