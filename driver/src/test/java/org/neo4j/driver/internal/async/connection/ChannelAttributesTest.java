@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authContext;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authorizationStateListener;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.connectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.connectionReadTimeout;
@@ -31,6 +32,7 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messa
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.protocolVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAddress;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAgent;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthContext;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthorizationStateListener;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionReadTimeout;
@@ -47,6 +49,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 
 class ChannelAttributesTest {
@@ -194,5 +197,19 @@ class ChannelAttributesTest {
         long timeout = 15L;
         setConnectionReadTimeout(channel, timeout);
         assertThrows(IllegalStateException.class, () -> setConnectionReadTimeout(channel, timeout));
+    }
+
+    @Test
+    void shouldSetAndGetAuthContext() {
+        var context = mock(AuthContext.class);
+        setAuthContext(channel, context);
+        assertEquals(context, authContext(channel));
+    }
+
+    @Test
+    void shouldFailToSetAuthContextTwice() {
+        var context = mock(AuthContext.class);
+        setAuthContext(channel, context);
+        assertThrows(IllegalStateException.class, () -> setAuthContext(channel, context));
     }
 }

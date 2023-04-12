@@ -52,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -72,6 +73,7 @@ import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -115,7 +117,7 @@ class DriverFactoryTest {
         createDriver(uri, factory, config);
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
-        assertThat(capturedFactory.newInstance(SessionConfig.defaultConfig()), instanceOf(NetworkSession.class));
+        assertThat(capturedFactory.newInstance(SessionConfig.defaultConfig(), null), instanceOf(NetworkSession.class));
     }
 
     @ParameterizedTest
@@ -128,7 +130,7 @@ class DriverFactoryTest {
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
         assertThat(
-                capturedFactory.newInstance(SessionConfig.defaultConfig()),
+                capturedFactory.newInstance(SessionConfig.defaultConfig(), null),
                 instanceOf(LeakLoggingNetworkSession.class));
     }
 
@@ -203,7 +205,12 @@ class DriverFactoryTest {
 
         // WHEN
         var driver = driverFactory.newInstance(
-                URI.create("neo4j://localhost:7687"), AuthTokens.none(), Config.defaultConfig(), null, null, null);
+                URI.create("neo4j://localhost:7687"),
+                new StaticAuthTokenManager(AuthTokens.none()),
+                Config.defaultConfig(),
+                null,
+                null,
+                null);
 
         // THEN
         var sessionFactory = ((InternalDriver) driver).getSessionFactory();
@@ -224,7 +231,7 @@ class DriverFactoryTest {
         // WHEN
         var driver = driverFactory.newInstance(
                 URI.create("neo4j://localhost:7687"),
-                AuthTokens.none(),
+                new StaticAuthTokenManager(AuthTokens.none()),
                 Config.defaultConfig(),
                 null,
                 null,
@@ -244,13 +251,13 @@ class DriverFactoryTest {
 
     private Driver createDriver(String uri, DriverFactory driverFactory, Config config) {
         AuthToken auth = AuthTokens.none();
-        return driverFactory.newInstance(URI.create(uri), auth, config);
+        return driverFactory.newInstance(URI.create(uri), new StaticAuthTokenManager(auth), config);
     }
 
     private static ConnectionPool connectionPoolMock() {
         ConnectionPool pool = mock(ConnectionPool.class);
         Connection connection = mock(Connection.class);
-        when(pool.acquire(any(BoltServerAddress.class))).thenReturn(completedFuture(connection));
+        when(pool.acquire(any(BoltServerAddress.class), any(AuthToken.class))).thenReturn(completedFuture(connection));
         when(pool.close()).thenReturn(completedWithNull());
         return pool;
     }
@@ -287,7 +294,7 @@ class DriverFactoryTest {
 
         @Override
         protected ConnectionPool createConnectionPool(
-                AuthToken authToken,
+                AuthTokenManager authTokenManager,
                 SecurityPlan securityPlan,
                 Bootstrap bootstrap,
                 MetricsProvider metricsProvider,
@@ -333,7 +340,7 @@ class DriverFactoryTest {
 
         @Override
         protected ConnectionPool createConnectionPool(
-                AuthToken authToken,
+                AuthTokenManager authTokenManager,
                 SecurityPlan securityPlan,
                 Bootstrap bootstrap,
                 MetricsProvider metricsProvider,
@@ -358,7 +365,7 @@ class DriverFactoryTest {
 
         @Override
         protected ConnectionPool createConnectionPool(
-                AuthToken authToken,
+                AuthTokenManager authTokenManager,
                 SecurityPlan securityPlan,
                 Bootstrap bootstrap,
                 MetricsProvider metricsProvider,

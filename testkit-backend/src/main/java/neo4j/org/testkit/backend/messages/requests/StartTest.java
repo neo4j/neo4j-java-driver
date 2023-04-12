@@ -36,6 +36,7 @@ import reactor.core.publisher.Mono;
 @Getter
 public class StartTest implements TestkitRequest {
     private static final Map<String, String> COMMON_SKIP_PATTERN_TO_REASON = new HashMap<>();
+    private static final Map<String, String> SYNC_SKIP_PATTERN_TO_REASON = new HashMap<>();
     private static final Map<String, String> ASYNC_SKIP_PATTERN_TO_REASON = new HashMap<>();
     private static final Map<String, String> REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON = new HashMap<>();
     private static final Map<String, String> REACTIVE_SKIP_PATTERN_TO_REASON = new HashMap<>();
@@ -84,14 +85,20 @@ public class StartTest implements TestkitRequest {
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query$", skipMessage);
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query_nested$", skipMessage);
+
+        SYNC_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
         skipMessage =
-                "Tests for driver with types.Feature.OPT_IMPLICIT_DEFAULT_ARGUMENTS but without types.Feature.OPT_AUTH_PIPELINING are (currently) missing when logon is supported";
-        COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.TestAuthenticationSchemes[^.]+\\.test_basic_scheme$", skipMessage);
-        COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.TestAuthenticationSchemes[^.]+\\.test_bearer_scheme$", skipMessage);
-        COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.TestAuthenticationSchemes[^.]+\\.test_custom_scheme$", skipMessage);
-        COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.TestAuthenticationSchemes[^.]+\\.test_kerberos_scheme$", skipMessage);
+                "Background handling of pipelined PULL failure might result in manager notification response being sent before respective Testkit request";
+        SYNC_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestAuthTokenManager[^.]+\\.test_notify_on_token_expired_pull_using_session_run$", skipMessage);
+        SYNC_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestAuthTokenManager[^.]+\\.test_notify_on_token_expired_pull_using_tx_run$", skipMessage);
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
+        ASYNC_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestAuthTokenManager[^.]+\\.test_notify_on_token_expired_pull_using_session_run$", skipMessage);
+        ASYNC_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestAuthTokenManager[^.]+\\.test_notify_on_token_expired_pull_using_tx_run$", skipMessage);
 
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
         // Current limitations (require further investigation or bug fixing)
@@ -136,6 +143,10 @@ public class StartTest implements TestkitRequest {
                 "^.*\\.TestTxRun\\.test_broken_transaction_should_not_break_session$", skipMessage);
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestTxRun\\.test_does_not_update_last_bookmark_on_failure$", skipMessage);
+        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestAuthTokenManager[^.]+\\.test_not_notify_on_auth_expired_run_using_tx_run$", skipMessage);
+        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestAuthTokenManager[^.]+\\.test_notify_on_token_expired_run_using_tx_run$", skipMessage);
         skipMessage = "The expects run failure to be reported immediately on run method";
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.Routing[^.]+\\.test_should_fail_when_writing_on_unexpectedly_interrupting_writer_on_run_using_tx_run$",
@@ -156,7 +167,7 @@ public class StartTest implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        return createSkipResponse(COMMON_SKIP_PATTERN_TO_REASON)
+        return createSkipResponse(SYNC_SKIP_PATTERN_TO_REASON)
                 .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
                         ? RunSubTests.builder().build()
                         : RunTest.builder().build());

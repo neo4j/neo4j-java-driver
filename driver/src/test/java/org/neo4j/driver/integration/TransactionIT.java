@@ -350,7 +350,7 @@ class TransactionIT {
         Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
 
         try (Driver driver = factory.newInstance(
-                session.uri(), session.authToken(), config, SecurityPlanImpl.insecure(), null, null)) {
+                session.uri(), session.authTokenManager(), config, SecurityPlanImpl.insecure(), null, null)) {
             ServiceUnavailableException e = assertThrows(ServiceUnavailableException.class, () -> {
                 try (Session session1 = driver.session();
                         Transaction tx = session1.beginTransaction()) {

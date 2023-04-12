@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logging;
@@ -92,9 +93,14 @@ class ConnectionHandlingIT {
     @BeforeEach
     void createDriver() {
         DriverFactoryWithConnectionPool driverFactory = new DriverFactoryWithConnectionPool();
-        AuthToken auth = neo4j.authToken();
+        var authTokenProvider = neo4j.authTokenManager();
         driver = driverFactory.newInstance(
-                neo4j.uri(), auth, Config.builder().withFetchSize(1).build(), SecurityPlanImpl.insecure(), null, null);
+                neo4j.uri(),
+                authTokenProvider,
+                Config.builder().withFetchSize(1).build(),
+                SecurityPlanImpl.insecure(),
+                null,
+                null);
         connectionPool = driverFactory.connectionPool;
         connectionPool.startMemorizing(); // start memorizing connections after driver creation
     }
@@ -447,14 +453,14 @@ class ConnectionHandlingIT {
 
         @Override
         protected ConnectionPool createConnectionPool(
-                AuthToken authToken,
+                AuthTokenManager authTokenManager,
                 SecurityPlan securityPlan,
                 Bootstrap bootstrap,
                 MetricsProvider ignored,
                 Config config,
                 boolean ownsEventLoopGroup,
                 RoutingContext routingContext) {
-            ConnectionSettings connectionSettings = new ConnectionSettings(authToken, "test", 1000);
+            ConnectionSettings connectionSettings = new ConnectionSettings(authTokenManager, "test", 1000);
             PoolSettings poolSettings = new PoolSettings(
                     config.maxConnectionPoolSize(),
                     config.connectionAcquisitionTimeoutMillis(),
@@ -488,8 +494,8 @@ class ConnectionHandlingIT {
         }
 
         @Override
-        public CompletionStage<Connection> acquire(final BoltServerAddress address) {
-            Connection connection = await(super.acquire(address));
+        public CompletionStage<Connection> acquire(final BoltServerAddress address, AuthToken overrideAuthToken) {
+            Connection connection = await(super.acquire(address, overrideAuthToken));
 
             if (memorize) {
                 // this connection pool returns spies so spies will be returned to the pool

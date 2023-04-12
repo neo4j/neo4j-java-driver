@@ -22,10 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.connectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.connectionReadTimeout;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAgent;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthContext;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.outbound.OutboundMessageHandler.NAME;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -34,19 +36,23 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
+import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 
 class HelloResponseHandlerTest {
     private static final String SERVER_AGENT = "Neo4j/4.4.0";
@@ -55,6 +61,7 @@ class HelloResponseHandlerTest {
 
     @BeforeEach
     void setUp() {
+        setAuthContext(channel, new AuthContext(new StaticAuthTokenManager(AuthTokens.none())));
         setMessageDispatcher(channel, new InboundMessageDispatcher(channel, DEV_NULL_LOGGING));
         ChannelPipeline pipeline = channel.pipeline();
         pipeline.addLast(NAME, new OutboundMessageHandler(new MessageFormatV3(), DEV_NULL_LOGGING));
@@ -69,7 +76,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldSetServerAgentOnChannel() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         Map<String, Value> metadata = metadata(SERVER_AGENT, "bolt-1");
         handler.onSuccess(metadata);
@@ -81,7 +88,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldThrowWhenServerVersionNotReturned() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         Map<String, Value> metadata = metadata(null, "bolt-1");
         assertThrows(UntrustedServerException.class, () -> handler.onSuccess(metadata));
@@ -93,7 +100,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldThrowWhenServerVersionIsNull() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         Map<String, Value> metadata = metadata(Values.NULL, "bolt-x");
         assertThrows(UntrustedServerException.class, () -> handler.onSuccess(metadata));
@@ -105,7 +112,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldThrowWhenServerAgentIsUnrecognised() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         Map<String, Value> metadata = metadata("WrongServerVersion", "bolt-x");
         assertThrows(UntrustedServerException.class, () -> handler.onSuccess(metadata));
@@ -117,7 +124,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldSetConnectionIdOnChannel() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         Map<String, Value> metadata = metadata(SERVER_AGENT, "bolt-42");
         handler.onSuccess(metadata);
@@ -129,7 +136,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldThrowWhenConnectionIdNotReturned() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         Map<String, Value> metadata = metadata(SERVER_AGENT, null);
         assertThrows(IllegalStateException.class, () -> handler.onSuccess(metadata));
@@ -141,7 +148,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldThrowWhenConnectionIdIsNull() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         Map<String, Value> metadata = metadata(SERVER_AGENT, Values.NULL);
         assertThrows(IllegalStateException.class, () -> handler.onSuccess(metadata));
@@ -153,7 +160,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldCloseChannelOnFailure() throws Exception {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         RuntimeException error = new RuntimeException("Hi!");
         handler.onFailure(error);
@@ -169,7 +176,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldNotThrowWhenConfigurationHintsAreAbsent() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         Map<String, Value> metadata = metadata(SERVER_AGENT, "bolt-x");
         handler.onSuccess(metadata);
@@ -181,7 +188,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldNotThrowWhenConfigurationHintsAreEmpty() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         Map<String, Value> metadata = metadata(SERVER_AGENT, "bolt-x", value(new HashMap<>()));
         handler.onSuccess(metadata);
@@ -193,7 +200,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldNotThrowWhenConfigurationHintsAreNull() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         Map<String, Value> metadata = metadata(SERVER_AGENT, "bolt-x", Values.NULL);
         handler.onSuccess(metadata);
@@ -205,7 +212,7 @@ class HelloResponseHandlerTest {
     @Test
     void shouldSetConnectionTimeoutHint() {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise);
+        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
         long timeout = 15L;
         Map<String, Value> hints = new HashMap<>();

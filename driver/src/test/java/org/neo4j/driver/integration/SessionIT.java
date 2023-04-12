@@ -129,7 +129,7 @@ class SessionIT {
     @Test
     void shouldHandleNullConfig() {
         // Given
-        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), null);
+        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), null);
         Session session = driver.session();
 
         // When
@@ -782,7 +782,7 @@ class SessionIT {
                 .withEventLoopThreads(1)
                 .build();
 
-        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), config);
+        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config);
 
         for (int i = 0; i < maxPoolSize; i++) {
             driver.session().beginTransaction();
@@ -907,7 +907,7 @@ class SessionIT {
                 .withConnectionTimeout(connectionTimeoutMs, TimeUnit.MILLISECONDS)
                 .build();
 
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), config)) {
+        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config)) {
             Session session1 = driver.session();
             Session session2 = driver.session();
 
@@ -1273,7 +1273,7 @@ class SessionIT {
     private Driver newDriverWithFixedRetries(int maxRetriesCount) {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic(maxRetriesCount);
         return driverFactory.newInstance(
-                neo4j.uri(), neo4j.authToken(), noLoggingConfig(), SecurityPlanImpl.insecure(), null, null);
+                neo4j.uri(), neo4j.authTokenManager(), noLoggingConfig(), SecurityPlanImpl.insecure(), null, null);
     }
 
     private Driver newDriverWithLimitedRetries(int maxTxRetryTime, TimeUnit unit) {
@@ -1281,7 +1281,7 @@ class SessionIT {
                 .withLogging(DEV_NULL_LOGGING)
                 .withMaxTransactionRetryTime(maxTxRetryTime, unit)
                 .build();
-        return GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), config);
+        return GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config);
     }
 
     private static Config noLoggingConfig() {

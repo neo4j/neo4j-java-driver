@@ -26,24 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-import io.netty.util.concurrent.EventExecutorGroup;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URI;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.InternalDriver;
-import org.neo4j.driver.internal.cluster.Rediscovery;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.testutil.TestUtil;
 
 class GraphDatabaseTest {
@@ -106,6 +93,58 @@ class GraphDatabaseTest {
         testFailureWhenServerDoesNotRespond(true);
     }
 
+    @Test
+    void shouldAcceptNullTokenOnFactoryWithString() {
+        AuthToken token = null;
+        GraphDatabase.driver("neo4j://host", token);
+    }
+
+    @Test
+    void shouldAcceptNullTokenOnFactoryWithUri() {
+        AuthToken token = null;
+        GraphDatabase.driver(URI.create("neo4j://host"), token);
+    }
+
+    @Test
+    void shouldAcceptNullTokenOnFactoryWithStringAndConfig() {
+        AuthToken token = null;
+        GraphDatabase.driver("neo4j://host", token, Config.defaultConfig());
+    }
+
+    @Test
+    void shouldAcceptNullTokenOnFactoryWithUriAndConfig() {
+        AuthToken token = null;
+        GraphDatabase.driver(URI.create("neo4j://host"), token, Config.defaultConfig());
+    }
+
+    @Test
+    void shouldRejectNullAuthTokenManagerOnFactoryWithString() {
+        AuthTokenManager manager = null;
+        assertThrows(NullPointerException.class, () -> GraphDatabase.driver("neo4j://host", manager));
+    }
+
+    @Test
+    void shouldRejectNullAuthTokenManagerOnFactoryWithUri() {
+        AuthTokenManager manager = null;
+        assertThrows(NullPointerException.class, () -> GraphDatabase.driver(URI.create("neo4j://host"), manager));
+    }
+
+    @Test
+    void shouldRejectNullAuthTokenManagerOnFactoryWithStringAndConfig() {
+        AuthTokenManager manager = null;
+        assertThrows(
+                NullPointerException.class,
+                () -> GraphDatabase.driver("neo4j://host", manager, Config.defaultConfig()));
+    }
+
+    @Test
+    void shouldRejectNullAuthTokenManagerOnFactoryWithUriAndConfig() {
+        AuthTokenManager manager = null;
+        assertThrows(
+                NullPointerException.class,
+                () -> GraphDatabase.driver(URI.create("neo4j://host"), manager, Config.defaultConfig()));
+    }
+
     private static void testFailureWhenServerDoesNotRespond(boolean encrypted) throws IOException {
         try (ServerSocket server = new ServerSocket(0)) // server that accepts connections but does not reply
         {
@@ -130,27 +169,5 @@ class GraphDatabaseTest {
         }
 
         return configBuilder.build();
-    }
-
-    private static class MockSupplyingDriverFactory extends DriverFactory {
-        private final Iterator<InternalDriver> driverIterator;
-
-        private MockSupplyingDriverFactory(List<InternalDriver> drivers) {
-            driverIterator = drivers.iterator();
-        }
-
-        @Override
-        protected InternalDriver createRoutingDriver(
-                SecurityPlan securityPlan,
-                BoltServerAddress address,
-                ConnectionPool connectionPool,
-                EventExecutorGroup eventExecutorGroup,
-                RoutingSettings routingSettings,
-                RetryLogic retryLogic,
-                MetricsProvider metricsProvider,
-                Supplier<Rediscovery> rediscoverySupplier,
-                Config config) {
-            return driverIterator.next();
-        }
     }
 }

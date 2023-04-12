@@ -48,7 +48,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -258,12 +257,12 @@ class ErrorIT {
                 new ChannelTrackingDriverFactoryWithFailingMessageFormat(new FakeClock());
 
         URI uri = session.uri();
-        AuthToken authToken = session.authToken();
+        var authTokenProvider = session.authTokenManager();
         Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
         Throwable queryError = null;
 
         try (Driver driver =
-                driverFactory.newInstance(uri, authToken, config, SecurityPlanImpl.insecure(), null, null)) {
+                driverFactory.newInstance(uri, authTokenProvider, config, SecurityPlanImpl.insecure(), null, null)) {
             driver.verifyConnectivity();
             try (Session session = driver.session()) {
                 messageFormatSetup.accept(driverFactory.getFailingMessageFormat());

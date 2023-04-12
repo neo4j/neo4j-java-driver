@@ -32,6 +32,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logger;
@@ -88,7 +89,8 @@ public class NetworkSession {
             long fetchSize,
             Logging logging,
             BookmarkManager bookmarkManager,
-            NotificationConfig notificationConfig) {
+            NotificationConfig notificationConfig,
+            AuthToken overrideAuthToken) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         this.connectionProvider = connectionProvider;
@@ -101,8 +103,8 @@ public class NetworkSession {
                 .orElse(new CompletableFuture<>());
         this.bookmarkManager = bookmarkManager;
         this.lastReceivedBookmarks = bookmarks;
-        this.connectionContext =
-                new NetworkSessionConnectionContext(databaseNameFuture, determineBookmarks(false), impersonatedUser);
+        this.connectionContext = new NetworkSessionConnectionContext(
+                databaseNameFuture, determineBookmarks(false), impersonatedUser, overrideAuthToken);
         this.fetchSize = fetchSize;
         this.notificationConfig = notificationConfig;
     }
@@ -402,12 +404,17 @@ public class NetworkSession {
         // As only those bookmarks could carry extra system bookmarks
         private final Set<Bookmark> rediscoveryBookmarks;
         private final String impersonatedUser;
+        private final AuthToken authToken;
 
         private NetworkSessionConnectionContext(
-                CompletableFuture<DatabaseName> databaseNameFuture, Set<Bookmark> bookmarks, String impersonatedUser) {
+                CompletableFuture<DatabaseName> databaseNameFuture,
+                Set<Bookmark> bookmarks,
+                String impersonatedUser,
+                AuthToken authToken) {
             this.databaseNameFuture = databaseNameFuture;
             this.rediscoveryBookmarks = bookmarks;
             this.impersonatedUser = impersonatedUser;
+            this.authToken = authToken;
         }
 
         private ConnectionContext contextWithMode(AccessMode mode) {
@@ -433,6 +440,11 @@ public class NetworkSession {
         @Override
         public String impersonatedUser() {
             return impersonatedUser;
+        }
+
+        @Override
+        public AuthToken overrideAuthToken() {
+            return authToken;
         }
     }
 }

@@ -18,35 +18,41 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authContext;
+
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelPromise;
+import java.time.Clock;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 public class LogonResponseHandler implements ResponseHandler {
-
-    private final ChannelPromise connectionInitializedPromise;
+    private final CompletableFuture<?> future;
     private final Channel channel;
+    private final Clock clock;
 
-    public LogonResponseHandler(ChannelPromise connectionInitializedPromise) {
-        this.connectionInitializedPromise = connectionInitializedPromise;
-        this.channel = connectionInitializedPromise.channel();
+    public LogonResponseHandler(CompletableFuture<?> future, Channel channel, Clock clock) {
+        this.future = requireNonNull(future, "future must not be null");
+        this.channel = requireNonNull(channel, "channel must not be null");
+        this.clock = requireNonNull(clock, "clock must not be null");
     }
 
     @Override
     public void onSuccess(Map<String, Value> metadata) {
-        connectionInitializedPromise.setSuccess();
+        authContext(channel).finishAuth(clock.millis());
+        future.complete(null);
     }
 
     @Override
     public void onFailure(Throwable error) {
-        channel.close().addListener(future -> connectionInitializedPromise.setFailure(error));
+        channel.close().addListener(future -> this.future.completeExceptionally(error));
     }
 
     @Override
     public void onRecord(Value[] fields) {
-        throw new ProtocolException("records not supported");
+        future.completeExceptionally(new ProtocolException("Records are not supported on LOGON"));
     }
 }

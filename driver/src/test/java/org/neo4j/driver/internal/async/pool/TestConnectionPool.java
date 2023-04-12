@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
@@ -57,7 +58,6 @@ public class TestConnectionPool extends ConnectionPoolImpl {
                 mock(ChannelConnector.class),
                 bootstrap,
                 nettyChannelTracker,
-                nettyChannelHealthChecker,
                 settings,
                 metricsListener,
                 logging,
@@ -77,7 +77,7 @@ public class TestConnectionPool extends ConnectionPoolImpl {
             private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
             @Override
-            public CompletionStage<Channel> acquire() {
+            public CompletionStage<Channel> acquire(AuthToken overrideAuthToken) {
                 EmbeddedChannel channel = new EmbeddedChannel();
                 setServerAddress(channel, address);
                 setPoolId(channel, id());
@@ -110,6 +110,11 @@ public class TestConnectionPool extends ConnectionPoolImpl {
             public CompletionStage<Void> close() {
                 isClosed.set(true);
                 return completedWithNull();
+            }
+
+            @Override
+            public NettyChannelHealthChecker healthChecker() {
+                return mock(NettyChannelHealthChecker.class);
             }
         };
         channelPoolsByAddress.put(address, channelPool);

@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.testutil.cc.LocalOrRemoteClusterExtension;
@@ -40,7 +40,7 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
     }
 
     @Override
-    AuthToken authToken() {
+    AuthTokenManager authTokenProvider() {
         return clusterRule.getAuthToken();
     }
 

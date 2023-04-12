@@ -24,7 +24,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
@@ -72,7 +72,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
 
     @Override
     protected final ConnectionPool createConnectionPool(
-            AuthToken authToken,
+            AuthTokenManager authTokenManager,
             SecurityPlan securityPlan,
             Bootstrap bootstrap,
             MetricsProvider metricsProvider,
@@ -80,7 +80,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
             boolean ownsEventLoopGroup,
             RoutingContext routingContext) {
         pool = super.createConnectionPool(
-                authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext);
+                authTokenManager, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext);
         return pool;
     }
 

@@ -53,7 +53,7 @@ class LoggingIT {
 
         Config config = Config.builder().withLogging(logging).build();
 
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), config)) {
+        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config)) {
             // When
             try (Session session = driver.session()) {
                 session.run("CREATE (a {name:'Cat'})");

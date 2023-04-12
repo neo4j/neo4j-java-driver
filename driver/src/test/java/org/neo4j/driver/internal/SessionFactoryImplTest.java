@@ -39,11 +39,11 @@ class SessionFactoryImplTest {
         SessionFactory factory = newSessionFactory(config);
 
         NetworkSession readSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.READ).build());
+                builder().withDefaultAccessMode(AccessMode.READ).build(), null);
         assertThat(readSession, instanceOf(NetworkSession.class));
 
         NetworkSession writeSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.WRITE).build());
+                builder().withDefaultAccessMode(AccessMode.WRITE).build(), null);
         assertThat(writeSession, instanceOf(NetworkSession.class));
     }
 
@@ -56,11 +56,11 @@ class SessionFactoryImplTest {
         SessionFactory factory = newSessionFactory(config);
 
         NetworkSession readSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.READ).build());
+                builder().withDefaultAccessMode(AccessMode.READ).build(), null);
         assertThat(readSession, instanceOf(LeakLoggingNetworkSession.class));
 
         NetworkSession writeSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.WRITE).build());
+                builder().withDefaultAccessMode(AccessMode.WRITE).build(), null);
         assertThat(writeSession, instanceOf(LeakLoggingNetworkSession.class));
     }
 

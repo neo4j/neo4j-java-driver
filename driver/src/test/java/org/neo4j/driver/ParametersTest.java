@@ -112,6 +112,7 @@ class ParametersTest {
                 UNLIMITED_FETCH_SIZE,
                 DEV_NULL_LOGGING,
                 mock(BookmarkManager.class),
+                null,
                 null);
         return new InternalSession(session);
     }

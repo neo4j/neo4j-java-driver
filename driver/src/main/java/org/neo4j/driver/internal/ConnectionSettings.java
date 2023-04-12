@@ -18,25 +18,25 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 
 /**
  * The connection settings are used whenever a new connection is
  * established to a server, specifically as part of the INIT request.
  */
 public class ConnectionSettings {
-    private final AuthToken authToken;
+    private final AuthTokenManager authTokenManager;
     private final String userAgent;
     private final int connectTimeoutMillis;
 
-    public ConnectionSettings(AuthToken authToken, String userAgent, int connectTimeoutMillis) {
-        this.authToken = authToken;
+    public ConnectionSettings(AuthTokenManager authTokenManager, String userAgent, int connectTimeoutMillis) {
+        this.authTokenManager = authTokenManager;
         this.userAgent = userAgent;
         this.connectTimeoutMillis = connectTimeoutMillis;
     }
 
-    public AuthToken authToken() {
-        return authToken;
+    public AuthTokenManager authTokenProvider() {
+        return authTokenManager;
     }
 
     public String userAgent() {

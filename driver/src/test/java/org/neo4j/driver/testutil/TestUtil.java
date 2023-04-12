@@ -269,6 +269,7 @@ public final class TestUtil {
                 UNLIMITED_FETCH_SIZE,
                 DEV_NULL_LOGGING,
                 NoOpBookmarkManager.INSTANCE,
+                null,
                 null);
     }
 

@@ -55,7 +55,7 @@ class DirectDriverIT {
         BoltServerAddress address = new BoltServerAddress(uri);
 
         // When
-        driver = GraphDatabase.driver(uri, neo4j.authToken());
+        driver = GraphDatabase.driver(uri, neo4j.authTokenManager());
 
         // Then
         assertThat(driver, is(directDriverWithAddress(address)));
@@ -68,7 +68,7 @@ class DirectDriverIT {
 
         // When & Then
         IllegalArgumentException e =
-                assertThrows(IllegalArgumentException.class, () -> GraphDatabase.driver(uri, neo4j.authToken()));
+                assertThrows(IllegalArgumentException.class, () -> GraphDatabase.driver(uri, neo4j.authTokenManager()));
         assertThat(e.getMessage(), equalTo("Scheme must not be null"));
     }
 
@@ -79,7 +79,7 @@ class DirectDriverIT {
         BoltServerAddress address = new BoltServerAddress(uri);
 
         // When
-        driver = GraphDatabase.driver(uri, neo4j.authToken());
+        driver = GraphDatabase.driver(uri, neo4j.authTokenManager());
 
         // Then
         assertThat(driver, is(directDriverWithAddress(address)));

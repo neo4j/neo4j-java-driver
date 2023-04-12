@@ -43,6 +43,7 @@ import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
@@ -54,6 +55,7 @@ public class TestkitState {
     private static final String TRANSACTION_NOT_FOUND_MESSAGE = "Could not find transaction";
     private static final String RESULT_NOT_FOUND_MESSAGE = "Could not find result";
     private static final String BOOKMARK_MANAGER_NOT_FOUND_MESSAGE = "Could not find bookmark manager";
+    private static final String AUTH_PROVIDER_NOT_FOUND_MESSAGE = "Could not find authentication provider";
 
     private final Map<String, DriverHolder> driverIdToDriverHolder = new HashMap<>();
 
@@ -78,6 +80,7 @@ public class TestkitState {
             new HashMap<>();
     private final Map<String, BookmarkManager> bookmarkManagerIdToBookmarkManager = new HashMap<>();
     private final Logging logging;
+    private final Map<String, AuthTokenManager> authProviderIdToAuthProvider = new HashMap<>();
 
     @Getter
     private final Map<String, Exception> errors = new HashMap<>();
@@ -243,6 +246,20 @@ public class TestkitState {
 
     public Logging getLogging() {
         return logging;
+    }
+
+    public void addAuthProvider(String id, AuthTokenManager authProvider) {
+        authProviderIdToAuthProvider.put(id, authProvider);
+    }
+
+    public AuthTokenManager getAuthProvider(String id) {
+        return get(id, authProviderIdToAuthProvider, AUTH_PROVIDER_NOT_FOUND_MESSAGE);
+    }
+
+    public void removeAuthProvider(String id) {
+        if (authProviderIdToAuthProvider.remove(id) == null) {
+            throw new RuntimeException(AUTH_PROVIDER_NOT_FOUND_MESSAGE);
+        }
     }
 
     private <T> String add(T value, Map<String, T> idToT) {

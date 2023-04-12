@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authContext;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.boltPatchesListeners;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.protocolVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
@@ -28,6 +30,7 @@ import static org.neo4j.driver.internal.util.MetadataExtractor.extractServer;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
+import java.time.Clock;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -45,10 +48,13 @@ public class HelloResponseHandler implements ResponseHandler {
 
     private final ChannelPromise connectionInitializedPromise;
     private final Channel channel;
+    private final Clock clock;
 
-    public HelloResponseHandler(ChannelPromise connectionInitializedPromise) {
+    public HelloResponseHandler(ChannelPromise connectionInitializedPromise, Clock clock) {
+        requireNonNull(clock, "clock must not be null");
         this.connectionInitializedPromise = connectionInitializedPromise;
         this.channel = connectionInitializedPromise.channel();
+        this.clock = clock;
     }
 
     @Override
@@ -70,6 +76,10 @@ public class HelloResponseHandler implements ResponseHandler {
                 }
             }
 
+            var authContext = authContext(channel);
+            if (authContext.getAuthToken() != null) {
+                authContext.finishAuth(clock.millis());
+            }
             connectionInitializedPromise.setSuccess();
         } catch (Throwable error) {
             onFailure(error);

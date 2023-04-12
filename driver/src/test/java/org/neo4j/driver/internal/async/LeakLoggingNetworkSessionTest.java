@@ -102,6 +102,7 @@ class LeakLoggingNetworkSessionTest {
                 FetchSizeUtil.UNLIMITED_FETCH_SIZE,
                 logging,
                 mock(BookmarkManager.class),
+                null,
                 null);
     }
 

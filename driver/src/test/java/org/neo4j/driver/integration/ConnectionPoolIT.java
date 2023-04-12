@@ -71,7 +71,7 @@ class ConnectionPoolIT {
     @Test
     void shouldRecoverFromDownedServer() throws Throwable {
         // Given a driver
-        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authToken());
+        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager());
 
         // and given I'm heavily using it to acquire and release sessions
         sessionGrabber = new SessionGrabber(driver);
@@ -95,7 +95,7 @@ class ConnectionPoolIT {
                 .withMaxConnectionLifetime(maxConnLifetimeHours, TimeUnit.HOURS)
                 .build();
         driver = driverFactory.newInstance(
-                neo4j.uri(), neo4j.authToken(), config, SecurityPlanImpl.insecure(), null, null);
+                neo4j.uri(), neo4j.authTokenManager(), config, SecurityPlanImpl.insecure(), null, null);
 
         // force driver create channel and return it to the pool
         startAndCloseTransactions(driver, 1);
@@ -137,7 +137,7 @@ class ConnectionPoolIT {
                 .withEventLoopThreads(1)
                 .build();
 
-        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), config);
+        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config);
 
         ClientException e =
                 assertThrows(ClientException.class, () -> startAndCloseTransactions(driver, maxPoolSize + 1));
