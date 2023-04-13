@@ -20,6 +20,7 @@ package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
 import org.neo4j.driver.AuthTokenManager;
+import org.neo4j.driver.util.Preview;
 
 /**
  * The token provided by the {@link AuthTokenManager} has expired.
@@ -33,6 +34,7 @@ import org.neo4j.driver.AuthTokenManager;
  * @see AuthTokenManager
  * @see org.neo4j.driver.GraphDatabase#driver(String, AuthTokenManager)
  */
+@Preview(name = "AuthToken rotation and session auth support")
 public class TokenExpiredRetryableException extends TokenExpiredException implements RetryableException {
     @Serial
     private static final long serialVersionUID = -6672756500436910942L;
