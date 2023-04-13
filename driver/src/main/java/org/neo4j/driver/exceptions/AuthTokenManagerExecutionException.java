@@ -20,6 +20,7 @@ package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
 import org.neo4j.driver.AuthTokenManager;
+import org.neo4j.driver.util.Preview;
 
 /**
  * The {@link org.neo4j.driver.AuthTokenManager} execution has lead to an unexpected result.
@@ -34,6 +35,7 @@ import org.neo4j.driver.AuthTokenManager;
  * </ul>
  * @since 5.8
  */
+@Preview(name = "AuthToken rotation and session auth support")
 public class AuthTokenManagerExecutionException extends ClientException {
     @Serial
     private static final long serialVersionUID = -5964665406806723214L;

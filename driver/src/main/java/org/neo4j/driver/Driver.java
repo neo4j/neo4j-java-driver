@@ -25,6 +25,7 @@ import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 import org.neo4j.driver.util.Experimental;
+import org.neo4j.driver.util.Preview;
 
 /**
  * Accessor for a specific Neo4j graph database.
@@ -174,6 +175,7 @@ public interface Driver extends AutoCloseable {
      * @throws IllegalArgumentException for unsupported session types
      * @since 5.8
      */
+    @Preview(name = "AuthToken rotation and session auth support")
     default <T extends BaseSession> T session(Class<T> sessionClass, AuthToken sessionAuthToken) {
         return session(sessionClass, SessionConfig.defaultConfig(), sessionAuthToken);
     }
@@ -244,6 +246,7 @@ public interface Driver extends AutoCloseable {
      * @throws IllegalArgumentException for unsupported session types
      * @since 5.8
      */
+    @Preview(name = "AuthToken rotation and session auth support")
     <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig, AuthToken sessionAuthToken);
 
     /**

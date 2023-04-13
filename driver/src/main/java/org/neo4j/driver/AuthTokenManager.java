@@ -19,6 +19,7 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.util.Preview;
 
 /**
  * A manager of {@link AuthToken} instances used by the driver.
@@ -39,6 +40,7 @@ import java.util.concurrent.CompletionStage;
  * be done on the calling thread.
  * @since 5.8
  */
+@Preview(name = "AuthToken rotation and session auth support")
 public interface AuthTokenManager {
     /**
      * Returns a {@link CompletionStage} for a valid {@link AuthToken}.
