@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver;
 
-import static java.lang.String.format;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.DriverInfoUtil.driverVersion;
 
 import java.io.File;
 import java.io.Serial;
@@ -345,7 +345,7 @@ public final class Config implements Serializable {
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private long maxConnectionLifetimeMillis = PoolSettings.DEFAULT_MAX_CONNECTION_LIFETIME;
         private long connectionAcquisitionTimeoutMillis = PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
-        private String userAgent = format("neo4j-java/%s", driverVersion());
+        private String userAgent = driverVersion();
         private final SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder =
                 new SecuritySettings.SecuritySettingsBuilder();
         private long routingTablePurgeDelayMillis = RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
@@ -746,23 +746,6 @@ public final class Config implements Serializable {
         public ConfigBuilder withNotificationConfig(NotificationConfig notificationConfig) {
             this.notificationConfig = Objects.requireNonNull(notificationConfig, "notificationConfig must not be null");
             return this;
-        }
-
-        /**
-         * Extracts the driver version from the driver jar MANIFEST.MF file.
-         */
-        private static String driverVersion() {
-            // "Session" is arbitrary - the only thing that matters is that the class we use here is in the
-            // 'org.neo4j.driver' package, because that is where the jar manifest specifies the version.
-            // This is done as part of the build, adding a MANIFEST.MF file to the generated jarfile.
-            Package pkg = Session.class.getPackage();
-            if (pkg != null && pkg.getImplementationVersion() != null) {
-                return pkg.getImplementationVersion();
-            }
-
-            // If there is no version, we're not running from a jar file, but from raw compiled class files.
-            // This should only happen during development, so call the version 'dev'.
-            return "dev";
         }
 
         /**

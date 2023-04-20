@@ -54,6 +54,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
@@ -226,7 +227,8 @@ class ChannelConnectorImplIT {
                 new FakeClock(),
                 RoutingContext.EMPTY,
                 DefaultDomainNameResolver.getInstance(),
-                null);
+                null,
+                BoltAgentUtil.VALUE);
     }
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException {

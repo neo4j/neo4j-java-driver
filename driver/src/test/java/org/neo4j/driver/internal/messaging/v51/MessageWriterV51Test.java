@@ -52,6 +52,7 @@ import java.util.stream.Stream;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -105,6 +106,7 @@ public class MessageWriterV51Test extends AbstractMessageWriterTestBase {
                 // Bolt V3 messages
                 new HelloMessage(
                         "MyDriver/1.2.3",
+                        BoltAgentUtil.VALUE,
                         ((InternalAuthToken) basic("neo4j", "neo4j")).toMap(),
                         Collections.emptyMap(),
                         false,

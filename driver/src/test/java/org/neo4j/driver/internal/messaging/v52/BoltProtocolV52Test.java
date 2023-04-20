@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v4;
+package org.neo4j.driver.internal.messaging.v52;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyMap;
@@ -77,7 +77,6 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -91,16 +90,15 @@ import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.CommitMessage;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
-import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+import org.neo4j.driver.internal.messaging.v51.MessageFormatV51;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
-public final class BoltProtocolV4Test {
-
+public class BoltProtocolV52Test {
     protected static final String QUERY_TEXT = "RETURN $x";
     protected static final Map<String, Value> PARAMS = singletonMap("x", value(42));
     protected static final Query QUERY = new Query(QUERY_TEXT, value(PARAMS));
@@ -113,6 +111,10 @@ public final class BoltProtocolV4Test {
             .withTimeout(ofSeconds(12))
             .withMetadata(singletonMap("key", value(42)))
             .build();
+
+    protected BoltProtocol createProtocol() {
+        return BoltProtocolV52.INSTANCE;
+    }
 
     @BeforeEach
     void beforeEach() {
@@ -132,31 +134,23 @@ public final class BoltProtocolV4Test {
     @Test
     void shouldInitializeChannel() {
         ChannelPromise promise = channel.newPromise();
-        var clock = mock(Clock.class);
-        var time = 1L;
-        when(clock.millis()).thenReturn(time);
-        var authContext = mock(AuthContext.class);
-        when(authContext.getAuthToken()).thenReturn(dummyAuthToken());
-        ChannelAttributes.setAuthContext(channel, authContext);
 
         protocol.initializeChannel(
-                "MyDriver/0.0.1", null, dummyAuthToken(), RoutingContext.EMPTY, promise, null, clock);
+                "MyDriver/0.0.1", null, dummyAuthToken(), RoutingContext.EMPTY, promise, null, mock(Clock.class));
 
-        assertThat(channel.outboundMessages(), hasSize(1));
-        assertThat(channel.outboundMessages().poll(), instanceOf(HelloMessage.class));
+        assertThat(channel.outboundMessages(), hasSize(0));
         assertEquals(1, messageDispatcher.queuedHandlersCount());
-        assertFalse(promise.isDone());
+        assertTrue(promise.isDone());
 
         Map<String, Value> metadata = new HashMap<>();
-        metadata.put("server", value("Neo4j/4.0.0"));
+        metadata.put("server", value("Neo4j/4.4.0"));
         metadata.put("connection_id", value("bolt-42"));
 
         messageDispatcher.handleSuccessMessage(metadata);
 
+        channel.flush();
         assertTrue(promise.isDone());
         assertTrue(promise.isSuccess());
-        verify(clock).millis();
-        verify(authContext).finishAuth(time);
     }
 
     @Test
@@ -166,24 +160,6 @@ public final class BoltProtocolV4Test {
         assertThat(channel.outboundMessages(), hasSize(1));
         assertThat(channel.outboundMessages().poll(), instanceOf(GoodbyeMessage.class));
         assertEquals(1, messageDispatcher.queuedHandlersCount());
-    }
-
-    @Test
-    void shouldFailToInitializeChannelWhenErrorIsReceived() {
-        ChannelPromise promise = channel.newPromise();
-
-        protocol.initializeChannel(
-                "MyDriver/2.2.1", null, dummyAuthToken(), RoutingContext.EMPTY, promise, null, mock(Clock.class));
-
-        assertThat(channel.outboundMessages(), hasSize(1));
-        assertThat(channel.outboundMessages().poll(), instanceOf(HelloMessage.class));
-        assertEquals(1, messageDispatcher.queuedHandlersCount());
-        assertFalse(promise.isDone());
-
-        messageDispatcher.handleFailureMessage("Neo.TransientError.General.DatabaseUnavailable", "Error!");
-
-        assertTrue(promise.isDone());
-        assertFalse(promise.isSuccess());
     }
 
     @Test
@@ -370,19 +346,11 @@ public final class BoltProtocolV4Test {
                 null));
     }
 
-    private BoltProtocol createProtocol() {
-        return BoltProtocolV4.INSTANCE;
-    }
-
     private Class<? extends MessageFormat> expectedMessageFormatType() {
-        return MessageFormatV4.class;
+        return MessageFormatV51.class;
     }
 
-    private static InternalAuthToken dummyAuthToken() {
-        return (InternalAuthToken) AuthTokens.basic("hello", "world");
-    }
-
-    protected void testFailedRunInAutoCommitTxWithWaitingForResponse(
+    private void testFailedRunInAutoCommitTxWithWaitingForResponse(
             Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) throws Exception {
         // Given
         Connection connection = connectionMock(mode, protocol);
@@ -409,7 +377,7 @@ public final class BoltProtocolV4Test {
         assertSame(error, actual);
     }
 
-    protected void testSuccessfulRunInAutoCommitTxWithWaitingForResponse(
+    private void testSuccessfulRunInAutoCommitTxWithWaitingForResponse(
             Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) throws Exception {
         // Given
         Connection connection = connectionMock(mode, protocol);
@@ -433,8 +401,7 @@ public final class BoltProtocolV4Test {
         assertNotNull(cursorFuture.get());
     }
 
-    protected void testRunInUnmanagedTransactionAndWaitForRunResponse(boolean success, AccessMode mode)
-            throws Exception {
+    private void testRunInUnmanagedTransactionAndWaitForRunResponse(boolean success, AccessMode mode) throws Exception {
         // Given
         Connection connection = connectionMock(mode, protocol);
 
@@ -465,7 +432,7 @@ public final class BoltProtocolV4Test {
         }
     }
 
-    protected void testRunAndWaitForRunResponse(boolean autoCommitTx, TransactionConfig config, AccessMode mode)
+    private void testRunAndWaitForRunResponse(boolean autoCommitTx, TransactionConfig config, AccessMode mode)
             throws Exception {
         // Given
         Connection connection = connectionMock(mode, protocol);
@@ -495,7 +462,7 @@ public final class BoltProtocolV4Test {
         assertNotNull(cursorFuture.get());
     }
 
-    protected void testDatabaseNameSupport(boolean autoCommitTx) {
+    private void testDatabaseNameSupport(boolean autoCommitTx) {
         Connection connection = connectionMock("foo", protocol);
         if (autoCommitTx) {
             ResultCursorFactory factory = protocol.runInAutoCommitTransaction(
@@ -511,6 +478,8 @@ public final class BoltProtocolV4Test {
                     connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));
             runHandler.onSuccess(emptyMap());
             await(resultStage);
+            verifySessionRunInvoked(
+                    connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));
         } else {
             CompletionStage<Void> txStage = protocol.beginTransaction(
                     connection, Collections.emptySet(), TransactionConfig.empty(), null, null);
@@ -526,12 +495,12 @@ public final class BoltProtocolV4Test {
 
     private ResponseHandler verifySessionRunInvoked(
             Connection connection,
-            Set<Bookmark> bookmarks,
+            Set<Bookmark> bookmark,
             TransactionConfig config,
             AccessMode mode,
             DatabaseName databaseName) {
         RunWithMetadataMessage runMessage =
-                RunWithMetadataMessage.autoCommitTxRunMessage(QUERY, config, databaseName, mode, bookmarks, null, null);
+                RunWithMetadataMessage.autoCommitTxRunMessage(QUERY, config, databaseName, mode, bookmark, null, null);
         return verifyRunInvoked(connection, runMessage);
     }
 
@@ -558,5 +527,9 @@ public final class BoltProtocolV4Test {
         BeginMessage beginMessage = new BeginMessage(bookmarks, config, databaseName, mode, null, null, null);
         verify(connection).writeAndFlush(eq(beginMessage), beginHandlerCaptor.capture());
         assertThat(beginHandlerCaptor.getValue(), instanceOf(BeginTxResponseHandler.class));
+    }
+
+    private static InternalAuthToken dummyAuthToken() {
+        return (InternalAuthToken) AuthTokens.basic("hello", "world");
     }
 }

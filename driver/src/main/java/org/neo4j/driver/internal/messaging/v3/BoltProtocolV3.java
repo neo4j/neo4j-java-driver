@@ -40,6 +40,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
+import org.neo4j.driver.internal.BoltAgent;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -81,6 +82,7 @@ public class BoltProtocolV3 implements BoltProtocol {
     @Override
     public void initializeChannel(
             String userAgent,
+            BoltAgent boltAgent,
             AuthToken authToken,
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise,
@@ -97,6 +99,7 @@ public class BoltProtocolV3 implements BoltProtocol {
         if (routingContext.isServerRoutingEnabled()) {
             message = new HelloMessage(
                     userAgent,
+                    null,
                     ((InternalAuthToken) authToken).toMap(),
                     routingContext.toMap(),
                     includeDateTimeUtcPatchInHello(),
@@ -104,6 +107,7 @@ public class BoltProtocolV3 implements BoltProtocol {
         } else {
             message = new HelloMessage(
                     userAgent,
+                    null,
                     ((InternalAuthToken) authToken).toMap(),
                     null,
                     includeDateTimeUtcPatchInHello(),

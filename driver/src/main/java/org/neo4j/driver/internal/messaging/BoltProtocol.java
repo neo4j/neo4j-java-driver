@@ -34,6 +34,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.BoltAgent;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cluster.RoutingContext;
@@ -47,6 +48,7 @@ import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
 import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
 import org.neo4j.driver.internal.messaging.v52.BoltProtocolV52;
+import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
 import org.neo4j.driver.internal.spi.Connection;
 
 public interface BoltProtocol {
@@ -61,14 +63,16 @@ public interface BoltProtocol {
      * Initialize channel after it is connected and handshake selected this protocol version.
      *
      * @param userAgent                 the user agent string.
+     * @param boltAgent                 the bolt agent
      * @param authToken                 the authentication token.
      * @param routingContext            the configured routing context
      * @param channelInitializedPromise the promise to be notified when initialization is completed.
-     * @param notificationConfig the notification configuration
-     * @param clock the clock to use
+     * @param notificationConfig        the notification configuration
+     * @param clock                     the clock to use
      */
     void initializeChannel(
             String userAgent,
+            BoltAgent boltAgent,
             AuthToken authToken,
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise,
@@ -189,6 +193,8 @@ public interface BoltProtocol {
             return BoltProtocolV51.INSTANCE;
         } else if (BoltProtocolV52.VERSION.equals(version)) {
             return BoltProtocolV52.INSTANCE;
+        } else if (BoltProtocolV53.VERSION.equals(version)) {
+            return BoltProtocolV53.INSTANCE;
         }
         throw new ClientException("Unknown protocol version: " + version);
     }

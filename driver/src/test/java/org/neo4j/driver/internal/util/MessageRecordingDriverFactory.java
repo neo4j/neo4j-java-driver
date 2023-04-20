@@ -29,6 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.internal.BoltAgent;
+import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.DriverFactory;
@@ -55,7 +57,8 @@ public class MessageRecordingDriverFactory extends DriverFactory {
             SecurityPlan securityPlan,
             Config config,
             Clock clock,
-            RoutingContext routingContext) {
+            RoutingContext routingContext,
+            BoltAgent boltAgent) {
         ChannelPipelineBuilder pipelineBuilder = new MessageRecordingChannelPipelineBuilder();
         return new ChannelConnectorImpl(
                 settings,
@@ -65,7 +68,8 @@ public class MessageRecordingDriverFactory extends DriverFactory {
                 clock,
                 routingContext,
                 DefaultDomainNameResolver.getInstance(),
-                null);
+                null,
+                BoltAgentUtil.VALUE);
     }
 
     private class MessageRecordingChannelPipelineBuilder extends ChannelPipelineBuilderImpl {

@@ -57,6 +57,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DriverFactory;
@@ -467,8 +468,8 @@ class ConnectionHandlingIT {
                     config.maxConnectionLifetimeMillis(),
                     config.idleTimeBeforeConnectionTest());
             Clock clock = createClock();
-            ChannelConnector connector =
-                    super.createConnector(connectionSettings, securityPlan, config, clock, routingContext);
+            ChannelConnector connector = super.createConnector(
+                    connectionSettings, securityPlan, config, clock, routingContext, BoltAgentUtil.VALUE);
             connectionPool = new MemorizingConnectionPool(
                     connector, bootstrap, poolSettings, config.logging(), clock, ownsEventLoopGroup);
             return connectionPool;

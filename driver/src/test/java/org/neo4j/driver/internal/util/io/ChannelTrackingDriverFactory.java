@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
+import org.neo4j.driver.internal.BoltAgent;
+import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
@@ -40,10 +42,6 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
     private final List<Channel> channels = new CopyOnWriteArrayList<>();
     private final int eventLoopThreads;
     private ConnectionPool pool;
-
-    public ChannelTrackingDriverFactory() {
-        this(0, Clock.systemUTC());
-    }
 
     public ChannelTrackingDriverFactory(Clock clock) {
         this(0, clock);
@@ -65,7 +63,8 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
             SecurityPlan securityPlan,
             Config config,
             Clock clock,
-            RoutingContext routingContext) {
+            RoutingContext routingContext,
+            BoltAgent boltAgent) {
         return createChannelTrackingConnector(
                 createRealConnector(settings, securityPlan, config, clock, routingContext));
     }
@@ -90,7 +89,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
             Config config,
             Clock clock,
             RoutingContext routingContext) {
-        return super.createConnector(settings, securityPlan, config, clock, routingContext);
+        return super.createConnector(settings, securityPlan, config, clock, routingContext, BoltAgentUtil.VALUE);
     }
 
     private ChannelTrackingConnector createChannelTrackingConnector(ChannelConnector connector) {
@@ -99,12 +98,6 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
 
     public List<Channel> channels() {
         return new ArrayList<>(channels);
-    }
-
-    public List<Channel> pollChannels() {
-        List<Channel> result = new ArrayList<>(channels);
-        channels.clear();
-        return result;
     }
 
     public int activeChannels(BoltServerAddress address) {

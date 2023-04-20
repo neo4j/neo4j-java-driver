@@ -27,11 +27,17 @@ import java.util.Map;
 import java.util.Objects;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.BoltAgent;
 
 public class HelloMessage extends MessageWithMetadata {
     public static final byte SIGNATURE = 0x01;
 
     private static final String USER_AGENT_METADATA_KEY = "user_agent";
+    private static final String BOLT_AGENT_METADATA_KEY = "bolt_agent";
+    private static final String BOLT_AGENT_PRODUCT_KEY = "product";
+    private static final String BOLT_AGENT_PLATFORM_KEY = "platform";
+    private static final String BOLT_AGENT_LANGUAGE_KEY = "language";
+    private static final String BOLT_AGENT_LANGUAGE_DETAIL_KEY = "language_details";
     private static final String ROUTING_CONTEXT_METADATA_KEY = "routing";
     private static final String PATCH_BOLT_METADATA_KEY = "patch_bolt";
 
@@ -39,11 +45,12 @@ public class HelloMessage extends MessageWithMetadata {
 
     public HelloMessage(
             String userAgent,
+            BoltAgent boltAgent,
             Map<String, Value> authToken,
             Map<String, String> routingContext,
             boolean includeDateTimeUtc,
             NotificationConfig notificationConfig) {
-        super(buildMetadata(userAgent, authToken, routingContext, includeDateTimeUtc, notificationConfig));
+        super(buildMetadata(userAgent, boltAgent, authToken, routingContext, includeDateTimeUtc, notificationConfig));
     }
 
     @Override
@@ -77,12 +84,29 @@ public class HelloMessage extends MessageWithMetadata {
 
     private static Map<String, Value> buildMetadata(
             String userAgent,
+            BoltAgent boltAgent,
             Map<String, Value> authToken,
             Map<String, String> routingContext,
             boolean includeDateTimeUtc,
             NotificationConfig notificationConfig) {
         Map<String, Value> result = new HashMap<>(authToken);
-        result.put(USER_AGENT_METADATA_KEY, value(userAgent));
+        if (userAgent != null) {
+            result.put(USER_AGENT_METADATA_KEY, value(userAgent));
+        }
+        if (boltAgent != null) {
+            var boltAgentMap = new HashMap<String, String>();
+            boltAgentMap.put(BOLT_AGENT_PRODUCT_KEY, boltAgent.product());
+            if (boltAgent.platform() != null) {
+                boltAgentMap.put(BOLT_AGENT_PLATFORM_KEY, boltAgent.platform());
+            }
+            if (boltAgent.language() != null) {
+                boltAgentMap.put(BOLT_AGENT_LANGUAGE_KEY, boltAgent.language());
+            }
+            if (boltAgent.languageDetails() != null) {
+                boltAgentMap.put(BOLT_AGENT_LANGUAGE_DETAIL_KEY, boltAgent.languageDetails());
+            }
+            result.put(BOLT_AGENT_METADATA_KEY, value(boltAgentMap));
+        }
         if (routingContext != null) {
             result.put(ROUTING_CONTEXT_METADATA_KEY, value(routingContext));
         }

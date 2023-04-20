@@ -26,12 +26,14 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromise;
 import java.time.Clock;
 import org.neo4j.driver.NotificationConfig;
+import org.neo4j.driver.internal.BoltAgent;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
 
 public class HandshakeCompletedListener implements ChannelFutureListener {
     private final String userAgent;
+    private final BoltAgent boltAgent;
     private final RoutingContext routingContext;
     private final ChannelPromise connectionInitializedPromise;
     private final NotificationConfig notificationConfig;
@@ -39,12 +41,14 @@ public class HandshakeCompletedListener implements ChannelFutureListener {
 
     public HandshakeCompletedListener(
             String userAgent,
+            BoltAgent boltAgent,
             RoutingContext routingContext,
             ChannelPromise connectionInitializedPromise,
             NotificationConfig notificationConfig,
             Clock clock) {
         requireNonNull(clock, "clock must not be null");
         this.userAgent = requireNonNull(userAgent);
+        this.boltAgent = requireNonNull(boltAgent);
         this.routingContext = routingContext;
         this.connectionInitializedPromise = requireNonNull(connectionInitializedPromise);
         this.notificationConfig = notificationConfig;
@@ -71,6 +75,7 @@ public class HandshakeCompletedListener implements ChannelFutureListener {
                                         authContext.setValidToken(authToken);
                                         protocol.initializeChannel(
                                                 userAgent,
+                                                boltAgent,
                                                 authToken,
                                                 routingContext,
                                                 connectionInitializedPromise,
@@ -81,7 +86,13 @@ public class HandshakeCompletedListener implements ChannelFutureListener {
                                 channel.eventLoop());
             } else {
                 protocol.initializeChannel(
-                        userAgent, null, routingContext, connectionInitializedPromise, notificationConfig, clock);
+                        userAgent,
+                        boltAgent,
+                        null,
+                        routingContext,
+                        connectionInitializedPromise,
+                        notificationConfig,
+                        clock);
             }
         } else {
             connectionInitializedPromise.setFailure(future.cause());

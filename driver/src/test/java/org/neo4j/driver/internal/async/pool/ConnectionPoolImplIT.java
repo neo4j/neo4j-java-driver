@@ -37,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
@@ -59,7 +60,7 @@ class ConnectionPoolImplIT {
     private ConnectionPoolImpl pool;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         pool = newPool();
     }
 
@@ -143,7 +144,8 @@ class ConnectionPoolImplIT {
                 clock,
                 RoutingContext.EMPTY,
                 DefaultDomainNameResolver.getInstance(),
-                null);
+                null,
+                BoltAgentUtil.VALUE);
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap(1);
         return new ConnectionPoolImpl(
