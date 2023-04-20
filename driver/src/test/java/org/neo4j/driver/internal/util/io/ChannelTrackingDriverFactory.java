@@ -41,10 +41,6 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
     private final int eventLoopThreads;
     private ConnectionPool pool;
 
-    public ChannelTrackingDriverFactory() {
-        this(0, Clock.systemUTC());
-    }
-
     public ChannelTrackingDriverFactory(Clock clock) {
         this(0, clock);
     }
@@ -91,7 +87,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
             Config config,
             Clock clock,
             RoutingContext routingContext) {
-        return super.createConnector(settings, securityPlan, config, clock, routingContext, null);
+        return super.createConnector(settings, securityPlan, config, clock, routingContext, "agent");
     }
 
     private ChannelTrackingConnector createChannelTrackingConnector(ChannelConnector connector) {
@@ -100,12 +96,6 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
 
     public List<Channel> channels() {
         return new ArrayList<>(channels);
-    }
-
-    public List<Channel> pollChannels() {
-        List<Channel> result = new ArrayList<>(channels);
-        channels.clear();
-        return result;
     }
 
     public int activeChannels(BoltServerAddress address) {

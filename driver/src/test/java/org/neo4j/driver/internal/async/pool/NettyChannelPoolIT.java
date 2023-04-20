@@ -199,7 +199,7 @@ class NettyChannelPoolIT {
                 RoutingContext.EMPTY,
                 DefaultDomainNameResolver.getInstance(),
                 null,
-                null);
+                "agent");
         var nettyChannelHealthChecker = mock(NettyChannelHealthChecker.class);
         when(nettyChannelHealthChecker.isHealthy(any())).thenAnswer(NettyChannelPoolIT::answer);
         return new NettyChannelPool(

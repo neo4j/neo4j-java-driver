@@ -52,7 +52,7 @@ public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends Channe
                 routingContext,
                 DefaultDomainNameResolver.getInstance(),
                 null,
-                null);
+                "agent");
     }
 
     public FailingMessageFormat getFailingMessageFormat() {

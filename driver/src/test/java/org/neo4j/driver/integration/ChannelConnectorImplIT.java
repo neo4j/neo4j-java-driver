@@ -227,7 +227,7 @@ class ChannelConnectorImplIT {
                 RoutingContext.EMPTY,
                 DefaultDomainNameResolver.getInstance(),
                 null,
-                null);
+                "agent");
     }
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException {

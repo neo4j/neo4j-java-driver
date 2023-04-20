@@ -67,7 +67,7 @@ public class MessageRecordingDriverFactory extends DriverFactory {
                 routingContext,
                 DefaultDomainNameResolver.getInstance(),
                 null,
-                null);
+                "agent");
     }
 
     private class MessageRecordingChannelPipelineBuilder extends ChannelPipelineBuilderImpl {
