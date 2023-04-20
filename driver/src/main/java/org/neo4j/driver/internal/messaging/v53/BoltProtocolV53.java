@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v51;
+package org.neo4j.driver.internal.messaging.v53;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setHelloStage;
@@ -31,13 +31,12 @@ import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.handlers.HelloV51ResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
+import org.neo4j.driver.internal.messaging.v52.BoltProtocolV52;
 
-public class BoltProtocolV51 extends BoltProtocolV5 {
-    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(5, 1);
-    public static final BoltProtocol INSTANCE = new BoltProtocolV51();
+public class BoltProtocolV53 extends BoltProtocolV52 {
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(5, 3);
+    public static final BoltProtocol INSTANCE = new BoltProtocolV53();
 
     @Override
     public void initializeChannel(
@@ -58,9 +57,20 @@ public class BoltProtocolV51 extends BoltProtocolV5 {
 
         if (routingContext.isServerRoutingEnabled()) {
             message = new HelloMessage(
-                    userAgent, null, Collections.emptyMap(), routingContext.toMap(), false, notificationConfig);
+                    boltAgent.equals(userAgent) ? null : userAgent,
+                    boltAgent,
+                    Collections.emptyMap(),
+                    routingContext.toMap(),
+                    false,
+                    notificationConfig);
         } else {
-            message = new HelloMessage(userAgent, null, Collections.emptyMap(), null, false, notificationConfig);
+            message = new HelloMessage(
+                    boltAgent.equals(userAgent) ? null : userAgent,
+                    boltAgent,
+                    Collections.emptyMap(),
+                    null,
+                    false,
+                    notificationConfig);
         }
 
         var helloFuture = new CompletableFuture<Void>();
@@ -73,10 +83,5 @@ public class BoltProtocolV51 extends BoltProtocolV5 {
     @Override
     public BoltProtocolVersion version() {
         return VERSION;
-    }
-
-    @Override
-    public MessageFormat createMessageFormat() {
-        return new MessageFormatV51();
     }
 }

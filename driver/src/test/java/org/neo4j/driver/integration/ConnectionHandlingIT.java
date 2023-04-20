@@ -468,7 +468,7 @@ class ConnectionHandlingIT {
                     config.idleTimeBeforeConnectionTest());
             Clock clock = createClock();
             ChannelConnector connector =
-                    super.createConnector(connectionSettings, securityPlan, config, clock, routingContext);
+                    super.createConnector(connectionSettings, securityPlan, config, clock, routingContext, "agent");
             connectionPool = new MemorizingConnectionPool(
                     connector, bootstrap, poolSettings, config.logging(), clock, ownsEventLoopGroup);
             return connectionPool;

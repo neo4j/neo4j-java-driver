@@ -51,7 +51,8 @@ public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends Channe
                 clock,
                 routingContext,
                 DefaultDomainNameResolver.getInstance(),
-                null);
+                null,
+                "agent");
     }
 
     public FailingMessageFormat getFailingMessageFormat() {

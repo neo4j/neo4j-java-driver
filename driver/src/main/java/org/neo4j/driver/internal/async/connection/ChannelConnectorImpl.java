@@ -42,6 +42,7 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 
 public class ChannelConnectorImpl implements ChannelConnector {
     private final String userAgent;
+    private final String boltAgent;
     private final AuthTokenManager authTokenManager;
     private final RoutingContext routingContext;
     private final SecurityPlan securityPlan;
@@ -60,7 +61,8 @@ public class ChannelConnectorImpl implements ChannelConnector {
             Clock clock,
             RoutingContext routingContext,
             DomainNameResolver domainNameResolver,
-            NotificationConfig notificationConfig) {
+            NotificationConfig notificationConfig,
+            String boltAgent) {
         this(
                 connectionSettings,
                 securityPlan,
@@ -69,7 +71,8 @@ public class ChannelConnectorImpl implements ChannelConnector {
                 clock,
                 routingContext,
                 domainNameResolver,
-                notificationConfig);
+                notificationConfig,
+                boltAgent);
     }
 
     public ChannelConnectorImpl(
@@ -80,8 +83,10 @@ public class ChannelConnectorImpl implements ChannelConnector {
             Clock clock,
             RoutingContext routingContext,
             DomainNameResolver domainNameResolver,
-            NotificationConfig notificationConfig) {
+            NotificationConfig notificationConfig,
+            String boltAgent) {
         this.userAgent = connectionSettings.userAgent();
+        this.boltAgent = requireNonNull(boltAgent);
         this.authTokenManager = connectionSettings.authTokenProvider();
         this.routingContext = routingContext;
         this.connectTimeoutMillis = connectionSettings.connectTimeoutMillis();
@@ -145,6 +150,6 @@ public class ChannelConnectorImpl implements ChannelConnector {
         // add listener that sends an INIT message. connection is now fully established. channel pipeline if fully
         // set to send/receive messages for a selected protocol version
         handshakeCompleted.addListener(new HandshakeCompletedListener(
-                userAgent, routingContext, connectionInitialized, notificationConfig, clock));
+                userAgent, boltAgent, routingContext, connectionInitialized, notificationConfig, clock));
     }
 }
