@@ -42,14 +42,13 @@ class HelloMessageEncoderTest {
         authToken.put("username", value("bob"));
         authToken.put("password", value("secret"));
 
-        encoder.encode(new HelloMessage("MyDriver", "agent", authToken, null, false, null), packer);
+        encoder.encode(new HelloMessage("MyDriver", authToken, null, false, null), packer);
 
         InOrder order = inOrder(packer);
         order.verify(packer).packStructHeader(1, HelloMessage.SIGNATURE);
 
         Map<String, Value> expectedMetadata = new HashMap<>(authToken);
         expectedMetadata.put("user_agent", value("MyDriver"));
-        expectedMetadata.put("bolt_agent", value("agent"));
         order.verify(packer).pack(expectedMetadata);
     }
 
@@ -62,14 +61,13 @@ class HelloMessageEncoderTest {
         Map<String, String> routingContext = new HashMap<>();
         routingContext.put("policy", "eu-fast");
 
-        encoder.encode(new HelloMessage("MyDriver", "agent", authToken, routingContext, false, null), packer);
+        encoder.encode(new HelloMessage("MyDriver", authToken, routingContext, false, null), packer);
 
         InOrder order = inOrder(packer);
         order.verify(packer).packStructHeader(1, HelloMessage.SIGNATURE);
 
         Map<String, Value> expectedMetadata = new HashMap<>(authToken);
         expectedMetadata.put("user_agent", value("MyDriver"));
-        expectedMetadata.put("bolt_agent", value("agent"));
         expectedMetadata.put("routing", value(routingContext));
         order.verify(packer).pack(expectedMetadata);
     }

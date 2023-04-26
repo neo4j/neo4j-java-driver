@@ -55,8 +55,7 @@ public class MessageRecordingDriverFactory extends DriverFactory {
             SecurityPlan securityPlan,
             Config config,
             Clock clock,
-            RoutingContext routingContext,
-            String boltAgent) {
+            RoutingContext routingContext) {
         ChannelPipelineBuilder pipelineBuilder = new MessageRecordingChannelPipelineBuilder();
         return new ChannelConnectorImpl(
                 settings,
@@ -66,8 +65,7 @@ public class MessageRecordingDriverFactory extends DriverFactory {
                 clock,
                 routingContext,
                 DefaultDomainNameResolver.getInstance(),
-                null,
-                "agent");
+                null);
     }
 
     private class MessageRecordingChannelPipelineBuilder extends ChannelPipelineBuilderImpl {

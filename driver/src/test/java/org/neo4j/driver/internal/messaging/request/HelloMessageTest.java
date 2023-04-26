@@ -39,12 +39,10 @@ class HelloMessageTest {
         authToken.put("user", value("Alice"));
         authToken.put("credentials", value("SecretPassword"));
 
-        HelloMessage message =
-                new HelloMessage("MyDriver/1.0.2", "agent", authToken, Collections.emptyMap(), false, null);
+        HelloMessage message = new HelloMessage("MyDriver/1.0.2", authToken, Collections.emptyMap(), false, null);
 
         Map<String, Value> expectedMetadata = new HashMap<>(authToken);
         expectedMetadata.put("user_agent", value("MyDriver/1.0.2"));
-        expectedMetadata.put("bolt_agent", value("agent"));
         expectedMetadata.put("routing", value(Collections.emptyMap()));
         assertEquals(expectedMetadata, message.metadata());
     }
@@ -59,11 +57,10 @@ class HelloMessageTest {
         routingContext.put("region", "China");
         routingContext.put("speed", "Slow");
 
-        HelloMessage message = new HelloMessage("MyDriver/1.0.2", "agent", authToken, routingContext, false, null);
+        HelloMessage message = new HelloMessage("MyDriver/1.0.2", authToken, routingContext, false, null);
 
         Map<String, Value> expectedMetadata = new HashMap<>(authToken);
         expectedMetadata.put("user_agent", value("MyDriver/1.0.2"));
-        expectedMetadata.put("bolt_agent", value("agent"));
         expectedMetadata.put("routing", value(routingContext));
         assertEquals(expectedMetadata, message.metadata());
     }
@@ -74,8 +71,7 @@ class HelloMessageTest {
         authToken.put(PRINCIPAL_KEY, value("Alice"));
         authToken.put(CREDENTIALS_KEY, value("SecretPassword"));
 
-        HelloMessage message =
-                new HelloMessage("MyDriver/1.0.2", "agent", authToken, Collections.emptyMap(), false, null);
+        HelloMessage message = new HelloMessage("MyDriver/1.0.2", authToken, Collections.emptyMap(), false, null);
 
         assertThat(message.toString(), not(containsString("SecretPassword")));
     }

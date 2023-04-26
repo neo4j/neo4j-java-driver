@@ -32,7 +32,6 @@ public class HelloMessage extends MessageWithMetadata {
     public static final byte SIGNATURE = 0x01;
 
     private static final String USER_AGENT_METADATA_KEY = "user_agent";
-    private static final String BOLT_AGENT_METADATA_KEY = "bolt_agent";
     private static final String ROUTING_CONTEXT_METADATA_KEY = "routing";
     private static final String PATCH_BOLT_METADATA_KEY = "patch_bolt";
 
@@ -40,12 +39,11 @@ public class HelloMessage extends MessageWithMetadata {
 
     public HelloMessage(
             String userAgent,
-            String boltAgent,
             Map<String, Value> authToken,
             Map<String, String> routingContext,
             boolean includeDateTimeUtc,
             NotificationConfig notificationConfig) {
-        super(buildMetadata(userAgent, boltAgent, authToken, routingContext, includeDateTimeUtc, notificationConfig));
+        super(buildMetadata(userAgent, authToken, routingContext, includeDateTimeUtc, notificationConfig));
     }
 
     @Override
@@ -79,18 +77,12 @@ public class HelloMessage extends MessageWithMetadata {
 
     private static Map<String, Value> buildMetadata(
             String userAgent,
-            String boltAgent,
             Map<String, Value> authToken,
             Map<String, String> routingContext,
             boolean includeDateTimeUtc,
             NotificationConfig notificationConfig) {
         Map<String, Value> result = new HashMap<>(authToken);
-        if (userAgent != null) {
-            result.put(USER_AGENT_METADATA_KEY, value(userAgent));
-        }
-        if (boltAgent != null) {
-            result.put(BOLT_AGENT_METADATA_KEY, value(boltAgent));
-        }
+        result.put(USER_AGENT_METADATA_KEY, value(userAgent));
         if (routingContext != null) {
             result.put(ROUTING_CONTEXT_METADATA_KEY, value(routingContext));
         }

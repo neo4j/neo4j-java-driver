@@ -61,7 +61,6 @@ import org.neo4j.driver.internal.security.SecurityPlans;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.util.DriverInfoUtil;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddressResolver;
 
@@ -142,8 +141,7 @@ public class DriverFactory {
         Clock clock = createClock();
         ConnectionSettings settings =
                 new ConnectionSettings(authTokenManager, config.userAgent(), config.connectionTimeoutMillis());
-        var boltAgent = DriverInfoUtil.boltAgent();
-        ChannelConnector connector = createConnector(settings, securityPlan, config, clock, routingContext, boltAgent);
+        ChannelConnector connector = createConnector(settings, securityPlan, config, clock, routingContext);
         PoolSettings poolSettings = new PoolSettings(
                 config.maxConnectionPoolSize(),
                 config.connectionAcquisitionTimeoutMillis(),
@@ -181,8 +179,7 @@ public class DriverFactory {
             SecurityPlan securityPlan,
             Config config,
             Clock clock,
-            RoutingContext routingContext,
-            String boltAgent) {
+            RoutingContext routingContext) {
         return new ChannelConnectorImpl(
                 settings,
                 securityPlan,
@@ -190,8 +187,7 @@ public class DriverFactory {
                 clock,
                 routingContext,
                 getDomainNameResolver(),
-                config.notificationConfig(),
-                boltAgent);
+                config.notificationConfig());
     }
 
     private InternalDriver createDriver(

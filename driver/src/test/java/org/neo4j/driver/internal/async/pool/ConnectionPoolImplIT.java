@@ -59,7 +59,7 @@ class ConnectionPoolImplIT {
     private ConnectionPoolImpl pool;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         pool = newPool();
     }
 
@@ -143,8 +143,7 @@ class ConnectionPoolImplIT {
                 clock,
                 RoutingContext.EMPTY,
                 DefaultDomainNameResolver.getInstance(),
-                null,
-                "agent");
+                null);
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap(1);
         return new ConnectionPoolImpl(

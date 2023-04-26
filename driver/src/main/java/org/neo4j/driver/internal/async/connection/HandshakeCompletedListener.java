@@ -32,7 +32,6 @@ import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
 
 public class HandshakeCompletedListener implements ChannelFutureListener {
     private final String userAgent;
-    private final String boltAgent;
     private final RoutingContext routingContext;
     private final ChannelPromise connectionInitializedPromise;
     private final NotificationConfig notificationConfig;
@@ -40,14 +39,12 @@ public class HandshakeCompletedListener implements ChannelFutureListener {
 
     public HandshakeCompletedListener(
             String userAgent,
-            String boltAgent,
             RoutingContext routingContext,
             ChannelPromise connectionInitializedPromise,
             NotificationConfig notificationConfig,
             Clock clock) {
         requireNonNull(clock, "clock must not be null");
         this.userAgent = requireNonNull(userAgent);
-        this.boltAgent = requireNonNull(boltAgent);
         this.routingContext = routingContext;
         this.connectionInitializedPromise = requireNonNull(connectionInitializedPromise);
         this.notificationConfig = notificationConfig;
@@ -74,7 +71,6 @@ public class HandshakeCompletedListener implements ChannelFutureListener {
                                         authContext.setValidToken(authToken);
                                         protocol.initializeChannel(
                                                 userAgent,
-                                                boltAgent,
                                                 authToken,
                                                 routingContext,
                                                 connectionInitializedPromise,
@@ -85,13 +81,7 @@ public class HandshakeCompletedListener implements ChannelFutureListener {
                                 channel.eventLoop());
             } else {
                 protocol.initializeChannel(
-                        userAgent,
-                        boltAgent,
-                        null,
-                        routingContext,
-                        connectionInitializedPromise,
-                        notificationConfig,
-                        clock);
+                        userAgent, null, routingContext, connectionInitializedPromise, notificationConfig, clock);
             }
         } else {
             connectionInitializedPromise.setFailure(future.cause());

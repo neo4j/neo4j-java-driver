@@ -81,7 +81,6 @@ public class BoltProtocolV3 implements BoltProtocol {
     @Override
     public void initializeChannel(
             String userAgent,
-            String boltAgent,
             AuthToken authToken,
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise,
@@ -98,7 +97,6 @@ public class BoltProtocolV3 implements BoltProtocol {
         if (routingContext.isServerRoutingEnabled()) {
             message = new HelloMessage(
                     userAgent,
-                    null,
                     ((InternalAuthToken) authToken).toMap(),
                     routingContext.toMap(),
                     includeDateTimeUtcPatchInHello(),
@@ -106,7 +104,6 @@ public class BoltProtocolV3 implements BoltProtocol {
         } else {
             message = new HelloMessage(
                     userAgent,
-                    null,
                     ((InternalAuthToken) authToken).toMap(),
                     null,
                     includeDateTimeUtcPatchInHello(),

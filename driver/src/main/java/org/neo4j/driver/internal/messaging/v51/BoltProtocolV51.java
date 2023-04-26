@@ -42,7 +42,6 @@ public class BoltProtocolV51 extends BoltProtocolV5 {
     @Override
     public void initializeChannel(
             String userAgent,
-            String boltAgent,
             AuthToken authToken,
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise,
@@ -58,9 +57,9 @@ public class BoltProtocolV51 extends BoltProtocolV5 {
 
         if (routingContext.isServerRoutingEnabled()) {
             message = new HelloMessage(
-                    userAgent, null, Collections.emptyMap(), routingContext.toMap(), false, notificationConfig);
+                    userAgent, Collections.emptyMap(), routingContext.toMap(), false, notificationConfig);
         } else {
-            message = new HelloMessage(userAgent, null, Collections.emptyMap(), null, false, notificationConfig);
+            message = new HelloMessage(userAgent, Collections.emptyMap(), null, false, notificationConfig);
         }
 
         var helloFuture = new CompletableFuture<Void>();

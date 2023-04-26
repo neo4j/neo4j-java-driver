@@ -106,7 +106,6 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                 // Bolt V3 messages
                 new HelloMessage(
                         "MyDriver/1.2.3",
-                        "agent",
                         ((InternalAuthToken) basic("neo4j", "neo4j")).toMap(),
                         Collections.emptyMap(),
                         false,
