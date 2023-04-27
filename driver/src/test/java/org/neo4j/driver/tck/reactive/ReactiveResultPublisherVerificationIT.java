@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.tck.reactive;
 
-import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
-
 import java.time.Duration;
+import java.util.Map;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.reactive.ReactiveResult;
-import org.neo4j.driver.reactive.ReactiveSession;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.reactivestreams.ReactiveResult;
+import org.neo4j.driver.reactivestreams.ReactiveSession;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
@@ -31,7 +31,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import reactor.core.publisher.Mono;
 
-public class ReactiveResultPublisherVerificationIT extends PublisherVerification<ReactiveResult> {
+public class ReactiveResultPublisherVerificationIT extends PublisherVerification<Record> {
     private final Neo4jManager NEO4J = new Neo4jManager();
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
     private static final Duration TIMEOUT_FOR_NO_SIGNALS = Duration.ofSeconds(1);
@@ -63,15 +63,14 @@ public class ReactiveResultPublisherVerificationIT extends PublisherVerification
     }
 
     @Override
-    public Publisher<ReactiveResult> createPublisher(long elements) {
-        ReactiveSession session = driver.session(ReactiveSession.class);
-        return Mono.from(flowPublisherToFlux(session.run("RETURN 1")));
+    public Publisher<Record> createPublisher(long elements) {
+        var session = driver.session(ReactiveSession.class);
+        return Mono.from(session.run("UNWIND range(0, $elements) AS x RETURN x", Map.of("elements", elements - 1)))
+                .flatMapMany(ReactiveResult::records);
     }
 
     @Override
-    public Publisher<ReactiveResult> createFailedPublisher() {
-        ReactiveSession session = driver.session(ReactiveSession.class);
-        // Please note that this publisher fails on run stage.
-        return Mono.from(flowPublisherToFlux(session.run("RETURN 5/0")));
+    public Publisher<Record> createFailedPublisher() {
+        return null;
     }
 }
