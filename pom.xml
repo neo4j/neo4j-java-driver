@@ -36,25 +36,25 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.90.Final</netty-bom.version>
+    <netty-bom.version>4.1.92.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2020.0.30</reactor-bom.version>
+    <reactor-bom.version>2022.0.6</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
-    <mockito-core.version>5.2.0</mockito-core.version>
-    <junit.version>5.9.2</junit.version>
+    <mockito-core.version>5.3.1</mockito-core.version>
+    <junit.version>5.9.3</junit.version>
     <testng-engine.version>1.0.4</testng-engine.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.70</bouncycastle-jdk15on.version>
-    <logback-classic.version>1.4.6</logback-classic.version>
-    <jackson.version>2.14.2</jackson.version>
+    <logback-classic.version>1.4.7</logback-classic.version>
+    <jackson.version>2.15.0</jackson.version>
     <lombok.version>1.18.26</lombok.version>
-    <svm.version>22.3.1</svm.version>
-    <micrometer.version>1.10.5</micrometer.version>
-    <testcontainers.version>1.17.6</testcontainers.version>
-    <build-resources.version>5.6.0</build-resources.version>
+    <svm.version>22.3.2</svm.version>
+    <micrometer.version>1.10.6</micrometer.version>
+    <testcontainers.version>1.18.0</testcontainers.version>
+    <build-resources.version>5.7.0</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
