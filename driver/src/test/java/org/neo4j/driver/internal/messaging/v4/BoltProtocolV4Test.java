@@ -139,8 +139,7 @@ public final class BoltProtocolV4Test {
         when(authContext.getAuthToken()).thenReturn(dummyAuthToken());
         ChannelAttributes.setAuthContext(channel, authContext);
 
-        protocol.initializeChannel(
-                "MyDriver/0.0.1", null, dummyAuthToken(), RoutingContext.EMPTY, promise, null, clock);
+        protocol.initializeChannel("MyDriver/0.0.1", dummyAuthToken(), RoutingContext.EMPTY, promise, null, clock);
 
         assertThat(channel.outboundMessages(), hasSize(1));
         assertThat(channel.outboundMessages().poll(), instanceOf(HelloMessage.class));
@@ -173,7 +172,7 @@ public final class BoltProtocolV4Test {
         ChannelPromise promise = channel.newPromise();
 
         protocol.initializeChannel(
-                "MyDriver/2.2.1", null, dummyAuthToken(), RoutingContext.EMPTY, promise, null, mock(Clock.class));
+                "MyDriver/2.2.1", dummyAuthToken(), RoutingContext.EMPTY, promise, null, mock(Clock.class));
 
         assertThat(channel.outboundMessages(), hasSize(1));
         assertThat(channel.outboundMessages().poll(), instanceOf(HelloMessage.class));

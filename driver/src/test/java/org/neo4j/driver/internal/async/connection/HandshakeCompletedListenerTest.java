@@ -58,7 +58,6 @@ import org.neo4j.driver.internal.util.Futures;
 
 class HandshakeCompletedListenerTest {
     private static final String USER_AGENT = "user-agent";
-    private static final String BOLT_AGENT = "bolt-agent";
 
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
@@ -71,7 +70,7 @@ class HandshakeCompletedListenerTest {
     void shouldFailConnectionInitializedPromiseWhenHandshakeFails() {
         ChannelPromise channelInitializedPromise = channel.newPromise();
         HandshakeCompletedListener listener = new HandshakeCompletedListener(
-                USER_AGENT, BOLT_AGENT, RoutingContext.EMPTY, channelInitializedPromise, null, mock(Clock.class));
+                "user-agent", RoutingContext.EMPTY, channelInitializedPromise, null, mock(Clock.class));
 
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         IOException cause = new IOException("Bad handshake");
@@ -93,7 +92,7 @@ class HandshakeCompletedListenerTest {
         setAuthContext(channel, authContext);
         testWritingOfInitializationMessage(
                 BoltProtocolV3.VERSION,
-                new HelloMessage(USER_AGENT, null, authToken().toMap(), Collections.emptyMap(), false, null),
+                new HelloMessage(USER_AGENT, authToken().toMap(), Collections.emptyMap(), false, null),
                 HelloResponseHandler.class);
         then(authContext).should().initiateAuth(authToken);
     }
@@ -103,7 +102,7 @@ class HandshakeCompletedListenerTest {
         // given
         var channelInitializedPromise = channel.newPromise();
         var listener = new HandshakeCompletedListener(
-                USER_AGENT, BOLT_AGENT, mock(RoutingContext.class), channelInitializedPromise, null, mock(Clock.class));
+                "agent", mock(RoutingContext.class), channelInitializedPromise, null, mock(Clock.class));
         var handshakeCompletedPromise = channel.newPromise();
         handshakeCompletedPromise.setSuccess();
         setProtocolVersion(channel, BoltProtocolV5.VERSION);
@@ -135,7 +134,7 @@ class HandshakeCompletedListenerTest {
 
         ChannelPromise channelInitializedPromise = channel.newPromise();
         HandshakeCompletedListener listener = new HandshakeCompletedListener(
-                USER_AGENT, BOLT_AGENT, RoutingContext.EMPTY, channelInitializedPromise, null, mock(Clock.class));
+                USER_AGENT, RoutingContext.EMPTY, channelInitializedPromise, null, mock(Clock.class));
 
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         handshakeCompletedPromise.setSuccess();
