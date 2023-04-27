@@ -208,7 +208,7 @@
                   </excludes>
                 </filter>
                 <filter>
-                  <artifact>${groupId}:${artifactId}</artifact>
+                  <artifact>${project.groupId}:${project.artifactId}</artifact>
                   <excludes>
                     <exclude>module-info.java</exclude>
                   </excludes>
@@ -232,9 +232,9 @@
             </goals>
             <configuration>
               <target>
-                <unzip src="${project.build.directory}/${artifactId}-${version}-sources.jar" dest="${project.build.directory}/sources-with-module"/>
+                <unzip src="${project.build.directory}/${project.artifactId}-${project.version}-sources.jar" dest="${project.build.directory}/sources-with-module"/>
                 <copy file="${project.basedir}/src/main/jpms/module-info.java" tofile="${project.build.directory}/sources-with-module/module-info.java" />
-                <zip basedir="${project.build.directory}/sources-with-module" destfile="${project.build.directory}/${artifactId}-${version}-sources.jar"/>
+                <zip basedir="${project.build.directory}/sources-with-module" destfile="${project.build.directory}/${project.artifactId}-${project.version}-sources.jar"/>
               </target>
             </configuration>
           </execution>
