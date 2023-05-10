@@ -32,6 +32,7 @@ import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.spi.Connection;
@@ -158,6 +159,11 @@ public class InternalSession extends AbstractQueryRunner implements Session {
             try (Transaction tx = beginTransaction(mode, config)) {
 
                 T result = work.execute(tx);
+                if (result instanceof Result) {
+                    throw new ClientException(String.format(
+                            "%s is not a valid return value, it should be consumed before producing a return value",
+                            Result.class.getName()));
+                }
                 if (tx.isOpen()) {
                     // commit tx if a user has not explicitly committed or rolled back the transaction
                     tx.commit();

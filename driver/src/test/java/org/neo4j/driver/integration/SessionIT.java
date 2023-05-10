@@ -63,9 +63,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
@@ -1188,6 +1191,29 @@ class SessionIT {
         });
         assertThat(error.getMessage(), containsString("Database does not exist. Database name: 'foo'"));
         session.close();
+    }
+
+    @ParameterizedTest
+    @MethodSource("managedTransactionsReturningResult")
+    void shouldErrorWhenResultIsReturned(Function<Session, Result> fn) {
+        // GIVEN
+        var session = neo4j.driver().session();
+
+        // WHEN & THEN
+        var error = assertThrows(ClientException.class, () -> fn.apply(session));
+        assertEquals(
+                "org.neo4j.driver.Result is not a valid return value, it should be consumed before producing a return value",
+                error.getMessage());
+        session.close();
+    }
+
+    @SuppressWarnings("deprecation")
+    static List<Function<Session, Result>> managedTransactionsReturningResult() {
+        return List.of(
+                session -> session.writeTransaction(tx -> tx.run("RETURN 1")),
+                session -> session.readTransaction(tx -> tx.run("RETURN 1")),
+                session -> session.executeWrite(tx -> tx.run("RETURN 1")),
+                session -> session.executeRead(tx -> tx.run("RETURN 1")));
     }
 
     @SuppressWarnings("deprecation")

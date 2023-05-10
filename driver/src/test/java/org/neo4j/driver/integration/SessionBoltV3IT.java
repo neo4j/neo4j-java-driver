@@ -248,7 +248,7 @@ class SessionBoltV3IT {
         Session session = driver.session();
         Bookmark initialBookmark = session.lastBookmark();
 
-        session.writeTransaction(tx -> tx.run("CREATE ()"));
+        session.writeTransaction(tx -> tx.run("CREATE ()").consume());
         Bookmark bookmark1 = session.lastBookmark();
         assertNotNull(bookmark1);
         assertNotEquals(initialBookmark, bookmark1);
@@ -259,7 +259,7 @@ class SessionBoltV3IT {
         assertNotEquals(initialBookmark, bookmark2);
         assertNotEquals(bookmark1, bookmark2);
 
-        session.writeTransaction(tx -> tx.run("CREATE ()"));
+        session.writeTransaction(tx -> tx.run("CREATE ()").consume());
         Bookmark bookmark3 = session.lastBookmark();
         assertNotNull(bookmark3);
         assertNotEquals(initialBookmark, bookmark3);

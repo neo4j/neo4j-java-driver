@@ -27,10 +27,13 @@ import java.util.function.Function;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactivestreams.ReactiveResult;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -90,8 +93,25 @@ public abstract class AbstractReactiveSession<S> {
                 tx -> Mono.fromDirect(closeTransaction(tx, false)).subscribe());
     }
 
+    @SuppressWarnings("deprecation")
     protected <T> Publisher<T> runTransaction(
             AccessMode mode, Function<S, ? extends Publisher<T>> work, TransactionConfig config) {
+        work = work.andThen(publisher -> Flux.from(publisher).map(value -> {
+            if (value instanceof ReactiveResult) {
+                throw new ClientException(String.format(
+                        "%s is not a valid return value, it should be consumed before producing a return value",
+                        ReactiveResult.class.getName()));
+            } else if (value instanceof org.neo4j.driver.reactive.ReactiveResult) {
+                throw new ClientException(String.format(
+                        "%s is not a valid return value, it should be consumed before producing a return value",
+                        org.neo4j.driver.reactive.ReactiveResult.class.getName()));
+            } else if (value instanceof RxResult) {
+                throw new ClientException(String.format(
+                        "%s is not a valid return value, it should be consumed before producing a return value",
+                        RxResult.class.getName()));
+            }
+            return value;
+        }));
         Flux<T> repeatableWork = Flux.usingWhen(
                 beginTransaction(mode, config),
                 work,
