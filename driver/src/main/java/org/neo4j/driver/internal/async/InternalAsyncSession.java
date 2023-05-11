@@ -36,6 +36,7 @@ import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionCallback;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -160,6 +161,11 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
         workFuture.whenComplete((result, completionError) -> {
             Throwable error = Futures.completionExceptionCause(completionError);
             if (error != null) {
+                closeTxAfterFailedTransactionWork(tx, resultFuture, error);
+            } else if (result instanceof ResultCursor) {
+                error = new ClientException(String.format(
+                        "%s is not a valid return value, it should be consumed before producing a return value",
+                        ResultCursor.class.getName()));
                 closeTxAfterFailedTransactionWork(tx, resultFuture, error);
             } else {
                 closeTxAfterSucceededTransactionWork(tx, resultFuture, result);

@@ -24,14 +24,19 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
@@ -177,6 +182,28 @@ class RxSessionIT {
         assertEquals(2, work.invocationCount());
         assertEquals(0, countNodesByLabel("Person"));
         assertNoParallelScheduler();
+    }
+
+    @ParameterizedTest
+    @MethodSource("managedTransactionsReturningReactiveResultPublisher")
+    void shouldErrorWhenReactiveResultIsReturned(Function<RxSession, Publisher<RxResult>> fn) {
+        // GIVEN
+        var session = neo4j.driver().rxSession();
+
+        // WHEN & THEN
+        var error = assertThrows(
+                ClientException.class, () -> Flux.from(fn.apply(session)).blockFirst());
+        assertEquals(
+                "org.neo4j.driver.reactive.RxResult is not a valid return value, it should be consumed before producing a return value",
+                error.getMessage());
+        Flux.from(session.close()).blockFirst();
+    }
+
+    @SuppressWarnings("deprecation")
+    static List<Function<RxSession, Publisher<RxResult>>> managedTransactionsReturningReactiveResultPublisher() {
+        return List.of(
+                session -> session.writeTransaction(tx -> Flux.just(tx.run("RETURN 1"))),
+                session -> session.readTransaction(tx -> Flux.just(tx.run("RETURN 1"))));
     }
 
     private void assertNoParallelScheduler() {

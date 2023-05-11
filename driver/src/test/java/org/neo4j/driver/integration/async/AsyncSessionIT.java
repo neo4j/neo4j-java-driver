@@ -56,10 +56,13 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
@@ -750,6 +753,25 @@ class AsyncSessionIT {
 
         CompletionStage<Object> writeResult = session.writeTransactionAsync(tx -> null);
         assertNull(await(writeResult));
+    }
+
+    @ParameterizedTest
+    @MethodSource("managedTransactionsReturningResultCursorStage")
+    void shouldErrorWhenResultCursorIsReturned(Function<AsyncSession, CompletionStage<ResultCursor>> fn) {
+        var error = assertThrows(ClientException.class, () -> await(fn.apply(session)));
+        assertEquals(
+                "org.neo4j.driver.async.ResultCursor is not a valid return value, it should be consumed before producing a return value",
+                error.getMessage());
+        await(session.closeAsync());
+    }
+
+    @SuppressWarnings("deprecation")
+    static List<Function<AsyncSession, CompletionStage<ResultCursor>>> managedTransactionsReturningResultCursorStage() {
+        return List.of(
+                session -> session.writeTransactionAsync(tx -> tx.runAsync("RETURN 1")),
+                session -> session.readTransactionAsync(tx -> tx.runAsync("RETURN 1")),
+                session -> session.executeWriteAsync(tx -> tx.runAsync("RETURN 1")),
+                session -> session.executeReadAsync(tx -> tx.runAsync("RETURN 1")));
     }
 
     private Future<List<CompletionStage<Record>>> runNestedQueries(ResultCursor inputCursor) {
