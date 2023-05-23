@@ -34,6 +34,8 @@ import org.neo4j.driver.summary.ResultSummary;
  * </ul>
  * <p>
  * By default, both options are not activated.
+ * <p>
+ * Disabling categories or severities allows the server to skip analysis for those, which can speed up query execution.
  *
  * @since 5.7
  * @see ResultSummary#notifications()
