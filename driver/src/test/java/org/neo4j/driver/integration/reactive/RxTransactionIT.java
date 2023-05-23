@@ -270,11 +270,12 @@ class RxTransactionIT {
 
     @Test
     void shouldFailBoBeginTxWithInvalidBookmark() {
-        RxSession session = neo4j.driver()
+        var session = neo4j.driver()
                 .rxSession(builder().withBookmarks(parse("InvalidBookmark")).build());
 
-        ClientException e = assertThrows(ClientException.class, () -> await(session.beginTransaction()));
-        assertThat(e.getMessage(), containsString("InvalidBookmark"));
+        var e = assertThrows(ClientException.class, () -> await(session.beginTransaction()));
+        assertTrue(e.getMessage().contains("InvalidBookmark")
+                || e.getMessage().contains("Parsing of supplied bookmarks failed"));
     }
 
     @Test
