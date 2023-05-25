@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.Session;
@@ -35,6 +37,7 @@ import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionContext;
 import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.retry.RetryLogic;
 
 public class InternalSessionTest {
@@ -82,6 +85,19 @@ public class InternalSessionTest {
         }
         then(networkSession).should().retryLogic();
         then(logic).should().retry(any());
+    }
+
+    @Test
+    void shouldDelegateBeginWithType() {
+        var internalSession = (InternalSession) session;
+        var config = TransactionConfig.empty();
+        var type = "TYPE";
+        given(networkSession.beginTransactionAsync(config, type))
+                .willReturn(completedFuture(mock(UnmanagedTransaction.class)));
+
+        internalSession.beginTransaction(config, type);
+
+        then(networkSession).should().beginTransactionAsync(config, type);
     }
 
     static List<ExecuteVariation> executeVariations() {
