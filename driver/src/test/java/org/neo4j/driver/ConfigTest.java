@@ -503,4 +503,11 @@ class ConfigTest {
             assertTrue(Serializable.class.isAssignableFrom(loggingClass));
         }
     }
+
+    @Test
+    void shouldHaveDefaultUserAgent() {
+        var config = Config.defaultConfig();
+
+        assertTrue(config.userAgent().matches("^neo4j-java/.+$"));
+    }
 }
