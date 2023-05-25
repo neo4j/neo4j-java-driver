@@ -24,8 +24,6 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,7 +38,6 @@ import static org.neo4j.driver.testutil.TestUtil.verifyCommitTx;
 import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
 import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -53,7 +50,6 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.ConnectionContext;
-import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -152,17 +148,6 @@ class InternalTransactionTest {
     @Test
     void shouldReleaseConnectionWhenFailedToClose() {
         shouldReleaseConnectionWhenFailedToAction(Transaction::close);
-    }
-
-    @Test
-    void shouldDelegateInterrupt() {
-        var unmanagedTx = mock(UnmanagedTransaction.class);
-        given(unmanagedTx.interruptAsync()).willReturn(CompletableFuture.completedFuture(null));
-        var tx = new InternalTransaction(unmanagedTx);
-
-        tx.interrupt();
-
-        then(unmanagedTx).should().interruptAsync();
     }
 
     private void shouldReleaseConnectionWhenFailedToAction(Consumer<Transaction> txAction) {
