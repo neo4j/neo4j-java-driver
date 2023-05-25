@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver;
 
+import static java.lang.String.format;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.DriverInfoUtil.driverVersion;
 
@@ -345,7 +346,7 @@ public final class Config implements Serializable {
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private long maxConnectionLifetimeMillis = PoolSettings.DEFAULT_MAX_CONNECTION_LIFETIME;
         private long connectionAcquisitionTimeoutMillis = PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
-        private String userAgent = driverVersion();
+        private String userAgent = format("neo4j-java/%s", driverVersion());
         private final SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder =
                 new SecuritySettings.SecuritySettingsBuilder();
         private long routingTablePurgeDelayMillis = RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
