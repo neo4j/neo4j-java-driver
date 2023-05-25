@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.BoltAgent;
 import org.neo4j.driver.internal.BoltAgentUtil;
 
 class HelloMessageTest {
@@ -80,5 +81,46 @@ class HelloMessageTest {
                 new HelloMessage("MyDriver/1.0.2", BoltAgentUtil.VALUE, authToken, Collections.emptyMap(), false, null);
 
         assertThat(message.toString(), not(containsString("SecretPassword")));
+    }
+
+    @Test
+    void shouldAcceptNullBoltAgent() {
+        var authToken = new HashMap<String, Value>();
+        authToken.put("user", value("Alice"));
+        authToken.put("credentials", value("SecretPassword"));
+
+        HelloMessage message = new HelloMessage("MyDriver/1.0.2", null, authToken, Collections.emptyMap(), false, null);
+
+        var expectedMetadata = new HashMap<>(authToken);
+        expectedMetadata.put("user_agent", value("MyDriver/1.0.2"));
+        expectedMetadata.put("routing", value(Collections.emptyMap()));
+        assertEquals(expectedMetadata, message.metadata());
+    }
+
+    @Test
+    void shouldAcceptDetailedBoltAgent() {
+        var authToken = new HashMap<String, Value>();
+        authToken.put("user", value("Alice"));
+        authToken.put("credentials", value("SecretPassword"));
+        var boltAgent = new BoltAgent("1", "2", "3", "4");
+
+        HelloMessage message =
+                new HelloMessage("MyDriver/1.0.2", boltAgent, authToken, Collections.emptyMap(), false, null);
+
+        var expectedMetadata = new HashMap<>(authToken);
+        expectedMetadata.put("user_agent", value("MyDriver/1.0.2"));
+        expectedMetadata.put(
+                "bolt_agent",
+                value(Map.of(
+                        "product",
+                        boltAgent.product(),
+                        "platform",
+                        boltAgent.platform(),
+                        "language",
+                        boltAgent.language(),
+                        "language_details",
+                        boltAgent.languageDetails())));
+        expectedMetadata.put("routing", value(Collections.emptyMap()));
+        assertEquals(expectedMetadata, message.metadata());
     }
 }
