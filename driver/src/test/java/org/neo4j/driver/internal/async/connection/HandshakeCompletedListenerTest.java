@@ -43,6 +43,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.cluster.RoutingContext;
@@ -70,7 +71,12 @@ class HandshakeCompletedListenerTest {
     void shouldFailConnectionInitializedPromiseWhenHandshakeFails() {
         ChannelPromise channelInitializedPromise = channel.newPromise();
         HandshakeCompletedListener listener = new HandshakeCompletedListener(
-                "user-agent", RoutingContext.EMPTY, channelInitializedPromise, null, mock(Clock.class));
+                USER_AGENT,
+                BoltAgentUtil.VALUE,
+                RoutingContext.EMPTY,
+                channelInitializedPromise,
+                null,
+                mock(Clock.class));
 
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         IOException cause = new IOException("Bad handshake");
@@ -92,7 +98,7 @@ class HandshakeCompletedListenerTest {
         setAuthContext(channel, authContext);
         testWritingOfInitializationMessage(
                 BoltProtocolV3.VERSION,
-                new HelloMessage(USER_AGENT, authToken().toMap(), Collections.emptyMap(), false, null),
+                new HelloMessage(USER_AGENT, null, authToken().toMap(), Collections.emptyMap(), false, null),
                 HelloResponseHandler.class);
         then(authContext).should().initiateAuth(authToken);
     }
@@ -102,7 +108,12 @@ class HandshakeCompletedListenerTest {
         // given
         var channelInitializedPromise = channel.newPromise();
         var listener = new HandshakeCompletedListener(
-                "agent", mock(RoutingContext.class), channelInitializedPromise, null, mock(Clock.class));
+                USER_AGENT,
+                BoltAgentUtil.VALUE,
+                mock(RoutingContext.class),
+                channelInitializedPromise,
+                null,
+                mock(Clock.class));
         var handshakeCompletedPromise = channel.newPromise();
         handshakeCompletedPromise.setSuccess();
         setProtocolVersion(channel, BoltProtocolV5.VERSION);
@@ -134,7 +145,12 @@ class HandshakeCompletedListenerTest {
 
         ChannelPromise channelInitializedPromise = channel.newPromise();
         HandshakeCompletedListener listener = new HandshakeCompletedListener(
-                USER_AGENT, RoutingContext.EMPTY, channelInitializedPromise, null, mock(Clock.class));
+                USER_AGENT,
+                BoltAgentUtil.VALUE,
+                RoutingContext.EMPTY,
+                channelInitializedPromise,
+                null,
+                mock(Clock.class));
 
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         handshakeCompletedPromise.setSuccess();

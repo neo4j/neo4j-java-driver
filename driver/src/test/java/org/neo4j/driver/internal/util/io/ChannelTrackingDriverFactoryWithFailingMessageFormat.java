@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.util.io;
 
 import java.time.Clock;
 import org.neo4j.driver.Config;
+import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
@@ -51,7 +52,8 @@ public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends Channe
                 clock,
                 routingContext,
                 DefaultDomainNameResolver.getInstance(),
-                null);
+                null,
+                BoltAgentUtil.VALUE);
     }
 
     public FailingMessageFormat getFailingMessageFormat() {

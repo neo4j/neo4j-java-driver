@@ -48,6 +48,7 @@ import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.stream.Stream;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -105,6 +106,7 @@ class MessageWriterV42Test extends AbstractMessageWriterTestBase {
                 // Bolt V3 messages
                 new HelloMessage(
                         "MyDriver/1.2.3",
+                        BoltAgentUtil.VALUE,
                         ((InternalAuthToken) basic("neo4j", "neo4j")).toMap(),
                         Collections.emptyMap(),
                         false,

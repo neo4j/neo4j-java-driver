@@ -47,6 +47,7 @@ import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthenticationException;
+import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
@@ -198,7 +199,8 @@ class NettyChannelPoolIT {
                 new FakeClock(),
                 RoutingContext.EMPTY,
                 DefaultDomainNameResolver.getInstance(),
-                null);
+                null,
+                BoltAgentUtil.VALUE);
         var nettyChannelHealthChecker = mock(NettyChannelHealthChecker.class);
         when(nettyChannelHealthChecker.isHealthy(any())).thenAnswer(NettyChannelPoolIT::answer);
         return new NettyChannelPool(
