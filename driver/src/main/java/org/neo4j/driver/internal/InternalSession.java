@@ -90,8 +90,12 @@ public class InternalSession extends AbstractQueryRunner implements Session {
 
     @Override
     public Transaction beginTransaction(TransactionConfig config) {
-        UnmanagedTransaction tx = Futures.blockingGet(
-                session.beginTransactionAsync(config),
+        return beginTransaction(config, null);
+    }
+
+    public Transaction beginTransaction(TransactionConfig config, String txType) {
+        var tx = Futures.blockingGet(
+                session.beginTransactionAsync(config, txType),
                 () -> terminateConnectionOnThreadInterrupt("Thread interrupted while starting a transaction"));
         return new InternalTransaction(tx);
     }
