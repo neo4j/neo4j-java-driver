@@ -44,7 +44,7 @@
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
     <mockito-core.version>5.3.1</mockito-core.version>
-    <junit.version>5.10.0-M1</junit.version>
+    <junit.version>5.9.3</junit.version>
     <testng-engine.version>1.0.4</testng-engine.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.70</bouncycastle-jdk15on.version>
