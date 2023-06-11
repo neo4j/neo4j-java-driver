@@ -19,6 +19,7 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.reactive.ReactiveSession;
@@ -432,4 +433,20 @@ public interface Driver extends AutoCloseable {
      * the driver connects to supports multi-databases, otherwise false.
      */
     CompletionStage<Boolean> supportsMultiDbAsync();
+
+    /**
+     * Forces the driver to resolve all home databases (again).
+     * <p>
+     * The resolution is lazy and will only happen when the driver needs to know the home database. In practice, this
+     * means that the driver will flush the cache configured by
+     * {@link org.neo4j.driver.Config.ConfigBuilder#withMaxHomeDatabaseDelay(long, TimeUnit)}.
+     * <p>
+     * This method is for instance useful when an application has changed a user's home database, and the same
+     * application wants to pick up the change in the next session while wanting to avoid setting the max home database
+     * delay to `0` because of the performance penalty.
+     * @since 5.10
+     * @see org.neo4j.driver.Config.ConfigBuilder#withMaxHomeDatabaseDelay(long, TimeUnit)
+     * @see Config#maxTransactionRetryTimeMillis()
+     */
+    void forceHomeDatabaseResolution();
 }

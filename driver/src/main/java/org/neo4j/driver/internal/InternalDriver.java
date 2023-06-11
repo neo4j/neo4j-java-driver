@@ -67,15 +67,18 @@ public class InternalDriver implements Driver {
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final MetricsProvider metricsProvider;
+    private final Runnable homeDatabaseCachePurgeRunnable;
 
     InternalDriver(
             SecurityPlan securityPlan,
             SessionFactory sessionFactory,
             MetricsProvider metricsProvider,
+            Runnable homeDatabaseCachePurgeRunnable,
             Logging logging) {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
         this.metricsProvider = metricsProvider;
+        this.homeDatabaseCachePurgeRunnable = homeDatabaseCachePurgeRunnable;
         this.log = logging.getLog(getClass());
     }
 
@@ -191,6 +194,11 @@ public class InternalDriver implements Driver {
     @Override
     public CompletionStage<Boolean> supportsMultiDbAsync() {
         return sessionFactory.supportsMultiDb();
+    }
+
+    @Override
+    public void forceHomeDatabaseResolution() {
+        homeDatabaseCachePurgeRunnable.run();
     }
 
     @Override

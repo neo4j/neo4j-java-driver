@@ -132,7 +132,7 @@ class InternalDriverTest {
 
     private static InternalDriver newDriver(SessionFactory sessionFactory) {
         return new InternalDriver(
-                SecurityPlanImpl.insecure(), sessionFactory, DevNullMetricsProvider.INSTANCE, DEV_NULL_LOGGING);
+                SecurityPlanImpl.insecure(), sessionFactory, DevNullMetricsProvider.INSTANCE, null, DEV_NULL_LOGGING);
     }
 
     private static SessionFactory sessionFactoryMock() {
@@ -149,6 +149,6 @@ class InternalDriverTest {
         }
 
         MetricsProvider metricsProvider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
-        return new InternalDriver(SecurityPlanImpl.insecure(), sessionFactory, metricsProvider, DEV_NULL_LOGGING);
+        return new InternalDriver(SecurityPlanImpl.insecure(), sessionFactory, metricsProvider, null, DEV_NULL_LOGGING);
     }
 }

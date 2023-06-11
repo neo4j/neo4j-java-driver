@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Logging.none;
@@ -45,6 +46,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -69,6 +71,7 @@ import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.async.pool.TestConnectionPool;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterCompositionLookupResult;
+import org.neo4j.driver.internal.cluster.HomeDatabaseCache;
 import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
@@ -331,13 +334,17 @@ class RoutingTableAndConnectionPoolTest {
 
     private LoadBalancer newLoadBalancer(ConnectionPool connectionPool, RoutingTableRegistry routingTables) {
         Rediscovery rediscovery = mock(Rediscovery.class);
+        var homeDatabaseCache = mock(HomeDatabaseCache.class);
+        given(homeDatabaseCache.getName(any(String.class), any(AuthToken.class)))
+                .willReturn(Optional.empty());
         return new LoadBalancer(
                 connectionPool,
                 routingTables,
                 rediscovery,
                 new LeastConnectedLoadBalancingStrategy(connectionPool, logging),
                 GlobalEventExecutor.INSTANCE,
-                logging);
+                logging,
+                homeDatabaseCache);
     }
 
     private CompletableFuture<ClusterCompositionLookupResult> clusterComposition(BoltServerAddress... addresses) {

@@ -34,7 +34,6 @@ import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
@@ -42,6 +41,7 @@ import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
+import org.neo4j.driver.internal.cluster.HomeDatabaseCache;
 import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RediscoveryImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
@@ -242,10 +242,10 @@ public class DriverFactory {
             RetryLogic retryLogic,
             MetricsProvider metricsProvider,
             Config config) {
-        ConnectionProvider connectionProvider = new DirectConnectionProvider(address, connectionPool);
-        SessionFactory sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
-        InternalDriver driver = createDriver(securityPlan, sessionFactory, metricsProvider, config);
-        Logger log = config.logging().getLog(getClass());
+        var connectionProvider = new DirectConnectionProvider(address, connectionPool);
+        var sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
+        var driver = createDriver(securityPlan, sessionFactory, metricsProvider, () -> {}, config);
+        var log = config.logging().getLog(getClass());
         log.info("Direct driver instance %s created for server address %s", driver.hashCode(), address);
         return driver;
     }
@@ -265,11 +265,18 @@ public class DriverFactory {
             MetricsProvider metricsProvider,
             Supplier<Rediscovery> rediscoverySupplier,
             Config config) {
-        ConnectionProvider connectionProvider = createLoadBalancer(
-                address, connectionPool, eventExecutorGroup, config, routingSettings, rediscoverySupplier);
-        SessionFactory sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
-        InternalDriver driver = createDriver(securityPlan, sessionFactory, metricsProvider, config);
-        Logger log = config.logging().getLog(getClass());
+        var homeDatabaseCache = new HomeDatabaseCache(config.maxHomeDatabaseDelayMillis(), createClock());
+        var connectionProvider = createLoadBalancer(
+                address,
+                connectionPool,
+                eventExecutorGroup,
+                config,
+                routingSettings,
+                rediscoverySupplier,
+                homeDatabaseCache);
+        var sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
+        var driver = createDriver(securityPlan, sessionFactory, metricsProvider, homeDatabaseCache::purge, config);
+        var log = config.logging().getLog(getClass());
         log.info("Routing driver instance %s created for server address %s", driver.hashCode(), address);
         return driver;
     }
@@ -280,8 +287,13 @@ public class DriverFactory {
      * <b>This method is protected only for testing</b>
      */
     protected InternalDriver createDriver(
-            SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config) {
-        return new InternalDriver(securityPlan, sessionFactory, metricsProvider, config.logging());
+            SecurityPlan securityPlan,
+            SessionFactory sessionFactory,
+            MetricsProvider metricsProvider,
+            Runnable homeDatabaseCachePurgeRunnable,
+            Config config) {
+        return new InternalDriver(
+                securityPlan, sessionFactory, metricsProvider, homeDatabaseCachePurgeRunnable, config.logging());
     }
 
     /**
@@ -295,7 +307,8 @@ public class DriverFactory {
             EventExecutorGroup eventExecutorGroup,
             Config config,
             RoutingSettings routingSettings,
-            Supplier<Rediscovery> rediscoverySupplier) {
+            Supplier<Rediscovery> rediscoverySupplier,
+            HomeDatabaseCache homeDatabaseCache) {
         var loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(connectionPool, config.logging());
         var resolver = createResolver(config);
         var domainNameResolver = requireNonNull(getDomainNameResolver(), "domainNameResolver must not be null");
@@ -312,7 +325,8 @@ public class DriverFactory {
                 loadBalancingStrategy,
                 eventExecutorGroup,
                 clock,
-                logging);
+                logging,
+                homeDatabaseCache);
         handleNewLoadBalancer(loadBalancer);
         return loadBalancer;
     }

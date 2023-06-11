@@ -62,6 +62,7 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
+import org.neo4j.driver.internal.cluster.HomeDatabaseCache;
 import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RediscoveryImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
@@ -274,6 +275,7 @@ class DriverFactoryTest {
                 SecurityPlan securityPlan,
                 SessionFactory sessionFactory,
                 MetricsProvider metricsProvider,
+                Runnable homeDatabaseCachePurgeRunnable,
                 Config config) {
             throw new UnsupportedOperationException("Can't create direct driver");
         }
@@ -313,6 +315,7 @@ class DriverFactoryTest {
                 SecurityPlan securityPlan,
                 SessionFactory sessionFactory,
                 MetricsProvider metricsProvider,
+                Runnable homeDatabaseCachePurgeRunnable,
                 Config config) {
             InternalDriver driver = mock(InternalDriver.class);
             when(driver.verifyConnectivityAsync()).thenReturn(completedWithNull());
@@ -326,7 +329,8 @@ class DriverFactoryTest {
                 EventExecutorGroup eventExecutorGroup,
                 Config config,
                 RoutingSettings routingSettings,
-                Supplier<Rediscovery> rediscoverySupplier) {
+                Supplier<Rediscovery> rediscoverySupplier,
+                HomeDatabaseCache homeDatabaseCache) {
             return null;
         }
 

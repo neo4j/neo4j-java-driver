@@ -568,4 +568,10 @@
         <method>org.neo4j.driver.AuthTokenAndExpiration expiringAt(long)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>void forceHomeDatabaseResolution()</method>
+    </difference>
+
 </differences>

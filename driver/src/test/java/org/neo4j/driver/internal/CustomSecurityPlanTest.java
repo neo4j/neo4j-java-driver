@@ -63,9 +63,11 @@ class CustomSecurityPlanTest {
                 SecurityPlan securityPlan,
                 SessionFactory sessionFactory,
                 MetricsProvider metricsProvider,
+                Runnable homeDatabaseCachePurgeRunnable,
                 Config config) {
             capturedSecurityPlans.add(securityPlan);
-            return super.createDriver(securityPlan, sessionFactory, metricsProvider, config);
+            return super.createDriver(
+                    securityPlan, sessionFactory, metricsProvider, homeDatabaseCachePurgeRunnable, config);
         }
 
         @Override

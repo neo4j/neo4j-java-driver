@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -59,6 +60,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -69,6 +71,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -80,6 +83,7 @@ import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.RoutingConnection;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterRoutingTable;
+import org.neo4j.driver.internal.cluster.HomeDatabaseCache;
 import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTableHandler;
@@ -370,13 +374,17 @@ class LoadBalancerTest {
         when(routingTables.ensureRoutingTable(any(ConnectionContext.class)))
                 .thenReturn(CompletableFuture.completedFuture(handler));
         Rediscovery rediscovery = mock(Rediscovery.class);
+        var homeDatabaseCache = mock(HomeDatabaseCache.class);
+        given(homeDatabaseCache.getName(any(String.class), any(AuthToken.class)))
+                .willReturn(Optional.empty());
         LoadBalancer loadBalancer = new LoadBalancer(
                 connectionPool,
                 routingTables,
                 rediscovery,
                 new LeastConnectedLoadBalancingStrategy(connectionPool, DEV_NULL_LOGGING),
                 GlobalEventExecutor.INSTANCE,
-                DEV_NULL_LOGGING);
+                DEV_NULL_LOGGING,
+                homeDatabaseCache);
         ConnectionContext context = mock(ConnectionContext.class);
         CompletableFuture<DatabaseName> databaseNameFuture = spy(new CompletableFuture<>());
         if (completed) {
@@ -411,6 +419,9 @@ class LoadBalancerTest {
         // GIVEN
         var connectionPool = mock(ConnectionPool.class);
         var routingTables = mock(RoutingTableRegistry.class);
+        var homeDatabaseCache = mock(HomeDatabaseCache.class);
+        given(homeDatabaseCache.getName(any(String.class), any(AuthToken.class)))
+                .willReturn(Optional.empty());
 
         // WHEN & THEN
         assertThrows(
@@ -421,7 +432,8 @@ class LoadBalancerTest {
                         null,
                         new LeastConnectedLoadBalancingStrategy(connectionPool, DEV_NULL_LOGGING),
                         GlobalEventExecutor.INSTANCE,
-                        DEV_NULL_LOGGING));
+                        DEV_NULL_LOGGING,
+                        homeDatabaseCache));
     }
 
     private static ConnectionPool newConnectionPoolMock() {
@@ -467,13 +479,17 @@ class LoadBalancerTest {
         when(routingTables.ensureRoutingTable(any(ConnectionContext.class)))
                 .thenReturn(CompletableFuture.completedFuture(handler));
         Rediscovery rediscovery = mock(Rediscovery.class);
+        var homeDatabaseCache = mock(HomeDatabaseCache.class);
+        given(homeDatabaseCache.getName(any(String.class), any(AuthToken.class)))
+                .willReturn(Optional.empty());
         return new LoadBalancer(
                 connectionPool,
                 routingTables,
                 rediscovery,
                 new LeastConnectedLoadBalancingStrategy(connectionPool, DEV_NULL_LOGGING),
                 GlobalEventExecutor.INSTANCE,
-                DEV_NULL_LOGGING);
+                DEV_NULL_LOGGING,
+                homeDatabaseCache);
     }
 
     private static LoadBalancer newLoadBalancer(ConnectionPool connectionPool, Rediscovery rediscovery) {
@@ -484,6 +500,9 @@ class LoadBalancerTest {
 
     private static LoadBalancer newLoadBalancer(
             ConnectionPool connectionPool, RoutingTableRegistry routingTables, Rediscovery rediscovery) {
+        var homeDatabaseCache = mock(HomeDatabaseCache.class);
+        given(homeDatabaseCache.getName(any(String.class), any(AuthToken.class)))
+                .willReturn(Optional.empty());
         // Used only in testing
         return new LoadBalancer(
                 connectionPool,
@@ -491,6 +510,7 @@ class LoadBalancerTest {
                 rediscovery,
                 new LeastConnectedLoadBalancingStrategy(connectionPool, DEV_NULL_LOGGING),
                 GlobalEventExecutor.INSTANCE,
-                DEV_NULL_LOGGING);
+                DEV_NULL_LOGGING,
+                homeDatabaseCache);
     }
 }

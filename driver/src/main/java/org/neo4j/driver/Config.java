@@ -149,6 +149,11 @@ public final class Config implements Serializable {
      */
     private final MetricsAdapter metricsAdapter;
 
+    /**
+     * The upper bound for how long in milliseconds a resolved home database can be cached.
+     */
+    private final long maxHomeDatabaseDelayMillis;
+
     private Config(ConfigBuilder builder) {
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
@@ -170,6 +175,8 @@ public final class Config implements Serializable {
 
         this.eventLoopThreads = builder.eventLoopThreads;
         this.metricsAdapter = builder.metricsAdapter;
+
+        this.maxHomeDatabaseDelayMillis = builder.maxHomeDatabaseDelayMillis;
     }
 
     /**
@@ -337,6 +344,16 @@ public final class Config implements Serializable {
     }
 
     /**
+     * Returns the upper bound for how long in milliseconds a resolved home database can be cached.
+     * @return the delay in milliseconds
+     * @since 5.10
+     * @see Driver#forceHomeDatabaseResolution()
+     */
+    public long maxHomeDatabaseDelayMillis() {
+        return maxHomeDatabaseDelayMillis;
+    }
+
+    /**
      * Used to build new config instances
      */
     public static final class ConfigBuilder {
@@ -357,6 +374,7 @@ public final class Config implements Serializable {
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
+        private long maxHomeDatabaseDelayMillis = TimeUnit.SECONDS.toMillis(5);
 
         private ConfigBuilder() {}
 
@@ -746,6 +764,31 @@ public final class Config implements Serializable {
          */
         public ConfigBuilder withNotificationConfig(NotificationConfig notificationConfig) {
             this.notificationConfig = Objects.requireNonNull(notificationConfig, "notificationConfig must not be null");
+            return this;
+        }
+
+        /**
+         * Sets the upper bound for how long in milliseconds a resolved home database can be cached.
+         * <p>
+         * Set this value to 0 to prohibit any caching.
+         * <p>
+         * This likely incurs a significant performance penalty (driver and server side).
+         * <p>
+         * The default is 5 seconds.
+         *
+         * @param value the delay value
+         * @param unit the unit in which the delay is given
+         * @return this builder
+         * @since 5.10
+         * @see Driver#forceHomeDatabaseResolution()
+         */
+        public ConfigBuilder withMaxHomeDatabaseDelay(long value, TimeUnit unit) {
+            long delayMs = unit.toMillis(value);
+            if (delayMs < 0) {
+                throw new IllegalArgumentException(String.format(
+                        "The max home database delay may not be smaller than 0, but was %d %s.", value, unit));
+            }
+            this.maxHomeDatabaseDelayMillis = delayMs;
             return this;
         }
 

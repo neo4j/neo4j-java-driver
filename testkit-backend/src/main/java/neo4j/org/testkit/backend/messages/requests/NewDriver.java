@@ -100,6 +100,8 @@ public class NewDriver implements TestkitRequest {
         Optional.ofNullable(data.maxConnectionPoolSize).ifPresent(configBuilder::withMaxConnectionPoolSize);
         Optional.ofNullable(data.connectionAcquisitionTimeoutMs)
                 .ifPresent(timeout -> configBuilder.withConnectionAcquisitionTimeout(timeout, TimeUnit.MILLISECONDS));
+        Optional.ofNullable(data.maxHomeDatabaseDelayMs)
+                .ifPresent(delay -> configBuilder.withMaxHomeDatabaseDelay(delay, TimeUnit.MILLISECONDS));
         configBuilder.withNotificationConfig(
                 toNotificationConfig(data.notificationsMinSeverity, data.notificationsDisabledCategories));
         configBuilder.withDriverMetrics();
@@ -299,6 +301,7 @@ public class NewDriver implements TestkitRequest {
         private Long connectionAcquisitionTimeoutMs;
         private boolean encrypted;
         private List<String> trustedCertificates;
+        private Long maxHomeDatabaseDelayMs;
     }
 
     @RequiredArgsConstructor

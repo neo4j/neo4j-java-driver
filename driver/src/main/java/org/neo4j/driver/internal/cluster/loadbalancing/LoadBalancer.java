@@ -42,8 +42,10 @@ import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.RoutingConnection;
+import org.neo4j.driver.internal.cluster.HomeDatabaseCache;
 import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
@@ -69,6 +71,7 @@ public class LoadBalancer implements ConnectionProvider {
     private final EventExecutorGroup eventExecutorGroup;
     private final Logger log;
     private final Rediscovery rediscovery;
+    private final HomeDatabaseCache homeDatabaseCache;
 
     public LoadBalancer(
             ConnectionPool connectionPool,
@@ -77,14 +80,16 @@ public class LoadBalancer implements ConnectionProvider {
             LoadBalancingStrategy loadBalancingStrategy,
             EventExecutorGroup eventExecutorGroup,
             Clock clock,
-            Logging logging) {
+            Logging logging,
+            HomeDatabaseCache homeDatabaseCache) {
         this(
                 connectionPool,
                 createRoutingTables(connectionPool, rediscovery, settings, clock, logging),
                 rediscovery,
                 loadBalancingStrategy,
                 eventExecutorGroup,
-                logging);
+                logging,
+                homeDatabaseCache);
     }
 
     LoadBalancer(
@@ -93,27 +98,47 @@ public class LoadBalancer implements ConnectionProvider {
             Rediscovery rediscovery,
             LoadBalancingStrategy loadBalancingStrategy,
             EventExecutorGroup eventExecutorGroup,
-            Logging logging) {
+            Logging logging,
+            HomeDatabaseCache homeDatabaseCache) {
         requireNonNull(rediscovery, "rediscovery must not be null");
+        requireNonNull(homeDatabaseCache, "homeDatabaseCache must not be null");
         this.connectionPool = connectionPool;
         this.routingTables = routingTables;
         this.rediscovery = rediscovery;
         this.loadBalancingStrategy = loadBalancingStrategy;
         this.eventExecutorGroup = eventExecutorGroup;
+        this.homeDatabaseCache = homeDatabaseCache;
         this.log = logging.getLog(getClass());
     }
 
     @Override
     public CompletionStage<Connection> acquireConnection(ConnectionContext context) {
-        return routingTables.ensureRoutingTable(context).thenCompose(handler -> acquire(
-                        context.mode(), handler.routingTable(), context.overrideAuthToken())
-                .thenApply(connection -> new RoutingConnection(
-                        connection,
-                        Futures.joinNowOrElseThrow(
-                                context.databaseNameFuture(), PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER),
-                        context.mode(),
-                        context.impersonatedUser(),
-                        handler)));
+        var databaseNameFuture = context.databaseNameFuture();
+        if (!databaseNameFuture.isDone()) {
+            homeDatabaseCache
+                    .getName(context.impersonatedUser(), context.overrideAuthToken())
+                    .ifPresent(name -> databaseNameFuture.complete(DatabaseNameUtil.database(name)));
+        }
+        var updateHomeDatabase = !databaseNameFuture.isDone();
+        return routingTables
+                .ensureRoutingTable(context)
+                .whenComplete((handler, ignored) -> {
+                    if (handler != null && databaseNameFuture.isDone() && updateHomeDatabase) {
+                        handler.routingTable()
+                                .database()
+                                .databaseName()
+                                .ifPresent(name -> homeDatabaseCache.put(
+                                        context.impersonatedUser(), context.overrideAuthToken(), name));
+                    }
+                })
+                .thenCompose(handler -> acquire(context.mode(), handler.routingTable(), context.overrideAuthToken())
+                        .thenApply(connection -> new RoutingConnection(
+                                connection,
+                                Futures.joinNowOrElseThrow(
+                                        context.databaseNameFuture(), PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER),
+                                context.mode(),
+                                context.impersonatedUser(),
+                                handler)));
     }
 
     @Override
