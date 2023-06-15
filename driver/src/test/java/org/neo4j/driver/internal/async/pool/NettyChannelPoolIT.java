@@ -86,7 +86,7 @@ class NettyChannelPoolIT {
     void shouldAcquireAndReleaseWithCorrectCredentials() throws Exception {
         pool = newPool(neo4j.authToken());
 
-        Channel channel = await(pool.acquire());
+        Channel channel = await(pool.acquire(null));
         assertNotNull(channel);
         verify(poolHandler).channelCreated(eq(channel), any());
         verify(poolHandler, never()).channelReleased(channel);
@@ -99,7 +99,7 @@ class NettyChannelPoolIT {
     void shouldFailToAcquireWithWrongCredentials() throws Exception {
         pool = newPool(AuthTokens.basic("wrong", "wrong"));
 
-        assertThrows(AuthenticationException.class, () -> await(pool.acquire()));
+        assertThrows(AuthenticationException.class, () -> await(pool.acquire(null)));
 
         verify(poolHandler, never()).channelCreated(any());
         verify(poolHandler, never()).channelReleased(any());
@@ -180,7 +180,7 @@ class NettyChannelPoolIT {
     }
 
     private static Channel acquire(NettyChannelPool pool) throws Exception {
-        return await(pool.acquire());
+        return await(pool.acquire(null));
     }
 
     private void release(Channel channel) throws Exception {

@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.async;
 
 import static java.util.Collections.emptyMap;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authContext;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTerminationReason;
 import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
@@ -158,14 +159,20 @@ public class NetworkConnection implements Connection {
 
     @Override
     public CompletionStage<Void> release() {
-        if (status.compareAndSet(Status.OPEN, Status.RELEASED)) {
-            ChannelReleasingResetResponseHandler handler = new ChannelReleasingResetResponseHandler(
-                    channel, channelPool, messageDispatcher, clock, releaseFuture);
+        // todo event loop
+        if (authContext(channel).isPendingLogoff()) {
+            terminateAndRelease("auth connections are done");
+            return CompletableFuture.completedFuture(null);
+        } else {
+            if (status.compareAndSet(Status.OPEN, Status.RELEASED)) {
+                ChannelReleasingResetResponseHandler handler = new ChannelReleasingResetResponseHandler(
+                        channel, channelPool, messageDispatcher, clock, releaseFuture);
 
-            writeResetMessageIfNeeded(handler, false);
-            metricsListener.afterConnectionReleased(poolId(this.channel), this.inUseEvent);
+                writeResetMessageIfNeeded(handler, false);
+                metricsListener.afterConnectionReleased(poolId(this.channel), this.inUseEvent);
+            }
+            return releaseFuture;
         }
-        return releaseFuture;
     }
 
     @Override

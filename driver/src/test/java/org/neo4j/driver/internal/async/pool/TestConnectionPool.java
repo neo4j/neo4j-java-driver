@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
@@ -77,7 +78,7 @@ public class TestConnectionPool extends ConnectionPoolImpl {
             private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
             @Override
-            public CompletionStage<Channel> acquire() {
+            public CompletionStage<Channel> acquire(AuthToken overrideAuthToken) {
                 EmbeddedChannel channel = new EmbeddedChannel();
                 setServerAddress(channel, address);
                 setPoolId(channel, id());

@@ -20,9 +20,10 @@ package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
 import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.AuthToken;
 
 public interface ExtendedChannelPool {
-    CompletionStage<Channel> acquire();
+    CompletionStage<Channel> acquire(AuthToken overrideAuthToken);
 
     CompletionStage<Void> release(Channel channel);
 

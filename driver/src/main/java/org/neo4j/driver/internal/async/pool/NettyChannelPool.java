@@ -19,6 +19,9 @@
 package org.neo4j.driver.internal.async.pool;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authContext;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthContext;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setPoolId;
 import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
 
@@ -29,8 +32,10 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.pool.ChannelHealthChecker;
 import io.netty.channel.pool.FixedChannelPool;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
@@ -49,6 +54,7 @@ public class NettyChannelPool implements ExtendedChannelPool {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final String id;
     private final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
+    private final ChannelConnector connector;
 
     NettyChannelPool(
             BoltServerAddress address,
@@ -62,6 +68,7 @@ public class NettyChannelPool implements ExtendedChannelPool {
         requireNonNull(connector);
         requireNonNull(handler);
         this.id = poolId(address);
+        this.connector = connector;
         this.delegate =
                 new FixedChannelPool(
                         bootstrap,
@@ -105,8 +112,8 @@ public class NettyChannelPool implements ExtendedChannelPool {
     }
 
     @Override
-    public CompletionStage<Channel> acquire() {
-        return asCompletionStage(delegate.acquire());
+    public CompletionStage<Channel> acquire(AuthToken overrideAuthToken) {
+        return asCompletionStage(delegate.acquire()).thenCompose(channel -> auth(channel, overrideAuthToken));
     }
 
     @Override
@@ -122,6 +129,32 @@ public class NettyChannelPool implements ExtendedChannelPool {
     @Override
     public String id() {
         return this.id;
+    }
+
+    private CompletionStage<Channel> auth(Channel channel, AuthToken overrideAuthToken) {
+        AuthContext authContext = authContext(channel);
+        CompletionStage<Channel> authStage = authContext == null
+                ? asCompletionStage(connector.logon(channel, overrideAuthToken)).thenApply(ignored -> {
+                    setAuthContext(channel, new AuthContext());
+                    if (overrideAuthToken != null) {
+                        authContext(channel).markPendingLogoff();
+                    }
+                    return channel;
+                })
+                : completedFuture(channel);
+        return authStage.handle((ignored, throwable) -> {
+            if (throwable != null) {
+                channel.close();
+                release(channel);
+                if (throwable instanceof RuntimeException) {
+                    throw (RuntimeException) throwable;
+                } else {
+                    throw new CompletionException(throwable);
+                }
+            } else {
+                return channel;
+            }
+        });
     }
 
     private String poolId(BoltServerAddress serverAddress) {

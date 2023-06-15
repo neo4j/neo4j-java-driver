@@ -31,6 +31,7 @@ import io.netty.channel.EventLoopGroup;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -66,7 +67,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
     private final boolean ownsEventLoopGroup;
 
     private final ReadWriteLock addressToPoolLock = new ReentrantReadWriteLock();
-    private final Map<BoltServerAddress, ExtendedChannelPool> addressToPool = new HashMap<>();
+    private final Map<AddressAndToken, ExtendedChannelPool> addressToPool = new HashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
     private final ConnectionFactory connectionFactory;
@@ -120,12 +121,11 @@ public class ConnectionPoolImpl implements ConnectionPool {
         log.trace("Acquiring a connection from pool towards %s", address);
 
         assertNotClosed();
-        ExtendedChannelPool pool = getOrCreatePool(address);
+        ExtendedChannelPool pool = getOrCreatePool(new AddressAndToken(address, overrideAuthToken != null));
 
         ListenerEvent acquireEvent = metricsListener.createListenerEvent();
         metricsListener.beforeAcquiringOrCreating(pool.id(), acquireEvent);
-        // todo pass token?
-        CompletionStage<Channel> channelFuture = pool.acquire();
+        CompletionStage<Channel> channelFuture = pool.acquire(overrideAuthToken);
 
         return channelFuture.handle((channel, error) -> {
             try {
@@ -145,11 +145,11 @@ public class ConnectionPoolImpl implements ConnectionPool {
     @Override
     public void retainAll(Set<BoltServerAddress> addressesToRetain) {
         executeWithLock(addressToPoolLock.writeLock(), () -> {
-            Iterator<Map.Entry<BoltServerAddress, ExtendedChannelPool>> entryIterator =
+            Iterator<Map.Entry<AddressAndToken, ExtendedChannelPool>> entryIterator =
                     addressToPool.entrySet().iterator();
             while (entryIterator.hasNext()) {
-                Map.Entry<BoltServerAddress, ExtendedChannelPool> entry = entryIterator.next();
-                BoltServerAddress address = entry.getKey();
+                Map.Entry<AddressAndToken, ExtendedChannelPool> entry = entryIterator.next();
+                BoltServerAddress address = entry.getKey().getAddress();
                 if (!addressesToRetain.contains(address)) {
                     int activeChannels = nettyChannelTracker.inUseChannelCount(address);
                     if (activeChannels == 0) {
@@ -158,6 +158,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
                         ExtendedChannelPool pool = entry.getValue();
                         entryIterator.remove();
                         if (pool != null) {
+                            // todo extend log entry
                             log.info(
                                     "Closing connection pool towards %s, it has no active connections "
                                             + "and is not in the routing table registry.",
@@ -268,22 +269,23 @@ public class ConnectionPoolImpl implements ConnectionPool {
                 settings.maxConnectionPoolSize());
     }
 
-    private ExtendedChannelPool getOrCreatePool(BoltServerAddress address) {
+    private ExtendedChannelPool getOrCreatePool(AddressAndToken addressAndToken) {
         ExtendedChannelPool existingPool =
-                executeWithLock(addressToPoolLock.readLock(), () -> addressToPool.get(address));
+                executeWithLock(addressToPoolLock.readLock(), () -> addressToPool.get(addressAndToken));
         return existingPool != null
                 ? existingPool
                 : executeWithLock(addressToPoolLock.writeLock(), () -> {
-                    ExtendedChannelPool pool = addressToPool.get(address);
+                    ExtendedChannelPool pool = addressToPool.get(addressAndToken);
                     if (pool == null) {
-                        pool = newPool(address);
+                        pool = newPool(addressAndToken.getAddress());
                         // before the connection pool is added I can register the metrics for the pool.
+                        // todo extend metrics
                         metricsListener.registerPoolMetrics(
                                 pool.id(),
-                                address,
-                                () -> this.inUseConnections(address),
-                                () -> this.idleConnections(address));
-                        addressToPool.put(address, pool);
+                                addressAndToken.getAddress(),
+                                () -> this.inUseConnections(addressAndToken.getAddress()),
+                                () -> this.idleConnections(addressAndToken.getAddress()));
+                        addressToPool.put(addressAndToken, pool);
                     }
                     return pool;
                 });
@@ -325,12 +327,44 @@ public class ConnectionPoolImpl implements ConnectionPool {
     private CompletableFuture<Void> closeAllPools() {
         return CompletableFuture.allOf(addressToPool.entrySet().stream()
                 .map(entry -> {
-                    BoltServerAddress address = entry.getKey();
+                    AddressAndToken addressAndToken = entry.getKey();
                     ExtendedChannelPool pool = entry.getValue();
-                    log.info("Closing connection pool towards %s", address);
+                    // todo extend
+                    log.info("Closing connection pool towards %s", addressAndToken);
                     // Wait for all pools to be closed.
                     return closePool(pool).toCompletableFuture();
                 })
                 .toArray(CompletableFuture[]::new));
+    }
+
+    protected static class AddressAndToken {
+        private final BoltServerAddress address;
+        private final boolean overrideToken;
+
+        protected AddressAndToken(BoltServerAddress address, boolean overrideToken) {
+            this.address = address;
+            this.overrideToken = overrideToken;
+        }
+
+        public BoltServerAddress getAddress() {
+            return address;
+        }
+
+        public boolean isOverrideToken() {
+            return overrideToken;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            AddressAndToken that = (AddressAndToken) o;
+            return overrideToken == that.overrideToken && address.equals(that.address);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(address, overrideToken);
+        }
     }
 }

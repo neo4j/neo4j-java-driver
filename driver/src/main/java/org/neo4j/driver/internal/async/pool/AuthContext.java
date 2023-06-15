@@ -16,16 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async.connection;
+package org.neo4j.driver.internal.async.pool;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.internal.BoltServerAddress;
+public class AuthContext {
+    private boolean pendingLogoff;
 
-public interface ChannelConnector {
-    ChannelFuture connect(BoltServerAddress address, Bootstrap bootstrap);
+    public void markPendingLogoff() {
+        pendingLogoff = true;
+    }
 
-    ChannelFuture logon(Channel channel, AuthToken overrideAuthToken);
+    public boolean isPendingLogoff() {
+        return pendingLogoff;
+    }
 }

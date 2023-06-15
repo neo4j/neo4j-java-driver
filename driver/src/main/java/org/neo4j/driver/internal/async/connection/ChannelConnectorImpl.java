@@ -38,6 +38,7 @@ import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.cluster.RoutingContext;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
@@ -111,10 +112,19 @@ public class ChannelConnectorImpl implements ChannelConnector {
         ChannelPromise handshakeCompleted = channel.newPromise();
         ChannelPromise connectionInitialized = channel.newPromise();
 
-        installChannelConnectedListeners(address, channelConnected, handshakeCompleted);
-        installHandshakeCompletedListeners(handshakeCompleted, connectionInitialized);
+        installChannelConnectedListeners(address, channelConnected, connectionInitialized);
+        //        installHandshakeCompletedListeners(handshakeCompleted, connectionInitialized);
 
         return connectionInitialized;
+    }
+
+    @Override
+    public ChannelFuture logon(Channel channel, AuthToken overrideAuthToken) {
+        BoltProtocol protocol = BoltProtocol.forChannel(channel);
+        ChannelPromise promise = channel.newPromise();
+        protocol.initializeChannel(
+                userAgent, overrideAuthToken != null ? overrideAuthToken : authToken, routingContext, promise);
+        return promise;
     }
 
     private void installChannelConnectedListeners(

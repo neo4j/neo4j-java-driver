@@ -22,6 +22,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import java.util.List;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 
@@ -39,5 +40,10 @@ public class ChannelTrackingConnector implements ChannelConnector {
         ChannelFuture channelFuture = realConnector.connect(address, bootstrap);
         channels.add(channelFuture.channel());
         return channelFuture;
+    }
+
+    @Override
+    public ChannelFuture logon(Channel channel, AuthToken overrideAuthToken) {
+        return realConnector.logon(channel, overrideAuthToken);
     }
 }

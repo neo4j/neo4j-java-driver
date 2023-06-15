@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.messaging.BoltPatchesListener;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -50,6 +51,7 @@ public final class ChannelAttributes {
 
     // configuration hints provided by the server
     private static final AttributeKey<Long> CONNECTION_READ_TIMEOUT = newInstance("connectionReadTimeout");
+    private static final AttributeKey<AuthContext> AUTH_CONTEXT = newInstance("authContext");
 
     private ChannelAttributes() {}
 
@@ -162,6 +164,14 @@ public final class ChannelAttributes {
     public static Set<BoltPatchesListener> boltPatchesListeners(Channel channel) {
         Set<BoltPatchesListener> boltPatchesListeners = get(channel, BOLT_PATCHES_LISTENERS);
         return boltPatchesListeners != null ? boltPatchesListeners : Collections.emptySet();
+    }
+
+    public static AuthContext authContext(Channel channel) {
+        return get(channel, AUTH_CONTEXT);
+    }
+
+    public static void setAuthContext(Channel channel, AuthContext authContext) {
+        setOnce(channel, AUTH_CONTEXT, authContext);
     }
 
     private static <T> T get(Channel channel, AttributeKey<T> key) {
