@@ -19,13 +19,7 @@ RUN mkdir -p /etc/apt/keyrings \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/lib/jvm/temurin-17-jdk-* $JAVA_HOME
 
-# https://maven.apache.org/download.cgi
-RUN curl --location --output /tmp/download.tar.gz --silent --show-error https://downloads.apache.org/maven/maven-3/3.9.1/binaries/apache-maven-3.9.1-bin.tar.gz \
-    && cd /tmp \
-    && tar -xzf download.tar.gz \
-    && echo 'd3be5956712d1c2cf7a6e4c3a2db1841aa971c6097c7a67f59493a5873ccf8c8b889cf988e4e9801390a2b1ae5a0669de07673acb090a083232dbd3faf82f3e3  /tmp/download.tar.gz' | sha512sum --check --quiet \
-    && mv apache-maven* /opt/apache-maven \
-    && rm download.tar.gz
+COPY --from=maven:3.9.2-eclipse-temurin-17 /usr/share/maven /opt/apache-maven
 
 # Install our own CAs on the image.
 # Assumes Linux Debian based image.
