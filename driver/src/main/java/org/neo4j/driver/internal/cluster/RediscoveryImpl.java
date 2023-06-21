@@ -316,13 +316,11 @@ public class RediscoveryImpl implements Rediscovery {
             throw new CompletionException(error);
         }
 
-        // Retriable error happened during discovery.
-        DiscoveryException discoveryError =
-                new DiscoveryException(format(RECOVERABLE_ROUTING_ERROR, routerAddress), error);
+        // Retryable error happened during discovery.
+        var discoveryError = new DiscoveryException(format(RECOVERABLE_ROUTING_ERROR, routerAddress), error);
         Futures.combineErrors(baseError, discoveryError); // we record each failure here
-        String warningMessage = format(RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER, routerAddress);
-        log.warn(warningMessage);
-        log.debug(warningMessage, discoveryError);
+        log.warn(RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER, routerAddress);
+        log.debug(format(RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER, routerAddress), discoveryError);
         routingTable.forget(routerAddress);
         return null;
     }

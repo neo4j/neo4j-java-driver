@@ -28,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.startsWith;
@@ -54,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -523,6 +526,35 @@ class RediscoveryTest {
                 () -> await(rediscovery.lookupClusterComposition(table, pool, Collections.emptySet(), null, null)));
         assertEquals(exception, actualException);
         verify(table).forget(A);
+    }
+
+    @Test
+    void shouldLogScopedIPV6AddressWithStringFormattingLogger() throws UnknownHostException {
+        // GIVEN
+        var initialRouter = new BoltServerAddress("initialRouter", 7687);
+        var compositionProvider = compositionProviderMock(Collections.emptyMap());
+        var resolver = resolverMock(initialRouter, initialRouter);
+        var domainNameResolver = mock(DomainNameResolver.class);
+        var address = mock(InetAddress.class);
+        given(address.getHostAddress()).willReturn("fe80:0:0:0:ce66:1564:db8q:94b6%6");
+        given(domainNameResolver.resolve(initialRouter.host())).willReturn(new InetAddress[] {address});
+        var table = routingTableMock(true);
+        var pool = mock(ConnectionPool.class);
+        given(pool.acquire(any(), any()))
+                .willReturn(CompletableFuture.failedFuture(new ServiceUnavailableException("not available")));
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
+        given(logging.getLog(any(Class.class))).willReturn(logger);
+        doAnswer(invocationOnMock -> String.format(invocationOnMock.getArgument(0), invocationOnMock.getArgument(1)))
+                .when(logger)
+                .warn(any());
+        var rediscovery =
+                new RediscoveryImpl(initialRouter, compositionProvider, resolver, logging, domainNameResolver);
+
+        // WHEN & THEN
+        assertThrows(
+                ServiceUnavailableException.class,
+                () -> await(rediscovery.lookupClusterComposition(table, pool, Collections.emptySet(), null, null)));
     }
 
     private Rediscovery newRediscovery(
