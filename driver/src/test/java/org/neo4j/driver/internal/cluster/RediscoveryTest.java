@@ -29,6 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.startsWith;
@@ -52,9 +54,11 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -522,6 +526,43 @@ class RediscoveryTest {
         verify(domainNameResolver, times(1)).resolve(A.host());
         assertEquals(1, addresses.size());
         assertEquals(new BoltServerAddress(A.host(), localhost.getHostAddress(), A.port()), addresses.get(0));
+    }
+
+    @Test
+    void shouldLogScopedIPV6AddressWithStringFormattingLogger() throws UnknownHostException {
+        // GIVEN
+        BoltServerAddress initialRouter = new BoltServerAddress("initialRouter", 7687);
+        ClusterCompositionProvider compositionProvider = compositionProviderMock(Collections.emptyMap());
+        ServerAddressResolver resolver = resolverMock(initialRouter, initialRouter);
+        DomainNameResolver domainNameResolver = mock(DomainNameResolver.class);
+        InetAddress address = mock(InetAddress.class);
+        given(address.getHostAddress()).willReturn("fe80:0:0:0:ce66:1564:db8q:94b6%6");
+        given(domainNameResolver.resolve(initialRouter.host())).willReturn(new InetAddress[] {address});
+        RoutingTable table = routingTableMock(true);
+        ConnectionPool pool = mock(ConnectionPool.class);
+        CompletableFuture<Connection> failedAcquisition = new CompletableFuture<>();
+        failedAcquisition.completeExceptionally(new ServiceUnavailableException("not available"));
+        given(pool.acquire(any())).willReturn(failedAcquisition);
+        Logging logging = mock(Logging.class);
+        Logger logger = mock(Logger.class);
+        given(logging.getLog(any(Class.class))).willReturn(logger);
+        doAnswer(invocationOnMock -> String.format(invocationOnMock.getArgument(0), invocationOnMock.getArgument(1)))
+                .when(logger)
+                .warn(any());
+        RoutingSettings settings = new RoutingSettings(1, 0, 0);
+        RediscoveryImpl rediscovery = new RediscoveryImpl(
+                initialRouter,
+                settings,
+                compositionProvider,
+                GlobalEventExecutor.INSTANCE,
+                resolver,
+                logging,
+                domainNameResolver);
+
+        // WHEN & THEN
+        assertThrows(
+                ServiceUnavailableException.class,
+                () -> await(rediscovery.lookupClusterComposition(table, pool, null, null)));
     }
 
     private Rediscovery newRediscovery(
