@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -35,6 +36,8 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.LongStream;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
@@ -46,6 +49,8 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.TransactionTerminatedException;
+import org.neo4j.driver.internal.InternalTransaction;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -432,6 +437,40 @@ class TransactionIT {
         assertEquals(0, countNodesByLabel("Node2"));
         assertEquals(0, countNodesByLabel("Node3"));
         assertEquals(0, countNodesByLabel("Node4"));
+    }
+
+    @Test
+    void shouldTerminateTransactionAndRejectSubsequentRuns() {
+        // Given
+        var tx = (InternalTransaction) session.beginTransaction();
+        var result = tx.run("UNWIND range(0, 5) AS x RETURN x");
+        result.next();
+
+        // When
+        tx.terminate();
+
+        // Then
+        assertThrows(TransactionTerminatedException.class, () -> tx.run("UNWIND range(0, 5) AS x RETURN x"));
+        tx.close();
+    }
+
+    // The driver must handle the Neo.ClientError.Transaction.Terminated failure. If the failure does not arrive, it
+    // must prevent further PULLs from being dispatched and must surface a driver generated error. The already received
+    // records should be accessible.
+    @RepeatedTest(5)
+    void shouldTerminateTransaction() {
+        // Given
+        var tx = (InternalTransaction) session.beginTransaction();
+        var fetchSize = Config.defaultConfig().fetchSize();
+        var result = tx.run("UNWIND range(0, $limit) AS x RETURN x", Map.of("limit", fetchSize));
+
+        // When
+        tx.terminate();
+
+        // Then
+        assertThrows(TransactionTerminatedException.class, () -> LongStream.range(0, fetchSize + 1)
+                .forEach(ignored -> assertNotNull(result.next())));
+        tx.close();
     }
 
     private void shouldRunAndCloseAfterAction(Consumer<Transaction> txConsumer, boolean isCommit) {

@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async.connection;
 
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.RoutingErrorHandler;
@@ -84,8 +85,8 @@ public class RoutingConnection implements Connection {
     }
 
     @Override
-    public CompletionStage<Void> reset() {
-        return delegate.reset();
+    public CompletionStage<Void> reset(Neo4jException error) {
+        return delegate.reset(error);
     }
 
     @Override

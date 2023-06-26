@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.ConnectionReadTimeoutHandler;
@@ -146,9 +147,9 @@ public class NetworkConnection implements Connection {
     }
 
     @Override
-    public CompletionStage<Void> reset() {
+    public CompletionStage<Void> reset(Neo4jException error) {
         CompletableFuture<Void> result = new CompletableFuture<>();
-        ResetResponseHandler handler = new ResetResponseHandler(messageDispatcher, result);
+        ResetResponseHandler handler = new ResetResponseHandler(messageDispatcher, result, error);
         writeResetMessageIfNeeded(handler, true);
         return result;
     }

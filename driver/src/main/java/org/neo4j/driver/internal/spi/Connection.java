@@ -22,6 +22,7 @@ import static java.lang.String.format;
 
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -42,7 +43,11 @@ public interface Connection {
 
     void writeAndFlush(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2);
 
-    CompletionStage<Void> reset();
+    default CompletionStage<Void> reset() {
+        return reset(null);
+    }
+
+    CompletionStage<Void> reset(Neo4jException error);
 
     CompletionStage<Void> release();
 

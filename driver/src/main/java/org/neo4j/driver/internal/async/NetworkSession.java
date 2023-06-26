@@ -43,6 +43,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransactionNestingException;
+import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.FailableCursor;
@@ -175,7 +176,8 @@ public class NetworkSession {
         return existingTransactionOrNull()
                 .thenAccept(tx -> {
                     if (tx != null) {
-                        tx.markTerminated(null);
+                        tx.markTerminated(new TransactionTerminatedException(
+                                "The transaction has been explicitly terminated by the driver"));
                     }
                 })
                 .thenCompose(ignore -> connectionStage)

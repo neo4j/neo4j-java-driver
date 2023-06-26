@@ -28,6 +28,7 @@ import io.netty.channel.Channel;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -36,6 +37,7 @@ import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.exceptions.TokenExpiredRetryableException;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.logging.ChannelErrorLogger;
@@ -43,6 +45,7 @@ import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
+import org.neo4j.driver.internal.value.BooleanValue;
 
 public class InboundMessageDispatcher implements ResponseMessageHandler {
     private final Channel channel;
@@ -88,7 +91,19 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         log.debug("S: SUCCESS %s", meta);
         invokeBeforeLastHandlerHook(HandlerHook.MessageType.SUCCESS);
         ResponseHandler handler = removeHandler();
-        handler.onSuccess(meta);
+        getResetResponseHandler()
+                .flatMap(ResetResponseHandler::error)
+                .ifPresentOrElse(
+                        error -> {
+                            if (handler instanceof PullAllResponseHandler
+                                    && meta.getOrDefault("has_more", BooleanValue.FALSE)
+                                            .asBoolean()) {
+                                handler.onFailure(error);
+                            } else {
+                                handler.onSuccess(meta);
+                            }
+                        },
+                        () -> handler.onSuccess(meta));
     }
 
     @Override
@@ -146,20 +161,30 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
     public void handleIgnoredMessage() {
         log.debug("S: IGNORED");
 
-        ResponseHandler handler = removeHandler();
+        var handler = removeHandler();
 
         Throwable error;
         if (currentError != null) {
             error = currentError;
         } else {
-            log.warn(
-                    "Received IGNORED message for handler %s but error is missing and RESET is not in progress. "
-                            + "Current handlers %s",
-                    handler, handlers);
-
-            error = new ClientException("Database ignored the request");
+            var resetHandlerOpt = getResetResponseHandler();
+            if (resetHandlerOpt.isEmpty()) {
+                log.warn(
+                        "Received IGNORED message for handler %s but error is missing and RESET is not in progress. Current handlers %s",
+                        handler, handlers);
+            }
+            error = resetHandlerOpt
+                    .flatMap(ResetResponseHandler::error)
+                    .orElseGet(() -> new ClientException("Database ignored the request"));
         }
         handler.onFailure(error);
+    }
+
+    private Optional<ResetResponseHandler> getResetResponseHandler() {
+        return handlers.stream()
+                .filter(nextHandler -> nextHandler instanceof ResetResponseHandler)
+                .map(nextHandler -> (ResetResponseHandler) nextHandler)
+                .findFirst();
     }
 
     public void handleChannelInactive(Throwable cause) {

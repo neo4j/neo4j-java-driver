@@ -71,6 +71,7 @@ import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -432,34 +433,34 @@ class UnmanagedTransactionTest {
     }
 
     @Test
-    void shouldInterruptOnInterruptAsync() {
+    void shouldInterruptOnTerminateAsync() {
         // Given
         Connection connection = connectionMock(BoltProtocolV4.INSTANCE);
         UnmanagedTransaction tx = beginTx(connection);
 
         // When
-        await(tx.interruptAsync());
+        await(tx.terminateAsync());
 
         // Then
-        then(connection).should().reset();
+        then(connection).should().reset(any(TransactionTerminatedException.class));
     }
 
     @Test
-    void shouldServeTheSameStageOnInterruptAsync() {
+    void shouldServeTheSameStageOnTerminateAsync() {
         // Given
         Connection connection = connectionMock(BoltProtocolV4.INSTANCE);
         UnmanagedTransaction tx = beginTx(connection);
 
         // When
-        CompletionStage<Void> stage0 = tx.interruptAsync();
-        CompletionStage<Void> stage1 = tx.interruptAsync();
+        CompletionStage<Void> stage0 = tx.terminateAsync();
+        CompletionStage<Void> stage1 = tx.terminateAsync();
 
         // Then
         assertEquals(stage0, stage1);
     }
 
     @Test
-    void shouldHandleInterruptionWhenAlreadyInterrupted() throws ExecutionException, InterruptedException {
+    void shouldHandleTerminationWhenAlreadyTerminated() throws ExecutionException, InterruptedException {
         // Given
         var connection = connectionMock(BoltProtocolV4.INSTANCE);
         var exception = new Neo4jException("message");
@@ -473,7 +474,7 @@ class UnmanagedTransactionTest {
         } catch (ExecutionException e) {
             actualException = e.getCause();
         }
-        tx.interruptAsync().toCompletableFuture().get();
+        tx.terminateAsync().toCompletableFuture().get();
 
         // Then
         assertEquals(exception, actualException);

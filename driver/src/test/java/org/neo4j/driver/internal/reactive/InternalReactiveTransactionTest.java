@@ -35,33 +35,33 @@ public class InternalReactiveTransactionTest {
     @Test
     void shouldDelegateInterrupt() {
         // Given
-        UnmanagedTransaction utx = mock(UnmanagedTransaction.class);
-        given(utx.interruptAsync()).willReturn(completedFuture(null));
+        var utx = mock(UnmanagedTransaction.class);
+        given(utx.terminateAsync()).willReturn(completedFuture(null));
         tx = new InternalReactiveTransaction(utx);
 
         // When
-        StepVerifier.create(flowPublisherToFlux(tx.interrupt()))
+        StepVerifier.create(flowPublisherToFlux(tx.terminate()))
                 .expectComplete()
                 .verify();
 
         // Then
-        then(utx).should().interruptAsync();
+        then(utx).should().terminateAsync();
     }
 
     @Test
     void shouldDelegateInterruptAndReportError() {
         // Given
-        UnmanagedTransaction utx = mock(UnmanagedTransaction.class);
-        RuntimeException e = mock(RuntimeException.class);
-        given(utx.interruptAsync()).willReturn(failedFuture(e));
+        var utx = mock(UnmanagedTransaction.class);
+        var e = mock(RuntimeException.class);
+        given(utx.terminateAsync()).willReturn(failedFuture(e));
         tx = new InternalReactiveTransaction(utx);
 
         // When
-        StepVerifier.create(flowPublisherToFlux(tx.interrupt()))
+        StepVerifier.create(flowPublisherToFlux(tx.terminate()))
                 .expectErrorMatches(ar -> ar == e)
                 .verify();
 
         // Then
-        then(utx).should().interruptAsync();
+        then(utx).should().terminateAsync();
     }
 }

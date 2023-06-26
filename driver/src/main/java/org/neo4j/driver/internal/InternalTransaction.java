@@ -66,6 +66,22 @@ public class InternalTransaction extends AbstractQueryRunner implements Transact
         return tx.isOpen();
     }
 
+    /**
+     * <b>THIS IS A PRIVATE API</b>
+     * <p>
+     * Terminates the transaction by sending the Bolt {@code RESET} message and waiting for its response as long as the
+     * transaction has not already been terminated, is not closed or closing.
+     *
+     * @since 5.10
+     * @throws org.neo4j.driver.exceptions.ClientException if the transaction is closed or is closing
+     * @see org.neo4j.driver.exceptions.TransactionTerminatedException
+     */
+    public void terminate() {
+        Futures.blockingGet(
+                tx.terminateAsync(),
+                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while terminating the transaction"));
+    }
+
     private void terminateConnectionOnThreadInterrupt(String reason) {
         tx.connection().terminateAndRelease(reason);
     }

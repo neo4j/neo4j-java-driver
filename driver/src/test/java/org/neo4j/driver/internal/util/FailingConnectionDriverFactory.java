@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
@@ -159,8 +160,8 @@ public class FailingConnectionDriverFactory extends DriverFactory {
         }
 
         @Override
-        public CompletionStage<Void> reset() {
-            return delegate.reset();
+        public CompletionStage<Void> reset(Neo4jException error) {
+            return delegate.reset(error);
         }
 
         @Override

@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.asCompletionException;
 import static org.neo4j.driver.internal.util.Futures.combineErrors;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -44,6 +45,7 @@ import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
+import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
@@ -210,10 +212,14 @@ public class UnmanagedTransaction {
             } else if (state == State.ROLLED_BACK) {
                 throw new ClientException("Cannot run more queries in this transaction, it has been rolled back");
             } else if (state == State.TERMINATED) {
-                throw new ClientException(
-                        "Cannot run more queries in this transaction, "
-                                + "it has either experienced an fatal error or was explicitly terminated",
-                        causeOfTermination);
+                if (causeOfTermination instanceof TransactionTerminatedException transactionTerminatedException) {
+                    throw transactionTerminatedException;
+                } else {
+                    throw new ClientException(
+                            "Cannot run more queries in this transaction, "
+                                    + "it has either experienced an fatal error or was explicitly terminated",
+                            causeOfTermination);
+                }
             }
         });
     }
@@ -319,20 +325,21 @@ public class UnmanagedTransaction {
         return stage;
     }
 
-    /**
-     * Marks transaction as terminated and sends {@code RESET} message over allocated connection.
-     * <p>
-     * <b>THIS METHOD IS NOT PART OF PUBLIC API. This method may be changed or removed at any moment in time.</b>
-     *
-     * @return {@code RESET} response stage
-     */
-    public CompletionStage<Void> interruptAsync() {
+    public CompletionStage<Void> terminateAsync() {
         return executeWithLock(lock, () -> {
-            if (interruptStage == null) {
-                markTerminated(null);
-                interruptStage = connection.reset();
+            if (!isOpen() || commitFuture != null || rollbackFuture != null) {
+                return failedFuture(new ClientException("Can't terminate closed or closing transaction"));
+            } else {
+                if (state == State.TERMINATED) {
+                    return interruptStage != null ? interruptStage : completedFuture(null);
+                } else {
+                    var error = new TransactionTerminatedException(
+                            "The transaction has been explicitly terminated by the driver");
+                    markTerminated(error);
+                    interruptStage = connection.reset(error);
+                    return interruptStage;
+                }
             }
-            return interruptStage;
         });
     }
 }

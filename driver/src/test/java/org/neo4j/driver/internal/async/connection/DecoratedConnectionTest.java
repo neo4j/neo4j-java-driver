@@ -134,7 +134,7 @@ class DecoratedConnectionTest {
 
         connection.reset();
 
-        verify(mockConnection).reset();
+        verify(mockConnection).reset(null);
     }
 
     @Test

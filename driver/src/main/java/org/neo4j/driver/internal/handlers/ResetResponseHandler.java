@@ -19,22 +19,33 @@
 package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 public class ResetResponseHandler implements ResponseHandler {
     private final InboundMessageDispatcher messageDispatcher;
     private final CompletableFuture<Void> completionFuture;
+    private final Neo4jException error;
 
     public ResetResponseHandler(InboundMessageDispatcher messageDispatcher) {
         this(messageDispatcher, null);
     }
 
     public ResetResponseHandler(InboundMessageDispatcher messageDispatcher, CompletableFuture<Void> completionFuture) {
+        this(messageDispatcher, completionFuture, null);
+    }
+
+    public ResetResponseHandler(
+            InboundMessageDispatcher messageDispatcher,
+            CompletableFuture<Void> completionFuture,
+            Neo4jException error) {
         this.messageDispatcher = messageDispatcher;
         this.completionFuture = completionFuture;
+        this.error = error;
     }
 
     @Override
@@ -50,6 +61,10 @@ public class ResetResponseHandler implements ResponseHandler {
     @Override
     public final void onRecord(Value[] fields) {
         throw new UnsupportedOperationException();
+    }
+
+    public Optional<Neo4jException> error() {
+        return Optional.ofNullable(error);
     }
 
     private void resetCompleted(boolean success) {

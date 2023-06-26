@@ -73,6 +73,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.NoOpBookmarkManager;
@@ -467,6 +468,7 @@ public final class TestUtil {
             setupSuccessResponse(connection, BeginMessage.class);
             when(connection.release()).thenReturn(completedWithNull());
             when(connection.reset()).thenReturn(completedWithNull());
+            when(connection.reset(any(Neo4jException.class))).thenReturn(completedWithNull());
         } else {
             throw new IllegalArgumentException("Unsupported bolt protocol version: " + version);
         }

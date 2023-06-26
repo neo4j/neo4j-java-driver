@@ -60,14 +60,16 @@ public class InternalReactiveTransaction extends AbstractReactiveTransaction
     }
 
     /**
-     * Marks transaction as terminated and sends {@code RESET} message over allocated connection.
+     * <b>THIS IS A PRIVATE API</b>
      * <p>
-     * <b>THIS METHOD IS NOT PART OF PUBLIC API. This method may be changed or removed at any moment in time.</b>
+     * Terminates the transaction by sending the Bolt {@code RESET} message and waiting for its response as long as the
+     * transaction has not already been terminated, is not closed or closing.
      *
-     * @return {@code RESET} response publisher
+     * @return completion publisher (the {@code RESET} completion publisher if the message was sent)
+     * @since 5.10
      */
-    public Publisher<Void> interrupt() {
-        return Mono.fromCompletionStage(tx.interruptAsync());
+    public Publisher<Void> terminate() {
+        return Mono.fromCompletionStage(tx.terminateAsync());
     }
 
     @Override
