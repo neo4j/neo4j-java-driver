@@ -60,17 +60,6 @@ public class InternalReactiveTransaction extends AbstractReactiveTransaction
                 .map(InternalReactiveResult::new));
     }
 
-    /**
-     * Marks transaction as terminated and sends {@code RESET} message over allocated connection.
-     * <p>
-     * <b>THIS METHOD IS NOT PART OF PUBLIC API. This method may be changed or removed at any moment in time.</b>
-     *
-     * @return {@code RESET} response publisher
-     */
-    public Publisher<Void> interrupt() {
-        return publisherToFlowPublisher(Mono.fromCompletionStage(tx.interruptAsync()));
-    }
-
     @Override
     public <T> Publisher<T> commit() {
         return publisherToFlowPublisher(doCommit());

@@ -24,7 +24,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -66,6 +65,7 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.InternalSession;
 import org.neo4j.driver.testutil.DatabaseExtension;
@@ -158,17 +158,16 @@ class SessionResetIT {
     @Test
     void shouldMarkTxAsFailedAndDisallowRunAfterSessionReset() {
         // Given
-        try (InternalSession session = (InternalSession) neo4j.driver().session()) {
-            Transaction tx = session.beginTransaction();
+        try (var session = (InternalSession) neo4j.driver().session()) {
+            var tx = session.beginTransaction();
             // When reset the state of this session
             session.reset();
 
             // Then
-            Exception e = assertThrows(Exception.class, () -> {
+            assertThrows(TransactionTerminatedException.class, () -> {
                 tx.run("RETURN 1");
                 tx.commit();
             });
-            assertThat(e.getMessage(), startsWith("Cannot run more queries in this transaction"));
         }
     }
 
@@ -282,12 +281,11 @@ class SessionResetIT {
 
     @Test
     void shouldHandleResetBeforeRun() {
-        try (InternalSession session = (InternalSession) neo4j.driver().session();
-                Transaction tx = session.beginTransaction()) {
+        try (var session = (InternalSession) neo4j.driver().session();
+                var tx = session.beginTransaction()) {
             session.reset();
 
-            ClientException e = assertThrows(ClientException.class, () -> tx.run("CREATE (n:FirstNode)"));
-            assertThat(e.getMessage(), containsString("Cannot run more queries in this transaction"));
+            assertThrows(TransactionTerminatedException.class, () -> tx.run("CREATE (n:FirstNode)"));
         }
     }
 

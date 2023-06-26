@@ -31,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
@@ -172,17 +173,18 @@ public class NetworkSession {
     }
 
     public CompletionStage<Void> resetAsync() {
+        var terminationException = new AtomicReference<Throwable>();
         return existingTransactionOrNull()
                 .thenAccept(tx -> {
                     if (tx != null) {
-                        tx.markTerminated(null);
+                        terminationException.set(tx.markTerminated(null));
                     }
                 })
                 .thenCompose(ignore -> connectionStage)
                 .thenCompose(connection -> {
                     if (connection != null) {
                         // there exists an active connection, send a RESET message over it
-                        return connection.reset();
+                        return connection.reset(terminationException.get());
                     }
                     return completedWithNull();
                 });

@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -35,8 +36,11 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
@@ -46,6 +50,8 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.TransactionTerminatedException;
+import org.neo4j.driver.internal.InternalTransaction;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -143,7 +149,7 @@ class TransactionIT {
     }
 
     @Test
-    void shouldFailToCommitAfterCommit() throws Throwable {
+    void shouldFailToCommitAfterCommit() {
         Transaction tx = session.beginTransaction();
         tx.run("CREATE (:MyLabel)");
         tx.commit();
@@ -153,7 +159,7 @@ class TransactionIT {
     }
 
     @Test
-    void shouldFailToRollbackAfterRollback() throws Throwable {
+    void shouldFailToRollbackAfterRollback() {
         Transaction tx = session.beginTransaction();
         tx.run("CREATE (:MyLabel)");
         tx.rollback();
@@ -432,6 +438,146 @@ class TransactionIT {
         assertEquals(0, countNodesByLabel("Node2"));
         assertEquals(0, countNodesByLabel("Node3"));
         assertEquals(0, countNodesByLabel("Node4"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldPreventPullAfterTransactionTermination(boolean iterate) {
+        // Given
+        var tx = session.beginTransaction();
+        var streamSize = Config.defaultConfig().fetchSize() + 1;
+        var result0 = tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize));
+        var result1 = tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize));
+
+        // When
+        var terminationException = assertThrows(ClientException.class, () -> tx.run("invalid"));
+        assertEquals(terminationException.code(), "Neo.ClientError.Statement.SyntaxError");
+
+        // Then
+        for (var result : List.of(result0, result1)) {
+            var exception = assertThrows(ClientException.class, () -> {
+                if (iterate) {
+                    LongStream.range(0, streamSize).forEach(ignored -> result.next());
+                } else {
+                    result.list();
+                }
+            });
+            assertEquals(terminationException, exception);
+        }
+        tx.close();
+    }
+
+    @Test
+    void shouldPreventDiscardAfterTransactionTermination() {
+        // Given
+        var tx = session.beginTransaction();
+        var streamSize = Config.defaultConfig().fetchSize() + 1;
+        var result0 = tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize));
+        var result1 = tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize));
+
+        // When
+        var terminationException = assertThrows(ClientException.class, () -> tx.run("invalid"));
+        assertEquals(terminationException.code(), "Neo.ClientError.Statement.SyntaxError");
+
+        // Then
+        for (var result : List.of(result0, result1)) {
+            var exception = assertThrows(ClientException.class, result::consume);
+            assertEquals(terminationException, exception);
+        }
+        tx.close();
+    }
+
+    @Test
+    void shouldPreventRunAfterTransactionTermination() {
+        // Given
+        var tx = session.beginTransaction();
+        var terminationException = assertThrows(ClientException.class, () -> tx.run("invalid"));
+        assertEquals(terminationException.code(), "Neo.ClientError.Statement.SyntaxError");
+
+        // When
+        var exception = assertThrows(TransactionTerminatedException.class, () -> tx.run("RETURN 1"));
+
+        // Then
+        assertEquals(terminationException, exception.getCause());
+        tx.close();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldPreventPullAfterDriverTransactionTermination(boolean iterate) {
+        // Given
+        var tx = (InternalTransaction) session.beginTransaction();
+        var streamSize = Config.defaultConfig().fetchSize() + 1;
+        var result0 = tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize));
+        var result1 = tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize));
+
+        // When
+        tx.terminate();
+
+        // Then
+        for (var result : List.of(result0, result1)) {
+            assertThrows(TransactionTerminatedException.class, () -> {
+                if (iterate) {
+                    LongStream.range(0, streamSize).forEach(ignored -> result.next());
+                } else {
+                    result.list();
+                }
+            });
+        }
+        tx.close();
+    }
+
+    @Test
+    void shouldPreventDiscardAfterDriverTransactionTermination() {
+        // Given
+        var tx = (InternalTransaction) session.beginTransaction();
+        var streamSize = Config.defaultConfig().fetchSize() + 1;
+        var result0 = tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize));
+        var result1 = tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize));
+
+        // When
+        tx.terminate();
+
+        // Then
+        for (var result : List.of(result0, result1)) {
+            assertThrows(TransactionTerminatedException.class, result::consume);
+        }
+        tx.close();
+    }
+
+    @Test
+    void shouldPreventRunAfterDriverTransactionTermination() {
+        // Given
+        var tx = (InternalTransaction) session.beginTransaction();
+        var streamSize = Config.defaultConfig().fetchSize() + 1;
+        var result = tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize));
+        result.next();
+
+        // When
+        tx.terminate();
+
+        // Then
+        assertThrows(TransactionTerminatedException.class, () -> tx.run("UNWIND range(0, 5) AS x RETURN x"));
+        // the result handle has the pending error
+        assertThrows(TransactionTerminatedException.class, tx::close);
+        // all errors have been surfaced
+        tx.close();
+    }
+
+    @Test
+    void shouldTerminateTransactionAndHandleFailureResponseOrPreventFurtherPulls() {
+        // Given
+        var tx = (InternalTransaction) session.beginTransaction();
+        var streamSize = Config.defaultConfig().fetchSize() + 1;
+        var result = tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize));
+
+        // When
+        tx.terminate();
+
+        // Then
+        assertThrows(TransactionTerminatedException.class, () -> LongStream.range(0, streamSize)
+                .forEach(ignored -> assertNotNull(result.next())));
+        tx.close();
     }
 
     private void shouldRunAndCloseAfterAction(Consumer<Transaction> txConsumer, boolean isCommit) {

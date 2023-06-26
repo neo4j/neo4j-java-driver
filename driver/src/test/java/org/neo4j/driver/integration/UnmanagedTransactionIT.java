@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.testutil.TestUtil.await;
@@ -46,7 +47,9 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -111,11 +114,11 @@ class UnmanagedTransactionIT {
 
     @Test
     void shouldFailToCommitAfterTermination() {
-        UnmanagedTransaction tx = beginTransaction();
+        var tx = beginTransaction();
 
         tx.markTerminated(null);
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(TransactionTerminatedException.class, () -> await(tx.commitAsync()));
         assertThat(e.getMessage(), startsWith("Transaction can't be committed"));
     }
 
@@ -154,10 +157,12 @@ class UnmanagedTransactionIT {
     void shouldFailToRunQueryWhenTerminated() {
         UnmanagedTransaction tx = beginTransaction();
         txRun(tx, "CREATE (:MyLabel)");
-        tx.markTerminated(null);
+        var terminationException = mock(Neo4jException.class);
+        tx.markTerminated(terminationException);
 
-        ClientException e = assertThrows(ClientException.class, () -> txRun(tx, "CREATE (:MyOtherLabel)"));
+        var e = assertThrows(TransactionTerminatedException.class, () -> txRun(tx, "CREATE (:MyOtherLabel)"));
         assertThat(e.getMessage(), startsWith("Cannot run more queries in this transaction"));
+        assertEquals(e.getCause(), terminationException);
     }
 
     @Test
@@ -166,7 +171,7 @@ class UnmanagedTransactionIT {
         tx1.markTerminated(null);
 
         // commit should fail, make session forget about this transaction and release the connection to the pool
-        ClientException e = assertThrows(ClientException.class, () -> await(tx1.commitAsync()));
+        var e = assertThrows(TransactionTerminatedException.class, () -> await(tx1.commitAsync()));
         assertThat(e.getMessage(), startsWith("Transaction can't be committed"));
 
         await(session.beginTransactionAsync(TransactionConfig.empty())

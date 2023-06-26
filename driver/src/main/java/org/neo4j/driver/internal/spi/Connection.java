@@ -24,6 +24,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 
@@ -36,13 +37,9 @@ public interface Connection {
 
     void write(Message message, ResponseHandler handler);
 
-    void write(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2);
-
     void writeAndFlush(Message message, ResponseHandler handler);
 
-    void writeAndFlush(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2);
-
-    CompletionStage<Void> reset();
+    CompletionStage<Void> reset(Throwable throwable);
 
     CompletionStage<Void> release();
 
@@ -53,6 +50,8 @@ public interface Connection {
     BoltServerAddress serverAddress();
 
     BoltProtocol protocol();
+
+    void bindTransaction(UnmanagedTransaction transaction);
 
     default AccessMode mode() {
         throw new UnsupportedOperationException(format("%s does not support access mode.", getClass()));
@@ -65,6 +64,4 @@ public interface Connection {
     default String impersonatedUser() {
         throw new UnsupportedOperationException(format("%s does not support impersonated user.", getClass()));
     }
-
-    void flush();
 }

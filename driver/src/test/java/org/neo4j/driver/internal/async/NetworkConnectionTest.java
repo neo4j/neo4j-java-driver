@@ -107,14 +107,6 @@ class NetworkConnectionTest {
                 "WriteSingleMessage",
                 connection -> connection.write(
                         RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")), NO_OP_HANDLER));
-
-        testWriteInEventLoop(
-                "WriteMultipleMessages",
-                connection -> connection.write(
-                        RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                        NO_OP_HANDLER,
-                        PULL_ALL,
-                        NO_OP_HANDLER));
     }
 
     @Test
@@ -123,32 +115,11 @@ class NetworkConnectionTest {
                 "WriteAndFlushSingleMessage",
                 connection -> connection.writeAndFlush(
                         RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")), NO_OP_HANDLER));
-
-        testWriteInEventLoop(
-                "WriteAndFlushMultipleMessages",
-                connection -> connection.writeAndFlush(
-                        RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                        NO_OP_HANDLER,
-                        PULL_ALL,
-                        NO_OP_HANDLER));
     }
 
     @Test
     void shouldWriteForceReleaseInEventLoopThread() throws Exception {
         testWriteInEventLoop("ReleaseTestEventLoop", NetworkConnection::release);
-    }
-
-    @Test
-    void shouldFlushInEventLoopThread() throws Exception {
-        EmbeddedChannel channel = spy(new EmbeddedChannel());
-        initializeEventLoop(channel, "Flush");
-        ChannelAttributes.setProtocolVersion(channel, DEFAULT_TEST_PROTOCOL_VERSION);
-
-        NetworkConnection connection = newConnection(channel);
-        connection.flush();
-
-        shutdownEventLoop();
-        verify(channel).flush();
     }
 
     @Test
@@ -190,20 +161,6 @@ class NetworkConnectionTest {
     }
 
     @Test
-    void shouldWriteMultipleMessage() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
-
-        connection.write(PULL_ALL, NO_OP_HANDLER, RESET, NO_OP_HANDLER);
-
-        assertEquals(0, channel.outboundMessages().size());
-        channel.flushOutbound();
-        assertEquals(2, channel.outboundMessages().size());
-        assertEquals(PULL_ALL, channel.outboundMessages().poll());
-        assertEquals(RESET, channel.outboundMessages().poll());
-    }
-
-    @Test
     void shouldWriteAndFlushSingleMessage() {
         EmbeddedChannel channel = newChannel();
         NetworkConnection connection = newConnection(channel);
@@ -217,20 +174,6 @@ class NetworkConnectionTest {
     }
 
     @Test
-    void shouldWriteAndFlushMultipleMessage() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
-
-        connection.writeAndFlush(PULL_ALL, NO_OP_HANDLER, RESET, NO_OP_HANDLER);
-        channel.runPendingTasks(); // writeAndFlush is scheduled to execute in the event loop thread, trigger its
-        // execution
-
-        assertEquals(2, channel.outboundMessages().size());
-        assertEquals(PULL_ALL, channel.outboundMessages().poll());
-        assertEquals(RESET, channel.outboundMessages().poll());
-    }
-
-    @Test
     void shouldNotWriteSingleMessageWhenReleased() {
         ResponseHandler handler = mock(ResponseHandler.class);
         NetworkConnection connection = newConnection(newChannel());
@@ -240,24 +183,6 @@ class NetworkConnectionTest {
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
         verify(handler).onFailure(failureCaptor.capture());
-        assertConnectionReleasedError(failureCaptor.getValue());
-    }
-
-    @Test
-    void shouldNotWriteMultipleMessagesWhenReleased() {
-        ResponseHandler runHandler = mock(ResponseHandler.class);
-        ResponseHandler pullAllHandler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
-
-        connection.release();
-        connection.write(
-                RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                runHandler,
-                PULL_ALL,
-                pullAllHandler);
-
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
-        verify(runHandler).onFailure(failureCaptor.capture());
         assertConnectionReleasedError(failureCaptor.getValue());
     }
 
@@ -275,24 +200,6 @@ class NetworkConnectionTest {
     }
 
     @Test
-    void shouldNotWriteAndFlushMultipleMessagesWhenReleased() {
-        ResponseHandler runHandler = mock(ResponseHandler.class);
-        ResponseHandler pullAllHandler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
-
-        connection.release();
-        connection.writeAndFlush(
-                RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                runHandler,
-                PULL_ALL,
-                pullAllHandler);
-
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
-        verify(runHandler).onFailure(failureCaptor.capture());
-        assertConnectionReleasedError(failureCaptor.getValue());
-    }
-
-    @Test
     void shouldNotWriteSingleMessageWhenTerminated() {
         ResponseHandler handler = mock(ResponseHandler.class);
         NetworkConnection connection = newConnection(newChannel());
@@ -306,24 +213,6 @@ class NetworkConnectionTest {
     }
 
     @Test
-    void shouldNotWriteMultipleMessagesWhenTerminated() {
-        ResponseHandler runHandler = mock(ResponseHandler.class);
-        ResponseHandler pullAllHandler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
-
-        connection.terminateAndRelease("42");
-        connection.write(
-                RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                runHandler,
-                PULL_ALL,
-                pullAllHandler);
-
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
-        verify(runHandler).onFailure(failureCaptor.capture());
-        assertConnectionTerminatedError(failureCaptor.getValue());
-    }
-
-    @Test
     void shouldNotWriteAndFlushSingleMessageWhenTerminated() {
         ResponseHandler handler = mock(ResponseHandler.class);
         NetworkConnection connection = newConnection(newChannel());
@@ -333,24 +222,6 @@ class NetworkConnectionTest {
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
         verify(handler).onFailure(failureCaptor.capture());
-        assertConnectionTerminatedError(failureCaptor.getValue());
-    }
-
-    @Test
-    void shouldNotWriteAndFlushMultipleMessagesWhenTerminated() {
-        ResponseHandler runHandler = mock(ResponseHandler.class);
-        ResponseHandler pullAllHandler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
-
-        connection.terminateAndRelease("42");
-        connection.writeAndFlush(
-                RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                runHandler,
-                PULL_ALL,
-                pullAllHandler);
-
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
-        verify(runHandler).onFailure(failureCaptor.capture());
         assertConnectionTerminatedError(failureCaptor.getValue());
     }
 
@@ -503,7 +374,7 @@ class NetworkConnectionTest {
         EmbeddedChannel channel = newChannel();
         NetworkConnection connection = newConnection(channel);
 
-        connection.reset();
+        connection.reset(null);
         channel.runPendingTasks();
 
         assertEquals(1, channel.outboundMessages().size());
@@ -515,7 +386,7 @@ class NetworkConnectionTest {
         EmbeddedChannel channel = newChannel();
         NetworkConnection connection = newConnection(channel);
 
-        CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
+        CompletableFuture<Void> resetFuture = connection.reset(null).toCompletableFuture();
         channel.runPendingTasks();
         assertFalse(resetFuture.isDone());
 
@@ -529,7 +400,7 @@ class NetworkConnectionTest {
         EmbeddedChannel channel = newChannel();
         NetworkConnection connection = newConnection(channel);
 
-        CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
+        CompletableFuture<Void> resetFuture = connection.reset(null).toCompletableFuture();
         channel.runPendingTasks();
         assertFalse(resetFuture.isDone());
 
@@ -546,7 +417,7 @@ class NetworkConnectionTest {
         connection.release();
         channel.runPendingTasks();
 
-        CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
+        CompletableFuture<Void> resetFuture = connection.reset(null).toCompletableFuture();
         channel.runPendingTasks();
 
         assertEquals(1, channel.outboundMessages().size());
@@ -561,7 +432,7 @@ class NetworkConnectionTest {
         channel.config().setAutoRead(false);
         NetworkConnection connection = newConnection(channel);
 
-        connection.reset();
+        connection.reset(null);
         channel.runPendingTasks();
 
         assertTrue(channel.config().isAutoRead());

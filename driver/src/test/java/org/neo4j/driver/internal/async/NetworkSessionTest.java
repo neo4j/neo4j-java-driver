@@ -328,11 +328,11 @@ class NetworkSessionTest {
         run(session, query);
 
         InOrder connectionInOrder = inOrder(connection);
-        connectionInOrder.verify(connection, never()).reset();
+        connectionInOrder.verify(connection, never()).reset(null);
         connectionInOrder.verify(connection).release();
 
         await(session.resetAsync());
-        connectionInOrder.verify(connection).reset();
+        connectionInOrder.verify(connection).reset(null);
         connectionInOrder.verify(connection, never()).release();
     }
 
@@ -467,11 +467,11 @@ class NetworkSessionTest {
         UnmanagedTransaction tx = beginTransaction(session);
 
         assertTrue(tx.isOpen());
-        verify(connection, never()).reset();
+        verify(connection, never()).reset(null);
 
         await(session.resetAsync());
 
-        verify(connection).reset();
+        verify(connection).reset(any());
     }
 
     private static ResultCursor run(NetworkSession session, String query) {

@@ -43,6 +43,7 @@ import org.neo4j.driver.summary.ResultSummary;
  * Provides basic handling of pull responses from sever. The state is managed by {@link State}.
  */
 public class BasicPullResponseHandler implements PullResponseHandler {
+    private static final Runnable NO_OP_RUNNABLE = () -> {};
     private final Query query;
     protected final RunResponseHandler runResponseHandler;
     protected final MetadataExtractor metadataExtractor;
@@ -163,15 +164,33 @@ public class BasicPullResponseHandler implements PullResponseHandler {
     }
 
     @Override
-    public synchronized void request(long size) {
-        assertRecordAndSummaryConsumerInstalled();
-        state.request(this, size);
+    public void request(long size) {
+        Runnable postAction;
+        synchronized (this) {
+            assertRecordAndSummaryConsumerInstalled();
+            postAction = state.request(this, size);
+            if (syncSignals) {
+                postAction.run();
+            }
+        }
+        if (!syncSignals) {
+            postAction.run();
+        }
     }
 
     @Override
     public synchronized void cancel() {
-        assertRecordAndSummaryConsumerInstalled();
-        state.cancel(this);
+        Runnable postAction;
+        synchronized (this) {
+            assertRecordAndSummaryConsumerInstalled();
+            postAction = state.cancel(this);
+            if (syncSignals) {
+                postAction.run();
+            }
+        }
+        if (!syncSignals) {
+            postAction.run();
+        }
     }
 
     protected void writePull(long n) {
@@ -285,15 +304,15 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             }
 
             @Override
-            void request(BasicPullResponseHandler context, long n) {
+            Runnable request(BasicPullResponseHandler context, long n) {
                 context.state(STREAMING_STATE);
-                context.writePull(n);
+                return () -> context.writePull(n);
             }
 
             @Override
-            void cancel(BasicPullResponseHandler context) {
+            Runnable cancel(BasicPullResponseHandler context) {
                 context.state(CANCELLED_STATE);
-                context.discardAll();
+                return context::discardAll;
             }
         },
         STREAMING_STATE {
@@ -317,14 +336,16 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             }
 
             @Override
-            void request(BasicPullResponseHandler context, long n) {
+            Runnable request(BasicPullResponseHandler context, long n) {
                 context.state(STREAMING_STATE);
                 context.addToRequest(n);
+                return NO_OP_RUNNABLE;
             }
 
             @Override
-            void cancel(BasicPullResponseHandler context) {
+            Runnable cancel(BasicPullResponseHandler context) {
                 context.state(CANCELLED_STATE);
+                return NO_OP_RUNNABLE;
             }
         },
         CANCELLED_STATE {
@@ -349,13 +370,15 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             }
 
             @Override
-            void request(BasicPullResponseHandler context, long n) {
+            Runnable request(BasicPullResponseHandler context, long n) {
                 context.state(CANCELLED_STATE);
+                return NO_OP_RUNNABLE;
             }
 
             @Override
-            void cancel(BasicPullResponseHandler context) {
+            Runnable cancel(BasicPullResponseHandler context) {
                 context.state(CANCELLED_STATE);
+                return NO_OP_RUNNABLE;
             }
         },
         SUCCEEDED_STATE {
@@ -375,13 +398,15 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             }
 
             @Override
-            void request(BasicPullResponseHandler context, long n) {
+            Runnable request(BasicPullResponseHandler context, long n) {
                 context.state(SUCCEEDED_STATE);
+                return NO_OP_RUNNABLE;
             }
 
             @Override
-            void cancel(BasicPullResponseHandler context) {
+            Runnable cancel(BasicPullResponseHandler context) {
                 context.state(SUCCEEDED_STATE);
+                return NO_OP_RUNNABLE;
             }
         },
         FAILURE_STATE {
@@ -401,13 +426,15 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             }
 
             @Override
-            void request(BasicPullResponseHandler context, long n) {
+            Runnable request(BasicPullResponseHandler context, long n) {
                 context.state(FAILURE_STATE);
+                return NO_OP_RUNNABLE;
             }
 
             @Override
-            void cancel(BasicPullResponseHandler context) {
+            Runnable cancel(BasicPullResponseHandler context) {
                 context.state(FAILURE_STATE);
+                return NO_OP_RUNNABLE;
             }
         };
 
@@ -417,8 +444,8 @@ public class BasicPullResponseHandler implements PullResponseHandler {
 
         abstract void onRecord(BasicPullResponseHandler context, Value[] fields);
 
-        abstract void request(BasicPullResponseHandler context, long n);
+        abstract Runnable request(BasicPullResponseHandler context, long n);
 
-        abstract void cancel(BasicPullResponseHandler context);
+        abstract Runnable cancel(BasicPullResponseHandler context);
     }
 }

@@ -28,6 +28,7 @@ import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
@@ -134,14 +135,6 @@ public class FailingConnectionDriverFactory extends DriverFactory {
         }
 
         @Override
-        public void write(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2) {
-            if (tryFail(handler1, handler2)) {
-                return;
-            }
-            delegate.write(message1, handler1, message2, handler2);
-        }
-
-        @Override
         public void writeAndFlush(Message message, ResponseHandler handler) {
             if (tryFail(handler, null)) {
                 return;
@@ -150,17 +143,8 @@ public class FailingConnectionDriverFactory extends DriverFactory {
         }
 
         @Override
-        public void writeAndFlush(
-                Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2) {
-            if (tryFail(handler1, handler2)) {
-                return;
-            }
-            delegate.writeAndFlush(message1, handler1, message2, handler2);
-        }
-
-        @Override
-        public CompletionStage<Void> reset() {
-            return delegate.reset();
+        public CompletionStage<Void> reset(Throwable throwable) {
+            return delegate.reset(throwable);
         }
 
         @Override
@@ -189,11 +173,8 @@ public class FailingConnectionDriverFactory extends DriverFactory {
         }
 
         @Override
-        public void flush() {
-            if (tryFail(null, null)) {
-                return;
-            }
-            delegate.flush();
+        public void bindTransaction(UnmanagedTransaction transaction) {
+            delegate.bindTransaction(transaction);
         }
 
         private boolean tryFail(ResponseHandler handler1, ResponseHandler handler2) {

@@ -28,6 +28,8 @@ import io.netty.channel.Channel;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -146,20 +148,23 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
     public void handleIgnoredMessage() {
         log.debug("S: IGNORED");
 
-        ResponseHandler handler = removeHandler();
-
-        Throwable error;
-        if (currentError != null) {
-            error = currentError;
-        } else {
-            log.warn(
-                    "Received IGNORED message for handler %s but error is missing and RESET is not in progress. "
-                            + "Current handlers %s",
-                    handler, handlers);
-
-            error = new ClientException("Database ignored the request");
-        }
+        var handler = removeHandler();
+        var error = Objects.requireNonNullElseGet(currentError, () -> getPendingResetHandler()
+                .flatMap(ResetResponseHandler::throwable)
+                .orElseGet(() -> {
+                    log.warn(
+                            "Received IGNORED message for handler %s but error is missing and RESET is not in progress. Current handlers %s",
+                            handler, handlers);
+                    return new ClientException("Database ignored the request");
+                }));
         handler.onFailure(error);
+    }
+
+    private Optional<ResetResponseHandler> getPendingResetHandler() {
+        return handlers.stream()
+                .filter(h -> h instanceof ResetResponseHandler)
+                .map(h -> (ResetResponseHandler) h)
+                .findFirst();
     }
 
     public void handleChannelInactive(Throwable cause) {
