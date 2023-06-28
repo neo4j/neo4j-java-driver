@@ -71,7 +71,6 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter {
             // it is most likely inactive because actual network connection broke or was explicitly closed by the driver
 
             messageDispatcher.handleChannelInactive(error);
-            ctx.channel().close();
         } else {
             fail(error);
         }
