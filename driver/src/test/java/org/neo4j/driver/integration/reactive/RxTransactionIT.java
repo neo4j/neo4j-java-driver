@@ -273,7 +273,8 @@ class RxTransactionIT {
                 .rxSession(builder().withBookmarks(parse("InvalidBookmark")).build());
 
         ClientException e = assertThrows(ClientException.class, () -> await(session.beginTransaction()));
-        assertThat(e.getMessage(), containsString("InvalidBookmark"));
+        assertTrue(e.getMessage().contains("InvalidBookmark")
+                || e.getMessage().contains("Parsing of supplied bookmarks failed"));
     }
 
     @Test

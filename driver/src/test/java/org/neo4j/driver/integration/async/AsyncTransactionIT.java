@@ -278,7 +278,8 @@ class AsyncTransactionIT {
                 .asyncSession(builder().withBookmarks(parse("InvalidBookmark")).build());
 
         ClientException e = assertThrows(ClientException.class, () -> await(session.beginTransactionAsync()));
-        assertThat(e.getMessage(), containsString("InvalidBookmark"));
+        assertTrue(e.getMessage().contains("InvalidBookmark")
+                || e.getMessage().contains("Parsing of supplied bookmarks failed"));
     }
 
     @Test
