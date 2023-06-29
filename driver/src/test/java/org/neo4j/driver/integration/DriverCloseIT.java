@@ -18,15 +18,22 @@
  */
 package org.neo4j.driver.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.SessionConfig.builder;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -82,6 +89,25 @@ class DriverCloseIT {
         driver.close();
 
         assertThrows(IllegalStateException.class, () -> session.run("CREATE ()"));
+    }
+
+    @Test
+    void shouldInterruptStreamConsumptionAndEndRetriesOnDriverClosure() {
+        int fetchSize = 5;
+        Config config = Config.builder().withFetchSize(fetchSize).build();
+        Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), config);
+        Session session = driver.session();
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> session.readTransaction(tx -> {
+                    Map<String, Object> parameters = new HashMap<>();
+                    parameters.put("limit", fetchSize * 3);
+                    Result result = tx.run("UNWIND range(0, $limit) AS x RETURN x", parameters);
+                    CompletableFuture.runAsync(driver::close);
+                    return result.list();
+                }));
+        assertEquals(ConnectionPool.CONNECTION_POOL_CLOSED_ERROR_MESSAGE, exception.getMessage());
     }
 
     private static Driver createDriver() {
