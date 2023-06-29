@@ -168,6 +168,10 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         if (!gracefullyClosed) {
             handleChannelError(cause);
         } else {
+            while (!handlers.isEmpty()) {
+                ResponseHandler handler = removeHandler();
+                handler.onFailure(cause);
+            }
             channel.close();
         }
     }
