@@ -218,7 +218,7 @@ public class NetworkConnection implements Connection {
 
     private void writeMessageInEventLoop(Message message, ResponseHandler handler, boolean flush) {
         channel.eventLoop()
-                .execute(() -> transactionTerminationAwareExecutor(message).execute(causeOfTermination -> {
+                .execute(() -> terminationAwareStateLockingExecutor(message).execute(causeOfTermination -> {
                     if (causeOfTermination == null) {
                         messageDispatcher.enqueue(handler);
 
@@ -279,7 +279,7 @@ public class NetworkConnection implements Connection {
         }
     }
 
-    private TerminationAwareStateLockingExecutor transactionTerminationAwareExecutor(Message message) {
+    private TerminationAwareStateLockingExecutor terminationAwareStateLockingExecutor(Message message) {
         var result = (TerminationAwareStateLockingExecutor) consumer -> consumer.accept(null);
         if (isQueryMessage(message)) {
             var lockingExecutor = executeWithLock(lock, () -> this.terminationAwareStateLockingExecutor);
