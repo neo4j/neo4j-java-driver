@@ -52,7 +52,7 @@ import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
 
-public class UnmanagedTransaction {
+public class UnmanagedTransaction implements TerminationAwareStateLockingExecutor {
     private enum State {
         /**
          * The transaction is running with no explicit success or failure marked
@@ -121,7 +121,7 @@ public class UnmanagedTransaction {
         this.fetchSize = fetchSize;
         this.notificationConfig = notificationConfig;
 
-        connection.bindTransaction(this);
+        connection.bindTerminationAwareStateLockingExecutor(this);
     }
 
     public CompletionStage<UnmanagedTransaction> beginAsync(
@@ -211,13 +211,8 @@ public class UnmanagedTransaction {
         return connection;
     }
 
-    /**
-     * Locks the transaction state and executes the supplied {@link Consumer} with a cause of termination if the
-     * transaction is terminated.
-     *
-     * @param causeOfTerminationConsumer the consumer accepting
-     */
-    public void executeWithLockedState(Consumer<Throwable> causeOfTerminationConsumer) {
+    @Override
+    public void execute(Consumer<Throwable> causeOfTerminationConsumer) {
         executeWithLock(lock, () -> causeOfTerminationConsumer.accept(causeOfTermination));
     }
 

@@ -32,7 +32,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -76,7 +75,7 @@ public class NetworkConnection implements Connection {
     private final Long connectionReadTimeout;
 
     private Status status = Status.OPEN;
-    private UnmanagedTransaction transaction;
+    private TerminationAwareStateLockingExecutor terminationAwareStateLockingExecutor;
     private ChannelHandler connectionReadTimeoutHandler;
 
     public NetworkConnection(
@@ -185,12 +184,12 @@ public class NetworkConnection implements Connection {
     }
 
     @Override
-    public void bindTransaction(UnmanagedTransaction transaction) {
+    public void bindTerminationAwareStateLockingExecutor(TerminationAwareStateLockingExecutor executor) {
         executeWithLock(lock, () -> {
-            if (this.transaction != null) {
-                throw new IllegalStateException("transaction is already set");
+            if (this.terminationAwareStateLockingExecutor != null) {
+                throw new IllegalStateException("terminationAwareStateLockingExecutor is already set");
             }
-            this.transaction = transaction;
+            this.terminationAwareStateLockingExecutor = terminationAwareStateLockingExecutor;
         });
     }
 
@@ -219,7 +218,7 @@ public class NetworkConnection implements Connection {
 
     private void writeMessageInEventLoop(Message message, ResponseHandler handler, boolean flush) {
         channel.eventLoop()
-                .execute(() -> transactionTerminationAwareExecutor(message).accept(causeOfTermination -> {
+                .execute(() -> transactionTerminationAwareExecutor(message).execute(causeOfTermination -> {
                     if (causeOfTermination == null) {
                         messageDispatcher.enqueue(handler);
 
@@ -280,12 +279,12 @@ public class NetworkConnection implements Connection {
         }
     }
 
-    private Consumer<Consumer<Throwable>> transactionTerminationAwareExecutor(Message message) {
-        var result = (Consumer<Consumer<Throwable>>) consumer -> consumer.accept(null);
+    private TerminationAwareStateLockingExecutor transactionTerminationAwareExecutor(Message message) {
+        var result = (TerminationAwareStateLockingExecutor) consumer -> consumer.accept(null);
         if (isQueryMessage(message)) {
-            var transaction = executeWithLock(lock, () -> this.transaction);
-            if (transaction != null) {
-                result = transaction::executeWithLockedState;
+            var lockingExecutor = executeWithLock(lock, () -> this.terminationAwareStateLockingExecutor);
+            if (lockingExecutor != null) {
+                result = lockingExecutor;
             }
         }
         return result;

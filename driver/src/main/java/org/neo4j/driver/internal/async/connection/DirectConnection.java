@@ -23,7 +23,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.DirectConnectionProvider;
-import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.async.TerminationAwareStateLockingExecutor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
@@ -105,8 +105,8 @@ public class DirectConnection implements Connection {
     }
 
     @Override
-    public void bindTransaction(UnmanagedTransaction transaction) {
-        delegate.bindTransaction(transaction);
+    public void bindTerminationAwareStateLockingExecutor(TerminationAwareStateLockingExecutor executor) {
+        delegate.bindTerminationAwareStateLockingExecutor(executor);
     }
 
     @Override

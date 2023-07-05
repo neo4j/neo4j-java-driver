@@ -24,7 +24,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.async.TerminationAwareStateLockingExecutor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 
@@ -51,7 +51,7 @@ public interface Connection {
 
     BoltProtocol protocol();
 
-    void bindTransaction(UnmanagedTransaction transaction);
+    void bindTerminationAwareStateLockingExecutor(TerminationAwareStateLockingExecutor executor);
 
     default AccessMode mode() {
         throw new UnsupportedOperationException(format("%s does not support access mode.", getClass()));

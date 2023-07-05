@@ -28,7 +28,7 @@ import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.async.TerminationAwareStateLockingExecutor;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
@@ -173,8 +173,8 @@ public class FailingConnectionDriverFactory extends DriverFactory {
         }
 
         @Override
-        public void bindTransaction(UnmanagedTransaction transaction) {
-            delegate.bindTransaction(transaction);
+        public void bindTerminationAwareStateLockingExecutor(TerminationAwareStateLockingExecutor executor) {
+            delegate.bindTerminationAwareStateLockingExecutor(executor);
         }
 
         private boolean tryFail(ResponseHandler handler1, ResponseHandler handler2) {
