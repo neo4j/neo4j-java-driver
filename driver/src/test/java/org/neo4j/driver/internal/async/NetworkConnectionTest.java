@@ -23,8 +23,11 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -43,6 +46,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -53,13 +57,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
+import org.neo4j.driver.internal.messaging.request.DiscardMessage;
+import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -437,6 +449,120 @@ class NetworkConnectionTest {
 
         assertTrue(channel.config().isAutoRead());
     }
+
+    @Test
+    void shouldRejectBindingTerminationAwareStateLockingExecutorTwice() {
+        var channel = newChannel();
+        var connection = newConnection(channel);
+        var lockingExecutor = mock(TerminationAwareStateLockingExecutor.class);
+        connection.bindTerminationAwareStateLockingExecutor(lockingExecutor);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> connection.bindTerminationAwareStateLockingExecutor(lockingExecutor));
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryMessages")
+    void shouldPreventDispatchingQueryMessagesOnTermination(QueryMessage queryMessage) {
+        // Given
+        var channel = newChannel();
+        var connection = newConnection(channel);
+        var lockingExecutor = mock(TerminationAwareStateLockingExecutor.class);
+        var error = mock(Neo4jException.class);
+        doAnswer(invocationOnMock -> {
+                    @SuppressWarnings("unchecked")
+                    var consumer = (Consumer<Throwable>) invocationOnMock.getArguments()[0];
+                    consumer.accept(error);
+                    return null;
+                })
+                .when(lockingExecutor)
+                .execute(any());
+        connection.bindTerminationAwareStateLockingExecutor(lockingExecutor);
+        var handler = mock(ResponseHandler.class);
+
+        // When
+        if (queryMessage.flush()) {
+            connection.writeAndFlush(queryMessage.message(), handler);
+        } else {
+            connection.write(queryMessage.message(), handler);
+        }
+        channel.runPendingTasks();
+
+        // Then
+        assertTrue(channel.outboundMessages().isEmpty());
+        then(lockingExecutor).should().execute(any());
+        then(handler).should().onFailure(error);
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryMessages")
+    void shouldDispatchingQueryMessagesWhenNotTerminated(QueryMessage queryMessage) {
+        // Given
+        var channel = newChannel();
+        var connection = newConnection(channel);
+        var lockingExecutor = mock(TerminationAwareStateLockingExecutor.class);
+        doAnswer(invocationOnMock -> {
+                    @SuppressWarnings("unchecked")
+                    var consumer = (Consumer<Throwable>) invocationOnMock.getArguments()[0];
+                    consumer.accept(null);
+                    return null;
+                })
+                .when(lockingExecutor)
+                .execute(any());
+        connection.bindTerminationAwareStateLockingExecutor(lockingExecutor);
+        var handler = mock(ResponseHandler.class);
+
+        // When
+        if (queryMessage.flush()) {
+            connection.writeAndFlush(queryMessage.message(), handler);
+        } else {
+            connection.write(queryMessage.message(), handler);
+            channel.flushOutbound();
+        }
+        channel.runPendingTasks();
+
+        // Then
+        assertEquals(1, channel.outboundMessages().size());
+        then(lockingExecutor).should().execute(any());
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryMessages")
+    void shouldDispatchingQueryMessagesWhenExecutorAbsent(QueryMessage queryMessage) {
+        // Given
+        var channel = newChannel();
+        var connection = newConnection(channel);
+        var handler = mock(ResponseHandler.class);
+
+        // When
+        if (queryMessage.flush()) {
+            connection.writeAndFlush(queryMessage.message(), handler);
+        } else {
+            connection.write(queryMessage.message(), handler);
+            channel.flushOutbound();
+        }
+        channel.runPendingTasks();
+
+        // Then
+        assertEquals(1, channel.outboundMessages().size());
+    }
+
+    static List<QueryMessage> queryMessages() {
+        return List.of(
+                new QueryMessage(false, mock(RunWithMetadataMessage.class)),
+                new QueryMessage(true, mock(RunWithMetadataMessage.class)),
+                new QueryMessage(false, mock(PullMessage.class)),
+                new QueryMessage(true, mock(PullMessage.class)),
+                new QueryMessage(false, mock(PullAllMessage.class)),
+                new QueryMessage(true, mock(PullAllMessage.class)),
+                new QueryMessage(false, mock(DiscardMessage.class)),
+                new QueryMessage(true, mock(DiscardMessage.class)),
+                new QueryMessage(false, mock(DiscardAllMessage.class)),
+                new QueryMessage(true, mock(DiscardAllMessage.class)));
+    }
+
+    private record QueryMessage(boolean flush, Message message) {}
 
     private void testWriteInEventLoop(String threadName, Consumer<NetworkConnection> action) throws Exception {
         EmbeddedChannel channel = spy(new EmbeddedChannel());

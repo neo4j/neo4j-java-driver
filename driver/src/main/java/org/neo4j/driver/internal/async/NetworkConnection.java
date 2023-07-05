@@ -189,7 +189,7 @@ public class NetworkConnection implements Connection {
             if (this.terminationAwareStateLockingExecutor != null) {
                 throw new IllegalStateException("terminationAwareStateLockingExecutor is already set");
             }
-            this.terminationAwareStateLockingExecutor = terminationAwareStateLockingExecutor;
+            this.terminationAwareStateLockingExecutor = executor;
         });
     }
 
