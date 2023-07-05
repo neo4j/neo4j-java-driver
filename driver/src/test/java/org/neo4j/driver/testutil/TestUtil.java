@@ -466,7 +466,7 @@ public final class TestUtil {
             setupSuccessResponse(connection, RollbackMessage.class);
             setupSuccessResponse(connection, BeginMessage.class);
             when(connection.release()).thenReturn(completedWithNull());
-            when(connection.reset()).thenReturn(completedWithNull());
+            when(connection.reset(any())).thenReturn(completedWithNull());
         } else {
             throw new IllegalArgumentException("Unsupported bolt protocol version: " + version);
         }

@@ -151,6 +151,14 @@ public class StartTest implements TestkitRequest {
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.Routing[^.]+\\.test_should_fail_when_writing_on_unexpectedly_interrupting_writer_on_run_using_tx_run$",
                 skipMessage);
+        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestTxRun\\.test_should_prevent_pull_after_tx_termination_on_run$", skipMessage);
+        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestTxRun\\.test_should_prevent_discard_after_tx_termination_on_run$", skipMessage);
+        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestTxRun\\.test_should_prevent_run_after_tx_termination_on_run$", skipMessage);
+        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.TestTxRun\\.test_should_prevent_run_after_tx_termination_on_pull$", skipMessage);
         skipMessage = "Does not support multiple concurrent result streams on session level";
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put("^.*\\.TestSessionRun\\.test_iteration_nested$", skipMessage);
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put("^.*\\.TestSessionRun\\.test_partial_iteration$", skipMessage);

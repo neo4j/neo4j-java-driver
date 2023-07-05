@@ -85,21 +85,6 @@ class DecoratedConnectionTest {
     }
 
     @Test
-    void shouldDelegateWriteTwoMessages() {
-        Connection mockConnection = mock(Connection.class);
-        DirectConnection connection = newConnection(mockConnection);
-
-        Message message1 = mock(Message.class);
-        ResponseHandler handler1 = mock(ResponseHandler.class);
-        Message message2 = mock(Message.class);
-        ResponseHandler handler2 = mock(ResponseHandler.class);
-
-        connection.write(message1, handler1, message2, handler2);
-
-        verify(mockConnection).write(message1, handler1, message2, handler2);
-    }
-
-    @Test
     void shouldDelegateWriteAndFlush() {
         Connection mockConnection = mock(Connection.class);
         DirectConnection connection = newConnection(mockConnection);
@@ -113,28 +98,13 @@ class DecoratedConnectionTest {
     }
 
     @Test
-    void shouldDelegateWriteAndFlush1() {
-        Connection mockConnection = mock(Connection.class);
-        DirectConnection connection = newConnection(mockConnection);
-
-        Message message1 = mock(Message.class);
-        ResponseHandler handler1 = mock(ResponseHandler.class);
-        Message message2 = mock(Message.class);
-        ResponseHandler handler2 = mock(ResponseHandler.class);
-
-        connection.writeAndFlush(message1, handler1, message2, handler2);
-
-        verify(mockConnection).writeAndFlush(message1, handler1, message2, handler2);
-    }
-
-    @Test
     void shouldDelegateReset() {
         Connection mockConnection = mock(Connection.class);
         DirectConnection connection = newConnection(mockConnection);
 
-        connection.reset();
+        connection.reset(null);
 
-        verify(mockConnection).reset();
+        verify(mockConnection).reset(null);
     }
 
     @Test

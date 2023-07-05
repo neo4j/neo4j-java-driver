@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.asCompletionException;
 import static org.neo4j.driver.internal.util.Futures.combineErrors;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -44,13 +45,14 @@ import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
+import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
 
-public class UnmanagedTransaction {
+public class UnmanagedTransaction implements TerminationAwareStateLockingExecutor {
     private enum State {
         /**
          * The transaction is running with no explicit success or failure marked
@@ -73,6 +75,8 @@ public class UnmanagedTransaction {
         ROLLED_BACK
     }
 
+    public static final String EXPLICITLY_TERMINATED_MSG =
+            "The transaction has been explicitly terminated by the driver";
     protected static final String CANT_COMMIT_COMMITTED_MSG = "Can't commit, transaction has been committed";
     protected static final String CANT_ROLLBACK_COMMITTED_MSG = "Can't rollback, transaction has been committed";
     protected static final String CANT_COMMIT_ROLLED_BACK_MSG = "Can't commit, transaction has been rolled back";
@@ -93,7 +97,7 @@ public class UnmanagedTransaction {
     private CompletableFuture<Void> commitFuture;
     private CompletableFuture<Void> rollbackFuture;
     private Throwable causeOfTermination;
-    private CompletionStage<Void> interruptStage;
+    private CompletionStage<Void> terminationStage;
     private final NotificationConfig notificationConfig;
 
     public UnmanagedTransaction(
@@ -116,6 +120,8 @@ public class UnmanagedTransaction {
         this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
         this.notificationConfig = notificationConfig;
+
+        connection.bindTerminationAwareStateLockingExecutor(this);
     }
 
     public CompletionStage<UnmanagedTransaction> beginAsync(
@@ -176,16 +182,18 @@ public class UnmanagedTransaction {
         return OPEN_STATES.contains(executeWithLock(lock, () -> state));
     }
 
-    public void markTerminated(Throwable cause) {
-        executeWithLock(lock, () -> {
+    public Throwable markTerminated(Throwable cause) {
+        return executeWithLock(lock, () -> {
             if (state == State.TERMINATED) {
-                if (causeOfTermination != null && cause != null) {
+                if (cause != null) {
                     addSuppressedWhenNotCaptured(causeOfTermination, cause);
                 }
             } else {
                 state = State.TERMINATED;
-                causeOfTermination = cause;
+                causeOfTermination =
+                        cause != null ? cause : new TransactionTerminatedException(EXPLICITLY_TERMINATED_MSG);
             }
+            return causeOfTermination;
         });
     }
 
@@ -203,6 +211,27 @@ public class UnmanagedTransaction {
         return connection;
     }
 
+    @Override
+    public void execute(Consumer<Throwable> causeOfTerminationConsumer) {
+        executeWithLock(lock, () -> causeOfTerminationConsumer.accept(causeOfTermination));
+    }
+
+    public CompletionStage<Void> terminateAsync() {
+        return executeWithLock(lock, () -> {
+            if (!isOpen() || commitFuture != null || rollbackFuture != null) {
+                return failedFuture(new ClientException("Can't terminate closed or closing transaction"));
+            } else {
+                if (state == State.TERMINATED) {
+                    return terminationStage != null ? terminationStage : completedFuture(null);
+                } else {
+                    var terminationException = markTerminated(null);
+                    terminationStage = connection.reset(terminationException);
+                    return terminationStage;
+                }
+            }
+        });
+    }
+
     private void ensureCanRunQueries() {
         executeWithLock(lock, () -> {
             if (state == State.COMMITTED) {
@@ -210,10 +239,14 @@ public class UnmanagedTransaction {
             } else if (state == State.ROLLED_BACK) {
                 throw new ClientException("Cannot run more queries in this transaction, it has been rolled back");
             } else if (state == State.TERMINATED) {
-                throw new ClientException(
-                        "Cannot run more queries in this transaction, "
-                                + "it has either experienced an fatal error or was explicitly terminated",
-                        causeOfTermination);
+                if (causeOfTermination instanceof TransactionTerminatedException transactionTerminatedException) {
+                    throw transactionTerminatedException;
+                } else {
+                    throw new TransactionTerminatedException(
+                            "Cannot run more queries in this transaction, "
+                                    + "it has either experienced an fatal error or was explicitly terminated",
+                            causeOfTermination);
+                }
             }
         });
     }
@@ -222,7 +255,7 @@ public class UnmanagedTransaction {
         ClientException exception = executeWithLock(
                 lock,
                 () -> state == State.TERMINATED
-                        ? new ClientException(
+                        ? new TransactionTerminatedException(
                                 "Transaction can't be committed. "
                                         + "It has been rolled back either because of an error or explicit termination",
                                 cursorFailure != causeOfTermination ? causeOfTermination : null)
@@ -317,22 +350,5 @@ public class UnmanagedTransaction {
         }
 
         return stage;
-    }
-
-    /**
-     * Marks transaction as terminated and sends {@code RESET} message over allocated connection.
-     * <p>
-     * <b>THIS METHOD IS NOT PART OF PUBLIC API. This method may be changed or removed at any moment in time.</b>
-     *
-     * @return {@code RESET} response stage
-     */
-    public CompletionStage<Void> interruptAsync() {
-        return executeWithLock(lock, () -> {
-            if (interruptStage == null) {
-                markTerminated(null);
-                interruptStage = connection.reset();
-            }
-            return interruptStage;
-        });
     }
 }

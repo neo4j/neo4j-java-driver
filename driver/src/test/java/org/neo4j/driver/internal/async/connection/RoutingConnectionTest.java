@@ -28,7 +28,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 
 import org.junit.jupiter.api.Test;
@@ -47,16 +46,6 @@ class RoutingConnectionTest {
     @Test
     void shouldWrapHandlersWhenWritingAndFlushingSingleMessage() {
         testHandlersWrappingWithSingleMessage(true);
-    }
-
-    @Test
-    void shouldWrapHandlersWhenWritingMultipleMessages() {
-        testHandlersWrappingWithMultipleMessages(false);
-    }
-
-    @Test
-    void shouldWrapHandlersWhenWritingAndFlushingMultipleMessages() {
-        testHandlersWrappingWithMultipleMessages(true);
     }
 
     @Test
@@ -98,32 +87,5 @@ class RoutingConnectionTest {
         }
 
         assertThat(handlerCaptor.getValue(), instanceOf(RoutingResponseHandler.class));
-    }
-
-    private static void testHandlersWrappingWithMultipleMessages(boolean flush) {
-        Connection connection = mock(Connection.class);
-        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
-        RoutingConnection routingConnection =
-                new RoutingConnection(connection, defaultDatabase(), READ, null, errorHandler);
-
-        if (flush) {
-            routingConnection.writeAndFlush(
-                    PULL_ALL, mock(ResponseHandler.class), DISCARD_ALL, mock(ResponseHandler.class));
-        } else {
-            routingConnection.write(PULL_ALL, mock(ResponseHandler.class), DISCARD_ALL, mock(ResponseHandler.class));
-        }
-
-        ArgumentCaptor<ResponseHandler> handlerCaptor1 = ArgumentCaptor.forClass(ResponseHandler.class);
-        ArgumentCaptor<ResponseHandler> handlerCaptor2 = ArgumentCaptor.forClass(ResponseHandler.class);
-
-        if (flush) {
-            verify(connection)
-                    .writeAndFlush(eq(PULL_ALL), handlerCaptor1.capture(), eq(DISCARD_ALL), handlerCaptor2.capture());
-        } else {
-            verify(connection).write(eq(PULL_ALL), handlerCaptor1.capture(), eq(DISCARD_ALL), handlerCaptor2.capture());
-        }
-
-        assertThat(handlerCaptor1.getValue(), instanceOf(RoutingResponseHandler.class));
-        assertThat(handlerCaptor2.getValue(), instanceOf(RoutingResponseHandler.class));
     }
 }

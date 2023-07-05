@@ -71,6 +71,7 @@ import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -130,7 +131,6 @@ class UnmanagedTransactionTest {
         beginTx(connection, Collections.emptySet());
 
         verifyBeginTx(connection);
-        verify(connection, never()).writeAndFlush(any(), any(), any(), any());
     }
 
     @Test
@@ -141,7 +141,6 @@ class UnmanagedTransactionTest {
         beginTx(connection, bookmarks);
 
         verifyBeginTx(connection);
-        verify(connection, never()).write(any(), any(), any(), any());
     }
 
     @Test
@@ -153,7 +152,7 @@ class UnmanagedTransactionTest {
 
     @Test
     void shouldBeClosedWhenMarkedAsTerminated() {
-        UnmanagedTransaction tx = beginTx(connectionMock());
+        var tx = beginTx(connectionMock());
 
         tx.markTerminated(null);
 
@@ -162,7 +161,7 @@ class UnmanagedTransactionTest {
 
     @Test
     void shouldBeClosedWhenMarkedTerminatedAndClosed() {
-        UnmanagedTransaction tx = beginTx(connectionMock());
+        var tx = beginTx(connectionMock());
 
         tx.markTerminated(null);
         await(tx.closeAsync());
@@ -201,12 +200,12 @@ class UnmanagedTransactionTest {
 
     @Test
     void shouldReleaseConnectionWhenTerminatedAndCommitted() {
-        Connection connection = connectionMock();
-        UnmanagedTransaction tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null);
+        var connection = connectionMock();
+        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null);
 
         tx.markTerminated(null);
 
-        assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        assertThrows(TransactionTerminatedException.class, () -> await(tx.commitAsync()));
 
         assertFalse(tx.isOpen());
         verify(connection).release();
@@ -214,30 +213,28 @@ class UnmanagedTransactionTest {
 
     @Test
     void shouldNotCreateCircularExceptionWhenTerminationCauseEqualsToCursorFailure() {
-        Connection connection = connectionMock();
-        ClientException terminationCause = new ClientException("Custom exception");
-        ResultCursorsHolder resultCursorsHolder = mockResultCursorWith(terminationCause);
-        UnmanagedTransaction tx =
-                new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, resultCursorsHolder, null);
+        var connection = connectionMock();
+        var terminationCause = new ClientException("Custom exception");
+        var resultCursorsHolder = mockResultCursorWith(terminationCause);
+        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, resultCursorsHolder, null);
 
         tx.markTerminated(terminationCause);
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertNoCircularReferences(e);
         assertEquals(terminationCause, e);
     }
 
     @Test
     void shouldNotCreateCircularExceptionWhenTerminationCauseDifferentFromCursorFailure() {
-        Connection connection = connectionMock();
-        ClientException terminationCause = new ClientException("Custom exception");
-        ResultCursorsHolder resultCursorsHolder = mockResultCursorWith(new ClientException("Cursor error"));
-        UnmanagedTransaction tx =
-                new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, resultCursorsHolder, null);
+        var connection = connectionMock();
+        var terminationCause = new ClientException("Custom exception");
+        var resultCursorsHolder = mockResultCursorWith(new ClientException("Cursor error"));
+        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, resultCursorsHolder, null);
 
         tx.markTerminated(terminationCause);
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertNoCircularReferences(e);
         assertEquals(1, e.getSuppressed().length);
 
@@ -247,13 +244,13 @@ class UnmanagedTransactionTest {
 
     @Test
     void shouldNotCreateCircularExceptionWhenTerminatedWithoutFailure() {
-        Connection connection = connectionMock();
-        ClientException terminationCause = new ClientException("Custom exception");
-        UnmanagedTransaction tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null);
+        var connection = connectionMock();
+        var terminationCause = new ClientException("Custom exception");
+        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null);
 
         tx.markTerminated(terminationCause);
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(TransactionTerminatedException.class, () -> await(tx.commitAsync()));
         assertNoCircularReferences(e);
 
         assertEquals(terminationCause, e.getCause());
@@ -261,8 +258,8 @@ class UnmanagedTransactionTest {
 
     @Test
     void shouldReleaseConnectionWhenTerminatedAndRolledBack() {
-        Connection connection = connectionMock();
-        UnmanagedTransaction tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null);
+        var connection = connectionMock();
+        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null);
 
         tx.markTerminated(null);
         await(tx.rollbackAsync());
@@ -271,7 +268,7 @@ class UnmanagedTransactionTest {
     }
 
     @Test
-    void shouldReleaseConnectionWhenClose() throws Throwable {
+    void shouldReleaseConnectionWhenClose() {
         Connection connection = connectionMock();
         UnmanagedTransaction tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null);
 
@@ -432,34 +429,34 @@ class UnmanagedTransactionTest {
     }
 
     @Test
-    void shouldInterruptOnInterruptAsync() {
+    void shouldTerminateOnTerminateAsync() {
         // Given
-        Connection connection = connectionMock(BoltProtocolV4.INSTANCE);
-        UnmanagedTransaction tx = beginTx(connection);
+        var connection = connectionMock(BoltProtocolV4.INSTANCE);
+        var tx = beginTx(connection);
 
         // When
-        await(tx.interruptAsync());
+        await(tx.terminateAsync());
 
         // Then
-        then(connection).should().reset();
+        then(connection).should().reset(any());
     }
 
     @Test
-    void shouldServeTheSameStageOnInterruptAsync() {
+    void shouldServeTheSameStageOnTerminateAsync() {
         // Given
         Connection connection = connectionMock(BoltProtocolV4.INSTANCE);
         UnmanagedTransaction tx = beginTx(connection);
 
         // When
-        CompletionStage<Void> stage0 = tx.interruptAsync();
-        CompletionStage<Void> stage1 = tx.interruptAsync();
+        CompletionStage<Void> stage0 = tx.terminateAsync();
+        CompletionStage<Void> stage1 = tx.terminateAsync();
 
         // Then
         assertEquals(stage0, stage1);
     }
 
     @Test
-    void shouldHandleInterruptionWhenAlreadyInterrupted() throws ExecutionException, InterruptedException {
+    void shouldHandleTerminationWhenAlreadyTerminated() throws ExecutionException, InterruptedException {
         // Given
         var connection = connectionMock(BoltProtocolV4.INSTANCE);
         var exception = new Neo4jException("message");
@@ -473,7 +470,7 @@ class UnmanagedTransactionTest {
         } catch (ExecutionException e) {
             actualException = e.getCause();
         }
-        tx.interruptAsync().toCompletableFuture().get();
+        tx.terminateAsync().toCompletableFuture().get();
 
         // Then
         assertEquals(exception, actualException);

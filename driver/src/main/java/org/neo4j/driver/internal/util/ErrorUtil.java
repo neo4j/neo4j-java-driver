@@ -32,6 +32,7 @@ import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
+import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.exceptions.TransientException;
 
 public final class ErrorUtil {
@@ -72,6 +73,8 @@ public final class ErrorUtil {
                 } else {
                     if (code.equalsIgnoreCase("Neo.ClientError.Database.DatabaseNotFound")) {
                         return new FatalDiscoveryException(code, message);
+                    } else if (code.equalsIgnoreCase("Neo.ClientError.Transaction.Terminated")) {
+                        return new TransactionTerminatedException(code, message);
                     } else {
                         return new ClientException(code, message);
                     }
@@ -80,7 +83,7 @@ public final class ErrorUtil {
                 // Since 5.0 these 2 errors have been moved to ClientError class.
                 // This mapping is required if driver is connection to earlier server versions.
                 if ("Neo.TransientError.Transaction.Terminated".equals(code)) {
-                    return new ClientException("Neo.ClientError.Transaction.Terminated", message);
+                    return new TransactionTerminatedException("Neo.ClientError.Transaction.Terminated", message);
                 } else if ("Neo.TransientError.Transaction.LockClientStopped".equals(code)) {
                     return new ClientException("Neo.ClientError.Transaction.LockClientStopped", message);
                 } else {

@@ -23,8 +23,11 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -43,6 +46,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -53,13 +57,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
+import org.neo4j.driver.internal.messaging.request.DiscardMessage;
+import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -107,14 +119,6 @@ class NetworkConnectionTest {
                 "WriteSingleMessage",
                 connection -> connection.write(
                         RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")), NO_OP_HANDLER));
-
-        testWriteInEventLoop(
-                "WriteMultipleMessages",
-                connection -> connection.write(
-                        RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                        NO_OP_HANDLER,
-                        PULL_ALL,
-                        NO_OP_HANDLER));
     }
 
     @Test
@@ -123,32 +127,11 @@ class NetworkConnectionTest {
                 "WriteAndFlushSingleMessage",
                 connection -> connection.writeAndFlush(
                         RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")), NO_OP_HANDLER));
-
-        testWriteInEventLoop(
-                "WriteAndFlushMultipleMessages",
-                connection -> connection.writeAndFlush(
-                        RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                        NO_OP_HANDLER,
-                        PULL_ALL,
-                        NO_OP_HANDLER));
     }
 
     @Test
     void shouldWriteForceReleaseInEventLoopThread() throws Exception {
         testWriteInEventLoop("ReleaseTestEventLoop", NetworkConnection::release);
-    }
-
-    @Test
-    void shouldFlushInEventLoopThread() throws Exception {
-        EmbeddedChannel channel = spy(new EmbeddedChannel());
-        initializeEventLoop(channel, "Flush");
-        ChannelAttributes.setProtocolVersion(channel, DEFAULT_TEST_PROTOCOL_VERSION);
-
-        NetworkConnection connection = newConnection(channel);
-        connection.flush();
-
-        shutdownEventLoop();
-        verify(channel).flush();
     }
 
     @Test
@@ -190,20 +173,6 @@ class NetworkConnectionTest {
     }
 
     @Test
-    void shouldWriteMultipleMessage() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
-
-        connection.write(PULL_ALL, NO_OP_HANDLER, RESET, NO_OP_HANDLER);
-
-        assertEquals(0, channel.outboundMessages().size());
-        channel.flushOutbound();
-        assertEquals(2, channel.outboundMessages().size());
-        assertEquals(PULL_ALL, channel.outboundMessages().poll());
-        assertEquals(RESET, channel.outboundMessages().poll());
-    }
-
-    @Test
     void shouldWriteAndFlushSingleMessage() {
         EmbeddedChannel channel = newChannel();
         NetworkConnection connection = newConnection(channel);
@@ -217,20 +186,6 @@ class NetworkConnectionTest {
     }
 
     @Test
-    void shouldWriteAndFlushMultipleMessage() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
-
-        connection.writeAndFlush(PULL_ALL, NO_OP_HANDLER, RESET, NO_OP_HANDLER);
-        channel.runPendingTasks(); // writeAndFlush is scheduled to execute in the event loop thread, trigger its
-        // execution
-
-        assertEquals(2, channel.outboundMessages().size());
-        assertEquals(PULL_ALL, channel.outboundMessages().poll());
-        assertEquals(RESET, channel.outboundMessages().poll());
-    }
-
-    @Test
     void shouldNotWriteSingleMessageWhenReleased() {
         ResponseHandler handler = mock(ResponseHandler.class);
         NetworkConnection connection = newConnection(newChannel());
@@ -240,24 +195,6 @@ class NetworkConnectionTest {
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
         verify(handler).onFailure(failureCaptor.capture());
-        assertConnectionReleasedError(failureCaptor.getValue());
-    }
-
-    @Test
-    void shouldNotWriteMultipleMessagesWhenReleased() {
-        ResponseHandler runHandler = mock(ResponseHandler.class);
-        ResponseHandler pullAllHandler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
-
-        connection.release();
-        connection.write(
-                RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                runHandler,
-                PULL_ALL,
-                pullAllHandler);
-
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
-        verify(runHandler).onFailure(failureCaptor.capture());
         assertConnectionReleasedError(failureCaptor.getValue());
     }
 
@@ -275,24 +212,6 @@ class NetworkConnectionTest {
     }
 
     @Test
-    void shouldNotWriteAndFlushMultipleMessagesWhenReleased() {
-        ResponseHandler runHandler = mock(ResponseHandler.class);
-        ResponseHandler pullAllHandler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
-
-        connection.release();
-        connection.writeAndFlush(
-                RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                runHandler,
-                PULL_ALL,
-                pullAllHandler);
-
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
-        verify(runHandler).onFailure(failureCaptor.capture());
-        assertConnectionReleasedError(failureCaptor.getValue());
-    }
-
-    @Test
     void shouldNotWriteSingleMessageWhenTerminated() {
         ResponseHandler handler = mock(ResponseHandler.class);
         NetworkConnection connection = newConnection(newChannel());
@@ -306,24 +225,6 @@ class NetworkConnectionTest {
     }
 
     @Test
-    void shouldNotWriteMultipleMessagesWhenTerminated() {
-        ResponseHandler runHandler = mock(ResponseHandler.class);
-        ResponseHandler pullAllHandler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
-
-        connection.terminateAndRelease("42");
-        connection.write(
-                RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                runHandler,
-                PULL_ALL,
-                pullAllHandler);
-
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
-        verify(runHandler).onFailure(failureCaptor.capture());
-        assertConnectionTerminatedError(failureCaptor.getValue());
-    }
-
-    @Test
     void shouldNotWriteAndFlushSingleMessageWhenTerminated() {
         ResponseHandler handler = mock(ResponseHandler.class);
         NetworkConnection connection = newConnection(newChannel());
@@ -333,24 +234,6 @@ class NetworkConnectionTest {
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
         verify(handler).onFailure(failureCaptor.capture());
-        assertConnectionTerminatedError(failureCaptor.getValue());
-    }
-
-    @Test
-    void shouldNotWriteAndFlushMultipleMessagesWhenTerminated() {
-        ResponseHandler runHandler = mock(ResponseHandler.class);
-        ResponseHandler pullAllHandler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
-
-        connection.terminateAndRelease("42");
-        connection.writeAndFlush(
-                RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")),
-                runHandler,
-                PULL_ALL,
-                pullAllHandler);
-
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
-        verify(runHandler).onFailure(failureCaptor.capture());
         assertConnectionTerminatedError(failureCaptor.getValue());
     }
 
@@ -503,7 +386,7 @@ class NetworkConnectionTest {
         EmbeddedChannel channel = newChannel();
         NetworkConnection connection = newConnection(channel);
 
-        connection.reset();
+        connection.reset(null);
         channel.runPendingTasks();
 
         assertEquals(1, channel.outboundMessages().size());
@@ -515,7 +398,7 @@ class NetworkConnectionTest {
         EmbeddedChannel channel = newChannel();
         NetworkConnection connection = newConnection(channel);
 
-        CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
+        CompletableFuture<Void> resetFuture = connection.reset(null).toCompletableFuture();
         channel.runPendingTasks();
         assertFalse(resetFuture.isDone());
 
@@ -529,7 +412,7 @@ class NetworkConnectionTest {
         EmbeddedChannel channel = newChannel();
         NetworkConnection connection = newConnection(channel);
 
-        CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
+        CompletableFuture<Void> resetFuture = connection.reset(null).toCompletableFuture();
         channel.runPendingTasks();
         assertFalse(resetFuture.isDone());
 
@@ -546,7 +429,7 @@ class NetworkConnectionTest {
         connection.release();
         channel.runPendingTasks();
 
-        CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
+        CompletableFuture<Void> resetFuture = connection.reset(null).toCompletableFuture();
         channel.runPendingTasks();
 
         assertEquals(1, channel.outboundMessages().size());
@@ -561,11 +444,125 @@ class NetworkConnectionTest {
         channel.config().setAutoRead(false);
         NetworkConnection connection = newConnection(channel);
 
-        connection.reset();
+        connection.reset(null);
         channel.runPendingTasks();
 
         assertTrue(channel.config().isAutoRead());
     }
+
+    @Test
+    void shouldRejectBindingTerminationAwareStateLockingExecutorTwice() {
+        var channel = newChannel();
+        var connection = newConnection(channel);
+        var lockingExecutor = mock(TerminationAwareStateLockingExecutor.class);
+        connection.bindTerminationAwareStateLockingExecutor(lockingExecutor);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> connection.bindTerminationAwareStateLockingExecutor(lockingExecutor));
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryMessages")
+    void shouldPreventDispatchingQueryMessagesOnTermination(QueryMessage queryMessage) {
+        // Given
+        var channel = newChannel();
+        var connection = newConnection(channel);
+        var lockingExecutor = mock(TerminationAwareStateLockingExecutor.class);
+        var error = mock(Neo4jException.class);
+        doAnswer(invocationOnMock -> {
+                    @SuppressWarnings("unchecked")
+                    var consumer = (Consumer<Throwable>) invocationOnMock.getArguments()[0];
+                    consumer.accept(error);
+                    return null;
+                })
+                .when(lockingExecutor)
+                .execute(any());
+        connection.bindTerminationAwareStateLockingExecutor(lockingExecutor);
+        var handler = mock(ResponseHandler.class);
+
+        // When
+        if (queryMessage.flush()) {
+            connection.writeAndFlush(queryMessage.message(), handler);
+        } else {
+            connection.write(queryMessage.message(), handler);
+        }
+        channel.runPendingTasks();
+
+        // Then
+        assertTrue(channel.outboundMessages().isEmpty());
+        then(lockingExecutor).should().execute(any());
+        then(handler).should().onFailure(error);
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryMessages")
+    void shouldDispatchingQueryMessagesWhenNotTerminated(QueryMessage queryMessage) {
+        // Given
+        var channel = newChannel();
+        var connection = newConnection(channel);
+        var lockingExecutor = mock(TerminationAwareStateLockingExecutor.class);
+        doAnswer(invocationOnMock -> {
+                    @SuppressWarnings("unchecked")
+                    var consumer = (Consumer<Throwable>) invocationOnMock.getArguments()[0];
+                    consumer.accept(null);
+                    return null;
+                })
+                .when(lockingExecutor)
+                .execute(any());
+        connection.bindTerminationAwareStateLockingExecutor(lockingExecutor);
+        var handler = mock(ResponseHandler.class);
+
+        // When
+        if (queryMessage.flush()) {
+            connection.writeAndFlush(queryMessage.message(), handler);
+        } else {
+            connection.write(queryMessage.message(), handler);
+            channel.flushOutbound();
+        }
+        channel.runPendingTasks();
+
+        // Then
+        assertEquals(1, channel.outboundMessages().size());
+        then(lockingExecutor).should().execute(any());
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryMessages")
+    void shouldDispatchingQueryMessagesWhenExecutorAbsent(QueryMessage queryMessage) {
+        // Given
+        var channel = newChannel();
+        var connection = newConnection(channel);
+        var handler = mock(ResponseHandler.class);
+
+        // When
+        if (queryMessage.flush()) {
+            connection.writeAndFlush(queryMessage.message(), handler);
+        } else {
+            connection.write(queryMessage.message(), handler);
+            channel.flushOutbound();
+        }
+        channel.runPendingTasks();
+
+        // Then
+        assertEquals(1, channel.outboundMessages().size());
+    }
+
+    static List<QueryMessage> queryMessages() {
+        return List.of(
+                new QueryMessage(false, mock(RunWithMetadataMessage.class)),
+                new QueryMessage(true, mock(RunWithMetadataMessage.class)),
+                new QueryMessage(false, mock(PullMessage.class)),
+                new QueryMessage(true, mock(PullMessage.class)),
+                new QueryMessage(false, mock(PullAllMessage.class)),
+                new QueryMessage(true, mock(PullAllMessage.class)),
+                new QueryMessage(false, mock(DiscardMessage.class)),
+                new QueryMessage(true, mock(DiscardMessage.class)),
+                new QueryMessage(false, mock(DiscardAllMessage.class)),
+                new QueryMessage(true, mock(DiscardAllMessage.class)));
+    }
+
+    private record QueryMessage(boolean flush, Message message) {}
 
     private void testWriteInEventLoop(String threadName, Consumer<NetworkConnection> action) throws Exception {
         EmbeddedChannel channel = spy(new EmbeddedChannel());

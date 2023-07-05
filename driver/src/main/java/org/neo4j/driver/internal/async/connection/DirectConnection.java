@@ -23,6 +23,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.DirectConnectionProvider;
+import org.neo4j.driver.internal.async.TerminationAwareStateLockingExecutor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
@@ -69,23 +70,13 @@ public class DirectConnection implements Connection {
     }
 
     @Override
-    public void write(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2) {
-        delegate.write(message1, handler1, message2, handler2);
-    }
-
-    @Override
     public void writeAndFlush(Message message, ResponseHandler handler) {
         delegate.writeAndFlush(message, handler);
     }
 
     @Override
-    public void writeAndFlush(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2) {
-        delegate.writeAndFlush(message1, handler1, message2, handler2);
-    }
-
-    @Override
-    public CompletionStage<Void> reset() {
-        return delegate.reset();
+    public CompletionStage<Void> reset(Throwable throwable) {
+        return delegate.reset(throwable);
     }
 
     @Override
@@ -114,6 +105,11 @@ public class DirectConnection implements Connection {
     }
 
     @Override
+    public void bindTerminationAwareStateLockingExecutor(TerminationAwareStateLockingExecutor executor) {
+        delegate.bindTerminationAwareStateLockingExecutor(executor);
+    }
+
+    @Override
     public AccessMode mode() {
         return mode;
     }
@@ -126,10 +122,5 @@ public class DirectConnection implements Connection {
     @Override
     public String impersonatedUser() {
         return impersonatedUser;
-    }
-
-    @Override
-    public void flush() {
-        delegate.flush();
     }
 }

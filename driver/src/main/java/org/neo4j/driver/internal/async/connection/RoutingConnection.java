@@ -23,6 +23,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.async.TerminationAwareStateLockingExecutor;
 import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
@@ -68,24 +69,13 @@ public class RoutingConnection implements Connection {
     }
 
     @Override
-    public void write(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2) {
-        delegate.write(message1, newRoutingResponseHandler(handler1), message2, newRoutingResponseHandler(handler2));
-    }
-
-    @Override
     public void writeAndFlush(Message message, ResponseHandler handler) {
         delegate.writeAndFlush(message, newRoutingResponseHandler(handler));
     }
 
     @Override
-    public void writeAndFlush(Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2) {
-        delegate.writeAndFlush(
-                message1, newRoutingResponseHandler(handler1), message2, newRoutingResponseHandler(handler2));
-    }
-
-    @Override
-    public CompletionStage<Void> reset() {
-        return delegate.reset();
+    public CompletionStage<Void> reset(Throwable throwable) {
+        return delegate.reset(throwable);
     }
 
     @Override
@@ -119,8 +109,8 @@ public class RoutingConnection implements Connection {
     }
 
     @Override
-    public void flush() {
-        delegate.flush();
+    public void bindTerminationAwareStateLockingExecutor(TerminationAwareStateLockingExecutor executor) {
+        delegate.bindTerminationAwareStateLockingExecutor(executor);
     }
 
     @Override

@@ -145,12 +145,14 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
         if (isDone()) {
             return completedWithValueIfNoFailure(summary);
         } else {
-            cancel();
-            if (summaryFuture == null) {
-                summaryFuture = new CompletableFuture<>();
+            var future = summaryFuture;
+            if (future == null) {
+                future = new CompletableFuture<>();
+                summaryFuture = future;
             }
+            cancel();
 
-            return summaryFuture;
+            return future;
         }
     }
 
@@ -172,12 +174,14 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
         if (isDone()) {
             return completedWithValueIfNoFailure(summary);
         } else {
-            request(UNLIMITED_FETCH_SIZE);
-            if (summaryFuture == null) {
-                summaryFuture = new CompletableFuture<>();
+            var future = summaryFuture;
+            if (future == null) {
+                future = new CompletableFuture<>();
+                summaryFuture = future;
             }
+            request(UNLIMITED_FETCH_SIZE);
 
-            return summaryFuture;
+            return future;
         }
     }
 
