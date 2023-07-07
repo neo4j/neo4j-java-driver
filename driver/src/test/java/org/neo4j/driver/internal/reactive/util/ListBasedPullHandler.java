@@ -68,7 +68,7 @@ public class ListBasedPullHandler extends BasicPullResponseHandler {
         when(super.metadataExtractor.extractSummary(any(Query.class), any(Connection.class), anyLong(), any()))
                 .thenReturn(mock(ResultSummary.class));
         if (list.size() > 1) {
-            Record record = list.get(0);
+            var record = list.get(0);
             when(super.runResponseHandler.queryKeys()).thenReturn(new QueryKeys(record.keys()));
         }
     }

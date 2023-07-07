@@ -49,13 +49,13 @@ public class DelegatingReactiveTransactionContextTest {
     @Test
     void shouldDelegateRunWithValueParams() {
         // GIVEN
-        String query = "something";
-        Value params = mock(Value.class);
+        var query = "something";
+        var params = mock(Value.class);
         Publisher<ReactiveResult> expected = publisherToFlowPublisher(Mono.empty());
         given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        Publisher<ReactiveResult> actual = context.run(query, params);
+        var actual = context.run(query, params);
 
         // THEN
         assertEquals(expected, actual);
@@ -65,13 +65,13 @@ public class DelegatingReactiveTransactionContextTest {
     @Test
     void shouldDelegateRunWithMapParams() {
         // GIVEN
-        String query = "something";
+        var query = "something";
         Map<String, Object> params = Collections.emptyMap();
         Publisher<ReactiveResult> expected = publisherToFlowPublisher(Mono.empty());
         given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        Publisher<ReactiveResult> actual = context.run(query, params);
+        var actual = context.run(query, params);
 
         // THEN
         assertEquals(expected, actual);
@@ -81,13 +81,13 @@ public class DelegatingReactiveTransactionContextTest {
     @Test
     void shouldDelegateRunWithRecordParams() {
         // GIVEN
-        String query = "something";
-        Record params = mock(Record.class);
+        var query = "something";
+        var params = mock(Record.class);
         Publisher<ReactiveResult> expected = publisherToFlowPublisher(Mono.empty());
         given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        Publisher<ReactiveResult> actual = context.run(query, params);
+        var actual = context.run(query, params);
 
         // THEN
         assertEquals(expected, actual);
@@ -97,12 +97,12 @@ public class DelegatingReactiveTransactionContextTest {
     @Test
     void shouldDelegateRun() {
         // GIVEN
-        String query = "something";
+        var query = "something";
         Publisher<ReactiveResult> expected = publisherToFlowPublisher(Mono.empty());
         given(transaction.run(query)).willReturn(expected);
 
         // WHEN
-        Publisher<ReactiveResult> actual = context.run(query);
+        var actual = context.run(query);
 
         // THEN
         assertEquals(expected, actual);
@@ -112,12 +112,12 @@ public class DelegatingReactiveTransactionContextTest {
     @Test
     void shouldDelegateRunWithQueryType() {
         // GIVEN
-        Query query = mock(Query.class);
+        var query = mock(Query.class);
         Publisher<ReactiveResult> expected = publisherToFlowPublisher(Mono.empty());
         given(transaction.run(query)).willReturn(expected);
 
         // WHEN
-        Publisher<ReactiveResult> actual = context.run(query);
+        var actual = context.run(query);
 
         // THEN
         assertEquals(expected, actual);

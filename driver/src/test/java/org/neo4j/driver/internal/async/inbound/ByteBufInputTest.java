@@ -31,14 +31,14 @@ import org.junit.jupiter.api.Test;
 class ByteBufInputTest {
     @Test
     void shouldThrowWhenStartedWithNullBuf() {
-        ByteBufInput input = new ByteBufInput();
+        var input = new ByteBufInput();
 
         assertThrows(NullPointerException.class, () -> input.start(null));
     }
 
     @Test
     void shouldThrowWhenStartedTwice() {
-        ByteBufInput input = new ByteBufInput();
+        var input = new ByteBufInput();
         input.start(mock(ByteBuf.class));
 
         assertThrows(IllegalStateException.class, () -> input.start(mock(ByteBuf.class)));
@@ -46,8 +46,8 @@ class ByteBufInputTest {
 
     @Test
     void shouldDelegateReadByte() {
-        ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock(ByteBuf.class);
+        var input = new ByteBufInput();
+        var buf = mock(ByteBuf.class);
         when(buf.readByte()).thenReturn((byte) 42);
         input.start(buf);
 
@@ -56,8 +56,8 @@ class ByteBufInputTest {
 
     @Test
     void shouldDelegateReadShort() {
-        ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock(ByteBuf.class);
+        var input = new ByteBufInput();
+        var buf = mock(ByteBuf.class);
         when(buf.readShort()).thenReturn((short) -42);
         input.start(buf);
 
@@ -66,8 +66,8 @@ class ByteBufInputTest {
 
     @Test
     void shouldDelegateReadInt() {
-        ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock(ByteBuf.class);
+        var input = new ByteBufInput();
+        var buf = mock(ByteBuf.class);
         when(buf.readInt()).thenReturn(15);
         input.start(buf);
 
@@ -76,8 +76,8 @@ class ByteBufInputTest {
 
     @Test
     void shouldDelegateReadLong() {
-        ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock(ByteBuf.class);
+        var input = new ByteBufInput();
+        var buf = mock(ByteBuf.class);
         when(buf.readLong()).thenReturn(4242L);
         input.start(buf);
 
@@ -86,8 +86,8 @@ class ByteBufInputTest {
 
     @Test
     void shouldDelegateReadDouble() {
-        ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock(ByteBuf.class);
+        var input = new ByteBufInput();
+        var buf = mock(ByteBuf.class);
         when(buf.readDouble()).thenReturn(42.42D);
         input.start(buf);
 
@@ -96,8 +96,8 @@ class ByteBufInputTest {
 
     @Test
     void shouldDelegateReadBytes() {
-        ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock(ByteBuf.class);
+        var input = new ByteBufInput();
+        var buf = mock(ByteBuf.class);
         input.start(buf);
 
         input.readBytes(new byte[10], 3, 5);
@@ -107,8 +107,8 @@ class ByteBufInputTest {
 
     @Test
     void shouldDelegatePeekByte() {
-        ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock(ByteBuf.class);
+        var input = new ByteBufInput();
+        var buf = mock(ByteBuf.class);
         when(buf.getByte(anyInt())).thenReturn((byte) 42);
         input.start(buf);
 

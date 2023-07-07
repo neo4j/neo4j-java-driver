@@ -32,12 +32,10 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.InOrder;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -53,23 +51,23 @@ class RunWithMetadataMessageEncoderTest {
     @ParameterizedTest
     @EnumSource(AccessMode.class)
     void shouldEncodeRunWithMetadataMessage(AccessMode mode) throws Exception {
-        Map<String, Value> params = singletonMap("answer", value(42));
+        var params = singletonMap("answer", value(42));
 
-        Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx999"));
+        var bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx999"));
 
         Map<String, Value> txMetadata = new HashMap<>();
         txMetadata.put("key1", value("value1"));
         txMetadata.put("key2", value(1, 2, 3, 4, 5));
         txMetadata.put("key3", value(true));
 
-        Duration txTimeout = Duration.ofMillis(42);
+        var txTimeout = Duration.ofMillis(42);
 
-        Query query = new Query("RETURN $answer", value(params));
+        var query = new Query("RETURN $answer", value(params));
         encoder.encode(
                 autoCommitTxRunMessage(query, txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null, null),
                 packer);
 
-        InOrder order = inOrder(packer);
+        var order = inOrder(packer);
         order.verify(packer).packStructHeader(3, RunWithMetadataMessage.SIGNATURE);
         order.verify(packer).pack("RETURN $answer");
         order.verify(packer).pack(params);

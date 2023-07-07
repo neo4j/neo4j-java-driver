@@ -86,7 +86,7 @@ class DriverFactoryTest {
     @ParameterizedTest
     @MethodSource("testUris")
     void connectionPoolClosedWhenDriverCreationFails(String uri) {
-        ConnectionPool connectionPool = connectionPoolMock();
+        var connectionPool = connectionPoolMock();
         DriverFactory factory = new ThrowingDriverFactory(connectionPool);
 
         assertThrows(UnsupportedOperationException.class, () -> createDriver(uri, factory));
@@ -96,14 +96,13 @@ class DriverFactoryTest {
     @ParameterizedTest
     @MethodSource("testUris")
     void connectionPoolCloseExceptionIsSuppressedWhenDriverCreationFails(String uri) {
-        ConnectionPool connectionPool = connectionPoolMock();
-        RuntimeException poolCloseError = new RuntimeException("Pool close error");
+        var connectionPool = connectionPoolMock();
+        var poolCloseError = new RuntimeException("Pool close error");
         when(connectionPool.close()).thenReturn(failedFuture(poolCloseError));
 
         DriverFactory factory = new ThrowingDriverFactory(connectionPool);
 
-        UnsupportedOperationException e =
-                assertThrows(UnsupportedOperationException.class, () -> createDriver(uri, factory));
+        var e = assertThrows(UnsupportedOperationException.class, () -> createDriver(uri, factory));
         assertArrayEquals(new Throwable[] {poolCloseError}, e.getSuppressed());
         verify(connectionPool).close();
     }
@@ -111,24 +110,24 @@ class DriverFactoryTest {
     @ParameterizedTest
     @MethodSource("testUris")
     void usesStandardSessionFactoryWhenNothingConfigured(String uri) {
-        Config config = defaultConfig();
-        SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
+        var config = defaultConfig();
+        var factory = new SessionFactoryCapturingDriverFactory();
 
         createDriver(uri, factory, config);
 
-        SessionFactory capturedFactory = factory.capturedSessionFactory;
+        var capturedFactory = factory.capturedSessionFactory;
         assertThat(capturedFactory.newInstance(SessionConfig.defaultConfig(), null), instanceOf(NetworkSession.class));
     }
 
     @ParameterizedTest
     @MethodSource("testUris")
     void usesLeakLoggingSessionFactoryWhenConfigured(String uri) {
-        Config config = Config.builder().withLeakedSessionsLogging().build();
-        SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
+        var config = Config.builder().withLeakedSessionsLogging().build();
+        var factory = new SessionFactoryCapturingDriverFactory();
 
         createDriver(uri, factory, config);
 
-        SessionFactory capturedFactory = factory.capturedSessionFactory;
+        var capturedFactory = factory.capturedSessionFactory;
         assertThat(
                 capturedFactory.newInstance(SessionConfig.defaultConfig(), null),
                 instanceOf(LeakLoggingNetworkSession.class));
@@ -137,12 +136,12 @@ class DriverFactoryTest {
     @ParameterizedTest
     @MethodSource("testUris")
     void shouldNotVerifyConnectivity(String uri) {
-        SessionFactory sessionFactory = mock(SessionFactory.class);
+        var sessionFactory = mock(SessionFactory.class);
         when(sessionFactory.verifyConnectivity()).thenReturn(completedWithNull());
         when(sessionFactory.close()).thenReturn(completedWithNull());
-        DriverFactoryWithSessions driverFactory = new DriverFactoryWithSessions(sessionFactory);
+        var driverFactory = new DriverFactoryWithSessions(sessionFactory);
 
-        try (Driver driver = createDriver(uri, driverFactory)) {
+        try (var driver = createDriver(uri, driverFactory)) {
             assertNotNull(driver);
             verify(sessionFactory, never()).verifyConnectivity();
         }
@@ -151,9 +150,9 @@ class DriverFactoryTest {
     @Test
     void shouldNotCreateDriverMetrics() {
         // Given
-        Config config = Config.builder().withoutDriverMetrics().build();
+        var config = Config.builder().withoutDriverMetrics().build();
         // When
-        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
+        var provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
         // Then
         assertThat(provider, is(equalTo(DevNullMetricsProvider.INSTANCE)));
     }
@@ -161,10 +160,10 @@ class DriverFactoryTest {
     @Test
     void shouldCreateDriverMetricsIfMonitoringEnabled() {
         // Given
-        Config config =
+        var config =
                 Config.builder().withDriverMetrics().withLogging(Logging.none()).build();
         // When
-        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
+        var provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
         // Then
         assertThat(provider instanceof InternalMetricsProvider, is(true));
     }
@@ -172,13 +171,13 @@ class DriverFactoryTest {
     @Test
     void shouldCreateMicrometerDriverMetricsIfMonitoringEnabled() {
         // Given
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withDriverMetrics()
                 .withMetricsAdapter(MetricsAdapter.MICROMETER)
                 .withLogging(Logging.none())
                 .build();
         // When
-        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
+        var provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
         // Then
         assertThat(provider instanceof MicrometerMetricsProvider, is(true));
     }
@@ -186,8 +185,8 @@ class DriverFactoryTest {
     @ParameterizedTest
     @MethodSource("testUris")
     void shouldCreateAppropriateDriverType(String uri) {
-        DriverFactory driverFactory = new DriverFactory();
-        Driver driver = createDriver(uri, driverFactory);
+        var driverFactory = new DriverFactory();
+        var driver = createDriver(uri, driverFactory);
 
         if (uri.startsWith("bolt://")) {
             assertThat(driver, is(directDriver()));
@@ -250,13 +249,13 @@ class DriverFactoryTest {
     }
 
     private Driver createDriver(String uri, DriverFactory driverFactory, Config config) {
-        AuthToken auth = AuthTokens.none();
+        var auth = AuthTokens.none();
         return driverFactory.newInstance(URI.create(uri), new StaticAuthTokenManager(auth), config);
     }
 
     private static ConnectionPool connectionPoolMock() {
-        ConnectionPool pool = mock(ConnectionPool.class);
-        Connection connection = mock(Connection.class);
+        var pool = mock(ConnectionPool.class);
+        var connection = mock(Connection.class);
         when(pool.acquire(any(BoltServerAddress.class), any(AuthToken.class))).thenReturn(completedFuture(connection));
         when(pool.close()).thenReturn(completedWithNull());
         return pool;
@@ -314,7 +313,7 @@ class DriverFactoryTest {
                 SessionFactory sessionFactory,
                 MetricsProvider metricsProvider,
                 Config config) {
-            InternalDriver driver = mock(InternalDriver.class);
+            var driver = mock(InternalDriver.class);
             when(driver.verifyConnectivityAsync()).thenReturn(completedWithNull());
             return driver;
         }
@@ -333,7 +332,7 @@ class DriverFactoryTest {
         @Override
         protected SessionFactory createSessionFactory(
                 ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config) {
-            SessionFactory sessionFactory = super.createSessionFactory(connectionProvider, retryLogic, config);
+            var sessionFactory = super.createSessionFactory(connectionProvider, retryLogic, config);
             capturedSessionFactory = sessionFactory;
             return sessionFactory;
         }

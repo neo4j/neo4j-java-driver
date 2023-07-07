@@ -33,8 +33,8 @@ import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 class ResetResponseHandlerTest {
     @Test
     void shouldCompleteFutureOnSuccess() throws Exception {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        ResetResponseHandler handler = newHandler(future);
+        var future = new CompletableFuture<Void>();
+        var handler = newHandler(future);
 
         assertFalse(future.isDone());
 
@@ -46,8 +46,8 @@ class ResetResponseHandlerTest {
 
     @Test
     void shouldCompleteFutureOnFailure() throws Exception {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        ResetResponseHandler handler = newHandler(future);
+        var future = new CompletableFuture<Void>();
+        var handler = newHandler(future);
 
         assertFalse(future.isDone());
 
@@ -59,7 +59,7 @@ class ResetResponseHandlerTest {
 
     @Test
     void shouldThrowWhenOnRecord() {
-        ResetResponseHandler handler = newHandler(new CompletableFuture<>());
+        var handler = newHandler(new CompletableFuture<>());
 
         assertThrows(UnsupportedOperationException.class, () -> handler.onRecord(values(1, 2, 3)));
     }

@@ -51,15 +51,14 @@ class RoutingConnectionTest {
     @Test
     void shouldReturnServerAgent() {
         // given
-        Connection connection = mock(Connection.class);
-        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
-        RoutingConnection routingConnection =
-                new RoutingConnection(connection, defaultDatabase(), READ, null, errorHandler);
-        String agent = "Neo4j/4.2.5";
+        var connection = mock(Connection.class);
+        var errorHandler = mock(RoutingErrorHandler.class);
+        var routingConnection = new RoutingConnection(connection, defaultDatabase(), READ, null, errorHandler);
+        var agent = "Neo4j/4.2.5";
         given(connection.serverAgent()).willReturn(agent);
 
         // when
-        String actualAgent = routingConnection.serverAgent();
+        var actualAgent = routingConnection.serverAgent();
 
         // then
         assertEquals(agent, actualAgent);
@@ -67,10 +66,9 @@ class RoutingConnectionTest {
     }
 
     private static void testHandlersWrappingWithSingleMessage(boolean flush) {
-        Connection connection = mock(Connection.class);
-        RoutingErrorHandler errorHandler = mock(RoutingErrorHandler.class);
-        RoutingConnection routingConnection =
-                new RoutingConnection(connection, defaultDatabase(), READ, null, errorHandler);
+        var connection = mock(Connection.class);
+        var errorHandler = mock(RoutingErrorHandler.class);
+        var routingConnection = new RoutingConnection(connection, defaultDatabase(), READ, null, errorHandler);
 
         if (flush) {
             routingConnection.writeAndFlush(PULL_ALL, mock(ResponseHandler.class));
@@ -78,7 +76,7 @@ class RoutingConnectionTest {
             routingConnection.write(PULL_ALL, mock(ResponseHandler.class));
         }
 
-        ArgumentCaptor<ResponseHandler> handlerCaptor = ArgumentCaptor.forClass(ResponseHandler.class);
+        var handlerCaptor = ArgumentCaptor.forClass(ResponseHandler.class);
 
         if (flush) {
             verify(connection).writeAndFlush(eq(PULL_ALL), handlerCaptor.capture());

@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 class ServerAddressTest {
     @Test
     void shouldCreateAddress() {
-        ServerAddress address = ServerAddress.of("my.database.com", 8897);
+        var address = ServerAddress.of("my.database.com", 8897);
         assertEquals("my.database.com", address.host());
         assertEquals(8897, address.port());
     }

@@ -40,9 +40,9 @@ public class RxWriteQueryWithRetries<C extends AbstractContext> extends Abstract
     @Override
     @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
-        CompletableFuture<Void> queryFinished = new CompletableFuture<>();
+        var queryFinished = new CompletableFuture<Void>();
 
-        AtomicInteger createdNodesNum = new AtomicInteger();
+        var createdNodesNum = new AtomicInteger();
         Flux.usingWhen(
                         Mono.fromSupplier(driver::rxSession),
                         session -> session.writeTransaction(

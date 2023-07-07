@@ -53,8 +53,8 @@ class RoutingContextTest {
 
     @Test
     void uriWithQueryIsParsed() {
-        URI uri = URI.create("neo4j://localhost:7687/?key1=value1&key2=value2&key3=value3");
-        RoutingContext context = new RoutingContext(uri);
+        var uri = URI.create("neo4j://localhost:7687/?key1=value1&key2=value2&key3=value3");
+        var context = new RoutingContext(uri);
 
         assertTrue(context.isDefined());
         Map<String, String> expectedMap = new HashMap<>();
@@ -67,16 +67,16 @@ class RoutingContextTest {
 
     @Test
     void boltUriDisablesServerSideRouting() {
-        URI uri = URI.create("bolt://localhost:7687/?key1=value1&key2=value2&key3=value3");
-        RoutingContext context = new RoutingContext(uri);
+        var uri = URI.create("bolt://localhost:7687/?key1=value1&key2=value2&key3=value3");
+        var context = new RoutingContext(uri);
 
         assertEquals(false, context.isServerRoutingEnabled());
     }
 
     @Test
     void neo4jUriEnablesServerSideRouting() {
-        URI uri = URI.create("neo4j://localhost:7687/?key1=value1&key2=value2&key3=value3");
-        RoutingContext context = new RoutingContext(uri);
+        var uri = URI.create("neo4j://localhost:7687/?key1=value1&key2=value2&key3=value3");
+        var context = new RoutingContext(uri);
 
         assertEquals(true, context.isServerRoutingEnabled());
     }
@@ -103,8 +103,8 @@ class RoutingContextTest {
 
     @Test
     void mapRepresentationIsUnmodifiable() {
-        URI uri = URI.create("neo4j://localhost:7687/?key1=value1");
-        RoutingContext context = new RoutingContext(uri);
+        var uri = URI.create("neo4j://localhost:7687/?key1=value1");
+        var context = new RoutingContext(uri);
 
         Map<String, String> expectedMap = new HashMap<>();
         expectedMap.put("key1", "value1");
@@ -118,17 +118,17 @@ class RoutingContextTest {
 
     @Test
     void populateAddressWithDefaultPort() {
-        URI uri = URI.create("neo4j://localhost/");
-        RoutingContext context = new RoutingContext(uri);
+        var uri = URI.create("neo4j://localhost/");
+        var context = new RoutingContext(uri);
 
         assertEquals(singletonMap("address", "localhost:7687"), context.toMap());
     }
 
     @Test
     void throwsExceptionIfAddressIsUsedInContext() {
-        URI uri = URI.create("neo4j://localhost:7687/?key1=value1&address=someaddress:9010");
+        var uri = URI.create("neo4j://localhost:7687/?key1=value1&address=someaddress:9010");
 
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> new RoutingContext(uri));
+        var e = assertThrows(IllegalArgumentException.class, () -> new RoutingContext(uri));
         assertEquals("The key 'address' is reserved for routing context.", e.getMessage());
     }
 
@@ -137,7 +137,7 @@ class RoutingContextTest {
     }
 
     private static void testEmptyRoutingContext(URI uri) {
-        RoutingContext context = new RoutingContext(uri);
+        var context = new RoutingContext(uri);
 
         Map<String, String> expectedMap = new HashMap<>();
         expectedMap.put("address", "localhost:7687");

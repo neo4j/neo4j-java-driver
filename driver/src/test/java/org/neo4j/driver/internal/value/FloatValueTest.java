@@ -37,7 +37,7 @@ class FloatValueTest {
     @Test
     void testZeroFloatValue() {
         // Given
-        FloatValue value = new FloatValue(0);
+        var value = new FloatValue(0);
 
         // Then
         assertThat(value.asInt(), equalTo(0));
@@ -49,7 +49,7 @@ class FloatValueTest {
     @Test
     void testNonZeroFloatValue() {
         // Given
-        FloatValue value = new FloatValue(6.28);
+        var value = new FloatValue(6.28);
 
         // Then
         assertThat(value.asDouble(), equalTo(6.28));
@@ -58,7 +58,7 @@ class FloatValueTest {
     @Test
     void testIsFloat() {
         // Given
-        FloatValue value = new FloatValue(6.28);
+        var value = new FloatValue(6.28);
 
         // Then
         assertThat(typeSystem.FLOAT().isTypeOf(value), equalTo(true));
@@ -67,8 +67,8 @@ class FloatValueTest {
     @Test
     void testEquals() {
         // Given
-        FloatValue firstValue = new FloatValue(6.28);
-        FloatValue secondValue = new FloatValue(6.28);
+        var firstValue = new FloatValue(6.28);
+        var secondValue = new FloatValue(6.28);
 
         // Then
         assertThat(firstValue, equalTo(secondValue));
@@ -77,7 +77,7 @@ class FloatValueTest {
     @Test
     void testHashCode() {
         // Given
-        FloatValue value = new FloatValue(6.28);
+        var value = new FloatValue(6.28);
 
         // Then
         assertThat(value.hashCode(), notNullValue());
@@ -97,15 +97,15 @@ class FloatValueTest {
 
     @Test
     void shouldThrowIfFloatContainsDecimalWhenConverting() {
-        FloatValue value = new FloatValue(1.1);
+        var value = new FloatValue(1.1);
 
         assertThrows(LossyCoercion.class, value::asInt);
     }
 
     @Test
     void shouldThrowIfLargerThanIntegerMax() {
-        FloatValue value1 = new FloatValue(Integer.MAX_VALUE);
-        FloatValue value2 = new FloatValue(Integer.MAX_VALUE + 1L);
+        var value1 = new FloatValue(Integer.MAX_VALUE);
+        var value2 = new FloatValue(Integer.MAX_VALUE + 1L);
 
         assertThat(value1.asInt(), equalTo(Integer.MAX_VALUE));
         assertThrows(LossyCoercion.class, value2::asInt);
@@ -113,8 +113,8 @@ class FloatValueTest {
 
     @Test
     void shouldThrowIfSmallerThanIntegerMin() {
-        FloatValue value1 = new FloatValue(Integer.MIN_VALUE);
-        FloatValue value2 = new FloatValue(Integer.MIN_VALUE - 1L);
+        var value1 = new FloatValue(Integer.MIN_VALUE);
+        var value2 = new FloatValue(Integer.MIN_VALUE - 1L);
 
         assertThat(value1.asInt(), equalTo(Integer.MIN_VALUE));
         assertThrows(LossyCoercion.class, value2::asInt);

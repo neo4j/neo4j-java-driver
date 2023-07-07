@@ -44,11 +44,11 @@ class AsyncResultCursorOnlyFactoryTest {
     @Test
     void shouldReturnAsyncResultWhenRunSucceeded() {
         // Given
-        Connection connection = mock(Connection.class);
+        var connection = mock(Connection.class);
         ResultCursorFactory cursorFactory = newResultCursorFactory(connection, null);
 
         // When
-        CompletionStage<AsyncResultCursor> cursorFuture = cursorFactory.asyncResult();
+        var cursorFuture = cursorFactory.asyncResult();
 
         // Then
         verifyRunCompleted(connection, cursorFuture);
@@ -61,24 +61,24 @@ class AsyncResultCursorOnlyFactoryTest {
         ResultCursorFactory cursorFactory = newResultCursorFactory(error);
 
         // When
-        CompletionStage<AsyncResultCursor> cursorFuture = cursorFactory.asyncResult();
+        var cursorFuture = cursorFactory.asyncResult();
 
         // Then
-        AsyncResultCursor cursor = getNow(cursorFuture);
-        Throwable actual = assertThrows(error.getClass(), () -> await(cursor.mapSuccessfulRunCompletionAsync()));
+        var cursor = getNow(cursorFuture);
+        var actual = assertThrows(error.getClass(), () -> await(cursor.mapSuccessfulRunCompletionAsync()));
         assertSame(error, actual);
     }
 
     @Test
     void shouldPrePopulateRecords() {
         // Given
-        Connection connection = mock(Connection.class);
-        Message runMessage = mock(Message.class);
+        var connection = mock(Connection.class);
+        var runMessage = mock(Message.class);
 
-        RunResponseHandler runHandler = mock(RunResponseHandler.class);
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        var runHandler = mock(RunResponseHandler.class);
+        var runFuture = new CompletableFuture<Void>();
 
-        PullAllResponseHandler pullAllHandler = mock(PullAllResponseHandler.class);
+        var pullAllHandler = mock(PullAllResponseHandler.class);
 
         ResultCursorFactory cursorFactory =
                 new AsyncResultCursorOnlyFactory(connection, runMessage, runHandler, runFuture, pullAllHandler);
@@ -97,31 +97,31 @@ class AsyncResultCursorOnlyFactoryTest {
         ResultCursorFactory cursorFactory = newResultCursorFactory(null);
 
         // When & Then
-        CompletionStage<RxResultCursor> rxCursorFuture = cursorFactory.rxResult();
-        CompletionException error = assertThrows(CompletionException.class, () -> getNow(rxCursorFuture));
+        var rxCursorFuture = cursorFactory.rxResult();
+        var error = assertThrows(CompletionException.class, () -> getNow(rxCursorFuture));
         assertThat(
                 error.getCause().getMessage(),
                 containsString("Driver is connected to the database that does not support driver reactive API"));
     }
 
     private AsyncResultCursorOnlyFactory newResultCursorFactory(Connection connection, Throwable runError) {
-        Message runMessage = mock(Message.class);
+        var runMessage = mock(Message.class);
 
-        RunResponseHandler runHandler = mock(RunResponseHandler.class);
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        var runHandler = mock(RunResponseHandler.class);
+        var runFuture = new CompletableFuture<Void>();
         if (runError != null) {
             runFuture.completeExceptionally(runError);
         } else {
             runFuture.complete(null);
         }
 
-        AutoPullResponseHandler pullHandler = mock(AutoPullResponseHandler.class);
+        var pullHandler = mock(AutoPullResponseHandler.class);
 
         return new AsyncResultCursorOnlyFactory(connection, runMessage, runHandler, runFuture, pullHandler);
     }
 
     private AsyncResultCursorOnlyFactory newResultCursorFactory(Throwable runError) {
-        Connection connection = mock(Connection.class);
+        var connection = mock(Connection.class);
         return newResultCursorFactory(connection, runError);
     }
 

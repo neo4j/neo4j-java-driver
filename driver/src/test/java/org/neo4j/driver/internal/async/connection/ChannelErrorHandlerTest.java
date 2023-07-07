@@ -61,7 +61,7 @@ class ChannelErrorHandlerTest {
     void shouldHandleChannelInactive() {
         channel.pipeline().fireChannelInactive();
 
-        Throwable error = messageDispatcher.currentError();
+        var error = messageDispatcher.currentError();
 
         assertThat(error, instanceOf(ServiceUnavailableException.class));
         assertThat(error.getMessage(), startsWith("Connection to the database terminated"));
@@ -70,11 +70,11 @@ class ChannelErrorHandlerTest {
 
     @Test
     void shouldHandleChannelInactiveAfterExceptionCaught() {
-        RuntimeException originalError = new RuntimeException("Hi!");
+        var originalError = new RuntimeException("Hi!");
         channel.pipeline().fireExceptionCaught(originalError);
         channel.pipeline().fireChannelInactive();
 
-        Throwable error = messageDispatcher.currentError();
+        var error = messageDispatcher.currentError();
 
         assertEquals(originalError, error);
         assertFalse(channel.isOpen());
@@ -82,12 +82,12 @@ class ChannelErrorHandlerTest {
 
     @Test
     void shouldHandleChannelInactiveWhenTerminationReasonSet() {
-        String terminationReason = "Something really bad happened";
+        var terminationReason = "Something really bad happened";
         setTerminationReason(channel, terminationReason);
 
         channel.pipeline().fireChannelInactive();
 
-        Throwable error = messageDispatcher.currentError();
+        var error = messageDispatcher.currentError();
 
         assertThat(error, instanceOf(ServiceUnavailableException.class));
         assertThat(error.getMessage(), startsWith("Connection to the database terminated"));
@@ -97,11 +97,11 @@ class ChannelErrorHandlerTest {
 
     @Test
     void shouldHandleCodecException() {
-        RuntimeException cause = new RuntimeException("Hi!");
-        CodecException codecException = new CodecException("Unable to encode or decode message", cause);
+        var cause = new RuntimeException("Hi!");
+        var codecException = new CodecException("Unable to encode or decode message", cause);
         channel.pipeline().fireExceptionCaught(codecException);
 
-        Throwable error = messageDispatcher.currentError();
+        var error = messageDispatcher.currentError();
 
         assertEquals(cause, error);
         assertFalse(channel.isOpen());
@@ -109,10 +109,10 @@ class ChannelErrorHandlerTest {
 
     @Test
     void shouldHandleCodecExceptionWithoutCause() {
-        CodecException codecException = new CodecException("Unable to encode or decode message");
+        var codecException = new CodecException("Unable to encode or decode message");
         channel.pipeline().fireExceptionCaught(codecException);
 
-        Throwable error = messageDispatcher.currentError();
+        var error = messageDispatcher.currentError();
 
         assertEquals(codecException, error);
         assertFalse(channel.isOpen());
@@ -120,10 +120,10 @@ class ChannelErrorHandlerTest {
 
     @Test
     void shouldHandleIOException() {
-        IOException ioException = new IOException("Write or read failed");
+        var ioException = new IOException("Write or read failed");
         channel.pipeline().fireExceptionCaught(ioException);
 
-        Throwable error = messageDispatcher.currentError();
+        var error = messageDispatcher.currentError();
 
         assertThat(error, instanceOf(ServiceUnavailableException.class));
         assertEquals(ioException, error.getCause());
@@ -132,10 +132,10 @@ class ChannelErrorHandlerTest {
 
     @Test
     void shouldHandleException() {
-        RuntimeException originalError = new RuntimeException("Random failure");
+        var originalError = new RuntimeException("Random failure");
         channel.pipeline().fireExceptionCaught(originalError);
 
-        Throwable error = messageDispatcher.currentError();
+        var error = messageDispatcher.currentError();
 
         assertEquals(originalError, error);
         assertFalse(channel.isOpen());
@@ -143,13 +143,13 @@ class ChannelErrorHandlerTest {
 
     @Test
     void shouldHandleMultipleExceptions() {
-        RuntimeException error1 = new RuntimeException("Failure 1");
-        RuntimeException error2 = new RuntimeException("Failure 2");
+        var error1 = new RuntimeException("Failure 1");
+        var error2 = new RuntimeException("Failure 2");
 
         channel.pipeline().fireExceptionCaught(error1);
         channel.pipeline().fireExceptionCaught(error2);
 
-        Throwable error = messageDispatcher.currentError();
+        var error = messageDispatcher.currentError();
 
         assertEquals(error1, error);
         assertFalse(channel.isOpen());

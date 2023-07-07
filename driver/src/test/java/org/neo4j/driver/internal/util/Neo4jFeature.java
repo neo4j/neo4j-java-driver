@@ -56,7 +56,7 @@ public enum Neo4jFeature {
         }
 
         private int compareTo(Version o) {
-            int c = compare(major, o.major);
+            var c = compare(major, o.major);
             if (c == 0) {
                 c = compare(minor, o.minor);
                 if (c == 0) {

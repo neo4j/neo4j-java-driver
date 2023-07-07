@@ -37,14 +37,14 @@ class SchemeTest {
     @ParameterizedTest
     @ValueSource(strings = {"bob", "grey", "", " ", "blah"})
     void shouldRejectInvalidSchemes(String input) {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> Scheme.validateScheme(input));
+        var ex = assertThrows(IllegalArgumentException.class, () -> Scheme.validateScheme(input));
         assertTrue(ex.getMessage().contains("Invalid address format " + input));
     }
 
     @ParameterizedTest
     @NullSource
     void shouldRejectNullScheme(String input) {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> Scheme.validateScheme(input));
+        var ex = assertThrows(IllegalArgumentException.class, () -> Scheme.validateScheme(input));
         assertTrue(ex.getMessage().contains("Scheme must not be null"));
     }
 

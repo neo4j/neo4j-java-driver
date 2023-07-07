@@ -48,9 +48,9 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateIsDebugEnabled() {
-        Logger delegate = newLoggerMock(true, false);
+        var delegate = newLoggerMock(true, false);
 
-        PrefixedLogger logger = new PrefixedLogger(delegate);
+        var logger = new PrefixedLogger(delegate);
 
         assertTrue(logger.isDebugEnabled());
         verify(delegate).isDebugEnabled();
@@ -58,9 +58,9 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateIsTraceEnabled() {
-        Logger delegate = newLoggerMock(false, true);
+        var delegate = newLoggerMock(false, true);
 
-        PrefixedLogger logger = new PrefixedLogger(delegate);
+        var logger = new PrefixedLogger(delegate);
 
         assertTrue(logger.isTraceEnabled());
         verify(delegate).isTraceEnabled();
@@ -68,9 +68,9 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldNotDelegateDebugLogWhenDebugDisabled() {
-        Logger delegate = newLoggerMock();
+        var delegate = newLoggerMock();
 
-        PrefixedLogger logger = new PrefixedLogger(delegate);
+        var logger = new PrefixedLogger(delegate);
         logger.debug(MESSAGE);
 
         verify(delegate, never()).debug(anyString(), any(Object[].class));
@@ -78,9 +78,9 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldNotDelegateDebugLogWithThrowableWhenDebugDisabled() {
-        Logger delegate = newLoggerMock();
+        var delegate = newLoggerMock();
 
-        PrefixedLogger logger = new PrefixedLogger(delegate);
+        var logger = new PrefixedLogger(delegate);
         logger.debug(MESSAGE, mock(Throwable.class));
 
         verify(delegate, never()).debug(anyString(), any(Throwable.class));
@@ -88,9 +88,9 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldNotDelegateTraceLogWhenTraceDisabled() {
-        Logger delegate = newLoggerMock();
+        var delegate = newLoggerMock();
 
-        PrefixedLogger logger = new PrefixedLogger(delegate);
+        var logger = new PrefixedLogger(delegate);
         logger.trace(MESSAGE);
 
         verify(delegate, never()).trace(anyString(), any());
@@ -98,8 +98,8 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateErrorMessageWhenNoPrefix() {
-        Logger delegate = newLoggerMock();
-        PrefixedLogger logger = new PrefixedLogger(delegate);
+        var delegate = newLoggerMock();
+        var logger = new PrefixedLogger(delegate);
 
         logger.error(MESSAGE, ERROR);
 
@@ -108,8 +108,8 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateInfoMessageWhenNoPrefix() {
-        Logger delegate = newLoggerMock();
-        PrefixedLogger logger = new PrefixedLogger(delegate);
+        var delegate = newLoggerMock();
+        var logger = new PrefixedLogger(delegate);
 
         logger.info(MESSAGE);
 
@@ -118,8 +118,8 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateWarnMessageWhenNoPrefix() {
-        Logger delegate = newLoggerMock();
-        PrefixedLogger logger = new PrefixedLogger(delegate);
+        var delegate = newLoggerMock();
+        var logger = new PrefixedLogger(delegate);
 
         logger.warn(MESSAGE);
 
@@ -128,10 +128,10 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateWarnMessageWithoutErrorWhenNoPrefix() {
-        Logger delegate = newLoggerMock();
-        PrefixedLogger logger = new PrefixedLogger(delegate);
+        var delegate = newLoggerMock();
+        var logger = new PrefixedLogger(delegate);
 
-        Exception cause = new Exception();
+        var cause = new Exception();
         logger.warn(MESSAGE, cause);
 
         verify(delegate).warn(MESSAGE, cause);
@@ -139,8 +139,8 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateDebugMessageWhenNoPrefix() {
-        Logger delegate = newLoggerMock(true, false);
-        PrefixedLogger logger = new PrefixedLogger(delegate);
+        var delegate = newLoggerMock(true, false);
+        var logger = new PrefixedLogger(delegate);
 
         logger.debug(MESSAGE);
 
@@ -149,8 +149,8 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateTraceMessageWhenNoPrefix() {
-        Logger delegate = newLoggerMock(false, true);
-        PrefixedLogger logger = new PrefixedLogger(delegate);
+        var delegate = newLoggerMock(false, true);
+        var logger = new PrefixedLogger(delegate);
 
         logger.trace(MESSAGE);
 
@@ -159,8 +159,8 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateErrorMessageWithPrefix() {
-        Logger delegate = newLoggerMock();
-        PrefixedLogger logger = new PrefixedLogger(PREFIX, delegate);
+        var delegate = newLoggerMock();
+        var logger = new PrefixedLogger(PREFIX, delegate);
 
         logger.error(MESSAGE, ERROR);
 
@@ -169,8 +169,8 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateInfoMessageWithPrefix() {
-        Logger delegate = newLoggerMock();
-        PrefixedLogger logger = new PrefixedLogger(PREFIX, delegate);
+        var delegate = newLoggerMock();
+        var logger = new PrefixedLogger(PREFIX, delegate);
 
         logger.info(MESSAGE);
 
@@ -179,8 +179,8 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateWarnMessageWithPrefix() {
-        Logger delegate = newLoggerMock();
-        PrefixedLogger logger = new PrefixedLogger(PREFIX, delegate);
+        var delegate = newLoggerMock();
+        var logger = new PrefixedLogger(PREFIX, delegate);
 
         logger.warn(MESSAGE);
 
@@ -189,10 +189,10 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateWarnMessageWithErrorWithPrefix() {
-        Logger delegate = newLoggerMock();
-        PrefixedLogger logger = new PrefixedLogger(PREFIX, delegate);
+        var delegate = newLoggerMock();
+        var logger = new PrefixedLogger(PREFIX, delegate);
 
-        Exception cause = new Exception();
+        var cause = new Exception();
         logger.warn(MESSAGE, cause);
 
         verify(delegate).warn("Output Hello World!", cause);
@@ -200,8 +200,8 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateDebugMessageWithPrefix() {
-        Logger delegate = newLoggerMock(true, false);
-        PrefixedLogger logger = new PrefixedLogger(PREFIX, delegate);
+        var delegate = newLoggerMock(true, false);
+        var logger = new PrefixedLogger(PREFIX, delegate);
 
         logger.debug(MESSAGE);
 
@@ -210,8 +210,8 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldDelegateTraceMessageWithPrefix() {
-        Logger delegate = newLoggerMock(false, true);
-        PrefixedLogger logger = new PrefixedLogger(PREFIX, delegate);
+        var delegate = newLoggerMock(false, true);
+        var logger = new PrefixedLogger(PREFIX, delegate);
 
         logger.trace(MESSAGE);
 
@@ -223,7 +223,7 @@ class PrefixedLoggerTest {
     }
 
     private static Logger newLoggerMock(boolean debugEnabled, boolean traceEnabled) {
-        Logger logger = mock(Logger.class);
+        var logger = mock(Logger.class);
         when(logger.isDebugEnabled()).thenReturn(debugEnabled);
         when(logger.isTraceEnabled()).thenReturn(traceEnabled);
         return logger;

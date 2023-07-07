@@ -23,8 +23,6 @@ import static org.neo4j.driver.Values.parameters;
 import java.time.Duration;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxSession;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
@@ -69,15 +67,15 @@ public class RxResultRecordPublisherVerificationIT extends PublisherVerification
 
     @Override
     public Publisher<Record> createPublisher(long elements) {
-        RxSession session = driver.rxSession();
-        RxResult result = session.run(QUERY, parameters("numberOfRecords", elements));
+        var session = driver.rxSession();
+        var result = session.run(QUERY, parameters("numberOfRecords", elements));
         return result.records();
     }
 
     @Override
     public Publisher<Record> createFailedPublisher() {
-        RxSession session = driver.rxSession();
-        RxResult result = session.run("INVALID");
+        var session = driver.rxSession();
+        var result = session.run("INVALID");
         return result.records();
     }
 }

@@ -120,7 +120,7 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     @Override
     @SuppressWarnings("deprecation")
     public Set<Bookmark> lastBookmarks() {
-        Bookmark bookmark = lastBookmark();
+        var bookmark = lastBookmark();
         if (bookmark == null || bookmark.isEmpty()) {
             return Collections.emptySet();
         } else if (bookmark.values().size() == 1) {

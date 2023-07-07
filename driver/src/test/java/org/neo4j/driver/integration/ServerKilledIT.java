@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.Config.TrustStrategy.trustCustomCertificateSignedBy;
 
 import java.time.Clock;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -33,8 +32,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
@@ -66,7 +63,7 @@ class ServerKilledIT {
     @MethodSource("data")
     void shouldRecoverFromServerRestart(String name, Config.ConfigBuilder configBuilder) {
         // Given config with sessionLivenessCheckTimeout not set, i.e. turned off
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), configBuilder.build())) {
+        try (var driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), configBuilder.build())) {
             acquireAndReleaseConnections(4, driver);
 
             // When
@@ -74,9 +71,9 @@ class ServerKilledIT {
             neo4j.startProxy();
 
             // Then we should be able to start using sessions again, at most O(numSessions) session calls later
-            int toleratedFailures = 4;
-            for (int i = 0; i < 10; i++) {
-                try (Session s = driver.session()) {
+            var toleratedFailures = 4;
+            for (var i = 0; i < 10; i++) {
+                try (var s = driver.session()) {
                     s.run("RETURN 'Hello, world!'");
                 } catch (ServiceUnavailableException e) {
                     if (toleratedFailures-- == 0) {
@@ -92,12 +89,12 @@ class ServerKilledIT {
     @MethodSource("data")
     void shouldDropBrokenOldSessions(String name, Config.ConfigBuilder configBuilder) {
         // config with set liveness check timeout
-        int livenessCheckTimeoutMinutes = 10;
+        var livenessCheckTimeoutMinutes = 10;
         configBuilder.withConnectionLivenessCheckTimeout(livenessCheckTimeoutMinutes, TimeUnit.MINUTES);
 
-        FakeClock clock = new FakeClock();
+        var clock = new FakeClock();
 
-        try (Driver driver = createDriver(clock, configBuilder.build())) {
+        try (var driver = createDriver(clock, configBuilder.build())) {
             acquireAndReleaseConnections(5, driver);
 
             // restart database access to invalidate all idle connections in the pool
@@ -108,8 +105,8 @@ class ServerKilledIT {
 
             // now all idle connections should be considered too old and will be verified during acquisition
             // they will appear broken because of the database restart and new valid connection will be created
-            try (Session session = driver.session()) {
-                List<Record> records = session.run("RETURN 1").list();
+            try (var session = driver.session()) {
+                var records = session.run("RETURN 1").list();
                 assertEquals(1, records.size());
                 assertEquals(1, records.get(0).get(0).asInt());
             }
@@ -118,7 +115,7 @@ class ServerKilledIT {
 
     private static void acquireAndReleaseConnections(int count, Driver driver) {
         if (count > 0) {
-            Session session = driver.session();
+            var session = driver.session();
             session.run("RETURN 1");
             acquireAndReleaseConnections(count - 1, driver);
             session.close();

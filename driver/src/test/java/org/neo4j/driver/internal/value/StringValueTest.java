@@ -35,7 +35,7 @@ class StringValueTest {
     @Test
     void testStringValue() {
         // Given
-        StringValue value = new StringValue("Spongebob");
+        var value = new StringValue("Spongebob");
 
         // Then
         assertThat(value.asString(), equalTo("Spongebob"));
@@ -44,7 +44,7 @@ class StringValueTest {
     @Test
     void testIsString() {
         // Given
-        StringValue value = new StringValue("Spongebob");
+        var value = new StringValue("Spongebob");
 
         // Then
         assertThat(typeSystem.STRING().isTypeOf(value), equalTo(true));
@@ -53,8 +53,8 @@ class StringValueTest {
     @Test
     void testEquals() {
         // Given
-        StringValue firstValue = new StringValue("Spongebob");
-        StringValue secondValue = new StringValue("Spongebob");
+        var firstValue = new StringValue("Spongebob");
+        var secondValue = new StringValue("Spongebob");
 
         // Then
         assertThat(firstValue, equalTo(secondValue));
@@ -63,7 +63,7 @@ class StringValueTest {
     @Test
     void testHashCode() {
         // Given
-        StringValue value = new StringValue("Spongebob");
+        var value = new StringValue("Spongebob");
 
         // Then
         assertThat(value.hashCode(), notNullValue());

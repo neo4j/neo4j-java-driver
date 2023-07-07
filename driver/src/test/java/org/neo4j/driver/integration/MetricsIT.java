@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.Values.parameters;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.Test;
 import org.junit.jupiter.api.AfterEach;
@@ -60,13 +59,13 @@ class MetricsIT {
 
     @Test
     void driverMetricsUpdatedWithDriverUse() {
-        Result result = createNodesInNewSession(12);
+        var result = createNodesInNewSession(12);
         // assert in use
-        Timer acquisitionTimer =
+        var acquisitionTimer =
                 meterRegistry.get("neo4j.driver.connections.acquisition").timer();
-        Timer creationTimer =
+        var creationTimer =
                 meterRegistry.get("neo4j.driver.connections.creation").timer();
-        Timer usageTimer = meterRegistry.get("neo4j.driver.connections.usage").timer();
+        var usageTimer = meterRegistry.get("neo4j.driver.connections.usage").timer();
         assertEquals(1, acquisitionTimer.count());
         assertEquals(1, creationTimer.count());
         assertEquals(0, usageTimer.count());

@@ -71,7 +71,7 @@ public class FailingMessageFormat implements MessageFormat {
 
         @Override
         public void write(Message msg) throws IOException {
-            Throwable error = throwableRef.getAndSet(null);
+            var error = throwableRef.getAndSet(null);
             if (error != null) {
                 PlatformDependent.throwException(error);
             } else {
@@ -94,13 +94,13 @@ public class FailingMessageFormat implements MessageFormat {
 
         @Override
         public void read(ResponseMessageHandler handler) throws IOException {
-            Throwable error = throwableRef.getAndSet(null);
+            var error = throwableRef.getAndSet(null);
             if (error != null) {
                 PlatformDependent.throwException(error);
                 return;
             }
 
-            FailureMessage failureMsg = failureRef.getAndSet(null);
+            var failureMsg = failureRef.getAndSet(null);
             if (failureMsg != null) {
                 handler.handleFailureMessage(failureMsg.code(), failureMsg.message());
                 return;

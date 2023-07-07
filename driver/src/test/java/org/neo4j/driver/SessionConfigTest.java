@@ -48,7 +48,7 @@ import org.neo4j.driver.testutil.TestUtil;
 class SessionConfigTest {
     @Test
     void shouldReturnDefaultValues() {
-        SessionConfig config = defaultConfig();
+        var config = defaultConfig();
 
         assertEquals(AccessMode.WRITE, config.defaultAccessMode());
         assertFalse(config.database().isPresent());
@@ -59,14 +59,14 @@ class SessionConfigTest {
     @ParameterizedTest
     @EnumSource(AccessMode.class)
     void shouldChangeAccessMode(AccessMode mode) {
-        SessionConfig config = builder().withDefaultAccessMode(mode).build();
+        var config = builder().withDefaultAccessMode(mode).build();
         assertEquals(mode, config.defaultAccessMode());
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"foo", "data", "my awesome database", "    "})
     void shouldChangeDatabaseName(String databaseName) {
-        SessionConfig config = builder().withDatabase(databaseName).build();
+        var config = builder().withDatabase(databaseName).build();
         assertTrue(config.database().isPresent());
         assertEquals(databaseName, config.database().get());
     }
@@ -104,56 +104,54 @@ class SessionConfigTest {
     @ParameterizedTest
     @ValueSource(strings = {""})
     void shouldForbiddenEmptyStringDatabaseName(String databaseName) {
-        IllegalArgumentException error =
-                assertThrows(IllegalArgumentException.class, () -> builder().withDatabase(databaseName));
+        var error = assertThrows(IllegalArgumentException.class, () -> builder().withDatabase(databaseName));
         assertTrue(error.getMessage().startsWith("Illegal database name "));
     }
 
     @Test
     void shouldAcceptNullBookmarks() {
-        SessionConfig config = builder().withBookmarks((Bookmark[]) null).build();
+        var config = builder().withBookmarks((Bookmark[]) null).build();
         assertNull(config.bookmarks());
 
-        SessionConfig config2 = builder().withBookmarks((List<Bookmark>) null).build();
+        var config2 = builder().withBookmarks((List<Bookmark>) null).build();
         assertNull(config2.bookmarks());
     }
 
     @Test
     void shouldAcceptEmptyBookmarks() {
-        SessionConfig config = builder().withBookmarks().build();
+        var config = builder().withBookmarks().build();
         assertEquals(emptyList(), config.bookmarks());
 
-        SessionConfig config2 = builder().withBookmarks(emptyList()).build();
+        var config2 = builder().withBookmarks(emptyList()).build();
         assertEquals(emptyList(), config2.bookmarks());
     }
 
     @Test
     void shouldAcceptBookmarks() {
-        Bookmark one = parse("one");
-        Bookmark two = parse("two");
-        SessionConfig config = builder().withBookmarks(one, two).build();
+        var one = parse("one");
+        var two = parse("two");
+        var config = builder().withBookmarks(one, two).build();
         assertEquals(Arrays.asList(one, two), config.bookmarks());
 
-        SessionConfig config2 = builder().withBookmarks(Arrays.asList(one, two)).build();
+        var config2 = builder().withBookmarks(Arrays.asList(one, two)).build();
         assertEquals(Arrays.asList(one, two), config2.bookmarks());
     }
 
     @Test
     void shouldAcceptNullInBookmarks() {
-        Bookmark one = parse("one");
-        Bookmark two = parse("two");
-        SessionConfig config = builder().withBookmarks(one, two, null).build();
+        var one = parse("one");
+        var two = parse("two");
+        var config = builder().withBookmarks(one, two, null).build();
         assertEquals(Arrays.asList(one, two, null), config.bookmarks());
 
-        SessionConfig config2 =
-                builder().withBookmarks(Arrays.asList(one, two, null)).build();
+        var config2 = builder().withBookmarks(Arrays.asList(one, two, null)).build();
         assertEquals(Arrays.asList(one, two, null), config2.bookmarks());
     }
 
     @ParameterizedTest
     @ValueSource(longs = {100, 1, 1000, Long.MAX_VALUE, -1})
     void shouldChangeFetchSize(long value) {
-        SessionConfig config = builder().withFetchSize(value).build();
+        var config = builder().withFetchSize(value).build();
         assertEquals(Optional.of(value), config.fetchSize());
     }
 
@@ -167,8 +165,8 @@ class SessionConfigTest {
 
     @Test
     void shouldTwoConfigBeEqual() {
-        SessionConfig config1 = builder().withFetchSize(100).build();
-        SessionConfig config2 = builder().withFetchSize(100).build();
+        var config1 = builder().withFetchSize(100).build();
+        var config2 = builder().withFetchSize(100).build();
 
         assertEquals(config1, config2);
     }
@@ -176,7 +174,7 @@ class SessionConfigTest {
     @Test
     @SuppressWarnings("deprecation")
     void shouldSerialize() throws Exception {
-        SessionConfig config = SessionConfig.builder()
+        var config = SessionConfig.builder()
                 .withBookmarks(
                         Bookmark.from(new HashSet<>(Arrays.asList("bookmarkA", "bookmarkB"))),
                         Bookmark.from(new HashSet<>(Arrays.asList("bookmarkC", "bookmarkD"))))
@@ -189,7 +187,7 @@ class SessionConfigTest {
                         .disableCategories(Set.of(NotificationCategory.UNSUPPORTED, NotificationCategory.UNRECOGNIZED)))
                 .build();
 
-        SessionConfig verify = TestUtil.serializeAndReadBack(config, SessionConfig.class);
+        var verify = TestUtil.serializeAndReadBack(config, SessionConfig.class);
 
         assertNotNull(verify.bookmarks());
 

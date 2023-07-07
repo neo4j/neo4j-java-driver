@@ -52,7 +52,7 @@ public class TransactionMetadataBuilderTest {
     @ParameterizedTest
     @EnumSource(AccessMode.class)
     void shouldHaveCorrectMetadata(AccessMode mode) {
-        Set<Bookmark> bookmarks = Collections.singleton(
+        var bookmarks = Collections.singleton(
                 InternalBookmark.parse(new HashSet<>(asList("neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52"))));
 
         Map<String, Value> txMetadata = new HashMap<>();
@@ -60,10 +60,9 @@ public class TransactionMetadataBuilderTest {
         txMetadata.put("baz", value(111));
         txMetadata.put("time", value(LocalDateTime.now()));
 
-        Duration txTimeout = Duration.ofSeconds(7);
+        var txTimeout = Duration.ofSeconds(7);
 
-        Map<String, Value> metadata =
-                buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null, null, null);
+        var metadata = buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null, null, null);
 
         Map<String, Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put(
@@ -80,7 +79,7 @@ public class TransactionMetadataBuilderTest {
     @ParameterizedTest
     @ValueSource(strings = {"", "foo", "data"})
     void shouldHaveCorrectMetadataForDatabaseName(String databaseName) {
-        Set<Bookmark> bookmarks = Collections.singleton(
+        var bookmarks = Collections.singleton(
                 InternalBookmark.parse(new HashSet<>(asList("neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52"))));
 
         Map<String, Value> txMetadata = new HashMap<>();
@@ -88,10 +87,9 @@ public class TransactionMetadataBuilderTest {
         txMetadata.put("baz", value(111));
         txMetadata.put("time", value(LocalDateTime.now()));
 
-        Duration txTimeout = Duration.ofSeconds(7);
+        var txTimeout = Duration.ofSeconds(7);
 
-        Map<String, Value> metadata =
-                buildMetadata(txTimeout, txMetadata, database(databaseName), WRITE, bookmarks, null, null, null);
+        var metadata = buildMetadata(txTimeout, txMetadata, database(databaseName), WRITE, bookmarks, null, null, null);
 
         Map<String, Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put(
@@ -105,8 +103,7 @@ public class TransactionMetadataBuilderTest {
 
     @Test
     void shouldNotHaveMetadataForDatabaseNameWhenIsNull() {
-        Map<String, Value> metadata =
-                buildMetadata(null, null, defaultDatabase(), WRITE, Collections.emptySet(), null, null, null);
+        var metadata = buildMetadata(null, null, defaultDatabase(), WRITE, Collections.emptySet(), null, null, null);
         assertTrue(metadata.isEmpty());
     }
 

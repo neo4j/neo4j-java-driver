@@ -64,21 +64,21 @@ class LeastConnectedLoadBalancingStrategyTest {
 
     @Test
     void shouldHandleSingleReaderWithoutActiveConnections() {
-        BoltServerAddress address = new BoltServerAddress("reader", 9999);
+        var address = new BoltServerAddress("reader", 9999);
 
         assertEquals(address, strategy.selectReader(Collections.singletonList(address)));
     }
 
     @Test
     void shouldHandleSingleWriterWithoutActiveConnections() {
-        BoltServerAddress address = new BoltServerAddress("writer", 9999);
+        var address = new BoltServerAddress("writer", 9999);
 
         assertEquals(address, strategy.selectWriter(Collections.singletonList(address)));
     }
 
     @Test
     void shouldHandleSingleReaderWithActiveConnections() {
-        BoltServerAddress address = new BoltServerAddress("reader", 9999);
+        var address = new BoltServerAddress("reader", 9999);
         when(connectionPool.inUseConnections(address)).thenReturn(42);
 
         assertEquals(address, strategy.selectReader(Collections.singletonList(address)));
@@ -86,7 +86,7 @@ class LeastConnectedLoadBalancingStrategyTest {
 
     @Test
     void shouldHandleSingleWriterWithActiveConnections() {
-        BoltServerAddress address = new BoltServerAddress("writer", 9999);
+        var address = new BoltServerAddress("writer", 9999);
         when(connectionPool.inUseConnections(address)).thenReturn(24);
 
         assertEquals(address, strategy.selectWriter(Collections.singletonList(address)));
@@ -94,9 +94,9 @@ class LeastConnectedLoadBalancingStrategyTest {
 
     @Test
     void shouldHandleMultipleReadersWithActiveConnections() {
-        BoltServerAddress address1 = new BoltServerAddress("reader", 1);
-        BoltServerAddress address2 = new BoltServerAddress("reader", 2);
-        BoltServerAddress address3 = new BoltServerAddress("reader", 3);
+        var address1 = new BoltServerAddress("reader", 1);
+        var address2 = new BoltServerAddress("reader", 2);
+        var address3 = new BoltServerAddress("reader", 3);
 
         when(connectionPool.inUseConnections(address1)).thenReturn(3);
         when(connectionPool.inUseConnections(address2)).thenReturn(4);
@@ -107,10 +107,10 @@ class LeastConnectedLoadBalancingStrategyTest {
 
     @Test
     void shouldHandleMultipleWritersWithActiveConnections() {
-        BoltServerAddress address1 = new BoltServerAddress("writer", 1);
-        BoltServerAddress address2 = new BoltServerAddress("writer", 2);
-        BoltServerAddress address3 = new BoltServerAddress("writer", 3);
-        BoltServerAddress address4 = new BoltServerAddress("writer", 4);
+        var address1 = new BoltServerAddress("writer", 1);
+        var address2 = new BoltServerAddress("writer", 2);
+        var address3 = new BoltServerAddress("writer", 3);
+        var address4 = new BoltServerAddress("writer", 4);
 
         when(connectionPool.inUseConnections(address1)).thenReturn(5);
         when(connectionPool.inUseConnections(address2)).thenReturn(6);
@@ -122,9 +122,9 @@ class LeastConnectedLoadBalancingStrategyTest {
 
     @Test
     void shouldReturnDifferentReaderOnEveryInvocationWhenNoActiveConnections() {
-        BoltServerAddress address1 = new BoltServerAddress("reader", 1);
-        BoltServerAddress address2 = new BoltServerAddress("reader", 2);
-        BoltServerAddress address3 = new BoltServerAddress("reader", 3);
+        var address1 = new BoltServerAddress("reader", 1);
+        var address2 = new BoltServerAddress("reader", 2);
+        var address3 = new BoltServerAddress("reader", 3);
 
         assertEquals(address1, strategy.selectReader(Arrays.asList(address1, address2, address3)));
         assertEquals(address2, strategy.selectReader(Arrays.asList(address1, address2, address3)));
@@ -137,8 +137,8 @@ class LeastConnectedLoadBalancingStrategyTest {
 
     @Test
     void shouldReturnDifferentWriterOnEveryInvocationWhenNoActiveConnections() {
-        BoltServerAddress address1 = new BoltServerAddress("writer", 1);
-        BoltServerAddress address2 = new BoltServerAddress("writer", 2);
+        var address1 = new BoltServerAddress("writer", 1);
+        var address2 = new BoltServerAddress("writer", 2);
 
         assertEquals(address1, strategy.selectReader(Arrays.asList(address1, address2)));
         assertEquals(address2, strategy.selectReader(Arrays.asList(address1, address2)));
@@ -149,8 +149,8 @@ class LeastConnectedLoadBalancingStrategyTest {
 
     @Test
     void shouldTraceLogWhenNoAddressSelected() {
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
         LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy(connectionPool, logging);
@@ -164,8 +164,8 @@ class LeastConnectedLoadBalancingStrategyTest {
 
     @Test
     void shouldTraceLogSelectedAddress() {
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
         when(connectionPool.inUseConnections(any(BoltServerAddress.class))).thenReturn(42);

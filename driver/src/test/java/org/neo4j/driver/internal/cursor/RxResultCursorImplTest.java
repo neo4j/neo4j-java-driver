@@ -37,9 +37,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Test;
@@ -57,9 +55,9 @@ class RxResultCursorImplTest {
     @SuppressWarnings("unchecked")
     void shouldInstallSummaryConsumerWithoutReportingError() {
         // Given
-        RuntimeException error = new RuntimeException("Hi");
-        RunResponseHandler runHandler = newRunResponseHandler(error);
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        var error = new RuntimeException("Hi");
+        var runHandler = newRunResponseHandler(error);
+        var pullHandler = mock(PullResponseHandler.class);
 
         // When
         new RxResultCursorImpl(error, runHandler, pullHandler);
@@ -72,15 +70,15 @@ class RxResultCursorImplTest {
     @Test
     void shouldReturnQueryKeys() {
         // Given
-        RunResponseHandler runHandler = newRunResponseHandler();
-        List<String> expected = asList("key1", "key2", "key3");
+        var runHandler = newRunResponseHandler();
+        var expected = asList("key1", "key2", "key3");
         runHandler.onSuccess(Collections.singletonMap("fields", value(expected)));
 
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        var pullHandler = mock(PullResponseHandler.class);
 
         // When
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
-        List<String> actual = cursor.keys();
+        var actual = cursor.keys();
 
         // Then
         assertEquals(expected, actual);
@@ -89,17 +87,17 @@ class RxResultCursorImplTest {
     @Test
     void shouldSupportReturnQueryKeysMultipleTimes() {
         // Given
-        RunResponseHandler runHandler = newRunResponseHandler();
-        List<String> expected = asList("key1", "key2", "key3");
+        var runHandler = newRunResponseHandler();
+        var expected = asList("key1", "key2", "key3");
         runHandler.onSuccess(Collections.singletonMap("fields", value(expected)));
 
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        var pullHandler = mock(PullResponseHandler.class);
 
         // When
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // Then
-        List<String> actual = cursor.keys();
+        var actual = cursor.keys();
         assertEquals(expected, actual);
 
         // Many times
@@ -113,8 +111,8 @@ class RxResultCursorImplTest {
     @Test
     void shouldPull() {
         // Given
-        RunResponseHandler runHandler = newRunResponseHandler();
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        var runHandler = newRunResponseHandler();
+        var pullHandler = mock(PullResponseHandler.class);
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
@@ -127,8 +125,8 @@ class RxResultCursorImplTest {
     @Test
     void shouldPullUnboundedOnLongMax() {
         // Given
-        RunResponseHandler runHandler = newRunResponseHandler();
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        var runHandler = newRunResponseHandler();
+        var pullHandler = mock(PullResponseHandler.class);
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
@@ -141,8 +139,8 @@ class RxResultCursorImplTest {
     @Test
     void shouldCancel() {
         // Given
-        RunResponseHandler runHandler = newRunResponseHandler();
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        var runHandler = newRunResponseHandler();
+        var pullHandler = mock(PullResponseHandler.class);
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
@@ -155,12 +153,12 @@ class RxResultCursorImplTest {
     @Test
     void shouldInstallRecordConsumerAndReportError() {
         // Given
-        RuntimeException error = new RuntimeException("Hi");
+        var error = new RuntimeException("Hi");
         @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
 
         // When
-        RunResponseHandler runHandler = newRunResponseHandler(error);
+        var runHandler = newRunResponseHandler(error);
         PullResponseHandler pullHandler = new ListBasedPullHandler();
         RxResultCursor cursor = new RxResultCursorImpl(error, runHandler, pullHandler);
         cursor.installRecordConsumer(recordConsumer);
@@ -173,7 +171,7 @@ class RxResultCursorImplTest {
     @Test
     void shouldReturnSummaryFuture() {
         // Given
-        RunResponseHandler runHandler = newRunResponseHandler();
+        var runHandler = newRunResponseHandler();
         PullResponseHandler pullHandler = new ListBasedPullHandler();
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
@@ -189,7 +187,7 @@ class RxResultCursorImplTest {
     @Test
     void shouldNotAllowToInstallRecordConsumerAfterSummary() {
         // Given
-        RunResponseHandler runHandler = newRunResponseHandler();
+        var runHandler = newRunResponseHandler();
         PullResponseHandler pullHandler = new ListBasedPullHandler();
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
@@ -203,7 +201,7 @@ class RxResultCursorImplTest {
     @Test
     void shouldAllowToCallSummaryMultipleTimes() {
         // Given
-        RunResponseHandler runHandler = newRunResponseHandler();
+        var runHandler = newRunResponseHandler();
         PullResponseHandler pullHandler = new ListBasedPullHandler();
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
@@ -218,8 +216,8 @@ class RxResultCursorImplTest {
     @Test
     void shouldOnlyInstallRecordConsumerOnce() {
         // Given
-        RunResponseHandler runHandler = newRunResponseHandler();
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        var runHandler = newRunResponseHandler();
+        var pullHandler = mock(PullResponseHandler.class);
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
@@ -233,8 +231,8 @@ class RxResultCursorImplTest {
     @Test
     void shouldCancelIfNotPulled() {
         // Given
-        RunResponseHandler runHandler = newRunResponseHandler();
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        var runHandler = newRunResponseHandler();
+        var pullHandler = mock(PullResponseHandler.class);
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
 
         // When
@@ -250,25 +248,25 @@ class RxResultCursorImplTest {
     void shouldPropagateSummaryErrorViaSummaryStageWhenItIsRetrievedExternally()
             throws ExecutionException, InterruptedException {
         // Given
-        RunResponseHandler runHandler = mock(RunResponseHandler.class);
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        var runHandler = mock(RunResponseHandler.class);
+        var pullHandler = mock(PullResponseHandler.class);
         @SuppressWarnings("unchecked")
         ArgumentCaptor<BiConsumer<ResultSummary, Throwable>> summaryConsumerCaptor =
                 ArgumentCaptor.forClass(BiConsumer.class);
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
         verify(pullHandler, times(1)).installSummaryConsumer(summaryConsumerCaptor.capture());
-        BiConsumer<ResultSummary, Throwable> summaryConsumer = summaryConsumerCaptor.getValue();
-        RuntimeException exception = mock(RuntimeException.class);
+        var summaryConsumer = summaryConsumerCaptor.getValue();
+        var exception = mock(RuntimeException.class);
 
         // When
-        CompletionStage<ResultSummary> summaryStage = cursor.summaryAsync();
-        CompletionStage<Throwable> discardStage = cursor.discardAllFailureAsync();
+        var summaryStage = cursor.summaryAsync();
+        var discardStage = cursor.discardAllFailureAsync();
         summaryConsumer.accept(null, exception);
 
         // Then
         verify(pullHandler).installRecordConsumer(DISCARD_RECORD_CONSUMER);
         verify(pullHandler).cancel();
-        ExecutionException actualException = assertThrows(
+        var actualException = assertThrows(
                 ExecutionException.class,
                 () -> summaryStage.toCompletableFuture().get());
         assertSame(exception, actualException.getCause());
@@ -279,18 +277,18 @@ class RxResultCursorImplTest {
     void shouldPropagateSummaryErrorViaDiscardStageWhenSummaryStageIsNotRetrievedExternally()
             throws ExecutionException, InterruptedException {
         // Given
-        RunResponseHandler runHandler = mock(RunResponseHandler.class);
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
+        var runHandler = mock(RunResponseHandler.class);
+        var pullHandler = mock(PullResponseHandler.class);
         @SuppressWarnings("unchecked")
         ArgumentCaptor<BiConsumer<ResultSummary, Throwable>> summaryConsumerCaptor =
                 ArgumentCaptor.forClass(BiConsumer.class);
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
         verify(pullHandler, times(1)).installSummaryConsumer(summaryConsumerCaptor.capture());
-        BiConsumer<ResultSummary, Throwable> summaryConsumer = summaryConsumerCaptor.getValue();
-        RuntimeException exception = mock(RuntimeException.class);
+        var summaryConsumer = summaryConsumerCaptor.getValue();
+        var exception = mock(RuntimeException.class);
 
         // When
-        CompletionStage<Throwable> discardStage = cursor.discardAllFailureAsync();
+        var discardStage = cursor.discardAllFailureAsync();
         summaryConsumer.accept(null, exception);
 
         // Then

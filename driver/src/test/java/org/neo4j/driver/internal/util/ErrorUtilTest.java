@@ -42,17 +42,16 @@ import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 
 class ErrorUtilTest {
     @Test
     void shouldCreateAuthenticationException() {
-        String code = "Neo.ClientError.Security.Unauthorized";
-        String message = "Wrong credentials";
+        var code = "Neo.ClientError.Security.Unauthorized";
+        var message = "Wrong credentials";
 
-        Neo4jException error = newNeo4jError(code, message);
+        var error = newNeo4jError(code, message);
 
         assertThat(error, instanceOf(AuthenticationException.class));
         assertEquals(code, error.code());
@@ -61,10 +60,10 @@ class ErrorUtilTest {
 
     @Test
     void shouldCreateClientException() {
-        String code = "Neo.ClientError.Transaction.InvalidBookmark";
-        String message = "Wrong bookmark";
+        var code = "Neo.ClientError.Transaction.InvalidBookmark";
+        var message = "Wrong bookmark";
 
-        Neo4jException error = newNeo4jError(code, message);
+        var error = newNeo4jError(code, message);
 
         assertThat(error, instanceOf(ClientException.class));
         assertEquals(code, error.code());
@@ -73,10 +72,10 @@ class ErrorUtilTest {
 
     @Test
     void shouldCreateTransientException() {
-        String code = "Neo.TransientError.Transaction.DeadlockDetected";
-        String message = "Deadlock occurred";
+        var code = "Neo.TransientError.Transaction.DeadlockDetected";
+        var message = "Deadlock occurred";
 
-        Neo4jException error = newNeo4jError(code, message);
+        var error = newNeo4jError(code, message);
 
         assertThat(error, instanceOf(TransientException.class));
         assertEquals(code, error.code());
@@ -85,10 +84,10 @@ class ErrorUtilTest {
 
     @Test
     void shouldCreateDatabaseException() {
-        String code = "Neo.DatabaseError.Transaction.TransactionLogError";
-        String message = "Failed to write the transaction log";
+        var code = "Neo.DatabaseError.Transaction.TransactionLogError";
+        var message = "Failed to write the transaction log";
 
-        Neo4jException error = newNeo4jError(code, message);
+        var error = newNeo4jError(code, message);
 
         assertThat(error, instanceOf(DatabaseException.class));
         assertEquals(code, error.code());
@@ -97,10 +96,10 @@ class ErrorUtilTest {
 
     @Test
     void shouldCreateDatabaseExceptionWhenErrorCodeIsWrong() {
-        String code = "WrongErrorCode";
-        String message = "Some really strange error";
+        var code = "WrongErrorCode";
+        var message = "Some really strange error";
 
-        Neo4jException error = newNeo4jError(code, message);
+        var error = newNeo4jError(code, message);
 
         assertThat(error, instanceOf(DatabaseException.class));
         assertEquals(code, error.code());
@@ -136,30 +135,30 @@ class ErrorUtilTest {
 
     @Test
     void shouldCreateConnectionTerminatedError() {
-        ServiceUnavailableException error = newConnectionTerminatedError();
+        var error = newConnectionTerminatedError();
         assertThat(error.getMessage(), startsWith("Connection to the database terminated"));
     }
 
     @Test
     void shouldCreateConnectionTerminatedErrorWithNullReason() {
-        ServiceUnavailableException error = newConnectionTerminatedError(null);
+        var error = newConnectionTerminatedError(null);
         assertThat(error.getMessage(), startsWith("Connection to the database terminated"));
     }
 
     @Test
     void shouldCreateConnectionTerminatedErrorWithReason() {
-        String reason = "Thread interrupted";
-        ServiceUnavailableException error = newConnectionTerminatedError(reason);
+        var reason = "Thread interrupted";
+        var error = newConnectionTerminatedError(reason);
         assertThat(error.getMessage(), startsWith("Connection to the database terminated"));
         assertThat(error.getMessage(), containsString(reason));
     }
 
     @Test
     void shouldCreateAuthorizationExpiredException() {
-        String code = "Neo.ClientError.Security.AuthorizationExpired";
-        String message = "Expired authorization info";
+        var code = "Neo.ClientError.Security.AuthorizationExpired";
+        var message = "Expired authorization info";
 
-        Neo4jException error = newNeo4jError(code, message);
+        var error = newNeo4jError(code, message);
 
         assertThat(error, instanceOf(AuthorizationExpiredException.class));
         assertEquals(code, error.code());
@@ -168,10 +167,10 @@ class ErrorUtilTest {
 
     @Test
     void shouldCreateTokenExpiredException() {
-        String code = "Neo.ClientError.Security.TokenExpired";
-        String message = "message";
+        var code = "Neo.ClientError.Security.TokenExpired";
+        var message = "message";
 
-        Neo4jException error = newNeo4jError(code, message);
+        var error = newNeo4jError(code, message);
 
         assertThat(error, instanceOf(TokenExpiredException.class));
         assertEquals(code, error.code());
@@ -180,10 +179,10 @@ class ErrorUtilTest {
 
     @Test
     void shouldMapTransientTransactionTerminatedToClientException() {
-        String code = "Neo.TransientError.Transaction.Terminated";
-        String message = "message";
+        var code = "Neo.TransientError.Transaction.Terminated";
+        var message = "message";
 
-        Neo4jException error = newNeo4jError(code, message);
+        var error = newNeo4jError(code, message);
 
         assertThat(error, instanceOf(ClientException.class));
         assertEquals("Neo.ClientError.Transaction.Terminated", error.code());
@@ -192,10 +191,10 @@ class ErrorUtilTest {
 
     @Test
     void shouldMapTransientTransactionLockClientStoppedToClientException() {
-        String code = "Neo.TransientError.Transaction.LockClientStopped";
-        String message = "message";
+        var code = "Neo.TransientError.Transaction.LockClientStopped";
+        var message = "message";
 
-        Neo4jException error = newNeo4jError(code, message);
+        var error = newNeo4jError(code, message);
 
         assertThat(error, instanceOf(ClientException.class));
         assertEquals("Neo.ClientError.Transaction.LockClientStopped", error.code());
@@ -204,12 +203,12 @@ class ErrorUtilTest {
 
     @Test
     void shouldWrapCheckedExceptionsInNeo4jExceptionWhenRethrowingAsyncException() {
-        ExecutionException ee = mock(ExecutionException.class);
-        UnknownHostException uhe = mock(UnknownHostException.class);
+        var ee = mock(ExecutionException.class);
+        var uhe = mock(UnknownHostException.class);
         given(ee.getCause()).willReturn(uhe);
         given(uhe.getStackTrace()).willReturn(new StackTraceElement[0]);
 
-        Neo4jException actual = assertThrows(Neo4jException.class, () -> rethrowAsyncException(ee));
+        var actual = assertThrows(Neo4jException.class, () -> rethrowAsyncException(ee));
 
         assertEquals(actual.getCause(), uhe);
     }

@@ -45,7 +45,7 @@ class RxUtilsTest {
 
     @Test
     void emptyPublisherShouldErrorWhenSupplierErrors() {
-        RuntimeException error = new RuntimeException("Error");
+        var error = new RuntimeException("Error");
         Publisher<Void> emptyPublisher = createEmptyPublisher(() -> failedFuture(error));
 
         StepVerifier.create(emptyPublisher).verifyErrorMatches(Predicate.isEqual(error));
@@ -53,14 +53,14 @@ class RxUtilsTest {
 
     @Test
     void singleItemPublisherShouldCompleteWithValue() {
-        Publisher<String> publisher = createSingleItemPublisher(
+        var publisher = createSingleItemPublisher(
                 () -> CompletableFuture.completedFuture("One"), () -> mock(Throwable.class), (ignored) -> {});
         StepVerifier.create(publisher).expectNext("One").verifyComplete();
     }
 
     @Test
     void singleItemPublisherShouldErrorWhenFutureCompletesWithNull() {
-        Throwable error = mock(Throwable.class);
+        var error = mock(Throwable.class);
         Publisher<String> publisher =
                 createSingleItemPublisher(Futures::completedWithNull, () -> error, (ignored) -> {});
 
@@ -69,7 +69,7 @@ class RxUtilsTest {
 
     @Test
     void singleItemPublisherShouldErrorWhenSupplierErrors() {
-        RuntimeException error = mock(RuntimeException.class);
+        var error = mock(RuntimeException.class);
         Publisher<String> publisher =
                 createSingleItemPublisher(() -> failedFuture(error), () -> mock(Throwable.class), (ignored) -> {});
 

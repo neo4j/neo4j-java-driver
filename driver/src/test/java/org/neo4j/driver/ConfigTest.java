@@ -33,8 +33,6 @@ import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.DEFAULT_FET
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -56,10 +54,10 @@ class ConfigTest {
     @Test
     void shouldDefaultToKnownCerts() {
         // Given
-        Config config = Config.defaultConfig();
+        var config = Config.defaultConfig();
 
         // When
-        Config.TrustStrategy authConfig = config.trustStrategy();
+        var authConfig = config.trustStrategy();
 
         // Then
         assertEquals(authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_SYSTEM_CA_SIGNED_CERTIFICATES);
@@ -68,13 +66,13 @@ class ConfigTest {
     @Test
     void shouldChangeToTrustedCert() {
         // Given
-        File trustedCert = new File("trusted_cert");
-        Config config = Config.builder()
+        var trustedCert = new File("trusted_cert");
+        var config = Config.builder()
                 .withTrustStrategy(Config.TrustStrategy.trustCustomCertificateSignedBy(trustedCert))
                 .build();
 
         // When
-        Config.TrustStrategy authConfig = config.trustStrategy();
+        var authConfig = config.trustStrategy();
 
         // Then
         assertEquals(authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES);
@@ -84,7 +82,7 @@ class ConfigTest {
 
     @Test
     void shouldSupportLivenessCheckTimeoutSetting() {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withConnectionLivenessCheckTimeout(42, TimeUnit.SECONDS)
                 .build();
 
@@ -93,7 +91,7 @@ class ConfigTest {
 
     @Test
     void shouldAllowZeroConnectionLivenessCheckTimeout() {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withConnectionLivenessCheckTimeout(0, TimeUnit.SECONDS)
                 .build();
 
@@ -102,7 +100,7 @@ class ConfigTest {
 
     @Test
     void shouldAllowNegativeConnectionLivenessCheckTimeout() {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withConnectionLivenessCheckTimeout(-42, TimeUnit.SECONDS)
                 .build();
 
@@ -116,7 +114,7 @@ class ConfigTest {
 
     @Test
     void shouldSupportMaxConnectionLifetimeSetting() {
-        Config config =
+        var config =
                 Config.builder().withMaxConnectionLifetime(42, TimeUnit.SECONDS).build();
 
         assertEquals(TimeUnit.SECONDS.toMillis(42), config.maxConnectionLifetimeMillis());
@@ -124,7 +122,7 @@ class ConfigTest {
 
     @Test
     void shouldAllowZeroConnectionMaxConnectionLifetime() {
-        Config config =
+        var config =
                 Config.builder().withMaxConnectionLifetime(0, TimeUnit.SECONDS).build();
 
         assertEquals(0, config.maxConnectionLifetimeMillis());
@@ -132,7 +130,7 @@ class ConfigTest {
 
     @Test
     void shouldAllowNegativeConnectionMaxConnectionLifetime() {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withMaxConnectionLifetime(-42, TimeUnit.SECONDS)
                 .build();
 
@@ -150,34 +148,32 @@ class ConfigTest {
 
     @Test
     void shouldHaveDefaultConnectionTimeout() {
-        Config defaultConfig = Config.defaultConfig();
+        var defaultConfig = Config.defaultConfig();
         assertEquals(TimeUnit.SECONDS.toMillis(30), defaultConfig.connectionTimeoutMillis());
     }
 
     @Test
     void shouldRespectConfiguredConnectionTimeout() {
-        Config config =
-                Config.builder().withConnectionTimeout(42, TimeUnit.HOURS).build();
+        var config = Config.builder().withConnectionTimeout(42, TimeUnit.HOURS).build();
         assertEquals(TimeUnit.HOURS.toMillis(42), config.connectionTimeoutMillis());
     }
 
     @Test
     void shouldAllowConnectionTimeoutOfZero() {
-        Config config =
-                Config.builder().withConnectionTimeout(0, TimeUnit.SECONDS).build();
+        var config = Config.builder().withConnectionTimeout(0, TimeUnit.SECONDS).build();
         assertEquals(0, config.connectionTimeoutMillis());
     }
 
     @Test
     void shouldThrowForNegativeConnectionTimeout() {
-        Config.ConfigBuilder builder = Config.builder();
+        var builder = Config.builder();
 
         assertThrows(IllegalArgumentException.class, () -> builder.withConnectionTimeout(-42, TimeUnit.SECONDS));
     }
 
     @Test
     void shouldThrowForTooLargeConnectionTimeout() {
-        Config.ConfigBuilder builder = Config.builder();
+        var builder = Config.builder();
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -186,14 +182,14 @@ class ConfigTest {
 
     @Test
     void shouldNotAllowNegativeMaxRetryTimeMs() {
-        Config.ConfigBuilder builder = Config.builder();
+        var builder = Config.builder();
 
         assertThrows(IllegalArgumentException.class, () -> builder.withMaxTransactionRetryTime(-42, TimeUnit.SECONDS));
     }
 
     @Test
     void shouldAllowZeroMaxRetryTimeMs() {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withMaxTransactionRetryTime(0, TimeUnit.SECONDS)
                 .build();
 
@@ -202,7 +198,7 @@ class ConfigTest {
 
     @Test
     void shouldAllowPositiveRetryAttempts() {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withMaxTransactionRetryTime(42, TimeUnit.SECONDS)
                 .build();
 
@@ -216,21 +212,21 @@ class ConfigTest {
 
     @Test
     void shouldAllowPositiveMaxConnectionPoolSize() {
-        Config config = Config.builder().withMaxConnectionPoolSize(42).build();
+        var config = Config.builder().withMaxConnectionPoolSize(42).build();
 
         assertEquals(42, config.maxConnectionPoolSize());
     }
 
     @Test
     void shouldAllowNegativeMaxConnectionPoolSize() {
-        Config config = Config.builder().withMaxConnectionPoolSize(-42).build();
+        var config = Config.builder().withMaxConnectionPoolSize(-42).build();
 
         assertEquals(Integer.MAX_VALUE, config.maxConnectionPoolSize());
     }
 
     @Test
     void shouldDisallowZeroMaxConnectionPoolSize() {
-        IllegalArgumentException e = assertThrows(
+        var e = assertThrows(
                 IllegalArgumentException.class,
                 () -> Config.builder().withMaxConnectionPoolSize(0).build());
         assertEquals("Zero value is not supported", e.getMessage());
@@ -243,7 +239,7 @@ class ConfigTest {
 
     @Test
     void shouldAllowPositiveConnectionAcquisitionTimeout() {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withConnectionAcquisitionTimeout(42, TimeUnit.SECONDS)
                 .build();
 
@@ -252,7 +248,7 @@ class ConfigTest {
 
     @Test
     void shouldAllowNegativeConnectionAcquisitionTimeout() {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withConnectionAcquisitionTimeout(-42, TimeUnit.HOURS)
                 .build();
 
@@ -261,7 +257,7 @@ class ConfigTest {
 
     @Test
     void shouldAllowConnectionAcquisitionTimeoutOfZero() {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withConnectionAcquisitionTimeout(0, TimeUnit.DAYS)
                 .build();
 
@@ -270,7 +266,7 @@ class ConfigTest {
 
     @Test
     void shouldEnableAndDisableHostnameVerificationOnTrustStrategy() {
-        Config.TrustStrategy trustStrategy = Config.TrustStrategy.trustSystemCertificates();
+        var trustStrategy = Config.TrustStrategy.trustSystemCertificates();
         assertTrue(trustStrategy.isHostnameVerificationEnabled());
 
         assertSame(trustStrategy, trustStrategy.withHostnameVerification());
@@ -282,7 +278,7 @@ class ConfigTest {
 
     @Test
     void shouldEnableAndDisableCertificateRevocationChecksOnTestStrategy() {
-        Config.TrustStrategy trustStrategy = Config.TrustStrategy.trustSystemCertificates();
+        var trustStrategy = Config.TrustStrategy.trustSystemCertificates();
         assertEquals(NO_CHECKS, trustStrategy.revocationCheckingStrategy());
 
         assertSame(trustStrategy, trustStrategy.withoutCertificateRevocationChecks());
@@ -297,8 +293,8 @@ class ConfigTest {
 
     @Test
     void shouldAllowToConfigureResolver() {
-        ServerAddressResolver resolver = mock(ServerAddressResolver.class);
-        Config config = Config.builder().withResolver(resolver).build();
+        var resolver = mock(ServerAddressResolver.class);
+        var config = Config.builder().withResolver(resolver).build();
 
         assertEquals(resolver, config.resolver());
     }
@@ -310,14 +306,14 @@ class ConfigTest {
 
     @Test
     void shouldDefaultToDefaultFetchSize() {
-        Config config = Config.defaultConfig();
+        var config = Config.defaultConfig();
         assertEquals(DEFAULT_FETCH_SIZE, config.fetchSize());
     }
 
     @ParameterizedTest
     @ValueSource(longs = {100, 1, 1000, Long.MAX_VALUE, -1})
     void shouldChangeFetchSize(long value) {
-        Config config = Config.builder().withFetchSize(value).build();
+        var config = Config.builder().withFetchSize(value).build();
         assertEquals(value, config.fetchSize());
     }
 
@@ -332,7 +328,7 @@ class ConfigTest {
     @ParameterizedTest
     @ValueSource(ints = {100, 1, 1000, Integer.MAX_VALUE})
     void shouldChangeEventLoopThreads(int value) {
-        Config config = Config.builder().withEventLoopThreads(value).build();
+        var config = Config.builder().withEventLoopThreads(value).build();
         assertEquals(value, config.eventLoopThreads());
     }
 
@@ -346,7 +342,7 @@ class ConfigTest {
 
     @Test
     void shouldChangeUserAgent() {
-        Config config = Config.builder().withUserAgent("AwesomeDriver").build();
+        var config = Config.builder().withUserAgent("AwesomeDriver").build();
         assertEquals("AwesomeDriver", config.userAgent());
     }
 
@@ -362,8 +358,8 @@ class ConfigTest {
 
     @Test
     void shouldNotHaveMeterRegistryByDefault() {
-        Config config = Config.builder().build();
-        MetricsAdapter metricsAdapter = config.metricsAdapter();
+        var config = Config.builder().build();
+        var metricsAdapter = config.metricsAdapter();
 
         assertEquals(MetricsAdapter.DEV_NULL, metricsAdapter);
         assertFalse(config.isMetricsEnabled());
@@ -371,15 +367,14 @@ class ConfigTest {
 
     @Test
     void shouldNotAcceptNullMeterRegistry() {
-        Config.ConfigBuilder builder = Config.builder();
+        var builder = Config.builder();
         assertThrows(NullPointerException.class, () -> builder.withMetricsAdapter(null));
     }
 
     @Test
     void shouldSetMetricsAdapter() {
-        Config config =
-                Config.builder().withMetricsAdapter(MetricsAdapter.DEFAULT).build();
-        MetricsAdapter metricsAdapter = config.metricsAdapter();
+        var config = Config.builder().withMetricsAdapter(MetricsAdapter.DEFAULT).build();
+        var metricsAdapter = config.metricsAdapter();
 
         assertEquals(MetricsAdapter.DEFAULT, metricsAdapter);
         assertTrue(config.isMetricsEnabled());
@@ -417,7 +412,7 @@ class ConfigTest {
     class SerializationTest {
         @Test
         void shouldSerialize() throws Exception {
-            Config config = Config.builder()
+            var config = Config.builder()
                     .withMaxConnectionPoolSize(123)
                     .withConnectionTimeout(6543L, TimeUnit.MILLISECONDS)
                     .withConnectionAcquisitionTimeout(5432L, TimeUnit.MILLISECONDS)
@@ -439,7 +434,7 @@ class ConfigTest {
                                     Set.of(NotificationCategory.UNSUPPORTED, NotificationCategory.UNRECOGNIZED)))
                     .build();
 
-            Config verify = TestUtil.serializeAndReadBack(config, Config.class);
+            var verify = TestUtil.serializeAndReadBack(config, Config.class);
 
             assertEquals(config.maxConnectionPoolSize(), verify.maxConnectionPoolSize());
             assertEquals(config.connectionTimeoutMillis(), verify.connectionTimeoutMillis());
@@ -476,15 +471,15 @@ class ConfigTest {
 
         @Test
         void shouldSerializeSerializableLogging() throws IOException, ClassNotFoundException {
-            Config config = Config.builder()
+            var config = Config.builder()
                     .withLogging(Logging.javaUtilLogging(Level.ALL))
                     .build();
 
-            Config verify = TestUtil.serializeAndReadBack(config, Config.class);
-            Logging logging = verify.logging();
+            var verify = TestUtil.serializeAndReadBack(config, Config.class);
+            var logging = verify.logging();
             assertInstanceOf(JULogging.class, logging);
 
-            List<Field> loggingLevelFields = ReflectionSupport.findFields(
+            var loggingLevelFields = ReflectionSupport.findFields(
                     JULogging.class, f -> "loggingLevel".equals(f.getName()), HierarchyTraversalMode.TOP_DOWN);
             assertFalse(loggingLevelFields.isEmpty());
             loggingLevelFields.forEach(field -> {

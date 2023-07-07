@@ -42,10 +42,10 @@ class DecoratedConnectionTest {
     @ParameterizedTest
     @ValueSource(strings = {"true", "false"})
     void shouldDelegateIsOpen(String open) {
-        Connection mockConnection = mock(Connection.class);
+        var mockConnection = mock(Connection.class);
         when(mockConnection.isOpen()).thenReturn(Boolean.valueOf(open));
 
-        DirectConnection connection = newConnection(mockConnection);
+        var connection = newConnection(mockConnection);
 
         assertEquals(Boolean.valueOf(open).booleanValue(), connection.isOpen());
         verify(mockConnection).isOpen();
@@ -53,8 +53,8 @@ class DecoratedConnectionTest {
 
     @Test
     void shouldDelegateEnableAutoRead() {
-        Connection mockConnection = mock(Connection.class);
-        DirectConnection connection = newConnection(mockConnection);
+        var mockConnection = mock(Connection.class);
+        var connection = newConnection(mockConnection);
 
         connection.enableAutoRead();
 
@@ -63,8 +63,8 @@ class DecoratedConnectionTest {
 
     @Test
     void shouldDelegateDisableAutoRead() {
-        Connection mockConnection = mock(Connection.class);
-        DirectConnection connection = newConnection(mockConnection);
+        var mockConnection = mock(Connection.class);
+        var connection = newConnection(mockConnection);
 
         connection.disableAutoRead();
 
@@ -73,11 +73,11 @@ class DecoratedConnectionTest {
 
     @Test
     void shouldDelegateWrite() {
-        Connection mockConnection = mock(Connection.class);
-        DirectConnection connection = newConnection(mockConnection);
+        var mockConnection = mock(Connection.class);
+        var connection = newConnection(mockConnection);
 
-        Message message = mock(Message.class);
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var message = mock(Message.class);
+        var handler = mock(ResponseHandler.class);
 
         connection.write(message, handler);
 
@@ -86,11 +86,11 @@ class DecoratedConnectionTest {
 
     @Test
     void shouldDelegateWriteAndFlush() {
-        Connection mockConnection = mock(Connection.class);
-        DirectConnection connection = newConnection(mockConnection);
+        var mockConnection = mock(Connection.class);
+        var connection = newConnection(mockConnection);
 
-        Message message = mock(Message.class);
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var message = mock(Message.class);
+        var handler = mock(ResponseHandler.class);
 
         connection.writeAndFlush(message, handler);
 
@@ -99,8 +99,8 @@ class DecoratedConnectionTest {
 
     @Test
     void shouldDelegateReset() {
-        Connection mockConnection = mock(Connection.class);
-        DirectConnection connection = newConnection(mockConnection);
+        var mockConnection = mock(Connection.class);
+        var connection = newConnection(mockConnection);
 
         connection.reset(null);
 
@@ -109,8 +109,8 @@ class DecoratedConnectionTest {
 
     @Test
     void shouldDelegateRelease() {
-        Connection mockConnection = mock(Connection.class);
-        DirectConnection connection = newConnection(mockConnection);
+        var mockConnection = mock(Connection.class);
+        var connection = newConnection(mockConnection);
 
         connection.release();
 
@@ -119,8 +119,8 @@ class DecoratedConnectionTest {
 
     @Test
     void shouldDelegateTerminateAndRelease() {
-        Connection mockConnection = mock(Connection.class);
-        DirectConnection connection = newConnection(mockConnection);
+        var mockConnection = mock(Connection.class);
+        var connection = newConnection(mockConnection);
 
         connection.terminateAndRelease("a reason");
 
@@ -129,10 +129,10 @@ class DecoratedConnectionTest {
 
     @Test
     void shouldDelegateServerAddress() {
-        BoltServerAddress address = BoltServerAddress.from(ServerAddress.of("localhost", 9999));
-        Connection mockConnection = mock(Connection.class);
+        var address = BoltServerAddress.from(ServerAddress.of("localhost", 9999));
+        var mockConnection = mock(Connection.class);
         when(mockConnection.serverAddress()).thenReturn(address);
-        DirectConnection connection = newConnection(mockConnection);
+        var connection = newConnection(mockConnection);
 
         assertSame(address, connection.serverAddress());
         verify(mockConnection).serverAddress();
@@ -140,10 +140,10 @@ class DecoratedConnectionTest {
 
     @Test
     void shouldDelegateProtocol() {
-        BoltProtocol protocol = mock(BoltProtocol.class);
-        Connection mockConnection = mock(Connection.class);
+        var protocol = mock(BoltProtocol.class);
+        var mockConnection = mock(Connection.class);
         when(mockConnection.protocol()).thenReturn(protocol);
-        DirectConnection connection = newConnection(mockConnection);
+        var connection = newConnection(mockConnection);
 
         assertSame(protocol, connection.protocol());
         verify(mockConnection).protocol();
@@ -152,15 +152,15 @@ class DecoratedConnectionTest {
     @ParameterizedTest
     @EnumSource(AccessMode.class)
     void shouldReturnModeFromConstructor(AccessMode mode) {
-        DirectConnection connection = new DirectConnection(mock(Connection.class), defaultDatabase(), mode, null);
+        var connection = new DirectConnection(mock(Connection.class), defaultDatabase(), mode, null);
 
         assertEquals(mode, connection.mode());
     }
 
     @Test
     void shouldReturnConnection() {
-        Connection mockConnection = mock(Connection.class);
-        DirectConnection connection = newConnection(mockConnection);
+        var mockConnection = mock(Connection.class);
+        var connection = newConnection(mockConnection);
 
         assertSame(mockConnection, connection.connection());
     }

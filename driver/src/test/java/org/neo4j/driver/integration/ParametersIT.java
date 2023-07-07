@@ -37,14 +37,11 @@ import static org.neo4j.driver.types.TypeSystem.getDefault;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -63,11 +60,11 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnBooleanProperty() {
         // When
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", true));
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", true));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().BOOLEAN()), equalTo(true));
             assertThat(value.asBoolean(), equalTo(true));
         }
@@ -76,11 +73,11 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnByteProperty() {
         // When
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", (byte) 1));
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", (byte) 1));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().INTEGER()), equalTo(true));
             assertThat(value.asLong(), equalTo(1L));
         }
@@ -89,11 +86,11 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnShortProperty() {
         // When
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", (short) 1));
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", (short) 1));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().INTEGER()), equalTo(true));
             assertThat(value.asLong(), equalTo(1L));
         }
@@ -102,11 +99,11 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnIntegerProperty() {
         // When
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", 1));
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", 1));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().INTEGER()), equalTo(true));
             assertThat(value.asLong(), equalTo(1L));
         }
@@ -115,11 +112,11 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnLongProperty() {
         // When
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", 1L));
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", 1L));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().INTEGER()), equalTo(true));
             assertThat(value.asLong(), equalTo(1L));
         }
@@ -128,11 +125,11 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnDoubleProperty() {
         // When
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", 6.28));
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", 6.28));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().FLOAT()), equalTo(true));
             assertThat(value.asDouble(), equalTo(6.28));
         }
@@ -141,8 +138,8 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnBytesProperty() {
         testBytesProperty(new byte[0]);
-        for (int i = 0; i < 16; i++) {
-            int length = (int) Math.pow(2, i);
+        for (var i = 0; i < 16; i++) {
+            var length = (int) Math.pow(2, i);
             testBytesProperty(randomByteArray(length));
             testBytesProperty(randomByteArray(length - 1));
         }
@@ -159,15 +156,15 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnBooleanArrayProperty() {
         // When
-        boolean[] arrayValue = new boolean[] {true, true, true};
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", arrayValue));
+        var arrayValue = new boolean[] {true, true, true};
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", arrayValue));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().LIST()), equalTo(true));
             assertThat(value.size(), equalTo(3));
-            for (Value item : value.asList(ofValue())) {
+            for (var item : value.asList(ofValue())) {
                 assertThat(item.hasType(getDefault().BOOLEAN()), equalTo(true));
                 assertThat(item.asBoolean(), equalTo(true));
             }
@@ -177,15 +174,15 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnIntegerArrayProperty() {
         // When
-        int[] arrayValue = new int[] {42, 42, 42};
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", arrayValue));
+        var arrayValue = new int[] {42, 42, 42};
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", arrayValue));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().LIST()), equalTo(true));
             assertThat(value.size(), equalTo(3));
-            for (Value item : value.asList(ofValue())) {
+            for (var item : value.asList(ofValue())) {
                 assertThat(item.hasType(getDefault().INTEGER()), equalTo(true));
                 assertThat(item.asLong(), equalTo(42L));
             }
@@ -195,15 +192,15 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnDoubleArrayProperty() {
         // When
-        double[] arrayValue = new double[] {6.28, 6.28, 6.28};
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", arrayValue));
+        var arrayValue = new double[] {6.28, 6.28, 6.28};
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", arrayValue));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().LIST()), equalTo(true));
             assertThat(value.size(), equalTo(3));
-            for (Value item : value.asList(ofValue())) {
+            for (var item : value.asList(ofValue())) {
                 assertThat(item.hasType(getDefault().FLOAT()), equalTo(true));
                 assertThat(item.asDouble(), equalTo(6.28));
             }
@@ -217,16 +214,16 @@ class ParametersIT {
     }
 
     private static void testStringArrayContaining(String str) {
-        String[] arrayValue = new String[] {str, str, str};
+        var arrayValue = new String[] {str, str, str};
 
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", arrayValue));
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", arrayValue));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().LIST()), equalTo(true));
             assertThat(value.size(), equalTo(3));
-            for (Value item : value.asList(ofValue())) {
+            for (var item : value.asList(ofValue())) {
                 assertThat(item.hasType(getDefault().STRING()), equalTo(true));
                 assertThat(item.asString(), equalTo(str));
             }
@@ -236,18 +233,18 @@ class ParametersIT {
     @Test
     void shouldHandleLargeString() {
         // Given
-        char[] bigStr = new char[1024 * 10];
-        for (int i = 0; i < bigStr.length; i += 4) {
+        var bigStr = new char[1024 * 10];
+        for (var i = 0; i < bigStr.length; i += 4) {
             bigStr[i] = 'a';
             bigStr[i + 1] = 'b';
             bigStr[i + 2] = 'c';
             bigStr[i + 3] = 'd';
         }
 
-        String bigString = new String(bigStr);
+        var bigString = new String(bigStr);
 
         // When
-        Value val =
+        var val =
                 session.run("RETURN $p AS p", parameters("p", bigString)).peek().get("p");
 
         // Then
@@ -257,12 +254,12 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnBooleanPropertyWithinMap() {
         // When
-        Result result =
+        var result =
                 session.run("CREATE (a {value:$value.v}) RETURN a.value", parameters("value", parameters("v", true)));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().BOOLEAN()), equalTo(true));
             assertThat(value.asBoolean(), equalTo(true));
         }
@@ -271,12 +268,12 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnIntegerPropertyWithinMap() {
         // When
-        Result result =
+        var result =
                 session.run("CREATE (a {value:$value.v}) RETURN a.value", parameters("value", parameters("v", 42)));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().INTEGER()), equalTo(true));
             assertThat(value.asLong(), equalTo(42L));
         }
@@ -285,12 +282,12 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnDoublePropertyWithinMap() {
         // When
-        Result result =
+        var result =
                 session.run("CREATE (a {value:$value.v}) RETURN a.value", parameters("value", parameters("v", 6.28)));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().FLOAT()), equalTo(true));
             assertThat(value.asDouble(), equalTo(6.28));
         }
@@ -299,12 +296,12 @@ class ParametersIT {
     @Test
     void shouldBeAbleToSetAndReturnStringPropertyWithinMap() {
         // When
-        Result result = session.run(
+        var result = session.run(
                 "CREATE (a {value:$value.v}) RETURN a.value", parameters("value", parameters("v", "Mjölnir")));
 
         // Then
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().STRING()), equalTo(true));
             assertThat(value.asString(), equalTo("Mjölnir"));
         }
@@ -312,15 +309,13 @@ class ParametersIT {
 
     @Test
     void settingInvalidParameterTypeShouldThrowHelpfulError() {
-        ClientException e =
-                assertThrows(ClientException.class, () -> session.run("anything", parameters("k", new Object())));
+        var e = assertThrows(ClientException.class, () -> session.run("anything", parameters("k", new Object())));
         assertEquals("Unable to convert java.lang.Object to Neo4j Value.", e.getMessage());
     }
 
     @Test
     void settingInvalidParameterTypeDirectlyShouldThrowHelpfulError() {
-        IllegalArgumentException e =
-                assertThrows(IllegalArgumentException.class, () -> session.run("anything", emptyNodeValue()));
+        var e = assertThrows(IllegalArgumentException.class, () -> session.run("anything", emptyNodeValue()));
         assertEquals(
                 "The parameters should be provided as Map type. Unsupported parameters type: NODE", e.getMessage());
     }
@@ -331,7 +326,7 @@ class ParametersIT {
         Value node = emptyNodeValue();
         Map<String, Value> params = new HashMap<>();
         params.put("a", node);
-        MapValue mapValue = new MapValue(params);
+        var mapValue = new MapValue(params);
 
         // WHEN
         expectIOExceptionWithMessage(mapValue, "Unknown type: NODE");
@@ -343,7 +338,7 @@ class ParametersIT {
         Value relationship = emptyRelationshipValue();
         Map<String, Value> params = new HashMap<>();
         params.put("a", relationship);
-        MapValue mapValue = new MapValue(params);
+        var mapValue = new MapValue(params);
 
         // WHEN
         expectIOExceptionWithMessage(mapValue, "Unknown type: RELATIONSHIP");
@@ -355,7 +350,7 @@ class ParametersIT {
         Value path = filledPathValue();
         Map<String, Value> params = new HashMap<>();
         params.put("a", path);
-        MapValue mapValue = new MapValue(params);
+        var mapValue = new MapValue(params);
 
         // WHEN
         expectIOExceptionWithMessage(mapValue, "Unknown type: PATH");
@@ -363,21 +358,20 @@ class ParametersIT {
 
     @Test
     void shouldSendAndReceiveLongString() {
-        String string = TestUtil.randomString(LONG_VALUE_SIZE);
+        var string = TestUtil.randomString(LONG_VALUE_SIZE);
         testSendAndReceiveValue(string);
     }
 
     @Test
     void shouldSendAndReceiveLongListOfLongs() {
-        List<Long> longs =
-                ThreadLocalRandom.current().longs(LONG_VALUE_SIZE).boxed().collect(toList());
+        var longs = ThreadLocalRandom.current().longs(LONG_VALUE_SIZE).boxed().collect(toList());
 
         testSendAndReceiveValue(longs);
     }
 
     @Test
     void shouldSendAndReceiveLongArrayOfBytes() {
-        byte[] bytes = new byte[LONG_VALUE_SIZE];
+        var bytes = new byte[LONG_VALUE_SIZE];
         ThreadLocalRandom.current().nextBytes(bytes);
 
         testSendAndReceiveValue(bytes);
@@ -385,52 +379,51 @@ class ParametersIT {
 
     @Test
     void shouldAcceptStreamsAsQueryParameters() {
-        Stream<Integer> stream = Stream.of(1, 2, 3, 4, 5, 42);
+        var stream = Stream.of(1, 2, 3, 4, 5, 42);
 
-        Result result = session.run("RETURN $value", singletonMap("value", stream));
-        Value receivedValue = result.single().get(0);
+        var result = session.run("RETURN $value", singletonMap("value", stream));
+        var receivedValue = result.single().get(0);
 
         assertEquals(asList(1, 2, 3, 4, 5, 42), receivedValue.asList(ofInteger()));
     }
 
     private static void testBytesProperty(byte[] array) {
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", array));
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", array));
 
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().BYTES()), equalTo(true));
             assertThat(value.asByteArray(), equalTo(array));
         }
     }
 
     private static void testStringProperty(String string) {
-        Result result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", string));
+        var result = session.run("CREATE (a {value:$value}) RETURN a.value", parameters("value", string));
 
-        for (Record record : result.list()) {
-            Value value = record.get("a.value");
+        for (var record : result.list()) {
+            var value = record.get("a.value");
             assertThat(value.hasType(getDefault().STRING()), equalTo(true));
             assertThat(value.asString(), equalTo(string));
         }
     }
 
     private static byte[] randomByteArray(int length) {
-        byte[] result = new byte[length];
+        var result = new byte[length];
         ThreadLocalRandom.current().nextBytes(result);
         return result;
     }
 
     private static void expectIOExceptionWithMessage(Value value, String message) {
-        ServiceUnavailableException e =
-                assertThrows(ServiceUnavailableException.class, () -> session.run("RETURN {a}", value)
-                        .consume());
-        Throwable cause = e.getCause();
+        var e = assertThrows(ServiceUnavailableException.class, () -> session.run("RETURN {a}", value)
+                .consume());
+        var cause = e.getCause();
         assertThat(cause, instanceOf(IOException.class));
         assertThat(cause.getMessage(), equalTo(message));
     }
 
     private static void testSendAndReceiveValue(Object value) {
-        Result result = session.run("RETURN $value", singletonMap("value", value));
-        Object receivedValue = result.single().get(0).asObject();
+        var result = session.run("RETURN $value", singletonMap("value", value));
+        var receivedValue = result.single().get(0).asObject();
         assertArrayEquals(new Object[] {value}, new Object[] {receivedValue});
     }
 }

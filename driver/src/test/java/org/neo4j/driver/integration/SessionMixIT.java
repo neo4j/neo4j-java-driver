@@ -41,14 +41,12 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
-import org.neo4j.driver.types.Node;
 
 @ParallelizableIT
 class SessionMixIT {
@@ -84,8 +82,7 @@ class SessionMixIT {
                 .beginTransactionAsync(TransactionConfig.empty())
                 .thenApply(tx -> {
                     if (EventLoopGroupFactory.isEventLoopThread(Thread.currentThread())) {
-                        IllegalStateException e =
-                                assertThrows(IllegalStateException.class, () -> session.run("CREATE ()"));
+                        var e = assertThrows(IllegalStateException.class, () -> session.run("CREATE ()"));
                         assertThat(e, is(blockingOperationInEventLoopError()));
                     }
                     return null;
@@ -96,7 +93,7 @@ class SessionMixIT {
 
     @Test
     void shouldAllowUsingBlockingApiInCommonPoolWhenChaining() {
-        CompletionStage<AsyncTransaction> txStage = asyncSession
+        var txStage = asyncSession
                 .beginTransactionAsync()
                 // move execution to ForkJoinPool.commonPool()
                 .thenApplyAsync(tx -> {
@@ -118,7 +115,7 @@ class SessionMixIT {
     void shouldFailToExecuteBlockingRunInAsyncTransactionFunction() {
         AsyncTransactionWork<CompletionStage<Void>> completionStageTransactionWork = tx -> {
             if (EventLoopGroupFactory.isEventLoopThread(Thread.currentThread())) {
-                IllegalStateException e = assertThrows(
+                var e = assertThrows(
                         IllegalStateException.class,
                         () -> session.run("UNWIND range(1, 10000) AS x CREATE (n:AsyncNode {x: x}) RETURN n"));
 
@@ -127,7 +124,7 @@ class SessionMixIT {
             return completedFuture(null);
         };
 
-        CompletionStage<Void> result = asyncSession.readTransactionAsync(completionStageTransactionWork);
+        var result = asyncSession.readTransactionAsync(completionStageTransactionWork);
         assertNull(await(result));
     }
 
@@ -138,7 +135,7 @@ class SessionMixIT {
                 .thenCompose(ResultCursor::singleAsync)
                 .thenApply(record -> {
                     if (EventLoopGroupFactory.isEventLoopThread(Thread.currentThread())) {
-                        IllegalStateException e = assertThrows(
+                        var e = assertThrows(
                                 IllegalStateException.class,
                                 () -> session.run(
                                         "RETURN $x",
@@ -154,7 +151,7 @@ class SessionMixIT {
 
     @Test
     void shouldAllowBlockingOperationInCommonPoolWhenChaining() {
-        CompletionStage<Node> nodeStage = asyncSession
+        var nodeStage = asyncSession
                 .runAsync("RETURN 42 AS value")
                 .thenCompose(ResultCursor::singleAsync)
                 // move execution to ForkJoinPool.commonPool()
@@ -162,7 +159,7 @@ class SessionMixIT {
                 .thenApply(Result::single)
                 .thenApply(record -> record.get(0).asNode());
 
-        Node node = await(nodeStage);
+        var node = await(nodeStage);
 
         assertEquals(42, node.get("value").asInt());
         assertEquals(1, countNodesByLabel("Node"));
@@ -172,7 +169,7 @@ class SessionMixIT {
             ResultCursor inputCursor,
             List<CompletionStage<Record>> stages,
             CompletableFuture<List<CompletionStage<Record>>> resultFuture) {
-        final CompletionStage<Record> recordResponse = inputCursor.nextAsync();
+        final var recordResponse = inputCursor.nextAsync();
         stages.add(recordResponse);
 
         recordResponse.whenComplete((record, error) -> {
@@ -191,11 +188,11 @@ class SessionMixIT {
             Record record,
             List<CompletionStage<Record>> stages,
             CompletableFuture<List<CompletionStage<Record>>> resultFuture) {
-        Node node = record.get(0).asNode();
-        long id = node.get("id").asLong();
-        long age = id * 10;
+        var node = record.get(0).asNode();
+        var id = node.get("id").asLong();
+        var age = id * 10;
 
-        CompletionStage<ResultCursor> response = asyncSession.runAsync(
+        var response = asyncSession.runAsync(
                 "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p", parameters("id", id, "age", age));
 
         response.whenComplete((cursor, error) -> {
@@ -209,7 +206,7 @@ class SessionMixIT {
     }
 
     private long countNodesByLabel(String label) {
-        CompletionStage<Long> countStage = asyncSession
+        var countStage = asyncSession
                 .runAsync("MATCH (n:" + label + ") RETURN count(n)")
                 .thenCompose(ResultCursor::singleAsync)
                 .thenApply(record -> record.get(0).asLong());
@@ -218,8 +215,8 @@ class SessionMixIT {
     }
 
     private int countNodes(Object id) {
-        Query query = new Query("MATCH (n:Node {id: $id}) RETURN count(n)", parameters("id", id));
-        Record record = session.run(query).single();
+        var query = new Query("MATCH (n:Node {id: $id}) RETURN count(n)", parameters("id", id));
+        var record = session.run(query).single();
         return record.get(0).asInt();
     }
 }

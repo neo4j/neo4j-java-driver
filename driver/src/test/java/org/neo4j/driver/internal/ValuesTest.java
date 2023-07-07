@@ -56,8 +56,6 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -73,15 +71,7 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.LocalDateTimeValue;
 import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.internal.value.PathValue;
-import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.TimeValue;
-import org.neo4j.driver.types.IsoDuration;
-import org.neo4j.driver.types.Node;
-import org.neo4j.driver.types.Path;
-import org.neo4j.driver.types.Point;
-import org.neo4j.driver.types.Relationship;
 
 class ValuesTest {
     @Test
@@ -125,7 +115,7 @@ class ValuesTest {
 
     @Test
     void shouldComplainAboutStrangeTypes() {
-        ClientException e = assertThrows(ClientException.class, () -> value(new Object()));
+        var e = assertThrows(ClientException.class, () -> value(new Object()));
         assertEquals("Unable to convert java.lang.Object to Neo4j Value.", e.getMessage());
     }
 
@@ -161,19 +151,19 @@ class ValuesTest {
         map.put("Cat", new ListValue(values("meow", "miaow")));
         map.put("Dog", new ListValue(values("wow")));
         map.put("Wrong", new ListValue(values(-1)));
-        MapValue mapValue = new MapValue(map);
+        var mapValue = new MapValue(map);
 
         // When
-        Iterable<List<String>> list = mapValue.values(ofList(ofToString()));
+        var list = mapValue.values(ofList(ofToString()));
 
         // Then
         assertEquals(3, mapValue.size());
-        Iterator<List<String>> listIterator = list.iterator();
+        var listIterator = list.iterator();
         Set<String> setA = new HashSet<>(3);
         Set<String> setB = new HashSet<>(3);
-        for (Value value : mapValue.values()) {
-            String a = value.get(0).toString();
-            String b = listIterator.next().get(0);
+        for (var value : mapValue.values()) {
+            var a = value.get(0).toString();
+            var b = listIterator.next().get(0);
             setA.add(a);
             setB.add(b);
         }
@@ -186,10 +176,10 @@ class ValuesTest {
         Map<String, Value> map = new HashMap<>();
         map.put("Cat", value(1));
         map.put("Dog", value(2));
-        MapValue values = new MapValue(map);
+        var values = new MapValue(map);
 
         // When
-        Map<String, String> result = values.asMap(Values.ofToString());
+        var result = values.asMap(Values.ofToString());
 
         // Then
         assertThat(result.size(), equalTo(2));
@@ -215,7 +205,7 @@ class ValuesTest {
     @Test
     void shouldMapInteger() {
         // Given
-        Value val = value(1, 2, 3);
+        var val = value(1, 2, 3);
 
         // When/Then
         assertThat(val.asList(ofInteger()), contains(1, 2, 3));
@@ -227,7 +217,7 @@ class ValuesTest {
     @Test
     void shouldMapFloat() {
         // Given
-        Value val = value(1.0, 1.2, 3.2);
+        var val = value(1.0, 1.2, 3.2);
 
         // When/Then
         assertThat(val.asList(ofDouble()), contains(1.0, 1.2, 3.2));
@@ -240,7 +230,7 @@ class ValuesTest {
         // Given all double -> float conversions other than integers
         //       loose precision, as far as java is concerned, so we
         //       can only convert integer numbers to float.
-        Value val = value(1.0, 2.0, 3.0);
+        var val = value(1.0, 2.0, 3.0);
 
         // When/Then
         assertThat(val.asList(ofFloat()), contains(1.0F, 2.0F, 3.0F));
@@ -249,7 +239,7 @@ class ValuesTest {
     @Test
     void shouldMapString() {
         // Given
-        Value val = value("hello", "world");
+        var val = value("hello", "world");
 
         // When/Then
         assertThat(val.asList(ofString()), contains("hello", "world"));
@@ -262,7 +252,7 @@ class ValuesTest {
         // Given
         Map<String, Object> map = new HashMap<>();
         map.put("hello", "world");
-        Value val = value(asList(map, map));
+        var val = value(asList(map, map));
 
         // When/Then
         assertThat(val.asList(ofMap()), contains(map, map));
@@ -275,7 +265,7 @@ class ValuesTest {
         Collection<String> collection = new ArrayDeque<>();
         collection.add("hello");
         collection.add("world");
-        Value val = value(collection);
+        var val = value(collection);
 
         // When/Then
         assertThat(val.asList(), Matchers.<Object>containsInAnyOrder("hello", "world"));
@@ -284,8 +274,8 @@ class ValuesTest {
     @Test
     void shouldHandleIterator() {
         // Given
-        Iterator<String> iterator = asList("hello", "world").iterator();
-        Value val = value(iterator);
+        var iterator = asList("hello", "world").iterator();
+        var val = value(iterator);
 
         // When/Then
         assertThat(val.asList(), Matchers.<Object>containsInAnyOrder("hello", "world"));
@@ -293,8 +283,8 @@ class ValuesTest {
 
     @Test
     void shouldCreateDateValueFromLocalDate() {
-        LocalDate localDate = LocalDate.now();
-        Value value = value(localDate);
+        var localDate = LocalDate.now();
+        var value = value(localDate);
 
         assertThat(value, instanceOf(DateValue.class));
         assertEquals(localDate, value.asLocalDate());
@@ -303,7 +293,7 @@ class ValuesTest {
     @Test
     void shouldCreateDateValue() {
         Object localDate = LocalDate.now();
-        Value value = value(localDate);
+        var value = value(localDate);
 
         assertThat(value, instanceOf(DateValue.class));
         assertEquals(localDate, value.asObject());
@@ -311,8 +301,8 @@ class ValuesTest {
 
     @Test
     void shouldCreateTimeValueFromOffsetTime() {
-        OffsetTime offsetTime = OffsetTime.now();
-        Value value = value(offsetTime);
+        var offsetTime = OffsetTime.now();
+        var value = value(offsetTime);
 
         assertThat(value, instanceOf(TimeValue.class));
         assertEquals(offsetTime, value.asOffsetTime());
@@ -320,8 +310,8 @@ class ValuesTest {
 
     @Test
     void shouldCreateTimeValue() {
-        OffsetTime offsetTime = OffsetTime.now();
-        Value value = value(offsetTime);
+        var offsetTime = OffsetTime.now();
+        var value = value(offsetTime);
 
         assertThat(value, instanceOf(TimeValue.class));
         assertEquals(offsetTime, value.asObject());
@@ -329,8 +319,8 @@ class ValuesTest {
 
     @Test
     void shouldCreateLocalTimeValueFromLocalTime() {
-        LocalTime localTime = LocalTime.now();
-        Value value = value(localTime);
+        var localTime = LocalTime.now();
+        var value = value(localTime);
 
         assertThat(value, instanceOf(LocalTimeValue.class));
         assertEquals(localTime, value.asLocalTime());
@@ -338,8 +328,8 @@ class ValuesTest {
 
     @Test
     void shouldCreateLocalTimeValue() {
-        LocalTime localTime = LocalTime.now();
-        Value value = value(localTime);
+        var localTime = LocalTime.now();
+        var value = value(localTime);
 
         assertThat(value, instanceOf(LocalTimeValue.class));
         assertEquals(localTime, value.asObject());
@@ -347,8 +337,8 @@ class ValuesTest {
 
     @Test
     void shouldCreateLocalDateTimeValueFromLocalDateTime() {
-        LocalDateTime localDateTime = LocalDateTime.now();
-        Value value = value(localDateTime);
+        var localDateTime = LocalDateTime.now();
+        var value = value(localDateTime);
 
         assertThat(value, instanceOf(LocalDateTimeValue.class));
         assertEquals(localDateTime, value.asLocalDateTime());
@@ -356,8 +346,8 @@ class ValuesTest {
 
     @Test
     void shouldCreateLocalDateTimeValue() {
-        LocalDateTime localDateTime = LocalDateTime.now();
-        Value value = value(localDateTime);
+        var localDateTime = LocalDateTime.now();
+        var value = value(localDateTime);
 
         assertThat(value, instanceOf(LocalDateTimeValue.class));
         assertEquals(localDateTime, value.asObject());
@@ -365,8 +355,8 @@ class ValuesTest {
 
     @Test
     void shouldCreateDateTimeValueFromOffsetDateTime() {
-        OffsetDateTime offsetDateTime = OffsetDateTime.now();
-        Value value = value(offsetDateTime);
+        var offsetDateTime = OffsetDateTime.now();
+        var value = value(offsetDateTime);
 
         assertThat(value, instanceOf(DateTimeValue.class));
         assertEquals(offsetDateTime, value.asOffsetDateTime());
@@ -376,8 +366,8 @@ class ValuesTest {
 
     @Test
     void shouldCreateDateTimeValueFromZonedDateTime() {
-        ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        Value value = value(zonedDateTime);
+        var zonedDateTime = ZonedDateTime.now();
+        var value = value(zonedDateTime);
 
         assertThat(value, instanceOf(DateTimeValue.class));
         assertEquals(zonedDateTime, value.asZonedDateTime());
@@ -385,8 +375,8 @@ class ValuesTest {
 
     @Test
     void shouldCreateDateTimeValue() {
-        ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        Value value = value(zonedDateTime);
+        var zonedDateTime = ZonedDateTime.now();
+        var value = value(zonedDateTime);
 
         assertThat(value, instanceOf(DateTimeValue.class));
         assertEquals(zonedDateTime, value.asObject());
@@ -394,10 +384,10 @@ class ValuesTest {
 
     @Test
     void shouldCreateIsoDurationValue() {
-        Value value = isoDuration(42_1, 42_2, 42_3, 42_4);
+        var value = isoDuration(42_1, 42_2, 42_3, 42_4);
 
         assertThat(value, instanceOf(DurationValue.class));
-        IsoDuration duration = value.asIsoDuration();
+        var duration = value.asIsoDuration();
 
         assertEquals(42_1, duration.months());
         assertEquals(42_2, duration.days());
@@ -407,9 +397,9 @@ class ValuesTest {
 
     @Test
     void shouldCreateValueFromIsoDuration() {
-        Value durationValue1 = isoDuration(1, 2, 3, 4);
-        IsoDuration duration = durationValue1.asIsoDuration();
-        Value durationValue2 = value(duration);
+        var durationValue1 = isoDuration(1, 2, 3, 4);
+        var duration = durationValue1.asIsoDuration();
+        var durationValue2 = value(duration);
 
         assertEquals(duration, durationValue1.asIsoDuration());
         assertEquals(duration, durationValue2.asIsoDuration());
@@ -418,10 +408,10 @@ class ValuesTest {
 
     @Test
     void shouldCreateValueFromPeriod() {
-        Period period = Period.of(5, 11, 190);
+        var period = Period.of(5, 11, 190);
 
-        Value value = value(period);
-        IsoDuration isoDuration = value.asIsoDuration();
+        var value = value(period);
+        var isoDuration = value.asIsoDuration();
 
         assertEquals(period.toTotalMonths(), isoDuration.months());
         assertEquals(period.getDays(), isoDuration.days());
@@ -431,10 +421,10 @@ class ValuesTest {
 
     @Test
     void shouldCreateValueFromDuration() {
-        Duration duration = Duration.ofSeconds(183951, 4384718937L);
+        var duration = Duration.ofSeconds(183951, 4384718937L);
 
-        Value value = value(duration);
-        IsoDuration isoDuration = value.asIsoDuration();
+        var value = value(duration);
+        var isoDuration = value.asIsoDuration();
 
         assertEquals(0, isoDuration.months());
         assertEquals(0, isoDuration.days());
@@ -444,9 +434,9 @@ class ValuesTest {
 
     @Test
     void shouldCreateValueFromPoint2D() {
-        Value point2DValue1 = point(1, 2, 3);
-        Point point2D = point2DValue1.asPoint();
-        Value point2DValue2 = value(point2D);
+        var point2DValue1 = point(1, 2, 3);
+        var point2D = point2DValue1.asPoint();
+        var point2DValue2 = value(point2D);
 
         assertEquals(point2D, point2DValue1.asPoint());
         assertEquals(point2D, point2DValue2.asPoint());
@@ -455,9 +445,9 @@ class ValuesTest {
 
     @Test
     void shouldCreateValueFromPoint3D() {
-        Value point3DValue1 = point(1, 2, 3, 4);
-        Point point3D = point3DValue1.asPoint();
-        Value point3DValue2 = value(point3D);
+        var point3DValue1 = point(1, 2, 3, 4);
+        var point3D = point3DValue1.asPoint();
+        var point3DValue2 = value(point3D);
 
         assertEquals(point3D, point3DValue1.asPoint());
         assertEquals(point3D, point3DValue2.asPoint());
@@ -466,71 +456,71 @@ class ValuesTest {
 
     @Test
     void shouldCreateValueFromNodeValue() {
-        NodeValue node = emptyNodeValue();
-        Value value = value(node);
+        var node = emptyNodeValue();
+        var value = value(node);
         assertEquals(node, value);
     }
 
     @Test
     void shouldCreateValueFromNode() {
-        Node node = emptyNodeValue().asNode();
-        Value value = value(node);
+        var node = emptyNodeValue().asNode();
+        var value = value(node);
         assertEquals(node, value.asNode());
     }
 
     @Test
     void shouldCreateValueFromRelationshipValue() {
-        RelationshipValue rel = emptyRelationshipValue();
-        Value value = value(rel);
+        var rel = emptyRelationshipValue();
+        var value = value(rel);
         assertEquals(rel, value);
     }
 
     @Test
     void shouldCreateValueFromRelationship() {
-        Relationship rel = emptyRelationshipValue().asRelationship();
-        Value value = value(rel);
+        var rel = emptyRelationshipValue().asRelationship();
+        var value = value(rel);
         assertEquals(rel, value.asRelationship());
     }
 
     @Test
     void shouldCreateValueFromPathValue() {
-        PathValue path = filledPathValue();
-        Value value = value(path);
+        var path = filledPathValue();
+        var value = value(path);
         assertEquals(path, value);
     }
 
     @Test
     void shouldCreateValueFromPath() {
-        Path path = filledPathValue().asPath();
-        Value value = value(path);
+        var path = filledPathValue().asPath();
+        var value = value(path);
         assertEquals(path, value.asPath());
     }
 
     @Test
     void shouldCreateValueFromStream() {
-        Stream<String> stream = Stream.of("foo", "bar", "baz", "qux");
-        Value value = value(stream);
+        var stream = Stream.of("foo", "bar", "baz", "qux");
+        var value = value(stream);
         assertEquals(asList("foo", "bar", "baz", "qux"), value.asObject());
     }
 
     @Test
     void shouldFailToConvertStreamOfUnsupportedTypeToValue() {
-        Stream<Object> stream = Stream.of(new Object(), new Object());
-        ClientException e = assertThrows(ClientException.class, () -> value(stream));
+        var stream = Stream.of(new Object(), new Object());
+        var e = assertThrows(ClientException.class, () -> value(stream));
         assertEquals("Unable to convert java.lang.Object to Neo4j Value.", e.getMessage());
     }
 
     @Test
     void shouldCreateValueFromStreamOfStreams() {
-        Stream<Stream<String>> stream = Stream.of(Stream.of("foo", "bar"), Stream.of("baz", "qux"));
-        Value value = value(stream);
+        var stream = Stream.of(Stream.of("foo", "bar"), Stream.of("baz", "qux"));
+        var value = value(stream);
         assertEquals(asList(asList("foo", "bar"), asList("baz", "qux")), value.asObject());
     }
 
     @Test
     void shouldCreateValueFromStreamOfNulls() {
-        Stream<Object> stream = Stream.of(null, null, null);
-        Value value = value(stream);
+        var stream = Stream.of(null, null, null);
+        var value = value(stream);
         assertEquals(asList(null, null, null), value.asObject());
     }
 }

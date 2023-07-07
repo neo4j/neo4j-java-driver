@@ -25,9 +25,6 @@ import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
 
 public class BlockingFailingQueryInTx<C extends AbstractContext> extends AbstractBlockingQuery<C> {
     public BlockingFailingQueryInTx(Driver driver) {
@@ -36,11 +33,11 @@ public class BlockingFailingQueryInTx<C extends AbstractContext> extends Abstrac
 
     @Override
     public void execute(C context) {
-        try (Session session = newSession(AccessMode.READ, context)) {
-            try (Transaction tx = beginTransaction(session, context)) {
-                Result result = tx.run("UNWIND [10, 5, 0] AS x RETURN 10 / x");
+        try (var session = newSession(AccessMode.READ, context)) {
+            try (var tx = beginTransaction(session, context)) {
+                var result = tx.run("UNWIND [10, 5, 0] AS x RETURN 10 / x");
 
-                Exception e = assertThrows(Exception.class, result::consume);
+                var e = assertThrows(Exception.class, result::consume);
                 assertThat(e, is(arithmeticError()));
             }
         }

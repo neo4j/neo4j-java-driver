@@ -40,9 +40,9 @@ public class FileTools {
 
     public static void deleteRecursively(File file) {
         if (file.isDirectory()) {
-            File[] files = file.listFiles();
+            var files = file.listFiles();
             if (files != null) {
-                for (File sub : files) {
+                for (var sub : files) {
                     deleteRecursively(sub);
                 }
             }
@@ -53,7 +53,7 @@ public class FileTools {
     }
 
     public static File tempFile(String prefix, String suffix) throws Throwable {
-        File file = createTempFile(prefix, suffix);
+        var file = createTempFile(prefix, suffix);
         file.deleteOnExit();
         return file;
     }
@@ -66,7 +66,7 @@ public class FileTools {
         if (!file.exists()) {
             return true;
         }
-        int count = 0;
+        var count = 0;
         boolean deleted;
         do {
             deleted = file.delete();
@@ -101,8 +101,8 @@ public class FileTools {
     }
 
     public static void copyRecursively(File fromDirectory, File toDirectory, FileFilter filter) throws IOException {
-        for (File fromFile : fromDirectory.listFiles(filter)) {
-            File toFile = new File(toDirectory, fromFile.getName());
+        for (var fromFile : fromDirectory.listFiles(filter)) {
+            var toFile = new File(toDirectory, fromFile.getName());
             if (fromFile.isDirectory()) {
                 Files.createDirectories(toFile.toPath());
                 copyRecursively(fromFile, toFile, filter);
@@ -114,7 +114,7 @@ public class FileTools {
 
     public static void copyFile(File srcFile, File dstFile) throws IOException {
         //noinspection ResultOfMethodCallIgnored
-        File parentFile = dstFile.getParentFile();
+        var parentFile = dstFile.getParentFile();
         if (parentFile != null) {
             parentFile.mkdirs();
         }
@@ -123,8 +123,8 @@ public class FileTools {
         try {
             input = new FileInputStream(srcFile);
             output = new FileOutputStream(dstFile);
-            int bufferSize = 1024;
-            byte[] buffer = new byte[bufferSize];
+            var bufferSize = 1024;
+            var buffer = new byte[bufferSize];
             int bytesRead;
             while ((bytesRead = input.read(buffer)) != -1) {
                 output.write(buffer, 0, bytesRead);
@@ -163,21 +163,21 @@ public class FileTools {
 
     public static void updateProperties(File propFile, Map<String, String> propertiesMap, Set<String> excludes)
             throws IOException {
-        Scanner in = new Scanner(propFile);
+        var in = new Scanner(propFile);
 
         Set<String> updatedProperties = new HashSet<>(propertiesMap.size());
-        File newPropFile = File.createTempFile(propFile.getName(), null);
+        var newPropFile = File.createTempFile(propFile.getName(), null);
 
         try {
-            FileOutputStream outStream = new FileOutputStream(newPropFile);
-            PrintWriter out = new PrintWriter(outStream);
+            var outStream = new FileOutputStream(newPropFile);
+            var out = new PrintWriter(outStream);
 
             while (in.hasNextLine()) {
-                String line = in.nextLine();
+                var line = in.nextLine();
                 if (!line.trim().startsWith("#")) {
-                    String[] tokens = line.split("=");
+                    var tokens = line.split("=");
                     if (tokens.length == 2) {
-                        String name = tokens[0].trim();
+                        var name = tokens[0].trim();
                         if (excludes.contains(name)) {
                             continue;
                         }
@@ -201,8 +201,8 @@ public class FileTools {
                 }
             }
 
-            for (Map.Entry<String, String> entry : propertiesMap.entrySet()) {
-                String name = entry.getKey();
+            for (var entry : propertiesMap.entrySet()) {
+                var name = entry.getKey();
                 Object value = entry.getValue();
                 if (value != null && !updatedProperties.contains(name)) {
                     // add this as a new prop

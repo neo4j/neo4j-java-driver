@@ -49,8 +49,8 @@ class ConnectionPoolImplTest {
 
     @Test
     void shouldDoNothingWhenRetainOnEmptyPool() {
-        NettyChannelTracker nettyChannelTracker = mock(NettyChannelTracker.class);
-        TestConnectionPool pool = newConnectionPool(nettyChannelTracker);
+        var nettyChannelTracker = mock(NettyChannelTracker.class);
+        var pool = newConnectionPool(nettyChannelTracker);
 
         pool.retainAll(singleton(LOCAL_DEFAULT));
 
@@ -59,23 +59,23 @@ class ConnectionPoolImplTest {
 
     @Test
     void shouldRetainSpecifiedAddresses() {
-        NettyChannelTracker nettyChannelTracker = mock(NettyChannelTracker.class);
-        TestConnectionPool pool = newConnectionPool(nettyChannelTracker);
+        var nettyChannelTracker = mock(NettyChannelTracker.class);
+        var pool = newConnectionPool(nettyChannelTracker);
 
         pool.acquire(ADDRESS_1, null);
         pool.acquire(ADDRESS_2, null);
         pool.acquire(ADDRESS_3, null);
 
         pool.retainAll(new HashSet<>(asList(ADDRESS_1, ADDRESS_2, ADDRESS_3)));
-        for (ExtendedChannelPool channelPool : pool.channelPoolsByAddress.values()) {
+        for (var channelPool : pool.channelPoolsByAddress.values()) {
             assertFalse(channelPool.isClosed());
         }
     }
 
     @Test
     void shouldClosePoolsWhenRetaining() {
-        NettyChannelTracker nettyChannelTracker = mock(NettyChannelTracker.class);
-        TestConnectionPool pool = newConnectionPool(nettyChannelTracker);
+        var nettyChannelTracker = mock(NettyChannelTracker.class);
+        var pool = newConnectionPool(nettyChannelTracker);
 
         pool.acquire(ADDRESS_1, null);
         pool.acquire(ADDRESS_2, null);
@@ -93,8 +93,8 @@ class ConnectionPoolImplTest {
 
     @Test
     void shouldNotClosePoolsWithActiveConnectionsWhenRetaining() {
-        NettyChannelTracker nettyChannelTracker = mock(NettyChannelTracker.class);
-        TestConnectionPool pool = newConnectionPool(nettyChannelTracker);
+        var nettyChannelTracker = mock(NettyChannelTracker.class);
+        var pool = newConnectionPool(nettyChannelTracker);
 
         pool.acquire(ADDRESS_1, null);
         pool.acquire(ADDRESS_2, null);
@@ -113,14 +113,14 @@ class ConnectionPoolImplTest {
     @Disabled("to fix")
     @Test
     void shouldRegisterAuthorizationStateListenerWithChannel() throws ExecutionException, InterruptedException {
-        NettyChannelTracker nettyChannelTracker = mock(NettyChannelTracker.class);
-        NettyChannelHealthChecker nettyChannelHealthChecker = mock(NettyChannelHealthChecker.class);
-        ArgumentCaptor<Channel> channelArgumentCaptor = ArgumentCaptor.forClass(Channel.class);
-        TestConnectionPool pool = newConnectionPool(nettyChannelTracker, nettyChannelHealthChecker);
+        var nettyChannelTracker = mock(NettyChannelTracker.class);
+        var nettyChannelHealthChecker = mock(NettyChannelHealthChecker.class);
+        var channelArgumentCaptor = ArgumentCaptor.forClass(Channel.class);
+        var pool = newConnectionPool(nettyChannelTracker, nettyChannelHealthChecker);
 
         pool.acquire(ADDRESS_1, null).toCompletableFuture().get();
         verify(nettyChannelTracker).channelAcquired(channelArgumentCaptor.capture());
-        Channel channel = channelArgumentCaptor.getValue();
+        var channel = channelArgumentCaptor.getValue();
 
         assertEquals(nettyChannelHealthChecker, authorizationStateListener(channel));
     }

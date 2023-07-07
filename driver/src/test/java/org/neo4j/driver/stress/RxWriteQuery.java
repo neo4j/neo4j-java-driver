@@ -40,7 +40,7 @@ public class RxWriteQuery<C extends AbstractContext> extends AbstractRxQuery<C> 
     @Override
     @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
-        CompletableFuture<Void> queryFinished = new CompletableFuture<>();
+        var queryFinished = new CompletableFuture<Void>();
         Flux.usingWhen(
                         Mono.fromSupplier(() -> newSession(AccessMode.WRITE, context)),
                         session -> Flux.from(session.run("CREATE ()").consume())

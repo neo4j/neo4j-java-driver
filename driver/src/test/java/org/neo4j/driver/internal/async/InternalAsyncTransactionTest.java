@@ -59,7 +59,6 @@ import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.value.IntegerValue;
-import org.neo4j.driver.summary.ResultSummary;
 
 class InternalAsyncTransactionTest {
     private static final String DATABASE = "neo4j";
@@ -70,14 +69,14 @@ class InternalAsyncTransactionTest {
     @BeforeEach
     void setUp() {
         connection = connectionMock(BoltProtocolV4.INSTANCE);
-        ConnectionProvider connectionProvider = mock(ConnectionProvider.class);
+        var connectionProvider = mock(ConnectionProvider.class);
         when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenAnswer(invocation -> {
             var context = (ConnectionContext) invocation.getArgument(0);
             context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
             return completedFuture(connection);
         });
         networkSession = newSession(connectionProvider);
-        InternalAsyncSession session = new InternalAsyncSession(networkSession);
+        var session = new InternalAsyncSession(networkSession);
         tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
     }
 
@@ -96,8 +95,8 @@ class InternalAsyncTransactionTest {
     void shouldFlushOnRun(Function<AsyncTransaction, CompletionStage<ResultCursor>> runReturnOne) {
         setupSuccessfulRunAndPull(connection);
 
-        ResultCursor result = await(runReturnOne.apply(tx));
-        ResultSummary summary = await(result.consumeAsync());
+        var result = await(runReturnOne.apply(tx));
+        var summary = await(result.consumeAsync());
 
         verifyRunAndPull(connection, summary.query().text());
     }
@@ -141,8 +140,8 @@ class InternalAsyncTransactionTest {
     @Test
     void shouldDelegateIsOpenAsync() throws ExecutionException, InterruptedException {
         // GIVEN
-        UnmanagedTransaction utx = mock(UnmanagedTransaction.class);
-        boolean expected = false;
+        var utx = mock(UnmanagedTransaction.class);
+        var expected = false;
         given(utx.isOpen()).willReturn(expected);
         tx = new InternalAsyncTransaction(utx);
 

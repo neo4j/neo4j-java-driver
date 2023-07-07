@@ -32,7 +32,6 @@ import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.testutil.TestUtil.DEFAULT_TEST_PROTOCOL;
 
-import java.lang.reflect.Method;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -50,10 +49,10 @@ import org.neo4j.driver.testutil.TestUtil;
 class LeakLoggingNetworkSessionTest {
     @Test
     void logsNothingDuringFinalizationIfClosed() throws Exception {
-        Logging logging = mock(Logging.class);
-        Logger log = mock(Logger.class);
+        var logging = mock(Logging.class);
+        var log = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(log);
-        LeakLoggingNetworkSession session = newSession(logging, false);
+        var session = newSession(logging, false);
 
         finalize(session);
 
@@ -62,21 +61,21 @@ class LeakLoggingNetworkSessionTest {
 
     @Test
     void logsMessageWithStacktraceDuringFinalizationIfLeaked(TestInfo testInfo) throws Exception {
-        Logging logging = mock(Logging.class);
-        Logger log = mock(Logger.class);
+        var logging = mock(Logging.class);
+        var log = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(log);
-        LeakLoggingNetworkSession session = newSession(logging, true);
+        var session = newSession(logging, true);
         // begin transaction to make session obtain a connection
         session.beginTransactionAsync(TransactionConfig.empty());
 
         finalize(session);
 
-        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        var messageCaptor = ArgumentCaptor.forClass(String.class);
         verify(log).error(messageCaptor.capture(), any());
 
         assertEquals(1, messageCaptor.getAllValues().size());
 
-        String loggedMessage = messageCaptor.getValue();
+        var loggedMessage = messageCaptor.getValue();
         assertThat(loggedMessage, containsString("Neo4j Session object leaked"));
         assertThat(loggedMessage, containsString("Session was create at"));
         assertThat(
@@ -86,7 +85,7 @@ class LeakLoggingNetworkSessionTest {
     }
 
     private static void finalize(NetworkSession session) throws Exception {
-        Method finalizeMethod = session.getClass().getDeclaredMethod("finalize");
+        var finalizeMethod = session.getClass().getDeclaredMethod("finalize");
         finalizeMethod.setAccessible(true);
         finalizeMethod.invoke(session);
     }
@@ -107,14 +106,14 @@ class LeakLoggingNetworkSessionTest {
     }
 
     private static ConnectionProvider connectionProviderMock(boolean openConnection) {
-        ConnectionProvider provider = mock(ConnectionProvider.class);
-        Connection connection = connectionMock(openConnection);
+        var provider = mock(ConnectionProvider.class);
+        var connection = connectionMock(openConnection);
         when(provider.acquireConnection(any(ConnectionContext.class))).thenReturn(completedFuture(connection));
         return provider;
     }
 
     private static Connection connectionMock(boolean open) {
-        Connection connection = TestUtil.connectionMock(DEFAULT_TEST_PROTOCOL);
+        var connection = TestUtil.connectionMock(DEFAULT_TEST_PROTOCOL);
         when(connection.isOpen()).thenReturn(open);
         return connection;
     }

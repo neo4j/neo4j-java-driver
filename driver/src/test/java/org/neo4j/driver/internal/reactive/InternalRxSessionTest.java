@@ -35,9 +35,7 @@ import static org.neo4j.driver.TransactionConfig.empty;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -97,18 +95,17 @@ class InternalRxSessionTest {
     @MethodSource("allSessionRunMethods")
     void shouldDelegateRun(Function<RxSession, RxResult> runReturnOne) {
         // Given
-        NetworkSession session = mock(NetworkSession.class);
+        var session = mock(NetworkSession.class);
         RxResultCursor cursor = mock(RxResultCursorImpl.class);
 
         // Run succeeded with a cursor
         when(session.runRx(any(Query.class), any(TransactionConfig.class))).thenReturn(completedFuture(cursor));
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var rxSession = new InternalRxSession(session);
 
         // When
-        RxResult result = runReturnOne.apply(rxSession);
+        var result = runReturnOne.apply(rxSession);
         // Execute the run
-        CompletionStage<RxResultCursor> cursorFuture =
-                ((InternalRxResult) result).cursorFutureSupplier().get();
+        var cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
 
         // Then
         verify(session).runRx(any(Query.class), any(TransactionConfig.class));
@@ -120,19 +117,18 @@ class InternalRxSessionTest {
     void shouldReleaseConnectionIfFailedToRun(Function<RxSession, RxResult> runReturnOne) {
         // Given
         Throwable error = new RuntimeException("Hi there");
-        NetworkSession session = mock(NetworkSession.class);
+        var session = mock(NetworkSession.class);
 
         // Run failed with error
         when(session.runRx(any(Query.class), any(TransactionConfig.class))).thenReturn(Futures.failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var rxSession = new InternalRxSession(session);
 
         // When
-        RxResult result = runReturnOne.apply(rxSession);
+        var result = runReturnOne.apply(rxSession);
         // Execute the run
-        CompletionStage<RxResultCursor> cursorFuture =
-                ((InternalRxResult) result).cursorFutureSupplier().get();
+        var cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
 
         // Then
         verify(session).runRx(any(Query.class), any(TransactionConfig.class));
@@ -145,15 +141,15 @@ class InternalRxSessionTest {
     @MethodSource("allBeginTxMethods")
     void shouldDelegateBeginTx(Function<RxSession, Publisher<RxTransaction>> beginTx) {
         // Given
-        NetworkSession session = mock(NetworkSession.class);
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var session = mock(NetworkSession.class);
+        var tx = mock(UnmanagedTransaction.class);
 
         when(session.beginTransactionAsync(any(TransactionConfig.class), isNull()))
                 .thenReturn(completedFuture(tx));
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var rxSession = new InternalRxSession(session);
 
         // When
-        Publisher<RxTransaction> rxTx = beginTx.apply(rxSession);
+        var rxTx = beginTx.apply(rxSession);
         StepVerifier.create(Mono.from(rxTx)).expectNextCount(1).verifyComplete();
 
         // Then
@@ -165,18 +161,18 @@ class InternalRxSessionTest {
     void shouldReleaseConnectionIfFailedToBeginTx(Function<RxSession, Publisher<RxTransaction>> beginTx) {
         // Given
         Throwable error = new RuntimeException("Hi there");
-        NetworkSession session = mock(NetworkSession.class);
+        var session = mock(NetworkSession.class);
 
         // Run failed with error
         when(session.beginTransactionAsync(any(TransactionConfig.class), isNull()))
                 .thenReturn(Futures.failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var rxSession = new InternalRxSession(session);
 
         // When
-        Publisher<RxTransaction> rxTx = beginTx.apply(rxSession);
-        CompletableFuture<RxTransaction> txFuture = Mono.from(rxTx).toFuture();
+        var rxTx = beginTx.apply(rxSession);
+        var txFuture = Mono.from(rxTx).toFuture();
 
         // Then
         verify(session).beginTransactionAsync(any(TransactionConfig.class), isNull());
@@ -189,17 +185,17 @@ class InternalRxSessionTest {
     @MethodSource("allRunTxMethods")
     void shouldDelegateRunTx(Function<RxSession, Publisher<String>> runTx) {
         // Given
-        NetworkSession session = mock(NetworkSession.class);
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var session = mock(NetworkSession.class);
+        var tx = mock(UnmanagedTransaction.class);
         when(tx.closeAsync(true)).thenReturn(completedWithNull());
 
         when(session.beginTransactionAsync(any(AccessMode.class), any(TransactionConfig.class)))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(1));
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var rxSession = new InternalRxSession(session);
 
         // When
-        Publisher<String> strings = runTx.apply(rxSession);
+        var strings = runTx.apply(rxSession);
         StepVerifier.create(Flux.from(strings)).expectNext("a").verifyComplete();
 
         // Then
@@ -210,15 +206,15 @@ class InternalRxSessionTest {
     @Test
     void shouldRetryOnError() {
         // Given
-        int retryCount = 2;
-        NetworkSession session = mock(NetworkSession.class);
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var retryCount = 2;
+        var session = mock(NetworkSession.class);
+        var tx = mock(UnmanagedTransaction.class);
         when(tx.closeAsync(false)).thenReturn(completedWithNull());
 
         when(session.beginTransactionAsync(any(AccessMode.class), any(TransactionConfig.class)))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(retryCount));
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var rxSession = new InternalRxSession(session);
 
         // When
         Publisher<String> strings =
@@ -237,20 +233,20 @@ class InternalRxSessionTest {
     @Test
     void shouldObtainResultIfRetrySucceed() {
         // Given
-        int retryCount = 2;
-        NetworkSession session = mock(NetworkSession.class);
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var retryCount = 2;
+        var session = mock(NetworkSession.class);
+        var tx = mock(UnmanagedTransaction.class);
         when(tx.closeAsync(false)).thenReturn(completedWithNull());
         when(tx.closeAsync(true)).thenReturn(completedWithNull());
 
         when(session.beginTransactionAsync(any(AccessMode.class), any(TransactionConfig.class)))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(retryCount));
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var rxSession = new InternalRxSession(session);
 
         // When
-        AtomicInteger count = new AtomicInteger();
-        Publisher<String> strings = rxSession.readTransaction(t -> {
+        var count = new AtomicInteger();
+        var strings = rxSession.readTransaction(t -> {
             // we fail for the first few retries, and then success on the last run.
             if (count.getAndIncrement() == retryCount) {
                 return Flux.just("a");
@@ -270,8 +266,8 @@ class InternalRxSessionTest {
     @Test
     void shouldDelegateBookmark() {
         // Given
-        NetworkSession session = mock(NetworkSession.class);
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var session = mock(NetworkSession.class);
+        var rxSession = new InternalRxSession(session);
 
         // When
         rxSession.lastBookmark();
@@ -284,8 +280,8 @@ class InternalRxSessionTest {
     @Test
     void shouldDelegateBookmarks() {
         // Given
-        NetworkSession session = mock(NetworkSession.class);
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var session = mock(NetworkSession.class);
+        var rxSession = new InternalRxSession(session);
 
         // When
         rxSession.lastBookmarks();
@@ -298,9 +294,9 @@ class InternalRxSessionTest {
     @Test
     void shouldDelegateClose() {
         // Given
-        NetworkSession session = mock(NetworkSession.class);
+        var session = mock(NetworkSession.class);
         when(session.closeAsync()).thenReturn(completedWithNull());
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var rxSession = new InternalRxSession(session);
 
         // When
         Publisher<Void> mono = rxSession.close();

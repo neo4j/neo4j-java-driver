@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class PoolSettingsTest {
     @Test
     void idleTimeBeforeConnectionTestWhenConfigured() {
-        PoolSettings settings = new PoolSettings(5, -1, 10, 42);
+        var settings = new PoolSettings(5, -1, 10, 42);
         assertTrue(settings.idleTimeBeforeConnectionTestEnabled());
         assertEquals(42, settings.idleTimeBeforeConnectionTest());
     }
@@ -35,7 +35,7 @@ class PoolSettingsTest {
     @Test
     void idleTimeBeforeConnectionTestWhenSetToZero() {
         // Always test idle time during acquisition
-        PoolSettings settings = new PoolSettings(5, -1, 10, 0);
+        var settings = new PoolSettings(5, -1, 10, 0);
         assertTrue(settings.idleTimeBeforeConnectionTestEnabled());
         assertEquals(0, settings.idleTimeBeforeConnectionTest());
     }
@@ -50,7 +50,7 @@ class PoolSettingsTest {
 
     @Test
     void maxConnectionLifetimeWhenConfigured() {
-        PoolSettings settings = new PoolSettings(5, -1, 42, 10);
+        var settings = new PoolSettings(5, -1, 42, 10);
         assertTrue(settings.maxConnectionLifetimeEnabled());
         assertEquals(42, settings.maxConnectionLifetime());
     }
@@ -64,12 +64,12 @@ class PoolSettingsTest {
     }
 
     private static void testIdleTimeBeforeConnectionTestWithIllegalValue(int value) {
-        PoolSettings settings = new PoolSettings(5, -1, 10, value);
+        var settings = new PoolSettings(5, -1, 10, value);
         assertFalse(settings.idleTimeBeforeConnectionTestEnabled());
     }
 
     private static void testMaxConnectionLifetimeWithIllegalValue(int value) {
-        PoolSettings settings = new PoolSettings(5, -1, value, 10);
+        var settings = new PoolSettings(5, -1, value, 10);
         assertFalse(settings.maxConnectionLifetimeEnabled());
     }
 }

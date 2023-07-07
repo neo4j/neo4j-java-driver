@@ -41,12 +41,12 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
     @Override
     protected void shouldHandleSuccessWithSummary(BasicPullResponseHandler.State state) {
         // Given
-        Connection conn = mockConnection();
+        var conn = mockConnection();
         @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
         @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
-        BasicPullResponseHandler handler = newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
+        var handler = newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
 
         // When
         handler.onSuccess(Collections.emptyMap());
@@ -60,17 +60,17 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
     @Override
     protected void shouldHandleFailure(BasicPullResponseHandler.State state) {
         // Given
-        Connection conn = mockConnection();
+        var conn = mockConnection();
         @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
         @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var tx = mock(UnmanagedTransaction.class);
         when(tx.isOpen()).thenReturn(true);
-        BasicPullResponseHandler handler = newTxResponseHandler(conn, recordConsumer, summaryConsumer, tx, state);
+        var handler = newTxResponseHandler(conn, recordConsumer, summaryConsumer, tx, state);
 
         // When
-        RuntimeException error = new RuntimeException("I am an error");
+        var error = new RuntimeException("I am an error");
         handler.onFailure(error);
 
         // Then
@@ -86,7 +86,7 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
             BiConsumer<Record, Throwable> recordConsumer,
             BiConsumer<ResultSummary, Throwable> summaryConsumer,
             BasicPullResponseHandler.State state) {
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var tx = mock(UnmanagedTransaction.class);
         return newTxResponseHandler(conn, recordConsumer, summaryConsumer, tx, state);
     }
 
@@ -96,9 +96,9 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
             BiConsumer<ResultSummary, Throwable> summaryConsumer,
             UnmanagedTransaction tx,
             BasicPullResponseHandler.State state) {
-        RunResponseHandler runHandler = mock(RunResponseHandler.class);
-        TransactionPullResponseCompletionListener listener = new TransactionPullResponseCompletionListener(tx);
-        BasicPullResponseHandler handler = new BasicPullResponseHandler(
+        var runHandler = mock(RunResponseHandler.class);
+        var listener = new TransactionPullResponseCompletionListener(tx);
+        var handler = new BasicPullResponseHandler(
                 mock(Query.class), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener);
 
         handler.installRecordConsumer(recordConsumer);

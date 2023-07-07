@@ -44,7 +44,7 @@ public class ChannelOutput implements PackOutput {
 
     @Override
     public PackOutput writeShort(short value) throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(Short.BYTES);
+        var buffer = ByteBuffer.allocate(Short.BYTES);
         buffer.putShort(value);
         buffer.flip();
         channel.write(buffer);
@@ -53,7 +53,7 @@ public class ChannelOutput implements PackOutput {
 
     @Override
     public PackOutput writeInt(int value) throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
+        var buffer = ByteBuffer.allocate(Integer.BYTES);
         buffer.putInt(value);
         buffer.flip();
         channel.write(buffer);
@@ -62,7 +62,7 @@ public class ChannelOutput implements PackOutput {
 
     @Override
     public PackOutput writeLong(long value) throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        var buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putLong(value);
         buffer.flip();
         channel.write(buffer);
@@ -71,7 +71,7 @@ public class ChannelOutput implements PackOutput {
 
     @Override
     public PackOutput writeDouble(double value) throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(Double.BYTES);
+        var buffer = ByteBuffer.allocate(Double.BYTES);
         buffer.putDouble(value);
         buffer.flip();
         channel.write(buffer);

@@ -34,8 +34,8 @@ import org.neo4j.driver.Value;
 class PingResponseHandlerTest {
     @Test
     void shouldResolvePromiseOnSuccess() {
-        Promise<Boolean> promise = newPromise();
-        PingResponseHandler handler = newHandler(promise);
+        var promise = newPromise();
+        var handler = newHandler(promise);
 
         handler.onSuccess(emptyMap());
 
@@ -45,8 +45,8 @@ class PingResponseHandlerTest {
 
     @Test
     void shouldResolvePromiseOnFailure() {
-        Promise<Boolean> promise = newPromise();
-        PingResponseHandler handler = newHandler(promise);
+        var promise = newPromise();
+        var handler = newHandler(promise);
 
         handler.onFailure(new RuntimeException());
 
@@ -56,7 +56,7 @@ class PingResponseHandlerTest {
 
     @Test
     void shouldNotSupportRecordMessages() {
-        PingResponseHandler handler = newHandler(newPromise());
+        var handler = newHandler(newPromise());
 
         assertThrows(UnsupportedOperationException.class, () -> handler.onRecord(new Value[0]));
     }

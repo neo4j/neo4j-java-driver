@@ -41,7 +41,7 @@ class HelloMessageTest {
         authToken.put("user", value("Alice"));
         authToken.put("credentials", value("SecretPassword"));
 
-        HelloMessage message =
+        var message =
                 new HelloMessage("MyDriver/1.0.2", BoltAgentUtil.VALUE, authToken, Collections.emptyMap(), false, null);
 
         Map<String, Value> expectedMetadata = new HashMap<>(authToken);
@@ -61,8 +61,7 @@ class HelloMessageTest {
         routingContext.put("region", "China");
         routingContext.put("speed", "Slow");
 
-        HelloMessage message =
-                new HelloMessage("MyDriver/1.0.2", BoltAgentUtil.VALUE, authToken, routingContext, false, null);
+        var message = new HelloMessage("MyDriver/1.0.2", BoltAgentUtil.VALUE, authToken, routingContext, false, null);
 
         Map<String, Value> expectedMetadata = new HashMap<>(authToken);
         expectedMetadata.put("user_agent", value("MyDriver/1.0.2"));
@@ -77,7 +76,7 @@ class HelloMessageTest {
         authToken.put(PRINCIPAL_KEY, value("Alice"));
         authToken.put(CREDENTIALS_KEY, value("SecretPassword"));
 
-        HelloMessage message =
+        var message =
                 new HelloMessage("MyDriver/1.0.2", BoltAgentUtil.VALUE, authToken, Collections.emptyMap(), false, null);
 
         assertThat(message.toString(), not(containsString("SecretPassword")));
@@ -89,7 +88,7 @@ class HelloMessageTest {
         authToken.put("user", value("Alice"));
         authToken.put("credentials", value("SecretPassword"));
 
-        HelloMessage message = new HelloMessage("MyDriver/1.0.2", null, authToken, Collections.emptyMap(), false, null);
+        var message = new HelloMessage("MyDriver/1.0.2", null, authToken, Collections.emptyMap(), false, null);
 
         var expectedMetadata = new HashMap<>(authToken);
         expectedMetadata.put("user_agent", value("MyDriver/1.0.2"));
@@ -104,8 +103,7 @@ class HelloMessageTest {
         authToken.put("credentials", value("SecretPassword"));
         var boltAgent = new BoltAgent("1", "2", "3", "4");
 
-        HelloMessage message =
-                new HelloMessage("MyDriver/1.0.2", boltAgent, authToken, Collections.emptyMap(), false, null);
+        var message = new HelloMessage("MyDriver/1.0.2", boltAgent, authToken, Collections.emptyMap(), false, null);
 
         var expectedMetadata = new HashMap<>(authToken);
         expectedMetadata.put("user_agent", value("MyDriver/1.0.2"));

@@ -39,9 +39,9 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 class CustomSecurityPlanTest {
     @Test
     void testCustomSecurityPlanUsed() {
-        SecurityPlanCapturingDriverFactory driverFactory = new SecurityPlanCapturingDriverFactory();
+        var driverFactory = new SecurityPlanCapturingDriverFactory();
 
-        SecurityPlan securityPlan = mock(SecurityPlan.class);
+        var securityPlan = mock(SecurityPlan.class);
 
         driverFactory.newInstance(
                 URI.create("neo4j://somewhere:1234"),

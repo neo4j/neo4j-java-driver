@@ -139,7 +139,7 @@ class InternalAsyncSessionTest {
     void shouldFlushOnRun(Function<AsyncSession, CompletionStage<ResultCursor>> runReturnOne) {
         setupSuccessfulRunAndPull(connection);
 
-        ResultCursor cursor = await(runReturnOne.apply(asyncSession));
+        var cursor = await(runReturnOne.apply(asyncSession));
 
         verifyRunAndPull(connection, await(cursor.consumeAsync()).query().text());
     }
@@ -147,7 +147,7 @@ class InternalAsyncSessionTest {
     @ParameterizedTest
     @MethodSource("allBeginTxMethods")
     void shouldDelegateBeginTx(Function<AsyncSession, CompletionStage<AsyncTransaction>> beginTx) {
-        AsyncTransaction tx = await(beginTx.apply(asyncSession));
+        var tx = await(beginTx.apply(asyncSession));
 
         verifyBeginTx(connection);
         assertNotNull(tx);
@@ -156,7 +156,7 @@ class InternalAsyncSessionTest {
     @ParameterizedTest
     @MethodSource("allRunTxMethods")
     void txRunShouldBeginAndCommitTx(Function<AsyncSession, CompletionStage<String>> runTx) {
-        String string = await(runTx.apply(asyncSession));
+        var string = await(runTx.apply(asyncSession));
 
         verifyBeginTx(connection);
         verifyCommitTx(connection);
@@ -233,17 +233,17 @@ class InternalAsyncSessionTest {
     void shouldDelegateExecuteReadToRetryLogic(ExecuteVariation executeVariation)
             throws ExecutionException, InterruptedException {
         // GIVEN
-        NetworkSession networkSession = mock(NetworkSession.class);
+        var networkSession = mock(NetworkSession.class);
         AsyncSession session = new InternalAsyncSession(networkSession);
-        RetryLogic logic = mock(RetryLogic.class);
-        String expected = "";
+        var logic = mock(RetryLogic.class);
+        var expected = "";
         given(networkSession.retryLogic()).willReturn(logic);
         AsyncTransactionCallback<CompletionStage<String>> tc = (ignored) -> CompletableFuture.completedFuture(expected);
         given(logic.<String>retryAsync(any())).willReturn(tc.execute(null));
-        TransactionConfig config = TransactionConfig.builder().build();
+        var config = TransactionConfig.builder().build();
 
         // WHEN
-        CompletionStage<String> actual = executeVariation.readOnly
+        var actual = executeVariation.readOnly
                 ? (executeVariation.explicitTxConfig
                         ? session.executeReadAsync(tc, config)
                         : session.executeReadAsync(tc))
@@ -264,7 +264,7 @@ class InternalAsyncSessionTest {
             throw error;
         };
 
-        Exception e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, transactionMode, work));
+        var e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, transactionMode, work));
         assertEquals(error, e);
 
         verify(connectionProvider).acquireConnection(any(ConnectionContext.class));
@@ -273,14 +273,14 @@ class InternalAsyncSessionTest {
     }
 
     private void testTxIsRetriedUntilSuccessWhenFunctionThrows(AccessMode mode) {
-        int failures = 12;
-        int retries = failures + 1;
+        var failures = 12;
+        var retries = failures + 1;
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);
         asyncSession = new InternalAsyncSession(session);
 
-        TxWork work = spy(new TxWork(42, failures, new SessionExpiredException("")));
+        var work = spy(new TxWork(42, failures, new SessionExpiredException("")));
         int answer = executeTransaction(asyncSession, mode, work);
 
         assertEquals(42, answer);
@@ -290,15 +290,15 @@ class InternalAsyncSessionTest {
     }
 
     private void testTxIsRetriedUntilSuccessWhenCommitThrows(AccessMode mode) {
-        int failures = 13;
-        int retries = failures + 1;
+        var failures = 13;
+        var retries = failures + 1;
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         setupFailingCommit(connection, failures);
         session = newSession(connectionProvider, retryLogic);
         asyncSession = new InternalAsyncSession(session);
 
-        TxWork work = spy(new TxWork(43));
+        var work = spy(new TxWork(43));
         int answer = executeTransaction(asyncSession, mode, work);
 
         assertEquals(43, answer);
@@ -307,16 +307,16 @@ class InternalAsyncSessionTest {
     }
 
     private void testTxIsRetriedUntilFailureWhenFunctionThrows(AccessMode mode) {
-        int failures = 14;
-        int retries = failures - 1;
+        var failures = 14;
+        var retries = failures - 1;
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);
         asyncSession = new InternalAsyncSession(session);
 
-        TxWork work = spy(new TxWork(42, failures, new SessionExpiredException("Oh!")));
+        var work = spy(new TxWork(42, failures, new SessionExpiredException("Oh!")));
 
-        Exception e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, mode, work));
+        var e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, mode, work));
 
         MatcherAssert.assertThat(e, instanceOf(SessionExpiredException.class));
         assertEquals("Oh!", e.getMessage());
@@ -326,17 +326,17 @@ class InternalAsyncSessionTest {
     }
 
     private void testTxIsRetriedUntilFailureWhenCommitFails(AccessMode mode) {
-        int failures = 17;
-        int retries = failures - 1;
+        var failures = 17;
+        var retries = failures - 1;
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         setupFailingCommit(connection, failures);
         session = newSession(connectionProvider, retryLogic);
         asyncSession = new InternalAsyncSession(session);
 
-        TxWork work = spy(new TxWork(42));
+        var work = spy(new TxWork(42));
 
-        Exception e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, mode, work));
+        var e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, mode, work));
 
         MatcherAssert.assertThat(e, instanceOf(ServiceUnavailableException.class));
         verifyInvocationCount(work, failures);

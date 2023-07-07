@@ -44,7 +44,7 @@ class InternalProfiledPlanTest {
         Value value = new MapValue(createPlanMap());
 
         // WHEN
-        ProfiledPlan plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(value);
+        var plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(value);
 
         // THEN
         verifyPlan(plan);
@@ -53,15 +53,15 @@ class InternalProfiledPlanTest {
     @Test
     void shouldHandlePlanWithChildren() {
         // GIVEN
-        Map<String, Value> planMap = createPlanMap();
+        var planMap = createPlanMap();
         planMap.put("children", new ListValue(new MapValue(createPlanMap()), new MapValue(createPlanMap())));
         Value value = new MapValue(planMap);
 
         // WHEN
-        ProfiledPlan plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(value);
+        var plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(value);
 
         // THEN
-        for (ProfiledPlan child : plan.children()) {
+        for (var child : plan.children()) {
             verifyPlan(child);
         }
     }

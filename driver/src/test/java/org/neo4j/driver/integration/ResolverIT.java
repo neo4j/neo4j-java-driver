@@ -28,7 +28,6 @@ import static org.neo4j.driver.Logging.none;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
@@ -36,17 +35,17 @@ import org.neo4j.driver.net.ServerAddressResolver;
 class ResolverIT {
     @Test
     void shouldFailInitialDiscoveryWhenConfiguredResolverThrows() {
-        ServerAddressResolver resolver = mock(ServerAddressResolver.class);
+        var resolver = mock(ServerAddressResolver.class);
         when(resolver.resolve(any(ServerAddress.class))).thenThrow(new RuntimeException("Resolution failure!"));
 
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withoutEncryption()
                 .withLogging(none())
                 .withResolver(resolver)
                 .build();
-        final Driver driver = GraphDatabase.driver("neo4j://my.server.com:9001", config);
+        final var driver = GraphDatabase.driver("neo4j://my.server.com:9001", config);
 
-        RuntimeException error = assertThrows(RuntimeException.class, driver::verifyConnectivity);
+        var error = assertThrows(RuntimeException.class, driver::verifyConnectivity);
         assertEquals("Resolution failure!", error.getMessage());
         verify(resolver).resolve(ServerAddress.of("my.server.com", 9001));
     }

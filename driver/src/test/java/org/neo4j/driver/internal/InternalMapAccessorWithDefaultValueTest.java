@@ -53,7 +53,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetValueFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
 
         // Scalar Values
         assertThat(record.get("NullValue", NullValue.NULL), equalTo(NullValue.NULL));
@@ -104,7 +104,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetObjectFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
 
         // IntegerValue.asObject returns Long
         assertThat(record.get("IntegerValue", (Object) 3), equalTo(11L));
@@ -113,7 +113,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetNumberFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
 
         // IntegerValue.asNumber returns Long
         assertThat(record.get("IntegerValue", (Number) 3), equalTo((Object) 11L));
@@ -122,7 +122,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetEntityFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
 
         Entity defaultNodeEntity = new InternalNode(0L);
         assertThat(record.get("NodeValue", defaultNodeEntity), equalTo(createNode()));
@@ -135,7 +135,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetNodeFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
 
         Node defaultNode = new InternalNode(0L);
         assertThat(record.get("NodeValue", defaultNode), equalTo(createNode()));
@@ -144,7 +144,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetRelFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
 
         Relationship defaultRel = new InternalRelationship(0L, 0L, 1L, "T");
         assertThat(record.get("RelValue", defaultRel), equalTo(createRel()));
@@ -153,7 +153,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetPathFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
 
         Path defaultPath =
                 new InternalPath(new InternalNode(0L), new InternalRelationship(0L, 0L, 1L, "T"), new InternalNode(1L));
@@ -163,7 +163,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetListOfObjectsFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
 
         List<Object> defaultValue = new ArrayList<>();
         // List of java objects, therefore IntegerValue will be converted to Long
@@ -173,7 +173,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetListOfTFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
         List<Integer> defaultValue = new ArrayList<>();
 
         assertThat(record.get("ListValue", defaultValue, ofInteger()), equalTo(asList(1, 2)));
@@ -182,7 +182,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetMapOfStringObjectFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
 
         Map<String, Object> expected = new HashMap<>();
         expected.put("key1", 1L);
@@ -195,7 +195,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetMapOfStringTFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
 
         Map<String, Integer> expected = new HashMap<>();
         expected.put("key1", 1);
@@ -208,7 +208,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetPrimitiveTypesFromRecord() {
-        Record record = createRecord();
+        var record = createRecord();
 
         // boolean
         assertThat(record.get("BooleanValue", false), equalTo(true));
@@ -237,7 +237,7 @@ class InternalMapAccessorWithDefaultValueTest {
 
     @Test
     void shouldGetFromMap() {
-        MapValue mapValue = new MapValue(createMap());
+        var mapValue = new MapValue(createMap());
         assertThat(mapValue.get("key1", 0L), equalTo(1L));
         assertThat(mapValue.get("key2", 0), equalTo(2));
         assertThat(mapValue.get(wrongKey, ""), equalTo(""));
@@ -248,7 +248,7 @@ class InternalMapAccessorWithDefaultValueTest {
         Map<String, Value> props = new HashMap<>();
         props.put("k1", value(43));
         props.put("k2", value("hello world"));
-        NodeValue nodeValue = new NodeValue(new InternalNode(42L, Collections.singletonList("L"), props));
+        var nodeValue = new NodeValue(new InternalNode(42L, Collections.singletonList("L"), props));
 
         assertThat(nodeValue.get("k1", 0), equalTo(43));
         assertThat(nodeValue.get("k2", ""), equalTo("hello world"));
@@ -260,7 +260,7 @@ class InternalMapAccessorWithDefaultValueTest {
         Map<String, Value> props = new HashMap<>();
         props.put("k1", value(43));
         props.put("k2", value("hello world"));
-        RelationshipValue relValue = new RelationshipValue(new InternalRelationship(0L, 0L, 1L, "T", props));
+        var relValue = new RelationshipValue(new InternalRelationship(0L, 0L, 1L, "T", props));
 
         assertThat(relValue.get("k1", 0), equalTo(43));
         assertThat(relValue.get("k2", ""), equalTo("hello world"));
@@ -288,12 +288,12 @@ class InternalMapAccessorWithDefaultValueTest {
     }
 
     private Record createRecord() {
-        Map<String, Value> map = createMap();
-        Path path = createPath();
-        Node node = createNode();
-        Relationship rel = createRel();
+        var map = createMap();
+        var path = createPath();
+        var node = createNode();
+        var rel = createRel();
 
-        List<String> keys = asList(
+        var keys = asList(
                 "NullValue",
                 "BooleanValue",
                 "StringValue",
@@ -305,7 +305,7 @@ class InternalMapAccessorWithDefaultValueTest {
                 "NodeValue",
                 "RelValue",
                 "float");
-        Value[] values = new Value[] {
+        var values = new Value[] {
             NullValue.NULL,
             BooleanValue.TRUE,
             new StringValue("hello world"),

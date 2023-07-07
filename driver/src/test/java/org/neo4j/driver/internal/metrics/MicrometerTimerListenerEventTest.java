@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.metrics;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,13 +36,13 @@ class MicrometerTimerListenerEventTest {
     @Test
     void shouldCreateTimerSampleOnStartAndReturnOnGetSample() {
         // GIVEN
-        Timer.Sample initialSample = event.getSample();
+        var initialSample = event.getSample();
 
         // WHEN
         event.start();
 
         // THEN
-        Timer.Sample sample = event.getSample();
+        var sample = event.getSample();
         assertNull(initialSample);
         assertNotNull(sample);
     }

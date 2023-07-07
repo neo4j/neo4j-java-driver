@@ -72,7 +72,7 @@ class TransactionConfigTest {
 
     @Test
     void shouldHaveTimeout() {
-        TransactionConfig config =
+        var config =
                 TransactionConfig.builder().withTimeout(Duration.ofSeconds(3)).build();
 
         assertEquals(Duration.ofSeconds(3), config.timeout());
@@ -80,7 +80,7 @@ class TransactionConfigTest {
 
     @Test
     void shouldAllowDefaultTimeout() {
-        TransactionConfig config = TransactionConfig.builder()
+        var config = TransactionConfig.builder()
                 .withTimeout(Duration.ofSeconds(3))
                 .withDefaultTimeout()
                 .build();
@@ -90,8 +90,7 @@ class TransactionConfigTest {
 
     @Test
     void shouldAllowZeroTimeout() {
-        TransactionConfig config =
-                TransactionConfig.builder().withTimeout(Duration.ZERO).build();
+        var config = TransactionConfig.builder().withTimeout(Duration.ZERO).build();
 
         assertEquals(Duration.ZERO, config.timeout());
     }
@@ -103,9 +102,9 @@ class TransactionConfigTest {
         map.put("key2", true);
         map.put("key3", 42);
 
-        TransactionConfig config = TransactionConfig.builder().withMetadata(map).build();
+        var config = TransactionConfig.builder().withMetadata(map).build();
 
-        Map<String, Value> metadata = config.metadata();
+        var metadata = config.metadata();
 
         assertEquals(3, metadata.size());
         assertEquals(value("value1"), metadata.get("key1"));
@@ -121,10 +120,10 @@ class TransactionConfigTest {
         metadata.put("key2", true);
         metadata.put("key3", 42);
 
-        TransactionConfig.Builder builder = TransactionConfig.builder().withMetadata(metadata);
+        var builder = TransactionConfig.builder().withMetadata(metadata);
         metadata.put("key4", "what?");
 
-        TransactionConfig config = builder.build();
+        var config = builder.build();
         assertEquals(3, config.metadata().size());
     }
 
@@ -135,12 +134,12 @@ class TransactionConfigTest {
         metadata.put("key2", true);
         metadata.put("key3", 42);
 
-        TransactionConfig config = TransactionConfig.builder()
+        var config = TransactionConfig.builder()
                 .withTimeout(Duration.ofMillis(12345L))
                 .withMetadata(metadata)
                 .build();
 
-        TransactionConfig verify = TestUtil.serializeAndReadBack(config, TransactionConfig.class);
+        var verify = TestUtil.serializeAndReadBack(config, TransactionConfig.class);
 
         assertEquals(config.timeout(), verify.timeout());
         assertEquals(config.metadata(), verify.metadata());

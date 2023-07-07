@@ -38,9 +38,9 @@ public class AsyncWriteQueryWithRetries<C extends AbstractContext> extends Abstr
     @Override
     @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
-        AsyncSession session = newSession(AccessMode.WRITE, context);
+        var session = newSession(AccessMode.WRITE, context);
 
-        CompletionStage<ResultSummary> txStage =
+        var txStage =
                 session.writeTransactionAsync(tx -> tx.runAsync("CREATE ()").thenCompose(ResultCursor::consumeAsync));
 
         return txStage.thenApply(resultSummary -> processResultSummary(resultSummary, context))

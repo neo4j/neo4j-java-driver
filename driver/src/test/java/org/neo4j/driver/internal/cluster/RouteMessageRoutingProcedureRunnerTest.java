@@ -42,7 +42,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.DatabaseName;
@@ -70,15 +69,14 @@ class RouteMessageRoutingProcedureRunnerTest {
     @ParameterizedTest
     @MethodSource
     void shouldRequestRoutingTableForAllValidInputScenarios(RoutingContext routingContext, DatabaseName databaseName) {
-        Map<String, Value> routingTable = getRoutingTable();
-        CompletableFuture<Map<String, Value>> completableFuture = CompletableFuture.completedFuture(routingTable);
-        RouteMessageRoutingProcedureRunner runner =
-                new RouteMessageRoutingProcedureRunner(routingContext, () -> completableFuture);
-        Connection connection = mock(Connection.class);
+        var routingTable = getRoutingTable();
+        var completableFuture = CompletableFuture.completedFuture(routingTable);
+        var runner = new RouteMessageRoutingProcedureRunner(routingContext, () -> completableFuture);
+        var connection = mock(Connection.class);
         CompletableFuture<Void> releaseConnectionFuture = CompletableFuture.completedFuture(null);
         doReturn(releaseConnectionFuture).when(connection).release();
 
-        RoutingProcedureResponse response = TestUtil.await(runner.run(connection, databaseName, null, null));
+        var response = TestUtil.await(runner.run(connection, databaseName, null, null));
 
         assertNotNull(response);
         assertTrue(response.isSuccess());
@@ -86,7 +84,7 @@ class RouteMessageRoutingProcedureRunnerTest {
         assertEquals(1, response.records().size());
         assertNotNull(response.records().get(0));
 
-        Record record = response.records().get(0);
+        var record = response.records().get(0);
         assertEquals(routingTable.get("ttl"), record.get("ttl"));
         assertEquals(routingTable.get("servers"), record.get("servers"));
 
@@ -97,16 +95,14 @@ class RouteMessageRoutingProcedureRunnerTest {
     @Test
     void shouldReturnFailureWhenSomethingHappensGettingTheRoutingTable() {
         Throwable reason = new RuntimeException("Some error");
-        CompletableFuture<Map<String, Value>> completableFuture = new CompletableFuture<>();
+        var completableFuture = new CompletableFuture<Map<String, Value>>();
         completableFuture.completeExceptionally(reason);
-        RouteMessageRoutingProcedureRunner runner =
-                new RouteMessageRoutingProcedureRunner(RoutingContext.EMPTY, () -> completableFuture);
-        Connection connection = mock(Connection.class);
+        var runner = new RouteMessageRoutingProcedureRunner(RoutingContext.EMPTY, () -> completableFuture);
+        var connection = mock(Connection.class);
         CompletableFuture<Void> releaseConnectionFuture = CompletableFuture.completedFuture(null);
         doReturn(releaseConnectionFuture).when(connection).release();
 
-        RoutingProcedureResponse response =
-                TestUtil.await(runner.run(connection, DatabaseNameUtil.defaultDatabase(), null, null));
+        var response = TestUtil.await(runner.run(connection, DatabaseNameUtil.defaultDatabase(), null, null));
 
         assertNotNull(response);
         assertFalse(response.isSuccess());
@@ -125,7 +121,7 @@ class RouteMessageRoutingProcedureRunnerTest {
             RoutingContext routingContext,
             Set<Bookmark> bookmarks,
             DatabaseName databaseName) {
-        Map<String, Value> context = routingContext.toMap().entrySet().stream()
+        var context = routingContext.toMap().entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> Values.value(entry.getValue())));
 
         verify(connection)

@@ -24,7 +24,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.driver.Values.ofValue;
 import static org.neo4j.driver.Values.parameters;
 
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.util.Iterables;
@@ -42,7 +41,7 @@ class SelfContainedNodeTest {
     @SuppressWarnings("deprecation")
     void testIdentity() {
         // Given
-        Node node = adamTheNode();
+        var node = adamTheNode();
 
         // Then
         assertThat(node.id(), equalTo(1l));
@@ -51,10 +50,10 @@ class SelfContainedNodeTest {
     @Test
     void testLabels() {
         // Given
-        Node node = adamTheNode();
+        var node = adamTheNode();
 
         // Then
-        List<String> labels = Iterables.asList(node.labels());
+        var labels = Iterables.asList(node.labels());
         assertThat(labels.size(), equalTo(1));
         assertThat(labels.contains("Person"), equalTo(true));
     }
@@ -62,10 +61,10 @@ class SelfContainedNodeTest {
     @Test
     void testKeys() {
         // Given
-        Node node = adamTheNode();
+        var node = adamTheNode();
 
         // Then
-        List<String> keys = Iterables.asList(node.keys());
+        var keys = Iterables.asList(node.keys());
         assertThat(keys.size(), equalTo(1));
         assertThat(keys.contains("name"), equalTo(true));
     }
@@ -73,7 +72,7 @@ class SelfContainedNodeTest {
     @Test
     void testValue() {
         // Given
-        Node node = adamTheNode();
+        var node = adamTheNode();
 
         // Then
         assertThat(node.get("name").asString(), equalTo("Adam"));

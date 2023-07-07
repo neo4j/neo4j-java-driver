@@ -39,7 +39,6 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.createCluste
 
 import java.time.Clock;
 import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -50,7 +49,7 @@ class ClusterRoutingTableTest {
     @Test
     void shouldReturnStaleIfTtlExpired() {
         // Given
-        FakeClock clock = new FakeClock();
+        var clock = new FakeClock();
         RoutingTable routingTable = newRoutingTable(clock);
 
         // When
@@ -117,7 +116,7 @@ class ClusterRoutingTableTest {
     @Test
     void shouldBeStaleForReadsAndWritesAfterCreation() {
         // Given
-        FakeClock clock = new FakeClock();
+        var clock = new FakeClock();
 
         // When
         RoutingTable routingTable = new ClusterRoutingTable(defaultDatabase(), clock, A);
@@ -131,7 +130,7 @@ class ClusterRoutingTableTest {
     @ValueSource(strings = {"Molly", "", "I AM A NAME"})
     void shouldReturnDatabaseNameCorrectly(String db) {
         // Given
-        FakeClock clock = new FakeClock();
+        var clock = new FakeClock();
 
         // When
         RoutingTable routingTable = new ClusterRoutingTable(database(db), clock, A);
@@ -143,7 +142,7 @@ class ClusterRoutingTableTest {
     @Test
     void shouldContainInitialRouters() {
         // Given
-        FakeClock clock = new FakeClock();
+        var clock = new FakeClock();
 
         // When
         RoutingTable routingTable = new ClusterRoutingTable(defaultDatabase(), clock, A, B, C);
@@ -157,8 +156,8 @@ class ClusterRoutingTableTest {
 
     @Test
     void shouldPreserveOrderingOfRouters() {
-        ClusterRoutingTable routingTable = newRoutingTable();
-        List<BoltServerAddress> routers = asList(A, C, D, F, B, E);
+        var routingTable = newRoutingTable();
+        var routers = asList(A, C, D, F, B, E);
 
         routingTable.update(createClusterComposition(routers, EMPTY, EMPTY));
 
@@ -169,8 +168,8 @@ class ClusterRoutingTableTest {
 
     @Test
     void shouldPreserveOrderingOfWriters() {
-        ClusterRoutingTable routingTable = newRoutingTable();
-        List<BoltServerAddress> writers = asList(D, F, A, C, E);
+        var routingTable = newRoutingTable();
+        var writers = asList(D, F, A, C, E);
 
         routingTable.update(createClusterComposition(EMPTY, writers, EMPTY));
 
@@ -180,8 +179,8 @@ class ClusterRoutingTableTest {
 
     @Test
     void shouldPreserveOrderingOfReaders() {
-        ClusterRoutingTable routingTable = newRoutingTable();
-        List<BoltServerAddress> readers = asList(B, A, F, C, D);
+        var routingTable = newRoutingTable();
+        var readers = asList(B, A, F, C, D);
 
         routingTable.update(createClusterComposition(EMPTY, EMPTY, readers));
 
@@ -191,11 +190,11 @@ class ClusterRoutingTableTest {
 
     @Test
     void shouldTreatOneRouterAsValid() {
-        ClusterRoutingTable routingTable = newRoutingTable();
+        var routingTable = newRoutingTable();
 
-        List<BoltServerAddress> routers = singletonList(A);
-        List<BoltServerAddress> writers = asList(B, C);
-        List<BoltServerAddress> readers = asList(D, E);
+        var routers = singletonList(A);
+        var writers = asList(B, C);
+        var readers = asList(D, E);
 
         routingTable.update(createClusterComposition(routers, writers, readers));
 
@@ -205,25 +204,25 @@ class ClusterRoutingTableTest {
 
     @Test
     void shouldHaveBeStaleForExpiredTime() throws Throwable {
-        ClusterRoutingTable routingTable = newRoutingTable(Clock.systemUTC());
+        var routingTable = newRoutingTable(Clock.systemUTC());
         assertTrue(routingTable.hasBeenStaleFor(0));
     }
 
     @Test
     void shouldNotHaveBeStaleForUnexpiredTime() throws Throwable {
-        ClusterRoutingTable routingTable = newRoutingTable(Clock.systemUTC());
+        var routingTable = newRoutingTable(Clock.systemUTC());
         assertFalse(routingTable.hasBeenStaleFor(Duration.ofSeconds(30).toMillis()));
     }
 
     @Test
     void shouldDefaultToPreferInitialRouter() throws Throwable {
-        ClusterRoutingTable routingTable = newRoutingTable();
+        var routingTable = newRoutingTable();
         assertTrue(routingTable.preferInitialRouter());
     }
 
     @Test
     void shouldPreferInitialRouterIfNoWriter() throws Throwable {
-        ClusterRoutingTable routingTable = newRoutingTable();
+        var routingTable = newRoutingTable();
         routingTable.update(createClusterComposition(EMPTY, EMPTY, EMPTY));
         assertTrue(routingTable.preferInitialRouter());
 
@@ -242,7 +241,7 @@ class ClusterRoutingTableTest {
 
     @Test
     void shouldNotPreferInitialRouterIfHasWriter() throws Throwable {
-        ClusterRoutingTable routingTable = newRoutingTable();
+        var routingTable = newRoutingTable();
         routingTable.update(createClusterComposition(EMPTY, singletonList(A), EMPTY));
         assertFalse(routingTable.preferInitialRouter());
 

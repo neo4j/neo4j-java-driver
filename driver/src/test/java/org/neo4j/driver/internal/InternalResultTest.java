@@ -62,13 +62,12 @@ import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.util.Pair;
 
 class InternalResultTest {
     @Test
     void iterationShouldWorksAsExpected() {
         // GIVEN
-        Result result = createResult(3);
+        var result = createResult(3);
 
         // WHEN
         assertTrue(result.hasNext());
@@ -89,7 +88,7 @@ class InternalResultTest {
     @Test
     void firstOfFieldNameShouldWorkAsExpected() {
         // GIVEN
-        Result result = createResult(3);
+        var result = createResult(3);
 
         // THEN
         assertThat(result.next().get("k1"), equalTo(value("v1-1")));
@@ -99,7 +98,7 @@ class InternalResultTest {
     @Test
     void firstOfFieldIndexShouldWorkAsExpected() {
         // GIVEN
-        Result result = createResult(3);
+        var result = createResult(3);
 
         // THEN
         assertThat(result.next().get(0), equalTo(value("v1-1")));
@@ -109,7 +108,7 @@ class InternalResultTest {
     @Test
     void singlePastFirstShouldFail() {
         // GIVEN
-        Result result = createResult(2);
+        var result = createResult(2);
         result.next();
         result.next();
 
@@ -120,7 +119,7 @@ class InternalResultTest {
     @Test
     void singleNoneShouldFail() {
         // GIVEN
-        Result result = createResult(0);
+        var result = createResult(0);
 
         // THEN
         assertThrows(NoSuchRecordException.class, result::single);
@@ -129,7 +128,7 @@ class InternalResultTest {
     @Test
     void singleWhenMoreThanOneShouldFail() {
         // GIVEN
-        Result result = createResult(2);
+        var result = createResult(2);
 
         // THEN
         assertThrows(NoSuchRecordException.class, result::single);
@@ -138,7 +137,7 @@ class InternalResultTest {
     @Test
     void singleOfFieldNameShouldWorkAsExpected() {
         // GIVEN
-        Result result = createResult(1);
+        var result = createResult(1);
 
         // THEN
         assertThat(result.single().get("k1"), equalTo(value("v1-1")));
@@ -148,7 +147,7 @@ class InternalResultTest {
     @Test
     void singleOfFieldIndexShouldWorkAsExpected() {
         // GIVEN
-        Result result = createResult(1);
+        var result = createResult(1);
 
         // THEN
         assertThat(result.single().get(0), equalTo(value("v1-1")));
@@ -173,7 +172,7 @@ class InternalResultTest {
     @Test
     void singleShouldThrowOnConsumedResult() {
         assertThrows(ResultConsumedException.class, () -> {
-            Result result = createResult(2);
+            var result = createResult(2);
             result.consume();
             result.single();
         });
@@ -182,7 +181,7 @@ class InternalResultTest {
     @Test
     void shouldConsumeTwice() {
         // GIVEN
-        Result result = createResult(2);
+        var result = createResult(2);
         result.consume();
 
         // WHEN
@@ -195,8 +194,8 @@ class InternalResultTest {
     @Test
     void shouldList() {
         // GIVEN
-        Result result = createResult(2);
-        List<String> records = result.list(column("k1", ofString()));
+        var result = createResult(2);
+        var records = result.list(column("k1", ofString()));
 
         // THEN
         assertThat(records, equalTo(asList("v1-1", "v1-2")));
@@ -205,19 +204,19 @@ class InternalResultTest {
     @Test
     void shouldListTwice() {
         // GIVEN
-        Result result = createResult(2);
-        List<Record> firstList = result.list();
+        var result = createResult(2);
+        var firstList = result.list();
         assertThat(firstList.size(), equalTo(2));
 
         // THEN
-        List<Record> secondList = result.list();
+        var secondList = result.list();
         assertThat(secondList.size(), equalTo(0));
     }
 
     @Test
     void singleShouldNotThrowOnPartiallyConsumedResult() {
         // Given
-        Result result = createResult(2);
+        var result = createResult(2);
         result.next();
 
         // When + Then
@@ -226,7 +225,7 @@ class InternalResultTest {
 
     @Test
     void singleShouldConsumeIfFailing() {
-        Result result = createResult(2);
+        var result = createResult(2);
 
         assertThrows(NoSuchRecordException.class, result::single);
         assertFalse(result.hasNext());
@@ -235,10 +234,10 @@ class InternalResultTest {
     @Test
     void retainShouldWorkAsExpected() {
         // GIVEN
-        Result result = createResult(3);
+        var result = createResult(3);
 
         // WHEN
-        List<Record> records = result.list();
+        var records = result.list();
 
         // THEN
         assertFalse(result.hasNext());
@@ -248,10 +247,10 @@ class InternalResultTest {
     @Test
     void retainAndMapByKeyShouldWorkAsExpected() {
         // GIVEN
-        Result result = createResult(3);
+        var result = createResult(3);
 
         // WHEN
-        List<Value> records = result.list(column("k1"));
+        var records = result.list(column("k1"));
 
         // THEN
         assertFalse(result.hasNext());
@@ -261,10 +260,10 @@ class InternalResultTest {
     @Test
     void retainAndMapByIndexShouldWorkAsExpected() {
         // GIVEN
-        Result result = createResult(3);
+        var result = createResult(3);
 
         // WHEN
-        List<Value> records = result.list(column(0));
+        var records = result.list(column(0));
 
         // THEN
         assertFalse(result.hasNext());
@@ -274,10 +273,10 @@ class InternalResultTest {
     @Test
     void accessingOutOfBoundsShouldBeNull() {
         // GIVEN
-        Result result = createResult(1);
+        var result = createResult(1);
 
         // WHEN
-        Record record = result.single();
+        var record = result.single();
 
         // THEN
         assertThat(record.get(0), equalTo(value("v1-1")));
@@ -289,7 +288,7 @@ class InternalResultTest {
     @Test
     void accessingKeysWithoutCallingNextShouldNotFail() {
         // GIVEN
-        Result result = createResult(11);
+        var result = createResult(11);
 
         // WHEN
         // not calling next or single
@@ -301,7 +300,7 @@ class InternalResultTest {
     @Test
     void shouldPeekIntoTheFuture() {
         // WHEN
-        Result result = createResult(2);
+        var result = createResult(2);
 
         // THEN
         assertThat(result.peek().get("k1"), equalTo(value("v1-1")));
@@ -322,7 +321,7 @@ class InternalResultTest {
     @Test
     void shouldNotPeekIntoTheFutureWhenResultIsEmpty() {
         // GIVEN
-        Result result = createResult(0);
+        var result = createResult(0);
 
         // THEN
         assertThrows(NoSuchRecordException.class, result::peek);
@@ -332,12 +331,12 @@ class InternalResultTest {
     @ValueSource(booleans = {true, false})
     void shouldDelegateIsOpen(boolean expectedState) {
         // GIVEN
-        AsyncResultCursor cursor = mock(AsyncResultCursor.class);
+        var cursor = mock(AsyncResultCursor.class);
         given(cursor.isOpenAsync()).willReturn(CompletableFuture.completedFuture(expectedState));
         Result result = new InternalResult(null, cursor);
 
         // WHEN
-        boolean actualState = result.isOpen();
+        var actualState = result.isOpen();
 
         // THEN
         assertEquals(expectedState, actualState);
@@ -345,12 +344,12 @@ class InternalResultTest {
     }
 
     private Result createResult(int numberOfRecords) {
-        RunResponseHandler runHandler = new RunResponseHandler(
+        var runHandler = new RunResponseHandler(
                 new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock(Connection.class), null);
         runHandler.onSuccess(singletonMap("fields", value(Arrays.asList("k1", "k2"))));
 
-        Query query = new Query("<unknown>");
-        Connection connection = mock(Connection.class);
+        var query = new Query("<unknown>");
+        var connection = mock(Connection.class);
         when(connection.serverAddress()).thenReturn(LOCAL_DEFAULT);
         when(connection.protocol()).thenReturn(BoltProtocolV43.INSTANCE);
         when(connection.serverAgent()).thenReturn("Neo4j/4.2.5");
@@ -361,7 +360,7 @@ class InternalResultTest {
                 BoltProtocolV3.METADATA_EXTRACTOR,
                 mock(PullResponseCompletionListener.class));
 
-        for (int i = 1; i <= numberOfRecords; i++) {
+        for (var i = 1; i <= numberOfRecords; i++) {
             pullAllHandler.onRecord(new Value[] {value("v1-" + i), value("v2-" + i)});
         }
         pullAllHandler.onSuccess(emptyMap());
@@ -372,7 +371,7 @@ class InternalResultTest {
 
     private List<Value> values(Record record) {
         List<Value> result = new ArrayList<>(record.keys().size());
-        for (Pair<String, Value> property : record.fields()) {
+        for (var property : record.fields()) {
             result.add(property.value());
         }
         return result;

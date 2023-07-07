@@ -90,7 +90,7 @@ class UnsupportedBoltV3IT {
     }
 
     private static void assertTxConfigNotSupported(Executable executable) {
-        ClientException error = assertThrows(ClientException.class, executable);
+        var error = assertThrows(ClientException.class, executable);
         assertThat(
                 error.getMessage(),
                 startsWith("Driver is connected to the database that does not support transaction configuration"));

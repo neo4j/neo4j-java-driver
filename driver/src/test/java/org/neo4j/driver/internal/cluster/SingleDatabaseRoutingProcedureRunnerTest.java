@@ -48,16 +48,14 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.internal.spi.Connection;
 
 class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest {
     @Test
     void shouldCallGetRoutingTableWithEmptyMap() {
-        TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner(RoutingContext.EMPTY);
-        RoutingProcedureResponse response =
-                await(runner.run(connection(), defaultDatabase(), Collections.emptySet(), null));
+        var runner = new TestRoutingProcedureRunner(RoutingContext.EMPTY);
+        var response = await(runner.run(connection(), defaultDatabase(), Collections.emptySet(), null));
 
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());
@@ -66,18 +64,17 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertThat(runner.connection.databaseName(), equalTo(defaultDatabase()));
         assertThat(runner.connection.mode(), equalTo(AccessMode.WRITE));
 
-        Query query = generateRoutingQuery(Collections.emptyMap());
+        var query = generateRoutingQuery(Collections.emptyMap());
         assertThat(runner.procedure, equalTo(query));
     }
 
     @Test
     void shouldCallGetRoutingTableWithParam() {
-        URI uri = URI.create("neo4j://localhost/?key1=value1&key2=value2");
-        RoutingContext context = new RoutingContext(uri);
+        var uri = URI.create("neo4j://localhost/?key1=value1&key2=value2");
+        var context = new RoutingContext(uri);
 
-        TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner(context);
-        RoutingProcedureResponse response =
-                await(runner.run(connection(), defaultDatabase(), Collections.emptySet(), null));
+        var runner = new TestRoutingProcedureRunner(context);
+        var response = await(runner.run(connection(), defaultDatabase(), Collections.emptySet(), null));
 
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());
@@ -86,7 +83,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertThat(runner.connection.databaseName(), equalTo(defaultDatabase()));
         assertThat(runner.connection.mode(), equalTo(AccessMode.WRITE));
 
-        Query query = generateRoutingQuery(context.toMap());
+        var query = generateRoutingQuery(context.toMap());
         assertThat(response.procedure(), equalTo(query));
         assertThat(runner.procedure, equalTo(query));
     }
@@ -94,7 +91,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     @ParameterizedTest
     @MethodSource("invalidDatabaseNames")
     void shouldErrorWhenDatabaseIsNotAbsent(String db) throws Throwable {
-        TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner(RoutingContext.EMPTY);
+        var runner = new TestRoutingProcedureRunner(RoutingContext.EMPTY);
         assertThrows(
                 FatalDiscoveryException.class,
                 () -> await(runner.run(connection(), database(db), Collections.emptySet(), null)));
@@ -114,7 +111,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     }
 
     private static Query generateRoutingQuery(Map<String, String> context) {
-        Value parameters = parameters(ROUTING_CONTEXT, context);
+        var parameters = parameters(ROUTING_CONTEXT, context);
         return new Query(GET_ROUTING_TABLE, parameters);
     }
 

@@ -45,7 +45,6 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -56,21 +55,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.summary.QueryType;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
-import org.neo4j.driver.types.Node;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -91,12 +84,12 @@ class RxTransactionIT {
 
     @Test
     void shouldBePossibleToCommitEmptyTx() {
-        Bookmark bookmarkBefore = session.lastBookmark();
+        var bookmarkBefore = session.lastBookmark();
 
         Mono<Void> commit = Mono.from(session.beginTransaction()).flatMap(tx -> Mono.from(tx.commit()));
         StepVerifier.create(commit).verifyComplete();
 
-        Bookmark bookmarkAfter = session.lastBookmark();
+        var bookmarkAfter = session.lastBookmark();
 
         assertNotNull(bookmarkAfter);
         assertNotEquals(bookmarkBefore, bookmarkAfter);
@@ -104,18 +97,18 @@ class RxTransactionIT {
 
     @Test
     void shouldBePossibleToRollbackEmptyTx() {
-        Bookmark bookmarkBefore = session.lastBookmark();
+        var bookmarkBefore = session.lastBookmark();
 
         Mono<Void> rollback = Mono.from(session.beginTransaction()).flatMap(tx -> Mono.from(tx.rollback()));
         StepVerifier.create(rollback).verifyComplete();
 
-        Bookmark bookmarkAfter = session.lastBookmark();
+        var bookmarkAfter = session.lastBookmark();
         assertEquals(bookmarkBefore, bookmarkAfter);
     }
 
     @Test
     void shouldBePossibleToRunSingleQueryAndCommit() {
-        Flux<Integer> ids = Flux.usingWhen(
+        var ids = Flux.usingWhen(
                 session.beginTransaction(),
                 tx -> Flux.from(tx.run("CREATE (n:Node {id: 42}) RETURN n").records())
                         .map(record -> record.get(0).asNode().get("id").asInt()),
@@ -129,7 +122,7 @@ class RxTransactionIT {
 
     @Test
     void shouldBePossibleToRunSingleQueryAndRollback() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
         assertCanRunCreate(tx);
         assertCanRollback(tx);
 
@@ -139,15 +132,15 @@ class RxTransactionIT {
     @ParameterizedTest
     @MethodSource("commit")
     void shouldBePossibleToRunMultipleQueries(boolean commit) {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
 
-        RxResult cursor1 = tx.run("CREATE (n:Node {id: 1})");
+        var cursor1 = tx.run("CREATE (n:Node {id: 1})");
         await(cursor1.records());
 
-        RxResult cursor2 = tx.run("CREATE (n:Node {id: 2})");
+        var cursor2 = tx.run("CREATE (n:Node {id: 2})");
         await(cursor2.records());
 
-        RxResult cursor3 = tx.run("CREATE (n:Node {id: 1})");
+        var cursor3 = tx.run("CREATE (n:Node {id: 1})");
         await(cursor3.records());
 
         assertCanCommitOrRollback(commit, tx);
@@ -158,11 +151,11 @@ class RxTransactionIT {
     @ParameterizedTest
     @MethodSource("commit")
     void shouldBePossibleToRunMultipleQueriesWithoutWaiting(boolean commit) {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
 
-        RxResult cursor1 = tx.run("CREATE (n:Node {id: 1})");
-        RxResult cursor2 = tx.run("CREATE (n:Node {id: 2})");
-        RxResult cursor3 = tx.run("CREATE (n:Node {id: 1})");
+        var cursor1 = tx.run("CREATE (n:Node {id: 1})");
+        var cursor2 = tx.run("CREATE (n:Node {id: 2})");
+        var cursor3 = tx.run("CREATE (n:Node {id: 1})");
 
         await(Flux.from(cursor1.records()).concatWith(cursor2.records()).concatWith(cursor3.records()));
         assertCanCommitOrRollback(commit, tx);
@@ -173,13 +166,13 @@ class RxTransactionIT {
     @ParameterizedTest
     @MethodSource("commit")
     void shouldRunQueriesOnResultPublish(boolean commit) {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
 
-        RxResult cursor1 = tx.run("CREATE (n:Person {name: 'Alice'}) RETURN n.name");
-        RxResult cursor2 = tx.run("CREATE (n:Person {name: 'Bob'}) RETURN n.name");
+        var cursor1 = tx.run("CREATE (n:Person {name: 'Alice'}) RETURN n.name");
+        var cursor2 = tx.run("CREATE (n:Person {name: 'Bob'}) RETURN n.name");
 
         // The execution order is the same as the record publishing order.
-        List<Record> records = await(Flux.from(cursor2.records()).concatWith(cursor1.records()));
+        var records = await(Flux.from(cursor2.records()).concatWith(cursor1.records()));
         assertThat(records.size(), equalTo(2));
         assertThat(records.get(0).get("n.name").asString(), equalTo("Bob"));
         assertThat(records.get(1).get("n.name").asString(), equalTo("Alice"));
@@ -190,8 +183,8 @@ class RxTransactionIT {
     @ParameterizedTest
     @MethodSource("commit")
     void shouldDiscardOnCommitOrRollback(boolean commit) {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult cursor = tx.run("UNWIND [1,2,3,4] AS a RETURN a");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var cursor = tx.run("UNWIND [1,2,3,4] AS a RETURN a");
 
         // We only perform run without any pull
         await(Flux.from(cursor.keys()));
@@ -209,11 +202,11 @@ class RxTransactionIT {
     @ParameterizedTest
     @MethodSource("commit")
     void shouldBePossibleToRunMultipleQueriesWithoutStreaming(boolean commit) {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
 
-        RxResult cursor1 = tx.run("CREATE (n:Node {id: 1})");
-        RxResult cursor2 = tx.run("CREATE (n:Node {id: 2})");
-        RxResult cursor3 = tx.run("CREATE (n:Node {id: 1})");
+        var cursor1 = tx.run("CREATE (n:Node {id: 1})");
+        var cursor2 = tx.run("CREATE (n:Node {id: 2})");
+        var cursor3 = tx.run("CREATE (n:Node {id: 1})");
 
         await(Flux.from(cursor1.keys()).concatWith(cursor2.keys()).concatWith(cursor3.keys()));
         assertCanCommitOrRollback(commit, tx);
@@ -223,21 +216,21 @@ class RxTransactionIT {
 
     @Test
     void shouldFailToCommitAfterSingleWrongQuery() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
         assertFailToRunWrongQuery(tx);
         assertThrows(ClientException.class, () -> await(tx.commit()));
     }
 
     @Test
     void shouldAllowRollbackAfterSingleWrongQuery() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
         assertFailToRunWrongQuery(tx);
         assertCanRollback(tx);
     }
 
     @Test
     void shouldFailToCommitAfterCoupleCorrectAndSingleWrongQuery() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
 
         assertCanRunCreate(tx);
         assertCanRunReturnOne(tx);
@@ -248,7 +241,7 @@ class RxTransactionIT {
 
     @Test
     void shouldAllowRollbackAfterCoupleCorrectAndSingleWrongQuery() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
         assertCanRunCreate(tx);
         assertCanRunReturnOne(tx);
         assertFailToRunWrongQuery(tx);
@@ -258,11 +251,11 @@ class RxTransactionIT {
 
     @Test
     void shouldNotAllowNewQueriesAfterAnIncorrectQuery() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
         assertFailToRunWrongQuery(tx);
 
-        RxResult result = tx.run("CREATE ()");
-        Exception e = assertThrows(Exception.class, () -> await(result.records()));
+        var result = tx.run("CREATE ()");
+        var e = assertThrows(Exception.class, () -> await(result.records()));
         assertThat(e.getMessage(), startsWith("Cannot run more queries in this transaction"));
 
         assertCanRollback(tx);
@@ -280,7 +273,7 @@ class RxTransactionIT {
 
     @Test
     void shouldFailToCommitWhenCommitted() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
         assertCanRunCreate(tx);
         assertCanCommit(tx);
 
@@ -296,7 +289,7 @@ class RxTransactionIT {
 
     @Test
     void shouldFailToRollbackWhenRolledBack() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
         assertCanRunCreate(tx);
         assertCanRollback(tx);
 
@@ -312,29 +305,29 @@ class RxTransactionIT {
 
     @Test
     void shouldFailToCommitWhenRolledBack() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
         assertCanRunCreate(tx);
         assertCanRollback(tx);
 
         // should not be possible to commit after rollback
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commit()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commit()));
         assertThat(e.getMessage(), containsString("transaction has been rolled back"));
     }
 
     @Test
     void shouldFailToRollbackWhenCommitted() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
         assertCanRunCreate(tx);
         assertCanCommit(tx);
 
         // should not be possible to rollback after commit
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.rollback()));
+        var e = assertThrows(ClientException.class, () -> await(tx.rollback()));
         assertThat(e.getMessage(), containsString("transaction has been committed"));
     }
 
     @Test
     void shouldAllowRollbackAfterFailedCommit() {
-        Flux<Record> records = Flux.usingWhen(
+        var records = Flux.usingWhen(
                 session.beginTransaction(),
                 tx -> Flux.from(tx.run("WRONG").records()),
                 RxTransaction::commit,
@@ -347,10 +340,10 @@ class RxTransactionIT {
 
     @Test
     void shouldExposeQueryKeysForColumnsWithAliases() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five");
 
-        List<String> keys = await(Mono.from(result.keys()));
+        var keys = await(Mono.from(result.keys()));
         assertEquals(Arrays.asList("one", "two", "three", "five"), keys);
 
         assertCanRollback(tx); // you still need to rollback the tx as tx will not automatically closed
@@ -358,10 +351,10 @@ class RxTransactionIT {
 
     @Test
     void shouldExposeQueryKeysForColumnsWithoutAliases() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("RETURN 1, 2, 3, 5");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("RETURN 1, 2, 3, 5");
 
-        List<String> keys = await(Mono.from(result.keys()));
+        var keys = await(Mono.from(result.keys()));
         assertEquals(Arrays.asList("1", "2", "3", "5"), keys);
 
         assertCanRollback(tx); // you still need to rollback the tx as tx will not automatically closed
@@ -369,14 +362,14 @@ class RxTransactionIT {
 
     @Test
     void shouldExposeResultSummaryForSimpleQuery() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        String query = "CREATE (p1:Person {name: $name1})-[:KNOWS]->(p2:Person {name: $name2}) RETURN p1, p2";
-        Value params = parameters("name1", "Bob", "name2", "John");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var query = "CREATE (p1:Person {name: $name1})-[:KNOWS]->(p2:Person {name: $name2}) RETURN p1, p2";
+        var params = parameters("name1", "Bob", "name2", "John");
 
-        RxResult result = tx.run(query, params);
+        var result = tx.run(query, params);
         await(result.records()); // we run and stream
 
-        ResultSummary summary = await(Mono.from(result.consume()));
+        var summary = await(Mono.from(result.consume()));
 
         assertEquals(new Query(query, params), summary.query());
         assertEquals(2, summary.counters().nodesCreated());
@@ -396,13 +389,13 @@ class RxTransactionIT {
 
     @Test
     void shouldExposeResultSummaryForExplainQuery() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        String query = "EXPLAIN MATCH (n) RETURN n";
+        var tx = await(Mono.from(session.beginTransaction()));
+        var query = "EXPLAIN MATCH (n) RETURN n";
 
-        RxResult result = tx.run(query);
+        var result = tx.run(query);
         await(result.records()); // we run and stream
 
-        ResultSummary summary = await(Mono.from(result.consume()));
+        var summary = await(Mono.from(result.consume()));
 
         assertEquals(new Query(query), summary.query());
         assertEquals(0, summary.counters().nodesCreated());
@@ -423,16 +416,16 @@ class RxTransactionIT {
 
     @Test
     void shouldExposeResultSummaryForProfileQuery() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        String query = "PROFILE MERGE (n {name: $name}) " + "ON CREATE SET n.created = timestamp() "
+        var tx = await(Mono.from(session.beginTransaction()));
+        var query = "PROFILE MERGE (n {name: $name}) " + "ON CREATE SET n.created = timestamp() "
                 + "ON MATCH SET n.counter = coalesce(n.counter, 0) + 1";
 
-        Value params = parameters("name", "Bob");
+        var params = parameters("name", "Bob");
 
-        RxResult result = tx.run(query, params);
+        var result = tx.run(query, params);
         await(result.records()); // we run and stream
 
-        ResultSummary summary = await(Mono.from(result.consume()));
+        var summary = await(Mono.from(result.consume()));
 
         assertEquals(new Query(query, params), summary.query());
         assertEquals(1, summary.counters().nodesCreated());
@@ -445,7 +438,7 @@ class RxTransactionIT {
         assertNotNull(summary.profile());
         // asserting on profile is a bit fragile and can break when server side changes or with different
         // server versions; that is why do fuzzy assertions in this test based on string content
-        String profileAsString = summary.profile().toString().toLowerCase();
+        var profileAsString = summary.profile().toString().toLowerCase();
         assertThat(profileAsString, containsString("hits"));
         assertEquals(0, summary.notifications().size());
         assertThat(summary, containsResultAvailableAfterAndResultConsumedAfter());
@@ -455,10 +448,10 @@ class RxTransactionIT {
 
     @Test
     void shouldCancelRecordStream() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("UNWIND ['a', 'b', 'c'] AS x RETURN x");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("UNWIND ['a', 'b', 'c'] AS x RETURN x");
 
-        Flux<String> abc = Flux.from(result.records()).limitRate(1).take(1).map(record -> record.get(0)
+        var abc = Flux.from(result.records()).limitRate(1).take(1).map(record -> record.get(0)
                 .asString());
         StepVerifier.create(abc).expectNext("a").verifyComplete();
 
@@ -477,9 +470,9 @@ class RxTransactionIT {
 
     @Test
     void shouldFailForEachWhenActionFails() {
-        RuntimeException e = new RuntimeException();
+        var e = new RuntimeException();
 
-        Flux<Record> records = Flux.usingWhen(
+        var records = Flux.usingWhen(
                 session.beginTransaction(),
                 tx -> Flux.from(tx.run("RETURN 'Hi!'").records()).doOnNext(record -> {
                     throw e;
@@ -505,19 +498,18 @@ class RxTransactionIT {
 
     @Test
     void shouldConvertToTransformedListWithEmptyCursor() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("CREATE ()");
-        List<Map<String, Object>> maps =
-                await(Flux.from(result.records()).map(record -> record.get(0).asMap()));
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("CREATE ()");
+        var maps = await(Flux.from(result.records()).map(record -> record.get(0).asMap()));
         assertEquals(0, maps.size());
         assertCanRollback(tx);
     }
 
     @Test
     void shouldConvertToTransformedListWithNonEmptyCursor() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("UNWIND ['a', 'b', 'c'] AS x RETURN x");
-        List<String> strings =
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("UNWIND ['a', 'b', 'c'] AS x RETURN x");
+        var strings =
                 await(Flux.from(result.records()).map(record -> record.get(0).asString() + "!"));
 
         assertEquals(Arrays.asList("a!", "b!", "c!"), strings);
@@ -526,9 +518,9 @@ class RxTransactionIT {
 
     @Test
     void shouldFailWhenListTransformationFunctionFails() {
-        RuntimeException e = new RuntimeException();
+        var e = new RuntimeException();
 
-        Flux<Object> records = Flux.usingWhen(
+        var records = Flux.usingWhen(
                 session.beginTransaction(),
                 tx -> Flux.from(tx.run("RETURN 'Hi!'").records()).map(record -> {
                     throw e;
@@ -546,8 +538,8 @@ class RxTransactionIT {
 
     @Test
     void shouldFailToCommitWhenServerIsRestarted() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("RETURN 1");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("RETURN 1");
 
         assertThrows(ServiceUnavailableException.class, () -> {
             await(Flux.from(result.records()).doOnSubscribe(subscription -> {
@@ -561,10 +553,10 @@ class RxTransactionIT {
 
     @Test
     void shouldFailSingleWithEmptyCursor() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("MATCH (n:NoSuchLabel) RETURN n");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("MATCH (n:NoSuchLabel) RETURN n");
 
-        NoSuchElementException e = assertThrows(
+        var e = assertThrows(
                 NoSuchElementException.class,
                 () -> await(Flux.from(result.records()).single()));
         assertThat(e.getMessage(), containsString("Source was empty"));
@@ -573,10 +565,10 @@ class RxTransactionIT {
 
     @Test
     void shouldFailSingleWithMultiRecordCursor() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("UNWIND ['a', 'b'] AS x RETURN x");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("UNWIND ['a', 'b'] AS x RETURN x");
 
-        IndexOutOfBoundsException e = assertThrows(
+        var e = assertThrows(
                 IndexOutOfBoundsException.class,
                 () -> await(Flux.from(result.records()).single()));
         assertThat(e.getMessage(), startsWith("Source emitted more than one item"));
@@ -585,20 +577,20 @@ class RxTransactionIT {
 
     @Test
     void shouldReturnSingleWithSingleRecordCursor() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("RETURN 'Hello!'");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("RETURN 'Hello!'");
 
-        Record record = await(Flux.from(result.records()).single());
+        var record = await(Flux.from(result.records()).single());
         assertEquals("Hello!", record.get(0).asString());
         assertCanRollback(tx);
     }
 
     @Test
     void shouldPropagateFailureFromFirstRecordInSingleAsync() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("UNWIND [0] AS x RETURN 10 / x");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("UNWIND [0] AS x RETURN 10 / x");
 
-        ClientException e = assertThrows(
+        var e = assertThrows(
                 ClientException.class, () -> await(Flux.from(result.records()).single()));
         assertThat(e.getMessage(), containsString("/ by zero"));
         assertCanRollback(tx);
@@ -606,10 +598,10 @@ class RxTransactionIT {
 
     @Test
     void shouldPropagateFailureFromSecondRecordInSingleAsync() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("UNWIND [1, 0] AS x RETURN 10 / x");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("UNWIND [1, 0] AS x RETURN 10 / x");
 
-        ClientException e = assertThrows(
+        var e = assertThrows(
                 ClientException.class, () -> await(Flux.from(result.records()).single()));
         assertThat(e.getMessage(), containsString("/ by zero"));
         assertCanRollback(tx);
@@ -628,13 +620,13 @@ class RxTransactionIT {
     @ParameterizedTest
     @MethodSource("commit")
     void shouldFailToRunQueryAfterCommit(boolean commit) {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("CREATE (:MyLabel)");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("CREATE (:MyLabel)");
         await(result.records());
 
         assertCanCommitOrRollback(commit, tx);
 
-        Record record =
+        var record =
                 await(Flux.from(session.run("MATCH (n:MyLabel) RETURN count(n)").records())
                         .single());
         if (commit) {
@@ -643,7 +635,7 @@ class RxTransactionIT {
             assertEquals(0, record.get(0).asInt());
         }
 
-        ClientException e = assertThrows(
+        var e = assertThrows(
                 ClientException.class,
                 () -> await(tx.run("CREATE (:MyOtherLabel)").records()));
         assertThat(e.getMessage(), containsString("Cannot run more queries in this transaction, it has been "));
@@ -651,10 +643,10 @@ class RxTransactionIT {
 
     @Test
     void shouldFailToRunQueryWhenTerminated() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
         assertFailToRunWrongQuery(tx);
 
-        ClientException e = assertThrows(
+        var e = assertThrows(
                 ClientException.class,
                 () -> await(tx.run("CREATE (:MyOtherLabel)").records()));
         assertThat(e.getMessage(), startsWith("Cannot run more queries in this transaction"));
@@ -664,7 +656,7 @@ class RxTransactionIT {
 
     @Test
     void shouldUpdateSessionBookmarkAfterCommit() {
-        Bookmark bookmarkBefore = session.lastBookmark();
+        var bookmarkBefore = session.lastBookmark();
 
         await(Flux.usingWhen(
                 session.beginTransaction(),
@@ -673,7 +665,7 @@ class RxTransactionIT {
                 (tx, error) -> tx.rollback(),
                 null));
 
-        Bookmark bookmarkAfter = session.lastBookmark();
+        var bookmarkAfter = session.lastBookmark();
 
         assertNotNull(bookmarkAfter);
         assertNotEquals(bookmarkBefore, bookmarkAfter);
@@ -681,32 +673,32 @@ class RxTransactionIT {
 
     @Test
     void shouldFailToCommitWhenQueriesFailAndErrorNotConsumed() throws InterruptedException {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
 
-        RxResult result1 = tx.run("CREATE (:TestNode)");
-        RxResult result2 = tx.run("CREATE (:TestNode)");
-        RxResult result3 = tx.run("RETURN 10 / 0");
-        RxResult result4 = tx.run("CREATE (:TestNode)");
+        var result1 = tx.run("CREATE (:TestNode)");
+        var result2 = tx.run("CREATE (:TestNode)");
+        var result3 = tx.run("RETURN 10 / 0");
+        var result4 = tx.run("CREATE (:TestNode)");
 
-        Flux<Record> records = Flux.from(result1.records())
+        var records = Flux.from(result1.records())
                 .concatWith(result2.records())
                 .concatWith(result3.records())
                 .concatWith(result4.records());
-        ClientException e = assertThrows(ClientException.class, () -> await(records));
+        var e = assertThrows(ClientException.class, () -> await(records));
         assertEquals("/ by zero", e.getMessage());
         assertCanRollback(tx);
     }
 
     @Test
     void shouldNotRunUntilPublisherIsConnected() throws Throwable {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
 
-        RxResult result1 = tx.run("RETURN 1");
-        RxResult result2 = tx.run("RETURN 2");
-        RxResult result3 = tx.run("RETURN 3");
-        RxResult result4 = tx.run("RETURN 4");
+        var result1 = tx.run("RETURN 1");
+        var result2 = tx.run("RETURN 2");
+        var result3 = tx.run("RETURN 3");
+        var result4 = tx.run("RETURN 4");
 
-        Flux<Record> records = Flux.from(result4.records())
+        var records = Flux.from(result4.records())
                 .concatWith(result3.records())
                 .concatWith(result2.records())
                 .concatWith(result1.records());
@@ -722,7 +714,7 @@ class RxTransactionIT {
     @ParameterizedTest
     @MethodSource("commit")
     void shouldNotPropagateRunFailureIfNotExecuted(boolean commit) {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
 
         tx.run("RETURN ILLEGAL"); // no actually executed
 
@@ -731,33 +723,33 @@ class RxTransactionIT {
 
     @Test
     void shouldPropagateRunFailureOnRecord() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("RETURN 42 / 0");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("RETURN 42 / 0");
         await(result.keys()); // always returns keys
 
-        ClientException e = assertThrows(ClientException.class, () -> await(result.records()));
+        var e = assertThrows(ClientException.class, () -> await(result.records()));
         assertThat(e.getMessage(), containsString("/ by zero"));
         assertCanRollback(tx);
     }
 
     @Test
     void shouldFailToCommitWhenPullAllFailureIsConsumed() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))");
 
-        ClientException e1 = assertThrows(ClientException.class, () -> await(result.records()));
+        var e1 = assertThrows(ClientException.class, () -> await(result.records()));
         assertThat(e1.code(), containsString("TypeError"));
 
-        ClientException e2 = assertThrows(ClientException.class, () -> await(tx.commit()));
+        var e2 = assertThrows(ClientException.class, () -> await(tx.commit()));
         assertThat(e2.getMessage(), startsWith("Transaction can't be committed"));
     }
 
     @Test
     void shouldBeAbleToRollbackWhenPullAllFailureIsConsumed() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
-        RxResult result = tx.run("FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))");
+        var tx = await(Mono.from(session.beginTransaction()));
+        var result = tx.run("FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))");
 
-        ClientException e1 = assertThrows(ClientException.class, () -> await(result.records()));
+        var e1 = assertThrows(ClientException.class, () -> await(result.records()));
         assertThat(e1.code(), containsString("TypeError"));
 
         assertCanRollback(tx);
@@ -765,10 +757,10 @@ class RxTransactionIT {
 
     @Test
     void shouldNotPropagateRunFailureFromSummary() {
-        RxTransaction tx = await(Mono.from(session.beginTransaction()));
+        var tx = await(Mono.from(session.beginTransaction()));
 
-        RxResult result = tx.run("RETURN Wrong");
-        ClientException e = assertThrows(ClientException.class, () -> await(result.records()));
+        var result = tx.run("RETURN Wrong");
+        var e = assertThrows(ClientException.class, () -> await(result.records()));
         assertThat(e.code(), containsString("SyntaxError"));
 
         await(result.consume());
@@ -776,17 +768,17 @@ class RxTransactionIT {
     }
 
     private int countNodes(Object id) {
-        RxResult result = session.run("MATCH (n:Node {id: $id}) RETURN count(n)", parameters("id", id));
+        var result = session.run("MATCH (n:Node {id: $id}) RETURN count(n)", parameters("id", id));
         return await(
                 Flux.from(result.records()).single().map(record -> record.get(0).asInt()));
     }
 
     private void testForEach(String query, int expectedSeenRecords) {
-        Flux<ResultSummary> summary = Flux.usingWhen(
+        var summary = Flux.usingWhen(
                 session.beginTransaction(),
                 tx -> {
-                    RxResult result = tx.run(query);
-                    AtomicInteger recordsSeen = new AtomicInteger();
+                    var result = tx.run(query);
+                    var recordsSeen = new AtomicInteger();
                     return Flux.from(result.records())
                             .doOnNext(record -> recordsSeen.incrementAndGet())
                             .then(Mono.from(result.consume()))
@@ -807,7 +799,7 @@ class RxTransactionIT {
     private <T> void testList(String query, List<T> expectedList) {
         List<Object> actualList = new ArrayList<>();
 
-        Flux<List<Record>> records = Flux.usingWhen(
+        var records = Flux.usingWhen(
                 session.beginTransaction(),
                 tx -> Flux.from(tx.run(query).records()).collectList(),
                 RxTransaction::commit,
@@ -816,7 +808,7 @@ class RxTransactionIT {
 
         StepVerifier.create(records.single())
                 .consumeNextWith(allRecords -> {
-                    for (Record record : allRecords) {
+                    for (var record : allRecords) {
                         actualList.add(record.get(0).asObject());
                     }
                 })
@@ -826,7 +818,7 @@ class RxTransactionIT {
     }
 
     private void testConsume(String query) {
-        Flux<ResultSummary> summary = Flux.usingWhen(
+        var summary = Flux.usingWhen(
                 session.beginTransaction(),
                 tx -> tx.run(query).consume(),
                 RxTransaction::commit,
@@ -869,26 +861,26 @@ class RxTransactionIT {
     }
 
     private static void assertCanRunCreate(RxTransaction tx) {
-        RxResult result = tx.run("CREATE (n:Node {id: 4242}) RETURN n");
+        var result = tx.run("CREATE (n:Node {id: 4242}) RETURN n");
 
-        Record record = await(Flux.from(result.records()).single());
+        var record = await(Flux.from(result.records()).single());
 
-        Node node = record.get(0).asNode();
+        var node = record.get(0).asNode();
         assertEquals("Node", single(node.labels()));
         assertEquals(4242, node.get("id").asInt());
     }
 
     private static void assertFailToRunWrongQuery(RxTransaction tx) {
-        RxResult result = tx.run("RETURN");
-        Exception e = assertThrows(Exception.class, () -> await(result.records()));
+        var result = tx.run("RETURN");
+        var e = assertThrows(Exception.class, () -> await(result.records()));
         assertThat(e, is(syntaxError()));
     }
 
     private void assertCanRunReturnOne(RxTransaction tx) {
-        RxResult result = tx.run("RETURN 42");
-        List<Record> records = await(result.records());
+        var result = tx.run("RETURN 42");
+        var records = await(result.records());
         assertThat(records.size(), equalTo(1));
-        Record record = records.get(0);
+        var record = records.get(0);
         assertEquals(42, record.get(0).asInt());
     }
 }

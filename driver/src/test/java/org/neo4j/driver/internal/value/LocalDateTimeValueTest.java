@@ -32,29 +32,29 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 class LocalDateTimeValueTest {
     @Test
     void shouldHaveCorrectType() {
-        LocalDateTime dateTime = LocalDateTime.of(1991, AUGUST, 24, 12, 0, 0);
-        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue(dateTime);
+        var dateTime = LocalDateTime.of(1991, AUGUST, 24, 12, 0, 0);
+        var dateTimeValue = new LocalDateTimeValue(dateTime);
         assertEquals(InternalTypeSystem.TYPE_SYSTEM.LOCAL_DATE_TIME(), dateTimeValue.type());
     }
 
     @Test
     void shouldSupportAsObject() {
-        LocalDateTime dateTime = LocalDateTime.of(2015, FEBRUARY, 2, 23, 59, 59, 999_999);
-        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue(dateTime);
+        var dateTime = LocalDateTime.of(2015, FEBRUARY, 2, 23, 59, 59, 999_999);
+        var dateTimeValue = new LocalDateTimeValue(dateTime);
         assertEquals(dateTime, dateTimeValue.asObject());
     }
 
     @Test
     void shouldSupportAsLocalDateTime() {
-        LocalDateTime dateTime = LocalDateTime.of(1822, JANUARY, 24, 9, 23, 57, 123);
-        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue(dateTime);
+        var dateTime = LocalDateTime.of(1822, JANUARY, 24, 9, 23, 57, 123);
+        var dateTimeValue = new LocalDateTimeValue(dateTime);
         assertEquals(dateTime, dateTimeValue.asLocalDateTime());
     }
 
     @Test
     void shouldNotSupportAsLong() {
-        LocalDateTime dateTime = LocalDateTime.now();
-        LocalDateTimeValue dateTimeValue = new LocalDateTimeValue(dateTime);
+        var dateTime = LocalDateTime.now();
+        var dateTimeValue = new LocalDateTimeValue(dateTime);
 
         assertThrows(Uncoercible.class, dateTimeValue::asLong);
     }

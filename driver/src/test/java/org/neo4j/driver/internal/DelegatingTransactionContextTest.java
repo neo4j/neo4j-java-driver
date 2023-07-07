@@ -46,13 +46,13 @@ public class DelegatingTransactionContextTest {
     @Test
     void shouldDelegateRunWithValueParams() {
         // GIVEN
-        String query = "something";
-        Value params = mock(Value.class);
-        Result expected = mock(Result.class);
+        var query = "something";
+        var params = mock(Value.class);
+        var expected = mock(Result.class);
         given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        Result actual = context.run(query, params);
+        var actual = context.run(query, params);
 
         // THEN
         assertEquals(expected, actual);
@@ -62,13 +62,13 @@ public class DelegatingTransactionContextTest {
     @Test
     void shouldDelegateRunWithMapParams() {
         // GIVEN
-        String query = "something";
+        var query = "something";
         Map<String, Object> params = Collections.emptyMap();
-        Result expected = mock(Result.class);
+        var expected = mock(Result.class);
         given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        Result actual = context.run(query, params);
+        var actual = context.run(query, params);
 
         // THEN
         assertEquals(expected, actual);
@@ -78,13 +78,13 @@ public class DelegatingTransactionContextTest {
     @Test
     void shouldDelegateRunWithRecordParams() {
         // GIVEN
-        String query = "something";
-        Record params = mock(Record.class);
-        Result expected = mock(Result.class);
+        var query = "something";
+        var params = mock(Record.class);
+        var expected = mock(Result.class);
         given(transaction.run(query, params)).willReturn(expected);
 
         // WHEN
-        Result actual = context.run(query, params);
+        var actual = context.run(query, params);
 
         // THEN
         assertEquals(expected, actual);
@@ -94,12 +94,12 @@ public class DelegatingTransactionContextTest {
     @Test
     void shouldDelegateRun() {
         // GIVEN
-        String query = "something";
-        Result expected = mock(Result.class);
+        var query = "something";
+        var expected = mock(Result.class);
         given(transaction.run(query)).willReturn(expected);
 
         // WHEN
-        Result actual = context.run(query);
+        var actual = context.run(query);
 
         // THEN
         assertEquals(expected, actual);
@@ -109,12 +109,12 @@ public class DelegatingTransactionContextTest {
     @Test
     void shouldDelegateRunWithQueryType() {
         // GIVEN
-        Query query = mock(Query.class);
-        Result expected = mock(Result.class);
+        var query = mock(Query.class);
+        var expected = mock(Result.class);
         given(transaction.run(query)).willReturn(expected);
 
         // WHEN
-        Result actual = context.run(query);
+        var actual = context.run(query);
 
         // THEN
         assertEquals(expected, actual);

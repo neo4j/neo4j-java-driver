@@ -44,7 +44,7 @@ class CommitTxResponseHandlerTest {
 
     @Test
     void shouldHandleSuccessWithBookmark() {
-        String bookmarkString = "neo4j:bookmark:v1:tx12345";
+        var bookmarkString = "neo4j:bookmark:v1:tx12345";
 
         handler.onSuccess(singletonMap("bookmark", value(bookmarkString)));
 
@@ -53,11 +53,11 @@ class CommitTxResponseHandlerTest {
 
     @Test
     void shouldHandleFailure() {
-        RuntimeException error = new RuntimeException("Hello");
+        var error = new RuntimeException("Hello");
 
         handler.onFailure(error);
 
-        RuntimeException receivedError = assertThrows(RuntimeException.class, () -> await(future));
+        var receivedError = assertThrows(RuntimeException.class, () -> await(future));
         assertEquals(error, receivedError);
     }
 

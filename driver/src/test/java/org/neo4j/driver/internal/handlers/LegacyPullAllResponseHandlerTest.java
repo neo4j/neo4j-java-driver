@@ -39,18 +39,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.summary.ResultSummary;
 
 class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<LegacyPullAllResponseHandler> {
     @Test
     void shouldDisableAutoReadWhenTooManyRecordsArrive() {
-        Connection connection = connectionMock();
-        LegacyPullAllResponseHandler handler = newHandler(asList("key1", "key2"), connection);
+        var connection = connectionMock();
+        var handler = newHandler(asList("key1", "key2"), connection);
 
-        for (int i = 0; i < LegacyPullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 1; i++) {
+        for (var i = 0; i < LegacyPullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 1; i++) {
             handler.onRecord(values(100, 200));
         }
 
@@ -59,9 +57,9 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
 
     @Test
     void shouldEnableAutoReadWhenRecordsRetrievedFromBuffer() {
-        Connection connection = connectionMock();
-        List<String> keys = asList("key1", "key2");
-        LegacyPullAllResponseHandler handler = newHandler(keys, connection);
+        var connection = connectionMock();
+        var keys = asList("key1", "key2");
+        var handler = newHandler(keys, connection);
 
         int i;
         for (i = 0; i < LegacyPullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 1; i++) {
@@ -72,7 +70,7 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         verify(connection).disableAutoRead();
 
         while (i-- > LegacyPullAllResponseHandler.RECORD_BUFFER_LOW_WATERMARK - 1) {
-            Record record = await(handler.nextAsync());
+            var record = await(handler.nextAsync());
             assertNotNull(record);
             assertEquals(keys, record.keys());
             assertEquals(100, record.get("key1").asInt());
@@ -83,15 +81,15 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
 
     @Test
     void shouldNotDisableAutoReadWhenSummaryRequested() {
-        Connection connection = connectionMock();
-        List<String> keys = asList("key1", "key2");
-        LegacyPullAllResponseHandler handler = newHandler(keys, connection);
+        var connection = connectionMock();
+        var keys = asList("key1", "key2");
+        var handler = newHandler(keys, connection);
 
-        CompletableFuture<ResultSummary> summaryFuture = handler.consumeAsync().toCompletableFuture();
+        var summaryFuture = handler.consumeAsync().toCompletableFuture();
         assertFalse(summaryFuture.isDone());
 
-        int recordCount = LegacyPullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 10;
-        for (int i = 0; i < recordCount; i++) {
+        var recordCount = LegacyPullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 10;
+        for (var i = 0; i < recordCount; i++) {
             handler.onRecord(values("a", "b"));
         }
 
@@ -100,36 +98,35 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         handler.onSuccess(emptyMap());
         assertTrue(summaryFuture.isDone());
 
-        ResultSummary summary = await(summaryFuture);
+        var summary = await(summaryFuture);
         assertNotNull(summary);
         assertNull(await(handler.nextAsync()));
     }
 
     @Test
     void shouldNotDisableAutoReadWhenFailureRequested() {
-        Connection connection = connectionMock();
-        List<String> keys = asList("key1", "key2");
-        LegacyPullAllResponseHandler handler = newHandler(keys, connection);
+        var connection = connectionMock();
+        var keys = asList("key1", "key2");
+        var handler = newHandler(keys, connection);
 
-        CompletableFuture<Throwable> failureFuture =
-                handler.pullAllFailureAsync().toCompletableFuture();
+        var failureFuture = handler.pullAllFailureAsync().toCompletableFuture();
         assertFalse(failureFuture.isDone());
 
-        int recordCount = LegacyPullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 5;
-        for (int i = 0; i < recordCount; i++) {
+        var recordCount = LegacyPullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 5;
+        for (var i = 0; i < recordCount; i++) {
             handler.onRecord(values(123, 456));
         }
 
         verify(connection, never()).disableAutoRead();
 
-        IllegalStateException error = new IllegalStateException("Wrong config");
+        var error = new IllegalStateException("Wrong config");
         handler.onFailure(error);
 
         assertTrue(failureFuture.isDone());
         assertEquals(error, await(failureFuture));
 
-        for (int i = 0; i < recordCount; i++) {
-            Record record = await(handler.nextAsync());
+        for (var i = 0; i < recordCount; i++) {
+            var record = await(handler.nextAsync());
             assertNotNull(record);
             assertEquals(keys, record.keys());
             assertEquals(123, record.get("key1").asInt());
@@ -141,8 +138,8 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
 
     @Test
     void shouldEnableAutoReadOnConnectionWhenFailureRequestedButNotAvailable() throws Exception {
-        Connection connection = connectionMock();
-        LegacyPullAllResponseHandler handler = newHandler(asList("key1", "key2"), connection);
+        var connection = connectionMock();
+        var handler = newHandler(asList("key1", "key2"), connection);
 
         handler.onRecord(values(1, 2));
         handler.onRecord(values(3, 4));
@@ -150,8 +147,7 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         verify(connection, never()).enableAutoRead();
         verify(connection, never()).disableAutoRead();
 
-        CompletableFuture<Throwable> failureFuture =
-                handler.pullAllFailureAsync().toCompletableFuture();
+        var failureFuture = handler.pullAllFailureAsync().toCompletableFuture();
         assertFalse(failureFuture.isDone());
 
         verify(connection).enableAutoRead();
@@ -160,7 +156,7 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         assertNotNull(await(handler.nextAsync()));
         assertNotNull(await(handler.nextAsync()));
 
-        RuntimeException error = new RuntimeException("Oh my!");
+        var error = new RuntimeException("Oh my!");
         handler.onFailure(error);
 
         assertTrue(failureFuture.isDone());
@@ -169,11 +165,11 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
 
     @Test
     void shouldNotDisableAutoReadWhenAutoReadManagementDisabled() {
-        Connection connection = connectionMock();
-        LegacyPullAllResponseHandler handler = newHandler(asList("key1", "key2"), connection);
+        var connection = connectionMock();
+        var handler = newHandler(asList("key1", "key2"), connection);
         handler.disableAutoReadManagement();
 
-        for (int i = 0; i < LegacyPullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 1; i++) {
+        for (var i = 0; i < LegacyPullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 1; i++) {
             handler.onRecord(values(100, 200));
         }
 
@@ -182,9 +178,9 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
 
     @Test
     void shouldReturnEmptyListInListAsyncAfterFailure() {
-        LegacyPullAllResponseHandler handler = newHandler();
+        var handler = newHandler();
 
-        RuntimeException error = new RuntimeException("Hi");
+        var error = new RuntimeException("Hi");
         handler.onFailure(error);
 
         // consume the error
@@ -195,7 +191,7 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
     @Test
     void shouldEnableAutoReadOnConnectionWhenSummaryRequestedButNotAvailable() throws Exception // TODO for auto run
             {
-        Connection connection = connectionMock();
+        var connection = connectionMock();
         PullAllResponseHandler handler = newHandler(asList("key1", "key2", "key3"), connection);
 
         handler.onRecord(values(1, 2, 3));
@@ -204,7 +200,7 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         verify(connection, never()).enableAutoRead();
         verify(connection, never()).disableAutoRead();
 
-        CompletableFuture<ResultSummary> summaryFuture = handler.consumeAsync().toCompletableFuture();
+        var summaryFuture = handler.consumeAsync().toCompletableFuture();
         assertFalse(summaryFuture.isDone());
 
         verify(connection).enableAutoRead();
@@ -219,7 +215,7 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
     }
 
     protected LegacyPullAllResponseHandler newHandler(Query query, List<String> queryKeys, Connection connection) {
-        RunResponseHandler runResponseHandler = new RunResponseHandler(
+        var runResponseHandler = new RunResponseHandler(
                 new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock(Connection.class), null);
         runResponseHandler.onSuccess(singletonMap("fields", value(queryKeys)));
         return new LegacyPullAllResponseHandler(

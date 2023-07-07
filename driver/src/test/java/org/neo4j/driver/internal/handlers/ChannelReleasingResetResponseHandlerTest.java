@@ -50,11 +50,11 @@ class ChannelReleasingResetResponseHandlerTest {
 
     @Test
     void shouldReleaseChannelOnSuccess() {
-        ExtendedChannelPool pool = newChannelPoolMock();
-        FakeClock clock = new FakeClock();
+        var pool = newChannelPoolMock();
+        var clock = new FakeClock();
         clock.progress(5);
-        CompletableFuture<Void> releaseFuture = new CompletableFuture<>();
-        ChannelReleasingResetResponseHandler handler = newHandler(pool, clock, releaseFuture);
+        var releaseFuture = new CompletableFuture<Void>();
+        var handler = newHandler(pool, clock, releaseFuture);
 
         handler.onSuccess(emptyMap());
 
@@ -66,11 +66,11 @@ class ChannelReleasingResetResponseHandlerTest {
 
     @Test
     void shouldCloseAndReleaseChannelOnFailure() {
-        ExtendedChannelPool pool = newChannelPoolMock();
-        FakeClock clock = new FakeClock();
+        var pool = newChannelPoolMock();
+        var clock = new FakeClock();
         clock.progress(100);
-        CompletableFuture<Void> releaseFuture = new CompletableFuture<>();
-        ChannelReleasingResetResponseHandler handler = newHandler(pool, clock, releaseFuture);
+        var releaseFuture = new CompletableFuture<Void>();
+        var handler = newHandler(pool, clock, releaseFuture);
 
         handler.onFailure(new RuntimeException());
 
@@ -90,7 +90,7 @@ class ChannelReleasingResetResponseHandlerTest {
     }
 
     private static ExtendedChannelPool newChannelPoolMock() {
-        ExtendedChannelPool pool = mock(ExtendedChannelPool.class);
+        var pool = mock(ExtendedChannelPool.class);
         when(pool.release(any())).thenReturn(completedWithNull());
         return pool;
     }

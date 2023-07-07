@@ -34,23 +34,19 @@ import static org.neo4j.driver.Values.value;
 
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.util.Pair;
 
 class ExtractTest {
     @Test
     void extractEmptyArrayShouldNotBeModifiable() {
-        List<Value> list = Extract.list(new Value[] {});
+        var list = Extract.list(new Value[] {});
 
         assertThat(list, empty());
         assertThrows(UnsupportedOperationException.class, () -> list.add(null));
@@ -58,7 +54,7 @@ class ExtractTest {
 
     @Test
     void extractSingletonShouldNotBeModifiable() {
-        List<Value> list = Extract.list(new Value[] {value(42)});
+        var list = Extract.list(new Value[] {value(42)});
 
         assertThat(list, equalTo(singletonList(value(42))));
         assertThrows(UnsupportedOperationException.class, () -> list.add(null));
@@ -66,7 +62,7 @@ class ExtractTest {
 
     @Test
     void extractMultipleShouldNotBeModifiable() {
-        List<Value> list = Extract.list(new Value[] {value(42), value(43)});
+        var list = Extract.list(new Value[] {value(42), value(43)});
 
         assertThat(list, equalTo(asList(value(42), value(43))));
         assertThrows(UnsupportedOperationException.class, () -> list.add(null));
@@ -74,7 +70,7 @@ class ExtractTest {
 
     @Test
     void testMapOverList() {
-        List<Integer> mapped = Extract.list(new Value[] {value(42), value(43)}, Value::asInt);
+        var mapped = Extract.list(new Value[] {value(42), value(43)}, Value::asInt);
 
         assertThat(mapped, equalTo(Arrays.asList(42, 43)));
     }
@@ -87,10 +83,10 @@ class ExtractTest {
         map.put("k2", value(42));
 
         // WHEN
-        Map<String, Integer> mappedMap = Extract.map(map, Value::asInt);
+        var mappedMap = Extract.map(map, Value::asInt);
 
         // THEN
-        Collection<Integer> values = mappedMap.values();
+        var values = mappedMap.values();
         assertThat(values, containsInAnyOrder(43, 42));
     }
 
@@ -102,10 +98,10 @@ class ExtractTest {
         map.put("k1", value(42));
 
         // WHEN
-        Map<String, Integer> mappedMap = Extract.map(map, Value::asInt);
+        var mappedMap = Extract.map(map, Value::asInt);
 
         // THEN
-        Collection<Integer> values = mappedMap.values();
+        var values = mappedMap.values();
         assertThat(values, contains(43, 42));
     }
 
@@ -115,13 +111,13 @@ class ExtractTest {
         Map<String, Value> props = new HashMap<>();
         props.put("k1", value(43));
         props.put("k2", value(42));
-        InternalNode node = new InternalNode(42L, Collections.singletonList("L"), props);
+        var node = new InternalNode(42L, Collections.singletonList("L"), props);
 
         // WHEN
-        Iterable<Pair<String, Integer>> properties = Extract.properties(node, Value::asInt);
+        var properties = Extract.properties(node, Value::asInt);
 
         // THEN
-        Iterator<Pair<String, Integer>> iterator = properties.iterator();
+        var iterator = properties.iterator();
         assertThat(iterator.next(), equalTo(InternalPair.of("k1", 43)));
         assertThat(iterator.next(), equalTo(InternalPair.of("k2", 42)));
         assertFalse(iterator.hasNext());
@@ -130,9 +126,9 @@ class ExtractTest {
     @Test
     void testFields() {
         // GIVEN
-        InternalRecord record = new InternalRecord(singletonList("k1"), new Value[] {value(42)});
+        var record = new InternalRecord(singletonList("k1"), new Value[] {value(42)});
         // WHEN
-        List<Pair<String, Integer>> fields = Extract.fields(record, Value::asInt);
+        var fields = Extract.fields(record, Value::asInt);
 
         // THEN
         assertThat(fields, equalTo(Collections.singletonList(InternalPair.of("k1", 42))));
@@ -152,7 +148,7 @@ class ExtractTest {
         map.put("key3", LocalDate.now());
         map.put("key4", new byte[] {1, 2, 3});
 
-        Map<String, Value> mapOfValues = Extract.mapOfValues(map);
+        var mapOfValues = Extract.mapOfValues(map);
 
         assertEquals(4, map.size());
         assertEquals(value("value1"), mapOfValues.get("key1"));

@@ -30,18 +30,13 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelPipeline;
-import io.netty.util.concurrent.Future;
 import java.io.IOException;
 import java.time.Clock;
-import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionConfig;
@@ -93,7 +88,7 @@ class UnmanagedTransactionIT {
 
     @Test
     void shouldDoNothingWhenCommittedSecondTime() {
-        UnmanagedTransaction tx = beginTransaction();
+        var tx = beginTransaction();
 
         assertNull(await(tx.commitAsync()));
 
@@ -103,11 +98,11 @@ class UnmanagedTransactionIT {
 
     @Test
     void shouldFailToCommitAfterRollback() {
-        UnmanagedTransaction tx = beginTransaction();
+        var tx = beginTransaction();
 
         assertNull(await(tx.rollbackAsync()));
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertEquals("Can't commit, transaction has been rolled back", e.getMessage());
         assertFalse(tx.isOpen());
     }
@@ -124,7 +119,7 @@ class UnmanagedTransactionIT {
 
     @Test
     void shouldDoNothingWhenRolledBackSecondTime() {
-        UnmanagedTransaction tx = beginTransaction();
+        var tx = beginTransaction();
 
         assertNull(await(tx.rollbackAsync()));
 
@@ -134,18 +129,18 @@ class UnmanagedTransactionIT {
 
     @Test
     void shouldFailToRollbackAfterCommit() {
-        UnmanagedTransaction tx = beginTransaction();
+        var tx = beginTransaction();
 
         assertNull(await(tx.commitAsync()));
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
         assertEquals("Can't rollback, transaction has been committed", e.getMessage());
         assertFalse(tx.isOpen());
     }
 
     @Test
     void shouldRollbackAfterTermination() {
-        UnmanagedTransaction tx = beginTransaction();
+        var tx = beginTransaction();
 
         tx.markTerminated(null);
 
@@ -155,7 +150,7 @@ class UnmanagedTransactionIT {
 
     @Test
     void shouldFailToRunQueryWhenTerminated() {
-        UnmanagedTransaction tx = beginTransaction();
+        var tx = beginTransaction();
         txRun(tx, "CREATE (:MyLabel)");
         var terminationException = mock(Neo4jException.class);
         tx.markTerminated(terminationException);
@@ -167,7 +162,7 @@ class UnmanagedTransactionIT {
 
     @Test
     void shouldBePossibleToRunMoreTransactionsAfterOneIsTerminated() {
-        UnmanagedTransaction tx1 = beginTransaction();
+        var tx1 = beginTransaction();
         tx1.markTerminated(null);
 
         // commit should fail, make session forget about this transaction and release the connection to the pool
@@ -194,38 +189,37 @@ class UnmanagedTransactionIT {
     }
 
     private int countNodes(Object id) {
-        Query query = new Query("MATCH (n:Node {id: $id}) RETURN count(n)", parameters("id", id));
-        ResultCursor cursor = sessionRun(session, query);
+        var query = new Query("MATCH (n:Node {id: $id}) RETURN count(n)", parameters("id", id));
+        var cursor = sessionRun(session, query);
         return await(cursor.singleAsync()).get(0).asInt();
     }
 
     private void testCommitAndRollbackFailurePropagation(boolean commit) {
-        ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory(1, Clock.systemUTC());
-        Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
+        var driverFactory = new ChannelTrackingDriverFactory(1, Clock.systemUTC());
+        var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
 
-        try (Driver driver = driverFactory.newInstance(
+        try (var driver = driverFactory.newInstance(
                 neo4j.uri(), neo4j.authTokenManager(), config, SecurityPlanImpl.insecure(), null, null)) {
-            NetworkSession session = ((InternalDriver) driver).newSession(SessionConfig.defaultConfig(), null);
+            var session = ((InternalDriver) driver).newSession(SessionConfig.defaultConfig(), null);
             {
-                UnmanagedTransaction tx = beginTransaction(session);
+                var tx = beginTransaction(session);
 
                 // run query but do not consume the result
                 txRun(tx, "UNWIND range(0, 10000) AS x RETURN x + 1");
 
-                IOException ioError = new IOException("Connection reset by peer");
-                for (Channel channel : driverFactory.channels()) {
+                var ioError = new IOException("Connection reset by peer");
+                for (var channel : driverFactory.channels()) {
                     // make channel experience a fatal network error
                     // run in the event loop thread and wait for the whole operation to complete
-                    Future<ChannelPipeline> future =
+                    var future =
                             channel.eventLoop().submit(() -> channel.pipeline().fireExceptionCaught(ioError));
                     await(future);
                 }
 
-                CompletionStage<Void> commitOrRollback = commit ? tx.commitAsync() : tx.rollbackAsync();
+                var commitOrRollback = commit ? tx.commitAsync() : tx.rollbackAsync();
 
                 // commit/rollback should fail and propagate the network error
-                ServiceUnavailableException e =
-                        assertThrows(ServiceUnavailableException.class, () -> await(commitOrRollback));
+                var e = assertThrows(ServiceUnavailableException.class, () -> await(commitOrRollback));
                 assertEquals(ioError, e.getCause());
             }
         }

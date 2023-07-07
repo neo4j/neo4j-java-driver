@@ -38,13 +38,9 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -52,7 +48,6 @@ import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.summary.QueryType;
-import org.neo4j.driver.summary.ResultSummary;
 
 public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHandler> {
     @Test
@@ -60,7 +55,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         PullAllResponseHandler handler = newHandler();
         handler.onSuccess(emptyMap());
 
-        Throwable failure = await(handler.pullAllFailureAsync());
+        var failure = await(handler.pullAllFailureAsync());
 
         assertNull(failure);
     }
@@ -69,8 +64,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldReturnNoFailureWhenSucceededAfterFailureRequested() {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<Throwable> failureFuture =
-                handler.pullAllFailureAsync().toCompletableFuture();
+        var failureFuture = handler.pullAllFailureAsync().toCompletableFuture();
         assertFalse(failureFuture.isDone());
 
         handler.onSuccess(emptyMap());
@@ -83,10 +77,10 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldReturnFailureWhenAlreadyFailed() {
         PullAllResponseHandler handler = newHandler();
 
-        RuntimeException failure = new RuntimeException("Ops");
+        var failure = new RuntimeException("Ops");
         handler.onFailure(failure);
 
-        Throwable receivedFailure = await(handler.pullAllFailureAsync());
+        var receivedFailure = await(handler.pullAllFailureAsync());
         assertEquals(failure, receivedFailure);
     }
 
@@ -94,11 +88,10 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldReturnFailureWhenFailedAfterFailureRequested() {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<Throwable> failureFuture =
-                handler.pullAllFailureAsync().toCompletableFuture();
+        var failureFuture = handler.pullAllFailureAsync().toCompletableFuture();
         assertFalse(failureFuture.isDone());
 
-        IOException failure = new IOException("Broken pipe");
+        var failure = new IOException("Broken pipe");
         handler.onFailure(failure);
 
         assertTrue(failureFuture.isDone());
@@ -109,15 +102,13 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldReturnFailureWhenRequestedMultipleTimes() {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<Throwable> failureFuture1 =
-                handler.pullAllFailureAsync().toCompletableFuture();
-        CompletableFuture<Throwable> failureFuture2 =
-                handler.pullAllFailureAsync().toCompletableFuture();
+        var failureFuture1 = handler.pullAllFailureAsync().toCompletableFuture();
+        var failureFuture2 = handler.pullAllFailureAsync().toCompletableFuture();
 
         assertFalse(failureFuture1.isDone());
         assertFalse(failureFuture2.isDone());
 
-        RuntimeException failure = new RuntimeException("Unable to contact database");
+        var failure = new RuntimeException("Unable to contact database");
         handler.onFailure(failure);
 
         assertTrue(failureFuture1.isDone());
@@ -131,7 +122,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldReturnFailureOnlyOnceWhenFailedBeforeFailureRequested() {
         PullAllResponseHandler handler = newHandler();
 
-        ServiceUnavailableException failure = new ServiceUnavailableException("Connection terminated");
+        var failure = new ServiceUnavailableException("Connection terminated");
         handler.onFailure(failure);
 
         assertEquals(failure, await(handler.pullAllFailureAsync()));
@@ -142,9 +133,9 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldReturnFailureOnlyOnceWhenFailedAfterFailureRequested() {
         PullAllResponseHandler handler = newHandler();
 
-        CompletionStage<Throwable> failureFuture = handler.pullAllFailureAsync();
+        var failureFuture = handler.pullAllFailureAsync();
 
-        SessionExpiredException failure = new SessionExpiredException("Network unreachable");
+        var failure = new SessionExpiredException("Network unreachable");
         handler.onFailure(failure);
         assertEquals(failure, await(failureFuture));
 
@@ -153,26 +144,26 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
     @Test
     void shouldReturnSummaryWhenAlreadyFailedAndFailureConsumed() {
-        Query query = new Query("CREATE ()");
+        var query = new Query("CREATE ()");
         PullAllResponseHandler handler = newHandler(query);
 
-        ServiceUnavailableException failure = new ServiceUnavailableException("Neo4j unreachable");
+        var failure = new ServiceUnavailableException("Neo4j unreachable");
         handler.onFailure(failure);
 
         assertEquals(failure, await(handler.pullAllFailureAsync()));
 
-        ResultSummary summary = await(handler.consumeAsync());
+        var summary = await(handler.consumeAsync());
         assertNotNull(summary);
         assertEquals(query, summary.query());
     }
 
     @Test
     void shouldReturnSummaryWhenAlreadySucceeded() {
-        Query query = new Query("CREATE () RETURN 42");
+        var query = new Query("CREATE () RETURN 42");
         PullAllResponseHandler handler = newHandler(query);
         handler.onSuccess(singletonMap("type", value("rw")));
 
-        ResultSummary summary = await(handler.consumeAsync());
+        var summary = await(handler.consumeAsync());
 
         assertEquals(query, summary.query());
         assertEquals(QueryType.READ_WRITE, summary.queryType());
@@ -180,16 +171,16 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
     @Test
     void shouldReturnSummaryWhenSucceededAfterSummaryRequested() {
-        Query query = new Query("RETURN 'Hi!");
+        var query = new Query("RETURN 'Hi!");
         PullAllResponseHandler handler = newHandler(query);
 
-        CompletableFuture<ResultSummary> summaryFuture = handler.consumeAsync().toCompletableFuture();
+        var summaryFuture = handler.consumeAsync().toCompletableFuture();
         assertFalse(summaryFuture.isDone());
 
         handler.onSuccess(singletonMap("type", value("r")));
 
         assertTrue(summaryFuture.isDone());
-        ResultSummary summary = await(summaryFuture);
+        var summary = await(summaryFuture);
 
         assertEquals(query, summary.query());
         assertEquals(QueryType.READ_ONLY, summary.queryType());
@@ -199,10 +190,10 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldReturnFailureWhenSummaryRequestedWhenAlreadyFailed() {
         PullAllResponseHandler handler = newHandler();
 
-        RuntimeException failure = new RuntimeException("Computer is burning");
+        var failure = new RuntimeException("Computer is burning");
         handler.onFailure(failure);
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> await(handler.consumeAsync()));
+        var e = assertThrows(RuntimeException.class, () -> await(handler.consumeAsync()));
         assertEquals(failure, e);
     }
 
@@ -210,14 +201,14 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldReturnFailureWhenFailedAfterSummaryRequested() {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<ResultSummary> summaryFuture = handler.consumeAsync().toCompletableFuture();
+        var summaryFuture = handler.consumeAsync().toCompletableFuture();
         assertFalse(summaryFuture.isDone());
 
-        IOException failure = new IOException("FAILED to write");
+        var failure = new IOException("FAILED to write");
         handler.onFailure(failure);
 
         assertTrue(summaryFuture.isDone());
-        Exception e = assertThrows(Exception.class, () -> await(summaryFuture));
+        var e = assertThrows(Exception.class, () -> await(summaryFuture));
         assertEquals(failure, e);
     }
 
@@ -225,47 +216,47 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldFailSummaryWhenRequestedMultipleTimes() {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<ResultSummary> summaryFuture1 = handler.consumeAsync().toCompletableFuture();
-        CompletableFuture<ResultSummary> summaryFuture2 = handler.consumeAsync().toCompletableFuture();
+        var summaryFuture1 = handler.consumeAsync().toCompletableFuture();
+        var summaryFuture2 = handler.consumeAsync().toCompletableFuture();
         assertFalse(summaryFuture1.isDone());
         assertFalse(summaryFuture2.isDone());
 
-        ClosedChannelException failure = new ClosedChannelException();
+        var failure = new ClosedChannelException();
         handler.onFailure(failure);
 
         assertTrue(summaryFuture1.isDone());
         assertTrue(summaryFuture2.isDone());
 
-        Exception e1 = assertThrows(Exception.class, () -> await(summaryFuture2));
+        var e1 = assertThrows(Exception.class, () -> await(summaryFuture2));
         assertEquals(failure, e1);
 
-        Exception e2 = assertThrows(Exception.class, () -> await(summaryFuture1));
+        var e2 = assertThrows(Exception.class, () -> await(summaryFuture1));
         assertEquals(failure, e2);
     }
 
     @Test
     void shouldPropagateFailureOnlyOnceFromSummary() {
-        Query query = new Query("CREATE INDEX ON :Person(name)");
+        var query = new Query("CREATE INDEX ON :Person(name)");
         PullAllResponseHandler handler = newHandler(query);
 
-        IllegalStateException failure = new IllegalStateException("Some state is illegal :(");
+        var failure = new IllegalStateException("Some state is illegal :(");
         handler.onFailure(failure);
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> await(handler.consumeAsync()));
+        var e = assertThrows(RuntimeException.class, () -> await(handler.consumeAsync()));
         assertEquals(failure, e);
 
-        ResultSummary summary = await(handler.consumeAsync());
+        var summary = await(handler.consumeAsync());
         assertNotNull(summary);
         assertEquals(query, summary.query());
     }
 
     @Test
     void shouldPeekSingleAvailableRecord() {
-        List<String> keys = asList("key1", "key2");
+        var keys = asList("key1", "key2");
         PullAllResponseHandler handler = newHandler(keys);
         handler.onRecord(values("a", "b"));
 
-        Record record = await(handler.peekAsync());
+        var record = await(handler.peekAsync());
 
         assertEquals(keys, record.keys());
         assertEquals("a", record.get("key1").asString());
@@ -274,14 +265,14 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
     @Test
     void shouldPeekFirstRecordWhenMultipleAvailable() {
-        List<String> keys = asList("key1", "key2", "key3");
+        var keys = asList("key1", "key2", "key3");
         PullAllResponseHandler handler = newHandler(keys);
 
         handler.onRecord(values("a1", "b1", "c1"));
         handler.onRecord(values("a2", "b2", "c2"));
         handler.onRecord(values("a3", "b3", "c3"));
 
-        Record record = await(handler.peekAsync());
+        var record = await(handler.peekAsync());
 
         assertEquals(keys, record.keys());
         assertEquals("a1", record.get("key1").asString());
@@ -291,16 +282,16 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
     @Test
     void shouldPeekRecordThatBecomesAvailableLater() {
-        List<String> keys = asList("key1", "key2");
+        var keys = asList("key1", "key2");
         PullAllResponseHandler handler = newHandler(keys);
 
-        CompletableFuture<Record> recordFuture = handler.peekAsync().toCompletableFuture();
+        var recordFuture = handler.peekAsync().toCompletableFuture();
         assertFalse(recordFuture.isDone());
 
         handler.onRecord(values(24, 42));
         assertTrue(recordFuture.isDone());
 
-        Record record = await(recordFuture);
+        var record = await(recordFuture);
         assertEquals(keys, record.keys());
         assertEquals(24, record.get("key1").asInt());
         assertEquals(42, record.get("key2").asInt());
@@ -308,13 +299,13 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
     @Test
     void shouldPeekAvailableNothingAfterSuccess() {
-        List<String> keys = asList("key1", "key2", "key3");
+        var keys = asList("key1", "key2", "key3");
         PullAllResponseHandler handler = newHandler(keys);
 
         handler.onRecord(values(1, 2, 3));
         handler.onSuccess(emptyMap());
 
-        Record record = await(handler.peekAsync());
+        var record = await(handler.peekAsync());
         assertEquals(keys, record.keys());
         assertEquals(1, record.get("key1").asInt());
         assertEquals(2, record.get("key2").asInt());
@@ -331,12 +322,12 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
     @Test
     void shouldPeekWhenRequestedMultipleTimes() {
-        List<String> keys = asList("key1", "key2");
+        var keys = asList("key1", "key2");
         PullAllResponseHandler handler = newHandler(keys);
 
-        CompletableFuture<Record> recordFuture1 = handler.peekAsync().toCompletableFuture();
-        CompletableFuture<Record> recordFuture2 = handler.peekAsync().toCompletableFuture();
-        CompletableFuture<Record> recordFuture3 = handler.peekAsync().toCompletableFuture();
+        var recordFuture1 = handler.peekAsync().toCompletableFuture();
+        var recordFuture2 = handler.peekAsync().toCompletableFuture();
+        var recordFuture3 = handler.peekAsync().toCompletableFuture();
 
         assertFalse(recordFuture1.isDone());
         assertFalse(recordFuture2.isDone());
@@ -348,9 +339,9 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         assertTrue(recordFuture2.isDone());
         assertTrue(recordFuture3.isDone());
 
-        Record record1 = await(recordFuture1);
-        Record record2 = await(recordFuture2);
-        Record record3 = await(recordFuture3);
+        var record1 = await(recordFuture1);
+        var record2 = await(recordFuture2);
+        var record3 = await(recordFuture3);
 
         assertEquals(keys, record1.keys());
         assertEquals(keys, record2.keys());
@@ -370,10 +361,10 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldPropagateNotConsumedFailureInPeek() {
         PullAllResponseHandler handler = newHandler();
 
-        RuntimeException failure = new RuntimeException("Something is wrong");
+        var failure = new RuntimeException("Something is wrong");
         handler.onFailure(failure);
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> await(handler.peekAsync()));
+        var e = assertThrows(RuntimeException.class, () -> await(handler.peekAsync()));
         assertEquals(failure, e);
     }
 
@@ -381,13 +372,13 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldPropagateFailureInPeekWhenItBecomesAvailable() {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<Record> recordFuture = handler.peekAsync().toCompletableFuture();
+        var recordFuture = handler.peekAsync().toCompletableFuture();
         assertFalse(recordFuture.isDone());
 
-        RuntimeException failure = new RuntimeException("Error");
+        var failure = new RuntimeException("Error");
         handler.onFailure(failure);
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> await(recordFuture));
+        var e = assertThrows(RuntimeException.class, () -> await(recordFuture));
         assertEquals(failure, e);
     }
 
@@ -395,21 +386,21 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldPropagateFailureInPeekOnlyOnce() {
         PullAllResponseHandler handler = newHandler();
 
-        RuntimeException failure = new RuntimeException("Something is wrong");
+        var failure = new RuntimeException("Something is wrong");
         handler.onFailure(failure);
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> await(handler.peekAsync()));
+        var e = assertThrows(RuntimeException.class, () -> await(handler.peekAsync()));
         assertEquals(failure, e);
         assertNull(await(handler.peekAsync()));
     }
 
     @Test
     void shouldReturnSingleAvailableRecordInNextAsync() {
-        List<String> keys = asList("key1", "key2");
+        var keys = asList("key1", "key2");
         PullAllResponseHandler handler = newHandler(keys);
         handler.onRecord(values("1", "2"));
 
-        Record record = await(handler.nextAsync());
+        var record = await(handler.nextAsync());
 
         assertNotNull(record);
         assertEquals(keys, record.keys());
@@ -429,7 +420,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldReturnNoRecordsWhenSuccessComesAfterNextAsync() {
         PullAllResponseHandler handler = newHandler(asList("key1", "key2"));
 
-        CompletableFuture<Record> recordFuture = handler.nextAsync().toCompletableFuture();
+        var recordFuture = handler.nextAsync().toCompletableFuture();
         assertFalse(recordFuture.isDone());
 
         handler.onSuccess(emptyMap());
@@ -440,7 +431,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
     @Test
     void shouldPullAllAvailableRecordsWithNextAsync() {
-        List<String> keys = asList("key1", "key2", "key3");
+        var keys = asList("key1", "key2", "key3");
         PullAllResponseHandler handler = newHandler(keys);
 
         handler.onRecord(values(1, 2, 3));
@@ -449,28 +440,28 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         handler.onRecord(values(1111, 2222, 3333));
         handler.onSuccess(emptyMap());
 
-        Record record1 = await(handler.nextAsync());
+        var record1 = await(handler.nextAsync());
         assertNotNull(record1);
         assertEquals(keys, record1.keys());
         assertEquals(1, record1.get("key1").asInt());
         assertEquals(2, record1.get("key2").asInt());
         assertEquals(3, record1.get("key3").asInt());
 
-        Record record2 = await(handler.nextAsync());
+        var record2 = await(handler.nextAsync());
         assertNotNull(record2);
         assertEquals(keys, record2.keys());
         assertEquals(11, record2.get("key1").asInt());
         assertEquals(22, record2.get("key2").asInt());
         assertEquals(33, record2.get("key3").asInt());
 
-        Record record3 = await(handler.nextAsync());
+        var record3 = await(handler.nextAsync());
         assertNotNull(record3);
         assertEquals(keys, record3.keys());
         assertEquals(111, record3.get("key1").asInt());
         assertEquals(222, record3.get("key2").asInt());
         assertEquals(333, record3.get("key3").asInt());
 
-        Record record4 = await(handler.nextAsync());
+        var record4 = await(handler.nextAsync());
         assertNotNull(record4);
         assertEquals(keys, record4.keys());
         assertEquals(1111, record4.get("key1").asInt());
@@ -483,16 +474,16 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
     @Test
     void shouldReturnRecordInNextAsyncWhenItBecomesAvailableLater() {
-        List<String> keys = asList("key1", "key2");
+        var keys = asList("key1", "key2");
         PullAllResponseHandler handler = newHandler(keys);
 
-        CompletableFuture<Record> recordFuture = handler.nextAsync().toCompletableFuture();
+        var recordFuture = handler.nextAsync().toCompletableFuture();
         assertFalse(recordFuture.isDone());
 
         handler.onRecord(values(24, 42));
         assertTrue(recordFuture.isDone());
 
-        Record record = await(recordFuture);
+        var record = await(recordFuture);
         assertNotNull(record);
         assertEquals(keys, record.keys());
         assertEquals(24, record.get("key1").asInt());
@@ -501,11 +492,11 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
     @Test
     void shouldReturnSameRecordOnceWhenRequestedMultipleTimesInNextAsync() {
-        List<String> keys = asList("key1", "key2");
+        var keys = asList("key1", "key2");
         PullAllResponseHandler handler = newHandler(keys);
 
-        CompletableFuture<Record> recordFuture1 = handler.nextAsync().toCompletableFuture();
-        CompletableFuture<Record> recordFuture2 = handler.nextAsync().toCompletableFuture();
+        var recordFuture1 = handler.nextAsync().toCompletableFuture();
+        var recordFuture2 = handler.nextAsync().toCompletableFuture();
         assertFalse(recordFuture1.isDone());
         assertFalse(recordFuture2.isDone());
 
@@ -513,12 +504,12 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         assertTrue(recordFuture1.isDone());
         assertTrue(recordFuture2.isDone());
 
-        Record record1 = await(recordFuture1);
-        Record record2 = await(recordFuture2);
+        var record1 = await(recordFuture1);
+        var record2 = await(recordFuture2);
 
         // record should be returned only once because #nextAsync() polls it
         assertTrue(record1 != null || record2 != null);
-        Record record = record1 != null ? record1 : record2;
+        var record = record1 != null ? record1 : record2;
 
         assertNotNull(record);
         assertEquals(keys, record.keys());
@@ -529,10 +520,10 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     @Test
     void shouldPropagateExistingFailureInNextAsync() {
         PullAllResponseHandler handler = newHandler();
-        RuntimeException error = new RuntimeException("FAILED to read");
+        var error = new RuntimeException("FAILED to read");
         handler.onFailure(error);
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> await(handler.nextAsync()));
+        var e = assertThrows(RuntimeException.class, () -> await(handler.nextAsync()));
         assertEquals(error, e);
     }
 
@@ -540,24 +531,24 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     void shouldPropagateFailureInNextAsyncWhenFailureMessagesArrivesLater() {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<Record> recordFuture = handler.nextAsync().toCompletableFuture();
+        var recordFuture = handler.nextAsync().toCompletableFuture();
         assertFalse(recordFuture.isDone());
 
-        RuntimeException error = new RuntimeException("Network failed");
+        var error = new RuntimeException("Network failed");
         handler.onFailure(error);
 
         assertTrue(recordFuture.isDone());
-        RuntimeException e = assertThrows(RuntimeException.class, () -> await(recordFuture));
+        var e = assertThrows(RuntimeException.class, () -> await(recordFuture));
         assertEquals(error, e);
     }
 
     @Test
     void shouldPropagateFailureFromListAsync() {
         PullAllResponseHandler handler = newHandler();
-        RuntimeException error = new RuntimeException("Hi!");
+        var error = new RuntimeException("Hi!");
         handler.onFailure(error);
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> await(handler.listAsync(Function.identity())));
+        var e = assertThrows(RuntimeException.class, () -> await(handler.listAsync(Function.identity())));
         assertEquals(error, e);
     }
 
@@ -567,10 +558,10 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
         handler.onRecord(values("a", "b"));
 
-        RuntimeException error = new RuntimeException("Hi!");
+        var error = new RuntimeException("Hi!");
         handler.onFailure(error);
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> await(handler.listAsync(Function.identity())));
+        var e = assertThrows(RuntimeException.class, () -> await(handler.listAsync(Function.identity())));
         assertEquals(error, e);
     }
 
@@ -581,16 +572,16 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         handler.onRecord(values(3, 4));
         handler.onSuccess(emptyMap());
 
-        RuntimeException error = new RuntimeException("Hi!");
+        var error = new RuntimeException("Hi!");
 
-        CompletionStage<List<Integer>> stage = handler.listAsync(record -> {
+        var stage = handler.listAsync(record -> {
             if (record.get(1).asInt() == 4) {
                 throw error;
             }
             return 42;
         });
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> await(stage));
+        var e = assertThrows(RuntimeException.class, () -> await(stage));
         assertEquals(error, e);
     }
 
@@ -613,29 +604,28 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         handler.onRecord(values(4));
         handler.onSuccess(emptyMap());
 
-        List<Integer> transformedList =
-                await(handler.listAsync(record -> record.get(0).asInt() * 2));
+        var transformedList = await(handler.listAsync(record -> record.get(0).asInt() * 2));
 
         assertEquals(asList(2, 4, 6, 8), transformedList);
     }
 
     @Test
     void shouldReturnNotTransformedListInListAsync() {
-        List<String> keys = asList("key1", "key2");
+        var keys = asList("key1", "key2");
         PullAllResponseHandler handler = newHandler(keys);
 
-        Value[] fields1 = values("a", "b");
-        Value[] fields2 = values("c", "d");
-        Value[] fields3 = values("e", "f");
+        var fields1 = values("a", "b");
+        var fields2 = values("c", "d");
+        var fields3 = values("e", "f");
 
         handler.onRecord(fields1);
         handler.onRecord(fields2);
         handler.onRecord(fields3);
         handler.onSuccess(emptyMap());
 
-        List<Record> list = await(handler.listAsync(Function.identity()));
+        var list = await(handler.listAsync(Function.identity()));
 
-        List<InternalRecord> expectedRecords = asList(
+        var expectedRecords = asList(
                 new InternalRecord(keys, fields1),
                 new InternalRecord(keys, fields2),
                 new InternalRecord(keys, fields3));
@@ -666,7 +656,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     protected abstract T newHandler(Query query, List<String> queryKeys, Connection connection);
 
     protected Connection connectionMock() {
-        Connection connection = mock(Connection.class);
+        var connection = mock(Connection.class);
         when(connection.serverAddress()).thenReturn(BoltServerAddress.LOCAL_DEFAULT);
         when(connection.protocol()).thenReturn(BoltProtocolV43.INSTANCE);
         when(connection.serverAgent()).thenReturn("Neo4j/4.2.5");

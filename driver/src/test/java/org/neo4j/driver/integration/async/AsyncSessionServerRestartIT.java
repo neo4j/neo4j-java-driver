@@ -23,15 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -55,22 +51,22 @@ class AsyncSessionServerRestartIT {
 
     @Test
     void shouldFailWhenServerIsRestarted() {
-        int queryCount = 10_000;
+        var queryCount = 10_000;
 
-        String query = "UNWIND range(1, 100) AS x "
+        var query = "UNWIND range(1, 100) AS x "
                 + "CREATE (n1:Node {value: x})-[r:LINKED {value: x}]->(n2:Node {value: x}) "
                 + "DETACH DELETE n1, n2 "
                 + "RETURN x";
 
         assertThrows(ServiceUnavailableException.class, () -> {
-            for (int i = 0; i < queryCount; i++) {
-                ResultCursor cursor = await(session.runAsync(query));
+            for (var i = 0; i < queryCount; i++) {
+                var cursor = await(session.runAsync(query));
 
                 if (i == 0) {
                     neo4j.stopProxy();
                 }
 
-                List<Record> records = await(cursor.listAsync());
+                var records = await(cursor.listAsync());
                 assertEquals(100, records.size());
             }
         });
@@ -82,14 +78,14 @@ class AsyncSessionServerRestartIT {
         neo4j.stopProxy();
 
         assertThrows(ServiceUnavailableException.class, () -> {
-            ResultCursor cursor = await(session.runAsync("RETURN 42"));
+            var cursor = await(session.runAsync("RETURN 42"));
             await(cursor.nextAsync());
         });
 
         neo4j.startProxy();
 
-        ResultCursor cursor2 = await(session.runAsync("RETURN 42"));
-        Record record = await(cursor2.singleAsync());
+        var cursor2 = await(session.runAsync("RETURN 42"));
+        var record = await(cursor2.singleAsync());
         assertEquals(42, record.get(0).asInt());
     }
 
@@ -98,15 +94,15 @@ class AsyncSessionServerRestartIT {
         neo4j.stopProxy();
 
         assertThrows(ServiceUnavailableException.class, () -> {
-            ResultCursor cursor = await(session.runAsync("RETURN 42"));
+            var cursor = await(session.runAsync("RETURN 42"));
             await(cursor.consumeAsync());
         });
 
         neo4j.startProxy();
 
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor2 = await(tx.runAsync("RETURN 42"));
-        Record record = await(cursor2.singleAsync());
+        var tx = await(session.beginTransactionAsync());
+        var cursor2 = await(tx.runAsync("RETURN 42"));
+        var record = await(cursor2.singleAsync());
         assertEquals(42, record.get(0).asInt());
         assertNull(await(tx.rollbackAsync()));
     }

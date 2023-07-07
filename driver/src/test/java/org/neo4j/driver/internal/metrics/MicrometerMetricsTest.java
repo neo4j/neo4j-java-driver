@@ -25,7 +25,6 @@ import static org.mockito.Mockito.mock;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.util.Collection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -53,7 +52,7 @@ class MicrometerMetricsTest {
     @Test
     void shouldReturnEmptyConnectionPoolMetrics() {
         // GIVEN & WHEN
-        Collection<ConnectionPoolMetrics> collection = metrics.connectionPoolMetrics();
+        var collection = metrics.connectionPoolMetrics();
 
         // THEN
         assertTrue(collection.isEmpty());
@@ -198,7 +197,7 @@ class MicrometerMetricsTest {
     @Test
     void shouldCreateListenerEvent() {
         // GIVEN & WHEN
-        ListenerEvent<?> event = metrics.createListenerEvent();
+        var event = metrics.createListenerEvent();
 
         // THEN
         assertTrue(event instanceof MicrometerTimerListenerEvent);
@@ -207,7 +206,7 @@ class MicrometerMetricsTest {
     @Test
     void shouldPutPoolMetrics() {
         // GIVEN
-        int size = metrics.connectionPoolMetrics().size();
+        var size = metrics.connectionPoolMetrics().size();
 
         // WHEN
         metrics.registerPoolMetrics(ID, BoltServerAddress.LOCAL_DEFAULT, () -> 23, () -> 42);
@@ -220,7 +219,7 @@ class MicrometerMetricsTest {
     void shouldRemovePoolMetrics() {
         // GIVEN
         metrics.putPoolMetrics(ID, poolMetrics);
-        int size = metrics.connectionPoolMetrics().size();
+        var size = metrics.connectionPoolMetrics().size();
 
         // WHEN
         metrics.removePoolMetrics(ID);

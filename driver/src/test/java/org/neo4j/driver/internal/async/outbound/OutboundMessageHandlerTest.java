@@ -63,8 +63,8 @@ class OutboundMessageHandlerTest {
 
     @Test
     void shouldOutputByteBufAsWrittenByWriterAndMessageBoundary() {
-        MessageFormat messageFormat = mockMessageFormatWithWriter(1, 2, 3, 4, 5);
-        OutboundMessageHandler handler = newHandler(messageFormat);
+        var messageFormat = mockMessageFormatWithWriter(1, 2, 3, 4, 5);
+        var handler = newHandler(messageFormat);
         channel.pipeline().addLast(handler);
 
         // do not care which message, writer will return predefined bytes anyway
@@ -89,7 +89,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     void shouldSupportByteArraysByDefault() {
-        OutboundMessageHandler handler = newHandler(new MessageFormatV3());
+        var handler = newHandler(new MessageFormatV3());
         channel.pipeline().addLast(handler);
 
         Map<String, Value> params = new HashMap<>();
@@ -100,7 +100,7 @@ class OutboundMessageHandlerTest {
     }
 
     private static MessageFormat mockMessageFormatWithWriter(final int... bytesToWrite) {
-        MessageFormat messageFormat = mock(MessageFormat.class);
+        var messageFormat = mock(MessageFormat.class);
 
         when(messageFormat.newWriter(any(PackOutput.class))).then(invocation -> {
             PackOutput output = invocation.getArgument(0);
@@ -111,10 +111,10 @@ class OutboundMessageHandlerTest {
     }
 
     private static Writer mockWriter(final PackOutput output, final int... bytesToWrite) throws IOException {
-        Writer writer = mock(Writer.class);
+        var writer = mock(Writer.class);
 
         doAnswer(invocation -> {
-                    for (int b : bytesToWrite) {
+                    for (var b : bytesToWrite) {
                         output.writeByte((byte) b);
                     }
                     return writer;

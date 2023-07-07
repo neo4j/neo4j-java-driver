@@ -56,7 +56,7 @@ class NullValueTest {
 
     @Test
     void shouldReturnNativeTypesAsDefaultValue() {
-        Value value = NullValue.NULL;
+        var value = NullValue.NULL;
         // string
         assertThat(value.asString("string value"), equalTo("string value"));
 
@@ -123,7 +123,7 @@ class NullValueTest {
     }
 
     private static <T> void assertComputeOrDefaultReturnDefault(Function<Value, T> f, T defaultAndExpectedValue) {
-        Value value = NullValue.NULL;
+        var value = NullValue.NULL;
         assertThat(value.computeOrDefault(f, defaultAndExpectedValue), equalTo(defaultAndExpectedValue));
     }
 

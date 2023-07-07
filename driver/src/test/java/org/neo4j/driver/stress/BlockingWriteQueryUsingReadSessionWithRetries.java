@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
 
 public class BlockingWriteQueryUsingReadSessionWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C> {
@@ -33,7 +32,7 @@ public class BlockingWriteQueryUsingReadSessionWithRetries<C extends AbstractCon
     @Override
     @SuppressWarnings("deprecation")
     public void execute(C context) {
-        try (Session session = newSession(AccessMode.READ, context)) {
+        try (var session = newSession(AccessMode.READ, context)) {
             assertThrows(ClientException.class, () -> session.readTransaction(tx -> tx.run("CREATE ()")));
         }
     }

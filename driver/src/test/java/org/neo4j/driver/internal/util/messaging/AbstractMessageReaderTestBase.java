@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -49,18 +48,18 @@ public abstract class AbstractMessageReaderTestBase {
     }
 
     private void testSupportedMessageReading(Message message) throws IOException {
-        ResponseMessageHandler handler = testMessageReading(message);
+        var handler = testMessageReading(message);
 
         if (message instanceof SuccessMessage) {
-            SuccessMessage successMessage = (SuccessMessage) message;
+            var successMessage = (SuccessMessage) message;
             verify(handler).handleSuccessMessage(successMessage.metadata());
         } else if (message instanceof FailureMessage) {
-            FailureMessage failureMessage = (FailureMessage) message;
+            var failureMessage = (FailureMessage) message;
             verify(handler).handleFailureMessage(failureMessage.code(), failureMessage.message());
         } else if (message instanceof IgnoredMessage) {
             verify(handler).handleIgnoredMessage();
         } else if (message instanceof RecordMessage) {
-            RecordMessage recordMessage = (RecordMessage) message;
+            var recordMessage = (RecordMessage) message;
             verify(handler).handleRecordMessage(recordMessage.fields());
         } else {
             fail("Unsupported message type " + message.getClass().getSimpleName());
@@ -84,26 +83,26 @@ public abstract class AbstractMessageReaderTestBase {
     protected abstract MessageFormat.Reader newReader(PackInput input);
 
     protected ResponseMessageHandler testMessageReading(Message message) throws IOException {
-        PackInput input = newInputWith(message);
-        MessageFormat.Reader reader = newReader(input);
+        var input = newInputWith(message);
+        var reader = newReader(input);
 
-        ResponseMessageHandler handler = mock(ResponseMessageHandler.class);
+        var handler = mock(ResponseMessageHandler.class);
         reader.read(handler);
 
         return handler;
     }
 
     private PackInput newInputWith(Message message) throws IOException {
-        ByteBuf buffer = Unpooled.buffer();
+        var buffer = Unpooled.buffer();
 
         MessageFormat messageFormat = new KnowledgeableMessageFormat(isElementIdEnabled());
         if (isDateTimeUtcEnabled()) {
             messageFormat.enableDateTimeUtc();
         }
-        MessageFormat.Writer writer = messageFormat.newWriter(new ByteBufOutput(buffer));
+        var writer = messageFormat.newWriter(new ByteBufOutput(buffer));
         writer.write(message);
 
-        ByteBufInput input = new ByteBufInput();
+        var input = new ByteBufInput();
         input.start(buffer);
         return input;
     }

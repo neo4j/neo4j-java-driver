@@ -31,10 +31,8 @@ import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarksContain
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
@@ -75,7 +73,7 @@ class BookmarkIT {
     @SuppressWarnings("deprecation")
     void shouldReceiveNewBookmarkOnSuccessfulCommit() throws Throwable {
         // Given
-        Bookmark initialBookmark = session.lastBookmark();
+        var initialBookmark = session.lastBookmark();
         assertBookmarkIsEmpty(initialBookmark);
 
         // When
@@ -88,9 +86,9 @@ class BookmarkIT {
 
     @Test
     void shouldThrowForInvalidBookmark() {
-        Bookmark invalidBookmark = parse("hi, this is an invalid bookmark");
+        var invalidBookmark = parse("hi, this is an invalid bookmark");
 
-        try (Session session =
+        try (var session =
                 driver.session(builder().withBookmarks(invalidBookmark).build())) {
             assertThrows(ClientException.class, session::beginTransaction);
         }
@@ -103,10 +101,10 @@ class BookmarkIT {
 
         createNodeInTx(session);
 
-        Bookmark bookmark = session.lastBookmark();
+        var bookmark = session.lastBookmark();
         assertBookmarkContainsSingleValue(bookmark);
 
-        try (Transaction tx = session.beginTransaction()) {
+        try (var tx = session.beginTransaction()) {
             tx.run("CREATE (a:Person)");
             tx.rollback();
         }
@@ -121,10 +119,10 @@ class BookmarkIT {
 
         createNodeInTx(session);
 
-        Bookmark bookmark = session.lastBookmark();
+        var bookmark = session.lastBookmark();
         assertBookmarkContainsSingleValue(bookmark);
 
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
 
         assertThrows(ClientException.class, () -> tx.run("RETURN"));
         assertEquals(bookmark, session.lastBookmark());
@@ -137,7 +135,7 @@ class BookmarkIT {
 
         createNodeInTx(session);
 
-        Bookmark bookmark = session.lastBookmark();
+        var bookmark = session.lastBookmark();
         assertBookmarkContainsSingleValue(bookmark);
 
         session.run("RETURN 1").consume();
@@ -152,7 +150,7 @@ class BookmarkIT {
 
         createNodeInTx(session);
 
-        Bookmark bookmark = session.lastBookmark();
+        var bookmark = session.lastBookmark();
         assertBookmarkContainsSingleValue(bookmark);
 
         assertThrows(ClientException.class, () -> session.run("RETURN").consume());
@@ -165,15 +163,15 @@ class BookmarkIT {
         assertBookmarkIsEmpty(session.lastBookmark());
 
         createNodeInTx(session);
-        Bookmark bookmark1 = session.lastBookmark();
+        var bookmark1 = session.lastBookmark();
         assertBookmarkContainsSingleValue(bookmark1);
 
         createNodeInTx(session);
-        Bookmark bookmark2 = session.lastBookmark();
+        var bookmark2 = session.lastBookmark();
         assertBookmarkContainsSingleValue(bookmark2);
 
         createNodeInTx(session);
-        Bookmark bookmark3 = session.lastBookmark();
+        var bookmark3 = session.lastBookmark();
         assertBookmarkContainsSingleValue(bookmark3);
 
         assertBookmarksContainsSingleUniqueValues(bookmark1, bookmark2, bookmark3);
@@ -182,8 +180,8 @@ class BookmarkIT {
     @Test
     @SuppressWarnings("deprecation")
     void createSessionWithInitialBookmark() {
-        Bookmark bookmark = parse("TheBookmark");
-        try (Session session = driver.session(builder().withBookmarks(bookmark).build())) {
+        var bookmark = parse("TheBookmark");
+        try (var session = driver.session(builder().withBookmarks(bookmark).build())) {
             assertEquals(bookmark, session.lastBookmark());
         }
     }
@@ -191,14 +189,14 @@ class BookmarkIT {
     @Test
     @SuppressWarnings("deprecation")
     void createSessionWithAccessModeAndInitialBookmark() {
-        Bookmark bookmark = parse("TheBookmark");
-        try (Session session = driver.session(builder().withBookmarks(bookmark).build())) {
+        var bookmark = parse("TheBookmark");
+        try (var session = driver.session(builder().withBookmarks(bookmark).build())) {
             assertEquals(bookmark, session.lastBookmark());
         }
     }
 
     private static void createNodeInTx(Session session) {
-        try (Transaction tx = session.beginTransaction()) {
+        try (var tx = session.beginTransaction()) {
             tx.run("CREATE (a:Person)");
             tx.commit();
         }

@@ -31,14 +31,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.InOrder;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
@@ -53,20 +51,20 @@ class BeginMessageEncoderTest {
     @ParameterizedTest
     @MethodSource("arguments")
     void shouldEncodeBeginMessage(AccessMode mode, String impersonatedUser, String txType) throws Exception {
-        Set<Bookmark> bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx42"));
+        var bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx42"));
 
         Map<String, Value> txMetadata = new HashMap<>();
         txMetadata.put("hello", value("world"));
         txMetadata.put("answer", value(42));
 
-        Duration txTimeout = Duration.ofSeconds(1);
+        var txTimeout = Duration.ofSeconds(1);
 
         encoder.encode(
                 new BeginMessage(
                         bookmarks, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser, txType, null),
                 packer);
 
-        InOrder order = inOrder(packer);
+        var order = inOrder(packer);
         order.verify(packer).packStructHeader(1, BeginMessage.SIGNATURE);
 
         Map<String, Value> expectedMetadata = new HashMap<>();

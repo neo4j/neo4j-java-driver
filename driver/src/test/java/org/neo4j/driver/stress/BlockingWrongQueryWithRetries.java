@@ -25,7 +25,6 @@ import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
 
 public class BlockingWrongQueryWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C> {
     public BlockingWrongQueryWithRetries(Driver driver) {
@@ -35,8 +34,8 @@ public class BlockingWrongQueryWithRetries<C extends AbstractContext> extends Ab
     @Override
     @SuppressWarnings("deprecation")
     public void execute(C context) {
-        try (Session session = newSession(AccessMode.READ, context)) {
-            Exception e = assertThrows(
+        try (var session = newSession(AccessMode.READ, context)) {
+            var e = assertThrows(
                     Exception.class,
                     () -> session.readTransaction(tx -> tx.run("RETURN").consume()));
             assertThat(e, is(syntaxError()));

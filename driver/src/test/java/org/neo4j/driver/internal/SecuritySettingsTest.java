@@ -35,18 +35,18 @@ class SecuritySettingsTest {
     class SerializationTests {
         @Test
         void defaultSettingsShouldNotBeCustomizedWhenReadBack() throws IOException, ClassNotFoundException {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
+            var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
             assertFalse(isCustomized(securitySettings));
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
+            var verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
             assertFalse(isCustomized(verify));
         }
 
         @Test
         void defaultsShouldBeCheckCorrect() throws IOException, ClassNotFoundException {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+            var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                     .withoutEncryption()
                     .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
                     .build();
@@ -55,14 +55,14 @@ class SecuritySettingsTest {
             // customized.
             assertFalse(isCustomized(securitySettings));
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
+            var verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
             assertFalse(isCustomized(verify));
         }
 
         @Test
         void shouldReadBackChangedEncryption() throws IOException, ClassNotFoundException {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+            var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                     .withEncryption()
                     .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
                     .build();
@@ -70,7 +70,7 @@ class SecuritySettingsTest {
             assertTrue(isCustomized(securitySettings));
             assertTrue(securitySettings.encrypted());
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
+            var verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
             assertTrue(isCustomized(verify));
             assertTrue(securitySettings.encrypted());
@@ -78,7 +78,7 @@ class SecuritySettingsTest {
 
         @Test
         void shouldReadBackChangedStrategey() throws IOException, ClassNotFoundException {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+            var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                     .withoutEncryption()
                     .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
                     .build();
@@ -91,7 +91,7 @@ class SecuritySettingsTest {
                     Config.TrustStrategy.trustAllCertificates().strategy(),
                     securitySettings.trustStrategy().strategy());
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
+            var verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
             assertTrue(isCustomized(verify));
             assertFalse(securitySettings.encrypted());
@@ -102,7 +102,7 @@ class SecuritySettingsTest {
 
         @Test
         void shouldReadBackChangedCertFile() throws IOException, ClassNotFoundException {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+            var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                     .withoutEncryption()
                     .withTrustStrategy(Config.TrustStrategy.trustCustomCertificateSignedBy(new File("some.cert")))
                     .build();
@@ -116,7 +116,7 @@ class SecuritySettingsTest {
                             .strategy(),
                     securitySettings.trustStrategy().strategy());
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
+            var verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
             assertTrue(isCustomized(verify));
             assertFalse(securitySettings.encrypted());

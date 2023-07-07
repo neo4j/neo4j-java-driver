@@ -49,7 +49,6 @@ import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.junit.jupiter.api.Test;
@@ -66,16 +65,16 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 class RoutingTableRegistryImplTest {
     @Test
     void factoryShouldCreateARoutingTableWithSameDatabaseName() {
-        Clock clock = Clock.systemUTC();
-        RoutingTableHandlerFactory factory = new RoutingTableHandlerFactory(
+        var clock = Clock.systemUTC();
+        var factory = new RoutingTableHandlerFactory(
                 mock(ConnectionPool.class),
                 mock(RediscoveryImpl.class),
                 clock,
                 DEV_NULL_LOGGING,
                 STALE_ROUTING_TABLE_PURGE_DELAY_MS);
 
-        RoutingTableHandler handler = factory.newInstance(database("Molly"), null);
-        RoutingTable table = handler.routingTable();
+        var handler = factory.newInstance(database("Molly"), null);
+        var table = handler.routingTable();
 
         assertThat(table.database().description(), equalTo("Molly"));
 
@@ -92,11 +91,11 @@ class RoutingTableRegistryImplTest {
     void shouldCreateRoutingTableHandlerIfAbsentWhenFreshRoutingTable(String databaseName) {
         // Given
         ConcurrentMap<DatabaseName, RoutingTableHandler> map = new ConcurrentHashMap<>();
-        RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTableRegistryImpl routingTables = newRoutingTables(map, factory);
+        var factory = mockedHandlerFactory();
+        var routingTables = newRoutingTables(map, factory);
 
         // When
-        DatabaseName database = database(databaseName);
+        var database = database(databaseName);
         routingTables.ensureRoutingTable(
                 new ImmutableConnectionContext(database, Collections.emptySet(), AccessMode.READ));
 
@@ -110,17 +109,16 @@ class RoutingTableRegistryImplTest {
     void shouldReturnExistingRoutingTableHandlerWhenFreshRoutingTable(String databaseName) {
         // Given
         ConcurrentMap<DatabaseName, RoutingTableHandler> map = new ConcurrentHashMap<>();
-        RoutingTableHandler handler = mockedRoutingTableHandler();
-        DatabaseName database = database(databaseName);
+        var handler = mockedRoutingTableHandler();
+        var database = database(databaseName);
         map.put(database, handler);
 
-        RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTableRegistryImpl routingTables = newRoutingTables(map, factory);
-        ImmutableConnectionContext context =
-                new ImmutableConnectionContext(database, Collections.emptySet(), AccessMode.READ);
+        var factory = mockedHandlerFactory();
+        var routingTables = newRoutingTables(map, factory);
+        var context = new ImmutableConnectionContext(database, Collections.emptySet(), AccessMode.READ);
 
         // When
-        RoutingTableHandler actual = await(routingTables.ensureRoutingTable(context));
+        var actual = await(routingTables.ensureRoutingTable(context));
 
         // Then it is the one we put in map that is picked up.
         verify(handler).ensureRoutingTable(context);
@@ -133,13 +131,12 @@ class RoutingTableRegistryImplTest {
     void shouldReturnFreshRoutingTable(AccessMode mode) {
         // Given
         ConcurrentMap<DatabaseName, RoutingTableHandler> map = new ConcurrentHashMap<>();
-        RoutingTableHandler handler = mockedRoutingTableHandler();
-        RoutingTableHandlerFactory factory = mockedHandlerFactory(handler);
-        RoutingTableRegistryImpl routingTables =
+        var handler = mockedRoutingTableHandler();
+        var factory = mockedHandlerFactory(handler);
+        var routingTables =
                 new RoutingTableRegistryImpl(map, factory, null, null, mock(Rediscovery.class), DEV_NULL_LOGGING);
 
-        ImmutableConnectionContext context =
-                new ImmutableConnectionContext(defaultDatabase(), Collections.emptySet(), mode);
+        var context = new ImmutableConnectionContext(defaultDatabase(), Collections.emptySet(), mode);
         // When
         routingTables.ensureRoutingTable(context);
 
@@ -154,12 +151,12 @@ class RoutingTableRegistryImplTest {
         map.put(database("Apple"), mockedRoutingTableHandler(A, B, C));
         map.put(database("Banana"), mockedRoutingTableHandler(B, C, D));
         map.put(database("Orange"), mockedRoutingTableHandler(E, F, C));
-        RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTableRegistryImpl routingTables =
+        var factory = mockedHandlerFactory();
+        var routingTables =
                 new RoutingTableRegistryImpl(map, factory, null, null, mock(Rediscovery.class), DEV_NULL_LOGGING);
 
         // When
-        Set<BoltServerAddress> servers = routingTables.allServers();
+        var servers = routingTables.allServers();
 
         // Then
         assertThat(servers, containsInAnyOrder(A, B, C, D, E, F));
@@ -173,8 +170,8 @@ class RoutingTableRegistryImplTest {
         map.put(database("Banana"), mockedRoutingTableHandler(B));
         map.put(database("Orange"), mockedRoutingTableHandler(C));
 
-        RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTableRegistryImpl routingTables = newRoutingTables(map, factory);
+        var factory = mockedHandlerFactory();
+        var routingTables = newRoutingTables(map, factory);
 
         // When
         routingTables.remove(database("Apple"));
@@ -190,8 +187,8 @@ class RoutingTableRegistryImplTest {
         map.put(database("Banana"), mockedRoutingTableHandler(B));
         map.put(database("Orange"), mockedRoutingTableHandler(C));
 
-        RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTableRegistryImpl routingTables = newRoutingTables(map, factory);
+        var factory = mockedHandlerFactory();
+        var routingTables = newRoutingTables(map, factory);
 
         // When
         routingTables.removeAged();
@@ -214,7 +211,7 @@ class RoutingTableRegistryImplTest {
     }
 
     private RoutingTableHandler mockedRoutingTableHandler(BoltServerAddress... servers) {
-        RoutingTableHandler handler = mock(RoutingTableHandler.class);
+        var handler = mock(RoutingTableHandler.class);
         when(handler.servers()).thenReturn(new HashSet<>(Arrays.asList(servers)));
         when(handler.isRoutingTableAged()).thenReturn(true);
         return handler;
@@ -226,7 +223,7 @@ class RoutingTableRegistryImplTest {
     }
 
     private RoutingTableHandlerFactory mockedHandlerFactory(RoutingTableHandler handler) {
-        RoutingTableHandlerFactory factory = mock(RoutingTableHandlerFactory.class);
+        var factory = mock(RoutingTableHandlerFactory.class);
         when(factory.newInstance(any(), any())).thenReturn(handler);
         return factory;
     }
@@ -236,7 +233,7 @@ class RoutingTableRegistryImplTest {
     }
 
     private RoutingTableHandler mockedRoutingTableHandler() {
-        RoutingTableHandler handler = mock(RoutingTableHandler.class);
+        var handler = mock(RoutingTableHandler.class);
         when(handler.ensureRoutingTable(any())).thenReturn(completedFuture(mock(RoutingTable.class)));
         return handler;
     }

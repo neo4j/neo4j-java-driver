@@ -45,30 +45,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.summary.QueryType;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
-import org.neo4j.driver.types.Node;
 
 @ParallelizableIT
 class AsyncTransactionIT {
@@ -90,12 +81,12 @@ class AsyncTransactionIT {
     @Test
     @SuppressWarnings("deprecation")
     void shouldBePossibleToCommitEmptyTx() {
-        Bookmark bookmarkBefore = session.lastBookmark();
+        var bookmarkBefore = session.lastBookmark();
 
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
         assertThat(await(tx.commitAsync()), is(nullValue()));
 
-        Bookmark bookmarkAfter = session.lastBookmark();
+        var bookmarkAfter = session.lastBookmark();
 
         assertNotNull(bookmarkAfter);
         assertNotEquals(bookmarkBefore, bookmarkAfter);
@@ -104,24 +95,24 @@ class AsyncTransactionIT {
     @Test
     @SuppressWarnings("deprecation")
     void shouldBePossibleToRollbackEmptyTx() {
-        Bookmark bookmarkBefore = session.lastBookmark();
+        var bookmarkBefore = session.lastBookmark();
 
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
         assertThat(await(tx.rollbackAsync()), is(nullValue()));
 
-        Bookmark bookmarkAfter = session.lastBookmark();
+        var bookmarkAfter = session.lastBookmark();
         assertEquals(bookmarkBefore, bookmarkAfter);
     }
 
     @Test
     void shouldBePossibleToRunSingleQueryAndCommit() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
-        ResultCursor cursor = await(tx.runAsync("CREATE (n:Node {id: 42}) RETURN n"));
+        var cursor = await(tx.runAsync("CREATE (n:Node {id: 42}) RETURN n"));
 
-        Record record = await(cursor.nextAsync());
+        var record = await(cursor.nextAsync());
         assertNotNull(record);
-        Node node = record.get(0).asNode();
+        var node = record.get(0).asNode();
         assertEquals("Node", single(node.labels()));
         assertEquals(42, node.get("id").asInt());
         assertNull(await(cursor.nextAsync()));
@@ -132,12 +123,12 @@ class AsyncTransactionIT {
 
     @Test
     void shouldBePossibleToRunSingleQueryAndRollback() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
-        ResultCursor cursor = await(tx.runAsync("CREATE (n:Node {id: 4242}) RETURN n"));
-        Record record = await(cursor.nextAsync());
+        var cursor = await(tx.runAsync("CREATE (n:Node {id: 4242}) RETURN n"));
+        var record = await(cursor.nextAsync());
         assertNotNull(record);
-        Node node = record.get(0).asNode();
+        var node = record.get(0).asNode();
         assertEquals("Node", single(node.labels()));
         assertEquals(4242, node.get("id").asInt());
         assertNull(await(cursor.nextAsync()));
@@ -148,15 +139,15 @@ class AsyncTransactionIT {
 
     @Test
     void shouldBePossibleToRunMultipleQueriesAndCommit() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
-        ResultCursor cursor1 = await(tx.runAsync("CREATE (n:Node {id: 1})"));
+        var cursor1 = await(tx.runAsync("CREATE (n:Node {id: 1})"));
         assertNull(await(cursor1.nextAsync()));
 
-        ResultCursor cursor2 = await(tx.runAsync("CREATE (n:Node {id: 2})"));
+        var cursor2 = await(tx.runAsync("CREATE (n:Node {id: 2})"));
         assertNull(await(cursor2.nextAsync()));
 
-        ResultCursor cursor3 = await(tx.runAsync("CREATE (n:Node {id: 2})"));
+        var cursor3 = await(tx.runAsync("CREATE (n:Node {id: 2})"));
         assertNull(await(cursor3.nextAsync()));
 
         assertNull(await(tx.commitAsync()));
@@ -166,7 +157,7 @@ class AsyncTransactionIT {
 
     @Test
     void shouldBePossibleToRunMultipleQueriesAndCommitWithoutWaiting() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
         tx.runAsync("CREATE (n:Node {id: 1})");
         tx.runAsync("CREATE (n:Node {id: 2})");
@@ -179,12 +170,12 @@ class AsyncTransactionIT {
 
     @Test
     void shouldBePossibleToRunMultipleQueriesAndRollback() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
-        ResultCursor cursor1 = await(tx.runAsync("CREATE (n:Node {id: 1})"));
+        var cursor1 = await(tx.runAsync("CREATE (n:Node {id: 1})"));
         assertNull(await(cursor1.nextAsync()));
 
-        ResultCursor cursor2 = await(tx.runAsync("CREATE (n:Node {id: 42})"));
+        var cursor2 = await(tx.runAsync("CREATE (n:Node {id: 42})"));
         assertNull(await(cursor2.nextAsync()));
 
         assertNull(await(tx.rollbackAsync()));
@@ -194,7 +185,7 @@ class AsyncTransactionIT {
 
     @Test
     void shouldBePossibleToRunMultipleQueriesAndRollbackWithoutWaiting() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
         tx.runAsync("CREATE (n:Node {id: 1})");
         tx.runAsync("CREATE (n:Node {id: 42})");
@@ -206,9 +197,9 @@ class AsyncTransactionIT {
 
     @Test
     void shouldFailToCommitAfterSingleWrongQuery() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
-        Exception e = assertThrows(Exception.class, () -> await(tx.runAsync("RETURN")));
+        var e = assertThrows(Exception.class, () -> await(tx.runAsync("RETURN")));
         assertThat(e, is(syntaxError()));
 
         assertThrows(ClientException.class, () -> await(tx.commitAsync()));
@@ -216,28 +207,28 @@ class AsyncTransactionIT {
 
     @Test
     void shouldAllowRollbackAfterSingleWrongQuery() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
-        Exception e = assertThrows(Exception.class, () -> await(tx.runAsync("RETURN")));
+        var e = assertThrows(Exception.class, () -> await(tx.runAsync("RETURN")));
         assertThat(e, is(syntaxError()));
         assertThat(await(tx.rollbackAsync()), is(nullValue()));
     }
 
     @Test
     void shouldFailToCommitAfterCoupleCorrectAndSingleWrongQuery() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
-        ResultCursor cursor1 = await(tx.runAsync("CREATE (n:Node) RETURN n"));
-        Record record1 = await(cursor1.nextAsync());
+        var cursor1 = await(tx.runAsync("CREATE (n:Node) RETURN n"));
+        var record1 = await(cursor1.nextAsync());
         assertNotNull(record1);
         assertTrue(record1.get(0).asNode().hasLabel("Node"));
 
-        ResultCursor cursor2 = await(tx.runAsync("RETURN 42"));
-        Record record2 = await(cursor2.nextAsync());
+        var cursor2 = await(tx.runAsync("RETURN 42"));
+        var record2 = await(cursor2.nextAsync());
         assertNotNull(record2);
         assertEquals(42, record2.get(0).asInt());
 
-        Exception e = assertThrows(Exception.class, () -> await(tx.runAsync("RETURN")));
+        var e = assertThrows(Exception.class, () -> await(tx.runAsync("RETURN")));
         assertThat(e, is(syntaxError()));
 
         assertThrows(ClientException.class, () -> await(tx.commitAsync()));
@@ -245,31 +236,31 @@ class AsyncTransactionIT {
 
     @Test
     void shouldAllowRollbackAfterCoupleCorrectAndSingleWrongQuery() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
-        ResultCursor cursor1 = await(tx.runAsync("RETURN 4242"));
-        Record record1 = await(cursor1.nextAsync());
+        var cursor1 = await(tx.runAsync("RETURN 4242"));
+        var record1 = await(cursor1.nextAsync());
         assertNotNull(record1);
         assertEquals(4242, record1.get(0).asInt());
 
-        ResultCursor cursor2 = await(tx.runAsync("CREATE (n:Node) DELETE n RETURN 42"));
-        Record record2 = await(cursor2.nextAsync());
+        var cursor2 = await(tx.runAsync("CREATE (n:Node) DELETE n RETURN 42"));
+        var record2 = await(cursor2.nextAsync());
         assertNotNull(record2);
         assertEquals(42, record2.get(0).asInt());
 
-        Exception e = assertThrows(Exception.class, () -> await(tx.runAsync("RETURN")));
+        var e = assertThrows(Exception.class, () -> await(tx.runAsync("RETURN")));
         assertThat(e, is(syntaxError()));
         assertThat(await(tx.rollbackAsync()), is(nullValue()));
     }
 
     @Test
     void shouldNotAllowNewQueriesAfterAnIncorrectQuery() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
-        Exception e1 = assertThrows(Exception.class, () -> await(tx.runAsync("RETURN")));
+        var e1 = assertThrows(Exception.class, () -> await(tx.runAsync("RETURN")));
         assertThat(e1, is(syntaxError()));
 
-        ClientException e2 = assertThrows(ClientException.class, () -> tx.runAsync("CREATE ()"));
+        var e2 = assertThrows(ClientException.class, () -> tx.runAsync("CREATE ()"));
         assertThat(e2.getMessage(), startsWith("Cannot run more queries in this transaction"));
     }
 
@@ -287,72 +278,72 @@ class AsyncTransactionIT {
 
     @Test
     void shouldFailToCommitWhenCommitted() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
         tx.runAsync("CREATE ()");
         assertNull(await(tx.commitAsync()));
 
         // should not be possible to commit after commit
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertThat(e.getMessage(), containsString("transaction has been committed"));
     }
 
     @Test
     void shouldFailToRollbackWhenRolledBack() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
         tx.runAsync("CREATE ()");
         assertNull(await(tx.rollbackAsync()));
 
         // should not be possible to rollback after rollback
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
         assertThat(e.getMessage(), containsString("transaction has been rolled back"));
     }
 
     @Test
     void shouldFailToCommitWhenRolledBack() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
         tx.runAsync("CREATE ()");
         assertNull(await(tx.rollbackAsync()));
 
         // should not be possible to commit after rollback
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertThat(e.getMessage(), containsString("transaction has been rolled back"));
     }
 
     @Test
     void shouldFailToRollbackWhenCommitted() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
         tx.runAsync("CREATE ()");
         assertNull(await(tx.commitAsync()));
 
         // should not be possible to rollback after commit
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
         assertThat(e.getMessage(), containsString("transaction has been committed"));
     }
 
     @Test
     void shouldExposeQueryKeysForColumnsWithAliases() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five"));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five"));
 
         assertEquals(Arrays.asList("one", "two", "three", "five"), cursor.keys());
     }
 
     @Test
     void shouldExposeQueryKeysForColumnsWithoutAliases() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("RETURN 1, 2, 3, 5"));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("RETURN 1, 2, 3, 5"));
 
         assertEquals(Arrays.asList("1", "2", "3", "5"), cursor.keys());
     }
 
     @Test
     void shouldExposeResultSummaryForSimpleQuery() {
-        String query = "CREATE (p1:Person {name: $name1})-[:KNOWS]->(p2:Person {name: $name2}) RETURN p1, p2";
-        Value params = parameters("name1", "Bob", "name2", "John");
+        var query = "CREATE (p1:Person {name: $name1})-[:KNOWS]->(p2:Person {name: $name2}) RETURN p1, p2";
+        var params = parameters("name1", "Bob", "name2", "John");
 
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync(query, params));
-        ResultSummary summary = await(cursor.consumeAsync());
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync(query, params));
+        var summary = await(cursor.consumeAsync());
 
         assertEquals(new Query(query, params), summary.query());
         assertEquals(2, summary.counters().nodesCreated());
@@ -370,11 +361,11 @@ class AsyncTransactionIT {
 
     @Test
     void shouldExposeResultSummaryForExplainQuery() {
-        String query = "EXPLAIN MATCH (n) RETURN n";
+        var query = "EXPLAIN MATCH (n) RETURN n";
 
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync(query));
-        ResultSummary summary = await(cursor.consumeAsync());
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync(query));
+        var summary = await(cursor.consumeAsync());
 
         assertEquals(new Query(query), summary.query());
         assertEquals(0, summary.counters().nodesCreated());
@@ -393,14 +384,14 @@ class AsyncTransactionIT {
 
     @Test
     void shouldExposeResultSummaryForProfileQuery() {
-        String query = "PROFILE MERGE (n {name: $name}) " + "ON CREATE SET n.created = timestamp() "
+        var query = "PROFILE MERGE (n {name: $name}) " + "ON CREATE SET n.created = timestamp() "
                 + "ON MATCH SET n.counter = coalesce(n.counter, 0) + 1";
 
-        Value params = parameters("name", "Bob");
+        var params = parameters("name", "Bob");
 
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync(query, params));
-        ResultSummary summary = await(cursor.consumeAsync());
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync(query, params));
+        var summary = await(cursor.consumeAsync());
 
         assertEquals(new Query(query, params), summary.query());
         assertEquals(1, summary.counters().nodesCreated());
@@ -413,7 +404,7 @@ class AsyncTransactionIT {
         assertNotNull(summary.profile());
         // asserting on profile is a bit fragile and can break when server side changes or with different
         // server versions; that is why do fuzzy assertions in this test based on string content
-        String profileAsString = summary.profile().toString().toLowerCase();
+        var profileAsString = summary.profile().toString().toLowerCase();
         assertThat(profileAsString, containsString("hits"));
         assertEquals(0, summary.notifications().size());
         assertThat(summary, containsResultAvailableAfterAndResultConsumedAfter());
@@ -421,8 +412,8 @@ class AsyncTransactionIT {
 
     @Test
     void shouldPeekRecordFromCursor() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("UNWIND ['a', 'b', 'c'] AS x RETURN x"));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("UNWIND ['a', 'b', 'c'] AS x RETURN x"));
 
         assertEquals("a", await(cursor.peekAsync()).get(0).asString());
         assertEquals("a", await(cursor.peekAsync()).get(0).asString());
@@ -454,11 +445,11 @@ class AsyncTransactionIT {
 
     @Test
     void shouldFailForEachWhenActionFails() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("RETURN 'Hi!'"));
-        RuntimeException error = new RuntimeException();
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("RETURN 'Hi!'"));
+        var error = new RuntimeException();
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> {
+        var e = assertThrows(RuntimeException.class, () -> {
             await(cursor.forEachAsync(record -> {
                 throw error;
             }));
@@ -478,28 +469,27 @@ class AsyncTransactionIT {
 
     @Test
     void shouldConvertToTransformedListWithEmptyCursor() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("CREATE ()"));
-        List<Map<String, Object>> maps =
-                await(cursor.listAsync(record -> record.get(0).asMap()));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("CREATE ()"));
+        var maps = await(cursor.listAsync(record -> record.get(0).asMap()));
         assertEquals(0, maps.size());
     }
 
     @Test
     void shouldConvertToTransformedListWithNonEmptyCursor() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("UNWIND ['a', 'b', 'c'] AS x RETURN x"));
-        List<String> strings = await(cursor.listAsync(record -> record.get(0).asString() + "!"));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("UNWIND ['a', 'b', 'c'] AS x RETURN x"));
+        var strings = await(cursor.listAsync(record -> record.get(0).asString() + "!"));
         assertEquals(Arrays.asList("a!", "b!", "c!"), strings);
     }
 
     @Test
     void shouldFailWhenListTransformationFunctionFails() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("RETURN 'Hello'"));
-        IOException error = new IOException("World");
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("RETURN 'Hello'"));
+        var error = new IOException("World");
 
-        Exception e = assertThrows(
+        var e = assertThrows(
                 Exception.class,
                 () -> await(cursor.listAsync(record -> {
                     throw new CompletionException(error);
@@ -509,7 +499,7 @@ class AsyncTransactionIT {
 
     @Test
     void shouldFailToCommitWhenServerIsRestarted() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
         await(tx.runAsync("CREATE ()"));
 
@@ -520,47 +510,47 @@ class AsyncTransactionIT {
 
     @Test
     void shouldFailSingleWithEmptyCursor() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("MATCH (n:NoSuchLabel) RETURN n"));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("MATCH (n:NoSuchLabel) RETURN n"));
 
-        NoSuchRecordException e = assertThrows(NoSuchRecordException.class, () -> await(cursor.singleAsync()));
+        var e = assertThrows(NoSuchRecordException.class, () -> await(cursor.singleAsync()));
         assertThat(e.getMessage(), containsString("result is empty"));
     }
 
     @Test
     void shouldFailSingleWithMultiRecordCursor() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("UNWIND ['a', 'b'] AS x RETURN x"));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("UNWIND ['a', 'b'] AS x RETURN x"));
 
-        NoSuchRecordException e = assertThrows(NoSuchRecordException.class, () -> await(cursor.singleAsync()));
+        var e = assertThrows(NoSuchRecordException.class, () -> await(cursor.singleAsync()));
         assertThat(e.getMessage(), startsWith("Expected a result with a single record"));
     }
 
     @Test
     void shouldReturnSingleWithSingleRecordCursor() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("RETURN 'Hello!'"));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("RETURN 'Hello!'"));
 
-        Record record = await(cursor.singleAsync());
+        var record = await(cursor.singleAsync());
 
         assertEquals("Hello!", record.get(0).asString());
     }
 
     @Test
     void shouldPropagateFailureFromFirstRecordInSingleAsync() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("UNWIND [0] AS x RETURN 10 / x"));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("UNWIND [0] AS x RETURN 10 / x"));
 
-        ClientException e = assertThrows(ClientException.class, () -> await(cursor.singleAsync()));
+        var e = assertThrows(ClientException.class, () -> await(cursor.singleAsync()));
         assertThat(e.getMessage(), containsString("/ by zero"));
     }
 
     @Test
     void shouldNotPropagateFailureFromSecondRecordInSingleAsync() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("UNWIND [1, 0] AS x RETURN 10 / x"));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("UNWIND [1, 0] AS x RETURN 10 / x"));
 
-        ClientException e = assertThrows(ClientException.class, () -> await(cursor.singleAsync()));
+        var e = assertThrows(ClientException.class, () -> await(cursor.singleAsync()));
         assertThat(e.getMessage(), containsString("/ by zero"));
     }
 
@@ -576,39 +566,39 @@ class AsyncTransactionIT {
 
     @Test
     void shouldFailToRunQueryAfterCommit() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
         tx.runAsync("CREATE (:MyLabel)");
         assertNull(await(tx.commitAsync()));
 
-        ResultCursor cursor = await(session.runAsync("MATCH (n:MyLabel) RETURN count(n)"));
+        var cursor = await(session.runAsync("MATCH (n:MyLabel) RETURN count(n)"));
         assertEquals(1, await(cursor.singleAsync()).get(0).asInt());
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.runAsync("CREATE (:MyOtherLabel)")));
+        var e = assertThrows(ClientException.class, () -> await(tx.runAsync("CREATE (:MyOtherLabel)")));
         assertEquals("Cannot run more queries in this transaction, it has been committed", e.getMessage());
     }
 
     @Test
     void shouldFailToRunQueryAfterRollback() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
         tx.runAsync("CREATE (:MyLabel)");
         assertNull(await(tx.rollbackAsync()));
 
-        ResultCursor cursor = await(session.runAsync("MATCH (n:MyLabel) RETURN count(n)"));
+        var cursor = await(session.runAsync("MATCH (n:MyLabel) RETURN count(n)"));
         assertEquals(0, await(cursor.singleAsync()).get(0).asInt());
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.runAsync("CREATE (:MyOtherLabel)")));
+        var e = assertThrows(ClientException.class, () -> await(tx.runAsync("CREATE (:MyOtherLabel)")));
         assertEquals("Cannot run more queries in this transaction, it has been rolled back", e.getMessage());
     }
 
     @Test
     @SuppressWarnings("deprecation")
     void shouldUpdateSessionBookmarkAfterCommit() {
-        Bookmark bookmarkBefore = session.lastBookmark();
+        var bookmarkBefore = session.lastBookmark();
 
         await(session.beginTransactionAsync()
                 .thenCompose(tx -> tx.runAsync("CREATE (:MyNode)").thenCompose(ignore -> tx.commitAsync())));
 
-        Bookmark bookmarkAfter = session.lastBookmark();
+        var bookmarkAfter = session.lastBookmark();
 
         assertNotNull(bookmarkAfter);
         assertNotEquals(bookmarkBefore, bookmarkAfter);
@@ -616,14 +606,14 @@ class AsyncTransactionIT {
 
     @Test
     void shouldFailToCommitWhenQueriesFail() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
         tx.runAsync("CREATE (:TestNode)");
         tx.runAsync("CREATE (:TestNode)");
         tx.runAsync("RETURN 1 * \"x\"");
         tx.runAsync("CREATE (:TestNode)");
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertNoCircularReferences(e);
         assertEquals(
                 "Transaction can't be committed. It has been rolled back either because of an error or explicit termination",
@@ -632,23 +622,22 @@ class AsyncTransactionIT {
 
     @Test
     void shouldFailToCommitWhenRunFailed() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
         tx.runAsync("RETURN ILLEGAL");
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertNoCircularReferences(e);
         assertThat(e.getMessage(), containsString("Transaction can't be committed"));
     }
 
     @Test
     void shouldFailToCommitWhenBlockedRunFailed() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
-        ClientException runException =
-                assertThrows(ClientException.class, () -> await(tx.runAsync("RETURN 1 * \"x\"")));
+        var runException = assertThrows(ClientException.class, () -> await(tx.runAsync("RETURN 1 * \"x\"")));
 
-        ClientException commitException = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var commitException = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertThat(runException.getMessage(), containsString("Type mismatch"));
         assertNoCircularReferences(commitException);
         assertThat(commitException.getMessage(), containsString("Transaction can't be committed"));
@@ -656,7 +645,7 @@ class AsyncTransactionIT {
 
     @Test
     void shouldRollbackSuccessfullyWhenRunFailed() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
         tx.runAsync("RETURN ILLEGAL");
 
@@ -665,7 +654,7 @@ class AsyncTransactionIT {
 
     @Test
     void shouldRollbackSuccessfullyWhenBlockedRunFailed() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
         assertThrows(ClientException.class, () -> await(tx.runAsync("RETURN 1 * \"x\"")));
 
@@ -674,68 +663,68 @@ class AsyncTransactionIT {
 
     @Test
     void shouldPropagatePullAllFailureFromCommit() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
         tx.runAsync("UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x");
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertNoCircularReferences(e);
         assertThat(e.code(), containsString("TypeError"));
     }
 
     @Test
     void shouldPropagateBlockedPullAllFailureFromCommit() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
         await(tx.runAsync("UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x"));
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertNoCircularReferences(e);
         assertThat(e.code(), containsString("TypeError"));
     }
 
     @Test
     void shouldPropagatePullAllFailureFromRollback() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
         tx.runAsync("UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x");
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
         assertThat(e.code(), containsString("TypeError"));
     }
 
     @Test
     void shouldPropagateBlockedPullAllFailureFromRollback() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
+        var tx = await(session.beginTransactionAsync());
 
         await(tx.runAsync("UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x"));
 
-        ClientException e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
         assertThat(e.code(), containsString("TypeError"));
     }
 
     @Test
     void shouldRollbackWhenPullAllFailureIsConsumed() {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync("UNWIND [1, 0] AS x RETURN 5 / x"));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync("UNWIND [1, 0] AS x RETURN 5 / x"));
 
-        ClientException e = assertThrows(ClientException.class, () -> await(cursor.consumeAsync()));
+        var e = assertThrows(ClientException.class, () -> await(cursor.consumeAsync()));
         assertThat(e.getMessage(), containsString("/ by zero"));
         assertNull(await(tx.rollbackAsync()));
     }
 
     private int countNodes(Object id) {
-        ResultCursor cursor = await(session.runAsync("MATCH (n:Node {id: $id}) RETURN count(n)", parameters("id", id)));
+        var cursor = await(session.runAsync("MATCH (n:Node {id: $id}) RETURN count(n)", parameters("id", id)));
         return await(cursor.singleAsync()).get(0).asInt();
     }
 
     private void testForEach(String query, int expectedSeenRecords) {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync(query));
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync(query));
 
-        AtomicInteger recordsSeen = new AtomicInteger();
-        CompletionStage<ResultSummary> forEachDone = cursor.forEachAsync(record -> recordsSeen.incrementAndGet());
-        ResultSummary summary = await(forEachDone);
+        var recordsSeen = new AtomicInteger();
+        var forEachDone = cursor.forEachAsync(record -> recordsSeen.incrementAndGet());
+        var summary = await(forEachDone);
 
         assertNotNull(summary);
         assertEquals(query, summary.query().text());
@@ -744,20 +733,20 @@ class AsyncTransactionIT {
     }
 
     private <T> void testList(String query, List<T> expectedList) {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync(query));
-        List<Record> records = await(cursor.listAsync());
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync(query));
+        var records = await(cursor.listAsync());
         List<Object> actualList = new ArrayList<>();
-        for (Record record : records) {
+        for (var record : records) {
             actualList.add(record.get(0).asObject());
         }
         assertEquals(expectedList, actualList);
     }
 
     private void testConsume(String query) {
-        AsyncTransaction tx = await(session.beginTransactionAsync());
-        ResultCursor cursor = await(tx.runAsync(query));
-        ResultSummary summary = await(cursor.consumeAsync());
+        var tx = await(session.beginTransactionAsync());
+        var cursor = await(tx.runAsync(query));
+        var summary = await(cursor.consumeAsync());
 
         assertNotNull(summary);
         assertEquals(query, summary.query().text());

@@ -22,18 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ResultConsumedException;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
@@ -58,7 +53,7 @@ class QueryRunnerCloseIT {
     @Test
     void shouldErrorToAccessRecordsAfterConsume() {
         // Given
-        Result result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
+        var result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
 
         // When
         result.consume();
@@ -77,8 +72,8 @@ class QueryRunnerCloseIT {
     @Test
     void shouldErrorToAccessRecordsAfterClose() {
         // Given
-        Session session = neo4j.driver().session();
-        Result result = session.run("UNWIND [1,2] AS a RETURN a");
+        var session = neo4j.driver().session();
+        var result = session.run("UNWIND [1,2] AS a RETURN a");
 
         // When
         session.close();
@@ -97,15 +92,15 @@ class QueryRunnerCloseIT {
     @Test
     void shouldAllowConsumeAndKeysAfterConsume() {
         // Given
-        Result result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
-        List<String> keys = result.keys();
+        var result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
+        var keys = result.keys();
 
         // When
-        ResultSummary summary = result.consume();
+        var summary = result.consume();
 
         // Then
-        ResultSummary summary1 = result.consume();
-        List<String> keys1 = result.keys();
+        var summary1 = result.consume();
+        var keys1 = result.keys();
 
         assertEquals(summary, summary1);
         assertEquals(keys, keys1);
@@ -114,17 +109,17 @@ class QueryRunnerCloseIT {
     @Test
     void shouldAllowSummaryAndKeysAfterClose() {
         // Given
-        Session session = neo4j.driver().session();
-        Result result = session.run("UNWIND [1,2] AS a RETURN a");
-        List<String> keys = result.keys();
-        ResultSummary summary = result.consume();
+        var session = neo4j.driver().session();
+        var result = session.run("UNWIND [1,2] AS a RETURN a");
+        var keys = result.keys();
+        var summary = result.consume();
 
         // When
         session.close();
 
         // Then
-        ResultSummary summary1 = result.consume();
-        List<String> keys1 = result.keys();
+        var summary1 = result.consume();
+        var keys1 = result.keys();
 
         assertEquals(summary, summary1);
         assertEquals(keys, keys1);
@@ -133,8 +128,8 @@ class QueryRunnerCloseIT {
     @Test
     void shouldErrorToAccessRecordsAfterConsumeAsync() {
         // Given
-        AsyncSession session = neo4j.driver().session(AsyncSession.class);
-        ResultCursor result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
+        var session = neo4j.driver().session(AsyncSession.class);
+        var result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
 
         // When
         await(result.consumeAsync());
@@ -151,8 +146,8 @@ class QueryRunnerCloseIT {
     @Test
     void shouldErrorToAccessRecordsAfterCloseAsync() {
         // Given
-        AsyncSession session = neo4j.driver().session(AsyncSession.class);
-        ResultCursor result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
+        var session = neo4j.driver().session(AsyncSession.class);
+        var result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
 
         // When
         await(session.closeAsync());
@@ -169,17 +164,17 @@ class QueryRunnerCloseIT {
     @Test
     void shouldAllowConsumeAndKeysAfterConsumeAsync() {
         // Given
-        AsyncSession session = neo4j.driver().session(AsyncSession.class);
-        ResultCursor result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
+        var session = neo4j.driver().session(AsyncSession.class);
+        var result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
 
-        List<String> keys = result.keys();
+        var keys = result.keys();
 
         // When
-        ResultSummary summary = await(result.consumeAsync());
+        var summary = await(result.consumeAsync());
 
         // Then
-        ResultSummary summary1 = await(result.consumeAsync());
-        List<String> keys1 = result.keys();
+        var summary1 = await(result.consumeAsync());
+        var keys1 = result.keys();
 
         assertEquals(summary, summary1);
         assertEquals(keys, keys1);
@@ -188,17 +183,17 @@ class QueryRunnerCloseIT {
     @Test
     void shouldAllowConsumeAndKeysAfterCloseAsync() {
         // Given
-        AsyncSession session = neo4j.driver().session(AsyncSession.class);
-        ResultCursor result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
-        List<String> keys = result.keys();
-        ResultSummary summary = await(result.consumeAsync());
+        var session = neo4j.driver().session(AsyncSession.class);
+        var result = await(session.runAsync("UNWIND [1,2] AS a RETURN a"));
+        var keys = result.keys();
+        var summary = await(result.consumeAsync());
 
         // When
         await(session.closeAsync());
 
         // Then
-        List<String> keys1 = result.keys();
-        ResultSummary summary1 = await(result.consumeAsync());
+        var keys1 = result.keys();
+        var summary1 = await(result.consumeAsync());
 
         assertEquals(summary, summary1);
         assertEquals(keys, keys1);

@@ -40,13 +40,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.HashMap;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.async.connection.BoltProtocolUtil;
 import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilderImpl;
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.ChunkAwareByteBufOutput;
 import org.neo4j.driver.internal.messaging.common.CommonValueUnpacker;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
@@ -90,10 +88,10 @@ class MessageFormatTest {
     @Test
     void shouldGiveHelpfulErrorOnMalformedNodeStruct() throws Throwable {
         // Given
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput();
-        ByteBuf buf = Unpooled.buffer();
+        var output = new ChunkAwareByteBufOutput();
+        var buf = Unpooled.buffer();
         output.start(buf);
-        PackStream.Packer packer = new PackStream.Packer(output);
+        var packer = new PackStream.Packer(output);
 
         packer.packStructHeader(1, RecordMessage.SIGNATURE);
         packer.packListHeader(1);
@@ -103,7 +101,7 @@ class MessageFormatTest {
         BoltProtocolUtil.writeMessageBoundary(buf);
 
         // Expect
-        ClientException error = assertThrows(ClientException.class, () -> unpack(buf, newEmbeddedChannel()));
+        var error = assertThrows(ClientException.class, () -> unpack(buf, newEmbeddedChannel()));
         assertThat(
                 error.getMessage(),
                 startsWith("Invalid message received, serialized NODE structures should have 3 fields, "
@@ -115,10 +113,10 @@ class MessageFormatTest {
     }
 
     private void assertSerializes(Message message) throws Throwable {
-        EmbeddedChannel channel = newEmbeddedChannel(new KnowledgeableMessageFormat(false));
+        var channel = newEmbeddedChannel(new KnowledgeableMessageFormat(false));
 
-        ByteBuf packed = pack(message, channel);
-        Message unpackedMessage = unpack(packed, channel);
+        var packed = pack(message, channel);
+        var unpackedMessage = unpack(packed, channel);
 
         assertEquals(message, unpackedMessage);
     }
@@ -128,7 +126,7 @@ class MessageFormatTest {
     }
 
     private EmbeddedChannel newEmbeddedChannel(MessageFormat format) {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        var channel = new EmbeddedChannel();
         setMessageDispatcher(channel, new MemorizingInboundMessageDispatcher(channel, DEV_NULL_LOGGING));
         new ChannelPipelineBuilderImpl().build(format, channel.pipeline(), DEV_NULL_LOGGING);
         return channel;
@@ -137,7 +135,7 @@ class MessageFormatTest {
     private ByteBuf pack(Message message, EmbeddedChannel channel) {
         assertTrue(channel.writeOutbound(message));
 
-        ByteBuf[] packedMessages =
+        var packedMessages =
                 channel.outboundMessages().stream().map(msg -> (ByteBuf) msg).toArray(ByteBuf[]::new);
 
         return Unpooled.wrappedBuffer(packedMessages);
@@ -146,35 +144,35 @@ class MessageFormatTest {
     private Message unpack(ByteBuf packed, EmbeddedChannel channel) throws Throwable {
         channel.writeInbound(packed);
 
-        InboundMessageDispatcher dispatcher = messageDispatcher(channel);
-        MemorizingInboundMessageDispatcher memorizingDispatcher = ((MemorizingInboundMessageDispatcher) dispatcher);
+        var dispatcher = messageDispatcher(channel);
+        var memorizingDispatcher = ((MemorizingInboundMessageDispatcher) dispatcher);
 
-        Throwable error = memorizingDispatcher.currentError();
+        var error = memorizingDispatcher.currentError();
         if (error != null) {
             throw error;
         }
 
-        List<Message> unpackedMessages = memorizingDispatcher.messages();
+        var unpackedMessages = memorizingDispatcher.messages();
 
         assertEquals(1, unpackedMessages.size());
         return unpackedMessages.get(0);
     }
 
     private void assertOnlyDeserializesValue(Value value) throws Throwable {
-        RecordMessage message = new RecordMessage(new Value[] {value});
-        ByteBuf packed = knowledgeablePack(message);
+        var message = new RecordMessage(new Value[] {value});
+        var packed = knowledgeablePack(message);
 
-        EmbeddedChannel channel = newEmbeddedChannel();
-        Message unpackedMessage = unpack(packed, channel);
+        var channel = newEmbeddedChannel();
+        var unpackedMessage = unpack(packed, channel);
 
         assertEquals(message, unpackedMessage);
     }
 
     private ByteBuf knowledgeablePack(Message message) {
-        EmbeddedChannel channel = newEmbeddedChannel(new KnowledgeableMessageFormat(false));
+        var channel = newEmbeddedChannel(new KnowledgeableMessageFormat(false));
         assertTrue(channel.writeOutbound(message));
 
-        ByteBuf[] packedMessages =
+        var packedMessages =
                 channel.outboundMessages().stream().map(msg -> (ByteBuf) msg).toArray(ByteBuf[]::new);
 
         return Unpooled.wrappedBuffer(packedMessages);

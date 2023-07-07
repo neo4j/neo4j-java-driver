@@ -36,27 +36,27 @@ class ConnectTimeoutHandlerTest {
 
     @Test
     void shouldFireExceptionOnTimeout() throws Exception {
-        int timeoutMillis = 100;
+        var timeoutMillis = 100;
         channel.pipeline().addLast(new ConnectTimeoutHandler(timeoutMillis));
 
         // sleep for more than the timeout value
         Thread.sleep(timeoutMillis * 4);
         channel.runPendingTasks();
 
-        ServiceUnavailableException error = assertThrows(ServiceUnavailableException.class, channel::checkException);
+        var error = assertThrows(ServiceUnavailableException.class, channel::checkException);
         assertEquals(error.getMessage(), "Unable to establish connection in " + timeoutMillis + "ms");
     }
 
     @Test
     void shouldNotFireExceptionMultipleTimes() throws Exception {
-        int timeoutMillis = 70;
+        var timeoutMillis = 70;
         channel.pipeline().addLast(new ConnectTimeoutHandler(timeoutMillis));
 
         // sleep for more than the timeout value
         Thread.sleep(timeoutMillis * 4);
         channel.runPendingTasks();
 
-        ServiceUnavailableException error = assertThrows(ServiceUnavailableException.class, channel::checkException);
+        var error = assertThrows(ServiceUnavailableException.class, channel::checkException);
         assertEquals(error.getMessage(), "Unable to establish connection in " + timeoutMillis + "ms");
 
         // sleep even more

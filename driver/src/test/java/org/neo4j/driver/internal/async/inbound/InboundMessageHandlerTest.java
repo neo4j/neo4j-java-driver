@@ -66,7 +66,7 @@ class InboundMessageHandlerTest {
         writer = new MessageToByteBufWriter(new KnowledgeableMessageFormat(false));
         ChannelAttributes.setMessageDispatcher(channel, messageDispatcher);
 
-        InboundMessageHandler handler = new InboundMessageHandler(new MessageFormatV3(), DEV_NULL_LOGGING);
+        var handler = new InboundMessageHandler(new MessageFormatV3(), DEV_NULL_LOGGING);
         channel.pipeline().addFirst(handler);
     }
 
@@ -79,7 +79,7 @@ class InboundMessageHandlerTest {
 
     @Test
     void shouldReadSuccessMessage() {
-        ResponseHandler responseHandler = mock(ResponseHandler.class);
+        var responseHandler = mock(ResponseHandler.class);
         messageDispatcher.enqueue(responseHandler);
 
         Map<String, Value> metadata = new HashMap<>();
@@ -92,12 +92,12 @@ class InboundMessageHandlerTest {
 
     @Test
     void shouldReadFailureMessage() {
-        ResponseHandler responseHandler = mock(ResponseHandler.class);
+        var responseHandler = mock(ResponseHandler.class);
         messageDispatcher.enqueue(responseHandler);
 
         channel.writeInbound(writer.asByteBuf(new FailureMessage("Neo.TransientError.General.ReadOnly", "Hi!")));
 
-        ArgumentCaptor<Neo4jException> captor = ArgumentCaptor.forClass(Neo4jException.class);
+        var captor = ArgumentCaptor.forClass(Neo4jException.class);
         verify(responseHandler).onFailure(captor.capture());
         assertEquals("Neo.TransientError.General.ReadOnly", captor.getValue().code());
         assertEquals("Hi!", captor.getValue().getMessage());
@@ -105,10 +105,10 @@ class InboundMessageHandlerTest {
 
     @Test
     void shouldReadRecordMessage() {
-        ResponseHandler responseHandler = mock(ResponseHandler.class);
+        var responseHandler = mock(ResponseHandler.class);
         messageDispatcher.enqueue(responseHandler);
 
-        Value[] fields = {value(1), value(2), value(3)};
+        var fields = new Value[] {value(1), value(2), value(3)};
         channel.writeInbound(writer.asByteBuf(new RecordMessage(fields)));
 
         verify(responseHandler).onRecord(fields);
@@ -116,7 +116,7 @@ class InboundMessageHandlerTest {
 
     @Test
     void shouldReadIgnoredMessage() {
-        ResponseHandler responseHandler = mock(ResponseHandler.class);
+        var responseHandler = mock(ResponseHandler.class);
         messageDispatcher.enqueue(responseHandler);
 
         channel.writeInbound(writer.asByteBuf(IgnoredMessage.IGNORED));
@@ -125,18 +125,18 @@ class InboundMessageHandlerTest {
 
     @Test
     void shouldRethrowReadErrors() throws IOException {
-        MessageFormat messageFormat = mock(MessageFormat.class);
-        Reader reader = mock(Reader.class);
-        RuntimeException error = new RuntimeException("Unable to decode!");
+        var messageFormat = mock(MessageFormat.class);
+        var reader = mock(Reader.class);
+        var error = new RuntimeException("Unable to decode!");
         doThrow(error).when(reader).read(any());
         when(messageFormat.newReader(any())).thenReturn(reader);
 
-        InboundMessageHandler handler = new InboundMessageHandler(messageFormat, DEV_NULL_LOGGING);
+        var handler = new InboundMessageHandler(messageFormat, DEV_NULL_LOGGING);
 
         channel.pipeline().remove(InboundMessageHandler.class);
         channel.pipeline().addLast(handler);
 
-        DecoderException e = assertThrows(DecoderException.class, () -> channel.writeInbound(writer.asByteBuf(RESET)));
+        var e = assertThrows(DecoderException.class, () -> channel.writeInbound(writer.asByteBuf(RESET)));
         assertThat(e.getMessage(), startsWith("Failed to read inbound message"));
     }
 }

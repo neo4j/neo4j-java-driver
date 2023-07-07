@@ -38,14 +38,14 @@ class MessageFormatV3Test {
 
     @Test
     void shouldCreateCorrectWriter() {
-        MessageFormat.Writer writer = messageFormat.newWriter(mock(PackOutput.class));
+        var writer = messageFormat.newWriter(mock(PackOutput.class));
 
         assertThat(writer, instanceOf(MessageWriterV3.class));
     }
 
     @Test
     void shouldCreateCorrectReader() {
-        MessageFormat.Reader reader = messageFormat.newReader(mock(PackInput.class));
+        var reader = messageFormat.newReader(mock(PackInput.class));
 
         assertThat(reader, instanceOf(CommonMessageReader.class));
     }

@@ -27,7 +27,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.testutil.TestUtil;
@@ -61,7 +60,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
             clusterUri = remoteClusterUriFromSystemProperty();
             cleanDb();
         } else {
-            String neo4JVersion =
+            var neo4JVersion =
                     Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
             neo4jContainer = new Neo4jContainer<>(String.format("neo4j:%s-enterprise", neo4JVersion))
                     .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes");
@@ -84,17 +83,17 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
     }
 
     private void cleanDb() {
-        Config.ConfigBuilder builder = Config.builder();
+        var builder = Config.builder();
         builder.withEventLoopThreads(1);
 
-        try (Driver driver = GraphDatabase.driver(getClusterUri(), getAuthToken(), builder.build())) {
+        try (var driver = GraphDatabase.driver(getClusterUri(), getAuthToken(), builder.build())) {
             TestUtil.cleanDb(driver);
         }
     }
 
     private static void assertValidSystemPropertiesDefined() {
-        URI uri = remoteClusterUriFromSystemProperty();
-        String password = neo4jUserPasswordFromSystemProperty();
+        var uri = remoteClusterUriFromSystemProperty();
+        var password = neo4jUserPasswordFromSystemProperty();
         if ((uri != null && password == null) || (uri == null && password != null)) {
             throw new IllegalStateException(
                     "Both cluster uri and 'neo4j' user password system properties should be set. " + "Uri: '" + uri
@@ -107,7 +106,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
     }
 
     private static URI remoteClusterUriFromSystemProperty() {
-        String uri = System.getProperty(CLUSTER_URI_SYSTEM_PROPERTY_NAME);
+        var uri = System.getProperty(CLUSTER_URI_SYSTEM_PROPERTY_NAME);
         return uri == null ? null : URI.create(uri);
     }
 

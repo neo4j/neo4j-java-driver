@@ -35,34 +35,25 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.testutil.TestUtil.TX_TIMEOUT_TEST_TIMEOUT;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import io.netty.channel.Channel;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.MessageRecordingDriverFactory;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.testutil.DriverExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
@@ -88,11 +79,10 @@ class SessionBoltV3IT {
         metadata.put("b", LocalDate.now());
         metadata.put("c", driver.isNeo4j43OrEarlier() ? asList(true, false, true) : false);
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+        var config = TransactionConfig.builder().withMetadata(metadata).build();
 
-        Result result = driver.session().run(showTxMetadata, config);
-        Map<String, Object> receivedMetadata = result.single().get("metaData").asMap();
+        var result = driver.session().run(showTxMetadata, config);
+        var receivedMetadata = result.single().get("metaData").asMap();
 
         assertEquals(metadata, receivedMetadata);
     }
@@ -103,10 +93,9 @@ class SessionBoltV3IT {
         metadata.put("key1", "value1");
         metadata.put("key2", 42L);
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+        var config = TransactionConfig.builder().withMetadata(metadata).build();
 
-        CompletionStage<Map<String, Object>> metadataFuture = driver.asyncSession()
+        var metadataFuture = driver.asyncSession()
                 .runAsync(showTxMetadata, config)
                 .thenCompose(ResultCursor::singleAsync)
                 .thenApply(record -> record.get("metaData").asMap());
@@ -117,22 +106,21 @@ class SessionBoltV3IT {
     @Test
     void shouldSetTransactionTimeout() {
         // create a dummy node
-        Session session = driver.session();
+        var session = driver.session();
         session.run("CREATE (:Node)").consume();
 
-        try (Session otherSession = driver.driver().session()) {
-            try (Transaction otherTx = otherSession.beginTransaction()) {
+        try (var otherSession = driver.driver().session()) {
+            try (var otherTx = otherSession.beginTransaction()) {
                 // lock dummy node but keep the transaction open
                 otherTx.run("MATCH (n:Node) SET n.prop = 1").consume();
 
                 assertTimeoutPreemptively(TX_TIMEOUT_TEST_TIMEOUT, () -> {
-                    TransactionConfig config =
+                    var config =
                             TransactionConfig.builder().withTimeout(ofMillis(1)).build();
 
                     // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
-                    Exception error =
-                            assertThrows(Exception.class, () -> session.run("MATCH (n:Node) SET n.prop = 2", config)
-                                    .consume());
+                    var error = assertThrows(Exception.class, () -> session.run("MATCH (n:Node) SET n.prop = 2", config)
+                            .consume());
                     verifyValidException(error);
                 });
             }
@@ -142,24 +130,24 @@ class SessionBoltV3IT {
     @Test
     void shouldSetTransactionTimeoutAsync() {
         // create a dummy node
-        AsyncSession asyncSession = driver.asyncSession();
+        var asyncSession = driver.asyncSession();
         await(await(asyncSession.runAsync("CREATE (:Node)")).consumeAsync());
 
-        try (Session otherSession = driver.driver().session()) {
-            try (Transaction otherTx = otherSession.beginTransaction()) {
+        try (var otherSession = driver.driver().session()) {
+            try (var otherTx = otherSession.beginTransaction()) {
                 // lock dummy node but keep the transaction open
                 otherTx.run("MATCH (n:Node) SET n.prop = 1").consume();
 
                 assertTimeoutPreemptively(TX_TIMEOUT_TEST_TIMEOUT, () -> {
-                    TransactionConfig config =
+                    var config =
                             TransactionConfig.builder().withTimeout(ofMillis(1)).build();
 
                     // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
-                    CompletionStage<ResultSummary> resultFuture = asyncSession
+                    var resultFuture = asyncSession
                             .runAsync("MATCH (n:Node) SET n.prop = 2", config)
                             .thenCompose(ResultCursor::consumeAsync);
 
-                    Exception error = assertThrows(Exception.class, () -> await(resultFuture));
+                    var error = assertThrows(Exception.class, () -> await(resultFuture));
                     verifyValidException(error);
                 });
             }
@@ -189,22 +177,22 @@ class SessionBoltV3IT {
     @Test
     @SuppressWarnings("deprecation")
     void shouldUseBookmarksForAutoCommitTransactions() {
-        Session session = driver.session();
-        Bookmark initialBookmark = session.lastBookmark();
+        var session = driver.session();
+        var initialBookmark = session.lastBookmark();
 
         session.run("CREATE ()").consume();
-        Bookmark bookmark1 = session.lastBookmark();
+        var bookmark1 = session.lastBookmark();
         assertNotNull(bookmark1);
         assertNotEquals(initialBookmark, bookmark1);
 
         session.run("CREATE ()").consume();
-        Bookmark bookmark2 = session.lastBookmark();
+        var bookmark2 = session.lastBookmark();
         assertNotNull(bookmark2);
         assertNotEquals(initialBookmark, bookmark2);
         assertNotEquals(bookmark1, bookmark2);
 
         session.run("CREATE ()").consume();
-        Bookmark bookmark3 = session.lastBookmark();
+        var bookmark3 = session.lastBookmark();
         assertNotNull(bookmark3);
         assertNotEquals(initialBookmark, bookmark3);
         assertNotEquals(bookmark1, bookmark3);
@@ -214,28 +202,28 @@ class SessionBoltV3IT {
     @Test
     @SuppressWarnings("deprecation")
     void shouldUseBookmarksForAutoCommitAndUnmanagedTransactions() {
-        Session session = driver.session();
-        Bookmark initialBookmark = session.lastBookmark();
+        var session = driver.session();
+        var initialBookmark = session.lastBookmark();
 
-        try (Transaction tx = session.beginTransaction()) {
+        try (var tx = session.beginTransaction()) {
             tx.run("CREATE ()");
             tx.commit();
         }
-        Bookmark bookmark1 = session.lastBookmark();
+        var bookmark1 = session.lastBookmark();
         assertNotNull(bookmark1);
         assertNotEquals(initialBookmark, bookmark1);
 
         session.run("CREATE ()").consume();
-        Bookmark bookmark2 = session.lastBookmark();
+        var bookmark2 = session.lastBookmark();
         assertNotNull(bookmark2);
         assertNotEquals(initialBookmark, bookmark2);
         assertNotEquals(bookmark1, bookmark2);
 
-        try (Transaction tx = session.beginTransaction()) {
+        try (var tx = session.beginTransaction()) {
             tx.run("CREATE ()");
             tx.commit();
         }
-        Bookmark bookmark3 = session.lastBookmark();
+        var bookmark3 = session.lastBookmark();
         assertNotNull(bookmark3);
         assertNotEquals(initialBookmark, bookmark3);
         assertNotEquals(bookmark1, bookmark3);
@@ -245,22 +233,22 @@ class SessionBoltV3IT {
     @Test
     @SuppressWarnings("deprecation")
     void shouldUseBookmarksForAutoCommitTransactionsAndTransactionFunctions() {
-        Session session = driver.session();
-        Bookmark initialBookmark = session.lastBookmark();
+        var session = driver.session();
+        var initialBookmark = session.lastBookmark();
 
         session.writeTransaction(tx -> tx.run("CREATE ()").consume());
-        Bookmark bookmark1 = session.lastBookmark();
+        var bookmark1 = session.lastBookmark();
         assertNotNull(bookmark1);
         assertNotEquals(initialBookmark, bookmark1);
 
         session.run("CREATE ()").consume();
-        Bookmark bookmark2 = session.lastBookmark();
+        var bookmark2 = session.lastBookmark();
         assertNotNull(bookmark2);
         assertNotEquals(initialBookmark, bookmark2);
         assertNotEquals(bookmark1, bookmark2);
 
         session.writeTransaction(tx -> tx.run("CREATE ()").consume());
-        Bookmark bookmark3 = session.lastBookmark();
+        var bookmark3 = session.lastBookmark();
         assertNotNull(bookmark3);
         assertNotEquals(initialBookmark, bookmark3);
         assertNotEquals(bookmark1, bookmark3);
@@ -269,23 +257,23 @@ class SessionBoltV3IT {
 
     @Test
     void shouldSendGoodbyeWhenClosingDriver() {
-        int txCount = 13;
-        MessageRecordingDriverFactory driverFactory = new MessageRecordingDriverFactory();
+        var txCount = 13;
+        var driverFactory = new MessageRecordingDriverFactory();
 
-        try (Driver otherDriver = driverFactory.newInstance(
+        try (var otherDriver = driverFactory.newInstance(
                 driver.uri(), driver.authTokenManager(), defaultConfig(), SecurityPlanImpl.insecure(), null, null)) {
             List<Session> sessions = new ArrayList<>();
             List<Transaction> txs = new ArrayList<>();
-            for (int i = 0; i < txCount; i++) {
-                Session session = otherDriver.session();
+            for (var i = 0; i < txCount; i++) {
+                var session = otherDriver.session();
                 sessions.add(session);
-                Transaction tx = session.beginTransaction();
+                var tx = session.beginTransaction();
                 txs.add(tx);
             }
 
-            for (int i = 0; i < txCount; i++) {
-                Session session = sessions.get(i);
-                Transaction tx = txs.get(i);
+            for (var i = 0; i < txCount; i++) {
+                var session = sessions.get(i);
+                var tx = txs.get(i);
 
                 tx.run("CREATE ()");
                 tx.commit();
@@ -293,10 +281,10 @@ class SessionBoltV3IT {
             }
         }
 
-        Map<Channel, List<Message>> messagesByChannel = driverFactory.getMessagesByChannel();
+        var messagesByChannel = driverFactory.getMessagesByChannel();
         assertEquals(txCount, messagesByChannel.size());
 
-        for (List<Message> messages : messagesByChannel.values()) {
+        for (var messages : messagesByChannel.values()) {
             assertThat(messages.size(), greaterThan(2));
             assertThat(messages.get(0), instanceOf(HelloMessage.class)); // first message is HELLO
             assertThat(messages.get(messages.size() - 1), instanceOf(GoodbyeMessage.class)); // last message is GOODBYE
@@ -305,22 +293,21 @@ class SessionBoltV3IT {
 
     @SuppressWarnings("deprecation")
     private static void testTransactionMetadataWithAsyncTransactionFunctions(boolean read) {
-        AsyncSession asyncSession = driver.asyncSession();
+        var asyncSession = driver.asyncSession();
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("foo", "bar");
         metadata.put("baz", true);
         metadata.put("qux", 12345L);
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+        var config = TransactionConfig.builder().withMetadata(metadata).build();
 
-        CompletionStage<Record> singleFuture = read
+        var singleFuture = read
                 ? asyncSession.readTransactionAsync(
                         tx -> tx.runAsync(showTxMetadata).thenCompose(ResultCursor::singleAsync), config)
                 : asyncSession.writeTransactionAsync(
                         tx -> tx.runAsync(showTxMetadata).thenCompose(ResultCursor::singleAsync), config);
 
-        CompletionStage<Map<String, Object>> metadataFuture =
+        var metadataFuture =
                 singleFuture.thenApply(record -> record.get("metaData").asMap());
 
         assertEquals(metadata, await(metadataFuture));
@@ -328,20 +315,19 @@ class SessionBoltV3IT {
 
     @SuppressWarnings("deprecation")
     private static void testTransactionMetadataWithTransactionFunctions(boolean read) {
-        Session session = driver.session();
+        var session = driver.session();
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("foo", "bar");
         metadata.put("baz", true);
         metadata.put("qux", 12345L);
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+        var config = TransactionConfig.builder().withMetadata(metadata).build();
 
-        Record single = read
+        var single = read
                 ? session.readTransaction(tx -> tx.run(showTxMetadata).single(), config)
                 : session.writeTransaction(tx -> tx.run(showTxMetadata).single(), config);
 
-        Map<String, Object> receivedMetadata = single.get("metaData").asMap();
+        var receivedMetadata = single.get("metaData").asMap();
 
         assertEquals(metadata, receivedMetadata);
     }

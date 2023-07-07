@@ -21,14 +21,8 @@ package org.neo4j.driver.stress;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.driver.internal.util.Iterables.single;
 
-import java.util.List;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.types.Node;
 
 public class BlockingReadQueryInTx<C extends AbstractContext> extends AbstractBlockingQuery<C> {
     public BlockingReadQueryInTx(Driver driver, boolean useBookmark) {
@@ -37,13 +31,13 @@ public class BlockingReadQueryInTx<C extends AbstractContext> extends AbstractBl
 
     @Override
     public void execute(C context) {
-        try (Session session = newSession(AccessMode.READ, context);
-                Transaction tx = beginTransaction(session, context)) {
-            Result result = tx.run("MATCH (n) RETURN n LIMIT 1");
-            List<Record> records = result.list();
+        try (var session = newSession(AccessMode.READ, context);
+                var tx = beginTransaction(session, context)) {
+            var result = tx.run("MATCH (n) RETURN n LIMIT 1");
+            var records = result.list();
             if (!records.isEmpty()) {
-                Record record = single(records);
-                Node node = record.get(0).asNode();
+                var record = single(records);
+                var node = record.get(0).asNode();
                 assertNotNull(node);
             }
 

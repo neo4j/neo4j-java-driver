@@ -29,29 +29,29 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 class LocalTimeValueTest {
     @Test
     void shouldHaveCorrectType() {
-        LocalTime time = LocalTime.of(23, 59, 59);
-        LocalTimeValue timeValue = new LocalTimeValue(time);
+        var time = LocalTime.of(23, 59, 59);
+        var timeValue = new LocalTimeValue(time);
         assertEquals(InternalTypeSystem.TYPE_SYSTEM.LOCAL_TIME(), timeValue.type());
     }
 
     @Test
     void shouldSupportAsObject() {
-        LocalTime time = LocalTime.of(1, 17, 59, 999);
-        LocalTimeValue timeValue = new LocalTimeValue(time);
+        var time = LocalTime.of(1, 17, 59, 999);
+        var timeValue = new LocalTimeValue(time);
         assertEquals(time, timeValue.asObject());
     }
 
     @Test
     void shouldSupportAsLocalTime() {
-        LocalTime time = LocalTime.of(12, 59, 12, 999_999_999);
-        LocalTimeValue timeValue = new LocalTimeValue(time);
+        var time = LocalTime.of(12, 59, 12, 999_999_999);
+        var timeValue = new LocalTimeValue(time);
         assertEquals(time, timeValue.asLocalTime());
     }
 
     @Test
     void shouldNotSupportAsLong() {
-        LocalTime time = LocalTime.now();
-        LocalTimeValue timeValue = new LocalTimeValue(time);
+        var time = LocalTime.now();
+        var timeValue = new LocalTimeValue(time);
 
         assertThrows(Uncoercible.class, timeValue::asLong);
     }

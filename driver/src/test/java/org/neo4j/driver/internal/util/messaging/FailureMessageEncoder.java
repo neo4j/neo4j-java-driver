@@ -31,7 +31,7 @@ import org.neo4j.driver.internal.messaging.response.FailureMessage;
 public class FailureMessageEncoder implements MessageEncoder {
     @Override
     public void encode(Message message, ValuePacker packer) throws IOException {
-        FailureMessage failureMessage = (FailureMessage) message;
+        var failureMessage = (FailureMessage) message;
         packer.packStructHeader(1, failureMessage.signature());
         Map<String, Value> body = new HashMap<>();
         body.put("code", Values.value(failureMessage.code()));

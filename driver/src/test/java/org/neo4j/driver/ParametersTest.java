@@ -65,7 +65,7 @@ class ParametersTest {
     @ParameterizedTest
     @MethodSource("addressesToParse")
     void shouldGiveHelpfulMessageOnMisalignedInput(Object obj, String expectedMsg) {
-        ClientException e = assertThrows(ClientException.class, () -> Values.parameters("1", obj, "2"));
+        var e = assertThrows(ClientException.class, () -> Values.parameters("1", obj, "2"));
         assertThat(
                 e.getMessage(),
                 startsWith("Parameters function requires an even number of arguments, alternating key and value."));
@@ -74,17 +74,16 @@ class ParametersTest {
     @ParameterizedTest
     @MethodSource("addressesToParse")
     void shouldNotBePossibleToUseInvalidParameterTypesViaParameters(Object obj, String expectedMsg) {
-        Session session = mockedSession();
-        ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN {a}", parameters("a", obj)));
+        var session = mockedSession();
+        var e = assertThrows(ClientException.class, () -> session.run("RETURN {a}", parameters("a", obj)));
         assertEquals(expectedMsg, e.getMessage());
     }
 
     @ParameterizedTest
     @MethodSource("addressesToParse")
     void shouldNotBePossibleToUseInvalidParametersViaMap(Object obj, String expectedMsg) {
-        Session session = mockedSession();
-        ClientException e =
-                assertThrows(ClientException.class, () -> session.run("RETURN {a}", singletonMap("a", obj)));
+        var session = mockedSession();
+        var e = assertThrows(ClientException.class, () -> session.run("RETURN {a}", singletonMap("a", obj)));
         assertEquals(expectedMsg, e.getMessage());
     }
 
@@ -93,16 +92,16 @@ class ParametersTest {
     void shouldNotBePossibleToUseInvalidParametersViaRecord(Object obj, String expectedMsg) {
         assumeTrue(obj instanceof Value);
         Record record = new InternalRecord(singletonList("a"), new Value[] {(Value) obj});
-        Session session = mockedSession();
+        var session = mockedSession();
 
-        ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN {a}", record));
+        var e = assertThrows(ClientException.class, () -> session.run("RETURN {a}", record));
         assertEquals(expectedMsg, e.getMessage());
     }
 
     private Session mockedSession() {
-        ConnectionProvider provider = mock(ConnectionProvider.class);
-        RetryLogic retryLogic = mock(RetryLogic.class);
-        NetworkSession session = new NetworkSession(
+        var provider = mock(ConnectionProvider.class);
+        var retryLogic = mock(RetryLogic.class);
+        var session = new NetworkSession(
                 provider,
                 retryLogic,
                 defaultDatabase(),

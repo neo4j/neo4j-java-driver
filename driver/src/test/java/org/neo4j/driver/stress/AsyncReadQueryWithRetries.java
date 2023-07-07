@@ -24,10 +24,8 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.types.Node;
 
 public class AsyncReadQueryWithRetries<C extends AbstractContext> extends AbstractAsyncQuery<C> {
     public AsyncReadQueryWithRetries(Driver driver, boolean useBookmark) {
@@ -37,21 +35,20 @@ public class AsyncReadQueryWithRetries<C extends AbstractContext> extends Abstra
     @Override
     @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
-        AsyncSession session = newSession(AccessMode.READ, context);
+        var session = newSession(AccessMode.READ, context);
 
-        CompletionStage<ResultSummary> txStage = session.readTransactionAsync(
+        var txStage = session.readTransactionAsync(
                 tx -> tx.runAsync("MATCH (n) RETURN n LIMIT 1").thenCompose(cursor -> cursor.nextAsync()
                         .thenCompose(record -> processRecordAndGetSummary(record, cursor))));
 
-        CompletionStage<Void> resultsProcessingStage =
-                txStage.thenApply(resultSummary -> processResultSummary(resultSummary, context));
+        var resultsProcessingStage = txStage.thenApply(resultSummary -> processResultSummary(resultSummary, context));
 
         return resultsProcessingStage.whenComplete((nothing, throwable) -> session.closeAsync());
     }
 
     private CompletionStage<ResultSummary> processRecordAndGetSummary(Record record, ResultCursor cursor) {
         if (record != null) {
-            Node node = record.get(0).asNode();
+            var node = record.get(0).asNode();
             assertNotNull(node);
         }
         return cursor.consumeAsync();

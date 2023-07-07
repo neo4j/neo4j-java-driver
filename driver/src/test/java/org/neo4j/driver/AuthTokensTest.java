@@ -38,9 +38,9 @@ import org.neo4j.driver.internal.value.StringValue;
 class AuthTokensTest {
     @Test
     void basicAuthWithoutRealm() {
-        InternalAuthToken basic = (InternalAuthToken) basic("foo", "bar");
+        var basic = (InternalAuthToken) basic("foo", "bar");
 
-        Map<String, Value> map = basic.toMap();
+        var map = basic.toMap();
 
         assertThat(map.size(), equalTo(3));
         assertThat(map.get("scheme"), equalTo((Value) new StringValue("basic")));
@@ -50,9 +50,9 @@ class AuthTokensTest {
 
     @Test
     void basicAuthWithRealm() {
-        InternalAuthToken basic = (InternalAuthToken) basic("foo", "bar", "baz");
+        var basic = (InternalAuthToken) basic("foo", "bar", "baz");
 
-        Map<String, Value> map = basic.toMap();
+        var map = basic.toMap();
 
         assertThat(map.size(), equalTo(4));
         assertThat(map.get("scheme"), equalTo((Value) new StringValue("basic")));
@@ -63,9 +63,9 @@ class AuthTokensTest {
 
     @Test
     void customAuthWithoutParameters() {
-        InternalAuthToken basic = (InternalAuthToken) custom("foo", "bar", "baz", "my_scheme");
+        var basic = (InternalAuthToken) custom("foo", "bar", "baz", "my_scheme");
 
-        Map<String, Value> map = basic.toMap();
+        var map = basic.toMap();
 
         assertThat(map.size(), equalTo(4));
         assertThat(map.get("scheme"), equalTo((Value) new StringValue("my_scheme")));
@@ -76,13 +76,13 @@ class AuthTokensTest {
 
     @Test
     void customAuthParameters() {
-        HashMap<String, Object> parameters = new HashMap<>();
+        var parameters = new HashMap<String, Object>();
         parameters.put("list", asList(1, 2, 3));
-        InternalAuthToken basic = (InternalAuthToken) custom("foo", "bar", "baz", "my_scheme", parameters);
+        var basic = (InternalAuthToken) custom("foo", "bar", "baz", "my_scheme", parameters);
 
         Map<String, Value> expectedParameters = new HashMap<>();
         expectedParameters.put("list", new ListValue(values(1, 2, 3)));
-        Map<String, Value> map = basic.toMap();
+        var map = basic.toMap();
 
         assertThat(map.size(), equalTo(5));
         assertThat(map.get("scheme"), equalTo((Value) new StringValue("my_scheme")));
@@ -95,13 +95,13 @@ class AuthTokensTest {
     @Test
     void shouldSupportBearerAuth() {
         // GIVEN
-        String tokenStr = "token";
+        var tokenStr = "token";
 
         // WHEN
-        InternalAuthToken token = (InternalAuthToken) AuthTokens.bearer(tokenStr);
+        var token = (InternalAuthToken) AuthTokens.bearer(tokenStr);
 
         // THEN
-        Map<String, Value> map = token.toMap();
+        var map = token.toMap();
         assertThat(map.size(), equalTo(2));
         assertThat(map.get("scheme"), equalTo(new StringValue("bearer")));
         assertThat(map.get("credentials"), equalTo(new StringValue(tokenStr)));
@@ -109,8 +109,8 @@ class AuthTokensTest {
 
     @Test
     void basicKerberosAuthWithRealm() {
-        InternalAuthToken token = (InternalAuthToken) AuthTokens.kerberos("base64");
-        Map<String, Value> map = token.toMap();
+        var token = (InternalAuthToken) AuthTokens.kerberos("base64");
+        var map = token.toMap();
 
         assertThat(map.size(), equalTo(3));
         assertThat(map.get("scheme"), equalTo((Value) new StringValue("kerberos")));
@@ -120,20 +120,20 @@ class AuthTokensTest {
 
     @Test
     void shouldNotAllowBasicAuthTokenWithNullUsername() {
-        NullPointerException e = assertThrows(NullPointerException.class, () -> AuthTokens.basic(null, "password"));
+        var e = assertThrows(NullPointerException.class, () -> AuthTokens.basic(null, "password"));
         assertEquals("Username can't be null", e.getMessage());
     }
 
     @Test
     void shouldNotAllowBasicAuthTokenWithNullPassword() {
-        NullPointerException e = assertThrows(NullPointerException.class, () -> AuthTokens.basic("username", null));
+        var e = assertThrows(NullPointerException.class, () -> AuthTokens.basic("username", null));
         assertEquals("Password can't be null", e.getMessage());
     }
 
     @Test
     void shouldAllowBasicAuthTokenWithNullRealm() {
-        AuthToken token = AuthTokens.basic("username", "password", null);
-        Map<String, Value> map = ((InternalAuthToken) token).toMap();
+        var token = AuthTokens.basic("username", "password", null);
+        var map = ((InternalAuthToken) token).toMap();
 
         assertEquals(3, map.size());
         assertEquals("basic", map.get("scheme").asString());
@@ -143,34 +143,33 @@ class AuthTokensTest {
 
     @Test
     void shouldNotAllowBearerAuthTokenWithNullToken() {
-        NullPointerException e = assertThrows(NullPointerException.class, () -> AuthTokens.bearer(null));
+        var e = assertThrows(NullPointerException.class, () -> AuthTokens.bearer(null));
         assertEquals("Token can't be null", e.getMessage());
     }
 
     @Test
     void shouldNotAllowKerberosAuthTokenWithNullTicket() {
-        NullPointerException e = assertThrows(NullPointerException.class, () -> AuthTokens.kerberos(null));
+        var e = assertThrows(NullPointerException.class, () -> AuthTokens.kerberos(null));
         assertEquals("Ticket can't be null", e.getMessage());
     }
 
     @Test
     void shouldNotAllowCustomAuthTokenWithNullPrincipal() {
-        NullPointerException e = assertThrows(
+        var e = assertThrows(
                 NullPointerException.class, () -> AuthTokens.custom(null, "credentials", "realm", "scheme"));
         assertEquals("Principal can't be null", e.getMessage());
     }
 
     @Test
     void shouldNotAllowCustomAuthTokenWithNullCredentials() {
-        NullPointerException e =
-                assertThrows(NullPointerException.class, () -> AuthTokens.custom("principal", null, "realm", "scheme"));
+        var e = assertThrows(NullPointerException.class, () -> AuthTokens.custom("principal", null, "realm", "scheme"));
         assertEquals("Credentials can't be null", e.getMessage());
     }
 
     @Test
     void shouldAllowCustomAuthTokenWithNullRealm() {
-        AuthToken token = AuthTokens.custom("principal", "credentials", null, "scheme");
-        Map<String, Value> map = ((InternalAuthToken) token).toMap();
+        var token = AuthTokens.custom("principal", "credentials", null, "scheme");
+        var map = ((InternalAuthToken) token).toMap();
 
         assertEquals(3, map.size());
         assertEquals("scheme", map.get("scheme").asString());
@@ -180,7 +179,7 @@ class AuthTokensTest {
 
     @Test
     void shouldNotAllowCustomAuthTokenWithNullScheme() {
-        NullPointerException e = assertThrows(
+        var e = assertThrows(
                 NullPointerException.class, () -> AuthTokens.custom("principal", "credentials", "realm", null));
         assertEquals("Scheme can't be null", e.getMessage());
     }

@@ -23,14 +23,13 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.Logger;
 
 class Slf4jLoggingTest {
     @Test
     void shouldCreateLoggers() {
-        Slf4jLogging logging = new Slf4jLogging();
+        var logging = new Slf4jLogging();
 
-        Logger logger = logging.getLog("My Log");
+        var logger = logging.getLog("My Log");
 
         assertThat(logger, instanceOf(Slf4jLogger.class));
     }

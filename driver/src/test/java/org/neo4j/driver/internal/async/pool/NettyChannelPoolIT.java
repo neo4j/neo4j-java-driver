@@ -98,7 +98,7 @@ class NettyChannelPoolIT {
     void shouldAcquireAndReleaseWithCorrectCredentials() {
         pool = newPool(neo4j.authTokenManager());
 
-        Channel channel = await(pool.acquire(null));
+        var channel = await(pool.acquire(null));
         assertNotNull(channel);
         verify(poolHandler).channelCreated(eq(channel), any());
         verify(poolHandler, never()).channelReleased(channel);
@@ -131,18 +131,18 @@ class NettyChannelPoolIT {
 
     @Test
     void shouldAllowAcquireAfterFailures() throws Exception {
-        int maxConnections = 2;
+        var maxConnections = 2;
 
         Map<String, Value> authTokenMap = new HashMap<>();
         authTokenMap.put("scheme", value("basic"));
         authTokenMap.put("principal", value("neo4j"));
         authTokenMap.put("credentials", value("wrong"));
-        InternalAuthToken authToken = new InternalAuthToken(authTokenMap);
+        var authToken = new InternalAuthToken(authTokenMap);
 
         pool = newPool(new StaticAuthTokenManager(authToken), maxConnections);
 
-        for (int i = 0; i < maxConnections; i++) {
-            AuthenticationException e = assertThrows(AuthenticationException.class, () -> acquire(pool));
+        for (var i = 0; i < maxConnections; i++) {
+            var e = assertThrows(AuthenticationException.class, () -> acquire(pool));
         }
 
         authTokenMap.put("credentials", value(neo4j.adminPassword()));
@@ -152,28 +152,28 @@ class NettyChannelPoolIT {
 
     @Test
     void shouldLimitNumberOfConcurrentConnections() throws Exception {
-        int maxConnections = 5;
+        var maxConnections = 5;
         pool = newPool(neo4j.authTokenManager(), maxConnections);
 
-        for (int i = 0; i < maxConnections; i++) {
+        for (var i = 0; i < maxConnections; i++) {
             assertNotNull(acquire(pool));
         }
 
-        TimeoutException e = assertThrows(TimeoutException.class, () -> acquire(pool));
+        var e = assertThrows(TimeoutException.class, () -> acquire(pool));
         assertEquals(e.getMessage(), "Acquire operation took longer then configured maximum time");
     }
 
     @Test
     void shouldTrackActiveChannels() throws Exception {
-        NettyChannelTracker tracker = new NettyChannelTracker(
+        var tracker = new NettyChannelTracker(
                 DevNullMetricsListener.INSTANCE, new ImmediateSchedulingEventExecutor(), DEV_NULL_LOGGING);
 
         poolHandler = tracker;
         pool = newPool(neo4j.authTokenManager());
 
-        Channel channel1 = acquire(pool);
-        Channel channel2 = acquire(pool);
-        Channel channel3 = acquire(pool);
+        var channel1 = acquire(pool);
+        var channel2 = acquire(pool);
+        var channel3 = acquire(pool);
         assertEquals(3, tracker.inUseChannelCount(neo4j.address()));
 
         release(channel1);
@@ -191,8 +191,8 @@ class NettyChannelPoolIT {
     }
 
     private NettyChannelPool newPool(AuthTokenManager authTokenManager, int maxConnections) {
-        ConnectionSettings settings = new ConnectionSettings(authTokenManager, "test", 5_000);
-        ChannelConnectorImpl connector = new ChannelConnectorImpl(
+        var settings = new ConnectionSettings(authTokenManager, "test", 5_000);
+        var connector = new ChannelConnectorImpl(
                 settings,
                 SecurityPlanImpl.insecure(),
                 DEV_NULL_LOGGING,

@@ -25,7 +25,6 @@ import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
 
 public class BlockingFailingQueryWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C> {
     public BlockingFailingQueryWithRetries(Driver driver) {
@@ -35,8 +34,8 @@ public class BlockingFailingQueryWithRetries<C extends AbstractContext> extends 
     @Override
     @SuppressWarnings("deprecation")
     public void execute(C context) {
-        try (Session session = newSession(AccessMode.READ, context)) {
-            Exception e = assertThrows(
+        try (var session = newSession(AccessMode.READ, context)) {
+            var e = assertThrows(
                     Exception.class,
                     () -> session.readTransaction(
                             tx -> tx.run("UNWIND [10, 5, 0] AS x RETURN 10 / x").consume()));

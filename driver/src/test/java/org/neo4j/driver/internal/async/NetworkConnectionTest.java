@@ -48,8 +48,6 @@ import io.netty.channel.EventLoop;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -92,21 +90,21 @@ class NetworkConnectionTest {
 
     @Test
     void shouldBeOpenAfterCreated() {
-        NetworkConnection connection = newConnection(newChannel());
+        var connection = newConnection(newChannel());
         assertTrue(connection.isOpen());
     }
 
     @Test
     void shouldNotBeOpenAfterRelease() {
-        NetworkConnection connection = newConnection(newChannel());
+        var connection = newConnection(newChannel());
         connection.release();
         assertFalse(connection.isOpen());
     }
 
     @Test
     void shouldSendResetOnRelease() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
+        var channel = newChannel();
+        var connection = newConnection(channel);
 
         connection.release();
         channel.runPendingTasks();
@@ -138,10 +136,10 @@ class NetworkConnectionTest {
 
     @Test
     void shouldEnableAutoReadWhenReleased() {
-        EmbeddedChannel channel = newChannel();
+        var channel = newChannel();
         channel.config().setAutoRead(false);
 
-        NetworkConnection connection = newConnection(channel);
+        var connection = newConnection(channel);
 
         connection.release();
         channel.runPendingTasks();
@@ -151,10 +149,10 @@ class NetworkConnectionTest {
 
     @Test
     void shouldNotDisableAutoReadWhenReleased() {
-        EmbeddedChannel channel = newChannel();
+        var channel = newChannel();
         channel.config().setAutoRead(true);
 
-        NetworkConnection connection = newConnection(channel);
+        var connection = newConnection(channel);
 
         connection.release();
         connection.disableAutoRead(); // does nothing on released connection
@@ -163,8 +161,8 @@ class NetworkConnectionTest {
 
     @Test
     void shouldWriteSingleMessage() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
+        var channel = newChannel();
+        var connection = newConnection(channel);
 
         connection.write(PULL_ALL, NO_OP_HANDLER);
 
@@ -176,8 +174,8 @@ class NetworkConnectionTest {
 
     @Test
     void shouldWriteAndFlushSingleMessage() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
+        var channel = newChannel();
+        var connection = newConnection(channel);
 
         connection.writeAndFlush(PULL_ALL, NO_OP_HANDLER);
         channel.runPendingTasks(); // writeAndFlush is scheduled to execute in the event loop thread, trigger its
@@ -189,74 +187,74 @@ class NetworkConnectionTest {
 
     @Test
     void shouldNotWriteSingleMessageWhenReleased() {
-        ResponseHandler handler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
+        var handler = mock(ResponseHandler.class);
+        var connection = newConnection(newChannel());
 
         connection.release();
         connection.write(RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")), handler);
 
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
+        var failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
         verify(handler).onFailure(failureCaptor.capture());
         assertConnectionReleasedError(failureCaptor.getValue());
     }
 
     @Test
     void shouldNotWriteAndFlushSingleMessageWhenReleased() {
-        ResponseHandler handler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
+        var handler = mock(ResponseHandler.class);
+        var connection = newConnection(newChannel());
 
         connection.release();
         connection.writeAndFlush(RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")), handler);
 
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
+        var failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
         verify(handler).onFailure(failureCaptor.capture());
         assertConnectionReleasedError(failureCaptor.getValue());
     }
 
     @Test
     void shouldNotWriteSingleMessageWhenTerminated() {
-        ResponseHandler handler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
+        var handler = mock(ResponseHandler.class);
+        var connection = newConnection(newChannel());
 
         connection.terminateAndRelease("42");
         connection.write(RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")), handler);
 
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
+        var failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
         verify(handler).onFailure(failureCaptor.capture());
         assertConnectionTerminatedError(failureCaptor.getValue());
     }
 
     @Test
     void shouldNotWriteAndFlushSingleMessageWhenTerminated() {
-        ResponseHandler handler = mock(ResponseHandler.class);
-        NetworkConnection connection = newConnection(newChannel());
+        var handler = mock(ResponseHandler.class);
+        var connection = newConnection(newChannel());
 
         connection.terminateAndRelease("42");
         connection.writeAndFlush(RunWithMetadataMessage.unmanagedTxRunMessage(new Query("RETURN 1")), handler);
 
-        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
+        var failureCaptor = ArgumentCaptor.forClass(IllegalStateException.class);
         verify(handler).onFailure(failureCaptor.capture());
         assertConnectionTerminatedError(failureCaptor.getValue());
     }
 
     @Test
     void shouldReturnServerAgentWhenCreated() {
-        EmbeddedChannel channel = newChannel();
-        String agent = "Neo4j/4.2.5";
+        var channel = newChannel();
+        var agent = "Neo4j/4.2.5";
         ChannelAttributes.setServerAgent(channel, agent);
 
-        NetworkConnection connection = newConnection(channel);
+        var connection = newConnection(channel);
 
         assertEquals(agent, connection.serverAgent());
     }
 
     @Test
     void shouldReturnServerAgentWhenReleased() {
-        EmbeddedChannel channel = newChannel();
-        String agent = "Neo4j/4.2.5";
+        var channel = newChannel();
+        var agent = "Neo4j/4.2.5";
         ChannelAttributes.setServerAgent(channel, agent);
 
-        NetworkConnection connection = newConnection(channel);
+        var connection = newConnection(channel);
         connection.release();
 
         assertEquals(agent, connection.serverAgent());
@@ -264,11 +262,11 @@ class NetworkConnectionTest {
 
     @Test
     void shouldReturnServerAddressWhenReleased() {
-        EmbeddedChannel channel = newChannel();
-        BoltServerAddress address = new BoltServerAddress("host", 4242);
+        var channel = newChannel();
+        var address = new BoltServerAddress("host", 4242);
         ChannelAttributes.setServerAddress(channel, address);
 
-        NetworkConnection connection = newConnection(channel);
+        var connection = newConnection(channel);
         connection.release();
 
         assertEquals(address, connection.serverAddress());
@@ -276,12 +274,12 @@ class NetworkConnectionTest {
 
     @Test
     void shouldReturnSameCompletionStageFromRelease() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
+        var channel = newChannel();
+        var connection = newConnection(channel);
 
-        CompletionStage<Void> releaseStage1 = connection.release();
-        CompletionStage<Void> releaseStage2 = connection.release();
-        CompletionStage<Void> releaseStage3 = connection.release();
+        var releaseStage1 = connection.release();
+        var releaseStage2 = connection.release();
+        var releaseStage3 = connection.release();
 
         channel.runPendingTasks();
 
@@ -296,9 +294,9 @@ class NetworkConnectionTest {
 
     @Test
     void shouldEnableAutoRead() {
-        EmbeddedChannel channel = newChannel();
+        var channel = newChannel();
         channel.config().setAutoRead(false);
-        NetworkConnection connection = newConnection(channel);
+        var connection = newConnection(channel);
 
         connection.enableAutoRead();
 
@@ -307,9 +305,9 @@ class NetworkConnectionTest {
 
     @Test
     void shouldDisableAutoRead() {
-        EmbeddedChannel channel = newChannel();
+        var channel = newChannel();
         channel.config().setAutoRead(true);
-        NetworkConnection connection = newConnection(channel);
+        var connection = newConnection(channel);
 
         connection.disableAutoRead();
 
@@ -318,10 +316,10 @@ class NetworkConnectionTest {
 
     @Test
     void shouldSetTerminationReasonOnChannelWhenTerminated() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
+        var channel = newChannel();
+        var connection = newConnection(channel);
 
-        String reason = "Something really bad has happened";
+        var reason = "Something really bad has happened";
         connection.terminateAndRelease(reason);
 
         assertEquals(reason, terminationReason(channel));
@@ -329,8 +327,8 @@ class NetworkConnectionTest {
 
     @Test
     void shouldCloseChannelWhenTerminated() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
+        var channel = newChannel();
+        var connection = newConnection(channel);
         assertTrue(channel.isActive());
 
         connection.terminateAndRelease("test");
@@ -340,9 +338,9 @@ class NetworkConnectionTest {
 
     @Test
     void shouldReleaseChannelWhenTerminated() {
-        EmbeddedChannel channel = newChannel();
-        ExtendedChannelPool pool = mock(ExtendedChannelPool.class);
-        NetworkConnection connection = newConnection(channel, pool);
+        var channel = newChannel();
+        var pool = mock(ExtendedChannelPool.class);
+        var connection = newConnection(channel, pool);
         verify(pool, never()).release(any());
 
         connection.terminateAndRelease("test");
@@ -352,9 +350,9 @@ class NetworkConnectionTest {
 
     @Test
     void shouldNotReleaseChannelMultipleTimesWhenTerminatedMultipleTimes() {
-        EmbeddedChannel channel = newChannel();
-        ExtendedChannelPool pool = mock(ExtendedChannelPool.class);
-        NetworkConnection connection = newConnection(channel, pool);
+        var channel = newChannel();
+        var pool = mock(ExtendedChannelPool.class);
+        var connection = newConnection(channel, pool);
         verify(pool, never()).release(any());
 
         connection.terminateAndRelease("reason 1");
@@ -369,13 +367,13 @@ class NetworkConnectionTest {
 
     @Test
     void shouldNotReleaseAfterTermination() {
-        EmbeddedChannel channel = newChannel();
-        ExtendedChannelPool pool = mock(ExtendedChannelPool.class);
-        NetworkConnection connection = newConnection(channel, pool);
+        var channel = newChannel();
+        var pool = mock(ExtendedChannelPool.class);
+        var connection = newConnection(channel, pool);
         verify(pool, never()).release(any());
 
         connection.terminateAndRelease("test");
-        CompletionStage<Void> releaseStage = connection.release();
+        var releaseStage = connection.release();
 
         // release stage should be completed immediately
         assertTrue(releaseStage.toCompletableFuture().isDone());
@@ -385,8 +383,8 @@ class NetworkConnectionTest {
 
     @Test
     void shouldSendResetMessageWhenReset() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
+        var channel = newChannel();
+        var connection = newConnection(channel);
 
         connection.reset(null);
         channel.runPendingTasks();
@@ -397,10 +395,10 @@ class NetworkConnectionTest {
 
     @Test
     void shouldCompleteResetFutureWhenSuccessResponseArrives() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
+        var channel = newChannel();
+        var connection = newConnection(channel);
 
-        CompletableFuture<Void> resetFuture = connection.reset(null).toCompletableFuture();
+        var resetFuture = connection.reset(null).toCompletableFuture();
         channel.runPendingTasks();
         assertFalse(resetFuture.isDone());
 
@@ -411,10 +409,10 @@ class NetworkConnectionTest {
 
     @Test
     void shouldCompleteResetFutureWhenFailureResponseArrives() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
+        var channel = newChannel();
+        var connection = newConnection(channel);
 
-        CompletableFuture<Void> resetFuture = connection.reset(null).toCompletableFuture();
+        var resetFuture = connection.reset(null).toCompletableFuture();
         channel.runPendingTasks();
         assertFalse(resetFuture.isDone());
 
@@ -425,13 +423,13 @@ class NetworkConnectionTest {
 
     @Test
     void shouldDoNothingInResetWhenClosed() {
-        EmbeddedChannel channel = newChannel();
-        NetworkConnection connection = newConnection(channel);
+        var channel = newChannel();
+        var connection = newConnection(channel);
 
         connection.release();
         channel.runPendingTasks();
 
-        CompletableFuture<Void> resetFuture = connection.reset(null).toCompletableFuture();
+        var resetFuture = connection.reset(null).toCompletableFuture();
         channel.runPendingTasks();
 
         assertEquals(1, channel.outboundMessages().size());
@@ -442,9 +440,9 @@ class NetworkConnectionTest {
 
     @Test
     void shouldEnableAutoReadWhenDoingReset() {
-        EmbeddedChannel channel = newChannel();
+        var channel = newChannel();
         channel.config().setAutoRead(false);
-        NetworkConnection connection = newConnection(channel);
+        var connection = newConnection(channel);
 
         connection.reset(null);
         channel.runPendingTasks();
@@ -571,13 +569,13 @@ class NetworkConnectionTest {
     private record QueryMessage(boolean flush, Message message) {}
 
     private void testWriteInEventLoop(String threadName, Consumer<NetworkConnection> action) throws Exception {
-        EmbeddedChannel channel = spy(new EmbeddedChannel());
+        var channel = spy(new EmbeddedChannel());
         initializeEventLoop(channel, threadName);
-        ThreadTrackingInboundMessageDispatcher dispatcher = new ThreadTrackingInboundMessageDispatcher(channel);
+        var dispatcher = new ThreadTrackingInboundMessageDispatcher(channel);
         ChannelAttributes.setProtocolVersion(channel, DEFAULT_TEST_PROTOCOL_VERSION);
         ChannelAttributes.setMessageDispatcher(channel, dispatcher);
 
-        NetworkConnection connection = newConnection(channel);
+        var connection = newConnection(channel);
         action.accept(connection);
 
         shutdownEventLoop();
@@ -601,8 +599,8 @@ class NetworkConnectionTest {
     }
 
     private static EmbeddedChannel newChannel() {
-        EmbeddedChannel channel = new EmbeddedChannel();
-        InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher(channel, DEV_NULL_LOGGING);
+        var channel = new EmbeddedChannel();
+        var messageDispatcher = new InboundMessageDispatcher(channel, DEV_NULL_LOGGING);
         ChannelAttributes.setProtocolVersion(channel, DEFAULT_TEST_PROTOCOL_VERSION);
         ChannelAttributes.setMessageDispatcher(channel, messageDispatcher);
         return channel;

@@ -45,11 +45,11 @@ class GraphDatabaseTest {
 
     @Test
     void shouldRespondToInterruptsWhenConnectingToUnresponsiveServer() throws Exception {
-        try (ServerSocket serverSocket = new ServerSocket(0)) {
+        try (var serverSocket = new ServerSocket(0)) {
             // setup other thread to interrupt current thread when it blocks
             TestUtil.interruptWhenInWaitingState(Thread.currentThread());
 
-            final Driver driver = GraphDatabase.driver("bolt://localhost:" + serverSocket.getLocalPort());
+            final var driver = GraphDatabase.driver("bolt://localhost:" + serverSocket.getLocalPort());
             try {
                 assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
             } finally {
@@ -61,25 +61,23 @@ class GraphDatabaseTest {
 
     @Test
     void shouldPrintNiceErrorWhenConnectingToUnresponsiveServer() throws Exception {
-        int localPort = -1;
-        try (ServerSocket serverSocket = new ServerSocket(0)) {
+        var localPort = -1;
+        try (var serverSocket = new ServerSocket(0)) {
             localPort = serverSocket.getLocalPort();
         }
-        final Driver driver = GraphDatabase.driver("bolt://localhost:" + localPort, INSECURE_CONFIG);
-        final ServiceUnavailableException error =
-                assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
+        final var driver = GraphDatabase.driver("bolt://localhost:" + localPort, INSECURE_CONFIG);
+        final var error = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
         assertThat(error.getMessage(), containsString("Unable to connect to"));
     }
 
     @Test
     void shouldPrintNiceRoutingErrorWhenConnectingToUnresponsiveServer() throws Exception {
-        int localPort = -1;
-        try (ServerSocket serverSocket = new ServerSocket(0)) {
+        var localPort = -1;
+        try (var serverSocket = new ServerSocket(0)) {
             localPort = serverSocket.getLocalPort();
         }
-        final Driver driver = GraphDatabase.driver("neo4j://localhost:" + localPort, INSECURE_CONFIG);
-        final ServiceUnavailableException error =
-                assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
+        final var driver = GraphDatabase.driver("neo4j://localhost:" + localPort, INSECURE_CONFIG);
+        final var error = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
         assertThat(error.getMessage(), containsString("Unable to connect to"));
     }
 
@@ -146,19 +144,19 @@ class GraphDatabaseTest {
     }
 
     private static void testFailureWhenServerDoesNotRespond(boolean encrypted) throws IOException {
-        try (ServerSocket server = new ServerSocket(0)) // server that accepts connections but does not reply
+        try (var server = new ServerSocket(0)) // server that accepts connections but does not reply
         {
-            int connectionTimeoutMillis = 1_000;
-            Config config = createConfig(encrypted, connectionTimeoutMillis);
-            final Driver driver = GraphDatabase.driver(URI.create("bolt://localhost:" + server.getLocalPort()), config);
+            var connectionTimeoutMillis = 1_000;
+            var config = createConfig(encrypted, connectionTimeoutMillis);
+            final var driver = GraphDatabase.driver(URI.create("bolt://localhost:" + server.getLocalPort()), config);
 
-            ServiceUnavailableException e = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
+            var e = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
             assertEquals(e.getMessage(), "Unable to establish connection in " + connectionTimeoutMillis + "ms");
         }
     }
 
     private static Config createConfig(boolean encrypted, int timeoutMillis) {
-        Config.ConfigBuilder configBuilder = Config.builder()
+        var configBuilder = Config.builder()
                 .withConnectionTimeout(timeoutMillis, MILLISECONDS)
                 .withLogging(DEV_NULL_LOGGING);
 

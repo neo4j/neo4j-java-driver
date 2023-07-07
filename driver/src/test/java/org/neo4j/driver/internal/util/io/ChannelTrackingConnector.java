@@ -36,7 +36,7 @@ public class ChannelTrackingConnector implements ChannelConnector {
 
     @Override
     public ChannelFuture connect(BoltServerAddress address, Bootstrap bootstrap) {
-        ChannelFuture channelFuture = realConnector.connect(address, bootstrap);
+        var channelFuture = realConnector.connect(address, bootstrap);
         channels.add(channelFuture.channel());
         return channelFuture;
     }

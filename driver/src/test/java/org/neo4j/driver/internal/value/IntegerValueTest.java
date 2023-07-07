@@ -37,7 +37,7 @@ class IntegerValueTest {
     @Test
     void testZeroIntegerValue() {
         // Given
-        IntegerValue value = new IntegerValue(0);
+        var value = new IntegerValue(0);
 
         // Then
         assertThat(value.asLong(), equalTo(0L));
@@ -50,7 +50,7 @@ class IntegerValueTest {
     @Test
     void testNonZeroIntegerValue() {
         // Given
-        IntegerValue value = new IntegerValue(1);
+        var value = new IntegerValue(1);
 
         // Then
         assertThat(value.asLong(), equalTo(1L));
@@ -63,7 +63,7 @@ class IntegerValueTest {
     @Test
     void testIsInteger() {
         // Given
-        IntegerValue value = new IntegerValue(1L);
+        var value = new IntegerValue(1L);
 
         // Then
         assertThat(typeSystem.INTEGER().isTypeOf(value), equalTo(true));
@@ -72,8 +72,8 @@ class IntegerValueTest {
     @Test
     void testEquals() {
         // Given
-        IntegerValue firstValue = new IntegerValue(1);
-        IntegerValue secondValue = new IntegerValue(1);
+        var firstValue = new IntegerValue(1);
+        var secondValue = new IntegerValue(1);
 
         // Then
         assertThat(firstValue, equalTo(secondValue));
@@ -82,7 +82,7 @@ class IntegerValueTest {
     @Test
     void testHashCode() {
         // Given
-        IntegerValue value = new IntegerValue(1L);
+        var value = new IntegerValue(1L);
 
         // Then
         assertThat(value.hashCode(), notNullValue());
@@ -102,8 +102,8 @@ class IntegerValueTest {
 
     @Test
     void shouldThrowIfLargerThanIntegerMax() {
-        IntegerValue value1 = new IntegerValue(Integer.MAX_VALUE);
-        IntegerValue value2 = new IntegerValue(Integer.MAX_VALUE + 1L);
+        var value1 = new IntegerValue(Integer.MAX_VALUE);
+        var value2 = new IntegerValue(Integer.MAX_VALUE + 1L);
 
         assertThat(value1.asInt(), equalTo(Integer.MAX_VALUE));
         assertThrows(LossyCoercion.class, value2::asInt);
@@ -111,8 +111,8 @@ class IntegerValueTest {
 
     @Test
     void shouldThrowIfSmallerThanIntegerMin() {
-        IntegerValue value1 = new IntegerValue(Integer.MIN_VALUE);
-        IntegerValue value2 = new IntegerValue(Integer.MIN_VALUE - 1L);
+        var value1 = new IntegerValue(Integer.MIN_VALUE);
+        var value2 = new IntegerValue(Integer.MIN_VALUE - 1L);
 
         assertThat(value1.asInt(), equalTo(Integer.MIN_VALUE));
         assertThrows(LossyCoercion.class, value2::asInt);
@@ -120,8 +120,8 @@ class IntegerValueTest {
 
     @Test
     void shouldThrowIfLargerThan() {
-        IntegerValue value1 = new IntegerValue(9007199254740992L);
-        IntegerValue value2 = new IntegerValue(9007199254740993L);
+        var value1 = new IntegerValue(9007199254740992L);
+        var value2 = new IntegerValue(9007199254740993L);
 
         assertThat(value1.asDouble(), equalTo(9007199254740992D));
         assertThrows(LossyCoercion.class, value2::asDouble);

@@ -70,7 +70,6 @@ import org.mockito.verification.VerificationMode;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -165,14 +164,14 @@ public final class TestUtil {
     public static void assertByteBufContains(ByteBuf buf, Number... values) {
         try {
             assertNotNull(buf);
-            int expectedReadableBytes = 0;
-            for (Number value : values) {
+            var expectedReadableBytes = 0;
+            for (var value : values) {
                 expectedReadableBytes += bytesCount(value);
             }
             assertEquals(expectedReadableBytes, buf.readableBytes(), "Unexpected number of bytes");
-            for (Number expectedValue : values) {
-                Number actualValue = read(buf, expectedValue.getClass());
-                String valueType = actualValue.getClass().getSimpleName();
+            for (var expectedValue : values) {
+                var actualValue = read(buf, expectedValue.getClass());
+                var valueType = actualValue.getClass().getSimpleName();
                 assertEquals(expectedValue, actualValue, valueType + " values not equal");
             }
         } finally {
@@ -202,35 +201,35 @@ public final class TestUtil {
     }
 
     public static void cleanDb(Driver driver) {
-        try (Session session = driver.session()) {
+        try (var session = driver.session()) {
             cleanDb(session);
         }
     }
 
     public static void dropDatabase(Driver driver, String database) {
-        boolean databaseExists = databaseExists(driver, database);
+        var databaseExists = databaseExists(driver, database);
         if (!databaseExists) {
             return;
         }
 
-        try (Session session = driver.session(forDatabase("system"))) {
+        try (var session = driver.session(forDatabase("system"))) {
             session.run("DROP DATABASE " + database).consume();
         }
     }
 
     public static void createDatabase(Driver driver, String database) {
-        boolean databaseExists = databaseExists(driver, database);
+        var databaseExists = databaseExists(driver, database);
         if (databaseExists) {
             return;
         }
 
-        try (Session session = driver.session(SessionConfig.forDatabase("system"))) {
+        try (var session = driver.session(SessionConfig.forDatabase("system"))) {
             session.run("CREATE DATABASE " + database).consume();
         }
     }
 
     public static boolean databaseExists(Driver driver, String database) {
-        try (Session session = driver.session(forDatabase("system"))) {
+        try (var session = driver.session(forDatabase("system"))) {
             // No procedure equivalent and `call dbms.database.state("db")` also throws an exception when db doesn't
             // exist
             return session.run("SHOW DATABASES").stream()
@@ -446,12 +445,12 @@ public final class TestUtil {
     }
 
     public static Connection connectionMock(String databaseName, AccessMode mode, BoltProtocol protocol) {
-        Connection connection = mock(Connection.class);
+        var connection = mock(Connection.class);
         when(connection.serverAddress()).thenReturn(BoltServerAddress.LOCAL_DEFAULT);
         when(connection.protocol()).thenReturn(protocol);
         when(connection.mode()).thenReturn(mode);
         when(connection.databaseName()).thenReturn(database(databaseName));
-        BoltProtocolVersion version = protocol.version();
+        var version = protocol.version();
         if (version.equals(BoltProtocolV3.VERSION)
                 || version.equals(BoltProtocolV4.VERSION)
                 || version.equals(BoltProtocolV41.VERSION)
@@ -494,9 +493,9 @@ public final class TestUtil {
     }
 
     public static String randomString(int size) {
-        StringBuilder sb = new StringBuilder(size);
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        for (int i = 0; i < size; i++) {
+        var sb = new StringBuilder(size);
+        var random = ThreadLocalRandom.current();
+        for (var i = 0; i < size; i++) {
             sb.append(ALPHANUMERICS.charAt(random.nextInt(ALPHANUMERICS.length())));
         }
         return sb.toString();
@@ -527,7 +526,7 @@ public final class TestUtil {
             }
             assertNoCircularReferences(ex.getCause(), list);
         }
-        for (Throwable suppressed : ex.getSuppressed()) {
+        for (var suppressed : ex.getSuppressed()) {
             if (list.contains(suppressed)) {
                 throw new AssertionError("Circular reference detected", suppressed);
             }
@@ -554,7 +553,7 @@ public final class TestUtil {
 
     private static int deleteBatchOfNodes(Session session) {
         return session.executeWrite(tx -> {
-            Result result = tx.run("MATCH (n) WITH n LIMIT 1000 DETACH DELETE n RETURN count(n)");
+            var result = tx.run("MATCH (n) WITH n LIMIT 1000 DETACH DELETE n RETURN count(n)");
             return result.single().get(0).asInt();
         });
     }
@@ -604,13 +603,13 @@ public final class TestUtil {
     public static <T extends Serializable> T serializeAndReadBack(T instance, Class<T> targetClass)
             throws IOException, ClassNotFoundException {
 
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try (ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+        var bos = new ByteArrayOutputStream();
+        try (var oos = new ObjectOutputStream(bos)) {
             oos.writeObject(instance);
         }
         bos.close();
 
-        try (ObjectInputStream oos = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()))) {
+        try (var oos = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()))) {
             return targetClass.cast(oos.readObject());
         }
     }

@@ -61,7 +61,6 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -123,7 +122,7 @@ class SessionResetIT {
     @Test
     void shouldAllowMoreQueriesAfterSessionReset() {
         // Given
-        try (InternalSession session = (InternalSession) neo4j.driver().session()) {
+        try (var session = (InternalSession) neo4j.driver().session()) {
 
             session.run("RETURN 1").consume();
 
@@ -138,8 +137,8 @@ class SessionResetIT {
     @Test
     void shouldAllowMoreTxAfterSessionReset() {
         // Given
-        try (InternalSession session = (InternalSession) neo4j.driver().session()) {
-            try (Transaction tx = session.beginTransaction()) {
+        try (var session = (InternalSession) neo4j.driver().session()) {
+            try (var tx = session.beginTransaction()) {
                 tx.run("RETURN 1");
                 tx.commit();
             }
@@ -148,7 +147,7 @@ class SessionResetIT {
             session.reset();
 
             // Then can run more Tx
-            try (Transaction tx = session.beginTransaction()) {
+            try (var tx = session.beginTransaction()) {
                 tx.run("RETURN 2");
                 tx.commit();
             }
@@ -174,14 +173,14 @@ class SessionResetIT {
     @Test
     void shouldAllowMoreTxAfterSessionResetInTx() {
         // Given
-        try (InternalSession session = (InternalSession) neo4j.driver().session()) {
-            try (Transaction ignore = session.beginTransaction()) {
+        try (var session = (InternalSession) neo4j.driver().session()) {
+            try (var ignore = session.beginTransaction()) {
                 // When reset the state of this session
                 session.reset();
             }
 
             // Then can run more Tx
-            try (Transaction tx = session.beginTransaction()) {
+            try (var tx = session.beginTransaction()) {
                 tx.run("RETURN 2");
                 tx.commit();
             }
@@ -199,10 +198,10 @@ class SessionResetIT {
                     AtomicReference<InternalSession> usedSessionRef,
                     CountDownLatch latchToWait)
                     throws Exception {
-                try (InternalSession session = (InternalSession) driver.session()) {
+                try (var session = (InternalSession) driver.session()) {
                     usedSessionRef.set(session);
                     latchToWait.await();
-                    Result result = updateNodeId(session, nodeId, newNodeId);
+                    var result = updateNodeId(session, nodeId, newNodeId);
                     result.consume();
                 }
             }
@@ -220,11 +219,11 @@ class SessionResetIT {
                     AtomicReference<InternalSession> usedSessionRef,
                     CountDownLatch latchToWait)
                     throws Exception {
-                try (InternalSession session = (InternalSession) neo4j.driver().session();
-                        Transaction tx = session.beginTransaction()) {
+                try (var session = (InternalSession) neo4j.driver().session();
+                        var tx = session.beginTransaction()) {
                     usedSessionRef.set(session);
                     latchToWait.await();
-                    Result result = updateNodeId(tx, nodeId, newNodeId);
+                    var result = updateNodeId(tx, nodeId, newNodeId);
                     result.consume();
                 }
             }
@@ -233,7 +232,7 @@ class SessionResetIT {
 
     @Test
     void resetShouldStopWriteTransactionWaitingForALock() throws Exception {
-        AtomicInteger invocationsOfWork = new AtomicInteger();
+        var invocationsOfWork = new AtomicInteger();
 
         testResetOfQueryWaitingForLock(new NodeIdUpdater() {
             @Override
@@ -244,13 +243,13 @@ class SessionResetIT {
                     AtomicReference<InternalSession> usedSessionRef,
                     CountDownLatch latchToWait)
                     throws Exception {
-                try (InternalSession session = (InternalSession) driver.session()) {
+                try (var session = (InternalSession) driver.session()) {
                     usedSessionRef.set(session);
                     latchToWait.await();
 
                     session.writeTransaction(tx -> {
                         invocationsOfWork.incrementAndGet();
-                        Result result = updateNodeId(tx, nodeId, newNodeId);
+                        var result = updateNodeId(tx, nodeId, newNodeId);
                         result.consume();
                         return null;
                     });
@@ -263,18 +262,18 @@ class SessionResetIT {
 
     @Test
     void shouldBeAbleToRunMoreQueriesAfterResetOnNoErrorState() {
-        try (InternalSession session = (InternalSession) neo4j.driver().session()) {
+        try (var session = (InternalSession) neo4j.driver().session()) {
             // Given
             session.reset();
 
             // When
-            Transaction tx = session.beginTransaction();
+            var tx = session.beginTransaction();
             tx.run("CREATE (n:FirstNode)");
             tx.commit();
 
             // Then the outcome of both queries should be visible
-            Result result = session.run("MATCH (n) RETURN count(n)");
-            long nodes = result.single().get("count(n)").asLong();
+            var result = session.run("MATCH (n) RETURN count(n)");
+            var nodes = result.single().get("count(n)").asLong();
             assertThat(nodes, equalTo(1L));
         }
     }
@@ -291,13 +290,13 @@ class SessionResetIT {
 
     @Test
     void shouldHandleResetFromMultipleThreads() throws Throwable {
-        InternalSession session = (InternalSession) neo4j.driver().session();
+        var session = (InternalSession) neo4j.driver().session();
 
-        CountDownLatch beforeCommit = new CountDownLatch(1);
-        CountDownLatch afterReset = new CountDownLatch(1);
+        var beforeCommit = new CountDownLatch(1);
+        var afterReset = new CountDownLatch(1);
 
         Future<Void> txFuture = executor.submit(() -> {
-            Transaction tx1 = session.beginTransaction();
+            var tx1 = session.beginTransaction();
             tx1.run("CREATE (n:FirstNode)");
             beforeCommit.countDown();
             afterReset.await();
@@ -308,7 +307,7 @@ class SessionResetIT {
             } catch (Neo4jException ignore) {
             }
 
-            try (Transaction tx2 = session.beginTransaction()) {
+            try (var tx2 = session.beginTransaction()) {
                 tx2.run("CREATE (n:SecondNode)");
                 tx2.commit();
             }
@@ -334,20 +333,20 @@ class SessionResetIT {
     }
 
     private void testResetOfQueryWaitingForLock(NodeIdUpdater nodeIdUpdater) throws Exception {
-        int nodeId = 42;
-        int newNodeId1 = 4242;
-        int newNodeId2 = 424242;
+        var nodeId = 42;
+        var newNodeId1 = 4242;
+        var newNodeId2 = 424242;
 
         createNodeWithId(nodeId);
 
-        CountDownLatch nodeLocked = new CountDownLatch(1);
-        AtomicReference<InternalSession> otherSessionRef = new AtomicReference<>();
+        var nodeLocked = new CountDownLatch(1);
+        var otherSessionRef = new AtomicReference<InternalSession>();
 
-        try (InternalSession session = (InternalSession) neo4j.driver().session();
-                Transaction tx = session.beginTransaction()) {
-            Future<Void> txResult = nodeIdUpdater.update(nodeId, newNodeId1, otherSessionRef, nodeLocked);
+        try (var session = (InternalSession) neo4j.driver().session();
+                var tx = session.beginTransaction()) {
+            var txResult = nodeIdUpdater.update(nodeId, newNodeId1, otherSessionRef, nodeLocked);
 
-            Result result = updateNodeId(tx, nodeId, newNodeId2);
+            var result = updateNodeId(tx, nodeId, newNodeId2);
             result.consume();
 
             nodeLocked.countDown();
@@ -359,15 +358,15 @@ class SessionResetIT {
             tx.commit();
         }
 
-        try (Session session = neo4j.driver().session()) {
-            Result result = session.run("MATCH (n) RETURN n.id AS id");
-            int value = result.single().get("id").asInt();
+        try (var session = neo4j.driver().session()) {
+            var result = session.run("MATCH (n) RETURN n.id AS id");
+            var value = result.single().get("id").asInt();
             assertEquals(newNodeId2, value);
         }
     }
 
     private void createNodeWithId(int id) {
-        try (Session session = neo4j.driver().session()) {
+        try (var session = neo4j.driver().session()) {
             session.run("CREATE (n {id: $id})", parameters("id", id));
         }
     }
@@ -378,26 +377,26 @@ class SessionResetIT {
     }
 
     private static void assertTransactionTerminated(Future<Void> work) {
-        ExecutionException e = assertThrows(ExecutionException.class, () -> work.get(20, TimeUnit.SECONDS));
+        var e = assertThrows(ExecutionException.class, () -> work.get(20, TimeUnit.SECONDS));
         assertThat(e.getCause(), instanceOf(ClientException.class));
         assertThat(e.getCause().getMessage(), startsWith("The transaction has been terminated"));
     }
 
     private void testRandomQueryTermination(boolean autoCommit) throws InterruptedException {
         Set<InternalSession> runningSessions = newSetFromMap(new ConcurrentHashMap<>());
-        AtomicBoolean stop = new AtomicBoolean();
+        var stop = new AtomicBoolean();
         List<Future<?>> futures = new ArrayList<>();
 
-        for (int i = 0; i < STRESS_TEST_THREAD_COUNT; i++) {
+        for (var i = 0; i < STRESS_TEST_THREAD_COUNT; i++) {
             futures.add(executor.submit(() -> {
-                ThreadLocalRandom random = ThreadLocalRandom.current();
+                var random = ThreadLocalRandom.current();
                 while (!stop.get()) {
                     runRandomQuery(autoCommit, random, runningSessions, stop);
                 }
             }));
         }
 
-        long deadline = System.currentTimeMillis() + STRESS_TEST_DURATION_MS;
+        var deadline = System.currentTimeMillis() + STRESS_TEST_DURATION_MS;
         while (!stop.get()) {
             if (System.currentTimeMillis() > deadline) {
                 stop.set(true);
@@ -415,10 +414,10 @@ class SessionResetIT {
     private void runRandomQuery(
             boolean autoCommit, Random random, Set<InternalSession> runningSessions, AtomicBoolean stop) {
         try {
-            InternalSession session = (InternalSession) neo4j.driver().session();
+            var session = (InternalSession) neo4j.driver().session();
             runningSessions.add(session);
             try {
-                String query = STRESS_TEST_QUERIES[random.nextInt(STRESS_TEST_QUERIES.length - 1)];
+                var query = STRESS_TEST_QUERIES[random.nextInt(STRESS_TEST_QUERIES.length - 1)];
                 runQuery(session, query, autoCommit);
             } finally {
                 runningSessions.remove(session);
@@ -435,24 +434,24 @@ class SessionResetIT {
     }
 
     private void testQueryTermination(String query, boolean autoCommit) {
-        Future<Void> queryResult = runQueryInDifferentThreadAndResetSession(query, autoCommit);
-        ExecutionException e = assertThrows(ExecutionException.class, () -> queryResult.get(10, SECONDS));
+        var queryResult = runQueryInDifferentThreadAndResetSession(query, autoCommit);
+        var e = assertThrows(ExecutionException.class, () -> queryResult.get(10, SECONDS));
         assertThat(e.getCause(), instanceOf(Neo4jException.class));
         awaitNoActiveQueries();
     }
 
     private Future<Void> runQueryInDifferentThreadAndResetSession(String query, boolean autoCommit) {
-        AtomicReference<InternalSession> sessionRef = new AtomicReference<>();
+        var sessionRef = new AtomicReference<InternalSession>();
 
         Future<Void> queryResult = runAsync(() -> {
-            InternalSession session = (InternalSession) neo4j.driver().session();
+            var session = (InternalSession) neo4j.driver().session();
             sessionRef.set(session);
             runQuery(session, query, autoCommit);
         });
 
         awaitActiveQueriesToContain(query);
 
-        InternalSession session = sessionRef.get();
+        var session = sessionRef.get();
         assertNotNull(session);
         session.reset();
 
@@ -463,7 +462,7 @@ class SessionResetIT {
         if (autoCommit) {
             session.run(query).consume();
         } else {
-            try (Transaction tx = session.beginTransaction()) {
+            try (var tx = session.beginTransaction()) {
                 tx.run(query);
                 tx.commit();
             }
@@ -479,9 +478,8 @@ class SessionResetIT {
     }
 
     private long countNodes(String label) {
-        try (Session session = neo4j.driver().session()) {
-            Result result =
-                    session.run("MATCH (n" + (label == null ? "" : ":" + label) + ") RETURN count(n) AS result");
+        try (var session = neo4j.driver().session()) {
+            var result = session.run("MATCH (n" + (label == null ? "" : ":" + label) + ") RETURN count(n) AS result");
             return result.single().get(0).asLong();
         }
     }
@@ -547,7 +545,7 @@ class SessionResetIT {
     }
 
     private static void awaitAllFutures(List<Future<?>> futures) {
-        for (Future<?> future : futures) {
+        for (var future : futures) {
             await(future);
         }
     }
@@ -557,7 +555,7 @@ class SessionResetIT {
     }
 
     private static void awaitCondition(BooleanSupplier condition, long value) {
-        long deadline = System.currentTimeMillis() + TimeUnit.MILLISECONDS.toMillis(value);
+        var deadline = System.currentTimeMillis() + TimeUnit.MILLISECONDS.toMillis(value);
         while (!condition.getAsBoolean()) {
             if (System.currentTimeMillis() > deadline) {
                 fail("Condition was not met in time");
@@ -576,7 +574,7 @@ class SessionResetIT {
     }
 
     private static List<String> activeQueryNames(Driver driver) {
-        try (Session session = driver.session()) {
+        try (var session = driver.session()) {
             if (neo4j.isNeo4j44OrEarlier()) {
                 return session.run("CALL dbms.listQueries() YIELD query RETURN query").list().stream()
                         .map(record -> record.get(0).asString())

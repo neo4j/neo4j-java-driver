@@ -57,7 +57,7 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
     @Override
     boolean handleWriteFailure(Throwable error, Context context) {
         if (error instanceof SessionExpiredException) {
-            boolean isLeaderSwitch = error.getMessage().endsWith("no longer accepts writes");
+            var isLeaderSwitch = error.getMessage().endsWith("no longer accepts writes");
             if (isLeaderSwitch) {
                 context.leaderSwitch();
                 return true;

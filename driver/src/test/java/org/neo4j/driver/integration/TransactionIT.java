@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 
-import io.netty.channel.Channel;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -42,10 +41,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -81,14 +77,14 @@ class TransactionIT {
     @Test
     void shouldRunAndRollbackByDefault() {
         // When
-        try (Transaction tx = session.beginTransaction()) {
+        try (var tx = session.beginTransaction()) {
             tx.run("CREATE (n:FirstNode)");
             tx.run("CREATE (n:SecondNode)");
         }
 
         // Then there should be no visible effect of the transaction
-        Result cursor = session.run("MATCH (n) RETURN count(n)");
-        long nodes = cursor.single().get("count(n)").asLong();
+        var cursor = session.run("MATCH (n) RETURN count(n)");
+        var nodes = cursor.single().get("count(n)").asLong();
         assertThat(nodes, equalTo(0L));
     }
 
@@ -98,8 +94,8 @@ class TransactionIT {
         session.run("CREATE (n {name:'Steve Brook'})");
 
         // When
-        try (Transaction tx = session.beginTransaction()) {
-            Result res = tx.run("MATCH (n) RETURN n.name");
+        try (var tx = session.beginTransaction()) {
+            var res = tx.run("MATCH (n) RETURN n.name");
 
             // Then
             assertThat(res.single().get("n.name").asString(), equalTo("Steve Brook"));
@@ -130,41 +126,41 @@ class TransactionIT {
 
     @Test
     void shouldFailToCommitAfterRolledBack() {
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
         tx.run("CREATE (:MyLabel)");
         tx.rollback();
 
-        ClientException e = assertThrows(ClientException.class, tx::commit);
+        var e = assertThrows(ClientException.class, tx::commit);
         assertThat(e.getMessage(), startsWith("Can't commit, transaction has been rolled back"));
     }
 
     @Test
     void shouldFailToRollbackAfterTxIsCommitted() {
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
         tx.run("CREATE (:MyLabel)");
         tx.commit();
 
-        ClientException e = assertThrows(ClientException.class, tx::rollback);
+        var e = assertThrows(ClientException.class, tx::rollback);
         assertThat(e.getMessage(), startsWith("Can't rollback, transaction has been committed"));
     }
 
     @Test
     void shouldFailToCommitAfterCommit() {
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
         tx.run("CREATE (:MyLabel)");
         tx.commit();
 
-        ClientException e = assertThrows(ClientException.class, tx::commit);
+        var e = assertThrows(ClientException.class, tx::commit);
         assertThat(e.getMessage(), startsWith("Can't commit, transaction has been committed"));
     }
 
     @Test
     void shouldFailToRollbackAfterRollback() {
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
         tx.run("CREATE (:MyLabel)");
         tx.rollback();
 
-        ClientException e = assertThrows(ClientException.class, tx::rollback);
+        var e = assertThrows(ClientException.class, tx::rollback);
         assertThat(e.getMessage(), startsWith("Can't rollback, transaction has been rolled back"));
     }
 
@@ -186,7 +182,7 @@ class TransactionIT {
     @Test
     void shouldBeOpenBeforeCommit() {
         // When
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
 
         // Then
         assertTrue(tx.isOpen());
@@ -206,8 +202,8 @@ class TransactionIT {
     @Test
     void shouldHandleFailureAfterClosingTransaction() {
         // GIVEN a successful query in a transaction
-        Transaction tx = session.beginTransaction();
-        Result result = tx.run("CREATE (n) RETURN n");
+        var tx = session.beginTransaction();
+        var result = tx.run("CREATE (n) RETURN n");
         result.consume();
         tx.commit();
         tx.close();
@@ -221,7 +217,7 @@ class TransactionIT {
     @Test
     void shouldHandleNullRecordParameters() {
         // When
-        try (Transaction tx = session.beginTransaction()) {
+        try (var tx = session.beginTransaction()) {
             Record params = null;
             tx.run("CREATE (n:FirstNode)", params);
             tx.commit();
@@ -234,7 +230,7 @@ class TransactionIT {
     @Test
     void shouldHandleNullValueParameters() {
         // When
-        try (Transaction tx = session.beginTransaction()) {
+        try (var tx = session.beginTransaction()) {
             Value params = null;
             tx.run("CREATE (n:FirstNode)", params);
             tx.commit();
@@ -247,7 +243,7 @@ class TransactionIT {
     @Test
     void shouldHandleNullMapParameters() {
         // When
-        try (Transaction tx = session.beginTransaction()) {
+        try (var tx = session.beginTransaction()) {
             Map<String, Object> params = null;
             tx.run("CREATE (n:FirstNode)", params);
             tx.commit();
@@ -259,14 +255,14 @@ class TransactionIT {
     @Test
     void shouldRollbackTransactionAfterFailedRunAndCommitAndSessionShouldSuccessfullyBeginNewTransaction() {
         // Given
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
 
         assertThrows(ClientException.class, () -> tx.run("invalid")); // send run, pull_all
-        ClientException e = assertThrows(ClientException.class, tx::commit);
+        var e = assertThrows(ClientException.class, tx::commit);
         assertNoCircularReferences(e);
-        try (Transaction anotherTx = session.beginTransaction()) {
-            Result cursor = anotherTx.run("RETURN 1");
-            int val = cursor.single().get("1").asInt();
+        try (var anotherTx = session.beginTransaction()) {
+            var cursor = anotherTx.run("RETURN 1");
+            var val = cursor.single().get("1").asInt();
             assertThat(val, equalTo(1));
         }
     }
@@ -274,23 +270,23 @@ class TransactionIT {
     @Test
     void shouldRollBackTxIfErrorWithConsume() {
         assertThrows(ClientException.class, () -> {
-            try (Transaction tx = session.beginTransaction()) {
-                Result result = tx.run("invalid");
+            try (var tx = session.beginTransaction()) {
+                var result = tx.run("invalid");
                 result.consume();
             }
         });
 
-        try (Transaction tx = session.beginTransaction()) {
-            Result cursor = tx.run("RETURN 1");
-            int val = cursor.single().get("1").asInt();
+        try (var tx = session.beginTransaction()) {
+            var cursor = tx.run("RETURN 1");
+            var val = cursor.single().get("1").asInt();
             assertThat(val, equalTo(1));
         }
     }
 
     @Test
     void shouldFailRun() {
-        try (Transaction tx = session.beginTransaction()) {
-            ClientException e = assertThrows(ClientException.class, () -> tx.run("RETURN Wrong"));
+        try (var tx = session.beginTransaction()) {
+            var e = assertThrows(ClientException.class, () -> tx.run("RETURN Wrong"));
 
             assertThat(e.code(), containsString("SyntaxError"));
         }
@@ -298,11 +294,11 @@ class TransactionIT {
 
     @Test
     void shouldBeResponsiveToThreadInterruptWhenWaitingForResult() {
-        try (Session otherSession = session.driver().session()) {
+        try (var otherSession = session.driver().session()) {
             session.run("CREATE (:Person {name: 'Beta Ray Bill'})").consume();
 
-            Transaction tx1 = session.beginTransaction();
-            Transaction tx2 = otherSession.beginTransaction();
+            var tx1 = session.beginTransaction();
+            var tx2 = otherSession.beginTransaction();
             tx1.run("MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'")
                     .consume();
 
@@ -312,7 +308,7 @@ class TransactionIT {
             TestUtil.interruptWhenInWaitingState(Thread.currentThread());
 
             try {
-                ServiceUnavailableException e = assertThrows(ServiceUnavailableException.class, () -> tx2.run(
+                var e = assertThrows(ServiceUnavailableException.class, () -> tx2.run(
                                 "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'")
                         .consume());
                 assertThat(e.getMessage(), containsString("Connection to the database terminated"));
@@ -326,11 +322,11 @@ class TransactionIT {
 
     @Test
     void shouldBeResponsiveToThreadInterruptWhenWaitingForCommit() {
-        try (Session otherSession = session.driver().session()) {
+        try (var otherSession = session.driver().session()) {
             session.run("CREATE (:Person {name: 'Beta Ray Bill'})").consume();
 
-            Transaction tx1 = session.beginTransaction();
-            Transaction tx2 = otherSession.beginTransaction();
+            var tx1 = session.beginTransaction();
+            var tx2 = otherSession.beginTransaction();
             tx1.run("MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'")
                     .consume();
 
@@ -352,18 +348,18 @@ class TransactionIT {
 
     @Test
     void shouldThrowWhenConnectionKilledDuringTransaction() {
-        ChannelTrackingDriverFactory factory = new ChannelTrackingDriverFactory(1, Clock.systemUTC());
-        Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
+        var factory = new ChannelTrackingDriverFactory(1, Clock.systemUTC());
+        var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
 
-        try (Driver driver = factory.newInstance(
+        try (var driver = factory.newInstance(
                 session.uri(), session.authTokenManager(), config, SecurityPlanImpl.insecure(), null, null)) {
-            ServiceUnavailableException e = assertThrows(ServiceUnavailableException.class, () -> {
-                try (Session session1 = driver.session();
-                        Transaction tx = session1.beginTransaction()) {
+            var e = assertThrows(ServiceUnavailableException.class, () -> {
+                try (var session1 = driver.session();
+                        var tx = session1.beginTransaction()) {
                     tx.run("CREATE (:MyNode {id: 1})").consume();
 
                     // kill all network channels
-                    for (Channel channel : factory.channels()) {
+                    for (var channel : factory.channels()) {
                         channel.close().syncUninterruptibly();
                     }
 
@@ -384,36 +380,36 @@ class TransactionIT {
 
     @Test
     void shouldFailToCommitAfterFailure() throws Throwable {
-        try (Transaction tx = session.beginTransaction()) {
-            List<Integer> xs = tx.run("UNWIND [1,2,3] AS x CREATE (:Node) RETURN x")
+        try (var tx = session.beginTransaction()) {
+            var xs = tx.run("UNWIND [1,2,3] AS x CREATE (:Node) RETURN x")
                     .list(record -> record.get(0).asInt());
             assertEquals(asList(1, 2, 3), xs);
 
-            ClientException error1 = assertThrows(
+            var error1 = assertThrows(
                     ClientException.class, () -> tx.run("RETURN unknown").consume());
             assertThat(error1.code(), containsString("SyntaxError"));
 
-            ClientException error2 = assertThrows(ClientException.class, tx::commit);
+            var error2 = assertThrows(ClientException.class, tx::commit);
             assertThat(error2.getMessage(), startsWith("Transaction can't be committed. It has been rolled back"));
         }
     }
 
     @Test
     void shouldDisallowQueriesAfterFailureWhenResultsAreConsumed() {
-        try (Transaction tx = session.beginTransaction()) {
-            List<Integer> xs = tx.run("UNWIND [1,2,3] AS x CREATE (:Node) RETURN x")
+        try (var tx = session.beginTransaction()) {
+            var xs = tx.run("UNWIND [1,2,3] AS x CREATE (:Node) RETURN x")
                     .list(record -> record.get(0).asInt());
             assertEquals(asList(1, 2, 3), xs);
 
-            ClientException error1 = assertThrows(
+            var error1 = assertThrows(
                     ClientException.class, () -> tx.run("RETURN unknown").consume());
             assertThat(error1.code(), containsString("SyntaxError"));
 
-            ClientException error2 = assertThrows(
+            var error2 = assertThrows(
                     ClientException.class, () -> tx.run("CREATE (:OtherNode)").consume());
             assertThat(error2.getMessage(), startsWith("Cannot run more queries in this transaction"));
 
-            ClientException error3 = assertThrows(
+            var error3 = assertThrows(
                     ClientException.class, () -> tx.run("RETURN 42").consume());
             assertThat(error3.getMessage(), startsWith("Cannot run more queries in this transaction"));
         }
@@ -424,8 +420,8 @@ class TransactionIT {
 
     @Test
     void shouldRollbackWhenOneOfQueriesFails() {
-        ClientException error = assertThrows(ClientException.class, () -> {
-            try (Transaction tx = session.beginTransaction()) {
+        var error = assertThrows(ClientException.class, () -> {
+            try (var tx = session.beginTransaction()) {
                 tx.run("CREATE (:Node1)");
                 tx.run("CREATE (:Node2)");
                 tx.run("CREATE SmthStrange");
@@ -582,15 +578,15 @@ class TransactionIT {
 
     private void shouldRunAndCloseAfterAction(Consumer<Transaction> txConsumer, boolean isCommit) {
         // When
-        try (Transaction tx = session.beginTransaction()) {
+        try (var tx = session.beginTransaction()) {
             tx.run("CREATE (n:FirstNode)");
             tx.run("CREATE (n:SecondNode)");
             txConsumer.accept(tx);
         }
 
         // Then the outcome of both queries should be visible
-        Result result = session.run("MATCH (n) RETURN count(n)");
-        long nodes = result.single().get("count(n)").asLong();
+        var result = session.run("MATCH (n) RETURN count(n)");
+        var nodes = result.single().get("count(n)").asLong();
         if (isCommit) {
             assertThat(nodes, equalTo(2L));
         } else {
@@ -600,7 +596,7 @@ class TransactionIT {
 
     private void shouldBeClosedAfterAction(Consumer<Transaction> txConsumer) {
         // When
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
         txConsumer.accept(tx);
 
         // Then
@@ -608,11 +604,11 @@ class TransactionIT {
     }
 
     private void shouldFailToRunQueryAfterTxAction(Consumer<Transaction> txConsumer) {
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
         tx.run("CREATE (:MyLabel)");
         txConsumer.accept(tx);
 
-        ClientException e = assertThrows(ClientException.class, () -> tx.run("CREATE (:MyOtherLabel)"));
+        var e = assertThrows(ClientException.class, () -> tx.run("CREATE (:MyOtherLabel)"));
         assertThat(e.getMessage(), startsWith("Cannot run more queries in this transaction"));
     }
 

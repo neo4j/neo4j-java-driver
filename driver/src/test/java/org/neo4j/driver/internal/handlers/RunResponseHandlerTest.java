@@ -39,7 +39,6 @@ import static org.neo4j.driver.Values.values;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -54,8 +53,8 @@ import org.neo4j.driver.internal.util.MetadataExtractor;
 class RunResponseHandlerTest {
     @Test
     void shouldNotifyRunFutureOnSuccess() throws Exception {
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
-        RunResponseHandler handler = newHandler(runFuture);
+        var runFuture = new CompletableFuture<Void>();
+        var handler = newHandler(runFuture);
 
         assertFalse(runFuture.isDone());
         handler.onSuccess(emptyMap());
@@ -66,28 +65,28 @@ class RunResponseHandlerTest {
 
     @Test
     void shouldNotifyRunFutureOnFailure() {
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
-        RunResponseHandler handler = newHandler(runFuture);
+        var runFuture = new CompletableFuture<Void>();
+        var handler = newHandler(runFuture);
 
         assertFalse(runFuture.isDone());
-        RuntimeException exception = new RuntimeException();
+        var exception = new RuntimeException();
         handler.onFailure(exception);
 
         assertTrue(runFuture.isCompletedExceptionally());
-        ExecutionException executionException = assertThrows(ExecutionException.class, runFuture::get);
+        var executionException = assertThrows(ExecutionException.class, runFuture::get);
         assertThat(executionException.getCause(), equalTo(exception));
     }
 
     @Test
     void shouldThrowOnRecord() {
-        RunResponseHandler handler = newHandler();
+        var handler = newHandler();
 
         assertThrows(UnsupportedOperationException.class, () -> handler.onRecord(values("a", "b", "c")));
     }
 
     @Test
     void shouldReturnNoKeysWhenFailed() {
-        RunResponseHandler handler = newHandler();
+        var handler = newHandler();
 
         handler.onFailure(new RuntimeException());
 
@@ -97,7 +96,7 @@ class RunResponseHandlerTest {
 
     @Test
     void shouldReturnDefaultResultAvailableAfterWhenFailed() {
-        RunResponseHandler handler = newHandler();
+        var handler = newHandler();
 
         handler.onFailure(new RuntimeException());
 
@@ -106,9 +105,9 @@ class RunResponseHandlerTest {
 
     @Test
     void shouldReturnKeysWhenSucceeded() {
-        RunResponseHandler handler = newHandler();
+        var handler = newHandler();
 
-        List<String> keys = asList("key1", "key2", "key3");
+        var keys = asList("key1", "key2", "key3");
         Map<String, Integer> keyIndex = new HashMap<>();
         keyIndex.put("key1", 0);
         keyIndex.put("key2", 1);
@@ -126,18 +125,17 @@ class RunResponseHandlerTest {
 
     @Test
     void shouldMarkTxAndKeepConnectionAndFailOnFailure() {
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
-        Connection connection = mock(Connection.class);
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
-        RunResponseHandler handler =
-                new RunResponseHandler(runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, tx);
+        var runFuture = new CompletableFuture<Void>();
+        var connection = mock(Connection.class);
+        var tx = mock(UnmanagedTransaction.class);
+        var handler = new RunResponseHandler(runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, tx);
         Throwable throwable = new RuntimeException();
 
         assertFalse(runFuture.isDone());
         handler.onFailure(throwable);
 
         assertTrue(runFuture.isCompletedExceptionally());
-        Throwable actualException = assertThrows(Throwable.class, () -> await(runFuture));
+        var actualException = assertThrows(Throwable.class, () -> await(runFuture));
         assertSame(throwable, actualException);
         verify(tx).markTerminated(throwable);
         verify(connection, never()).release();
@@ -146,17 +144,16 @@ class RunResponseHandlerTest {
 
     @Test
     void shouldNotReleaseConnectionAndFailOnFailure() {
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
-        Connection connection = mock(Connection.class);
-        RunResponseHandler handler =
-                new RunResponseHandler(runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, null);
+        var runFuture = new CompletableFuture<Void>();
+        var connection = mock(Connection.class);
+        var handler = new RunResponseHandler(runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, null);
         Throwable throwable = new RuntimeException();
 
         assertFalse(runFuture.isDone());
         handler.onFailure(throwable);
 
         assertTrue(runFuture.isCompletedExceptionally());
-        Throwable actualException = assertThrows(Throwable.class, () -> await(runFuture));
+        var actualException = assertThrows(Throwable.class, () -> await(runFuture));
         assertSame(throwable, actualException);
         verify(connection, never()).release();
         verify(connection, never()).terminateAndRelease(any(String.class));
@@ -164,19 +161,16 @@ class RunResponseHandlerTest {
 
     @Test
     void shouldReleaseConnectionImmediatelyAndFailOnAuthorizationExpiredExceptionFailure() {
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
-        Connection connection = mock(Connection.class);
-        RunResponseHandler handler =
-                new RunResponseHandler(runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, null);
-        AuthorizationExpiredException authorizationExpiredException =
-                new AuthorizationExpiredException("code", "message");
+        var runFuture = new CompletableFuture<Void>();
+        var connection = mock(Connection.class);
+        var handler = new RunResponseHandler(runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, null);
+        var authorizationExpiredException = new AuthorizationExpiredException("code", "message");
 
         assertFalse(runFuture.isDone());
         handler.onFailure(authorizationExpiredException);
 
         assertTrue(runFuture.isCompletedExceptionally());
-        AuthorizationExpiredException actualException =
-                assertThrows(AuthorizationExpiredException.class, () -> await(runFuture));
+        var actualException = assertThrows(AuthorizationExpiredException.class, () -> await(runFuture));
         assertSame(authorizationExpiredException, actualException);
         verify(connection).terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
         verify(connection, never()).release();
@@ -184,24 +178,22 @@ class RunResponseHandlerTest {
 
     @Test
     void shouldReleaseConnectionImmediatelyAndFailOnConnectionReadTimeoutExceptionFailure() {
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
-        Connection connection = mock(Connection.class);
-        RunResponseHandler handler =
-                new RunResponseHandler(runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, null);
+        var runFuture = new CompletableFuture<Void>();
+        var connection = mock(Connection.class);
+        var handler = new RunResponseHandler(runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, null);
 
         assertFalse(runFuture.isDone());
         handler.onFailure(ConnectionReadTimeoutException.INSTANCE);
 
         assertTrue(runFuture.isCompletedExceptionally());
-        ConnectionReadTimeoutException actualException =
-                assertThrows(ConnectionReadTimeoutException.class, () -> await(runFuture));
+        var actualException = assertThrows(ConnectionReadTimeoutException.class, () -> await(runFuture));
         assertSame(ConnectionReadTimeoutException.INSTANCE, actualException);
         verify(connection).terminateAndRelease(ConnectionReadTimeoutException.INSTANCE.getMessage());
         verify(connection, never()).release();
     }
 
     private static void testResultAvailableAfterOnSuccess(String key, MetadataExtractor metadataExtractor) {
-        RunResponseHandler handler = newHandler(metadataExtractor);
+        var handler = newHandler(metadataExtractor);
 
         handler.onSuccess(singletonMap(key, value(42)));
 

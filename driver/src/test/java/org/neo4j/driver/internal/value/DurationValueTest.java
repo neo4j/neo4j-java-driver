@@ -30,29 +30,29 @@ import org.neo4j.driver.types.IsoDuration;
 class DurationValueTest {
     @Test
     void shouldHaveCorrectType() {
-        IsoDuration duration = newDuration(1, 2, 3, 4);
-        DurationValue durationValue = new DurationValue(duration);
+        var duration = newDuration(1, 2, 3, 4);
+        var durationValue = new DurationValue(duration);
         assertEquals(InternalTypeSystem.TYPE_SYSTEM.DURATION(), durationValue.type());
     }
 
     @Test
     void shouldSupportAsObject() {
-        IsoDuration duration = newDuration(11, 22, 33, 44);
-        DurationValue durationValue = new DurationValue(duration);
+        var duration = newDuration(11, 22, 33, 44);
+        var durationValue = new DurationValue(duration);
         assertEquals(duration, durationValue.asObject());
     }
 
     @Test
     void shouldSupportAsOffsetTime() {
-        IsoDuration duration = newDuration(111, 222, 333, 444);
-        DurationValue durationValue = new DurationValue(duration);
+        var duration = newDuration(111, 222, 333, 444);
+        var durationValue = new DurationValue(duration);
         assertEquals(duration, durationValue.asIsoDuration());
     }
 
     @Test
     void shouldNotSupportAsLong() {
-        IsoDuration duration = newDuration(1111, 2222, 3333, 4444);
-        DurationValue durationValue = new DurationValue(duration);
+        var duration = newDuration(1111, 2222, 3333, 4444);
+        var durationValue = new DurationValue(duration);
 
         assertThrows(Uncoercible.class, durationValue::asLong);
     }

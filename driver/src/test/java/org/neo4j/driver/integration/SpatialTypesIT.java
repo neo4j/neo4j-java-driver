@@ -28,10 +28,8 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.SPATIAL_TYPES;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -50,10 +48,9 @@ class SpatialTypesIT {
 
     @Test
     void shouldReceivePoint() {
-        Record record =
-                session.run("RETURN point({x: 39.111748, y:-76.775635})").single();
+        var record = session.run("RETURN point({x: 39.111748, y:-76.775635})").single();
 
-        Point point = record.get(0).asPoint();
+        var point = record.get(0).asPoint();
 
         assertEquals(CARTESIAN_CRS_CODE, point.srid());
         assertEquals(39.111748, point.x(), DELTA);
@@ -62,14 +59,14 @@ class SpatialTypesIT {
 
     @Test
     void shouldSendPoint() {
-        Value pointValue = point(WGS_84_CRS_CODE, 38.8719, 77.0563);
-        Record record1 = session.run("CREATE (n:Node {location: $point}) RETURN 42", singletonMap("point", pointValue))
+        var pointValue = point(WGS_84_CRS_CODE, 38.8719, 77.0563);
+        var record1 = session.run("CREATE (n:Node {location: $point}) RETURN 42", singletonMap("point", pointValue))
                 .single();
 
         assertEquals(42, record1.get(0).asInt());
 
-        Record record2 = session.run("MATCH (n:Node) RETURN n.location").single();
-        Point point = record2.get(0).asPoint();
+        var record2 = session.run("MATCH (n:Node) RETURN n.location").single();
+        var point = record2.get(0).asPoint();
 
         assertEquals(WGS_84_CRS_CODE, point.srid());
         assertEquals(38.8719, point.x(), DELTA);
@@ -83,43 +80,41 @@ class SpatialTypesIT {
 
     @Test
     void shouldSendAndReceiveRandom2DPoints() {
-        Stream<Value> randomPoints =
-                ThreadLocalRandom.current().ints(1_000, 0, 2).mapToObj(SpatialTypesIT::createPoint);
+        var randomPoints = ThreadLocalRandom.current().ints(1_000, 0, 2).mapToObj(SpatialTypesIT::createPoint);
 
         randomPoints.forEach(this::testPointSendAndReceive);
     }
 
     @Test
     void shouldSendAndReceiveRandom2DPointArrays() {
-        Stream<List<Value>> randomPointLists =
-                ThreadLocalRandom.current().ints(1_000, 0, 2).mapToObj(SpatialTypesIT::randomPointList);
+        var randomPointLists = ThreadLocalRandom.current().ints(1_000, 0, 2).mapToObj(SpatialTypesIT::randomPointList);
 
         randomPointLists.forEach(this::testPointListSendAndReceive);
     }
 
     private void testPointSendAndReceive(Value pointValue) {
-        Point originalPoint = pointValue.asPoint();
+        var originalPoint = pointValue.asPoint();
 
-        Record record = session.run("CREATE (n {point: $point}) return n.point", singletonMap("point", pointValue))
+        var record = session.run("CREATE (n {point: $point}) return n.point", singletonMap("point", pointValue))
                 .single();
-        Point receivedPoint = record.get(0).asPoint();
+        var receivedPoint = record.get(0).asPoint();
 
         assertPoints2DEqual(originalPoint, receivedPoint);
     }
 
     private void testPointListSendAndReceive(List<Value> points) {
-        Record record = session.run("CREATE (n {points: $points}) return n.points", singletonMap("points", points))
+        var record = session.run("CREATE (n {points: $points}) return n.points", singletonMap("points", points))
                 .single();
-        List<Point> receivedPoints = record.get(0).asList(ofPoint());
+        var receivedPoints = record.get(0).asList(ofPoint());
 
         assertEquals(points.size(), receivedPoints.size());
-        for (int i = 0; i < points.size(); i++) {
+        for (var i = 0; i < points.size(); i++) {
             assertPoints2DEqual(points.get(i).asPoint(), receivedPoints.get(i));
         }
     }
 
     private static List<Value> randomPointList(int index) {
-        int size = ThreadLocalRandom.current().nextInt(1, 100);
+        var size = ThreadLocalRandom.current().nextInt(1, 100);
         return IntStream.range(0, size).mapToObj(ignored -> createPoint(index)).collect(toList());
     }
 
@@ -138,7 +133,7 @@ class SpatialTypesIT {
     }
 
     private static void assertPoints2DEqual(Point expected, Point actual) {
-        String message = "Expected: " + expected + " but was: " + actual;
+        var message = "Expected: " + expected + " but was: " + actual;
         assertEquals(expected.srid(), actual.srid(), message);
         assertEquals(expected.x(), actual.x(), DELTA, message);
         assertEquals(expected.y(), actual.y(), DELTA, message);

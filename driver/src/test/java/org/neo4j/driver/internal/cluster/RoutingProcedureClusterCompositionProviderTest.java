@@ -60,16 +60,16 @@ class RoutingProcedureClusterCompositionProviderTest {
     @Test
     void shouldProtocolErrorWhenNoRecord() {
         // Given
-        SingleDatabaseRoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
+        var mockedRunner = newProcedureRunnerMock();
+        var connection = mock(Connection.class);
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection);
 
-        RoutingProcedureResponse noRecordsResponse = newRoutingResponse();
+        var noRecordsResponse = newRoutingResponse();
         when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(noRecordsResponse));
 
         // When & Then
-        ProtocolException error = assertThrows(
+        var error = assertThrows(
                 ProtocolException.class,
                 () -> await(
                         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null)));
@@ -79,17 +79,17 @@ class RoutingProcedureClusterCompositionProviderTest {
     @Test
     void shouldProtocolErrorWhenMoreThanOneRecord() {
         // Given
-        SingleDatabaseRoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
+        var mockedRunner = newProcedureRunnerMock();
+        var connection = mock(Connection.class);
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection);
 
         Record aRecord = new InternalRecord(asList("key1", "key2"), new Value[] {new StringValue("a value")});
-        RoutingProcedureResponse routingResponse = newRoutingResponse(aRecord, aRecord);
+        var routingResponse = newRoutingResponse(aRecord, aRecord);
         when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
 
         // When
-        ProtocolException error = assertThrows(
+        var error = assertThrows(
                 ProtocolException.class,
                 () -> await(
                         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null)));
@@ -99,17 +99,17 @@ class RoutingProcedureClusterCompositionProviderTest {
     @Test
     void shouldProtocolErrorWhenUnparsableRecord() {
         // Given
-        SingleDatabaseRoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
+        var mockedRunner = newProcedureRunnerMock();
+        var connection = mock(Connection.class);
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection);
 
         Record aRecord = new InternalRecord(asList("key1", "key2"), new Value[] {new StringValue("a value")});
-        RoutingProcedureResponse routingResponse = newRoutingResponse(aRecord);
+        var routingResponse = newRoutingResponse(aRecord);
         when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
 
         // When
-        ProtocolException error = assertThrows(
+        var error = assertThrows(
                 ProtocolException.class,
                 () -> await(
                         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null)));
@@ -119,21 +119,21 @@ class RoutingProcedureClusterCompositionProviderTest {
     @Test
     void shouldProtocolErrorWhenNoRouters() {
         // Given
-        MultiDatabasesRoutingProcedureRunner mockedRunner = newMultiDBProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
-        Clock mockedClock = mock(Clock.class);
+        var mockedRunner = newMultiDBProcedureRunnerMock();
+        var connection = mock(Connection.class);
+        var mockedClock = mock(Clock.class);
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection, mockedClock);
 
         Record record = new InternalRecord(asList("ttl", "servers"), new Value[] {
             value(100), value(asList(serverInfo("READ", "one:1337", "two:1337"), serverInfo("WRITE", "one:1337")))
         });
-        RoutingProcedureResponse routingResponse = newRoutingResponse(record);
+        var routingResponse = newRoutingResponse(record);
         when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
         // When
-        ProtocolException error = assertThrows(
+        var error = assertThrows(
                 ProtocolException.class,
                 () -> await(
                         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null)));
@@ -143,21 +143,21 @@ class RoutingProcedureClusterCompositionProviderTest {
     @Test
     void routeMessageRoutingProcedureShouldProtocolErrorWhenNoRouters() {
         // Given
-        RouteMessageRoutingProcedureRunner mockedRunner = newRouteMessageRoutingProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
-        Clock mockedClock = mock(Clock.class);
+        var mockedRunner = newRouteMessageRoutingProcedureRunnerMock();
+        var connection = mock(Connection.class);
+        var mockedClock = mock(Clock.class);
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection, mockedClock);
 
         Record record = new InternalRecord(asList("ttl", "servers"), new Value[] {
             value(100), value(asList(serverInfo("READ", "one:1337", "two:1337"), serverInfo("WRITE", "one:1337")))
         });
-        RoutingProcedureResponse routingResponse = newRoutingResponse(record);
+        var routingResponse = newRoutingResponse(record);
         when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
         // When
-        ProtocolException error = assertThrows(
+        var error = assertThrows(
                 ProtocolException.class,
                 () -> await(
                         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null)));
@@ -167,21 +167,21 @@ class RoutingProcedureClusterCompositionProviderTest {
     @Test
     void shouldProtocolErrorWhenNoReaders() {
         // Given
-        MultiDatabasesRoutingProcedureRunner mockedRunner = newMultiDBProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
-        Clock mockedClock = mock(Clock.class);
+        var mockedRunner = newMultiDBProcedureRunnerMock();
+        var connection = mock(Connection.class);
+        var mockedClock = mock(Clock.class);
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection, mockedClock);
 
         Record record = new InternalRecord(asList("ttl", "servers"), new Value[] {
             value(100), value(asList(serverInfo("WRITE", "one:1337"), serverInfo("ROUTE", "one:1337", "two:1337")))
         });
-        RoutingProcedureResponse routingResponse = newRoutingResponse(record);
+        var routingResponse = newRoutingResponse(record);
         when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
         // When
-        ProtocolException error = assertThrows(
+        var error = assertThrows(
                 ProtocolException.class,
                 () -> await(
                         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null)));
@@ -191,21 +191,21 @@ class RoutingProcedureClusterCompositionProviderTest {
     @Test
     void routeMessageRoutingProcedureShouldProtocolErrorWhenNoReaders() {
         // Given
-        RouteMessageRoutingProcedureRunner mockedRunner = newRouteMessageRoutingProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
-        Clock mockedClock = mock(Clock.class);
+        var mockedRunner = newRouteMessageRoutingProcedureRunnerMock();
+        var connection = mock(Connection.class);
+        var mockedClock = mock(Clock.class);
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection, mockedClock);
 
         Record record = new InternalRecord(asList("ttl", "servers"), new Value[] {
             value(100), value(asList(serverInfo("WRITE", "one:1337"), serverInfo("ROUTE", "one:1337", "two:1337")))
         });
-        RoutingProcedureResponse routingResponse = newRoutingResponse(record);
+        var routingResponse = newRoutingResponse(record);
         when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
         // When
-        ProtocolException error = assertThrows(
+        var error = assertThrows(
                 ProtocolException.class,
                 () -> await(
                         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null)));
@@ -215,15 +215,15 @@ class RoutingProcedureClusterCompositionProviderTest {
     @Test
     void shouldPropagateConnectionFailureExceptions() {
         // Given
-        SingleDatabaseRoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
+        var mockedRunner = newProcedureRunnerMock();
+        var connection = mock(Connection.class);
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection);
 
         when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(failedFuture(new ServiceUnavailableException("Connection breaks during cypher execution")));
 
         // When & Then
-        ServiceUnavailableException e = assertThrows(
+        var e = assertThrows(
                 ServiceUnavailableException.class,
                 () -> await(
                         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null)));
@@ -233,9 +233,9 @@ class RoutingProcedureClusterCompositionProviderTest {
     @Test
     void shouldReturnSuccessResultWhenNoError() {
         // Given
-        Clock mockedClock = mock(Clock.class);
-        Connection connection = mock(Connection.class);
-        MultiDatabasesRoutingProcedureRunner mockedRunner = newMultiDBProcedureRunnerMock();
+        var mockedClock = mock(Clock.class);
+        var connection = mock(Connection.class);
+        var mockedRunner = newMultiDBProcedureRunnerMock();
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection, mockedClock);
 
         Record record = new InternalRecord(asList("ttl", "servers"), new Value[] {
@@ -245,13 +245,13 @@ class RoutingProcedureClusterCompositionProviderTest {
                     serverInfo("WRITE", "one:1337"),
                     serverInfo("ROUTE", "one:1337", "two:1337")))
         });
-        RoutingProcedureResponse routingResponse = newRoutingResponse(record);
+        var routingResponse = newRoutingResponse(record);
         when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
         // When
-        ClusterComposition cluster =
+        var cluster =
                 await(provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null));
 
         // Then
@@ -264,9 +264,9 @@ class RoutingProcedureClusterCompositionProviderTest {
     @Test
     void routeMessageRoutingProcedureShouldReturnSuccessResultWhenNoError() {
         // Given
-        Clock mockedClock = mock(Clock.class);
-        Connection connection = mock(Connection.class);
-        RouteMessageRoutingProcedureRunner mockedRunner = newRouteMessageRoutingProcedureRunnerMock();
+        var mockedClock = mock(Clock.class);
+        var connection = mock(Connection.class);
+        var mockedRunner = newRouteMessageRoutingProcedureRunnerMock();
         ClusterCompositionProvider provider = newClusterCompositionProvider(mockedRunner, connection, mockedClock);
 
         Record record = new InternalRecord(asList("ttl", "servers"), new Value[] {
@@ -276,13 +276,13 @@ class RoutingProcedureClusterCompositionProviderTest {
                     serverInfo("WRITE", "one:1337"),
                     serverInfo("ROUTE", "one:1337", "two:1337")))
         });
-        RoutingProcedureResponse routingResponse = newRoutingResponse(record);
+        var routingResponse = newRoutingResponse(record);
         when(mockedRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(routingResponse));
         when(mockedClock.millis()).thenReturn(12345L);
 
         // When
-        ClusterComposition cluster =
+        var cluster =
                 await(provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null));
 
         // Then
@@ -294,17 +294,16 @@ class RoutingProcedureClusterCompositionProviderTest {
 
     @Test
     void shouldReturnFailureWhenProcedureRunnerFails() {
-        SingleDatabaseRoutingProcedureRunner procedureRunner = newProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
+        var procedureRunner = newProcedureRunnerMock();
+        var connection = mock(Connection.class);
 
-        RuntimeException error = new RuntimeException("hi");
+        var error = new RuntimeException("hi");
         when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedFuture(newRoutingResponse(error)));
 
-        RoutingProcedureClusterCompositionProvider provider =
-                newClusterCompositionProvider(procedureRunner, connection);
+        var provider = newClusterCompositionProvider(procedureRunner, connection);
 
-        RuntimeException e = assertThrows(
+        var e = assertThrows(
                 RuntimeException.class,
                 () -> await(
                         provider.getClusterComposition(connection, defaultDatabase(), Collections.emptySet(), null)));
@@ -313,11 +312,10 @@ class RoutingProcedureClusterCompositionProviderTest {
 
     @Test
     void shouldUseMultiDBProcedureRunnerWhenConnectingWith40Server() throws Throwable {
-        MultiDatabasesRoutingProcedureRunner procedureRunner = newMultiDBProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
+        var procedureRunner = newMultiDBProcedureRunnerMock();
+        var connection = mock(Connection.class);
 
-        RoutingProcedureClusterCompositionProvider provider =
-                newClusterCompositionProvider(procedureRunner, connection);
+        var provider = newClusterCompositionProvider(procedureRunner, connection);
 
         when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedWithNull());
@@ -328,11 +326,10 @@ class RoutingProcedureClusterCompositionProviderTest {
 
     @Test
     void shouldUseProcedureRunnerWhenConnectingWith35AndPreviousServers() throws Throwable {
-        SingleDatabaseRoutingProcedureRunner procedureRunner = newProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
+        var procedureRunner = newProcedureRunnerMock();
+        var connection = mock(Connection.class);
 
-        RoutingProcedureClusterCompositionProvider provider =
-                newClusterCompositionProvider(procedureRunner, connection);
+        var provider = newClusterCompositionProvider(procedureRunner, connection);
 
         when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedWithNull());
@@ -343,11 +340,10 @@ class RoutingProcedureClusterCompositionProviderTest {
 
     @Test
     void shouldUseRouteMessageProcedureRunnerWhenConnectingWithProtocol43() throws Throwable {
-        RouteMessageRoutingProcedureRunner procedureRunner = newRouteMessageRoutingProcedureRunnerMock();
-        Connection connection = mock(Connection.class);
+        var procedureRunner = newRouteMessageRoutingProcedureRunnerMock();
+        var connection = mock(Connection.class);
 
-        RoutingProcedureClusterCompositionProvider provider =
-                newClusterCompositionProvider(procedureRunner, connection);
+        var provider = newClusterCompositionProvider(procedureRunner, connection);
 
         when(procedureRunner.run(eq(connection), any(DatabaseName.class), any(), any()))
                 .thenReturn(completedWithNull());
@@ -365,7 +361,7 @@ class RoutingProcedureClusterCompositionProviderTest {
 
     private static Set<BoltServerAddress> serverSet(String... addresses) {
         Set<BoltServerAddress> result = new HashSet<>();
-        for (String address : addresses) {
+        for (var address : addresses) {
             result.add(new BoltServerAddress(address));
         }
         return result;

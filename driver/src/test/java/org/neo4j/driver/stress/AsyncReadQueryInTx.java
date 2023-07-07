@@ -24,11 +24,9 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.types.Node;
 
 public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsyncQuery<C> {
     public AsyncReadQueryInTx(Driver driver, boolean useBookmark) {
@@ -37,9 +35,9 @@ public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsync
 
     @Override
     public CompletionStage<Void> execute(C ctx) {
-        AsyncSession session = newSession(AccessMode.READ, ctx);
+        var session = newSession(AccessMode.READ, ctx);
 
-        CompletionStage<Void> txCommitted = session.beginTransactionAsync()
+        var txCommitted = session.beginTransactionAsync()
                 .thenCompose(tx -> tx.runAsync("MATCH (n) RETURN n LIMIT 1").thenCompose(cursor -> cursor.nextAsync()
                         .thenCompose(record -> processRecordAndGetSummary(record, cursor)
                                 .thenCompose(summary -> processSummaryAndCommit(summary, tx, ctx)))));
@@ -51,7 +49,7 @@ public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsync
 
     private CompletionStage<ResultSummary> processRecordAndGetSummary(Record record, ResultCursor cursor) {
         if (record != null) {
-            Node node = record.get(0).asNode();
+            var node = record.get(0).asNode();
             assertNotNull(node);
         }
         return cursor.consumeAsync();

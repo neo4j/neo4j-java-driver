@@ -30,29 +30,29 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 class TimeValueTest {
     @Test
     void shouldHaveCorrectType() {
-        OffsetTime time = OffsetTime.now().withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
-        TimeValue timeValue = new TimeValue(time);
+        var time = OffsetTime.now().withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
+        var timeValue = new TimeValue(time);
         assertEquals(InternalTypeSystem.TYPE_SYSTEM.TIME(), timeValue.type());
     }
 
     @Test
     void shouldSupportAsObject() {
-        OffsetTime time = OffsetTime.of(19, 0, 10, 1, ZoneOffset.ofHours(-3));
-        TimeValue timeValue = new TimeValue(time);
+        var time = OffsetTime.of(19, 0, 10, 1, ZoneOffset.ofHours(-3));
+        var timeValue = new TimeValue(time);
         assertEquals(time, timeValue.asObject());
     }
 
     @Test
     void shouldSupportAsOffsetTime() {
-        OffsetTime time = OffsetTime.of(23, 59, 59, 999_999_999, ZoneOffset.ofHoursMinutes(2, 15));
-        TimeValue timeValue = new TimeValue(time);
+        var time = OffsetTime.of(23, 59, 59, 999_999_999, ZoneOffset.ofHoursMinutes(2, 15));
+        var timeValue = new TimeValue(time);
         assertEquals(time, timeValue.asOffsetTime());
     }
 
     @Test
     void shouldNotSupportAsLong() {
-        OffsetTime time = OffsetTime.now().withOffsetSameInstant(ZoneOffset.ofHours(-5));
-        TimeValue timeValue = new TimeValue(time);
+        var time = OffsetTime.now().withOffsetSameInstant(ZoneOffset.ofHours(-5));
+        var timeValue = new TimeValue(time);
 
         assertThrows(Uncoercible.class, timeValue::asLong);
     }

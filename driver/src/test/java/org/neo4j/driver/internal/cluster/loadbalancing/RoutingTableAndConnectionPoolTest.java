@@ -34,7 +34,6 @@ import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithDatab
 import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import java.time.Clock;
 import java.time.Duration;
@@ -50,7 +49,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -98,12 +96,12 @@ class RoutingTableAndConnectionPoolTest {
     @Test
     void shouldAddServerToRoutingTableAndConnectionPool() {
         // Given
-        ConnectionPool connectionPool = newConnectionPool();
-        Rediscovery rediscovery = mock(Rediscovery.class);
+        var connectionPool = newConnectionPool();
+        var rediscovery = mock(Rediscovery.class);
         when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(clusterComposition(A));
-        RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
-        LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
+        var routingTables = newRoutingTables(connectionPool, rediscovery);
+        var loadBalancer = newLoadBalancer(connectionPool, routingTables);
 
         // When
         await(loadBalancer.acquireConnection(contextWithDatabase("neo4j")));
@@ -118,12 +116,12 @@ class RoutingTableAndConnectionPoolTest {
     @Test
     void shouldNotAddToRoutingTableWhenFailedWithRoutingError() {
         // Given
-        ConnectionPool connectionPool = newConnectionPool();
-        Rediscovery rediscovery = mock(Rediscovery.class);
+        var connectionPool = newConnectionPool();
+        var rediscovery = mock(Rediscovery.class);
         when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(Futures.failedFuture(new FatalDiscoveryException("No database found")));
-        RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
-        LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
+        var routingTables = newRoutingTables(connectionPool, rediscovery);
+        var loadBalancer = newLoadBalancer(connectionPool, routingTables);
 
         // When
         assertThrows(
@@ -139,12 +137,12 @@ class RoutingTableAndConnectionPoolTest {
     @Test
     void shouldNotAddToRoutingTableWhenFailedWithProtocolError() {
         // Given
-        ConnectionPool connectionPool = newConnectionPool();
-        Rediscovery rediscovery = mock(Rediscovery.class);
+        var connectionPool = newConnectionPool();
+        var rediscovery = mock(Rediscovery.class);
         when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(Futures.failedFuture(new ProtocolException("No database found")));
-        RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
-        LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
+        var routingTables = newRoutingTables(connectionPool, rediscovery);
+        var loadBalancer = newLoadBalancer(connectionPool, routingTables);
 
         // When
         assertThrows(
@@ -159,12 +157,12 @@ class RoutingTableAndConnectionPoolTest {
     @Test
     void shouldNotAddToRoutingTableWhenFailedWithSecurityError() {
         // Given
-        ConnectionPool connectionPool = newConnectionPool();
-        Rediscovery rediscovery = mock(Rediscovery.class);
+        var connectionPool = newConnectionPool();
+        var rediscovery = mock(Rediscovery.class);
         when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(Futures.failedFuture(new SecurityException("No database found")));
-        RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
-        LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
+        var routingTables = newRoutingTables(connectionPool, rediscovery);
+        var loadBalancer = newLoadBalancer(connectionPool, routingTables);
 
         // When
         assertThrows(
@@ -179,15 +177,15 @@ class RoutingTableAndConnectionPoolTest {
     @Test
     void shouldNotRemoveNewlyAddedRoutingTableEvenIfItIsExpired() {
         // Given
-        ConnectionPool connectionPool = newConnectionPool();
-        Rediscovery rediscovery = mock(Rediscovery.class);
+        var connectionPool = newConnectionPool();
+        var rediscovery = mock(Rediscovery.class);
         when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(expiredClusterComposition(A));
-        RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
-        LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
+        var routingTables = newRoutingTables(connectionPool, rediscovery);
+        var loadBalancer = newLoadBalancer(connectionPool, routingTables);
 
         // When
-        Connection connection = await(loadBalancer.acquireConnection(contextWithDatabase("neo4j")));
+        var connection = await(loadBalancer.acquireConnection(contextWithDatabase("neo4j")));
         await(connection.release());
 
         // Then
@@ -202,16 +200,16 @@ class RoutingTableAndConnectionPoolTest {
     @Test
     void shouldRemoveExpiredRoutingTableAndServers() {
         // Given
-        ConnectionPool connectionPool = newConnectionPool();
-        Rediscovery rediscovery = mock(Rediscovery.class);
+        var connectionPool = newConnectionPool();
+        var rediscovery = mock(Rediscovery.class);
         when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(expiredClusterComposition(A))
                 .thenReturn(clusterComposition(B));
-        RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
-        LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
+        var routingTables = newRoutingTables(connectionPool, rediscovery);
+        var loadBalancer = newLoadBalancer(connectionPool, routingTables);
 
         // When
-        Connection connection = await(loadBalancer.acquireConnection(contextWithDatabase("neo4j")));
+        var connection = await(loadBalancer.acquireConnection(contextWithDatabase("neo4j")));
         await(connection.release());
         await(loadBalancer.acquireConnection(contextWithDatabase("foo")));
 
@@ -228,13 +226,13 @@ class RoutingTableAndConnectionPoolTest {
     @Test
     void shouldRemoveExpiredRoutingTableButNotServer() {
         // Given
-        ConnectionPool connectionPool = newConnectionPool();
-        Rediscovery rediscovery = mock(Rediscovery.class);
+        var connectionPool = newConnectionPool();
+        var rediscovery = mock(Rediscovery.class);
         when(rediscovery.lookupClusterComposition(any(), any(), any(), any(), any()))
                 .thenReturn(expiredClusterComposition(A))
                 .thenReturn(clusterComposition(B));
-        RoutingTableRegistryImpl routingTables = newRoutingTables(connectionPool, rediscovery);
-        LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
+        var routingTables = newRoutingTables(connectionPool, rediscovery);
+        var loadBalancer = newLoadBalancer(connectionPool, routingTables);
 
         // When
         await(loadBalancer.acquireConnection(contextWithDatabase("neo4j")));
@@ -254,16 +252,16 @@ class RoutingTableAndConnectionPoolTest {
     @Test
     void shouldHandleAddAndRemoveFromRoutingTableAndConnectionPool() throws Throwable {
         // Given
-        ConnectionPool connectionPool = newConnectionPool();
+        var connectionPool = newConnectionPool();
         Rediscovery rediscovery = new RandomizedRediscovery();
         RoutingTableRegistry routingTables = newRoutingTables(connectionPool, rediscovery);
-        LoadBalancer loadBalancer = newLoadBalancer(connectionPool, routingTables);
+        var loadBalancer = newLoadBalancer(connectionPool, routingTables);
 
         // When
         acquireAndReleaseConnections(loadBalancer);
-        Set<BoltServerAddress> servers = routingTables.allServers();
+        var servers = routingTables.allServers();
         BoltServerAddress openServer = null;
-        for (BoltServerAddress server : servers) {
+        for (var server : servers) {
             if (connectionPool.isOpen(server)) {
                 openServer = server;
                 break;
@@ -281,14 +279,14 @@ class RoutingTableAndConnectionPoolTest {
     }
 
     private void acquireAndReleaseConnections(LoadBalancer loadBalancer) throws InterruptedException {
-        ExecutorService executorService = Executors.newFixedThreadPool(4);
-        int count = 100;
-        Future<?>[] futures = new Future<?>[count];
+        var executorService = Executors.newFixedThreadPool(4);
+        var count = 100;
+        var futures = new Future<?>[count];
 
-        for (int i = 0; i < count; i++) {
-            Future<?> future = executorService.submit(() -> {
-                int index = random.nextInt(DATABASES.length);
-                CompletionStage<Void> task = loadBalancer
+        for (var i = 0; i < count; i++) {
+            var future = executorService.submit(() -> {
+                var index = random.nextInt(DATABASES.length);
+                var task = loadBalancer
                         .acquireConnection(contextWithDatabase(DATABASES[index]))
                         .thenCompose(Connection::release);
                 await(task);
@@ -300,7 +298,7 @@ class RoutingTableAndConnectionPoolTest {
         executorService.awaitTermination(10, TimeUnit.SECONDS);
 
         List<Throwable> errors = new ArrayList<>();
-        for (Future<?> f : futures) {
+        for (var f : futures) {
             try {
                 f.get();
             } catch (ExecutionException e) {
@@ -314,11 +312,11 @@ class RoutingTableAndConnectionPoolTest {
 
     private ConnectionPool newConnectionPool() {
         MetricsListener metrics = DevNullMetricsListener.INSTANCE;
-        PoolSettings poolSettings = new PoolSettings(10, 5000, -1, -1);
-        Bootstrap bootstrap = BootstrapFactory.newBootstrap(1);
-        NettyChannelTracker channelTracker =
+        var poolSettings = new PoolSettings(10, 5000, -1, -1);
+        var bootstrap = BootstrapFactory.newBootstrap(1);
+        var channelTracker =
                 new NettyChannelTracker(metrics, bootstrap.config().group().next(), logging);
-        NettyChannelHealthChecker channelHealthChecker = new NettyChannelHealthChecker(poolSettings, clock, logging);
+        var channelHealthChecker = new NettyChannelHealthChecker(poolSettings, clock, logging);
 
         return new TestConnectionPool(
                 bootstrap, channelTracker, channelHealthChecker, poolSettings, metrics, logging, clock, true);
@@ -330,7 +328,7 @@ class RoutingTableAndConnectionPoolTest {
     }
 
     private LoadBalancer newLoadBalancer(ConnectionPool connectionPool, RoutingTableRegistry routingTables) {
-        Rediscovery rediscovery = mock(Rediscovery.class);
+        var rediscovery = mock(Rediscovery.class);
         return new LoadBalancer(
                 connectionPool,
                 routingTables,
@@ -351,9 +349,8 @@ class RoutingTableAndConnectionPoolTest {
 
     private CompletableFuture<ClusterCompositionLookupResult> clusterComposition(
             long expireAfterMs, BoltServerAddress... addresses) {
-        HashSet<BoltServerAddress> servers = new HashSet<>(Arrays.asList(addresses));
-        ClusterComposition composition =
-                new ClusterComposition(clock.millis() + expireAfterMs, servers, servers, servers, null);
+        var servers = new HashSet<BoltServerAddress>(Arrays.asList(addresses));
+        var composition = new ClusterComposition(clock.millis() + expireAfterMs, servers, servers, servers, null);
         return CompletableFuture.completedFuture(new ClusterCompositionLookupResult(composition));
     }
 
@@ -367,22 +364,21 @@ class RoutingTableAndConnectionPoolTest {
                 AuthToken overrideAuthToken) {
             // when looking up a new routing table, we return a valid random routing table back
             Set<BoltServerAddress> servers = new HashSet<>();
-            for (int i = 0; i < 3; i++) {
-                int index = random.nextInt(SERVERS.size());
-                BoltServerAddress server = SERVERS.get(index);
+            for (var i = 0; i < 3; i++) {
+                var index = random.nextInt(SERVERS.size());
+                var server = SERVERS.get(index);
                 if (server != null) {
                     servers.add(server);
                 }
             }
             if (servers.size() == 0) {
-                BoltServerAddress address = SERVERS.stream()
+                var address = SERVERS.stream()
                         .filter(Objects::nonNull)
                         .findFirst()
                         .orElseThrow(() -> new RuntimeException("No non null server addresses are available"));
                 servers.add(address);
             }
-            ClusterComposition composition =
-                    new ClusterComposition(clock.millis() + 1, servers, servers, servers, null);
+            var composition = new ClusterComposition(clock.millis() + 1, servers, servers, servers, null);
             return CompletableFuture.completedFuture(new ClusterCompositionLookupResult(composition));
         }
 

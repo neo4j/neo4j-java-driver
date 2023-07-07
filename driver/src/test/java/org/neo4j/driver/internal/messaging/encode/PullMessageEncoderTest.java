@@ -26,7 +26,6 @@ import static org.neo4j.driver.Values.value;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
@@ -43,7 +42,7 @@ class PullMessageEncoderTest {
         Map<String, Value> meta = new HashMap<>();
         meta.put("n", value(-1));
 
-        InOrder order = inOrder(packer);
+        var order = inOrder(packer);
         order.verify(packer).packStructHeader(1, PullMessage.SIGNATURE);
         order.verify(packer).pack(meta);
     }
@@ -56,7 +55,7 @@ class PullMessageEncoderTest {
         meta.put("n", value(100));
         meta.put("qid", value(200));
 
-        InOrder order = inOrder(packer);
+        var order = inOrder(packer);
         order.verify(packer).packStructHeader(1, PullMessage.SIGNATURE);
         order.verify(packer).pack(meta);
     }
@@ -68,7 +67,7 @@ class PullMessageEncoderTest {
         Map<String, Value> meta = new HashMap<>();
         meta.put("n", value(100));
 
-        InOrder order = inOrder(packer);
+        var order = inOrder(packer);
         order.verify(packer).packStructHeader(1, PullMessage.SIGNATURE);
         order.verify(packer).pack(meta);
     }

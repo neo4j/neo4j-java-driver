@@ -41,7 +41,6 @@ import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -95,12 +94,12 @@ public class InternalReactiveSessionTest {
     @MethodSource("allSessionRunMethods")
     void shouldDelegateRun(Function<ReactiveSession, Publisher<ReactiveResult>> runReturnOne) {
         // Given
-        NetworkSession session = mock(NetworkSession.class);
+        var session = mock(NetworkSession.class);
         RxResultCursor cursor = mock(RxResultCursorImpl.class);
 
         // Run succeeded with a cursor
         when(session.runRx(any(Query.class), any(TransactionConfig.class))).thenReturn(completedFuture(cursor));
-        InternalReactiveSession rxSession = new InternalReactiveSession(session);
+        var rxSession = new InternalReactiveSession(session);
 
         // When
         var result = flowPublisherToFlux(runReturnOne.apply(rxSession));
@@ -115,13 +114,13 @@ public class InternalReactiveSessionTest {
     void shouldReleaseConnectionIfFailedToRun(Function<ReactiveSession, Publisher<ReactiveResult>> runReturnOne) {
         // Given
         Throwable error = new RuntimeException("Hi there");
-        NetworkSession session = mock(NetworkSession.class);
+        var session = mock(NetworkSession.class);
 
         // Run failed with error
         when(session.runRx(any(Query.class), any(TransactionConfig.class))).thenReturn(Futures.failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
-        InternalReactiveSession rxSession = new InternalReactiveSession(session);
+        var rxSession = new InternalReactiveSession(session);
 
         // When
         var result = flowPublisherToFlux(runReturnOne.apply(rxSession));
@@ -136,12 +135,12 @@ public class InternalReactiveSessionTest {
     @MethodSource("allBeginTxMethods")
     void shouldDelegateBeginTx(Function<ReactiveSession, Publisher<ReactiveTransaction>> beginTx) {
         // Given
-        NetworkSession session = mock(NetworkSession.class);
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var session = mock(NetworkSession.class);
+        var tx = mock(UnmanagedTransaction.class);
 
         when(session.beginTransactionAsync(any(TransactionConfig.class), isNull()))
                 .thenReturn(completedFuture(tx));
-        InternalReactiveSession rxSession = new InternalReactiveSession(session);
+        var rxSession = new InternalReactiveSession(session);
 
         // When
         var rxTx = flowPublisherToFlux(beginTx.apply(rxSession));
@@ -156,18 +155,18 @@ public class InternalReactiveSessionTest {
     void shouldReleaseConnectionIfFailedToBeginTx(Function<ReactiveSession, Publisher<ReactiveTransaction>> beginTx) {
         // Given
         Throwable error = new RuntimeException("Hi there");
-        NetworkSession session = mock(NetworkSession.class);
+        var session = mock(NetworkSession.class);
 
         // Run failed with error
         when(session.beginTransactionAsync(any(TransactionConfig.class), isNull()))
                 .thenReturn(Futures.failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
-        InternalReactiveSession rxSession = new InternalReactiveSession(session);
+        var rxSession = new InternalReactiveSession(session);
 
         // When
         var rxTx = flowPublisherToFlux(beginTx.apply(rxSession));
-        CompletableFuture<ReactiveTransaction> txFuture = Mono.from(rxTx).toFuture();
+        var txFuture = Mono.from(rxTx).toFuture();
 
         // Then
         verify(session).beginTransactionAsync(any(TransactionConfig.class), isNull());
@@ -180,15 +179,15 @@ public class InternalReactiveSessionTest {
     @SuppressWarnings("deprecation")
     void shouldRetryOnError() {
         // Given
-        int retryCount = 2;
-        NetworkSession session = mock(NetworkSession.class);
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var retryCount = 2;
+        var session = mock(NetworkSession.class);
+        var tx = mock(UnmanagedTransaction.class);
         when(tx.closeAsync(false)).thenReturn(completedWithNull());
 
         when(session.beginTransactionAsync(any(AccessMode.class), any(TransactionConfig.class)))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(retryCount));
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var rxSession = new InternalRxSession(session);
 
         // When
         var strings = rxSession.<String>readTransaction(
@@ -208,19 +207,19 @@ public class InternalReactiveSessionTest {
     @SuppressWarnings("deprecation")
     void shouldObtainResultIfRetrySucceed() {
         // Given
-        int retryCount = 2;
-        NetworkSession session = mock(NetworkSession.class);
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var retryCount = 2;
+        var session = mock(NetworkSession.class);
+        var tx = mock(UnmanagedTransaction.class);
         when(tx.closeAsync(false)).thenReturn(completedWithNull());
         when(tx.closeAsync(true)).thenReturn(completedWithNull());
 
         when(session.beginTransactionAsync(any(AccessMode.class), any(TransactionConfig.class)))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(retryCount));
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var rxSession = new InternalRxSession(session);
 
         // When
-        AtomicInteger count = new AtomicInteger();
+        var count = new AtomicInteger();
         var strings = rxSession.readTransaction(t -> {
             // we fail for the first few retries, and then success on the last run.
             if (count.getAndIncrement() == retryCount) {
@@ -242,8 +241,8 @@ public class InternalReactiveSessionTest {
     @SuppressWarnings("deprecation")
     void shouldDelegateBookmark() {
         // Given
-        NetworkSession session = mock(NetworkSession.class);
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var session = mock(NetworkSession.class);
+        var rxSession = new InternalRxSession(session);
 
         // When
         rxSession.lastBookmark();
@@ -257,8 +256,8 @@ public class InternalReactiveSessionTest {
     @SuppressWarnings("deprecation")
     void shouldDelegateBookmarks() {
         // Given
-        NetworkSession session = mock(NetworkSession.class);
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var session = mock(NetworkSession.class);
+        var rxSession = new InternalRxSession(session);
 
         // When
         rxSession.lastBookmarks();
@@ -272,9 +271,9 @@ public class InternalReactiveSessionTest {
     @SuppressWarnings("deprecation")
     void shouldDelegateClose() {
         // Given
-        NetworkSession session = mock(NetworkSession.class);
+        var session = mock(NetworkSession.class);
         when(session.closeAsync()).thenReturn(completedWithNull());
-        InternalRxSession rxSession = new InternalRxSession(session);
+        var rxSession = new InternalRxSession(session);
 
         // When
         var mono = rxSession.<Void>close();
@@ -289,18 +288,18 @@ public class InternalReactiveSessionTest {
     @MethodSource("executeVariations")
     void shouldDelegateExecuteReadToRetryLogic(ExecuteVariation executeVariation) {
         // GIVEN
-        NetworkSession networkSession = mock(NetworkSession.class);
+        var networkSession = mock(NetworkSession.class);
         ReactiveSession session = new InternalReactiveSession(networkSession);
-        RetryLogic logic = mock(RetryLogic.class);
-        String expected = "";
+        var logic = mock(RetryLogic.class);
+        var expected = "";
         given(networkSession.retryLogic()).willReturn(logic);
         ReactiveTransactionCallback<Publisher<String>> tc =
                 (ignored) -> publisherToFlowPublisher(Mono.justOrEmpty(expected));
         given(logic.<String>retryRx(any())).willReturn(flowPublisherToFlux(tc.execute(null)));
-        TransactionConfig config = TransactionConfig.builder().build();
+        var config = TransactionConfig.builder().build();
 
         // WHEN
-        Publisher<String> actual = executeVariation.readOnly
+        var actual = executeVariation.readOnly
                 ? (executeVariation.explicitTxConfig ? session.executeRead(tc, config) : session.executeRead(tc))
                 : (executeVariation.explicitTxConfig ? session.executeWrite(tc, config) : session.executeWrite(tc));
 

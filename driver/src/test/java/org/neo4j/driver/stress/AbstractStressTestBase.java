@@ -35,9 +35,7 @@ import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.Values.point;
 
 import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Array;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -74,9 +72,6 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
@@ -86,7 +81,6 @@ import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.testutil.DaemonThreadFactory;
 import org.neo4j.driver.types.Node;
@@ -152,20 +146,20 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     @Test
     void blockingApiBigDataTest() {
-        Bookmark bookmark = createNodesBlocking(bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver);
+        var bookmark = createNodesBlocking(bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver);
         readNodesBlocking(driver, bookmark, BIG_DATA_TEST_NODE_COUNT);
     }
 
     @Test
     void asyncApiBigDataTest() throws Throwable {
-        Bookmark bookmark = createNodesAsync(bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver);
+        var bookmark = createNodesAsync(bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver);
         readNodesAsync(driver, bookmark, BIG_DATA_TEST_NODE_COUNT);
     }
 
     @Test
     void rxApiBigDataTest() {
         assertRxIsAvailable();
-        Bookmark bookmark = createNodesRx(bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver);
+        var bookmark = createNodesRx(bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver);
         readNodesRx(driver, bookmark, BIG_DATA_TEST_NODE_COUNT);
     }
 
@@ -174,14 +168,14 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     private void runStressTest(Function<C, List<Future<?>>> threadLauncher) throws Throwable {
-        C context = createContext();
-        List<Future<?>> resultFutures = threadLauncher.apply(context);
+        var context = createContext();
+        var resultFutures = threadLauncher.apply(context);
 
-        ResourcesInfo resourcesInfo = sleepAndGetResourcesInfo();
+        var resourcesInfo = sleepAndGetResourcesInfo();
         context.stop();
 
         Throwable firstError = null;
-        for (Future<?> future : resultFutures) {
+        for (var future : resultFutures) {
             try {
                 assertNull(future.get(10, SECONDS));
             } catch (Throwable error) {
@@ -205,7 +199,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     abstract Config.ConfigBuilder config(Config.ConfigBuilder builder);
 
     Config config() {
-        Config.ConfigBuilder builder = Config.builder()
+        var builder = Config.builder()
                 .withLogging(logging)
                 .withMaxConnectionPoolSize(100)
                 .withConnectionAcquisitionTimeout(1, MINUTES);
@@ -231,11 +225,11 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     abstract <A extends C> void printStats(A context);
 
     private List<Future<?>> launchBlockingWorkerThreads(C context) {
-        List<BlockingCommand<C>> commands = createBlockingCommands();
+        var commands = createBlockingCommands();
         List<Future<?>> futures = new ArrayList<>();
 
-        for (int i = 0; i < THREAD_COUNT; i++) {
-            Future<Void> future = launchBlockingWorkerThread(executor, commands, context);
+        for (var i = 0; i < THREAD_COUNT; i++) {
+            var future = launchBlockingWorkerThread(executor, commands, context);
             futures.add(future);
         }
 
@@ -266,7 +260,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
             ExecutorService executor, List<BlockingCommand<C>> commands, C context) {
         return executor.submit(() -> {
             while (!context.isStopped()) {
-                BlockingCommand<C> command = randomOf(commands);
+                var command = randomOf(commands);
                 command.execute(context);
             }
             return null;
@@ -274,11 +268,11 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     private List<Future<?>> launchRxWorkerThreads(C context) {
-        List<RxCommand<C>> commands = createRxCommands();
+        var commands = createRxCommands();
         List<Future<?>> futures = new ArrayList<>();
 
-        for (int i = 0; i < THREAD_COUNT; i++) {
-            Future<Void> future = launchRxWorkerThread(executor, commands, context);
+        for (var i = 0; i < THREAD_COUNT; i++) {
+            var future = launchRxWorkerThread(executor, commands, context);
             futures.add(future);
         }
         return futures;
@@ -303,7 +297,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     private Future<Void> launchRxWorkerThread(ExecutorService executor, List<RxCommand<C>> commands, C context) {
         return executor.submit(() -> {
             while (!context.isStopped()) {
-                CompletableFuture<Void> allCommands = executeRxCommands(context, commands, ASYNC_BATCH_SIZE);
+                var allCommands = executeRxCommands(context, commands, ASYNC_BATCH_SIZE);
                 assertNull(allCommands.get());
             }
             return null;
@@ -312,22 +306,21 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     private CompletableFuture<Void> executeRxCommands(C context, List<RxCommand<C>> commands, int count) {
         @SuppressWarnings("unchecked")
-        CompletableFuture<Void>[] executions =
-                (CompletableFuture<Void>[]) Array.newInstance(CompletableFuture.class, count);
-        for (int i = 0; i < count; i++) {
-            RxCommand<C> command = randomOf(commands);
-            CompletionStage<Void> execution = command.execute(context);
+        var executions = (CompletableFuture<Void>[]) Array.newInstance(CompletableFuture.class, count);
+        for (var i = 0; i < count; i++) {
+            var command = randomOf(commands);
+            var execution = command.execute(context);
             executions[i] = execution.toCompletableFuture();
         }
         return CompletableFuture.allOf(executions);
     }
 
     private List<Future<?>> launchAsyncWorkerThreads(C context) {
-        List<AsyncCommand<C>> commands = createAsyncCommands();
+        var commands = createAsyncCommands();
         List<Future<?>> futures = new ArrayList<>();
 
-        for (int i = 0; i < THREAD_COUNT; i++) {
-            Future<Void> future = launchAsyncWorkerThread(executor, commands, context);
+        for (var i = 0; i < THREAD_COUNT; i++) {
+            var future = launchAsyncWorkerThread(executor, commands, context);
             futures.add(future);
         }
 
@@ -353,7 +346,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     private Future<Void> launchAsyncWorkerThread(ExecutorService executor, List<AsyncCommand<C>> commands, C context) {
         return executor.submit(() -> {
             while (!context.isStopped()) {
-                CompletableFuture<Void> allCommands = executeAsyncCommands(context, commands, ASYNC_BATCH_SIZE);
+                var allCommands = executeAsyncCommands(context, commands, ASYNC_BATCH_SIZE);
                 assertNull(allCommands.get());
             }
             return null;
@@ -362,27 +355,26 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     private CompletableFuture<Void> executeAsyncCommands(C context, List<AsyncCommand<C>> commands, int count) {
         @SuppressWarnings("unchecked")
-        CompletableFuture<Void>[] executions =
-                (CompletableFuture<Void>[]) Array.newInstance(CompletableFuture.class, count);
-        for (int i = 0; i < count; i++) {
-            AsyncCommand<C> command = randomOf(commands);
-            CompletionStage<Void> execution = command.execute(context);
+        var executions = (CompletableFuture<Void>[]) Array.newInstance(CompletableFuture.class, count);
+        for (var i = 0; i < count; i++) {
+            var command = randomOf(commands);
+            var execution = command.execute(context);
             executions[i] = execution.toCompletableFuture();
         }
         return CompletableFuture.allOf(executions);
     }
 
     private ResourcesInfo sleepAndGetResourcesInfo() throws InterruptedException {
-        int halfSleepSeconds = Math.max(1, EXECUTION_TIME_SECONDS / 2);
+        var halfSleepSeconds = Math.max(1, EXECUTION_TIME_SECONDS / 2);
         SECONDS.sleep(halfSleepSeconds);
-        ResourcesInfo resourcesInfo = getResourcesInfo();
+        var resourcesInfo = getResourcesInfo();
         SECONDS.sleep(halfSleepSeconds);
         return resourcesInfo;
     }
 
     private ResourcesInfo getResourcesInfo() {
-        long openFileDescriptorCount = getOpenFileDescriptorCount();
-        Set<String> acquiredLoggerNames = logging.getAcquiredLoggerNames();
+        var openFileDescriptorCount = getOpenFileDescriptorCount();
+        var acquiredLoggerNames = logging.getAcquiredLoggerNames();
         return new ResourcesInfo(openFileDescriptorCount, acquiredLoggerNames);
     }
 
@@ -396,8 +388,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         System.out.println("Initially open file descriptors: " + previousOpenFileDescriptors);
 
         // number of open file descriptors should not go up for more than 50%
-        long maxOpenFileDescriptors = (long) (previousOpenFileDescriptors * 1.5);
-        long currentOpenFileDescriptorCount = getOpenFileDescriptorCount();
+        var maxOpenFileDescriptors = (long) (previousOpenFileDescriptors * 1.5);
+        var currentOpenFileDescriptorCount = getOpenFileDescriptorCount();
         System.out.println("Currently open file descriptors: " + currentOpenFileDescriptorCount);
 
         assertThat(
@@ -407,7 +399,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     private void assertNoLoggersLeak(Set<String> previousAcquiredLoggerNames) {
-        Set<String> currentAcquiredLoggerNames = logging.getAcquiredLoggerNames();
+        var currentAcquiredLoggerNames = logging.getAcquiredLoggerNames();
         assertThat(
                 "Unexpected amount of logger instances",
                 currentAcquiredLoggerNames,
@@ -415,20 +407,19 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     private void assertExpectedNumberOfNodesCreated(long expectedCount) {
-        try (Session session = driver.session()) {
-            List<Record> records =
-                    session.run("MATCH (n) RETURN count(n) AS nodesCount").list();
+        try (var session = driver.session()) {
+            var records = session.run("MATCH (n) RETURN count(n) AS nodesCount").list();
             assertEquals(1, records.size());
-            Record record = records.get(0);
-            long actualCount = record.get("nodesCount").asLong();
+            var record = records.get(0);
+            var actualCount = record.get("nodesCount").asLong();
             assertEquals(expectedCount, actualCount, "Unexpected number of nodes in the database");
         }
     }
 
     private static long getOpenFileDescriptorCount() {
         try {
-            OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
-            Method method = osBean.getClass().getDeclaredMethod("getOpenFileDescriptorCount");
+            var osBean = ManagementFactory.getOperatingSystemMXBean();
+            var method = osBean.getClass().getDeclaredMethod("getOpenFileDescriptorCount");
             method.setAccessible(true);
             return (long) method.invoke(osBean);
         } catch (Throwable t) {
@@ -445,7 +436,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     private static <T> T randomOf(List<T> elements) {
-        int index = ThreadLocalRandom.current().nextInt(elements.size());
+        var index = ThreadLocalRandom.current().nextInt(elements.size());
         return elements.get(index);
     }
 
@@ -460,15 +451,15 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     private static Bookmark createNodesBlocking(int batchCount, int batchSize, Driver driver) {
         Bookmark bookmark;
 
-        long start = System.nanoTime();
-        try (Session session = driver.session()) {
-            for (int i = 0; i < batchCount; i++) {
-                int batchIndex = i;
+        var start = System.nanoTime();
+        try (var session = driver.session()) {
+            for (var i = 0; i < batchCount; i++) {
+                var batchIndex = i;
                 session.writeTransaction(tx -> createNodesInTx(tx, batchIndex, batchSize));
             }
             bookmark = session.lastBookmark();
         }
-        long end = System.nanoTime();
+        var end = System.nanoTime();
         System.out.println("Node creation with blocking API took: " + NANOSECONDS.toMillis(end - start) + "ms");
 
         return bookmark;
@@ -476,17 +467,17 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     @SuppressWarnings("deprecation")
     private static void readNodesBlocking(Driver driver, Bookmark bookmark, int expectedNodeCount) {
-        long start = System.nanoTime();
-        try (Session session = driver.session(builder().withBookmarks(bookmark).build())) {
+        var start = System.nanoTime();
+        try (var session = driver.session(builder().withBookmarks(bookmark).build())) {
             int nodesProcessed = session.readTransaction(tx -> {
-                Result result = tx.run("MATCH (n:Node) RETURN n");
+                var result = tx.run("MATCH (n:Node) RETURN n");
 
-                int nodesSeen = 0;
+                var nodesSeen = 0;
                 while (result.hasNext()) {
-                    Node node = result.next().get(0).asNode();
+                    var node = result.next().get(0).asNode();
                     nodesSeen++;
 
-                    List<String> labels = Iterables.asList(node.labels());
+                    var labels = Iterables.asList(node.labels());
                     assertEquals(2, labels.size());
                     assertTrue(labels.contains("Test"));
                     assertTrue(labels.contains("Node"));
@@ -498,31 +489,31 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
             assertEquals(expectedNodeCount, nodesProcessed);
         }
-        long end = System.nanoTime();
+        var end = System.nanoTime();
         System.out.println("Reading nodes with blocking API took: " + NANOSECONDS.toMillis(end - start) + "ms");
     }
 
     @SuppressWarnings("deprecation")
     private static Bookmark createNodesAsync(int batchCount, int batchSize, Driver driver) throws Throwable {
-        long start = System.nanoTime();
+        var start = System.nanoTime();
 
-        AsyncSession session = driver.session(AsyncSession.class);
+        var session = driver.session(AsyncSession.class);
         CompletableFuture<Throwable> writeTransactions = completedFuture(null);
 
-        for (int i = 0; i < batchCount; i++) {
-            int batchIndex = i;
+        for (var i = 0; i < batchCount; i++) {
+            var batchIndex = i;
             writeTransactions = writeTransactions.thenCompose(
                     ignore -> session.writeTransactionAsync(tx -> createNodesInTxAsync(tx, batchIndex, batchSize)));
         }
         writeTransactions =
                 writeTransactions.exceptionally(error -> error).thenCompose(error -> safeCloseSession(session, error));
 
-        Throwable error = Futures.blockingGet(writeTransactions);
+        var error = Futures.blockingGet(writeTransactions);
         if (error != null) {
             throw error;
         }
 
-        long end = System.nanoTime();
+        var end = System.nanoTime();
         System.out.println("Node creation with async API took: " + NANOSECONDS.toMillis(end - start) + "ms");
 
         return session.lastBookmark();
@@ -530,18 +521,18 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     @SuppressWarnings("deprecation")
     private static void readNodesAsync(Driver driver, Bookmark bookmark, int expectedNodeCount) throws Throwable {
-        long start = System.nanoTime();
+        var start = System.nanoTime();
 
-        AsyncSession session = driver.session(
+        var session = driver.session(
                 AsyncSession.class, builder().withBookmarks(bookmark).build());
-        AtomicInteger nodesSeen = new AtomicInteger();
+        var nodesSeen = new AtomicInteger();
 
-        CompletionStage<Throwable> readQuery = session.readTransactionAsync(tx -> tx.runAsync("MATCH (n:Node) RETURN n")
+        var readQuery = session.readTransactionAsync(tx -> tx.runAsync("MATCH (n:Node) RETURN n")
                         .thenCompose(cursor -> cursor.forEachAsync(record -> {
-                            Node node = record.get(0).asNode();
+                            var node = record.get(0).asNode();
                             nodesSeen.incrementAndGet();
 
-                            List<String> labels = Iterables.asList(node.labels());
+                            var labels = Iterables.asList(node.labels());
                             assertEquals(2, labels.size());
                             assertTrue(labels.contains("Test"));
                             assertTrue(labels.contains("Node"));
@@ -552,29 +543,29 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
                 .exceptionally(error -> error)
                 .thenCompose(error -> safeCloseSession(session, error));
 
-        Throwable error = Futures.blockingGet(readQuery);
+        var error = Futures.blockingGet(readQuery);
         if (error != null) {
             throw error;
         }
 
         assertEquals(expectedNodeCount, nodesSeen.get());
 
-        long end = System.nanoTime();
+        var end = System.nanoTime();
         System.out.println("Reading nodes with async API took: " + NANOSECONDS.toMillis(end - start) + "ms");
     }
 
     @SuppressWarnings("deprecation")
     private Bookmark createNodesRx(int batchCount, int batchSize, InternalDriver driver) {
-        long start = System.nanoTime();
+        var start = System.nanoTime();
 
-        RxSession session = driver.rxSession();
+        var session = driver.rxSession();
 
         Flux.concat(Flux.range(0, batchCount)
                         .map(batchIndex ->
                                 session.writeTransaction(tx -> createNodesInTxRx(tx, batchIndex, batchSize))))
                 .blockLast(); // throw any error if happened
 
-        long end = System.nanoTime();
+        var end = System.nanoTime();
         System.out.println("Node creation with reactive API took: " + NANOSECONDS.toMillis(end - start) + "ms");
 
         return session.lastBookmark();
@@ -585,25 +576,25 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return Flux.concat(Flux.range(0, batchSize)
                 .map(index -> batchIndex * batchSize + index)
                 .map(nodeIndex -> {
-                    Query query = createNodeInTxQuery(nodeIndex);
+                    var query = createNodeInTxQuery(nodeIndex);
                     return Flux.from(tx.run(query).consume()).then(); // As long as there is no error
                 }));
     }
 
     @SuppressWarnings("deprecation")
     private void readNodesRx(InternalDriver driver, Bookmark bookmark, int expectedNodeCount) {
-        long start = System.nanoTime();
+        var start = System.nanoTime();
 
-        RxSession session = driver.rxSession(builder().withBookmarks(bookmark).build());
-        AtomicInteger nodesSeen = new AtomicInteger();
+        var session = driver.rxSession(builder().withBookmarks(bookmark).build());
+        var nodesSeen = new AtomicInteger();
 
-        Publisher<Void> readQuery = session.readTransaction(
+        var readQuery = session.readTransaction(
                 tx -> Flux.from(tx.run("MATCH (n:Node) RETURN n").records())
                         .doOnNext(record -> {
-                            Node node = record.get(0).asNode();
+                            var node = record.get(0).asNode();
                             nodesSeen.incrementAndGet();
 
-                            List<String> labels = Iterables.asList(node.labels());
+                            var labels = Iterables.asList(node.labels());
                             assertEquals(2, labels.size());
                             assertTrue(labels.contains("Test"));
                             assertTrue(labels.contains("Node"));
@@ -616,20 +607,20 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
         assertEquals(expectedNodeCount, nodesSeen.get());
 
-        long end = System.nanoTime();
+        var end = System.nanoTime();
         System.out.println("Reading nodes with async API took: " + NANOSECONDS.toMillis(end - start) + "ms");
     }
 
     private static Void createNodesInTx(Transaction tx, int batchIndex, int batchSize) {
-        for (int index = 0; index < batchSize; index++) {
-            int nodeIndex = batchIndex * batchSize + index;
+        for (var index = 0; index < batchSize; index++) {
+            var nodeIndex = batchIndex * batchSize + index;
             createNodeInTx(tx, nodeIndex);
         }
         return null;
     }
 
     private static void createNodeInTx(Transaction tx, int nodeIndex) {
-        Query query = createNodeInTxQuery(nodeIndex);
+        var query = createNodeInTxQuery(nodeIndex);
         tx.run(query).consume();
     }
 
@@ -646,7 +637,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     private static CompletableFuture<Void> createNodeInTxAsync(AsyncTransaction tx, int nodeIndex) {
-        Query query = createNodeInTxQuery(nodeIndex);
+        var query = createNodeInTxQuery(nodeIndex);
         return tx.runAsync(query)
                 .thenCompose(ResultCursor::consumeAsync)
                 .thenApply(ignore -> (Void) null)
@@ -654,7 +645,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     private static Query createNodeInTxQuery(int nodeIndex) {
-        String query = "CREATE (n:Test:Node) SET n = $props";
+        var query = "CREATE (n:Test:Node) SET n = $props";
         Map<String, Object> params = singletonMap("props", createNodeProperties(nodeIndex));
         return new Query(query, params);
     }
@@ -681,7 +672,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     private static void verifyNodeProperties(Node node) {
-        int nodeIndex = node.get("index").asInt();
+        var nodeIndex = node.get("index").asInt();
         assertEquals("name-" + nodeIndex, node.get("name").asString());
         assertEquals("surname-" + nodeIndex, node.get("surname").asString());
         assertEquals(nCopies(10, (long) nodeIndex), node.get("long-indices").asList());

@@ -100,7 +100,7 @@ class BoltServerAddressParsingTest {
     @ParameterizedTest
     @MethodSource("addressesToParse")
     void shouldParseAddress(String address, String expectedHost, int expectedPort) {
-        BoltServerAddress parsed = new BoltServerAddress(address);
+        var parsed = new BoltServerAddress(address);
         assertEquals(expectedHost, parsed.host());
         assertEquals(expectedPort, parsed.port());
     }

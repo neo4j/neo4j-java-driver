@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.Iterables.asList;
 
 import java.util.HashSet;
-import java.util.List;
 import org.hamcrest.Matcher;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -70,7 +69,7 @@ public class BookmarkUtil {
         assertNotNull(bookmark);
         assertThat(bookmark, instanceOf(InternalBookmark.class));
 
-        List<String> values = asList(((InternalBookmark) bookmark).values());
+        var values = asList(((InternalBookmark) bookmark).values());
         assertThat(values.size(), equalTo(1));
         assertThat(values.get(0), matcher);
     }
@@ -83,7 +82,7 @@ public class BookmarkUtil {
         assertNotNull(bookmark);
         assertThat(bookmark, instanceOf(InternalBookmark.class));
 
-        List<String> values = asList(((InternalBookmark) bookmark).values());
+        var values = asList(((InternalBookmark) bookmark).values());
         assertThat(values, matcher);
     }
 
@@ -92,12 +91,12 @@ public class BookmarkUtil {
      */
     @SuppressWarnings("deprecation")
     public static void assertBookmarksContainsSingleUniqueValues(Bookmark... bookmarks) {
-        int count = bookmarks.length;
-        HashSet<String> bookmarkStrings = new HashSet<>();
+        var count = bookmarks.length;
+        var bookmarkStrings = new HashSet<String>();
 
-        for (Bookmark bookmark : bookmarks) {
+        for (var bookmark : bookmarks) {
             assertBookmarkContainsSingleValue(bookmark);
-            List<String> values = asList(((InternalBookmark) bookmark).values());
+            var values = asList(((InternalBookmark) bookmark).values());
             bookmarkStrings.addAll(values);
         }
         assertEquals(count, bookmarkStrings.size());

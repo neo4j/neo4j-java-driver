@@ -27,7 +27,7 @@ class InternalInputPositionTest {
     @Test
     void shouldBehaveAsExpected() {
         // GIVEN, WHEN
-        InternalInputPosition position = new InternalInputPosition(0, 2, 1);
+        var position = new InternalInputPosition(0, 2, 1);
 
         // THEN
         assertThat(position.offset(), equalTo(0));

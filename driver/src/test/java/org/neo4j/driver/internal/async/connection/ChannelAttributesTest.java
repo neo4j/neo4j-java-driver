@@ -83,14 +83,14 @@ class ChannelAttributesTest {
 
     @Test
     void shouldSetAndGetServerAgent() {
-        String agent = "Neo4j/4.2.5";
+        var agent = "Neo4j/4.2.5";
         setServerAgent(channel, agent);
         assertEquals(agent, serverAgent(channel));
     }
 
     @Test
     void shouldFailToSetServerAgentTwice() {
-        String agent = "Neo4j/4.2.5";
+        var agent = "Neo4j/4.2.5";
         setServerAgent(channel, agent);
 
         assertThrows(IllegalStateException.class, () -> setServerAgent(channel, agent));
@@ -98,7 +98,7 @@ class ChannelAttributesTest {
 
     @Test
     void shouldSetAndGetAddress() {
-        BoltServerAddress address = new BoltServerAddress("local:42");
+        var address = new BoltServerAddress("local:42");
         setServerAddress(channel, address);
         assertEquals(address, serverAddress(channel));
     }
@@ -141,7 +141,7 @@ class ChannelAttributesTest {
 
     @Test
     void shouldSetAndGetMessageDispatcher() {
-        InboundMessageDispatcher dispatcher = mock(InboundMessageDispatcher.class);
+        var dispatcher = mock(InboundMessageDispatcher.class);
         setMessageDispatcher(channel, dispatcher);
         assertEquals(dispatcher, messageDispatcher(channel));
     }
@@ -156,7 +156,7 @@ class ChannelAttributesTest {
 
     @Test
     void shouldSetAndGetTerminationReason() {
-        String reason = "This channel has been terminated";
+        var reason = "This channel has been terminated";
         setTerminationReason(channel, reason);
         assertEquals(reason, terminationReason(channel));
     }
@@ -170,31 +170,31 @@ class ChannelAttributesTest {
 
     @Test
     void shouldSetAndGetAuthorizationStateListener() {
-        AuthorizationStateListener listener = mock(AuthorizationStateListener.class);
+        var listener = mock(AuthorizationStateListener.class);
         setAuthorizationStateListener(channel, listener);
         assertEquals(listener, authorizationStateListener(channel));
     }
 
     @Test
     void shouldAllowOverridingAuthorizationStateListener() {
-        AuthorizationStateListener listener = mock(AuthorizationStateListener.class);
+        var listener = mock(AuthorizationStateListener.class);
         setAuthorizationStateListener(channel, listener);
         assertEquals(listener, authorizationStateListener(channel));
-        AuthorizationStateListener newListener = mock(AuthorizationStateListener.class);
+        var newListener = mock(AuthorizationStateListener.class);
         setAuthorizationStateListener(channel, newListener);
         assertEquals(newListener, authorizationStateListener(channel));
     }
 
     @Test
     void shouldSetAndGetConnectionReadTimeout() {
-        long timeout = 15L;
+        var timeout = 15L;
         setConnectionReadTimeout(channel, timeout);
         assertEquals(timeout, connectionReadTimeout(channel).orElse(null));
     }
 
     @Test
     void shouldFailToSetConnectionReadTimeoutTwice() {
-        long timeout = 15L;
+        var timeout = 15L;
         setConnectionReadTimeout(channel, timeout);
         assertThrows(IllegalStateException.class, () -> setConnectionReadTimeout(channel, timeout));
     }
