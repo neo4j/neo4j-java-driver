@@ -32,12 +32,12 @@ public class MessageSerializerTest {
 
     @Test
     void shouldSerializerNewDriverResponse() throws JsonProcessingException {
-        Driver response = Driver.builder()
+        var response = Driver.builder()
                 .data(Driver.DriverBody.builder().id("1").build())
                 .build();
-        String expectedOutput = "{\"name\":\"Driver\",\"data\":{\"id\":\"1\"}}";
+        var expectedOutput = "{\"name\":\"Driver\",\"data\":{\"id\":\"1\"}}";
 
-        String serializedResponse = mapper.writeValueAsString(response);
+        var serializedResponse = mapper.writeValueAsString(response);
 
         assertThat(serializedResponse, equalTo(expectedOutput));
     }

@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.Bookmarks;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.Bookmark;
@@ -37,7 +36,7 @@ public class SessionLastBookmarks implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
+        var sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         return createResponse(sessionHolder.getSession().lastBookmarks());
     }
 

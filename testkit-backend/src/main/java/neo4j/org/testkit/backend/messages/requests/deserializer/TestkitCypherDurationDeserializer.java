@@ -40,7 +40,7 @@ public class TestkitCypherDurationDeserializer extends StdDeserializer<IsoDurati
 
     public IsoDuration deserialize(JsonParser p, DeserializationContext ctxt)
             throws IOException, JsonProcessingException {
-        CypherDurationData data = mapper.mapData(p, ctxt, new CypherDurationData());
+        var data = mapper.mapData(p, ctxt, new CypherDurationData());
         return new InternalIsoDuration(data.months, data.days, data.seconds, data.nanoseconds);
     }
 

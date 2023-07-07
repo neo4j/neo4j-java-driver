@@ -26,9 +26,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.io.Serial;
-import java.util.Map;
 import java.util.function.Function;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.MapValue;
 
 public class TestkitMapValueSerializer extends StdSerializer<MapValue> {
@@ -45,8 +43,7 @@ public class TestkitMapValueSerializer extends StdSerializer<MapValue> {
         cypherObject(gen, "CypherMap", () -> {
             gen.writeFieldName("value");
             object(gen, () -> {
-                for (Map.Entry<String, Value> entry :
-                        mapValue.asMap(Function.identity()).entrySet()) {
+                for (var entry : mapValue.asMap(Function.identity()).entrySet()) {
                     gen.writeObjectField(entry.getKey(), entry.getValue());
                 }
             });

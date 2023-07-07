@@ -33,7 +33,6 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.types.Node;
 
 public class TestkitNodeValueSerializer extends StdSerializer<NodeValue> {
     @Serial
@@ -49,11 +48,11 @@ public class TestkitNodeValueSerializer extends StdSerializer<NodeValue> {
             throws IOException {
 
         cypherObject(gen, "Node", () -> {
-            Node node = nodeValue.asNode();
+            var node = nodeValue.asNode();
             gen.writeObjectField("id", new IntegerValue(getId(node::id)));
             gen.writeObjectField("elementId", new StringValue(node.elementId()));
 
-            StringValue[] labels = StreamSupport.stream(node.labels().spliterator(), false)
+            var labels = StreamSupport.stream(node.labels().spliterator(), false)
                     .map(StringValue::new)
                     .toArray(StringValue[]::new);
 

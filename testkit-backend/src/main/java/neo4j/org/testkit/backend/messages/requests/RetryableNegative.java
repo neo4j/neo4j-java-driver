@@ -23,7 +23,6 @@ import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.FrontendError;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
@@ -34,7 +33,7 @@ public class RetryableNegative implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        SessionHolder sessionHolder = testkitState.getSessionHolder(data.sessionId);
+        var sessionHolder = testkitState.getSessionHolder(data.sessionId);
         Throwable throwable;
         if (!"".equals(data.getErrorId())) {
             throwable = testkitState.getErrors().get(data.getErrorId());

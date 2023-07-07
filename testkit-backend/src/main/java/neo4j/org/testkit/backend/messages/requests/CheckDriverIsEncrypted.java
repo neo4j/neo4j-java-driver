@@ -23,7 +23,6 @@ import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.holder.DriverHolder;
 import neo4j.org.testkit.backend.messages.responses.DriverIsEncrypted;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
@@ -59,7 +58,7 @@ public class CheckDriverIsEncrypted implements TestkitRequest {
     }
 
     private DriverIsEncrypted createResponse(TestkitState testkitState) {
-        DriverHolder driverHolder = testkitState.getDriverHolder(data.getDriverId());
+        var driverHolder = testkitState.getDriverHolder(data.getDriverId());
         return DriverIsEncrypted.builder()
                 .data(DriverIsEncrypted.DriverIsEncryptedBody.builder()
                         .encrypted(driverHolder.getDriver().isEncrypted())

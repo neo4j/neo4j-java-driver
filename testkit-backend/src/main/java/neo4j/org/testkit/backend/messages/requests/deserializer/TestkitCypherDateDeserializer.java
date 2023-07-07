@@ -41,7 +41,7 @@ public class TestkitCypherDateDeserializer extends StdDeserializer<LocalDate> {
 
     public LocalDate deserialize(JsonParser p, DeserializationContext ctxt)
             throws IOException, JsonProcessingException {
-        CypherDateData data = mapper.mapData(p, ctxt, new CypherDateData());
+        var data = mapper.mapData(p, ctxt, new CypherDateData());
         return LocalDate.of(data.year, data.month, data.day);
     }
 

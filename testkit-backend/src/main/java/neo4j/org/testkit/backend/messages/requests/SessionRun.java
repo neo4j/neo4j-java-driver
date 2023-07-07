@@ -33,28 +33,22 @@ import neo4j.org.testkit.backend.holder.ReactiveResultStreamsHolder;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
 import neo4j.org.testkit.backend.holder.RxResultHolder;
-import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.reactive.ReactiveSession;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxSession;
 import reactor.core.publisher.Mono;
 
 public class SessionRun extends AbstractTestkitRequestWithTransactionConfig<SessionRun.SessionRunBody> {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
-        Session session = sessionHolder.getSession();
-        Query query = Optional.ofNullable(data.params)
+        var sessionHolder = testkitState.getSessionHolder(data.getSessionId());
+        var session = sessionHolder.getSession();
+        var query = Optional.ofNullable(data.params)
                 .map(params -> new Query(data.cypher, data.params))
                 .orElseGet(() -> new Query(data.cypher));
-        org.neo4j.driver.Result result = session.run(query, buildTxConfig());
-        String id = testkitState.addResultHolder(new ResultHolder(sessionHolder, result));
+        var result = session.run(query, buildTxConfig());
+        var id = testkitState.addResultHolder(new ResultHolder(sessionHolder, result));
 
         return createResponse(id, result.keys());
     }
@@ -62,13 +56,13 @@ public class SessionRun extends AbstractTestkitRequestWithTransactionConfig<Sess
     @Override
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
         return testkitState.getAsyncSessionHolder(data.getSessionId()).thenCompose(sessionHolder -> {
-            AsyncSession session = sessionHolder.getSession();
-            Query query = Optional.ofNullable(data.params)
+            var session = sessionHolder.getSession();
+            var query = Optional.ofNullable(data.params)
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
 
             return session.runAsync(query, buildTxConfig()).thenApply(resultCursor -> {
-                String id = testkitState.addAsyncResultHolder(new ResultCursorHolder(sessionHolder, resultCursor));
+                var id = testkitState.addAsyncResultHolder(new ResultCursorHolder(sessionHolder, resultCursor));
                 return createResponse(id, resultCursor.keys());
             });
         });
@@ -78,13 +72,13 @@ public class SessionRun extends AbstractTestkitRequestWithTransactionConfig<Sess
     @SuppressWarnings("deprecation")
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState.getRxSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
-            RxSession session = sessionHolder.getSession();
-            Query query = Optional.ofNullable(data.params)
+            var session = sessionHolder.getSession();
+            var query = Optional.ofNullable(data.params)
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
 
-            RxResult result = session.run(query, buildTxConfig());
-            String id = testkitState.addRxResultHolder(new RxResultHolder(sessionHolder, result));
+            var result = session.run(query, buildTxConfig());
+            var id = testkitState.addRxResultHolder(new RxResultHolder(sessionHolder, result));
 
             // The keys() method causes RUN message exchange.
             // However, it does not currently report errors.
@@ -95,15 +89,14 @@ public class SessionRun extends AbstractTestkitRequestWithTransactionConfig<Sess
     @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState.getReactiveSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
-            ReactiveSession session = sessionHolder.getSession();
-            Query query = Optional.ofNullable(data.params)
+            var session = sessionHolder.getSession();
+            var query = Optional.ofNullable(data.params)
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
 
             return Mono.fromDirect(flowPublisherToFlux(session.run(query, buildTxConfig())))
                     .map(result -> {
-                        String id =
-                                testkitState.addReactiveResultHolder(new ReactiveResultHolder(sessionHolder, result));
+                        var id = testkitState.addReactiveResultHolder(new ReactiveResultHolder(sessionHolder, result));
                         return createResponse(id, result.keys());
                     });
         });
@@ -113,12 +106,12 @@ public class SessionRun extends AbstractTestkitRequestWithTransactionConfig<Sess
     public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
         return testkitState.getReactiveSessionStreamsHolder(data.getSessionId()).flatMap(sessionHolder -> {
             var session = sessionHolder.getSession();
-            Query query = Optional.ofNullable(data.params)
+            var query = Optional.ofNullable(data.params)
                     .map(params -> new Query(data.cypher, data.params))
                     .orElseGet(() -> new Query(data.cypher));
 
             return Mono.fromDirect(session.run(query, buildTxConfig())).map(result -> {
-                String id = testkitState.addReactiveResultStreamsHolder(
+                var id = testkitState.addReactiveResultStreamsHolder(
                         new ReactiveResultStreamsHolder(sessionHolder, result));
                 return createResponse(id, result.keys());
             });

@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.io.Serial;
-import java.time.LocalDate;
 import org.neo4j.driver.internal.value.DateValue;
 
 public class TestkitDateValueSerializer extends StdSerializer<DateValue> {
@@ -39,7 +38,7 @@ public class TestkitDateValueSerializer extends StdSerializer<DateValue> {
     @Override
     public void serialize(DateValue dateValue, JsonGenerator gen, SerializerProvider provider) throws IOException {
         cypherObject(gen, "CypherDate", () -> {
-            LocalDate date = dateValue.asLocalDate();
+            var date = dateValue.asLocalDate();
             GenUtils.writeDate(gen, date.getYear(), date.getMonthValue(), date.getDayOfMonth());
         });
     }

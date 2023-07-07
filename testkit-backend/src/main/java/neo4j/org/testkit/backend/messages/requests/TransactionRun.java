@@ -33,12 +33,9 @@ import neo4j.org.testkit.backend.holder.ReactiveResultStreamsHolder;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
 import neo4j.org.testkit.backend.holder.RxResultHolder;
-import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.reactive.ReactiveTransaction;
-import org.neo4j.driver.reactive.RxResult;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -48,11 +45,11 @@ public class TransactionRun implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        TransactionHolder transactionHolder = testkitState.getTransactionHolder(data.getTxId());
-        org.neo4j.driver.Result result = transactionHolder
+        var transactionHolder = testkitState.getTransactionHolder(data.getTxId());
+        var result = transactionHolder
                 .getTransaction()
                 .run(data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap());
-        String resultId = testkitState.addResultHolder(new ResultHolder(transactionHolder, result));
+        var resultId = testkitState.addResultHolder(new ResultHolder(transactionHolder, result));
         return createResponse(resultId, result.keys());
     }
 
@@ -62,7 +59,7 @@ public class TransactionRun implements TestkitRequest {
                 .getTransaction()
                 .runAsync(data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap())
                 .thenApply(resultCursor -> {
-                    String resultId =
+                    var resultId =
                             testkitState.addAsyncResultHolder(new ResultCursorHolder(transactionHolder, resultCursor));
                     return createResponse(resultId, resultCursor.keys());
                 }));
@@ -72,10 +69,10 @@ public class TransactionRun implements TestkitRequest {
     @SuppressWarnings("deprecation")
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState.getRxTransactionHolder(data.getTxId()).flatMap(transactionHolder -> {
-            RxResult result = transactionHolder
+            var result = transactionHolder
                     .getTransaction()
                     .run(data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap());
-            String resultId = testkitState.addRxResultHolder(new RxResultHolder(transactionHolder, result));
+            var resultId = testkitState.addRxResultHolder(new RxResultHolder(transactionHolder, result));
             // The keys() method causes RUN message exchange.
             // However, it does not currently report errors.
             return Mono.fromDirect(result.keys()).map(keys -> createResponse(resultId, keys));
@@ -85,12 +82,12 @@ public class TransactionRun implements TestkitRequest {
     @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState.getReactiveTransactionHolder(data.getTxId()).flatMap(transactionHolder -> {
-            ReactiveTransaction tx = transactionHolder.getTransaction();
+            var tx = transactionHolder.getTransaction();
             Map<String, Object> params = data.getParams() != null ? data.getParams() : Collections.emptyMap();
 
             return Mono.fromDirect(flowPublisherToFlux(tx.run(data.getCypher(), params)))
                     .map(result -> {
-                        String id = testkitState.addReactiveResultHolder(
+                        var id = testkitState.addReactiveResultHolder(
                                 new ReactiveResultHolder(transactionHolder, result));
                         return createResponse(id, result.keys());
                     });
@@ -104,7 +101,7 @@ public class TransactionRun implements TestkitRequest {
             Map<String, Object> params = data.getParams() != null ? data.getParams() : Collections.emptyMap();
 
             return Mono.fromDirect(tx.run(data.getCypher(), params)).map(result -> {
-                String id = testkitState.addReactiveResultStreamsHolder(
+                var id = testkitState.addReactiveResultStreamsHolder(
                         new ReactiveResultStreamsHolder(transactionHolder, result));
                 return createResponse(id, result.keys());
             });

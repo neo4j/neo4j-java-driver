@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.io.Serial;
-import java.time.LocalTime;
 import org.neo4j.driver.internal.value.LocalTimeValue;
 
 public class TestkitLocalTimeValueSerializer extends StdSerializer<LocalTimeValue> {
@@ -39,7 +38,7 @@ public class TestkitLocalTimeValueSerializer extends StdSerializer<LocalTimeValu
     @Override
     public void serialize(LocalTimeValue timeValue, JsonGenerator gen, SerializerProvider provider) throws IOException {
         cypherObject(gen, "CypherTime", () -> {
-            LocalTime time = timeValue.asLocalTime();
+            var time = timeValue.asLocalTime();
             GenUtils.writeTime(gen, time.getHour(), time.getMinute(), time.getSecond(), time.getNano());
         });
     }

@@ -53,7 +53,7 @@ public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String, 
         if (p.isExpectedStartObjectToken()) {
             key = p.nextFieldName();
         } else {
-            JsonToken t = p.getCurrentToken();
+            var t = p.getCurrentToken();
             if (t == JsonToken.END_OBJECT) {
                 return Collections.emptyMap();
             }
@@ -67,10 +67,10 @@ public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String, 
             String paramType = null;
 
             if (p.nextToken() == JsonToken.START_OBJECT) {
-                String fieldName = p.nextFieldName();
+                var fieldName = p.nextFieldName();
                 if (fieldName.equals("name")) {
                     paramType = p.nextTextValue();
-                    Class<?> mapValueType = cypherTypeToJavaType(paramType);
+                    var mapValueType = cypherTypeToJavaType(paramType);
                     p.nextFieldName(); // next is data which we can drop
                     p.nextToken();
                     p.nextToken();
@@ -82,7 +82,7 @@ public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String, 
                         {
                             result.put(key, deserialize(p, ctxt));
                         } else {
-                            Object obj = p.readValueAs(mapValueType);
+                            var obj = p.readValueAs(mapValueType);
                             if (obj instanceof CypherType) {
                                 obj = ((CypherType) obj).asValue();
                             }

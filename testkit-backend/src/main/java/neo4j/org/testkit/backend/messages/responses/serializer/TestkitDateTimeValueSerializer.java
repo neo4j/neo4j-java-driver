@@ -25,9 +25,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.io.Serial;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import org.neo4j.driver.internal.value.DateTimeValue;
 
 public class TestkitDateTimeValueSerializer extends StdSerializer<DateTimeValue> {
@@ -41,13 +38,13 @@ public class TestkitDateTimeValueSerializer extends StdSerializer<DateTimeValue>
     @Override
     public void serialize(DateTimeValue timeValue, JsonGenerator gen, SerializerProvider provider) throws IOException {
         cypherObject(gen, "CypherDateTime", () -> {
-            ZonedDateTime dateTime = timeValue.asZonedDateTime();
+            var dateTime = timeValue.asZonedDateTime();
             GenUtils.writeDate(gen, dateTime.getYear(), dateTime.getMonthValue(), dateTime.getDayOfMonth());
             GenUtils.writeTime(gen, dateTime.getHour(), dateTime.getMinute(), dateTime.getSecond(), dateTime.getNano());
-            ZoneOffset offset = dateTime.getOffset();
+            var offset = dateTime.getOffset();
             gen.writeFieldName("utc_offset_s");
             gen.writeNumber(offset.getTotalSeconds());
-            ZoneId zoneId = dateTime.getZone();
+            var zoneId = dateTime.getZone();
             if (zoneId != offset) {
                 // not fixed offset
                 gen.writeFieldName("timezone_id");

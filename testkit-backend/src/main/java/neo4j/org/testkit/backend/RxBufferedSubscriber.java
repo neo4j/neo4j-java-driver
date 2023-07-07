@@ -52,7 +52,7 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T> {
 
     public RxBufferedSubscriber(long fetchSize) {
         this.fetchSize = fetchSize;
-        AtomicReference<FluxSink<T>> sinkRef = new AtomicReference<>();
+        var sinkRef = new AtomicReference<FluxSink<T>>();
         itemsSubscriber = new OneSignalSubscriber<>();
         Flux.<T>create(fluxSink -> {
                     sinkRef.set(fluxSink);
@@ -121,7 +121,7 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T> {
         if (moreItemsPending) {
             return;
         }
-        Subscription subscription = subscriptionFuture.getNow(null);
+        var subscription = subscriptionFuture.getNow(null);
         if (subscription == null) {
             throw new IllegalStateException("Upstream subscription must not be null at this stage");
         }
@@ -169,7 +169,7 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T> {
 
         @Override
         protected void hookOnNext(T value) {
-            MonoSink<T> sink = executeWithLock(lock, () -> {
+            var sink = executeWithLock(lock, () -> {
                 emitted = true;
                 return this.sink;
             });
@@ -178,7 +178,7 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T> {
 
         @Override
         protected void hookOnComplete() {
-            MonoSink<T> sink = executeWithLock(lock, () -> {
+            var sink = executeWithLock(lock, () -> {
                 completionFuture.complete(null);
                 return !emitted ? this.sink : null;
             });
@@ -189,7 +189,7 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T> {
 
         @Override
         protected void hookOnError(Throwable throwable) {
-            MonoSink<T> sink = executeWithLock(lock, () -> {
+            var sink = executeWithLock(lock, () -> {
                 completionFuture.completeExceptionally(throwable);
                 return !emitted ? this.sink : null;
             });

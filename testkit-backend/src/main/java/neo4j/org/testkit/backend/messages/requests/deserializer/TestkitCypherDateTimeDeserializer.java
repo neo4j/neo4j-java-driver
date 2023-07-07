@@ -40,7 +40,7 @@ public class TestkitCypherDateTimeDeserializer extends StdDeserializer<CypherDat
     @Override
     public CypherDateTime deserialize(JsonParser p, DeserializationContext ctxt)
             throws IOException, JsonProcessingException {
-        CypherDateTimeData data = mapper.mapData(p, ctxt, new CypherDateTimeData());
+        var data = mapper.mapData(p, ctxt, new CypherDateTimeData());
         return new CypherDateTime(
                 data.year,
                 data.month,

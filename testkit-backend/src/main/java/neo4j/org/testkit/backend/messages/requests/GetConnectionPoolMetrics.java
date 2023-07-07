@@ -19,16 +19,13 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.holder.DriverHolder;
 import neo4j.org.testkit.backend.messages.responses.ConnectionPoolMetrics;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.Metrics;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.net.ServerAddress;
 import reactor.core.publisher.Mono;
@@ -64,15 +61,15 @@ public class GetConnectionPoolMetrics implements TestkitRequest {
     }
 
     private ConnectionPoolMetrics getConnectionPoolMetrics(TestkitState testkitState) {
-        DriverHolder driverHolder = testkitState.getDriverHolder(data.getDriverId());
-        Metrics metrics = driverHolder.getDriver().metrics();
-        org.neo4j.driver.ConnectionPoolMetrics poolMetrics = metrics.connectionPoolMetrics().stream()
+        var driverHolder = testkitState.getDriverHolder(data.getDriverId());
+        var metrics = driverHolder.getDriver().metrics();
+        var poolMetrics = metrics.connectionPoolMetrics().stream()
                 .filter(pm -> {
                     // Brute forcing the access via reflections avoid having the InternalConnectionPoolMetrics a public
                     // class
                     ServerAddress poolAddress;
                     try {
-                        Method m = pm.getClass().getDeclaredMethod("getAddress");
+                        var m = pm.getClass().getDeclaredMethod("getAddress");
                         m.setAccessible(true);
                         poolAddress = (ServerAddress) m.invoke(pm);
                     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {

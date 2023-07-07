@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -35,7 +34,7 @@ import org.neo4j.driver.Logging;
 public class Runner {
     public static void main(String[] args) throws InterruptedException {
         TestkitRequestProcessorHandler.BackendMode backendMode;
-        String modeArg = args.length > 0 ? args[0] : null;
+        var modeArg = args.length > 0 ? args[0] : null;
         if ("async".equals(modeArg)) {
             backendMode = TestkitRequestProcessorHandler.BackendMode.ASYNC;
         } else if ("reactive-legacy".equals(modeArg)) {
@@ -54,7 +53,7 @@ public class Runner {
 
         EventLoopGroup group = new NioEventLoopGroup();
         try {
-            ServerBootstrap bootstrap = new ServerBootstrap();
+            var bootstrap = new ServerBootstrap();
             bootstrap
                     .group(group)
                     .channel(NioServerSocketChannel.class)
@@ -68,7 +67,7 @@ public class Runner {
                             channel.pipeline().addLast(new TestkitRequestProcessorHandler(backendMode, logging));
                         }
                     });
-            ChannelFuture server = bootstrap.bind().sync();
+            var server = bootstrap.bind().sync();
             server.channel().closeFuture().sync();
         } finally {
             group.shutdownGracefully().sync();

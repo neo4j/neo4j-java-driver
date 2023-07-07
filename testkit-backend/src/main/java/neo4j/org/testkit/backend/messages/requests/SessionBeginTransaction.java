@@ -28,33 +28,28 @@ import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
-import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.reactive.ReactiveSession;
-import org.neo4j.driver.reactive.RxSession;
 import reactor.core.publisher.Mono;
 
 public class SessionBeginTransaction
         extends AbstractTestkitRequestWithTransactionConfig<SessionBeginTransaction.SessionBeginTransactionBody> {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
-        Session session = sessionHolder.getSession();
+        var sessionHolder = testkitState.getSessionHolder(data.getSessionId());
+        var session = sessionHolder.getSession();
 
-        org.neo4j.driver.Transaction transaction = session.beginTransaction(buildTxConfig());
+        var transaction = session.beginTransaction(buildTxConfig());
         return transaction(testkitState.addTransactionHolder(new TransactionHolder(sessionHolder, transaction)));
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
         return testkitState.getAsyncSessionHolder(data.getSessionId()).thenCompose(sessionHolder -> {
-            AsyncSession session = sessionHolder.getSession();
-            TransactionConfig.Builder builder = TransactionConfig.builder();
+            var session = sessionHolder.getSession();
+            var builder = TransactionConfig.builder();
 
             return session.beginTransactionAsync(buildTxConfig())
                     .thenApply(tx -> transaction(
@@ -66,8 +61,8 @@ public class SessionBeginTransaction
     @SuppressWarnings("deprecation")
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState.getRxSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
-            RxSession session = sessionHolder.getSession();
-            TransactionConfig.Builder builder = TransactionConfig.builder();
+            var session = sessionHolder.getSession();
+            var builder = TransactionConfig.builder();
 
             return Mono.fromDirect(session.beginTransaction(buildTxConfig()))
                     .map(tx -> transaction(
@@ -78,8 +73,8 @@ public class SessionBeginTransaction
     @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState.getReactiveSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
-            ReactiveSession session = sessionHolder.getSession();
-            TransactionConfig.Builder builder = TransactionConfig.builder();
+            var session = sessionHolder.getSession();
+            var builder = TransactionConfig.builder();
 
             return Mono.fromDirect(flowPublisherToFlux(session.beginTransaction(buildTxConfig())))
                     .map(tx -> transaction(testkitState.addReactiveTransactionHolder(
@@ -91,7 +86,7 @@ public class SessionBeginTransaction
     public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
         return testkitState.getReactiveSessionStreamsHolder(data.getSessionId()).flatMap(sessionHolder -> {
             var session = sessionHolder.getSession();
-            TransactionConfig.Builder builder = TransactionConfig.builder();
+            var builder = TransactionConfig.builder();
 
             return Mono.fromDirect(session.beginTransaction(buildTxConfig()))
                     .map(tx -> transaction(testkitState.addReactiveTransactionStreamsHolder(

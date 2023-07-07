@@ -46,7 +46,7 @@ public class TestkitListDeserializer extends StdDeserializer<List<?>> {
     public List<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
         List<Object> result = new ArrayList<>();
 
-        JsonToken t = p.getCurrentToken();
+        var t = p.getCurrentToken();
         if (t == JsonToken.END_OBJECT) {
             return result;
         }
@@ -54,7 +54,7 @@ public class TestkitListDeserializer extends StdDeserializer<List<?>> {
             ctxt.reportWrongTokenException(this, JsonToken.FIELD_NAME, null);
         }
 
-        JsonToken nextToken = p.nextToken();
+        var nextToken = p.nextToken();
 
         // standard list
         if (nextToken == JsonToken.VALUE_STRING) {
@@ -70,10 +70,10 @@ public class TestkitListDeserializer extends StdDeserializer<List<?>> {
             String paramType = null;
 
             if (nextToken == JsonToken.START_OBJECT) {
-                String fieldName = p.nextFieldName();
+                var fieldName = p.nextFieldName();
                 if (fieldName.equals("name")) {
                     paramType = p.nextTextValue();
-                    Class<?> mapValueType = cypherTypeToJavaType(paramType);
+                    var mapValueType = cypherTypeToJavaType(paramType);
                     p.nextFieldName(); // next is data which we can drop
                     p.nextToken();
                     p.nextToken();
@@ -85,7 +85,7 @@ public class TestkitListDeserializer extends StdDeserializer<List<?>> {
                         {
                             result.add(mapDeserializer.deserialize(p, ctxt));
                         } else {
-                            Object obj = p.readValueAs(mapValueType);
+                            var obj = p.readValueAs(mapValueType);
                             if (obj instanceof CypherType) {
                                 obj = ((CypherType) obj).asValue();
                             }

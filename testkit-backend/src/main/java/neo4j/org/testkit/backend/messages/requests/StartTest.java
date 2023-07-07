@@ -183,7 +183,7 @@ public class StartTest implements TestkitRequest {
 
     @Override
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createSkipResponse(ASYNC_SKIP_PATTERN_TO_REASON)
+        var testkitResponse = createSkipResponse(ASYNC_SKIP_PATTERN_TO_REASON)
                 .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
                         ? RunSubTests.builder().build()
                         : RunTest.builder().build());
@@ -192,7 +192,7 @@ public class StartTest implements TestkitRequest {
 
     @Override
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createSkipResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON)
+        var testkitResponse = createSkipResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON)
                 .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
                         ? RunSubTests.builder().build()
                         : RunTest.builder().build());
@@ -201,7 +201,7 @@ public class StartTest implements TestkitRequest {
 
     @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createSkipResponse(REACTIVE_SKIP_PATTERN_TO_REASON)
+        var testkitResponse = createSkipResponse(REACTIVE_SKIP_PATTERN_TO_REASON)
                 .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
                         ? RunSubTests.builder().build()
                         : RunTest.builder().build());
@@ -210,7 +210,7 @@ public class StartTest implements TestkitRequest {
 
     @Override
     public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createSkipResponse(REACTIVE_SKIP_PATTERN_TO_REASON)
+        var testkitResponse = createSkipResponse(REACTIVE_SKIP_PATTERN_TO_REASON)
                 .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
                         ? RunSubTests.builder().build()
                         : RunTest.builder().build());

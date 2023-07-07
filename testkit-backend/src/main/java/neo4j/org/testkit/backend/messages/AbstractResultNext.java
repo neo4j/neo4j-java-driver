@@ -30,7 +30,6 @@ import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import reactor.core.publisher.Mono;
 
@@ -38,7 +37,7 @@ public abstract class AbstractResultNext implements TestkitRequest {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         try {
-            Result result = testkitState.getResultHolder(getResultId()).getResult();
+            var result = testkitState.getResultHolder(getResultId()).getResult();
             return createResponse(result.next());
         } catch (NoSuchRecordException ignored) {
             return NullRecord.builder().build();
@@ -57,15 +56,12 @@ public abstract class AbstractResultNext implements TestkitRequest {
     @Override
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState.getRxResultHolder(getResultId()).flatMap(resultHolder -> {
-            RxBufferedSubscriber<Record> subscriber = resultHolder
-                    .getSubscriber()
-                    .orElseGet(() -> {
-                        RxBufferedSubscriber<Record> subscriberInstance =
-                                new RxBufferedSubscriber<>(getFetchSize(resultHolder));
-                        resultHolder.setSubscriber(subscriberInstance);
-                        resultHolder.getResult().records().subscribe(subscriberInstance);
-                        return subscriberInstance;
-                    });
+            var subscriber = resultHolder.getSubscriber().orElseGet(() -> {
+                var subscriberInstance = new RxBufferedSubscriber<Record>(getFetchSize(resultHolder));
+                resultHolder.setSubscriber(subscriberInstance);
+                resultHolder.getResult().records().subscribe(subscriberInstance);
+                return subscriberInstance;
+            });
             return subscriber
                     .next()
                     .map(this::createResponse)
@@ -76,15 +72,12 @@ public abstract class AbstractResultNext implements TestkitRequest {
     @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState.getReactiveResultHolder(getResultId()).flatMap(resultHolder -> {
-            RxBufferedSubscriber<Record> subscriber = resultHolder
-                    .getSubscriber()
-                    .orElseGet(() -> {
-                        RxBufferedSubscriber<Record> subscriberInstance =
-                                new RxBufferedSubscriber<>(getFetchSize(resultHolder));
-                        resultHolder.setSubscriber(subscriberInstance);
-                        resultHolder.getResult().records().subscribe(toFlowSubscriber(subscriberInstance));
-                        return subscriberInstance;
-                    });
+            var subscriber = resultHolder.getSubscriber().orElseGet(() -> {
+                var subscriberInstance = new RxBufferedSubscriber<Record>(getFetchSize(resultHolder));
+                resultHolder.setSubscriber(subscriberInstance);
+                resultHolder.getResult().records().subscribe(toFlowSubscriber(subscriberInstance));
+                return subscriberInstance;
+            });
             return subscriber
                     .next()
                     .map(this::createResponse)
@@ -95,15 +88,12 @@ public abstract class AbstractResultNext implements TestkitRequest {
     @Override
     public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
         return testkitState.getReactiveResultStreamsHolder(getResultId()).flatMap(resultHolder -> {
-            RxBufferedSubscriber<Record> subscriber = resultHolder
-                    .getSubscriber()
-                    .orElseGet(() -> {
-                        RxBufferedSubscriber<Record> subscriberInstance =
-                                new RxBufferedSubscriber<>(getFetchSize(resultHolder));
-                        resultHolder.setSubscriber(subscriberInstance);
-                        resultHolder.getResult().records().subscribe(subscriberInstance);
-                        return subscriberInstance;
-                    });
+            var subscriber = resultHolder.getSubscriber().orElseGet(() -> {
+                var subscriberInstance = new RxBufferedSubscriber<Record>(getFetchSize(resultHolder));
+                resultHolder.setSubscriber(subscriberInstance);
+                resultHolder.getResult().records().subscribe(subscriberInstance);
+                return subscriberInstance;
+            });
             return subscriber
                     .next()
                     .map(this::createResponse)

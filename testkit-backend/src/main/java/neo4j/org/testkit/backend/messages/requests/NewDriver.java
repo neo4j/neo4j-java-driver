@@ -57,7 +57,6 @@ import org.neo4j.driver.internal.InternalNotificationCategory;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
-import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlans;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.net.ServerAddressResolver;
@@ -70,7 +69,7 @@ public class NewDriver implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        String id = testkitState.newId();
+        var id = testkitState.newId();
 
         AuthTokenManager authTokenManager;
         if (data.getAuthTokenManagerId() != null) {
@@ -80,7 +79,7 @@ public class NewDriver implements TestkitRequest {
             authTokenManager = new StaticAuthTokenManager(authToken);
         }
 
-        Config.ConfigBuilder configBuilder = Config.builder();
+        var configBuilder = Config.builder();
         if (data.isResolverRegistered()) {
             configBuilder.withResolver(callbackResolver(testkitState));
         }
@@ -105,7 +104,7 @@ public class NewDriver implements TestkitRequest {
         configBuilder.withDriverMetrics();
         configBuilder.withLogging(testkitState.getLogging());
         org.neo4j.driver.Driver driver;
-        Config config = configBuilder.build();
+        var config = configBuilder.build();
         try {
             driver = driver(
                     URI.create(data.uri),
@@ -144,15 +143,13 @@ public class NewDriver implements TestkitRequest {
 
     private ServerAddressResolver callbackResolver(TestkitState testkitState) {
         return address -> {
-            String callbackId = testkitState.newId();
-            ResolverResolutionRequired.ResolverResolutionRequiredBody body =
-                    ResolverResolutionRequired.ResolverResolutionRequiredBody.builder()
-                            .id(callbackId)
-                            .address(String.format("%s:%d", address.host(), address.port()))
-                            .build();
-            ResolverResolutionRequired response =
-                    ResolverResolutionRequired.builder().data(body).build();
-            CompletionStage<TestkitCallbackResult> c = dispatchTestkitCallback(testkitState, response);
+            var callbackId = testkitState.newId();
+            var body = ResolverResolutionRequired.ResolverResolutionRequiredBody.builder()
+                    .id(callbackId)
+                    .address(String.format("%s:%d", address.host(), address.port()))
+                    .build();
+            var response = ResolverResolutionRequired.builder().data(body).build();
+            var c = dispatchTestkitCallback(testkitState, response);
             ResolverResolutionCompleted resolutionCompleted;
             try {
                 resolutionCompleted =
@@ -168,16 +165,14 @@ public class NewDriver implements TestkitRequest {
 
     private DomainNameResolver callbackDomainNameResolver(TestkitState testkitState) {
         return address -> {
-            String callbackId = testkitState.newId();
-            DomainNameResolutionRequired.DomainNameResolutionRequiredBody body =
-                    DomainNameResolutionRequired.DomainNameResolutionRequiredBody.builder()
-                            .id(callbackId)
-                            .name(address)
-                            .build();
-            DomainNameResolutionRequired callback =
-                    DomainNameResolutionRequired.builder().data(body).build();
+            var callbackId = testkitState.newId();
+            var body = DomainNameResolutionRequired.DomainNameResolutionRequiredBody.builder()
+                    .id(callbackId)
+                    .name(address)
+                    .build();
+            var callback = DomainNameResolutionRequired.builder().data(body).build();
 
-            CompletionStage<TestkitCallbackResult> callbackStage = dispatchTestkitCallback(testkitState, callback);
+            var callbackStage = dispatchTestkitCallback(testkitState, callback);
             DomainNameResolutionCompleted resolutionCompleted;
             try {
                 resolutionCompleted = (DomainNameResolutionCompleted)
@@ -200,7 +195,7 @@ public class NewDriver implements TestkitRequest {
 
     private CompletionStage<TestkitCallbackResult> dispatchTestkitCallback(
             TestkitState testkitState, TestkitCallback response) {
-        CompletableFuture<TestkitCallbackResult> future = new CompletableFuture<>();
+        var future = new CompletableFuture<TestkitCallbackResult>();
         testkitState.getCallbackIdToFuture().put(response.getCallbackId(), future);
         testkitState.getResponseWriter().accept(response);
         return future;
@@ -214,8 +209,8 @@ public class NewDriver implements TestkitRequest {
             SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder,
             TestkitState testkitState,
             String driverId) {
-        SecuritySettings securitySettings = securitySettingsBuilder.build();
-        SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, uri.getScheme());
+        var securitySettings = securitySettingsBuilder.build();
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, uri.getScheme());
         return new DriverFactoryWithDomainNameResolver(domainNameResolver, testkitState, driverId)
                 .newInstance(uri, authTokenManager, config, securityPlan, null, null);
     }
@@ -224,8 +219,8 @@ public class NewDriver implements TestkitRequest {
         Optional<TestkitResponse> response = Optional.empty();
         if (e instanceof IllegalArgumentException
                 && e.getMessage().startsWith(DriverFactory.NO_ROUTING_CONTEXT_ERROR_MESSAGE)) {
-            String id = testkitState.newId();
-            String errorType = e.getClass().getName();
+            var id = testkitState.newId();
+            var errorType = e.getClass().getName();
             response = Optional.of(DriverError.builder()
                     .data(DriverError.DriverErrorBody.builder()
                             .id(id)
@@ -238,8 +233,7 @@ public class NewDriver implements TestkitRequest {
     }
 
     private SecuritySettings.SecuritySettingsBuilder configureSecuritySettingsBuilder() {
-        SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder =
-                new SecuritySettings.SecuritySettingsBuilder();
+        var securitySettingsBuilder = new SecuritySettings.SecuritySettingsBuilder();
         if (data.encrypted) {
             securitySettingsBuilder.withEncryption();
         } else {
@@ -248,7 +242,7 @@ public class NewDriver implements TestkitRequest {
 
         if (data.trustedCertificates != null) {
             if (!data.trustedCertificates.isEmpty()) {
-                File[] certs = data.trustedCertificates.stream()
+                var certs = data.trustedCertificates.stream()
                         .map(cert -> "/usr/local/share/custom-ca-certificates/" + cert)
                         .map(Paths::get)
                         .map(Path::toFile)
