@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doAnswer;
@@ -52,13 +53,16 @@ import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
 import static org.neo4j.driver.testutil.TestUtil.verifyRunRx;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -72,10 +76,12 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
+import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
@@ -475,6 +481,76 @@ class UnmanagedTransactionTest {
         // Then
         assertEquals(exception, actualException);
     }
+
+    @ParameterizedTest
+    @MethodSource("transactionClosingTestParams")
+    void shouldThrowOnRunningNewQueriesWhenTransactionIsClosing(TransactionClosingTestParams testParams) {
+        // Given
+        var boltProtocol = mock(BoltProtocol.class);
+        given(boltProtocol.version()).willReturn(BoltProtocolV53.VERSION);
+        var closureStage = new CompletableFuture<DatabaseBookmark>();
+        var connection = connectionMock(boltProtocol);
+        given(boltProtocol.beginTransaction(eq(connection), any(), any(), any(), any()))
+                .willReturn(completedFuture(null));
+        given(boltProtocol.commitTransaction(connection)).willReturn(closureStage);
+        given(boltProtocol.rollbackTransaction(connection)).willReturn(closureStage.thenApply(ignored -> null));
+        var tx = beginTx(connection);
+
+        // When
+        testParams.closeAction().apply(tx);
+        var exception = assertThrows(
+                ClientException.class, () -> await(testParams.runAction().apply(tx)));
+
+        // Then
+        assertEquals(testParams.expectedMessage(), exception.getMessage());
+    }
+
+    static List<Arguments> transactionClosingTestParams() {
+        Function<UnmanagedTransaction, CompletionStage<?>> asyncRun = tx -> tx.runAsync(new Query("query"));
+        Function<UnmanagedTransaction, CompletionStage<?>> reactiveRun = tx -> tx.runRx(new Query("query"));
+        return List.of(
+                Arguments.of(Named.of(
+                        "commit and run async",
+                        new TransactionClosingTestParams(
+                                UnmanagedTransaction::commitAsync,
+                                asyncRun,
+                                "Cannot run more queries in this transaction, it is being committed"))),
+                Arguments.of(Named.of(
+                        "commit and run reactive",
+                        new TransactionClosingTestParams(
+                                UnmanagedTransaction::commitAsync,
+                                reactiveRun,
+                                "Cannot run more queries in this transaction, it is being committed"))),
+                Arguments.of(Named.of(
+                        "rollback and run async",
+                        new TransactionClosingTestParams(
+                                UnmanagedTransaction::rollbackAsync,
+                                asyncRun,
+                                "Cannot run more queries in this transaction, it is being rolled back"))),
+                Arguments.of(Named.of(
+                        "rollback and run reactive",
+                        new TransactionClosingTestParams(
+                                UnmanagedTransaction::rollbackAsync,
+                                reactiveRun,
+                                "Cannot run more queries in this transaction, it is being rolled back"))),
+                Arguments.of(Named.of(
+                        "close and run async",
+                        new TransactionClosingTestParams(
+                                UnmanagedTransaction::closeAsync,
+                                asyncRun,
+                                "Cannot run more queries in this transaction, it is being rolled back"))),
+                Arguments.of(Named.of(
+                        "close and run reactive",
+                        new TransactionClosingTestParams(
+                                UnmanagedTransaction::closeAsync,
+                                reactiveRun,
+                                "Cannot run more queries in this transaction, it is being rolled back"))));
+    }
+
+    private record TransactionClosingTestParams(
+            Function<UnmanagedTransaction, CompletionStage<?>> closeAction,
+            Function<UnmanagedTransaction, CompletionStage<?>> runAction,
+            String expectedMessage) {}
 
     private static UnmanagedTransaction beginTx(Connection connection) {
         return beginTx(connection, Collections.emptySet());

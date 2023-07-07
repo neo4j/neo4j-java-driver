@@ -247,6 +247,10 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                                     + "it has either experienced an fatal error or was explicitly terminated",
                             causeOfTermination);
                 }
+            } else if (commitFuture != null) {
+                throw new ClientException("Cannot run more queries in this transaction, it is being committed");
+            } else if (rollbackFuture != null) {
+                throw new ClientException("Cannot run more queries in this transaction, it is being rolled back");
             }
         });
     }

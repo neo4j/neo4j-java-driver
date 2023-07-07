@@ -43,11 +43,13 @@ import org.neo4j.driver.internal.handlers.ChannelReleasingResetResponseHandler;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.request.CommitMessage;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.request.DiscardMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
+import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
@@ -295,7 +297,9 @@ public class NetworkConnection implements Connection {
                 || message instanceof PullMessage
                 || message instanceof PullAllMessage
                 || message instanceof DiscardMessage
-                || message instanceof DiscardAllMessage;
+                || message instanceof DiscardAllMessage
+                || message instanceof CommitMessage
+                || message instanceof RollbackMessage;
     }
 
     private enum Status {

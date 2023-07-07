@@ -68,10 +68,12 @@ import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.request.CommitMessage;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.request.DiscardMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
+import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -559,7 +561,11 @@ class NetworkConnectionTest {
                 new QueryMessage(false, mock(DiscardMessage.class)),
                 new QueryMessage(true, mock(DiscardMessage.class)),
                 new QueryMessage(false, mock(DiscardAllMessage.class)),
-                new QueryMessage(true, mock(DiscardAllMessage.class)));
+                new QueryMessage(true, mock(DiscardAllMessage.class)),
+                new QueryMessage(false, mock(CommitMessage.class)),
+                new QueryMessage(true, mock(CommitMessage.class)),
+                new QueryMessage(false, mock(RollbackMessage.class)),
+                new QueryMessage(true, mock(RollbackMessage.class)));
     }
 
     private record QueryMessage(boolean flush, Message message) {}
