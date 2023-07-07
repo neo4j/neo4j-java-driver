@@ -58,7 +58,7 @@ class ChunkDecoderTest {
     @Test
     void shouldDecodeFullChunk() {
         // whole chunk with header and body arrives at once
-        ByteBuf input = buffer();
+        var input = buffer();
         input.writeShort(7);
         input.writeByte(1);
         input.writeByte(11);
@@ -81,7 +81,7 @@ class ChunkDecoderTest {
     @Test
     void shouldDecodeSplitChunk() {
         // first part of the chunk contains size header and some bytes
-        ByteBuf input1 = buffer();
+        var input1 = buffer();
         input1.writeShort(9);
         input1.writeByte(1);
         input1.writeByte(11);
@@ -90,13 +90,13 @@ class ChunkDecoderTest {
         assertFalse(channel.writeInbound(input1));
 
         // second part contains just a single byte
-        ByteBuf input2 = buffer();
+        var input2 = buffer();
         input2.writeByte(22);
         // nothing should be available for reading
         assertFalse(channel.writeInbound(input2));
 
         // third part contains couple more bytes
-        ByteBuf input3 = buffer();
+        var input3 = buffer();
         input3.writeByte(3);
         input3.writeByte(33);
         input3.writeByte(4);
@@ -104,7 +104,7 @@ class ChunkDecoderTest {
         assertFalse(channel.writeInbound(input3));
 
         // fourth part contains couple more bytes, and the chunk is now complete
-        ByteBuf input4 = buffer();
+        var input4 = buffer();
         input4.writeByte(44);
         input4.writeByte(5);
         // there should be something to read now
@@ -121,7 +121,7 @@ class ChunkDecoderTest {
     @Test
     void shouldDecodeEmptyChunk() {
         // chunk contains just the size header which is zero
-        ByteBuf input = copyShort(0);
+        var input = copyShort(0);
         assertTrue(channel.writeInbound(input));
         assertTrue(channel.finish());
 
@@ -133,14 +133,14 @@ class ChunkDecoderTest {
 
     @Test
     void shouldLogEmptyChunkOnTraceLevel() {
-        Logger logger = newTraceLogger();
+        var logger = newTraceLogger();
         channel = new EmbeddedChannel(new ChunkDecoder(newLogging(logger)));
 
         buffer = copyShort(0);
         assertTrue(channel.writeInbound(buffer.copy())); // copy buffer so we can verify against it later
         assertTrue(channel.finish());
 
-        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        var messageCaptor = ArgumentCaptor.forClass(String.class);
         verify(logger).trace(anyString(), messageCaptor.capture());
 
         // pretty hex dump should be logged
@@ -152,10 +152,10 @@ class ChunkDecoderTest {
 
     @Test
     void shouldLogNonEmptyChunkOnTraceLevel() {
-        Logger logger = newTraceLogger();
+        var logger = newTraceLogger();
         channel = new EmbeddedChannel(new ChunkDecoder(newLogging(logger)));
 
-        byte[] bytes = "Hello".getBytes();
+        var bytes = "Hello".getBytes();
         buffer = buffer();
         buffer.writeShort(bytes.length);
         buffer.writeBytes(bytes);
@@ -163,7 +163,7 @@ class ChunkDecoderTest {
         assertTrue(channel.writeInbound(buffer.copy())); // copy buffer so we can verify against it later
         assertTrue(channel.finish());
 
-        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        var messageCaptor = ArgumentCaptor.forClass(String.class);
         verify(logger).trace(anyString(), messageCaptor.capture());
 
         // pretty hex dump should be logged
@@ -175,9 +175,9 @@ class ChunkDecoderTest {
 
     @Test
     public void shouldDecodeMaxSizeChunk() {
-        byte[] message = new byte[0xFFFF];
+        var message = new byte[0xFFFF];
 
-        ByteBuf input = buffer();
+        var input = buffer();
         input.writeShort(message.length); // chunk header
         input.writeBytes(message); // chunk body
 
@@ -193,13 +193,13 @@ class ChunkDecoderTest {
     }
 
     private static Logger newTraceLogger() {
-        Logger logger = mock(Logger.class);
+        var logger = mock(Logger.class);
         when(logger.isTraceEnabled()).thenReturn(true);
         return logger;
     }
 
     private static Logging newLogging(Logger logger) {
-        Logging logging = mock(Logging.class);
+        var logging = mock(Logging.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         return logging;
     }

@@ -26,7 +26,6 @@ import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.util.Futures;
@@ -38,14 +37,14 @@ public class AsyncFailingQueryInTx<C extends AbstractContext> extends AbstractAs
 
     @Override
     public CompletionStage<Void> execute(C context) {
-        AsyncSession session = newSession(AccessMode.READ, context);
+        var session = newSession(AccessMode.READ, context);
 
         return session.beginTransactionAsync()
                 .thenCompose(tx -> tx.runAsync("UNWIND [10, 5, 0] AS x RETURN 10 / x")
                         .thenCompose(ResultCursor::listAsync)
                         .handle((records, error) -> {
                             assertNull(records);
-                            Throwable cause = Futures.completionExceptionCause(error);
+                            var cause = Futures.completionExceptionCause(error);
                             assertThat(cause, is(arithmeticError()));
 
                             return tx;

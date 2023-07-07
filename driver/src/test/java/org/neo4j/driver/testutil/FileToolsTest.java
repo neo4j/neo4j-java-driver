@@ -34,7 +34,7 @@ class FileToolsTest {
     @Test
     void shouldBeAbleToCreateTemporaryFile() throws Throwable {
         // Given
-        File file = FileTools.tempFile("test");
+        var file = FileTools.tempFile("test");
 
         // Then
         try {
@@ -47,13 +47,13 @@ class FileToolsTest {
     @Test
     void shouldAddPropertyAtBottom() throws IOException {
         // Given
-        File propertyFile = createPropertyFile();
+        var propertyFile = createPropertyFile();
 
         // When
         FileTools.updateProperty(propertyFile, "cat.name", "mimi");
 
         // Then
-        try (Scanner in = new Scanner(propertyFile)) {
+        try (var in = new Scanner(propertyFile)) {
             assertEquals("#Wow wow", in.nextLine());
             assertEquals("Meow meow", in.nextLine());
             assertEquals("color=black", in.nextLine());
@@ -69,13 +69,13 @@ class FileToolsTest {
     @Test
     void shouldResetPropertyAtTheSameLine() throws IOException {
         // Given
-        File propertyFile = createPropertyFile();
+        var propertyFile = createPropertyFile();
 
         // When
         FileTools.updateProperty(propertyFile, "color", "white");
 
         // Then
-        try (Scanner in = new Scanner(propertyFile)) {
+        try (var in = new Scanner(propertyFile)) {
             assertEquals("#Wow wow", in.nextLine());
             assertEquals("Meow meow", in.nextLine());
             assertEquals("color=white", in.nextLine());
@@ -88,8 +88,8 @@ class FileToolsTest {
     }
 
     private File createPropertyFile() throws FileNotFoundException {
-        File propFile = new File("Cat");
-        PrintWriter out = new PrintWriter(propFile);
+        var propFile = new File("Cat");
+        var out = new PrintWriter(propFile);
 
         out.println("#Wow wow");
         out.println("Meow meow");

@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Queue;
 import org.junit.jupiter.api.Test;
 
 class IterablesTest {
@@ -51,7 +50,7 @@ class IterablesTest {
 
     @Test
     void shouldReturnEmptyQueue() {
-        Queue<Object> queue = Iterables.emptyQueue();
+        var queue = Iterables.emptyQueue();
         assertEquals(0, queue.size());
         assertTrue(queue.isEmpty());
         assertNull(queue.peek());

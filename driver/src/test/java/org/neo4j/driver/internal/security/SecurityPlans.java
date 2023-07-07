@@ -53,9 +53,9 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("allSecureSchemes")
     void testEncryptionSchemeEnablesEncryption(String scheme) {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
+        var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
 
         assertTrue(securityPlan.requiresEncryption());
     }
@@ -63,9 +63,9 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("systemCertSchemes")
     void testSystemCertCompatibleConfiguration(String scheme) throws Exception {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
+        var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
 
         assertTrue(securityPlan.requiresEncryption());
         assertTrue(securityPlan.requiresHostnameVerification());
@@ -75,9 +75,9 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("selfSignedSchemes")
     void testSelfSignedCertConfigDisablesHostnameVerification(String scheme) throws Exception {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
+        var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
 
         assertTrue(securityPlan.requiresEncryption());
         assertFalse(securityPlan.requiresHostnameVerification());
@@ -86,11 +86,10 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("allSecureSchemes")
     void testThrowsOnUserCustomizedEncryption(String scheme) {
-        SecuritySettings securitySettings =
+        var securitySettings =
                 new SecuritySettings.SecuritySettingsBuilder().withEncryption().build();
 
-        ClientException ex =
-                assertThrows(ClientException.class, () -> SecurityPlans.createSecurityPlan(securitySettings, scheme));
+        var ex = assertThrows(ClientException.class, () -> SecurityPlans.createSecurityPlan(securitySettings, scheme));
 
         assertTrue(ex.getMessage()
                 .contains(String.format(
@@ -100,12 +99,11 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("allSecureSchemes")
     void testThrowsOnUserCustomizedTrustConfiguration(String scheme) {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+        var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                 .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
                 .build();
 
-        ClientException ex =
-                assertThrows(ClientException.class, () -> SecurityPlans.createSecurityPlan(securitySettings, scheme));
+        var ex = assertThrows(ClientException.class, () -> SecurityPlans.createSecurityPlan(securitySettings, scheme));
 
         assertTrue(ex.getMessage()
                 .contains(String.format(
@@ -115,13 +113,12 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("allSecureSchemes")
     void testThrowsOnUserCustomizedTrustConfigurationAndEncryption(String scheme) {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+        var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                 .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
                 .withEncryption()
                 .build();
 
-        ClientException ex =
-                assertThrows(ClientException.class, () -> SecurityPlans.createSecurityPlan(securitySettings, scheme));
+        var ex = assertThrows(ClientException.class, () -> SecurityPlans.createSecurityPlan(securitySettings, scheme));
 
         assertTrue(ex.getMessage()
                 .contains(String.format(
@@ -131,9 +128,9 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("unencryptedSchemes")
     void testNoEncryption(String scheme) {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
+        var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
 
         assertFalse(securityPlan.requiresEncryption());
     }
@@ -141,10 +138,10 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("unencryptedSchemes")
     void testConfiguredEncryption(String scheme) {
-        SecuritySettings securitySettings =
+        var securitySettings =
                 new SecuritySettings.SecuritySettingsBuilder().withEncryption().build();
 
-        SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
 
         assertTrue(securityPlan.requiresEncryption());
     }
@@ -152,12 +149,12 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("unencryptedSchemes")
     void testConfiguredAllCertificates(String scheme) {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+        var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                 .withEncryption()
                 .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
                 .build();
 
-        SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
 
         assertTrue(securityPlan.requiresEncryption());
     }
@@ -165,13 +162,13 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("unencryptedSchemes")
     void testConfigureStrictRevocationChecking(String scheme) {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+        var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                 .withTrustStrategy(
                         Config.TrustStrategy.trustSystemCertificates().withStrictRevocationChecks())
                 .withEncryption()
                 .build();
 
-        SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
 
         assertEquals(STRICT, securityPlan.revocationCheckingStrategy());
     }
@@ -179,13 +176,13 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("unencryptedSchemes")
     void testConfigureVerifyIfPresentRevocationChecking(String scheme) {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+        var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                 .withTrustStrategy(
                         Config.TrustStrategy.trustSystemCertificates().withVerifyIfPresentRevocationChecks())
                 .withEncryption()
                 .build();
 
-        SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
 
         assertEquals(VERIFY_IF_PRESENT, securityPlan.revocationCheckingStrategy());
     }
@@ -193,12 +190,12 @@ class SecurityPlansTest {
     @ParameterizedTest
     @MethodSource("unencryptedSchemes")
     void testRevocationCheckingDisabledByDefault(String scheme) {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+        var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                 .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
                 .withEncryption()
                 .build();
 
-        SecurityPlan securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
 
         assertEquals(NO_CHECKS, securityPlan.revocationCheckingStrategy());
     }

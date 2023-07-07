@@ -116,7 +116,7 @@ public class Neo4jSettings {
         newExcludes.add(key);
         Map<String, String> newMap = new HashMap<>(this.settings);
         newMap.remove(key);
-        Neo4jSettings newSettings = new Neo4jSettings(newMap, newExcludes);
+        var newSettings = new Neo4jSettings(newMap, newExcludes);
         return newSettings;
     }
 
@@ -129,7 +129,7 @@ public class Neo4jSettings {
             return false;
         }
 
-        Neo4jSettings that = (Neo4jSettings) o;
+        var that = (Neo4jSettings) o;
 
         if (!settings.equals(that.settings)) {
             return false;

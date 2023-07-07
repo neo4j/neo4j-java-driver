@@ -54,13 +54,13 @@ public class InternalSessionTest {
     @MethodSource("executeVariations")
     void shouldDelegateExecuteReadToRetryLogic(ExecuteVariation executeVariation) {
         // GIVEN
-        RetryLogic logic = mock(RetryLogic.class);
-        String expected = "";
+        var logic = mock(RetryLogic.class);
+        var expected = "";
         given(logic.retry(any())).willReturn(expected);
         given(networkSession.retryLogic()).willReturn(logic);
         TransactionCallback<String> tc = (ignored) -> expected;
         Consumer<TransactionContext> consumer = (ignored) -> {};
-        TransactionConfig config = TransactionConfig.builder().build();
+        var config = TransactionConfig.builder().build();
 
         // WHEN
         String actual = null;

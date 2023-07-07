@@ -29,29 +29,29 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 class DateValueTest {
     @Test
     void shouldHaveCorrectType() {
-        LocalDate localDate = LocalDate.now();
-        DateValue dateValue = new DateValue(localDate);
+        var localDate = LocalDate.now();
+        var dateValue = new DateValue(localDate);
         assertEquals(InternalTypeSystem.TYPE_SYSTEM.DATE(), dateValue.type());
     }
 
     @Test
     void shouldSupportAsObject() {
-        LocalDate localDate = LocalDate.now();
-        DateValue dateValue = new DateValue(localDate);
+        var localDate = LocalDate.now();
+        var dateValue = new DateValue(localDate);
         assertEquals(localDate, dateValue.asObject());
     }
 
     @Test
     void shouldSupportAsLocalDate() {
-        LocalDate localDate = LocalDate.now();
-        DateValue dateValue = new DateValue(localDate);
+        var localDate = LocalDate.now();
+        var dateValue = new DateValue(localDate);
         assertEquals(localDate, dateValue.asLocalDate());
     }
 
     @Test
     void shouldNotSupportAsLong() {
-        LocalDate localDate = LocalDate.now();
-        DateValue dateValue = new DateValue(localDate);
+        var localDate = LocalDate.now();
+        var dateValue = new DateValue(localDate);
 
         assertThrows(Uncoercible.class, dateValue::asLong);
     }

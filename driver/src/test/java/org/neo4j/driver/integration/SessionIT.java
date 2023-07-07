@@ -90,10 +90,7 @@ import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.summary.QueryType;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.neo4j.driver.testutil.TestUtil;
@@ -120,7 +117,7 @@ class SessionIT {
     @Test
     void shouldKnowSessionIsClosed() {
         // Given
-        Session session = neo4j.driver().session();
+        var session = neo4j.driver().session();
 
         // When
         session.close();
@@ -133,7 +130,7 @@ class SessionIT {
     void shouldHandleNullConfig() {
         // Given
         driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), null);
-        Session session = driver.session();
+        var session = driver.session();
 
         // When
         session.close();
@@ -186,16 +183,16 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void readTxRetriedUntilSuccess() {
-        int failures = 6;
-        int retries = failures + 1;
-        try (Driver driver = newDriverWithFixedRetries(retries)) {
-            try (Session session = driver.session()) {
+        var failures = 6;
+        var retries = failures + 1;
+        try (var driver = newDriverWithFixedRetries(retries)) {
+            try (var session = driver.session()) {
                 session.run("CREATE (:Person {name: 'Bruce Banner'})");
             }
 
-            ThrowingWork work = newThrowingWorkSpy("MATCH (n) RETURN n.name", failures);
-            try (Session session = driver.session()) {
-                Record record = session.readTransaction(work);
+            var work = newThrowingWorkSpy("MATCH (n) RETURN n.name", failures);
+            try (var session = driver.session()) {
+                var record = session.readTransaction(work);
                 assertEquals("Bruce Banner", record.get(0).asString());
             }
 
@@ -206,17 +203,17 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void writeTxRetriedUntilSuccess() {
-        int failures = 4;
-        int retries = failures + 1;
-        try (Driver driver = newDriverWithFixedRetries(retries)) {
-            ThrowingWork work = newThrowingWorkSpy("CREATE (p:Person {name: 'Hulk'}) RETURN p", failures);
-            try (Session session = driver.session()) {
-                Record record = session.writeTransaction(work);
+        var failures = 4;
+        var retries = failures + 1;
+        try (var driver = newDriverWithFixedRetries(retries)) {
+            var work = newThrowingWorkSpy("CREATE (p:Person {name: 'Hulk'}) RETURN p", failures);
+            try (var session = driver.session()) {
+                var record = session.writeTransaction(work);
                 assertEquals("Hulk", record.get(0).asNode().get("name").asString());
             }
 
-            try (Session session = driver.session()) {
-                Record record = session.run("MATCH (p: Person {name: 'Hulk'}) RETURN count(p)")
+            try (var session = driver.session()) {
+                var record = session.run("MATCH (p: Person {name: 'Hulk'}) RETURN count(p)")
                         .single();
                 assertEquals(1, record.get(0).asInt());
             }
@@ -228,11 +225,11 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void readTxRetriedUntilFailure() {
-        int failures = 3;
-        int retries = failures - 1;
-        try (Driver driver = newDriverWithFixedRetries(retries)) {
-            ThrowingWork work = newThrowingWorkSpy("MATCH (n) RETURN n.name", failures);
-            try (Session session = driver.session()) {
+        var failures = 3;
+        var retries = failures - 1;
+        try (var driver = newDriverWithFixedRetries(retries)) {
+            var work = newThrowingWorkSpy("MATCH (n) RETURN n.name", failures);
+            try (var session = driver.session()) {
                 assertThrows(ServiceUnavailableException.class, () -> session.readTransaction(work));
             }
 
@@ -243,16 +240,16 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void writeTxRetriedUntilFailure() {
-        int failures = 8;
-        int retries = failures - 1;
-        try (Driver driver = newDriverWithFixedRetries(retries)) {
-            ThrowingWork work = newThrowingWorkSpy("CREATE (:Person {name: 'Ronan'})", failures);
-            try (Session session = driver.session()) {
+        var failures = 8;
+        var retries = failures - 1;
+        try (var driver = newDriverWithFixedRetries(retries)) {
+            var work = newThrowingWorkSpy("CREATE (:Person {name: 'Ronan'})", failures);
+            try (var session = driver.session()) {
                 assertThrows(ServiceUnavailableException.class, () -> session.writeTransaction(work));
             }
 
-            try (Session session = driver.session()) {
-                Result result = session.run("MATCH (p:Person {name: 'Ronan'}) RETURN count(p)");
+            try (var session = driver.session()) {
+                var result = session.run("MATCH (p:Person {name: 'Ronan'}) RETURN count(p)");
                 assertEquals(0, result.single().get(0).asInt());
             }
 
@@ -263,18 +260,17 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void writeTxRetryErrorsAreCollected() {
-        try (Driver driver = newDriverWithLimitedRetries(5, TimeUnit.SECONDS)) {
-            ThrowingWork work = newThrowingWorkSpy("CREATE (:Person {name: 'Ronan'})", Integer.MAX_VALUE);
+        try (var driver = newDriverWithLimitedRetries(5, TimeUnit.SECONDS)) {
+            var work = newThrowingWorkSpy("CREATE (:Person {name: 'Ronan'})", Integer.MAX_VALUE);
             int suppressedErrors;
-            try (Session session = driver.session()) {
-                ServiceUnavailableException e =
-                        assertThrows(ServiceUnavailableException.class, () -> session.writeTransaction(work));
+            try (var session = driver.session()) {
+                var e = assertThrows(ServiceUnavailableException.class, () -> session.writeTransaction(work));
                 assertThat(e.getSuppressed(), not(emptyArray()));
                 suppressedErrors = e.getSuppressed().length;
             }
 
-            try (Session session = driver.session()) {
-                Result result = session.run("MATCH (p:Person {name: 'Ronan'}) RETURN count(p)");
+            try (var session = driver.session()) {
+                var result = session.run("MATCH (p:Person {name: 'Ronan'}) RETURN count(p)");
                 assertEquals(0, result.single().get(0).asInt());
             }
 
@@ -285,12 +281,11 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void readTxRetryErrorsAreCollected() {
-        try (Driver driver = newDriverWithLimitedRetries(4, TimeUnit.SECONDS)) {
-            ThrowingWork work = newThrowingWorkSpy("MATCH (n) RETURN n.name", Integer.MAX_VALUE);
+        try (var driver = newDriverWithLimitedRetries(4, TimeUnit.SECONDS)) {
+            var work = newThrowingWorkSpy("MATCH (n) RETURN n.name", Integer.MAX_VALUE);
             int suppressedErrors;
-            try (Session session = driver.session()) {
-                ServiceUnavailableException e =
-                        assertThrows(ServiceUnavailableException.class, () -> session.readTransaction(work));
+            try (var session = driver.session()) {
+                var e = assertThrows(ServiceUnavailableException.class, () -> session.readTransaction(work));
                 assertThat(e.getSuppressed(), not(emptyArray()));
                 suppressedErrors = e.getSuppressed().length;
             }
@@ -302,8 +297,8 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void readTxCommittedWithoutTxSuccess() {
-        try (Driver driver = newDriverWithoutRetries();
-                Session session = driver.session()) {
+        try (var driver = newDriverWithoutRetries();
+                var session = driver.session()) {
             assertBookmarkIsEmpty(session.lastBookmark());
 
             long answer = session.readTransaction(
@@ -318,8 +313,8 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void writeTxCommittedWithoutTxSuccess() {
-        try (Driver driver = newDriverWithoutRetries()) {
-            try (Session session = driver.session()) {
+        try (var driver = newDriverWithoutRetries()) {
+            try (var session = driver.session()) {
                 long answer = session.writeTransaction(tx -> tx.run("CREATE (:Person {name: 'Thor Odinson'}) RETURN 42")
                         .single()
                         .get(0)
@@ -327,8 +322,8 @@ class SessionIT {
                 assertEquals(42, answer);
             }
 
-            try (Session session = driver.session()) {
-                Result result = session.run("MATCH (p:Person {name: 'Thor Odinson'}) RETURN count(p)");
+            try (var session = driver.session()) {
+                var result = session.run("MATCH (p:Person {name: 'Thor Odinson'}) RETURN count(p)");
                 assertEquals(1, result.single().get(0).asInt());
             }
         }
@@ -337,13 +332,13 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void readTxRolledBackWithTxFailure() {
-        try (Driver driver = newDriverWithoutRetries();
-                Session session = driver.session()) {
+        try (var driver = newDriverWithoutRetries();
+                var session = driver.session()) {
             assertBookmarkIsEmpty(session.lastBookmark());
 
             long answer = session.readTransaction(tx -> {
-                Result result = tx.run("RETURN 42");
-                long single = result.single().get(0).asLong();
+                var result = tx.run("RETURN 42");
+                var single = result.single().get(0).asLong();
                 tx.rollback();
                 return single;
             });
@@ -357,8 +352,8 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void writeTxRolledBackWithTxFailure() {
-        try (Driver driver = newDriverWithoutRetries()) {
-            try (Session session = driver.session()) {
+        try (var driver = newDriverWithoutRetries()) {
+            try (var session = driver.session()) {
                 int answer = session.writeTransaction(tx -> {
                     tx.run("CREATE (:Person {name: 'Natasha Romanoff'})");
                     tx.rollback();
@@ -368,8 +363,8 @@ class SessionIT {
                 assertEquals(42, answer);
             }
 
-            try (Session session = driver.session()) {
-                Result result = session.run("MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)");
+            try (var session = driver.session()) {
+                var result = session.run("MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)");
                 assertEquals(0, result.single().get(0).asInt());
             }
         }
@@ -378,14 +373,14 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void readTxRolledBackWhenExceptionIsThrown() {
-        try (Driver driver = newDriverWithoutRetries();
-                Session session = driver.session()) {
+        try (var driver = newDriverWithoutRetries();
+                var session = driver.session()) {
             assertBookmarkIsEmpty(session.lastBookmark());
 
             assertThrows(
                     IllegalStateException.class,
                     () -> session.readTransaction(tx -> {
-                        Result result = tx.run("RETURN 42");
+                        var result = tx.run("RETURN 42");
                         if (result.single().get(0).asLong() == 42) {
                             throw new IllegalStateException();
                         }
@@ -400,8 +395,8 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void writeTxRolledBackWhenExceptionIsThrown() {
-        try (Driver driver = newDriverWithoutRetries()) {
-            try (Session session = driver.session()) {
+        try (var driver = newDriverWithoutRetries()) {
+            try (var session = driver.session()) {
                 assertThrows(
                         IllegalStateException.class,
                         () -> session.writeTransaction(tx -> {
@@ -410,8 +405,8 @@ class SessionIT {
                         }));
             }
 
-            try (Session session = driver.session()) {
-                Result result = session.run("MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)");
+            try (var session = driver.session()) {
+                var result = session.run("MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)");
                 assertEquals(0, result.single().get(0).asInt());
             }
         }
@@ -420,12 +415,12 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void readTxRolledBackWhenMarkedBothSuccessAndFailure() {
-        try (Driver driver = newDriverWithoutRetries();
-                Session session = driver.session()) {
-            ClientException error = assertThrows(
+        try (var driver = newDriverWithoutRetries();
+                var session = driver.session()) {
+            var error = assertThrows(
                     ClientException.class,
                     () -> session.readTransaction(tx -> {
-                        Result result = tx.run("RETURN 42");
+                        var result = tx.run("RETURN 42");
                         tx.commit();
                         tx.rollback();
                         return result.single().get(0).asLong();
@@ -437,9 +432,9 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void writeTxFailWhenBothCommitAndRollback() {
-        try (Driver driver = newDriverWithoutRetries()) {
-            try (Session session = driver.session()) {
-                ClientException error = assertThrows(
+        try (var driver = newDriverWithoutRetries()) {
+            try (var session = driver.session()) {
+                var error = assertThrows(
                         ClientException.class,
                         () -> session.writeTransaction(tx -> {
                             tx.run("CREATE (:Person {name: 'Natasha Romanoff'})");
@@ -456,8 +451,8 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void readTxCommittedWhenCommitAndThrowsException() {
-        try (Driver driver = newDriverWithoutRetries();
-                Session session = driver.session()) {
+        try (var driver = newDriverWithoutRetries();
+                var session = driver.session()) {
             assertBookmarkIsEmpty(session.lastBookmark());
 
             assertThrows(
@@ -476,8 +471,8 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void writeTxCommittedWhenCommitAndThrowsException() {
-        try (Driver driver = newDriverWithoutRetries()) {
-            try (Session session = driver.session()) {
+        try (var driver = newDriverWithoutRetries()) {
+            try (var session = driver.session()) {
                 assertThrows(
                         IllegalStateException.class,
                         () -> session.writeTransaction(tx -> {
@@ -487,8 +482,8 @@ class SessionIT {
                         }));
             }
 
-            try (Session session = driver.session()) {
-                Result result = session.run("MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)");
+            try (var session = driver.session()) {
+                var result = session.run("MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)");
                 assertEquals(1, result.single().get(0).asInt());
             }
         }
@@ -497,8 +492,8 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void readRolledBackWhenRollbackAndThrowsException() {
-        try (Driver driver = newDriverWithoutRetries();
-                Session session = driver.session()) {
+        try (var driver = newDriverWithoutRetries();
+                var session = driver.session()) {
             assertBookmarkIsEmpty(session.lastBookmark());
 
             assertThrows(
@@ -517,8 +512,8 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void writeTxRolledBackWhenRollbackAndThrowsException() {
-        try (Driver driver = newDriverWithoutRetries()) {
-            try (Session session = driver.session()) {
+        try (var driver = newDriverWithoutRetries()) {
+            try (var session = driver.session()) {
                 assertThrows(
                         IllegalStateException.class,
                         () -> session.writeTransaction(tx -> {
@@ -528,8 +523,8 @@ class SessionIT {
                         }));
             }
 
-            try (Session session = driver.session()) {
-                Result result = session.run("MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)");
+            try (var session = driver.session()) {
+                var result = session.run("MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)");
                 assertEquals(0, result.single().get(0).asInt());
             }
         }
@@ -537,20 +532,20 @@ class SessionIT {
 
     @Test
     void transactionRunShouldFailOnDeadlocks() throws Exception {
-        final int nodeId1 = 42;
-        final int nodeId2 = 4242;
-        final int newNodeId1 = 1;
-        final int newNodeId2 = 2;
+        final var nodeId1 = 42;
+        final var nodeId2 = 4242;
+        final var newNodeId1 = 1;
+        final var newNodeId2 = 2;
 
         createNodeWithId(nodeId1);
         createNodeWithId(nodeId2);
 
-        final CountDownLatch latch1 = new CountDownLatch(1);
-        final CountDownLatch latch2 = new CountDownLatch(1);
+        final var latch1 = new CountDownLatch(1);
+        final var latch2 = new CountDownLatch(1);
 
         Future<Void> result1 = executeInDifferentThread(() -> {
-            try (Session session = neo4j.driver().session();
-                    Transaction tx = session.beginTransaction()) {
+            try (var session = neo4j.driver().session();
+                    var tx = session.beginTransaction()) {
                 // lock first node
                 updateNodeId(tx, nodeId1, newNodeId1).consume();
 
@@ -566,8 +561,8 @@ class SessionIT {
         });
 
         Future<Void> result2 = executeInDifferentThread(() -> {
-            try (Session session = neo4j.driver().session();
-                    Transaction tx = session.beginTransaction()) {
+            try (var session = neo4j.driver().session();
+                    var tx = session.beginTransaction()) {
                 // lock second node
                 updateNodeId(tx, nodeId2, newNodeId2).consume();
 
@@ -582,7 +577,7 @@ class SessionIT {
             return null;
         });
 
-        boolean firstResultFailed = assertOneOfTwoFuturesFailWithDeadlock(result1, result2);
+        var firstResultFailed = assertOneOfTwoFuturesFailWithDeadlock(result1, result2);
         if (firstResultFailed) {
             assertEquals(0, countNodesWithId(newNodeId1));
             assertEquals(2, countNodesWithId(newNodeId2));
@@ -595,21 +590,21 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void writeTransactionFunctionShouldRetryDeadlocks() throws Exception {
-        final int nodeId1 = 42;
-        final int nodeId2 = 4242;
-        final int nodeId3 = 424242;
-        final int newNodeId1 = 1;
-        final int newNodeId2 = 2;
+        final var nodeId1 = 42;
+        final var nodeId2 = 4242;
+        final var nodeId3 = 424242;
+        final var newNodeId1 = 1;
+        final var newNodeId2 = 2;
 
         createNodeWithId(nodeId1);
         createNodeWithId(nodeId2);
 
-        final CountDownLatch latch1 = new CountDownLatch(1);
-        final CountDownLatch latch2 = new CountDownLatch(1);
+        final var latch1 = new CountDownLatch(1);
+        final var latch2 = new CountDownLatch(1);
 
         Future<Void> result1 = executeInDifferentThread(() -> {
-            try (Session session = neo4j.driver().session();
-                    Transaction tx = session.beginTransaction()) {
+            try (var session = neo4j.driver().session();
+                    var tx = session.beginTransaction()) {
                 // lock first node
                 updateNodeId(tx, nodeId1, newNodeId1).consume();
 
@@ -625,7 +620,7 @@ class SessionIT {
         });
 
         Future<Void> result2 = executeInDifferentThread(() -> {
-            try (Session session = neo4j.driver().session()) {
+            try (var session = neo4j.driver().session()) {
                 session.writeTransaction(tx -> {
                     // lock second node
                     updateNodeId(tx, nodeId2, newNodeId2).consume();
@@ -644,7 +639,7 @@ class SessionIT {
             return null;
         });
 
-        boolean firstResultFailed = false;
+        var firstResultFailed = false;
         try {
             // first future may:
             // 1) succeed, when it's tx was able to grab both locks and tx in other future was
@@ -675,11 +670,11 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void shouldExecuteTransactionWorkInCallerThread() {
-        int maxFailures = 3;
-        Thread callerThread = Thread.currentThread();
+        var maxFailures = 3;
+        var callerThread = Thread.currentThread();
 
-        try (Session session = neo4j.driver().session()) {
-            String result = session.readTransaction(new TransactionWork<String>() {
+        try (var session = neo4j.driver().session()) {
+            var result = session.readTransaction(new TransactionWork<String>() {
                 int failures;
 
                 @Override
@@ -698,8 +693,8 @@ class SessionIT {
 
     @Test
     void shouldThrowRunFailureImmediatelyAndCloseSuccessfully() {
-        try (Session session = neo4j.driver().session()) {
-            ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN 1 * \"x\""));
+        try (var session = neo4j.driver().session()) {
+            var e = assertThrows(ClientException.class, () -> session.run("RETURN 1 * \"x\""));
 
             assertThat(e.getMessage(), containsString("Type mismatch"));
         }
@@ -708,7 +703,7 @@ class SessionIT {
     @EnabledOnNeo4jWith(BOLT_V4)
     @Test
     void shouldNotPropagateFailureWhenStreamingIsCancelled() {
-        Session session = neo4j.driver().session();
+        var session = neo4j.driver().session();
         session.run("UNWIND range(20000, 0, -1) AS x RETURN 10 / x");
         session.close();
     }
@@ -716,7 +711,7 @@ class SessionIT {
     @Test
     void shouldNotBePossibleToConsumeResultAfterSessionIsClosed() {
         Result result;
-        try (Session session = neo4j.driver().session()) {
+        try (var session = neo4j.driver().session()) {
             result = session.run("UNWIND range(1, 20000) AS x RETURN x");
         }
 
@@ -727,11 +722,11 @@ class SessionIT {
 
     @Test
     void shouldThrowRunFailureImmediatelyAfterMultipleSuccessfulRunsAndCloseSuccessfully() {
-        try (Session session = neo4j.driver().session()) {
+        try (var session = neo4j.driver().session()) {
             session.run("CREATE ()");
             session.run("CREATE ()");
 
-            ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN 1 * \"x\""));
+            var e = assertThrows(ClientException.class, () -> session.run("RETURN 1 * \"x\""));
 
             assertThat(e.getMessage(), containsString("Type mismatch"));
         }
@@ -739,10 +734,10 @@ class SessionIT {
 
     @Test
     void shouldThrowRunFailureImmediatelyAndAcceptSubsequentRun() {
-        try (Session session = neo4j.driver().session()) {
+        try (var session = neo4j.driver().session()) {
             session.run("CREATE ()");
             session.run("CREATE ()");
-            ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN 1 * \"x\""));
+            var e = assertThrows(ClientException.class, () -> session.run("RETURN 1 * \"x\""));
             assertThat(e.getMessage(), containsString("Type mismatch"));
             session.run("CREATE ()");
         }
@@ -750,11 +745,11 @@ class SessionIT {
 
     @Test
     void shouldCloseCleanlyWhenRunErrorConsumed() {
-        Session session = neo4j.driver().session();
+        var session = neo4j.driver().session();
 
         session.run("CREATE ()");
 
-        ClientException e = assertThrows(
+        var e = assertThrows(
                 ClientException.class, () -> session.run("RETURN 10 / 0").consume());
         assertThat(e.getMessage(), containsString("/ by zero"));
 
@@ -766,10 +761,10 @@ class SessionIT {
 
     @Test
     void shouldConsumePreviousResultBeforeRunningNewQuery() {
-        try (Session session = neo4j.driver().session()) {
+        try (var session = neo4j.driver().session()) {
             session.run("UNWIND range(1000, 0, -1) AS x RETURN 42 / x");
 
-            ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN 1"));
+            var e = assertThrows(ClientException.class, () -> session.run("RETURN 1"));
             assertThat(e.getMessage(), containsString("/ by zero"));
         }
     }
@@ -777,8 +772,8 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void shouldNotRetryOnConnectionAcquisitionTimeout() {
-        int maxPoolSize = 3;
-        Config config = Config.builder()
+        var maxPoolSize = 3;
+        var config = Config.builder()
                 .withMaxConnectionPoolSize(maxPoolSize)
                 .withConnectionAcquisitionTimeout(0, TimeUnit.SECONDS)
                 .withMaxTransactionRetryTime(42, TimeUnit.DAYS) // retry for a really long time
@@ -787,12 +782,12 @@ class SessionIT {
 
         driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config);
 
-        for (int i = 0; i < maxPoolSize; i++) {
+        for (var i = 0; i < maxPoolSize; i++) {
             driver.session().beginTransaction();
         }
 
-        AtomicInteger invocations = new AtomicInteger();
-        ClientException e = assertThrows(
+        var invocations = new AtomicInteger();
+        var e = assertThrows(
                 ClientException.class, () -> driver.session().writeTransaction(tx -> invocations.incrementAndGet()));
         assertThat(e, is(connectionAcquisitionTimeoutError(0)));
 
@@ -802,23 +797,23 @@ class SessionIT {
 
     @Test
     void shouldReportFailureInClose() {
-        Session session = neo4j.driver().session();
+        var session = neo4j.driver().session();
 
-        Result result = session.run("CYPHER runtime=interpreted UNWIND [2, 4, 8, 0] AS x RETURN 32 / x");
+        var result = session.run("CYPHER runtime=interpreted UNWIND [2, 4, 8, 0] AS x RETURN 32 / x");
 
-        ClientException e = assertThrows(ClientException.class, session::close);
+        var e = assertThrows(ClientException.class, session::close);
         assertThat(e, is(arithmeticError()));
     }
 
     @Test
     void shouldNotAllowAccessingRecordsAfterSummary() {
-        int recordCount = 10_000;
-        String query = "UNWIND range(1, " + recordCount + ") AS x RETURN x";
+        var recordCount = 10_000;
+        var query = "UNWIND range(1, " + recordCount + ") AS x RETURN x";
 
-        try (Session session = neo4j.driver().session()) {
-            Result result = session.run(query);
+        try (var session = neo4j.driver().session()) {
+            var result = session.run(query);
 
-            ResultSummary summary = result.consume();
+            var summary = result.consume();
             assertEquals(query, summary.query().text());
             assertEquals(QueryType.READ_ONLY, summary.queryType());
 
@@ -828,11 +823,11 @@ class SessionIT {
 
     @Test
     void shouldNotAllowAccessingRecordsAfterSessionClosed() {
-        int recordCount = 11_333;
-        String query = "UNWIND range(1, " + recordCount + ") AS x RETURN 'Result-' + x";
+        var recordCount = 11_333;
+        var query = "UNWIND range(1, " + recordCount + ") AS x RETURN 'Result-' + x";
 
         Result result;
-        try (Session session = neo4j.driver().session()) {
+        try (var session = neo4j.driver().session()) {
             result = session.run(query);
         }
 
@@ -842,45 +837,45 @@ class SessionIT {
     @Test
     @DisabledOnNeo4jWith(BOLT_V4)
     void shouldAllowToConsumeRecordsSlowlyAndCloseSession() throws InterruptedException {
-        Session session = neo4j.driver().session();
+        var session = neo4j.driver().session();
 
-        Result result = session.run("UNWIND range(10000, 0, -1) AS x RETURN 10 / x");
+        var result = session.run("UNWIND range(10000, 0, -1) AS x RETURN 10 / x");
 
         // summary couple records slowly with a sleep in-between
-        for (int i = 0; i < 10; i++) {
+        for (var i = 0; i < 10; i++) {
             assertTrue(result.hasNext());
             assertNotNull(result.next());
             Thread.sleep(50);
         }
 
-        ClientException e = assertThrows(ClientException.class, session::close);
+        var e = assertThrows(ClientException.class, session::close);
         assertThat(e, is(arithmeticError()));
     }
 
     @Test
     void shouldAllowToConsumeRecordsSlowlyAndRetrieveSummary() throws InterruptedException {
-        try (Session session = neo4j.driver().session()) {
-            Result result = session.run("UNWIND range(8000, 1, -1) AS x RETURN 42 / x");
+        try (var session = neo4j.driver().session()) {
+            var result = session.run("UNWIND range(8000, 1, -1) AS x RETURN 42 / x");
 
             // summary couple records slowly with a sleep in-between
-            for (int i = 0; i < 12; i++) {
+            for (var i = 0; i < 12; i++) {
                 assertTrue(result.hasNext());
                 assertNotNull(result.next());
                 Thread.sleep(50);
             }
 
-            ResultSummary summary = result.consume();
+            var summary = result.consume();
             assertNotNull(summary);
         }
     }
 
     @Test
     void shouldBeResponsiveToThreadInterruptWhenWaitingForResult() {
-        try (Session session1 = neo4j.driver().session();
-                Session session2 = neo4j.driver().session()) {
+        try (var session1 = neo4j.driver().session();
+                var session2 = neo4j.driver().session()) {
             session1.run("CREATE (:Person {name: 'Beta Ray Bill'})").consume();
 
-            Transaction tx = session1.beginTransaction();
+            var tx = session1.beginTransaction();
             tx.run("MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'")
                     .consume();
 
@@ -890,7 +885,7 @@ class SessionIT {
             TestUtil.interruptWhenInWaitingState(Thread.currentThread());
 
             try {
-                ServiceUnavailableException e = assertThrows(ServiceUnavailableException.class, () -> session2.run(
+                var e = assertThrows(ServiceUnavailableException.class, () -> session2.run(
                                 "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'")
                         .consume());
                 assertThat(e.getMessage(), containsString("Connection to the database terminated"));
@@ -904,26 +899,26 @@ class SessionIT {
 
     @Test
     void shouldAllowLongRunningQueryWithConnectTimeout() throws Exception {
-        int connectionTimeoutMs = 3_000;
-        Config config = Config.builder()
+        var connectionTimeoutMs = 3_000;
+        var config = Config.builder()
                 .withLogging(DEV_NULL_LOGGING)
                 .withConnectionTimeout(connectionTimeoutMs, TimeUnit.MILLISECONDS)
                 .build();
 
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config)) {
-            Session session1 = driver.session();
-            Session session2 = driver.session();
+        try (var driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config)) {
+            var session1 = driver.session();
+            var session2 = driver.session();
 
             session1.run("CREATE (:Avenger {name: 'Hulk'})").consume();
 
-            Transaction tx = session1.beginTransaction();
+            var tx = session1.beginTransaction();
             tx.run("MATCH (a:Avenger {name: 'Hulk'}) SET a.power = 100 RETURN a")
                     .consume();
 
             // Hulk node is now locked
 
-            CountDownLatch latch = new CountDownLatch(1);
-            Future<Long> updateFuture = executeInDifferentThread(() -> {
+            var latch = new CountDownLatch(1);
+            var updateFuture = executeInDifferentThread(() -> {
                 latch.countDown();
                 return session2.run("MATCH (a:Avenger {name: 'Hulk'}) SET a.weight = 1000 RETURN a.power")
                         .single()
@@ -947,7 +942,7 @@ class SessionIT {
     @Test
     @SuppressWarnings("deprecation")
     void shouldAllowReturningNullFromTransactionFunction() {
-        try (Session session = neo4j.driver().session()) {
+        try (var session = neo4j.driver().session()) {
             assertNull(session.readTransaction(tx -> null));
             assertNull(session.writeTransaction(tx -> null));
         }
@@ -955,8 +950,8 @@ class SessionIT {
 
     @Test
     void shouldAllowIteratingOverEmptyResult() {
-        try (Session session = neo4j.driver().session()) {
-            Result result = session.run("UNWIND [] AS x RETURN x");
+        try (var session = neo4j.driver().session()) {
+            var result = session.run("UNWIND [] AS x RETURN x");
             assertFalse(result.hasNext());
 
             assertThrows(NoSuchElementException.class, result::next);
@@ -965,9 +960,9 @@ class SessionIT {
 
     @Test
     void shouldAllowConsumingEmptyResult() {
-        try (Session session = neo4j.driver().session()) {
-            Result result = session.run("UNWIND [] AS x RETURN x");
-            ResultSummary summary = result.consume();
+        try (var session = neo4j.driver().session()) {
+            var result = session.run("UNWIND [] AS x RETURN x");
+            var summary = result.consume();
             assertNotNull(summary);
             assertEquals(QueryType.READ_ONLY, summary.queryType());
         }
@@ -975,34 +970,34 @@ class SessionIT {
 
     @Test
     void shouldAllowListEmptyResult() {
-        try (Session session = neo4j.driver().session()) {
-            Result result = session.run("UNWIND [] AS x RETURN x");
+        try (var session = neo4j.driver().session()) {
+            var result = session.run("UNWIND [] AS x RETURN x");
             assertEquals(emptyList(), result.list());
         }
     }
 
     @Test
     void shouldReportFailureInSummary() {
-        try (Session session = neo4j.driver().session()) {
-            String query = "UNWIND [1, 2, 3, 4, 0] AS x RETURN 10 / x";
-            Result result = session.run(query);
+        try (var session = neo4j.driver().session()) {
+            var query = "UNWIND [1, 2, 3, 4, 0] AS x RETURN 10 / x";
+            var result = session.run(query);
 
-            ClientException e = assertThrows(ClientException.class, result::consume);
+            var e = assertThrows(ClientException.class, result::consume);
             assertThat(e, is(arithmeticError()));
 
-            ResultSummary summary = result.consume();
+            var summary = result.consume();
             assertEquals(query, summary.query().text());
         }
     }
 
     @Test
     void shouldNotAllowStartingMultipleTransactions() {
-        try (Session session = neo4j.driver().session()) {
-            Transaction tx = session.beginTransaction();
+        try (var session = neo4j.driver().session()) {
+            var tx = session.beginTransaction();
             assertNotNull(tx);
 
-            for (int i = 0; i < 3; i++) {
-                ClientException e = assertThrows(ClientException.class, session::beginTransaction);
+            for (var i = 0; i < 3; i++) {
+                var e = assertThrows(ClientException.class, session::beginTransaction);
                 assertThat(
                         e.getMessage(),
                         containsString("You cannot begin a transaction on a session with an open transaction"));
@@ -1016,8 +1011,8 @@ class SessionIT {
 
     @Test
     void shouldCloseOpenTransactionWhenClosed() {
-        try (Session session = neo4j.driver().session()) {
-            Transaction tx = session.beginTransaction();
+        try (var session = neo4j.driver().session()) {
+            var tx = session.beginTransaction();
             tx.run("CREATE (:Node {id: 123})");
             tx.run("CREATE (:Node {id: 456})");
 
@@ -1030,8 +1025,8 @@ class SessionIT {
 
     @Test
     void shouldRollbackOpenTransactionWhenClosed() {
-        try (Session session = neo4j.driver().session()) {
-            Transaction tx = session.beginTransaction();
+        try (var session = neo4j.driver().session()) {
+            var tx = session.beginTransaction();
             tx.run("CREATE (:Node {id: 123})");
             tx.run("CREATE (:Node {id: 456})");
 
@@ -1044,21 +1039,21 @@ class SessionIT {
 
     @Test
     void shouldSupportNestedQueries() {
-        try (Session session = neo4j.driver().session()) {
+        try (var session = neo4j.driver().session()) {
             // populate db with test data
             session.run("UNWIND range(1, 100) AS x CREATE (:Property {id: x})").consume();
             session.run("UNWIND range(1, 10) AS x CREATE (:Resource {id: x})").consume();
 
-            int seenProperties = 0;
-            int seenResources = 0;
+            var seenProperties = 0;
+            var seenResources = 0;
 
             // read properties and resources using a single session
-            Result properties = session.run("MATCH (p:Property) RETURN p");
+            var properties = session.run("MATCH (p:Property) RETURN p");
             while (properties.hasNext()) {
                 assertNotNull(properties.next());
                 seenProperties++;
 
-                Result resources = session.run("MATCH (r:Resource) RETURN r");
+                var resources = session.run("MATCH (r:Resource) RETURN r");
                 while (resources.hasNext()) {
                     assertNotNull(resources.next());
                     seenResources++;
@@ -1075,8 +1070,8 @@ class SessionIT {
     @SuppressWarnings("deprecation")
     void shouldErrorWhenTryingToUseRxAPIWithoutBoltV4() throws Throwable {
         // Given
-        RxSession session = neo4j.driver().rxSession();
-        RxResult result = session.run("RETURN 1");
+        var session = neo4j.driver().rxSession();
+        var result = session.run("RETURN 1");
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
         StepVerifier.create(result.records())
@@ -1095,10 +1090,10 @@ class SessionIT {
     @DisabledOnNeo4jWith(BOLT_V4)
     void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4() throws Throwable {
         // Given
-        Session session = neo4j.driver().session(forDatabase("foo"));
+        var session = neo4j.driver().session(forDatabase("foo"));
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
-        ClientException error = assertThrows(ClientException.class, () -> session.run("RETURN 1"));
+        var error = assertThrows(ClientException.class, () -> session.run("RETURN 1"));
         assertThat(error, instanceOf(ClientException.class));
         assertThat(
                 error.getMessage(), containsString("Database name parameter for selecting database is not supported"));
@@ -1108,10 +1103,10 @@ class SessionIT {
     @DisabledOnNeo4jWith(BOLT_V4)
     void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4UsingTx() throws Throwable {
         // Given
-        Session session = neo4j.driver().session(forDatabase("foo"));
+        var session = neo4j.driver().session(forDatabase("foo"));
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
-        ClientException error = assertThrows(ClientException.class, session::beginTransaction);
+        var error = assertThrows(ClientException.class, session::beginTransaction);
         assertThat(error, instanceOf(ClientException.class));
         assertThat(
                 error.getMessage(), containsString("Database name parameter for selecting database is not supported"));
@@ -1121,8 +1116,8 @@ class SessionIT {
     @EnabledOnNeo4jWith(BOLT_V4)
     void shouldAllowDatabaseName() throws Throwable {
         // Given
-        try (Session session = neo4j.driver().session(forDatabase("neo4j"))) {
-            Result result = session.run("RETURN 1");
+        try (var session = neo4j.driver().session(forDatabase("neo4j"))) {
+            var result = session.run("RETURN 1");
             assertThat(result.single().get(0).asInt(), equalTo(1));
         }
     }
@@ -1130,9 +1125,9 @@ class SessionIT {
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
     void shouldAllowDatabaseNameUsingTx() throws Throwable {
-        try (Session session = neo4j.driver().session(forDatabase("neo4j"));
-                Transaction transaction = session.beginTransaction()) {
-            Result result = transaction.run("RETURN 1");
+        try (var session = neo4j.driver().session(forDatabase("neo4j"));
+                var transaction = session.beginTransaction()) {
+            var result = transaction.run("RETURN 1");
             assertThat(result.single().get(0).asInt(), equalTo(1));
         }
     }
@@ -1141,7 +1136,7 @@ class SessionIT {
     @EnabledOnNeo4jWith(BOLT_V4)
     @SuppressWarnings("deprecation")
     void shouldAllowDatabaseNameUsingTxWithRetries() throws Throwable {
-        try (Session session = neo4j.driver().session(forDatabase("neo4j"))) {
+        try (var session = neo4j.driver().session(forDatabase("neo4j"))) {
             int num = session.readTransaction(
                     tx -> tx.run("RETURN 1").single().get(0).asInt());
             assertThat(num, equalTo(1));
@@ -1151,10 +1146,10 @@ class SessionIT {
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
     void shouldErrorDatabaseWhenDatabaseIsAbsent() throws Throwable {
-        Session session = neo4j.driver().session(forDatabase("foo"));
+        var session = neo4j.driver().session(forDatabase("foo"));
 
-        ClientException error = assertThrows(ClientException.class, () -> {
-            Result result = session.run("RETURN 1");
+        var error = assertThrows(ClientException.class, () -> {
+            var result = session.run("RETURN 1");
             result.consume();
         });
 
@@ -1166,12 +1161,12 @@ class SessionIT {
     @EnabledOnNeo4jWith(BOLT_V4)
     void shouldErrorDatabaseNameUsingTxWhenDatabaseIsAbsent() throws Throwable {
         // Given
-        Session session = neo4j.driver().session(forDatabase("foo"));
+        var session = neo4j.driver().session(forDatabase("foo"));
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
-        ClientException error = assertThrows(ClientException.class, () -> {
-            Transaction transaction = session.beginTransaction();
-            Result result = transaction.run("RETURN 1");
+        var error = assertThrows(ClientException.class, () -> {
+            var transaction = session.beginTransaction();
+            var result = transaction.run("RETURN 1");
             result.consume();
         });
         assertThat(error.getMessage(), containsString("Database does not exist. Database name: 'foo'"));
@@ -1183,10 +1178,10 @@ class SessionIT {
     @SuppressWarnings("deprecation")
     void shouldErrorDatabaseNameUsingTxWithRetriesWhenDatabaseIsAbsent() throws Throwable {
         // Given
-        Session session = neo4j.driver().session(forDatabase("foo"));
+        var session = neo4j.driver().session(forDatabase("foo"));
 
         // When trying to run the query on a database that does not exist
-        ClientException error = assertThrows(ClientException.class, () -> {
+        var error = assertThrows(ClientException.class, () -> {
             session.readTransaction(tx -> tx.run("RETURN 1").consume());
         });
         assertThat(error.getMessage(), containsString("Database does not exist. Database name: 'foo'"));
@@ -1218,22 +1213,21 @@ class SessionIT {
 
     @SuppressWarnings("deprecation")
     private void testExecuteReadTx(AccessMode sessionMode) {
-        Driver driver = neo4j.driver();
+        var driver = neo4j.driver();
 
         // write some test data
-        try (Session session = driver.session()) {
+        try (var session = driver.session()) {
             session.run("CREATE (:Person {name: 'Tony Stark'})");
             session.run("CREATE (:Person {name: 'Steve Rogers'})");
         }
 
         // read previously committed data
-        try (Session session =
+        try (var session =
                 driver.session(builder().withDefaultAccessMode(sessionMode).build())) {
-            Set<String> names = session.readTransaction(tx -> {
-                List<Record> records =
-                        tx.run("MATCH (p:Person) RETURN p.name AS name").list();
+            var names = session.readTransaction(tx -> {
+                var records = tx.run("MATCH (p:Person) RETURN p.name AS name").list();
                 Set<String> names1 = new HashSet<>(records.size());
-                for (Record record : records) {
+                for (var record : records) {
                     names1.add(record.get("name").asString());
                 }
                 return names1;
@@ -1245,14 +1239,14 @@ class SessionIT {
 
     @SuppressWarnings("deprecation")
     private void testExecuteWriteTx(AccessMode sessionMode) {
-        Driver driver = neo4j.driver();
+        var driver = neo4j.driver();
 
         // write some test data
-        try (Session session =
+        try (var session =
                 driver.session(builder().withDefaultAccessMode(sessionMode).build())) {
-            String material = session.writeTransaction(tx -> {
-                Result result = tx.run("CREATE (s:Shield {material: 'Vibranium'}) RETURN s");
-                Record record = result.single();
+            var material = session.writeTransaction(tx -> {
+                var result = tx.run("CREATE (s:Shield {material: 'Vibranium'}) RETURN s");
+                var record = result.single();
                 tx.commit();
                 return record.get(0).asNode().get("material").asString();
             });
@@ -1261,17 +1255,17 @@ class SessionIT {
         }
 
         // read previously committed data
-        try (Session session = driver.session()) {
-            Record record = session.run("MATCH (s:Shield) RETURN s.material").single();
+        try (var session = driver.session()) {
+            var record = session.run("MATCH (s:Shield) RETURN s.material").single();
             assertEquals("Vibranium", record.get(0).asString());
         }
     }
 
     @SuppressWarnings("deprecation")
     private void testTxRollbackWhenFunctionThrows(AccessMode sessionMode) {
-        Driver driver = neo4j.driver();
+        var driver = neo4j.driver();
 
-        try (Session session =
+        try (var session =
                 driver.session(builder().withDefaultAccessMode(sessionMode).build())) {
             assertThrows(
                     ClientException.class,
@@ -1285,8 +1279,8 @@ class SessionIT {
         }
 
         // no data should have been committed
-        try (Session session = driver.session()) {
-            Record record = session.run("MATCH (p:Person {name: 'Thanos'}) RETURN count(p)")
+        try (var session = driver.session()) {
+            var record = session.run("MATCH (p:Person {name: 'Thanos'}) RETURN count(p)")
                     .single();
             assertEquals(0, record.get(0).asInt());
         }
@@ -1303,7 +1297,7 @@ class SessionIT {
     }
 
     private Driver newDriverWithLimitedRetries(int maxTxRetryTime, TimeUnit unit) {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withLogging(DEV_NULL_LOGGING)
                 .withMaxTransactionRetryTime(maxTxRetryTime, unit)
                 .build();
@@ -1319,14 +1313,14 @@ class SessionIT {
     }
 
     private int countNodesWithId(int id) {
-        try (Session session = neo4j.driver().session()) {
-            Result result = session.run("MATCH (n {id: $id}) RETURN count(n)", parameters("id", id));
+        try (var session = neo4j.driver().session()) {
+            var result = session.run("MATCH (n {id: $id}) RETURN count(n)", parameters("id", id));
             return result.single().get(0).asInt();
         }
     }
 
     private void createNodeWithId(int id) {
-        try (Session session = neo4j.driver().session()) {
+        try (var session = neo4j.driver().session()) {
             session.run("CREATE (n {id: $id})", parameters("id", id));
         }
     }
@@ -1338,7 +1332,7 @@ class SessionIT {
 
     private static boolean assertOneOfTwoFuturesFailWithDeadlock(Future<Void> future1, Future<Void> future2)
             throws Exception {
-        boolean firstFailed = false;
+        var firstFailed = false;
         try {
             assertNull(future1.get(20, TimeUnit.SECONDS));
         } catch (ExecutionException e) {
@@ -1357,7 +1351,7 @@ class SessionIT {
 
     private static void assertDeadlockDetectedError(ExecutionException e) {
         assertThat(e.getCause(), instanceOf(TransientException.class));
-        String errorCode = ((TransientException) e.getCause()).code();
+        var errorCode = ((TransientException) e.getCause()).code();
         assertEquals("Neo.TransientError.Transaction.DeadlockDetected", errorCode);
     }
 
@@ -1391,11 +1385,11 @@ class SessionIT {
 
         @Override
         public Record execute(Transaction tx) {
-            Result result = tx.run(query);
+            var result = tx.run(query);
             if (invoked++ < failures) {
                 throw new ServiceUnavailableException("");
             }
-            Record single = result.single();
+            var single = result.single();
             tx.commit();
             return single;
         }

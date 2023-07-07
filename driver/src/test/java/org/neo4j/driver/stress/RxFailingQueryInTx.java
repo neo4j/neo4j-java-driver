@@ -29,7 +29,6 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import reactor.core.publisher.Flux;
 
@@ -41,8 +40,8 @@ public class RxFailingQueryInTx<C extends AbstractContext> extends AbstractRxQue
     @Override
     @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
-        CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        RxSession session = newSession(AccessMode.READ, context);
+        var queryFinished = new CompletableFuture<Void>();
+        var session = newSession(AccessMode.READ, context);
         Flux.usingWhen(
                         session.beginTransaction(),
                         tx -> tx.run("UNWIND [10, 5, 0] AS x RETURN 10 / x").records(),
@@ -54,7 +53,7 @@ public class RxFailingQueryInTx<C extends AbstractContext> extends AbstractRxQue
                             assertThat(record.get(0).asInt(), either(equalTo(1)).or(equalTo(2)));
                         },
                         error -> {
-                            Throwable cause = Futures.completionExceptionCause(error);
+                            var cause = Futures.completionExceptionCause(error);
                             assertThat(cause, is(arithmeticError()));
                             queryFinished.complete(null);
                         });

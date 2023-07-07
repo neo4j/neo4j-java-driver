@@ -33,7 +33,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.parameters;
 
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -56,10 +55,10 @@ import reactor.test.StepVerifier;
 class InternalRxTransactionTest {
     @Test
     void commitShouldDelegate() {
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var tx = mock(UnmanagedTransaction.class);
         when(tx.commitAsync()).thenReturn(Futures.completedWithNull());
 
-        InternalRxTransaction rxTx = new InternalRxTransaction(tx);
+        var rxTx = new InternalRxTransaction(tx);
         Publisher<Void> publisher = rxTx.commit();
         StepVerifier.create(publisher).verifyComplete();
 
@@ -68,10 +67,10 @@ class InternalRxTransactionTest {
 
     @Test
     void rollbackShouldDelegate() {
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var tx = mock(UnmanagedTransaction.class);
         when(tx.rollbackAsync()).thenReturn(Futures.completedWithNull());
 
-        InternalRxTransaction rxTx = new InternalRxTransaction(tx);
+        var rxTx = new InternalRxTransaction(tx);
         Publisher<Void> publisher = rxTx.rollback();
         StepVerifier.create(publisher).verifyComplete();
 
@@ -92,18 +91,17 @@ class InternalRxTransactionTest {
     @MethodSource("allTxRunMethods")
     void shouldDelegateRun(Function<RxTransaction, RxResult> runReturnOne) throws Throwable {
         // Given
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var tx = mock(UnmanagedTransaction.class);
         RxResultCursor cursor = mock(RxResultCursorImpl.class);
 
         // Run succeeded with a cursor
         when(tx.runRx(any(Query.class))).thenReturn(completedFuture(cursor));
-        InternalRxTransaction rxTx = new InternalRxTransaction(tx);
+        var rxTx = new InternalRxTransaction(tx);
 
         // When
-        RxResult result = runReturnOne.apply(rxTx);
+        var result = runReturnOne.apply(rxTx);
         // Execute the run
-        CompletionStage<RxResultCursor> cursorFuture =
-                ((InternalRxResult) result).cursorFutureSupplier().get();
+        var cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
 
         // Then
         verify(tx).runRx(any(Query.class));
@@ -115,17 +113,16 @@ class InternalRxTransactionTest {
     void shouldMarkTxIfFailedToRun(Function<RxTransaction, RxResult> runReturnOne) throws Throwable {
         // Given
         Throwable error = new RuntimeException("Hi there");
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var tx = mock(UnmanagedTransaction.class);
 
         // Run failed with error
         when(tx.runRx(any(Query.class))).thenReturn(Futures.failedFuture(error));
-        InternalRxTransaction rxTx = new InternalRxTransaction(tx);
+        var rxTx = new InternalRxTransaction(tx);
 
         // When
-        RxResult result = runReturnOne.apply(rxTx);
+        var result = runReturnOne.apply(rxTx);
         // Execute the run
-        CompletionStage<RxResultCursor> cursorFuture =
-                ((InternalRxResult) result).cursorFutureSupplier().get();
+        var cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
 
         // Then
         verify(tx).runRx(any(Query.class));
@@ -136,11 +133,11 @@ class InternalRxTransactionTest {
 
     @Test
     void shouldDelegateConditionalClose() {
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var tx = mock(UnmanagedTransaction.class);
         when(tx.closeAsync(true)).thenReturn(Futures.completedWithNull());
 
-        InternalRxTransaction rxTx = new InternalRxTransaction(tx);
-        Publisher<Void> publisher = rxTx.close(true);
+        var rxTx = new InternalRxTransaction(tx);
+        var publisher = rxTx.close(true);
         StepVerifier.create(publisher).verifyComplete();
 
         verify(tx).closeAsync(true);
@@ -148,11 +145,11 @@ class InternalRxTransactionTest {
 
     @Test
     void shouldDelegateClose() {
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var tx = mock(UnmanagedTransaction.class);
         when(tx.closeAsync(false)).thenReturn(Futures.completedWithNull());
 
-        InternalRxTransaction rxTx = new InternalRxTransaction(tx);
-        Publisher<Void> publisher = rxTx.close();
+        var rxTx = new InternalRxTransaction(tx);
+        var publisher = rxTx.close();
         StepVerifier.create(publisher).verifyComplete();
 
         verify(tx).closeAsync(false);
@@ -161,8 +158,8 @@ class InternalRxTransactionTest {
     @Test
     void shouldDelegateIsOpenAsync() {
         // GIVEN
-        UnmanagedTransaction utx = mock(UnmanagedTransaction.class);
-        boolean expected = false;
+        var utx = mock(UnmanagedTransaction.class);
+        var expected = false;
         given(utx.isOpen()).willReturn(expected);
         RxTransaction tx = new InternalRxTransaction(utx);
 

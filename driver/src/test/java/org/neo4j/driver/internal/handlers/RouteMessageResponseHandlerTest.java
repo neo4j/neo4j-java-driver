@@ -36,10 +36,10 @@ class RouteMessageResponseHandlerTest {
 
     @Test
     void onSuccessShouldSuccessFullyCompleteFutureWithRoutingTable() throws Exception {
-        CompletableFuture<Map<String, Value>> completableFuture = new CompletableFuture<>();
-        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler(completableFuture);
-        Map<String, Value> routingTable = getRoutingTable();
-        Map<String, Value> metadata = getMetadataWithRoutingTable(routingTable);
+        var completableFuture = new CompletableFuture<Map<String, Value>>();
+        var responseHandler = new RouteMessageResponseHandler(completableFuture);
+        var routingTable = getRoutingTable();
+        var metadata = getMetadataWithRoutingTable(routingTable);
 
         responseHandler.onSuccess(metadata);
 
@@ -48,8 +48,8 @@ class RouteMessageResponseHandlerTest {
 
     @Test
     void onSuccessShouldExceptionallyCompleteFutureWhenMetadataDoesNotHaveRoutingTable() throws Exception {
-        CompletableFuture<Map<String, Value>> completableFuture = new CompletableFuture<>();
-        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler(completableFuture);
+        var completableFuture = new CompletableFuture<Map<String, Value>>();
+        var responseHandler = new RouteMessageResponseHandler(completableFuture);
         Map<String, Value> metadata = new HashMap<>();
 
         responseHandler.onSuccess(metadata);
@@ -59,9 +59,9 @@ class RouteMessageResponseHandlerTest {
 
     @Test
     void onFailureShouldCompleteExceptionallyWithTheOriginalException() {
-        CompletableFuture<Map<String, Value>> completableFuture = new CompletableFuture<>();
-        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler(completableFuture);
-        RuntimeException expectedException = new RuntimeException("Test exception");
+        var completableFuture = new CompletableFuture<Map<String, Value>>();
+        var responseHandler = new RouteMessageResponseHandler(completableFuture);
+        var expectedException = new RuntimeException("Test exception");
 
         responseHandler.onFailure(expectedException);
 
@@ -75,8 +75,8 @@ class RouteMessageResponseHandlerTest {
 
     @Test
     void onRecordShouldThrowUnsupportedOperation() {
-        CompletableFuture<Map<String, Value>> completableFuture = new CompletableFuture<>();
-        RouteMessageResponseHandler responseHandler = new RouteMessageResponseHandler(completableFuture);
+        var completableFuture = new CompletableFuture<Map<String, Value>>();
+        var responseHandler = new RouteMessageResponseHandler(completableFuture);
 
         responseHandler.onRecord(new Value[0]);
 

@@ -47,97 +47,97 @@ import org.neo4j.driver.internal.InternalRecord;
 class ClusterCompositionTest {
     @Test
     void hasWritersReturnsFalseWhenNoWriters() {
-        ClusterComposition composition = newComposition(1, addresses(A, B), addresses(), addresses(C, D));
+        var composition = newComposition(1, addresses(A, B), addresses(), addresses(C, D));
 
         assertFalse(composition.hasWriters());
     }
 
     @Test
     void hasWritersReturnsTrueWhenSomeWriters() {
-        ClusterComposition composition = newComposition(1, addresses(A, B), addresses(C, D), addresses(E, F));
+        var composition = newComposition(1, addresses(A, B), addresses(C, D), addresses(E, F));
 
         assertTrue(composition.hasWriters());
     }
 
     @Test
     void hasRoutersAndReadersReturnsFalseWhenNoRouters() {
-        ClusterComposition composition = newComposition(1, addresses(A, B), addresses(C, D), addresses());
+        var composition = newComposition(1, addresses(A, B), addresses(C, D), addresses());
 
         assertFalse(composition.hasRoutersAndReaders());
     }
 
     @Test
     void hasRoutersAndReadersReturnsFalseWhenNoReaders() {
-        ClusterComposition composition = newComposition(1, addresses(), addresses(A, B), addresses(C, D));
+        var composition = newComposition(1, addresses(), addresses(A, B), addresses(C, D));
 
         assertFalse(composition.hasRoutersAndReaders());
     }
 
     @Test
     void hasRoutersAndReadersWhenSomeReadersAndRouters() {
-        ClusterComposition composition = newComposition(1, addresses(A, B), addresses(C, D), addresses(E, F));
+        var composition = newComposition(1, addresses(A, B), addresses(C, D), addresses(E, F));
 
         assertTrue(composition.hasRoutersAndReaders());
     }
 
     @Test
     void readersWhenEmpty() {
-        ClusterComposition composition = newComposition(1, addresses(), addresses(A, B), addresses(C, D));
+        var composition = newComposition(1, addresses(), addresses(A, B), addresses(C, D));
 
         assertEquals(0, composition.readers().size());
     }
 
     @Test
     void writersWhenEmpty() {
-        ClusterComposition composition = newComposition(1, addresses(A, B), addresses(), addresses(C, D));
+        var composition = newComposition(1, addresses(A, B), addresses(), addresses(C, D));
 
         assertEquals(0, composition.writers().size());
     }
 
     @Test
     void routersWhenEmpty() {
-        ClusterComposition composition = newComposition(1, addresses(A, B), addresses(C, D), addresses());
+        var composition = newComposition(1, addresses(A, B), addresses(C, D), addresses());
 
         assertEquals(0, composition.routers().size());
     }
 
     @Test
     void readersWhenNonEmpty() {
-        ClusterComposition composition = newComposition(1, addresses(A, B), addresses(C, D), addresses(E, F));
+        var composition = newComposition(1, addresses(A, B), addresses(C, D), addresses(E, F));
 
         assertEquals(addresses(A, B), composition.readers());
     }
 
     @Test
     void writersWhenNonEmpty() {
-        ClusterComposition composition = newComposition(1, addresses(A, B), addresses(C, D), addresses(E, F));
+        var composition = newComposition(1, addresses(A, B), addresses(C, D), addresses(E, F));
 
         assertEquals(addresses(C, D), composition.writers());
     }
 
     @Test
     void routersWhenNonEmpty() {
-        ClusterComposition composition = newComposition(1, addresses(A, B), addresses(C, D), addresses(E, F));
+        var composition = newComposition(1, addresses(A, B), addresses(C, D), addresses(E, F));
 
         assertEquals(addresses(E, F), composition.routers());
     }
 
     @Test
     void expirationTimestamp() {
-        ClusterComposition composition = newComposition(42, addresses(A, B), addresses(C, D), addresses(E, F));
+        var composition = newComposition(42, addresses(A, B), addresses(C, D), addresses(E, F));
 
         assertEquals(42, composition.expirationTimestamp());
     }
 
     @Test
     void parseCorrectRecord() {
-        Value[] values = {
+        var values = new Value[] {
             value(42L),
             value(asList(serversEntry("READ", A, B), serversEntry("WRITE", C, D), serversEntry("ROUTE", E, F)))
         };
         Record record = new InternalRecord(asList("ttl", "servers"), values);
 
-        ClusterComposition composition = ClusterComposition.parse(record, 0);
+        var composition = ClusterComposition.parse(record, 0);
 
         // TTL is received in seconds and is converted to millis
         assertEquals(42_000, composition.expirationTimestamp());
@@ -149,13 +149,13 @@ class ClusterCompositionTest {
 
     @Test
     void parsePreservesOrderOfReaders() {
-        Value[] values = {
+        var values = new Value[] {
             value(42L),
             value(asList(serversEntry("READ", A, C, E, B, F, D), serversEntry("WRITE"), serversEntry("ROUTE")))
         };
         Record record = new InternalRecord(asList("ttl", "servers"), values);
 
-        ClusterComposition composition = ClusterComposition.parse(record, 0);
+        var composition = ClusterComposition.parse(record, 0);
 
         assertThat(composition.readers(), contains(A, C, E, B, F, D));
         assertEquals(0, composition.writers().size());
@@ -164,13 +164,13 @@ class ClusterCompositionTest {
 
     @Test
     void parsePreservesOrderOfWriters() {
-        Value[] values = {
+        var values = new Value[] {
             value(42L),
             value(asList(serversEntry("READ"), serversEntry("WRITE", C, F, D, A, B, E), serversEntry("ROUTE")))
         };
         Record record = new InternalRecord(asList("ttl", "servers"), values);
 
-        ClusterComposition composition = ClusterComposition.parse(record, 0);
+        var composition = ClusterComposition.parse(record, 0);
 
         assertEquals(0, composition.readers().size());
         assertThat(composition.writers(), contains(C, F, D, A, B, E));
@@ -179,13 +179,13 @@ class ClusterCompositionTest {
 
     @Test
     void parsePreservesOrderOfRouters() {
-        Value[] values = {
+        var values = new Value[] {
             value(42L),
             value(asList(serversEntry("READ"), serversEntry("WRITE"), serversEntry("ROUTE", F, D, A, B, C, E)))
         };
         Record record = new InternalRecord(asList("ttl", "servers"), values);
 
-        ClusterComposition composition = ClusterComposition.parse(record, 0);
+        var composition = ClusterComposition.parse(record, 0);
 
         assertEquals(0, composition.readers().size());
         assertEquals(0, composition.writers().size());
@@ -208,7 +208,7 @@ class ClusterCompositionTest {
         Map<String, Object> map = new HashMap<>();
         map.put("role", role);
         List<String> addressStrings = new ArrayList<>();
-        for (BoltServerAddress address : addresses) {
+        for (var address : addresses) {
             addressStrings.add(address.toString());
         }
         map.put("addresses", addressStrings);

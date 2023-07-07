@@ -35,7 +35,6 @@ import static org.neo4j.driver.Values.values;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;
@@ -61,11 +60,10 @@ class InternalRxResultTest {
     void shouldInitCursorFuture() {
         // Given
         RxResultCursor cursor = mock(RxResultCursorImpl.class);
-        InternalRxResult rxResult = newRxResult(cursor);
+        var rxResult = newRxResult(cursor);
 
         // When
-        CompletableFuture<RxResultCursor> cursorFuture =
-                rxResult.initCursorFuture().toCompletableFuture();
+        var cursorFuture = rxResult.initCursorFuture().toCompletableFuture();
 
         // Then
         assertTrue(cursorFuture.isDone());
@@ -75,16 +73,15 @@ class InternalRxResultTest {
     @Test
     void shouldInitCursorFutureWithFailedCursor() {
         // Given
-        RuntimeException error = new RuntimeException("Failed to obtain cursor probably due to connection problem");
-        InternalRxResult rxResult = newRxResult(error);
+        var error = new RuntimeException("Failed to obtain cursor probably due to connection problem");
+        var rxResult = newRxResult(error);
 
         // When
-        CompletableFuture<RxResultCursor> cursorFuture =
-                rxResult.initCursorFuture().toCompletableFuture();
+        var cursorFuture = rxResult.initCursorFuture().toCompletableFuture();
 
         // Then
         assertTrue(cursorFuture.isDone());
-        RuntimeException actualError = assertThrows(RuntimeException.class, () -> Futures.getNow(cursorFuture));
+        var actualError = assertThrows(RuntimeException.class, () -> Futures.getNow(cursorFuture));
         assertThat(actualError.getCause(), equalTo(error));
     }
 
@@ -94,7 +91,7 @@ class InternalRxResultTest {
         RxResultCursor cursor = mock(RxResultCursorImpl.class);
         RxResult rxResult = newRxResult(cursor);
 
-        List<String> keys = Arrays.asList("one", "two", "three");
+        var keys = Arrays.asList("one", "two", "three");
         when(cursor.keys()).thenReturn(keys);
 
         // When & Then
@@ -106,8 +103,8 @@ class InternalRxResultTest {
     @Test
     void shouldErrorWhenFailedObtainKeys() {
         // Given
-        RuntimeException error = new RuntimeException("Failed to obtain cursor");
-        InternalRxResult rxResult = newRxResult(error);
+        var error = new RuntimeException("Failed to obtain cursor");
+        var rxResult = newRxResult(error);
 
         // When & Then
         StepVerifier.create(Flux.from(rxResult.keys()))
@@ -121,7 +118,7 @@ class InternalRxResultTest {
         RxResultCursor cursor = mock(RxResultCursorImpl.class);
         RxResult rxResult = newRxResult(cursor);
 
-        List<String> keys = Arrays.asList("one", "two", "three");
+        var keys = Arrays.asList("one", "two", "three");
         when(cursor.keys()).thenReturn(keys);
 
         // When & Then
@@ -200,12 +197,12 @@ class InternalRxResultTest {
     @ValueSource(booleans = {true, false})
     void shouldDelegateIsOpen(boolean expectedState) {
         // Given
-        RxResultCursor cursor = mock(RxResultCursor.class);
+        var cursor = mock(RxResultCursor.class);
         given(cursor.isDone()).willReturn(!expectedState);
         RxResult result = new InternalRxResult(() -> CompletableFuture.completedFuture(cursor));
 
         // When
-        Boolean actualState = Mono.from(result.isOpen()).block();
+        var actualState = Mono.from(result.isOpen()).block();
 
         // Then
         assertEquals(expectedState, actualState);
@@ -213,7 +210,7 @@ class InternalRxResultTest {
     }
 
     private InternalRxResult newRxResult(PullResponseHandler pullHandler) {
-        RunResponseHandler runHandler = mock(RunResponseHandler.class);
+        var runHandler = mock(RunResponseHandler.class);
         RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
         return newRxResult(cursor);
     }

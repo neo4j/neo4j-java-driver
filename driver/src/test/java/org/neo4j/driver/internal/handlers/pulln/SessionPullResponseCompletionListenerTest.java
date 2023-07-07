@@ -40,7 +40,7 @@ import org.neo4j.driver.summary.ResultSummary;
 class SessionPullResponseCompletionListenerTest extends BasicPullResponseHandlerTestBase {
     protected void shouldHandleSuccessWithSummary(BasicPullResponseHandler.State state) {
         // Given
-        Connection conn = mockConnection();
+        var conn = mockConnection();
         @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
         @SuppressWarnings("unchecked")
@@ -63,15 +63,15 @@ class SessionPullResponseCompletionListenerTest extends BasicPullResponseHandler
     @Override
     protected void shouldHandleFailure(BasicPullResponseHandler.State state) {
         // Given
-        Connection conn = mockConnection();
+        var conn = mockConnection();
         @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
         @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
-        BasicPullResponseHandler handler = newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
+        var handler = newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
 
         // When
-        RuntimeException error = new RuntimeException("I am an error");
+        var error = new RuntimeException("I am an error");
         handler.onFailure(error);
 
         // Then
@@ -96,10 +96,9 @@ class SessionPullResponseCompletionListenerTest extends BasicPullResponseHandler
             BiConsumer<ResultSummary, Throwable> summaryConsumer,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             BasicPullResponseHandler.State state) {
-        RunResponseHandler runHandler = mock(RunResponseHandler.class);
-        SessionPullResponseCompletionListener listener =
-                new SessionPullResponseCompletionListener(conn, bookmarkConsumer);
-        BasicPullResponseHandler handler = new BasicPullResponseHandler(
+        var runHandler = mock(RunResponseHandler.class);
+        var listener = new SessionPullResponseCompletionListener(conn, bookmarkConsumer);
+        var handler = new BasicPullResponseHandler(
                 mock(Query.class), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener);
 
         handler.installRecordConsumer(recordConsumer);

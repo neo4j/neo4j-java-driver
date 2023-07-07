@@ -21,15 +21,10 @@ package org.neo4j.driver.internal.util;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.enabled;
 
-import java.lang.reflect.AnnotatedElement;
-import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.testutil.DatabaseExtension;
 
 public class Neo4jWithFeatureCondition implements ExecutionCondition {
@@ -40,20 +35,20 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition {
 
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
-        Optional<AnnotatedElement> elementOptional = context.getElement();
+        var elementOptional = context.getElement();
         if (elementOptional.isPresent()) {
-            AnnotatedElement element = elementOptional.get();
+            var element = elementOptional.get();
 
-            EnabledOnNeo4jWith enabledAnnotation = element.getAnnotation(EnabledOnNeo4jWith.class);
+            var enabledAnnotation = element.getAnnotation(EnabledOnNeo4jWith.class);
             if (enabledAnnotation != null) {
-                ConditionEvaluationResult result = checkFeatureAvailability(enabledAnnotation.value(), false);
+                var result = checkFeatureAvailability(enabledAnnotation.value(), false);
                 if (enabledAnnotation.edition() != Neo4jEdition.UNDEFINED) {
                     result = checkEditionAvailability(result, enabledAnnotation.edition());
                 }
                 return result;
             }
 
-            DisabledOnNeo4jWith disabledAnnotation = element.getAnnotation(DisabledOnNeo4jWith.class);
+            var disabledAnnotation = element.getAnnotation(DisabledOnNeo4jWith.class);
             if (disabledAnnotation != null) {
                 return checkFeatureAvailability(disabledAnnotation.value(), true);
             }
@@ -62,17 +57,17 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition {
     }
 
     private static ConditionEvaluationResult checkFeatureAvailability(Neo4jFeature feature, boolean negated) {
-        Driver driver = DatabaseExtension.getInstance().driver();
+        var driver = DatabaseExtension.getInstance().driver();
         if (driver != null) {
-            try (Session session = driver.session()) {
-                String agent = session.executeRead(
+            try (var session = driver.session()) {
+                var agent = session.executeRead(
                         tx -> tx.run("RETURN 1").consume().server().agent());
-                Pattern pattern = Pattern.compile("^Neo4j/(\\d+)\\.(\\d+)\\.(\\d+)(-dev)?$");
-                Matcher matcher = pattern.matcher(agent);
+                var pattern = Pattern.compile("^Neo4j/(\\d+)\\.(\\d+)\\.(\\d+)(-dev)?$");
+                var matcher = pattern.matcher(agent);
                 if (!matcher.matches()) {
                     throw new IllegalStateException(String.format("Unexpected server agent value %s", agent));
                 }
-                Neo4jFeature.Version version = new Neo4jFeature.Version(
+                var version = new Neo4jFeature.Version(
                         Integer.parseInt(matcher.group(1)),
                         Integer.parseInt(matcher.group(2)),
                         Integer.parseInt(matcher.group(3)));
@@ -87,14 +82,14 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition {
         if (previousResult.isDisabled()) {
             return previousResult;
         }
-        Driver driver = DatabaseExtension.getInstance().driver();
+        var driver = DatabaseExtension.getInstance().driver();
         if (driver != null) {
-            try (Session session = driver.session()) {
-                String value = session.run("CALL dbms.components() YIELD edition")
+            try (var session = driver.session()) {
+                var value = session.run("CALL dbms.components() YIELD edition")
                         .single()
                         .get("edition")
                         .asString();
-                boolean editionMatches = edition.matches(value);
+                var editionMatches = edition.matches(value);
                 return editionMatches
                         ? enabled(previousResult
                                         .getReason()

@@ -23,12 +23,8 @@ import static org.hamcrest.Matchers.greaterThan;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.neo4j.driver.testutil.SessionExtension;
-import org.neo4j.driver.types.Node;
-import org.neo4j.driver.types.Path;
-import org.neo4j.driver.types.Relationship;
 
 @ParallelizableIT
 class EntityTypeIT {
@@ -39,8 +35,8 @@ class EntityTypeIT {
     @SuppressWarnings("deprecation")
     void shouldReturnIdentitiesOfNodes() {
         // When
-        Result cursor = session.run("CREATE (n) RETURN n");
-        Node node = cursor.single().get("n").asNode();
+        var cursor = session.run("CREATE (n) RETURN n");
+        var node = cursor.single().get("n").asNode();
 
         // Then
         assertThat(node.id(), greaterThan(-1L));
@@ -50,8 +46,8 @@ class EntityTypeIT {
     @SuppressWarnings("deprecation")
     void shouldReturnIdentitiesOfRelationships() {
         // When
-        Result cursor = session.run("CREATE ()-[r:T]->() RETURN r");
-        Relationship rel = cursor.single().get("r").asRelationship();
+        var cursor = session.run("CREATE ()-[r:T]->() RETURN r");
+        var rel = cursor.single().get("r").asRelationship();
 
         // Then
         assertThat(rel.startNodeId(), greaterThan(-1L));
@@ -63,14 +59,14 @@ class EntityTypeIT {
     @SuppressWarnings("deprecation")
     void shouldReturnIdentitiesOfPaths() {
         // When
-        Result cursor = session.run("CREATE p=()-[r:T]->() RETURN p");
-        Path path = cursor.single().get("p").asPath();
+        var cursor = session.run("CREATE p=()-[r:T]->() RETURN p");
+        var path = cursor.single().get("p").asPath();
 
         // Then
         assertThat(path.start().id(), greaterThan(-1L));
         assertThat(path.end().id(), greaterThan(-1L));
 
-        Path.Segment segment = path.iterator().next();
+        var segment = path.iterator().next();
 
         assertThat(segment.start().id(), greaterThan(-1L));
         assertThat(segment.relationship().id(), greaterThan(-1L));

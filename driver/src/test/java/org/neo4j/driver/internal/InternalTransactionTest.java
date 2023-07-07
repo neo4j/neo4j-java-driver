@@ -54,7 +54,6 @@ import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.value.IntegerValue;
-import org.neo4j.driver.summary.ResultSummary;
 
 class InternalTransactionTest {
     private static final String DATABASE = "neo4j";
@@ -64,13 +63,13 @@ class InternalTransactionTest {
     @BeforeEach
     void setUp() {
         connection = connectionMock(BoltProtocolV4.INSTANCE);
-        ConnectionProvider connectionProvider = mock(ConnectionProvider.class);
+        var connectionProvider = mock(ConnectionProvider.class);
         when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenAnswer(invocation -> {
             var context = (ConnectionContext) invocation.getArgument(0);
             context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
             return completedFuture(connection);
         });
-        InternalSession session = new InternalSession(newSession(connectionProvider));
+        var session = new InternalSession(newSession(connectionProvider));
         tx = session.beginTransaction();
     }
 
@@ -88,8 +87,8 @@ class InternalTransactionTest {
     void shouldFlushOnRun(Function<Transaction, Result> runReturnOne) {
         setupSuccessfulRunAndPull(connection);
 
-        Result result = runReturnOne.apply(tx);
-        ResultSummary summary = result.consume();
+        var result = runReturnOne.apply(tx);
+        var summary = result.consume();
 
         verifyRunAndPull(connection, summary.query().text());
     }

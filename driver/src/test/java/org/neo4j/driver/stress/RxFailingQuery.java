@@ -41,7 +41,7 @@ public class RxFailingQuery<C extends AbstractContext> extends AbstractRxQuery<C
     @Override
     @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
-        CompletableFuture<Void> queryFinished = new CompletableFuture<>();
+        var queryFinished = new CompletableFuture<Void>();
         Flux.usingWhen(
                         Mono.fromSupplier(() -> newSession(AccessMode.READ, context)),
                         session -> session.run("UNWIND [10, 5, 0] AS x RETURN 10 / x")
@@ -52,7 +52,7 @@ public class RxFailingQuery<C extends AbstractContext> extends AbstractRxQuery<C
                             assertThat(record.get(0).asInt(), either(equalTo(1)).or(equalTo(2)));
                         },
                         error -> {
-                            Throwable cause = Futures.completionExceptionCause(error);
+                            var cause = Futures.completionExceptionCause(error);
                             assertThat(cause, is(arithmeticError()));
                             queryFinished.complete(null);
                         });

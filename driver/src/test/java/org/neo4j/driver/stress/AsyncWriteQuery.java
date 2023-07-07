@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -38,7 +37,7 @@ public class AsyncWriteQuery<C extends AbstractContext> extends AbstractAsyncQue
     @Override
     @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
-        AsyncSession session = newSession(AccessMode.WRITE, context);
+        var session = newSession(AccessMode.WRITE, context);
 
         return session.runAsync("CREATE ()")
                 .thenCompose(ResultCursor::consumeAsync)

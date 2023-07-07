@@ -32,13 +32,13 @@ public class DirectConnectionTest {
     @Test
     void shouldReturnServerAgent() {
         // given
-        Connection connection = mock(Connection.class);
-        DirectConnection directConnection = new DirectConnection(connection, defaultDatabase(), READ, null);
-        String agent = "Neo4j/4.2.5";
+        var connection = mock(Connection.class);
+        var directConnection = new DirectConnection(connection, defaultDatabase(), READ, null);
+        var agent = "Neo4j/4.2.5";
         given(connection.serverAgent()).willReturn(agent);
 
         // when
-        String actualAgent = directConnection.serverAgent();
+        var actualAgent = directConnection.serverAgent();
 
         // then
         assertEquals(agent, actualAgent);

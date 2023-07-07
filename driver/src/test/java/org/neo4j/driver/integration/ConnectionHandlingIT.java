@@ -36,7 +36,6 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 
 import io.netty.bootstrap.Bootstrap;
 import java.time.Clock;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
@@ -54,8 +53,6 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -72,10 +69,8 @@ import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.reactivestreams.Publisher;
@@ -93,7 +88,7 @@ class ConnectionHandlingIT {
 
     @BeforeEach
     void createDriver() {
-        DriverFactoryWithConnectionPool driverFactory = new DriverFactoryWithConnectionPool();
+        var driverFactory = new DriverFactoryWithConnectionPool();
         var authTokenProvider = neo4j.authTokenManager();
         driver = driverFactory.newInstance(
                 neo4j.uri(),
@@ -113,105 +108,105 @@ class ConnectionHandlingIT {
 
     @Test
     void connectionUsedForSessionRunReturnedToThePoolWhenResultConsumed() {
-        Result result = createNodesInNewSession(12);
+        var result = createNodesInNewSession(12);
 
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, never()).release();
 
         result.consume();
 
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame(connection1, connection2);
         verify(connection1).release();
     }
 
     @Test
     void connectionUsedForSessionRunReturnedToThePoolWhenResultSummaryObtained() {
-        Result result = createNodesInNewSession(5);
+        var result = createNodesInNewSession(5);
 
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, never()).release();
 
-        ResultSummary summary = result.consume();
+        var summary = result.consume();
 
         assertEquals(5, summary.counters().nodesCreated());
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame(connection1, connection2);
         verify(connection1).release();
     }
 
     @Test
     void connectionUsedForSessionRunReturnedToThePoolWhenResultFetchedInList() {
-        Result result = createNodesInNewSession(2);
+        var result = createNodesInNewSession(2);
 
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, never()).release();
 
-        List<Record> records = result.list();
+        var records = result.list();
         assertEquals(2, records.size());
 
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame(connection1, connection2);
         verify(connection1).release();
     }
 
     @Test
     void connectionUsedForSessionRunReturnedToThePoolWhenSingleRecordFetched() {
-        Result result = createNodesInNewSession(1);
+        var result = createNodesInNewSession(1);
 
         assertNotNull(result.single());
 
-        Connection connection = connectionPool.lastAcquiredConnectionSpy;
+        var connection = connectionPool.lastAcquiredConnectionSpy;
         verify(connection).release();
     }
 
     @Test
     void connectionUsedForSessionRunReturnedToThePoolWhenResultFetchedAsIterator() {
-        Result result = createNodesInNewSession(6);
+        var result = createNodesInNewSession(6);
 
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, never()).release();
 
-        int seenRecords = 0;
+        var seenRecords = 0;
         while (result.hasNext()) {
             assertNotNull(result.next());
             seenRecords++;
         }
         assertEquals(6, seenRecords);
 
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame(connection1, connection2);
         verify(connection1).release();
     }
 
     @Test
     void connectionUsedForSessionRunReturnedToThePoolOnServerFailure() {
-        try (Session session = driver.session()) {
+        try (var session = driver.session()) {
             // provoke division by zero
             assertThrows(ClientException.class, () -> session.run(
                             "UNWIND range(10, -1, 0) AS i CREATE (n {index: 10/i}) RETURN n")
                     .consume());
 
-            Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+            var connection1 = connectionPool.lastAcquiredConnectionSpy;
             verify(connection1).release();
         }
     }
 
     @Test
     void connectionUsedForTransactionReturnedToThePoolWhenTransactionCommitted() {
-        Session session = driver.session();
+        var session = driver.session();
 
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
 
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, never()).release();
 
-        Result result = createNodes(5, tx);
-        int size = result.list().size();
+        var result = createNodes(5, tx);
+        var size = result.list().size();
         tx.commit();
         tx.close();
 
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame(connection1, connection2);
         verify(connection1).release();
 
@@ -220,19 +215,19 @@ class ConnectionHandlingIT {
 
     @Test
     void connectionUsedForTransactionReturnedToThePoolWhenTransactionRolledBack() {
-        Session session = driver.session();
+        var session = driver.session();
 
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
 
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, never()).release();
 
-        Result result = createNodes(8, tx);
-        int size = result.list().size();
+        var result = createNodes(8, tx);
+        var size = result.list().size();
         tx.rollback();
         tx.close();
 
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame(connection1, connection2);
         verify(connection1).release();
 
@@ -241,7 +236,7 @@ class ConnectionHandlingIT {
 
     @Test
     void connectionUsedForTransactionReturnedToThePoolWhenTransactionFailsToCommitted() {
-        try (Session session = driver.session()) {
+        try (var session = driver.session()) {
             if (neo4j.isNeo4j43OrEarlier()) {
                 session.run("CREATE CONSTRAINT ON (book:Library) ASSERT exists(book.isbn)");
             } else {
@@ -249,12 +244,12 @@ class ConnectionHandlingIT {
             }
         }
 
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, atLeastOnce()).release(); // connection used for constraint creation
 
-        Session session = driver.session();
-        Transaction tx = session.beginTransaction();
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var session = driver.session();
+        var tx = session.beginTransaction();
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection2, never()).release();
 
         // property existence constraints are verified on commit, try to violate it
@@ -268,30 +263,30 @@ class ConnectionHandlingIT {
 
     @Test
     void connectionUsedForSessionRunReturnedToThePoolWhenSessionClose() {
-        Session session = driver.session();
+        var session = driver.session();
         createNodes(12, session);
 
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, never()).release();
 
         session.close();
 
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame(connection1, connection2);
         verify(connection1, times(2)).release();
     }
 
     @Test
     void connectionUsedForBeginTxReturnedToThePoolWhenSessionClose() {
-        Session session = driver.session();
-        Transaction tx = session.beginTransaction();
+        var session = driver.session();
+        var tx = session.beginTransaction();
 
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, never()).release();
 
         session.close();
 
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame(connection1, connection2);
         verify(connection1, times(2)).release();
     }
@@ -300,19 +295,19 @@ class ConnectionHandlingIT {
     @EnabledOnNeo4jWith(BOLT_V4)
     @SuppressWarnings("deprecation")
     void sessionCloseShouldReleaseConnectionUsedBySessionRun() {
-        RxSession session = driver.rxSession();
-        RxResult res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
+        var session = driver.rxSession();
+        var res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
 
         // When we only run but not pull
         StepVerifier.create(Flux.from(res.keys()))
                 .expectNext(singletonList("a"))
                 .verifyComplete();
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, never()).release();
 
         // Then we shall discard all results and commit
         StepVerifier.create(Mono.from(session.close())).verifyComplete();
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame(connection1, connection2);
         verify(connection1, times(2)).release();
     }
@@ -321,9 +316,9 @@ class ConnectionHandlingIT {
     @EnabledOnNeo4jWith(BOLT_V4)
     @SuppressWarnings("deprecation")
     void resultRecordsShouldReleaseConnectionUsedBySessionRun() {
-        RxSession session = driver.rxSession();
-        RxResult res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var session = driver.rxSession();
+        var res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         assertNull(connection1);
 
         // When we run and pull
@@ -332,7 +327,7 @@ class ConnectionHandlingIT {
                 .expectNext(1, 2, 3, 4)
                 .verifyComplete();
 
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertNotSame(connection1, connection2);
         verify(connection2).release();
     }
@@ -341,14 +336,14 @@ class ConnectionHandlingIT {
     @EnabledOnNeo4jWith(BOLT_V4)
     @SuppressWarnings("deprecation")
     void resultSummaryShouldReleaseConnectionUsedBySessionRun() {
-        RxSession session = driver.rxSession();
-        RxResult res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var session = driver.rxSession();
+        var res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         assertNull(connection1);
 
         StepVerifier.create(Mono.from(res.consume())).expectNextCount(1).verifyComplete();
 
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertNotSame(connection1, connection2);
         verify(connection2).release();
     }
@@ -357,7 +352,7 @@ class ConnectionHandlingIT {
     @EnabledOnNeo4jWith(BOLT_V4)
     @SuppressWarnings("deprecation")
     void txCommitShouldReleaseConnectionUsedByBeginTx() {
-        AtomicReference<Connection> connection1Ref = new AtomicReference<>();
+        var connection1Ref = new AtomicReference<Connection>();
 
         Function<RxSession, Publisher<Record>> sessionToRecordPublisher = (RxSession session) -> Flux.usingWhen(
                 Mono.fromDirect(session.beginTransaction()),
@@ -370,11 +365,11 @@ class ConnectionHandlingIT {
                 (tx, error) -> tx.rollback(),
                 RxTransaction::rollback);
 
-        Flux<Integer> resultsFlux = Flux.usingWhen(
+        var resultsFlux = Flux.usingWhen(
                         Mono.fromSupplier(driver::rxSession),
                         sessionToRecordPublisher,
                         session -> {
-                            Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+                            var connection2 = connectionPool.lastAcquiredConnectionSpy;
                             assertSame(connection1Ref.get(), connection2);
                             verify(connection1Ref.get()).release();
                             return Mono.empty();
@@ -390,7 +385,7 @@ class ConnectionHandlingIT {
     @EnabledOnNeo4jWith(BOLT_V4)
     @SuppressWarnings("deprecation")
     void txRollbackShouldReleaseConnectionUsedByBeginTx() {
-        AtomicReference<Connection> connection1Ref = new AtomicReference<>();
+        var connection1Ref = new AtomicReference<Connection>();
 
         Function<RxSession, Publisher<Record>> sessionToRecordPublisher = (RxSession session) -> Flux.usingWhen(
                 Mono.fromDirect(session.beginTransaction()),
@@ -403,11 +398,11 @@ class ConnectionHandlingIT {
                 (tx, error) -> tx.rollback(),
                 RxTransaction::rollback);
 
-        Flux<Integer> resultsFlux = Flux.usingWhen(
+        var resultsFlux = Flux.usingWhen(
                         Mono.fromSupplier(driver::rxSession),
                         sessionToRecordPublisher,
                         session -> {
-                            Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+                            var connection2 = connectionPool.lastAcquiredConnectionSpy;
                             assertSame(connection1Ref.get(), connection2);
                             verify(connection1Ref.get()).release();
                             return Mono.empty();
@@ -424,17 +419,17 @@ class ConnectionHandlingIT {
     @SuppressWarnings("deprecation")
     void sessionCloseShouldReleaseConnectionUsedByBeginTx() {
         // Given
-        RxSession session = driver.rxSession();
-        Publisher<RxTransaction> tx = session.beginTransaction();
+        var session = driver.rxSession();
+        var tx = session.beginTransaction();
 
         // When we created a tx
         StepVerifier.create(Mono.from(tx)).expectNextCount(1).verifyComplete();
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, never()).release();
 
         // Then we shall discard all results and commit
         StepVerifier.create(Mono.from(session.close())).verifyComplete();
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        var connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame(connection1, connection2);
         verify(connection1, times(2)).release();
     }
@@ -461,14 +456,14 @@ class ConnectionHandlingIT {
                 Config config,
                 boolean ownsEventLoopGroup,
                 RoutingContext routingContext) {
-            ConnectionSettings connectionSettings = new ConnectionSettings(authTokenManager, "test", 1000);
-            PoolSettings poolSettings = new PoolSettings(
+            var connectionSettings = new ConnectionSettings(authTokenManager, "test", 1000);
+            var poolSettings = new PoolSettings(
                     config.maxConnectionPoolSize(),
                     config.connectionAcquisitionTimeoutMillis(),
                     config.maxConnectionLifetimeMillis(),
                     config.idleTimeBeforeConnectionTest());
-            Clock clock = createClock();
-            ChannelConnector connector = super.createConnector(
+            var clock = createClock();
+            var connector = super.createConnector(
                     connectionSettings, securityPlan, config, clock, routingContext, BoltAgentUtil.VALUE);
             connectionPool = new MemorizingConnectionPool(
                     connector, bootstrap, poolSettings, config.logging(), clock, ownsEventLoopGroup);
@@ -496,7 +491,7 @@ class ConnectionHandlingIT {
 
         @Override
         public CompletionStage<Connection> acquire(final BoltServerAddress address, AuthToken overrideAuthToken) {
-            Connection connection = await(super.acquire(address, overrideAuthToken));
+            var connection = await(super.acquire(address, overrideAuthToken));
 
             if (memorize) {
                 // this connection pool returns spies so spies will be returned to the pool

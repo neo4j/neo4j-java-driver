@@ -44,7 +44,6 @@ import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.concurrent.Future;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
@@ -92,32 +91,32 @@ class NettyChannelHealthCheckerTest {
 
     @Test
     void shouldDropTooOldChannelsWhenMaxLifetimeEnabled() {
-        int maxLifetime = 1000;
-        PoolSettings settings = new PoolSettings(
+        var maxLifetime = 1000;
+        var settings = new PoolSettings(
                 DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 maxLifetime,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        Clock clock = Clock.systemUTC();
-        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
+        var clock = Clock.systemUTC();
+        var healthChecker = newHealthChecker(settings, clock);
 
         setCreationTimestamp(channel, clock.millis() - maxLifetime * 2);
-        Future<Boolean> healthy = healthChecker.isHealthy(channel);
+        var healthy = healthChecker.isHealthy(channel);
 
         assertThat(await(healthy), is(false));
     }
 
     @Test
     void shouldAllowVeryOldChannelsWhenMaxLifetimeDisabled() {
-        PoolSettings settings = new PoolSettings(
+        var settings = new PoolSettings(
                 DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, Clock.systemUTC());
+        var healthChecker = newHealthChecker(settings, Clock.systemUTC());
 
         setCreationTimestamp(channel, 0);
-        Future<Boolean> healthy = healthChecker.isHealthy(channel);
+        var healthy = healthChecker.isHealthy(channel);
         channel.runPendingTasks();
 
         assertThat(await(healthy), is(true));
@@ -137,18 +136,18 @@ class NettyChannelHealthCheckerTest {
     @ParameterizedTest
     @MethodSource("boltVersionsBefore51")
     void shouldFailAllConnectionsCreatedOnOrBeforeExpirationTimestamp(BoltProtocolVersion boltProtocolVersion) {
-        PoolSettings settings = new PoolSettings(
+        var settings = new PoolSettings(
                 DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        Clock clock = mock(Clock.class);
-        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
+        var clock = mock(Clock.class);
+        var healthChecker = newHealthChecker(settings, clock);
 
         var authToken = AuthTokens.basic("username", "password");
         var authTokenManager = mock(AuthTokenManager.class);
         given(authTokenManager.getToken()).willReturn(completedFuture(authToken));
-        List<EmbeddedChannel> channels = IntStream.range(0, 100)
+        var channels = IntStream.range(0, 100)
                 .mapToObj(i -> {
                     var channel = new EmbeddedChannel();
                     setProtocolVersion(channel, boltProtocolVersion);
@@ -162,35 +161,35 @@ class NettyChannelHealthCheckerTest {
                 })
                 .toList();
 
-        int authorizationExpiredChannelIndex = channels.size() / 2 - 1;
+        var authorizationExpiredChannelIndex = channels.size() / 2 - 1;
         given(clock.millis()).willReturn((long) authorizationExpiredChannelIndex);
         healthChecker.onExpired(
                 new AuthorizationExpiredException("", ""), channels.get(authorizationExpiredChannelIndex));
 
-        for (int i = 0; i < channels.size(); i++) {
+        for (var i = 0; i < channels.size(); i++) {
             var channel = channels.get(i);
             var future = healthChecker.isHealthy(channel);
             channel.runPendingTasks();
             boolean health = Objects.requireNonNull(await(future));
-            boolean expectedHealth = i > authorizationExpiredChannelIndex;
+            var expectedHealth = i > authorizationExpiredChannelIndex;
             assertEquals(expectedHealth, health, String.format("Channel %d has failed the check", i));
         }
     }
 
     @Test
     void shouldMarkForLogoffAllConnectionsCreatedOnOrBeforeExpirationTimestamp() {
-        PoolSettings settings = new PoolSettings(
+        var settings = new PoolSettings(
                 DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        Clock clock = mock(Clock.class);
-        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
+        var clock = mock(Clock.class);
+        var healthChecker = newHealthChecker(settings, clock);
 
         var authToken = AuthTokens.basic("username", "password");
         var authTokenManager = mock(AuthTokenManager.class);
         given(authTokenManager.getToken()).willReturn(completedFuture(authToken));
-        List<EmbeddedChannel> channels = IntStream.range(0, 100)
+        var channels = IntStream.range(0, 100)
                 .mapToObj(i -> {
                     var channel = new EmbeddedChannel();
                     setProtocolVersion(channel, BoltProtocolV51.VERSION);
@@ -204,18 +203,18 @@ class NettyChannelHealthCheckerTest {
                 })
                 .toList();
 
-        int authorizationExpiredChannelIndex = channels.size() / 2 - 1;
+        var authorizationExpiredChannelIndex = channels.size() / 2 - 1;
         given(clock.millis()).willReturn((long) authorizationExpiredChannelIndex);
         healthChecker.onExpired(
                 new AuthorizationExpiredException("", ""), channels.get(authorizationExpiredChannelIndex));
 
-        for (int i = 0; i < channels.size(); i++) {
+        for (var i = 0; i < channels.size(); i++) {
             var channel = channels.get(i);
             var future = healthChecker.isHealthy(channel);
             channel.runPendingTasks();
             boolean health = Objects.requireNonNull(await(future));
             assertTrue(health, String.format("Channel %d has failed the check", i));
-            boolean pendingLogoff = i <= authorizationExpiredChannelIndex;
+            var pendingLogoff = i <= authorizationExpiredChannelIndex;
             then(authContext(channel))
                     .should(pendingLogoff ? times(1) : never())
                     .markPendingLogoff();
@@ -224,15 +223,15 @@ class NettyChannelHealthCheckerTest {
 
     @Test
     void shouldUseGreatestExpirationTimestamp() {
-        PoolSettings settings = new PoolSettings(
+        var settings = new PoolSettings(
                 DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        Clock clock = Clock.systemUTC();
-        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
+        var clock = Clock.systemUTC();
+        var healthChecker = newHealthChecker(settings, clock);
 
-        long initialTimestamp = clock.millis();
+        var initialTimestamp = clock.millis();
         var channel1 = new EmbeddedChannel();
         var channel2 = new EmbeddedChannel();
         setCreationTimestamp(channel1, initialTimestamp);
@@ -272,19 +271,19 @@ class NettyChannelHealthCheckerTest {
     }
 
     private void testPing(boolean resetMessageSuccessful) {
-        int idleTimeBeforeConnectionTest = 1000;
-        PoolSettings settings = new PoolSettings(
+        var idleTimeBeforeConnectionTest = 1000;
+        var settings = new PoolSettings(
                 DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 idleTimeBeforeConnectionTest);
-        Clock clock = Clock.systemUTC();
-        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
+        var clock = Clock.systemUTC();
+        var healthChecker = newHealthChecker(settings, clock);
 
         setCreationTimestamp(channel, clock.millis());
         setLastUsedTimestamp(channel, clock.millis() - idleTimeBeforeConnectionTest * 2);
 
-        Future<Boolean> healthy = healthChecker.isHealthy(channel);
+        var healthy = healthChecker.isHealthy(channel);
         channel.runPendingTasks();
 
         assertEquals(ResetMessage.RESET, single(channel.outboundMessages()));
@@ -300,23 +299,23 @@ class NettyChannelHealthCheckerTest {
     }
 
     private void testActiveConnectionCheck(boolean channelActive) {
-        PoolSettings settings = new PoolSettings(
+        var settings = new PoolSettings(
                 DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        Clock clock = Clock.systemUTC();
-        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
+        var clock = Clock.systemUTC();
+        var healthChecker = newHealthChecker(settings, clock);
 
         setCreationTimestamp(channel, clock.millis());
 
         if (channelActive) {
-            Future<Boolean> healthy = healthChecker.isHealthy(channel);
+            var healthy = healthChecker.isHealthy(channel);
             channel.runPendingTasks();
             assertThat(await(healthy), is(true));
         } else {
             channel.close().syncUninterruptibly();
-            Future<Boolean> healthy = healthChecker.isHealthy(channel);
+            var healthy = healthChecker.isHealthy(channel);
             channel.runPendingTasks();
             assertThat(await(healthy), is(false));
         }

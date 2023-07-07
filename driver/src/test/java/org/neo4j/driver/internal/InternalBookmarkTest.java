@@ -42,61 +42,61 @@ class InternalBookmarkTest {
     @Test
     @SuppressWarnings("deprecation")
     void isEmptyForEmptyBookmark() {
-        Bookmark bookmark = InternalBookmark.empty();
+        var bookmark = InternalBookmark.empty();
         assertTrue(bookmark.isEmpty());
         assertEquals(emptySet(), bookmark.values());
     }
 
     @Test
     void shouldSetToEmptyForNullBookmark() {
-        Bookmark bookmark = InternalBookmark.from(null);
+        var bookmark = InternalBookmark.from(null);
         assertEquals(InternalBookmark.empty(), bookmark);
     }
 
     @Test
     void shouldSetToEmptyForEmptyBookmarkIterator() {
-        Bookmark bookmark = InternalBookmark.from(emptyList());
+        var bookmark = InternalBookmark.from(emptyList());
         assertEquals(InternalBookmark.empty(), bookmark);
     }
 
     @Test
     void shouldSetToEmptyForNullBookmarkList() {
-        Bookmark bookmark = InternalBookmark.from(singletonList(null));
+        var bookmark = InternalBookmark.from(singletonList(null));
         assertEquals(InternalBookmark.empty(), bookmark);
     }
 
     @Test
     void shouldIgnoreNullAndEmptyInBookmarkList() {
-        Bookmark bookmark = InternalBookmark.from(Arrays.asList(InternalBookmark.empty(), null, null));
+        var bookmark = InternalBookmark.from(Arrays.asList(InternalBookmark.empty(), null, null));
         assertEquals(InternalBookmark.empty(), bookmark);
     }
 
     @Test
     void shouldReserveBookmarkValuesCorrectly() {
-        Bookmark one = parse("one");
-        Bookmark two = parse("two");
-        Bookmark empty = InternalBookmark.empty();
-        Bookmark bookmark = InternalBookmark.from(Arrays.asList(one, two, null, empty));
+        var one = parse("one");
+        var two = parse("two");
+        var empty = InternalBookmark.empty();
+        var bookmark = InternalBookmark.from(Arrays.asList(one, two, null, empty));
         verifyValues(bookmark, "one", "two");
     }
 
     @Test
     @SuppressWarnings("deprecation")
     void isNotEmptyForNonEmptyBookmark() {
-        Bookmark bookmark = InternalBookmark.parse("SomeBookmark");
+        var bookmark = InternalBookmark.parse("SomeBookmark");
         assertFalse(bookmark.isEmpty());
     }
 
     @Test
     void asBeginTransactionParametersForNonEmptyBookmark() {
-        Bookmark bookmark = InternalBookmark.parse("SomeBookmark");
+        var bookmark = InternalBookmark.parse("SomeBookmark");
         verifyValues(bookmark, "SomeBookmark");
     }
 
     @Test
     @SuppressWarnings("deprecation")
     void bookmarkFromString() {
-        Bookmark bookmark = InternalBookmark.parse("Cat");
+        var bookmark = InternalBookmark.parse("Cat");
         assertEquals(singleton("Cat"), bookmark.values());
         verifyValues(bookmark, "Cat");
     }
@@ -104,34 +104,34 @@ class InternalBookmarkTest {
     @Test
     @SuppressWarnings("deprecation")
     void bookmarkFromNullString() {
-        Bookmark bookmark = InternalBookmark.parse((String) null);
+        var bookmark = InternalBookmark.parse((String) null);
         assertTrue(bookmark.isEmpty());
     }
 
     @Test
     void bookmarkFromSet() {
-        Set<String> input = asSet("neo4j:bookmark:v1:tx42", "neo4j:bookmark:v1:tx10", "neo4j:bookmark:v1:tx12");
-        Bookmark bookmark = InternalBookmark.parse(input);
+        var input = asSet("neo4j:bookmark:v1:tx42", "neo4j:bookmark:v1:tx10", "neo4j:bookmark:v1:tx12");
+        var bookmark = InternalBookmark.parse(input);
         verifyValues(bookmark, "neo4j:bookmark:v1:tx42", "neo4j:bookmark:v1:tx10", "neo4j:bookmark:v1:tx12");
     }
 
     @Test
     @SuppressWarnings("deprecation")
     void bookmarkFromNullIterable() {
-        Bookmark bookmark = InternalBookmark.parse((Set<String>) null);
+        var bookmark = InternalBookmark.parse((Set<String>) null);
         assertTrue(bookmark.isEmpty());
     }
 
     @Test
     @SuppressWarnings("deprecation")
     void bookmarkFromEmptyIterable() {
-        Bookmark bookmark = InternalBookmark.parse(emptySet());
+        var bookmark = InternalBookmark.parse(emptySet());
         assertTrue(bookmark.isEmpty());
     }
 
     @Test
     void asBeginTransactionParametersForBookmarkWithInvalidValue() {
-        Bookmark bookmark = InternalBookmark.parse(
+        var bookmark = InternalBookmark.parse(
                 asSet("neo4j:bookmark:v1:tx1", "neo4j:bookmark:v1:txcat", "neo4j:bookmark:v1:tx3"));
         verifyValues(bookmark, "neo4j:bookmark:v1:tx1", "neo4j:bookmark:v1:txcat", "neo4j:bookmark:v1:tx3");
     }
@@ -144,15 +144,15 @@ class InternalBookmarkTest {
                 singleton("neo4j:bookmark:v1:tx42"),
                 InternalBookmark.parse("neo4j:bookmark:v1:tx42").values());
 
-        Set<String> bookmarks = asSet("neo4j:bookmark:v1:tx1", "neo4j:bookmark:v1:tx2", "neo4j:bookmark:v1:tx3");
+        var bookmarks = asSet("neo4j:bookmark:v1:tx1", "neo4j:bookmark:v1:tx2", "neo4j:bookmark:v1:tx3");
         assertIterableEquals(bookmarks, InternalBookmark.parse(bookmarks).values());
     }
 
     @Test
     @SuppressWarnings("deprecation")
     void valueShouldBeReadOnly() {
-        Bookmark bookmark = InternalBookmark.parse(asSet("first", "second"));
-        Set<String> values = bookmark.values();
+        var bookmark = InternalBookmark.parse(asSet("first", "second"));
+        var values = bookmark.values();
         assertThrows(UnsupportedOperationException.class, () -> values.add("third"));
     }
 

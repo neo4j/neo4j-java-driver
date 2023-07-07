@@ -27,7 +27,6 @@ import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_AL
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.messaging.ValuePacker;
@@ -45,7 +44,7 @@ class HelloMessageEncoderTest {
 
         encoder.encode(new HelloMessage("MyDriver", BoltAgentUtil.VALUE, authToken, null, false, null), packer);
 
-        InOrder order = inOrder(packer);
+        var order = inOrder(packer);
         order.verify(packer).packStructHeader(1, HelloMessage.SIGNATURE);
 
         Map<String, Value> expectedMetadata = new HashMap<>(authToken);
@@ -66,7 +65,7 @@ class HelloMessageEncoderTest {
         encoder.encode(
                 new HelloMessage("MyDriver", BoltAgentUtil.VALUE, authToken, routingContext, false, null), packer);
 
-        InOrder order = inOrder(packer);
+        var order = inOrder(packer);
         order.verify(packer).packStructHeader(1, HelloMessage.SIGNATURE);
 
         Map<String, Value> expectedMetadata = new HashMap<>(authToken);

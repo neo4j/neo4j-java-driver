@@ -34,8 +34,8 @@ class Slf4jLoggerTest {
     @Test
     void shouldLogErrorWithMessageAndThrowable() {
         when(logger.isErrorEnabled()).thenReturn(true);
-        String message = "Hello";
-        IllegalArgumentException error = new IllegalArgumentException("World");
+        var message = "Hello";
+        var error = new IllegalArgumentException("World");
 
         slf4jLogger.error(message, error);
 
@@ -45,7 +45,7 @@ class Slf4jLoggerTest {
     @Test
     void shouldLogInfoWithMessageAndParams() {
         when(logger.isInfoEnabled()).thenReturn(true);
-        String message = "One %s, two %s, three %s";
+        var message = "One %s, two %s, three %s";
         Object[] params = {"111", "222", "333"};
 
         slf4jLogger.info(message, params);
@@ -56,7 +56,7 @@ class Slf4jLoggerTest {
     @Test
     void shouldLogWarnWithMessageAndParams() {
         when(logger.isWarnEnabled()).thenReturn(true);
-        String message = "C for %s, d for %s";
+        var message = "C for %s, d for %s";
         Object[] params = {"cat", "dog"};
 
         slf4jLogger.warn(message, params);
@@ -67,8 +67,8 @@ class Slf4jLoggerTest {
     @Test
     void shouldLogWarnWithMessageAndThrowable() {
         when(logger.isWarnEnabled()).thenReturn(true);
-        String message = "Hello";
-        RuntimeException error = new RuntimeException("World");
+        var message = "Hello";
+        var error = new RuntimeException("World");
 
         slf4jLogger.warn(message, error);
 
@@ -78,7 +78,7 @@ class Slf4jLoggerTest {
     @Test
     void shouldLogDebugWithMessageAndParams() {
         when(logger.isDebugEnabled()).thenReturn(true);
-        String message = "Hello%s%s!";
+        var message = "Hello%s%s!";
         Object[] params = {" ", "World"};
 
         slf4jLogger.debug(message, params);
@@ -89,7 +89,7 @@ class Slf4jLoggerTest {
     @Test
     void shouldLogTraceWithMessageAndParams() {
         when(logger.isTraceEnabled()).thenReturn(true);
-        String message = "I'll be %s!";
+        var message = "I'll be %s!";
         Object[] params = {"back"};
 
         slf4jLogger.trace(message, params);

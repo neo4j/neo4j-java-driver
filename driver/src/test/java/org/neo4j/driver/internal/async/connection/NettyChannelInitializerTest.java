@@ -38,11 +38,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.ssl.SslHandler;
 import java.security.GeneralSecurityException;
 import java.time.Clock;
-import java.util.List;
 import javax.net.ssl.SNIHostName;
-import javax.net.ssl.SNIServerName;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AuthTokens;
@@ -63,8 +59,8 @@ class NettyChannelInitializerTest {
 
     @Test
     void shouldAddSslHandlerWhenRequiresEncryption() throws Exception {
-        SecurityPlan security = trustAllCertificates();
-        NettyChannelInitializer initializer = newInitializer(security);
+        var security = trustAllCertificates();
+        var initializer = newInitializer(security);
 
         initializer.initChannel(channel);
 
@@ -73,8 +69,8 @@ class NettyChannelInitializerTest {
 
     @Test
     void shouldNotAddSslHandlerWhenDoesNotRequireEncryption() {
-        SecurityPlan security = SecurityPlanImpl.insecure();
-        NettyChannelInitializer initializer = newInitializer(security);
+        var security = SecurityPlanImpl.insecure();
+        var initializer = newInitializer(security);
 
         initializer.initChannel(channel);
 
@@ -83,23 +79,23 @@ class NettyChannelInitializerTest {
 
     @Test
     void shouldAddSslHandlerWithHandshakeTimeout() throws Exception {
-        int timeoutMillis = 424242;
-        SecurityPlan security = trustAllCertificates();
-        NettyChannelInitializer initializer = newInitializer(security, timeoutMillis);
+        var timeoutMillis = 424242;
+        var security = trustAllCertificates();
+        var initializer = newInitializer(security, timeoutMillis);
 
         initializer.initChannel(channel);
 
-        SslHandler sslHandler = channel.pipeline().get(SslHandler.class);
+        var sslHandler = channel.pipeline().get(SslHandler.class);
         assertNotNull(sslHandler);
         assertEquals(timeoutMillis, sslHandler.getHandshakeTimeoutMillis());
     }
 
     @Test
     void shouldUpdateChannelAttributes() {
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         when(clock.millis()).thenReturn(42L);
-        SecurityPlan security = SecurityPlanImpl.insecure();
-        NettyChannelInitializer initializer = newInitializer(security, Integer.MAX_VALUE, clock);
+        var security = SecurityPlanImpl.insecure();
+        var initializer = newInitializer(security, Integer.MAX_VALUE, clock);
 
         initializer.initChannel(channel);
 
@@ -111,8 +107,8 @@ class NettyChannelInitializerTest {
 
     @Test
     void shouldIncludeSniHostName() throws Exception {
-        BoltServerAddress address = new BoltServerAddress("database.neo4j.com", 8989);
-        NettyChannelInitializer initializer = new NettyChannelInitializer(
+        var address = new BoltServerAddress("database.neo4j.com", 8989);
+        var initializer = new NettyChannelInitializer(
                 address,
                 trustAllCertificates(),
                 10000,
@@ -122,10 +118,10 @@ class NettyChannelInitializerTest {
 
         initializer.initChannel(channel);
 
-        SslHandler sslHandler = channel.pipeline().get(SslHandler.class);
-        SSLEngine sslEngine = sslHandler.engine();
-        SSLParameters sslParameters = sslEngine.getSSLParameters();
-        List<SNIServerName> sniServerNames = sslParameters.getServerNames();
+        var sslHandler = channel.pipeline().get(SslHandler.class);
+        var sslEngine = sslHandler.engine();
+        var sslParameters = sslEngine.getSSLParameters();
+        var sniServerNames = sslParameters.getServerNames();
         assertThat(sniServerNames, hasSize(1));
         assertThat(sniServerNames.get(0), instanceOf(SNIHostName.class));
         assertThat(((SNIHostName) sniServerNames.get(0)).getAsciiName(), equalTo(address.host()));
@@ -142,14 +138,14 @@ class NettyChannelInitializerTest {
     }
 
     private void testHostnameVerificationSetting(boolean enabled, String expectedValue) throws Exception {
-        NettyChannelInitializer initializer =
+        var initializer =
                 newInitializer(SecurityPlanImpl.forAllCertificates(enabled, RevocationCheckingStrategy.NO_CHECKS));
 
         initializer.initChannel(channel);
 
-        SslHandler sslHandler = channel.pipeline().get(SslHandler.class);
-        SSLEngine sslEngine = sslHandler.engine();
-        SSLParameters sslParameters = sslEngine.getSSLParameters();
+        var sslHandler = channel.pipeline().get(SslHandler.class);
+        var sslEngine = sslHandler.engine();
+        var sslParameters = sslEngine.getSSLParameters();
         assertEquals(expectedValue, sslParameters.getEndpointIdentificationAlgorithm());
     }
 

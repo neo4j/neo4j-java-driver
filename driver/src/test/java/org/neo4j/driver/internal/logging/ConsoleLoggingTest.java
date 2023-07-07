@@ -31,7 +31,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.Logger;
 import org.neo4j.driver.internal.logging.ConsoleLogging.ConsoleLogger;
 
 class ConsoleLoggingTest {
@@ -57,14 +56,14 @@ class ConsoleLoggingTest {
     @Test
     void shouldOnlyRecordMessageOnce() {
         // Given
-        ConsoleLogging logging = new ConsoleLogging(Level.ALL);
-        Logger catLogger = logging.getLog("Cat");
-        Logger dogLogger = logging.getLog("Dog");
+        var logging = new ConsoleLogging(Level.ALL);
+        var catLogger = logging.getLog("Cat");
+        var dogLogger = logging.getLog("Dog");
 
         catLogger.debug("Meow");
         dogLogger.debug("Wow");
 
-        Scanner scanner = new Scanner(new ByteArrayInputStream(out.toByteArray()));
+        var scanner = new Scanner(new ByteArrayInputStream(out.toByteArray()));
         assertTrue(scanner.hasNextLine());
         assertTrue(scanner.nextLine().contains("Meow"));
         assertTrue(scanner.hasNextLine());
@@ -75,8 +74,8 @@ class ConsoleLoggingTest {
     @Test
     void shouldResetLoggerLevel() {
         // Given
-        String logName = ConsoleLogging.class.getName();
-        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(logName);
+        var logName = ConsoleLogging.class.getName();
+        var logger = java.util.logging.Logger.getLogger(logName);
 
         // Then & When
         new ConsoleLogger(logName, Level.ALL).debug("Meow");
@@ -85,7 +84,7 @@ class ConsoleLoggingTest {
         new ConsoleLogger(logName, Level.SEVERE).debug("Wow");
         assertEquals(Level.SEVERE, logger.getLevel());
 
-        Scanner scanner = new Scanner(new ByteArrayInputStream(out.toByteArray()));
+        var scanner = new Scanner(new ByteArrayInputStream(out.toByteArray()));
         assertTrue(scanner.hasNextLine());
         assertTrue(scanner.nextLine().contains("Meow"));
         assertFalse(scanner.hasNextLine());

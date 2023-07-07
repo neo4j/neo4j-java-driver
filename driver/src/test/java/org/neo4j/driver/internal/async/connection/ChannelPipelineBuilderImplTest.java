@@ -23,10 +23,7 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import java.util.Iterator;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
@@ -39,13 +36,12 @@ import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
 class ChannelPipelineBuilderImplTest {
     @Test
     void shouldBuildPipeline() {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        var channel = new EmbeddedChannel();
         ChannelAttributes.setMessageDispatcher(channel, new InboundMessageDispatcher(channel, DEV_NULL_LOGGING));
 
         new ChannelPipelineBuilderImpl().build(new MessageFormatV3(), channel.pipeline(), DEV_NULL_LOGGING);
 
-        Iterator<Map.Entry<String, ChannelHandler>> iterator =
-                channel.pipeline().iterator();
+        var iterator = channel.pipeline().iterator();
         assertThat(iterator.next().getValue(), instanceOf(ChunkDecoder.class));
         assertThat(iterator.next().getValue(), instanceOf(MessageDecoder.class));
         assertThat(iterator.next().getValue(), instanceOf(InboundMessageHandler.class));

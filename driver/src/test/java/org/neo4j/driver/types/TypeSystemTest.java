@@ -62,7 +62,7 @@ class TypeSystemTest {
     private InternalTypeSystem typeSystem = TYPE_SYSTEM;
 
     private TypeVerifier newTypeVerifierFor(Type type) {
-        HashSet<Value> allValues = new HashSet<>();
+        var allValues = new HashSet<Value>();
         allValues.add(integerValue);
         allValues.add(stringValue);
         allValues.add(floatValue);
@@ -99,7 +99,7 @@ class TypeSystemTest {
 
     @Test
     void shouldInferAnyTypeCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(TYPE_SYSTEM.ANY())) {
+        try (var verifier = newTypeVerifierFor(TYPE_SYSTEM.ANY())) {
             verifier.assertIncludes(booleanValue);
             verifier.assertIncludes(stringValue);
             verifier.assertIncludes(integerValue);
@@ -114,7 +114,7 @@ class TypeSystemTest {
 
     @Test
     void shouldInferNumberTypeCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(TYPE_SYSTEM.NUMBER())) {
+        try (var verifier = newTypeVerifierFor(TYPE_SYSTEM.NUMBER())) {
             verifier.assertIncludes(integerValue);
             verifier.assertIncludes(floatValue);
         }
@@ -122,28 +122,28 @@ class TypeSystemTest {
 
     @Test
     void shouldInferNodesTypeCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(TYPE_SYSTEM.NODE())) {
+        try (var verifier = newTypeVerifierFor(TYPE_SYSTEM.NODE())) {
             verifier.assertIncludes(nodeValue);
         }
     }
 
     @Test
     void shouldInferRelTypeCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(TYPE_SYSTEM.RELATIONSHIP())) {
+        try (var verifier = newTypeVerifierFor(TYPE_SYSTEM.RELATIONSHIP())) {
             verifier.assertIncludes(relationshipValue);
         }
     }
 
     @Test
     void shouldInferStringTypeCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(TYPE_SYSTEM.STRING())) {
+        try (var verifier = newTypeVerifierFor(TYPE_SYSTEM.STRING())) {
             verifier.assertIncludes(stringValue);
         }
     }
 
     @Test
     void shouldInferMapTypeCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(TYPE_SYSTEM.MAP())) {
+        try (var verifier = newTypeVerifierFor(TYPE_SYSTEM.MAP())) {
             verifier.assertIncludes(nodeValue);
             verifier.assertIncludes(relationshipValue);
             verifier.assertIncludes(mapValue);
@@ -152,42 +152,42 @@ class TypeSystemTest {
 
     @Test
     void shouldInferPathTypeCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(TYPE_SYSTEM.PATH())) {
+        try (var verifier = newTypeVerifierFor(TYPE_SYSTEM.PATH())) {
             verifier.assertIncludes(pathValue);
         }
     }
 
     @Test
     void shouldInferNullCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(TYPE_SYSTEM.NULL())) {
+        try (var verifier = newTypeVerifierFor(TYPE_SYSTEM.NULL())) {
             verifier.assertIncludes(nullValue);
         }
     }
 
     @Test
     void shouldInferBooleanTypeCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(TYPE_SYSTEM.BOOLEAN())) {
+        try (var verifier = newTypeVerifierFor(TYPE_SYSTEM.BOOLEAN())) {
             verifier.assertIncludes(booleanValue);
         }
     }
 
     @Test
     void shouldIntegerTypeCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(TYPE_SYSTEM.INTEGER())) {
+        try (var verifier = newTypeVerifierFor(TYPE_SYSTEM.INTEGER())) {
             verifier.assertIncludes(integerValue);
         }
     }
 
     @Test
     void shouldInferFloatTypeCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(TYPE_SYSTEM.FLOAT())) {
+        try (var verifier = newTypeVerifierFor(TYPE_SYSTEM.FLOAT())) {
             verifier.assertIncludes(floatValue);
         }
     }
 
     @Test
     void shouldInferListTypeCorrectly() {
-        try (TypeVerifier verifier = newTypeVerifierFor(typeSystem.LIST())) {
+        try (var verifier = newTypeVerifierFor(typeSystem.LIST())) {
             verifier.assertIncludes(listValue);
         }
     }
@@ -222,7 +222,7 @@ class TypeSystemTest {
 
         @Override
         public void close() {
-            for (Value value : values) {
+            for (var value : values) {
                 assertThat(value, not(hasType(type)));
             }
         }

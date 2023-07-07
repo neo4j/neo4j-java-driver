@@ -29,9 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import io.netty.bootstrap.Bootstrap;
 import java.util.Collections;
-import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,24 +69,24 @@ class ConnectionPoolImplIT {
 
     @Test
     void shouldAcquireConnectionWhenPoolIsEmpty() {
-        Connection connection = await(pool.acquire(neo4j.address(), null));
+        var connection = await(pool.acquire(neo4j.address(), null));
 
         assertNotNull(connection);
     }
 
     @Test
     void shouldAcquireIdleConnection() {
-        Connection connection1 = await(pool.acquire(neo4j.address(), null));
+        var connection1 = await(pool.acquire(neo4j.address(), null));
         await(connection1.release());
 
-        Connection connection2 = await(pool.acquire(neo4j.address(), null));
+        var connection2 = await(pool.acquire(neo4j.address(), null));
         assertNotNull(connection2);
     }
 
     @Test
     void shouldBeAbleToClosePoolInIOWorkerThread() throws Throwable {
         // In the IO worker thread of a channel obtained from a pool, we shall be able to close the pool.
-        CompletionStage<Void> future = pool.acquire(neo4j.address(), null)
+        var future = pool.acquire(neo4j.address(), null)
                 .thenCompose(Connection::release)
                 // This shall close all pools
                 .whenComplete((ignored, error) -> pool.retainAll(Collections.emptySet()));
@@ -99,7 +97,7 @@ class ConnectionPoolImplIT {
 
     @Test
     void shouldFailToAcquireConnectionToWrongAddress() {
-        ServiceUnavailableException e = assertThrows(
+        var e = assertThrows(
                 ServiceUnavailableException.class,
                 () -> await(pool.acquire(new BoltServerAddress("wrong-localhost"), null)));
 
@@ -108,11 +106,11 @@ class ConnectionPoolImplIT {
 
     @Test
     void shouldFailToAcquireWhenPoolClosed() {
-        Connection connection = await(pool.acquire(neo4j.address(), null));
+        var connection = await(pool.acquire(neo4j.address(), null));
         await(connection.release());
         await(pool.close());
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> pool.acquire(neo4j.address(), null));
+        var e = assertThrows(IllegalStateException.class, () -> pool.acquire(neo4j.address(), null));
         assertThat(e.getMessage(), startsWith("Pool closed"));
     }
 
@@ -125,18 +123,17 @@ class ConnectionPoolImplIT {
     @Test
     void shouldFailToAcquireConnectionWhenPoolIsClosed() {
         await(pool.acquire(neo4j.address(), null));
-        ExtendedChannelPool channelPool = this.pool.getPool(neo4j.address());
+        var channelPool = this.pool.getPool(neo4j.address());
         await(channelPool.close());
-        ServiceUnavailableException error =
-                assertThrows(ServiceUnavailableException.class, () -> await(pool.acquire(neo4j.address(), null)));
+        var error = assertThrows(ServiceUnavailableException.class, () -> await(pool.acquire(neo4j.address(), null)));
         assertThat(error.getMessage(), containsString("closed while acquiring a connection"));
         assertThat(error.getCause(), instanceOf(IllegalStateException.class));
         assertThat(error.getCause().getMessage(), containsString("FixedChannelPool was closed"));
     }
 
     private ConnectionPoolImpl newPool() {
-        FakeClock clock = new FakeClock();
-        ConnectionSettings connectionSettings = new ConnectionSettings(neo4j.authTokenManager(), "test", 5000);
+        var clock = new FakeClock();
+        var connectionSettings = new ConnectionSettings(neo4j.authTokenManager(), "test", 5000);
         ChannelConnector connector = new ChannelConnectorImpl(
                 connectionSettings,
                 SecurityPlanImpl.insecure(),
@@ -146,8 +143,8 @@ class ConnectionPoolImplIT {
                 DefaultDomainNameResolver.getInstance(),
                 null,
                 BoltAgentUtil.VALUE);
-        PoolSettings poolSettings = newSettings();
-        Bootstrap bootstrap = BootstrapFactory.newBootstrap(1);
+        var poolSettings = newSettings();
+        var bootstrap = BootstrapFactory.newBootstrap(1);
         return new ConnectionPoolImpl(
                 connector, bootstrap, poolSettings, DevNullMetricsListener.INSTANCE, DEV_NULL_LOGGING, clock, true);
     }

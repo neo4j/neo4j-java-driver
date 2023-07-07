@@ -23,13 +23,11 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.neo4j.driver.Values.value;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.util.Pair;
 
 class InternalPairTest {
     @Test
     void testMethods() {
-        Pair<String, Value> pair = InternalPair.of("k", value("v"));
+        var pair = InternalPair.of("k", value("v"));
         assertThat(pair.key(), equalTo("k"));
         assertThat(pair.value(), equalTo(value("v")));
     }

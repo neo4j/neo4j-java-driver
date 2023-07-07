@@ -29,14 +29,14 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 class ListValueTest {
     @Test
     void shouldHaveSensibleToString() {
-        ListValue listValue = listValue(value(1), value(2), value(3));
+        var listValue = listValue(value(1), value(2), value(3));
         assertThat(listValue.toString(), equalTo("[1, 2, 3]"));
     }
 
     @Test
     void shouldHaveCorrectType() {
 
-        ListValue listValue = listValue();
+        var listValue = listValue();
 
         assertThat(listValue.type(), equalTo(InternalTypeSystem.TYPE_SYSTEM.LIST()));
     }

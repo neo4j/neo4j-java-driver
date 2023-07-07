@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
@@ -49,10 +48,10 @@ import org.neo4j.driver.internal.value.BooleanValue;
 class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPullResponseHandler> {
     @Override
     protected AutoPullResponseHandler newHandler(Query query, List<String> queryKeys, Connection connection) {
-        RunResponseHandler runResponseHandler = new RunResponseHandler(
+        var runResponseHandler = new RunResponseHandler(
                 new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock(Connection.class), null);
         runResponseHandler.onSuccess(singletonMap("fields", value(queryKeys)));
-        AutoPullResponseHandler handler = new AutoPullResponseHandler(
+        var handler = new AutoPullResponseHandler(
                 query,
                 runResponseHandler,
                 connection,
@@ -64,10 +63,10 @@ class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPul
     }
 
     protected AutoPullResponseHandler newHandler(Query query, Connection connection, long fetchSize) {
-        RunResponseHandler runResponseHandler = new RunResponseHandler(
+        var runResponseHandler = new RunResponseHandler(
                 new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock(Connection.class), null);
         runResponseHandler.onSuccess(emptyMap());
-        AutoPullResponseHandler handler = new AutoPullResponseHandler(
+        var handler = new AutoPullResponseHandler(
                 query,
                 runResponseHandler,
                 connection,
@@ -80,11 +79,11 @@ class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPul
 
     @Test
     void shouldKeepRequestingWhenBetweenRange() {
-        Connection connection = connectionMock();
-        InOrder inOrder = Mockito.inOrder(connection);
+        var connection = connectionMock();
+        var inOrder = Mockito.inOrder(connection);
 
         // highwatermark=2, lowwatermark=1
-        AutoPullResponseHandler handler = newHandler(new Query("RETURN 1"), connection, 4);
+        var handler = newHandler(new Query("RETURN 1"), connection, 4);
 
         Map<String, Value> metaData = new HashMap<>(1);
         metaData.put("has_more", BooleanValue.TRUE);
@@ -101,11 +100,11 @@ class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPul
 
     @Test
     void shouldStopRequestingWhenOverMaxWatermark() {
-        Connection connection = connectionMock();
-        InOrder inOrder = Mockito.inOrder(connection);
+        var connection = connectionMock();
+        var inOrder = Mockito.inOrder(connection);
 
         // highWatermark=2, lowWatermark=1
-        AutoPullResponseHandler handler = newHandler(new Query("RETURN 1"), connection, 4);
+        var handler = newHandler(new Query("RETURN 1"), connection, 4);
 
         Map<String, Value> metaData = new HashMap<>(1);
         metaData.put("has_more", BooleanValue.TRUE);
@@ -123,11 +122,11 @@ class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPul
 
     @Test
     void shouldRestartRequestingWhenMinimumWatermarkMet() {
-        Connection connection = connectionMock();
-        InOrder inOrder = Mockito.inOrder(connection);
+        var connection = connectionMock();
+        var inOrder = Mockito.inOrder(connection);
 
         // highwatermark=4, lowwatermark=2
-        AutoPullResponseHandler handler = newHandler(new Query("RETURN 1"), connection, 7);
+        var handler = newHandler(new Query("RETURN 1"), connection, 7);
 
         Map<String, Value> metaData = new HashMap<>(1);
         metaData.put("has_more", BooleanValue.TRUE);
@@ -152,8 +151,8 @@ class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPul
 
     @Test
     void shouldKeepRequestingMoreRecordsWhenPullAll() {
-        Connection connection = connectionMock();
-        AutoPullResponseHandler handler = newHandler(new Query("RETURN 1"), connection, -1);
+        var connection = connectionMock();
+        var handler = newHandler(new Query("RETURN 1"), connection, -1);
 
         Map<String, Value> metaData = new HashMap<>(1);
         metaData.put("has_more", BooleanValue.TRUE);
@@ -172,11 +171,11 @@ class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPul
 
     @Test
     void shouldFunctionWhenHighAndLowWatermarksAreEqual() {
-        Connection connection = connectionMock();
-        InOrder inOrder = Mockito.inOrder(connection);
+        var connection = connectionMock();
+        var inOrder = Mockito.inOrder(connection);
 
         // highwatermark=0, lowwatermark=0
-        AutoPullResponseHandler handler = newHandler(new Query("RETURN 1"), connection, 1);
+        var handler = newHandler(new Query("RETURN 1"), connection, 1);
 
         Map<String, Value> metaData = new HashMap<>(1);
         metaData.put("has_more", BooleanValue.TRUE);

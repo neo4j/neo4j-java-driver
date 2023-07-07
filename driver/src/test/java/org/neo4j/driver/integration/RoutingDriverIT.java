@@ -27,10 +27,7 @@ import java.net.URI;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.testutil.DatabaseExtension;
@@ -44,27 +41,27 @@ class RoutingDriverIT {
 
     @Test
     void shouldBeAbleToConnectSingleInstanceWithNeo4jScheme() throws Throwable {
-        URI uri = URI.create(String.format(
+        var uri = URI.create(String.format(
                 "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort()));
 
-        try (Driver driver = GraphDatabase.driver(uri, neo4j.authTokenManager());
-                Session session = driver.session()) {
+        try (var driver = GraphDatabase.driver(uri, neo4j.authTokenManager());
+                var session = driver.session()) {
             assertThat(driver, is(clusterDriver()));
 
-            Result result = session.run("RETURN 1");
+            var result = session.run("RETURN 1");
             assertThat(result.single().get(0).asInt(), CoreMatchers.equalTo(1));
         }
     }
 
     @Test
     void shouldBeAbleToRunQueryOnNeo4j() throws Throwable {
-        URI uri = URI.create(String.format(
+        var uri = URI.create(String.format(
                 "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort()));
-        try (Driver driver = GraphDatabase.driver(uri, neo4j.authTokenManager());
-                Session session = driver.session(forDatabase("neo4j"))) {
+        try (var driver = GraphDatabase.driver(uri, neo4j.authTokenManager());
+                var session = driver.session(forDatabase("neo4j"))) {
             assertThat(driver, is(clusterDriver()));
 
-            Result result = session.run("RETURN 1");
+            var result = session.run("RETURN 1");
             assertThat(result.single().get(0).asInt(), CoreMatchers.equalTo(1));
         }
     }

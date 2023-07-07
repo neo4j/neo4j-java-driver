@@ -29,9 +29,7 @@ import static org.neo4j.driver.Values.value;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
@@ -42,7 +40,7 @@ import org.neo4j.driver.internal.value.NullValue;
 class InternalRecordTest {
     @Test
     void accessingUnknownKeyShouldBeNull() {
-        InternalRecord record = createRecord();
+        var record = createRecord();
 
         assertThat(record.get("k1"), equalTo(value(0)));
         assertThat(record.get("k2"), equalTo(value(1)));
@@ -51,26 +49,26 @@ class InternalRecordTest {
 
     @Test
     void shouldHaveCorrectSize() {
-        InternalRecord record = createRecord();
+        var record = createRecord();
         assertThat(record.size(), equalTo(2));
     }
 
     @Test
     void shouldHaveCorrectFieldIndices() {
-        InternalRecord record = createRecord();
+        var record = createRecord();
         assertThat(record.index("k1"), equalTo(0));
         assertThat(record.index("k2"), equalTo(1));
     }
 
     @Test
     void shouldThrowWhenAskingForIndexOfUnknownField() {
-        InternalRecord record = createRecord();
+        var record = createRecord();
         assertThrows(NoSuchElementException.class, () -> record.index("BATMAN"));
     }
 
     @Test
     void accessingOutOfBoundsShouldBeNull() {
-        InternalRecord record = createRecord();
+        var record = createRecord();
 
         assertThat(record.get(0), equalTo(value(0)));
         assertThat(record.get(1), equalTo(value(1)));
@@ -80,7 +78,7 @@ class InternalRecordTest {
 
     @Test
     void testContainsKey() {
-        InternalRecord record = createRecord();
+        var record = createRecord();
 
         assertTrue(record.containsKey("k1"));
         assertTrue(record.containsKey("k2"));
@@ -89,7 +87,7 @@ class InternalRecordTest {
 
     @Test
     void testIndex() {
-        InternalRecord record = createRecord();
+        var record = createRecord();
 
         assertThat(record.index("k1"), equalTo(0));
         assertThat(record.index("k2"), equalTo(1));
@@ -98,10 +96,10 @@ class InternalRecordTest {
     @Test
     void testAsMap() {
         // GIVEN
-        InternalRecord record = createRecord();
+        var record = createRecord();
 
         // WHEN
-        Map<String, Object> map = record.asMap();
+        var map = record.asMap();
 
         // THEN
         assertThat(map.keySet(), containsInAnyOrder("k1", "k2"));
@@ -112,11 +110,11 @@ class InternalRecordTest {
     @Test
     void testMapExtraction() {
         // GIVEN
-        InternalRecord record = createRecord();
+        var record = createRecord();
         Function<Value, Integer> addOne = value -> value.asInt() + 1;
 
         // WHEN
-        Map<String, Integer> map = Extract.map(record, addOne);
+        var map = Extract.map(record, addOne);
 
         // THEN
         assertThat(map.keySet(), contains("k1", "k2"));
@@ -127,23 +125,23 @@ class InternalRecordTest {
     @Test
     void mapExtractionShouldPreserveIterationOrder() {
         // GIVEN
-        List<String> keys = Arrays.asList("k2", "k1");
-        InternalRecord record = new InternalRecord(keys, new Value[] {value(0), value(1)});
+        var keys = Arrays.asList("k2", "k1");
+        var record = new InternalRecord(keys, new Value[] {value(0), value(1)});
         Function<Value, Integer> addOne = value -> value.asInt() + 1;
 
         // WHEN
-        Map<String, Integer> map = Extract.map(record, addOne);
+        var map = Extract.map(record, addOne);
 
         // THEN
         assertThat(map.keySet(), contains("k2", "k1"));
-        Iterator<Integer> values = map.values().iterator();
+        var values = map.values().iterator();
         assertThat(values.next(), equalTo(1));
         assertThat(values.next(), equalTo(2));
     }
 
     @Test
     void testToString() {
-        InternalRecord record = createRecord();
+        var record = createRecord();
 
         assertThat(record.toString(), equalTo("Record<{k1: 0, k2: 1}>"));
     }
@@ -151,11 +149,11 @@ class InternalRecordTest {
     @Test
     void shouldHaveMethodToGetKeys() {
         // GIVEN
-        List<String> keys = Arrays.asList("k2", "k1");
-        InternalRecord record = new InternalRecord(keys, new Value[] {value(0), value(1)});
+        var keys = Arrays.asList("k2", "k1");
+        var record = new InternalRecord(keys, new Value[] {value(0), value(1)});
 
         // WHEN
-        List<String> appendedKeys = record.keys();
+        var appendedKeys = record.keys();
 
         // THEN
         assertThat(appendedKeys, equalTo(keys));
@@ -165,10 +163,10 @@ class InternalRecordTest {
     void emptyKeysShouldGiveEmptyList() {
         // GIVEN
         List<String> keys = Collections.emptyList();
-        InternalRecord record = new InternalRecord(keys, new Value[] {});
+        var record = new InternalRecord(keys, new Value[] {});
 
         // WHEN
-        List<String> appendedKeys = record.keys();
+        var appendedKeys = record.keys();
 
         // THEN
         assertThat(appendedKeys, equalTo(keys));
@@ -177,12 +175,12 @@ class InternalRecordTest {
     @Test
     void shouldHaveMethodToGetValues() {
         // GIVEN
-        List<String> keys = Arrays.asList("k2", "k1");
-        Value[] values = new Value[] {value(0), value(1)};
-        InternalRecord record = new InternalRecord(keys, values);
+        var keys = Arrays.asList("k2", "k1");
+        var values = new Value[] {value(0), value(1)};
+        var record = new InternalRecord(keys, values);
 
         // WHEN
-        List<Value> appendedValues = record.values();
+        var appendedValues = record.values();
 
         // THEN
         assertThat(appendedValues, equalTo(Arrays.asList(values)));
@@ -192,18 +190,18 @@ class InternalRecordTest {
     void emptyValuesShouldGiveEmptyList() {
         // GIVEN
         List<String> keys = Collections.emptyList();
-        Value[] values = new Value[] {};
-        InternalRecord record = new InternalRecord(keys, values);
+        var values = new Value[] {};
+        var record = new InternalRecord(keys, values);
 
         // WHEN
-        List<Value> appendedValues = record.values();
+        var appendedValues = record.values();
 
         // THEN
         assertThat(appendedValues, equalTo(Arrays.asList(values)));
     }
 
     private InternalRecord createRecord() {
-        List<String> keys = Arrays.asList("k1", "k2");
+        var keys = Arrays.asList("k1", "k2");
         return new InternalRecord(keys, new Value[] {value(0), value(1)});
     }
 }

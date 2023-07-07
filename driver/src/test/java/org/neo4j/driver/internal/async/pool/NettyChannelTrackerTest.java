@@ -49,7 +49,7 @@ class NettyChannelTrackerTest {
 
     @Test
     void shouldIncrementIdleCountWhenChannelCreated() {
-        Channel channel = newChannel();
+        var channel = newChannel();
         assertEquals(0, tracker.inUseChannelCount(address));
         assertEquals(0, tracker.idleChannelCount(address));
 
@@ -60,7 +60,7 @@ class NettyChannelTrackerTest {
 
     @Test
     void shouldIncrementInUseCountWhenChannelAcquired() {
-        Channel channel = newChannel();
+        var channel = newChannel();
         assertEquals(0, tracker.inUseChannelCount(address));
         assertEquals(0, tracker.idleChannelCount(address));
 
@@ -75,7 +75,7 @@ class NettyChannelTrackerTest {
 
     @Test
     void shouldIncrementIdleCountWhenChannelReleased() {
-        Channel channel = newChannel();
+        var channel = newChannel();
         assertEquals(0, tracker.inUseChannelCount(address));
         assertEquals(0, tracker.idleChannelCount(address));
 
@@ -90,9 +90,9 @@ class NettyChannelTrackerTest {
 
     @Test
     void shouldIncrementIdleCountForAddress() {
-        Channel channel1 = newChannel();
-        Channel channel2 = newChannel();
-        Channel channel3 = newChannel();
+        var channel1 = newChannel();
+        var channel2 = newChannel();
+        var channel3 = newChannel();
 
         assertEquals(0, tracker.idleChannelCount(address));
         tracker.channelCreated(channel1, null);
@@ -106,9 +106,9 @@ class NettyChannelTrackerTest {
 
     @Test
     void shouldDecrementCountForAddress() {
-        Channel channel1 = newChannel();
-        Channel channel2 = newChannel();
-        Channel channel3 = newChannel();
+        var channel1 = newChannel();
+        var channel2 = newChannel();
+        var channel3 = newChannel();
 
         channelCreatedAndAcquired(channel1);
         channelCreatedAndAcquired(channel2);
@@ -130,7 +130,7 @@ class NettyChannelTrackerTest {
     @Test
     void shouldDecreaseIdleWhenClosedOutsidePool() throws Throwable {
         // Given
-        Channel channel = newChannel();
+        var channel = newChannel();
         channelCreatedAndAcquired(channel);
         assertEquals(1, tracker.inUseChannelCount(address));
         assertEquals(0, tracker.idleChannelCount(address));
@@ -150,7 +150,7 @@ class NettyChannelTrackerTest {
     @Test
     void shouldDecreaseIdleWhenClosedInsidePool() throws Throwable {
         // Given
-        Channel channel = newChannel();
+        var channel = newChannel();
         channelCreatedAndAcquired(channel);
         assertEquals(1, tracker.inUseChannelCount(address));
         assertEquals(0, tracker.idleChannelCount(address));
@@ -168,7 +168,7 @@ class NettyChannelTrackerTest {
 
     @Test
     void shouldThrowWhenDecrementingForUnknownAddress() {
-        Channel channel = newChannel();
+        var channel = newChannel();
 
         assertThrows(IllegalStateException.class, () -> tracker.channelReleased(channel));
     }
@@ -180,10 +180,10 @@ class NettyChannelTrackerTest {
 
     @Test
     void shouldAddChannelToGroupWhenChannelCreated() {
-        Channel channel = newChannel();
-        Channel anotherChannel = newChannel();
-        ChannelGroup group = mock(ChannelGroup.class);
-        NettyChannelTracker tracker = new NettyChannelTracker(DevNullMetricsListener.INSTANCE, group, DEV_NULL_LOGGING);
+        var channel = newChannel();
+        var anotherChannel = newChannel();
+        var group = mock(ChannelGroup.class);
+        var tracker = new NettyChannelTracker(DevNullMetricsListener.INSTANCE, group, DEV_NULL_LOGGING);
 
         tracker.channelCreated(channel, null);
         tracker.channelCreated(anotherChannel, null);
@@ -194,12 +194,12 @@ class NettyChannelTrackerTest {
 
     @Test
     void shouldDelegateToProtocolPrepareToClose() {
-        EmbeddedChannel channel = newChannelWithProtocolV3();
-        EmbeddedChannel anotherChannel = newChannelWithProtocolV3();
-        ChannelGroup group = mock(ChannelGroup.class);
+        var channel = newChannelWithProtocolV3();
+        var anotherChannel = newChannelWithProtocolV3();
+        var group = mock(ChannelGroup.class);
         when(group.iterator()).thenReturn(new Arrays.Iterator<>(new Channel[] {channel, anotherChannel}));
 
-        NettyChannelTracker tracker = new NettyChannelTracker(DevNullMetricsListener.INSTANCE, group, DEV_NULL_LOGGING);
+        var tracker = new NettyChannelTracker(DevNullMetricsListener.INSTANCE, group, DEV_NULL_LOGGING);
 
         tracker.prepareToCloseChannels();
 
@@ -211,13 +211,13 @@ class NettyChannelTrackerTest {
     }
 
     private Channel newChannel() {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        var channel = new EmbeddedChannel();
         setServerAddress(channel, address);
         return channel;
     }
 
     private EmbeddedChannel newChannelWithProtocolV3() {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        var channel = new EmbeddedChannel();
         setServerAddress(channel, address);
         setProtocolVersion(channel, BoltProtocolV3.VERSION);
         setMessageDispatcher(channel, mock(InboundMessageDispatcher.class));

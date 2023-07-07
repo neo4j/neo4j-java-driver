@@ -28,11 +28,9 @@ import static org.mockito.Mockito.when;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
@@ -44,18 +42,18 @@ class LoggingIT {
     @Test
     void logShouldRecordDebugAndTraceInfo() {
         // Given
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
 
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         when(logger.isDebugEnabled()).thenReturn(true);
         when(logger.isTraceEnabled()).thenReturn(true);
 
-        Config config = Config.builder().withLogging(logging).build();
+        var config = Config.builder().withLogging(logging).build();
 
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config)) {
+        try (var driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config)) {
             // When
-            try (Session session = driver.session()) {
+            try (var session = driver.session()) {
                 session.run("CREATE (a {name:'Cat'})");
             }
         }

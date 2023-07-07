@@ -33,10 +33,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.SecurityException;
-import org.neo4j.driver.testutil.CertificateUtil.CertificateKeyPair;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
@@ -48,10 +45,10 @@ class TrustCustomCertificateIT {
     @Test
     void shouldAcceptServerWithCertificateSignedByDriverCertificate() throws Throwable {
         // Given root certificate
-        CertificateKeyPair<File, File> root = createNewCertificateAndKey();
+        var root = createNewCertificateAndKey();
 
         // When
-        CertificateKeyPair<File, File> server = createNewCertificateAndKeySignedBy(root, getDockerHostGeneralName());
+        var server = createNewCertificateAndKeySignedBy(root, getDockerHostGeneralName());
         neo4j.updateEncryptionKeyAndCert(server.key(), server.cert());
 
         // Then
@@ -66,17 +63,17 @@ class TrustCustomCertificateIT {
     @Test
     void shouldRejectServerWithUntrustedCertificate() throws Throwable {
         // Given a driver with a (random) cert
-        CertificateKeyPair<File, File> certificateAndKey = createNewCertificateAndKey();
+        var certificateAndKey = createNewCertificateAndKey();
 
         // When & Then
-        final Driver driver = createDriverWithCustomCertificate(certificateAndKey.cert());
+        final var driver = createDriverWithCustomCertificate(certificateAndKey.cert());
         assertThrows(SecurityException.class, driver::verifyConnectivity);
     }
 
     private void shouldBeAbleToRunCypher(Supplier<Driver> driverSupplier) {
-        try (Driver driver = driverSupplier.get();
-                Session session = driver.session()) {
-            Result result = session.run("RETURN 1 as n");
+        try (var driver = driverSupplier.get();
+                var session = driver.session()) {
+            var result = session.run("RETURN 1 as n");
             assertThat(result.single().get("n").asInt(), equalTo(1));
         }
     }

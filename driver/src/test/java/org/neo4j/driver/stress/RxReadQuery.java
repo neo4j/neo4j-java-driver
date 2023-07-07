@@ -22,10 +22,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.types.Node;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -38,7 +36,7 @@ public class RxReadQuery<C extends AbstractContext> extends AbstractRxQuery<C> {
     @Override
     @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
-        CompletableFuture<Void> queryFinished = new CompletableFuture<>();
+        var queryFinished = new CompletableFuture<Void>();
         Flux.usingWhen(
                         Mono.fromSupplier(() -> newSession(AccessMode.READ, context)),
                         this::processAndGetSummary,
@@ -57,10 +55,10 @@ public class RxReadQuery<C extends AbstractContext> extends AbstractRxQuery<C> {
 
     @SuppressWarnings("deprecation")
     private Publisher<ResultSummary> processAndGetSummary(RxSession session) {
-        RxResult result = session.run("MATCH (n) RETURN n LIMIT 1");
-        Mono<Node> records = Flux.from(result.records()).singleOrEmpty().map(record -> record.get(0)
+        var result = session.run("MATCH (n) RETURN n LIMIT 1");
+        var records = Flux.from(result.records()).singleOrEmpty().map(record -> record.get(0)
                 .asNode());
-        Mono<ResultSummary> summaryMono = Mono.from(result.consume()).single();
+        var summaryMono = Mono.from(result.consume()).single();
         return records.then(summaryMono);
     }
 }

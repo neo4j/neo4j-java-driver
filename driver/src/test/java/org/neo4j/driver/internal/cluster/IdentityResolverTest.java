@@ -24,16 +24,15 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
 
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.net.ServerAddress;
 
 class IdentityResolverTest {
     @Test
     void shouldReturnGivenAddress() {
-        ServerAddress address = mock(ServerAddress.class);
+        var address = mock(ServerAddress.class);
 
-        Set<ServerAddress> resolved = IDENTITY_RESOLVER.resolve(address);
+        var resolved = IDENTITY_RESOLVER.resolve(address);
 
         assertThat(resolved.size(), equalTo(1));
         assertThat(resolved.iterator().next(), is(address));

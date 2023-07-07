@@ -30,9 +30,9 @@ class BoltProtocolVersionTest {
     @ParameterizedTest(name = "V{0}.{1}")
     @CsvSource({"3, 0", "4, 0", "4, 1", "4, 2", "100, 100", "255, 255", "0, 0"})
     void shouldParseVersion(int major, int minor) {
-        BoltProtocolVersion protocolVersion = new BoltProtocolVersion(major, minor);
+        var protocolVersion = new BoltProtocolVersion(major, minor);
 
-        BoltProtocolVersion testVersion = BoltProtocolVersion.fromRawBytes(protocolVersion.toInt());
+        var testVersion = BoltProtocolVersion.fromRawBytes(protocolVersion.toInt());
 
         assertEquals(major, testVersion.getMajorVersion());
         assertEquals(minor, testVersion.getMinorVersion());
@@ -41,8 +41,8 @@ class BoltProtocolVersionTest {
     @ParameterizedTest(name = "V{0}.{1} comparedTo V{2}.{3}")
     @CsvSource({"1, 3, 25, 21, -1", "4, 0, 4, 0, 0", "4, 1, 4, 0, 1", "0, 1, 0, 2, -1"})
     void shouldCompareTo(int majorA, int minorA, int majorB, int minorB, int expectedResult) {
-        BoltProtocolVersion versionA = new BoltProtocolVersion(majorA, minorA);
-        BoltProtocolVersion versionB = new BoltProtocolVersion(majorB, minorB);
+        var versionA = new BoltProtocolVersion(majorA, minorA);
+        var versionB = new BoltProtocolVersion(majorB, minorB);
 
         assertEquals(expectedResult, versionA.compareTo(versionB));
     }
@@ -57,8 +57,8 @@ class BoltProtocolVersionTest {
         "255, 255, 255, 0, 0xFFFFFF"
     })
     void shouldOutputCorrectIntRange(int majorA, int minorA, int majorB, int minorB, int expectedResult) {
-        BoltProtocolVersion versionA = new BoltProtocolVersion(majorA, minorA);
-        BoltProtocolVersion versionB = new BoltProtocolVersion(majorB, minorB);
+        var versionA = new BoltProtocolVersion(majorA, minorA);
+        var versionB = new BoltProtocolVersion(majorB, minorB);
 
         assertEquals(expectedResult, versionA.toIntRange(versionB));
     }
@@ -66,27 +66,27 @@ class BoltProtocolVersionTest {
     @ParameterizedTest(name = "V{0}.{1} toIntRange V{2}.{3}")
     @CsvSource({"1, 0, 2, 0", "2, 0, 1, 0", "4, 3, 4, 5", "4, 6, 3, 7", "3, 7, 4, 6", "255, 255, 100, 0"})
     void shouldThrowsIllegalArgumentExceptionForIncorrectIntRange(int majorA, int minorA, int majorB, int minorB) {
-        BoltProtocolVersion versionA = new BoltProtocolVersion(majorA, minorA);
-        BoltProtocolVersion versionB = new BoltProtocolVersion(majorB, minorB);
+        var versionA = new BoltProtocolVersion(majorA, minorA);
+        var versionB = new BoltProtocolVersion(majorB, minorB);
 
         assertThrows(IllegalArgumentException.class, () -> versionA.toIntRange(versionB));
     }
 
     @Test
     void shouldOutputCorrectLongFormatForMajorVersionOnly() {
-        BoltProtocolVersion version = new BoltProtocolVersion(4, 0);
+        var version = new BoltProtocolVersion(4, 0);
         assertEquals(4L, version.toInt());
     }
 
     @Test
     void shouldOutputCorrectLongFormatForMajorAndMinorVersion() {
-        BoltProtocolVersion version = new BoltProtocolVersion(4, 1);
+        var version = new BoltProtocolVersion(4, 1);
         assertEquals(260L, version.toInt());
     }
 
     @Test
     void shouldOutputFormattedString() {
-        BoltProtocolVersion version = new BoltProtocolVersion(4, 1);
+        var version = new BoltProtocolVersion(4, 1);
 
         assertEquals("4.1", version.toString());
     }

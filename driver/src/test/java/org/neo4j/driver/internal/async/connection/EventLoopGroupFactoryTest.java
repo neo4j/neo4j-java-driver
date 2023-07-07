@@ -32,7 +32,6 @@ import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLo
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -52,7 +51,7 @@ class EventLoopGroupFactoryTest {
 
     @Test
     void shouldCreateEventLoopGroupWithSpecifiedThreadCount() {
-        int threadCount = 2;
+        var threadCount = 2;
         eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup(threadCount);
         assertEquals(threadCount, count(eventLoopGroup));
         assertThat(eventLoopGroup, instanceOf(NioEventLoopGroup.class));
@@ -66,9 +65,9 @@ class EventLoopGroupFactoryTest {
         EventLoopGroupFactory.assertNotInEventLoopThread();
 
         // submit assertion to the event loop thread, it should fail there
-        Future<?> assertFuture = eventLoopGroup.submit(EventLoopGroupFactory::assertNotInEventLoopThread);
+        var assertFuture = eventLoopGroup.submit(EventLoopGroupFactory::assertNotInEventLoopThread);
 
-        ExecutionException error = assertThrows(ExecutionException.class, () -> assertFuture.get(30, SECONDS));
+        var error = assertThrows(ExecutionException.class, () -> assertFuture.get(30, SECONDS));
         assertThat(error.getCause(), is(blockingOperationInEventLoopError()));
     }
 
@@ -76,7 +75,7 @@ class EventLoopGroupFactoryTest {
     void shouldCheckIfEventLoopThread() throws Exception {
         eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup(1);
 
-        Thread eventLoopThread = getThread(eventLoopGroup);
+        var eventLoopThread = getThread(eventLoopGroup);
         assertTrue(EventLoopGroupFactory.isEventLoopThread(eventLoopThread));
 
         assertFalse(EventLoopGroupFactory.isEventLoopThread(Thread.currentThread()));
@@ -88,11 +87,11 @@ class EventLoopGroupFactoryTest {
      */
     @Test
     void shouldUseSameThreadClassAsNioEventLoopGroupDoesByDefault() throws Exception {
-        NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(1);
+        var nioEventLoopGroup = new NioEventLoopGroup(1);
         eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup(1);
         try {
-            Thread defaultThread = getThread(nioEventLoopGroup);
-            Thread driverThread = getThread(eventLoopGroup);
+            var defaultThread = getThread(nioEventLoopGroup);
+            var driverThread = getThread(eventLoopGroup);
 
             assertEquals(defaultThread.getClass(), driverThread.getClass().getSuperclass());
             assertEquals(defaultThread.getPriority(), driverThread.getPriority());

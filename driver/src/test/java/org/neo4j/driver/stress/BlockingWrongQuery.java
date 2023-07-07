@@ -25,7 +25,6 @@ import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
 
 public class BlockingWrongQuery<C extends AbstractContext> extends AbstractBlockingQuery<C> {
     public BlockingWrongQuery(Driver driver) {
@@ -34,9 +33,8 @@ public class BlockingWrongQuery<C extends AbstractContext> extends AbstractBlock
 
     @Override
     public void execute(C context) {
-        try (Session session = newSession(AccessMode.READ, context)) {
-            Exception e =
-                    assertThrows(Exception.class, () -> session.run("RETURN").consume());
+        try (var session = newSession(AccessMode.READ, context)) {
+            var e = assertThrows(Exception.class, () -> session.run("RETURN").consume());
             assertThat(e, is(syntaxError()));
         }
     }

@@ -25,7 +25,6 @@ import static org.neo4j.driver.Values.NULL;
 import static org.neo4j.driver.Values.value;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
@@ -35,14 +34,14 @@ class InternalRelationshipTest {
     @Test
     void extractValuesFromNode() {
         // GIVEN
-        InternalRelationship relationship = createRelationship();
+        var relationship = createRelationship();
         Function<Value, Integer> extractor = Value::asInt;
 
         // WHEN
-        Iterable<Integer> values = relationship.values(extractor);
+        var values = relationship.values(extractor);
 
         // THEN
-        Iterator<Integer> iterator = values.iterator();
+        var iterator = values.iterator();
         assertThat(iterator.next(), equalTo(1));
         assertThat(iterator.next(), equalTo(2));
         assertFalse(iterator.hasNext());
@@ -50,7 +49,7 @@ class InternalRelationshipTest {
 
     @Test
     void accessUnknownKeyShouldBeNull() {
-        InternalRelationship relationship = createRelationship();
+        var relationship = createRelationship();
 
         assertThat(relationship.get("k1"), equalTo(value(1)));
         assertThat(relationship.get("k2"), equalTo(value(2)));

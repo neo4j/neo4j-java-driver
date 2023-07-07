@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
 
 public class BlockingWriteQueryInTx<C extends AbstractContext> extends AbstractBlockingQuery<C> {
     private AbstractStressTestBase<C> stressTest;
@@ -40,8 +38,8 @@ public class BlockingWriteQueryInTx<C extends AbstractContext> extends AbstractB
         Result result = null;
         Throwable txError = null;
 
-        try (Session session = newSession(AccessMode.WRITE, context)) {
-            try (Transaction tx = beginTransaction(session, context)) {
+        try (var session = newSession(AccessMode.WRITE, context)) {
+            try (var tx = beginTransaction(session, context)) {
                 result = tx.run("CREATE ()");
                 tx.commit();
             }

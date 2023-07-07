@@ -170,7 +170,7 @@ class InternalExecutableQueryTest {
         var executeResult = executableQuery.execute(recordCollector, finisherWithSummary);
 
         // THEN
-        ArgumentCaptor<SessionConfig> sessionConfigCapture = ArgumentCaptor.forClass(SessionConfig.class);
+        var sessionConfigCapture = ArgumentCaptor.forClass(SessionConfig.class);
         then(driver).should().session(sessionConfigCapture.capture());
         var sessionConfig = sessionConfigCapture.getValue();
         var expectedSessionConfig = SessionConfig.builder()

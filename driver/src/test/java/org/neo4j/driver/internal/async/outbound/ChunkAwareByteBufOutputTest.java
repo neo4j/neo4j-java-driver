@@ -42,13 +42,13 @@ class ChunkAwareByteBufOutputTest {
 
     @Test
     void shouldThrowWhenStartedWithNullBuf() {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(16);
+        var output = new ChunkAwareByteBufOutput(16);
         assertThrows(NullPointerException.class, () -> output.start(null));
     }
 
     @Test
     void shouldThrowWhenStartedTwice() {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(16);
+        var output = new ChunkAwareByteBufOutput(16);
         output.start(mock(ByteBuf.class));
 
         assertThrows(IllegalStateException.class, () -> output.start(mock(ByteBuf.class)));
@@ -57,7 +57,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteByteAtTheBeginningOfChunk(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(16);
+        var output = new ChunkAwareByteBufOutput(16);
 
         output.start(buf);
         output.writeByte((byte) 42);
@@ -69,7 +69,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteByteWhenCurrentChunkContainsSpace(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(16);
+        var output = new ChunkAwareByteBufOutput(16);
 
         output.start(buf);
         output.writeByte((byte) 1);
@@ -85,7 +85,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteByteWhenCurrentChunkIsFull(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(5);
+        var output = new ChunkAwareByteBufOutput(5);
 
         output.start(buf);
         output.writeByte((byte) 5);
@@ -109,7 +109,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteShortAtTheBeginningOfChunk(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(10);
+        var output = new ChunkAwareByteBufOutput(10);
 
         output.start(buf);
         output.writeShort(Short.MAX_VALUE);
@@ -121,7 +121,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteShortWhenCurrentChunkContainsSpace(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(12);
+        var output = new ChunkAwareByteBufOutput(12);
 
         output.start(buf);
         output.writeShort((short) 1);
@@ -138,7 +138,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteShortWhenCurrentChunkIsFull(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(8);
+        var output = new ChunkAwareByteBufOutput(8);
 
         output.start(buf);
         output.writeShort((short) 14);
@@ -162,7 +162,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteIntAtTheBeginningOfChunk(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(18);
+        var output = new ChunkAwareByteBufOutput(18);
 
         output.start(buf);
         output.writeInt(73649);
@@ -174,7 +174,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteIntWhenCurrentChunkContainsSpace(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(40);
+        var output = new ChunkAwareByteBufOutput(40);
 
         output.start(buf);
         output.writeInt(Integer.MAX_VALUE);
@@ -190,7 +190,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteIntWhenCurrentChunkIsFull(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(27);
+        var output = new ChunkAwareByteBufOutput(27);
 
         output.start(buf);
         output.writeInt(42);
@@ -220,7 +220,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteLongAtTheBeginningOfChunk(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(12);
+        var output = new ChunkAwareByteBufOutput(12);
 
         output.start(buf);
         output.writeLong(15);
@@ -232,7 +232,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteLongWhenCurrentChunkContainsSpace(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(34);
+        var output = new ChunkAwareByteBufOutput(34);
 
         output.start(buf);
         output.writeLong(Long.MAX_VALUE);
@@ -248,7 +248,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteLongWhenCurrentChunkIsFull(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(38);
+        var output = new ChunkAwareByteBufOutput(38);
 
         output.start(buf);
         output.writeLong(12);
@@ -274,7 +274,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteDoubleAtTheBeginningOfChunk(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(10);
+        var output = new ChunkAwareByteBufOutput(10);
 
         output.start(buf);
         output.writeDouble(12.99937);
@@ -286,7 +286,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteDoubleWhenCurrentChunkContainsSpace(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(18);
+        var output = new ChunkAwareByteBufOutput(18);
 
         output.start(buf);
         output.writeDouble(-5);
@@ -300,7 +300,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteDoubleWhenCurrentChunkIsFull(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(20);
+        var output = new ChunkAwareByteBufOutput(20);
 
         output.start(buf);
         output.writeDouble(1839);
@@ -322,7 +322,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteBytesAtTheBeginningOfChunk(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(10);
+        var output = new ChunkAwareByteBufOutput(10);
 
         output.start(buf);
         output.writeBytes(new byte[] {1, 2, 3, -1, -2, -3, 127});
@@ -335,7 +335,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteBytesWhenCurrentChunkContainsSpace(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(13);
+        var output = new ChunkAwareByteBufOutput(13);
 
         output.start(buf);
         output.writeBytes(new byte[] {9, 8, -10});
@@ -364,7 +364,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteBytesWhenCurrentChunkIsFull(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(9);
+        var output = new ChunkAwareByteBufOutput(9);
 
         output.start(buf);
         output.writeBytes(new byte[] {1, 2});
@@ -393,7 +393,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteBytesThatSpanMultipleChunks(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(7);
+        var output = new ChunkAwareByteBufOutput(7);
 
         output.start(buf);
         output.writeBytes(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18});
@@ -429,7 +429,7 @@ class ChunkAwareByteBufOutputTest {
     @ParameterizedTest
     @MethodSource("testBuffers")
     void shouldWriteDataToMultipleChunks(ByteBuf buf) {
-        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput(13);
+        var output = new ChunkAwareByteBufOutput(13);
 
         output.start(buf);
         output.writeDouble(12.3);

@@ -32,8 +32,6 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.summary.InputPosition;
-import org.neo4j.driver.summary.Notification;
 
 class InternalNotificationTest {
     @Test
@@ -54,7 +52,7 @@ class InternalNotificationTest {
         Value value = new MapValue(map);
 
         // WHEN
-        Notification notification = InternalNotification.VALUE_TO_NOTIFICATION.apply(value);
+        var notification = InternalNotification.VALUE_TO_NOTIFICATION.apply(value);
 
         // THEN
         assertThat(notification.description(), equalTo("A description"));
@@ -65,7 +63,7 @@ class InternalNotificationTest {
         MatcherAssert.assertThat(notification.rawSeverityLevel().get(), equalTo("WARNING"));
         MatcherAssert.assertThat(notification.category().get(), equalTo(NotificationCategory.DEPRECATION));
         MatcherAssert.assertThat(notification.rawCategory().get(), equalTo("DEPRECATION"));
-        InputPosition pos = notification.position();
+        var pos = notification.position();
         assertThat(pos.offset(), equalTo(0));
         assertThat(pos.column(), equalTo(1));
         assertThat(pos.line(), equalTo(2));
@@ -81,7 +79,7 @@ class InternalNotificationTest {
         Value value = new MapValue(map);
 
         // WHEN
-        Notification notification = InternalNotification.VALUE_TO_NOTIFICATION.apply(value);
+        var notification = InternalNotification.VALUE_TO_NOTIFICATION.apply(value);
 
         // THEN
         assertThat(notification.description(), equalTo("A description"));

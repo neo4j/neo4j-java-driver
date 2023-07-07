@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -40,7 +39,7 @@ public class AsyncWrongQuery<C extends AbstractContext> extends AbstractAsyncQue
 
     @Override
     public CompletionStage<Void> execute(C context) {
-        AsyncSession session = newSession(AccessMode.READ, context);
+        var session = newSession(AccessMode.READ, context);
 
         return session.runAsync("RETURN Wrong")
                 .thenCompose(ResultCursor::nextAsync)
@@ -48,7 +47,7 @@ public class AsyncWrongQuery<C extends AbstractContext> extends AbstractAsyncQue
                     session.closeAsync();
                     assertNull(record);
 
-                    Throwable cause = Futures.completionExceptionCause(error);
+                    var cause = Futures.completionExceptionCause(error);
                     assertNotNull(cause);
                     assertThat(cause, instanceOf(ClientException.class));
                     assertThat(((Neo4jException) cause).code(), containsString("SyntaxError"));

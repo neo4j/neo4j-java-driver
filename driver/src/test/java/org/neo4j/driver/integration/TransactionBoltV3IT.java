@@ -32,17 +32,11 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransientException;
@@ -72,10 +66,9 @@ class TransactionBoltV3IT {
         metadata.put("key2", 42L);
         metadata.put("key3", false);
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+        var config = TransactionConfig.builder().withMetadata(metadata).build();
 
-        try (Transaction tx = driver.session().beginTransaction(config)) {
+        try (var tx = driver.session().beginTransaction(config)) {
             tx.run("RETURN 1").consume();
 
             verifyTransactionMetadata(metadata);
@@ -88,16 +81,13 @@ class TransactionBoltV3IT {
         metadata.put("hello", "world");
         metadata.put("key", ZonedDateTime.now());
 
-        TransactionConfig config =
-                TransactionConfig.builder().withMetadata(metadata).build();
+        var config = TransactionConfig.builder().withMetadata(metadata).build();
 
-        CompletionStage<AsyncTransaction> txFuture = driver.asyncSession()
-                .beginTransactionAsync(config)
-                .thenCompose(tx -> tx.runAsync("RETURN 1")
-                        .thenCompose(ResultCursor::consumeAsync)
-                        .thenApply(ignore -> tx));
+        var txFuture = driver.asyncSession().beginTransactionAsync(config).thenCompose(tx -> tx.runAsync("RETURN 1")
+                .thenCompose(ResultCursor::consumeAsync)
+                .thenApply(ignore -> tx));
 
-        AsyncTransaction transaction = await(txFuture);
+        var transaction = await(txFuture);
         try {
             verifyTransactionMetadata(metadata);
         } finally {
@@ -108,21 +98,21 @@ class TransactionBoltV3IT {
     @Test
     void shouldSetTransactionTimeout() {
         // create a dummy node
-        Session session = driver.session();
+        var session = driver.session();
         session.run("CREATE (:Node)").consume();
 
-        try (Session otherSession = driver.driver().session()) {
-            try (Transaction otherTx = otherSession.beginTransaction()) {
+        try (var otherSession = driver.driver().session()) {
+            try (var otherTx = otherSession.beginTransaction()) {
                 // lock dummy node but keep the transaction open
                 otherTx.run("MATCH (n:Node) SET n.prop = 1").consume();
 
                 assertTimeoutPreemptively(TX_TIMEOUT_TEST_TIMEOUT, () -> {
-                    TransactionConfig config =
+                    var config =
                             TransactionConfig.builder().withTimeout(ofMillis(1)).build();
 
                     // start a new transaction with timeout and try to update the locked dummy node
-                    Exception error = assertThrows(Exception.class, () -> {
-                        try (Transaction tx = session.beginTransaction(config)) {
+                    var error = assertThrows(Exception.class, () -> {
+                        try (var tx = session.beginTransaction(config)) {
                             tx.run("MATCH (n:Node) SET n.prop = 2");
                             tx.commit();
                         }
@@ -137,27 +127,27 @@ class TransactionBoltV3IT {
     @Test
     void shouldSetTransactionTimeoutAsync() {
         // create a dummy node
-        Session session = driver.session();
-        AsyncSession asyncSession = driver.asyncSession();
+        var session = driver.session();
+        var asyncSession = driver.asyncSession();
 
         session.run("CREATE (:Node)").consume();
 
-        try (Session otherSession = driver.driver().session()) {
-            try (Transaction otherTx = otherSession.beginTransaction()) {
+        try (var otherSession = driver.driver().session()) {
+            try (var otherTx = otherSession.beginTransaction()) {
                 // lock dummy node but keep the transaction open
                 otherTx.run("MATCH (n:Node) SET n.prop = 1").consume();
 
                 assertTimeoutPreemptively(TX_TIMEOUT_TEST_TIMEOUT, () -> {
-                    TransactionConfig config =
+                    var config =
                             TransactionConfig.builder().withTimeout(ofMillis(1)).build();
 
                     // start a new transaction with timeout and try to update the locked dummy node
-                    CompletionStage<Void> txCommitFuture = asyncSession
+                    var txCommitFuture = asyncSession
                             .beginTransactionAsync(config)
                             .thenCompose(tx -> tx.runAsync("MATCH (n:Node) SET n.prop = 2")
                                     .thenCompose(ignore -> tx.commitAsync()));
 
-                    Exception error = assertThrows(Exception.class, () -> await(txCommitFuture));
+                    var error = assertThrows(Exception.class, () -> await(txCommitFuture));
 
                     verifyValidException(error);
                 });
@@ -175,10 +165,10 @@ class TransactionBoltV3IT {
     }
 
     private static void verifyTransactionMetadata(Map<String, Object> metadata) {
-        try (Session session = driver.driver().session()) {
-            Result result = session.run(showTxMetadata);
+        try (var session = driver.driver().session()) {
+            var result = session.run(showTxMetadata);
 
-            Map<String, Object> receivedMetadata = result.list().stream()
+            var receivedMetadata = result.list().stream()
                     .map(record -> record.get("metaData"))
                     .map(Value::asMap)
                     .filter(map -> !map.isEmpty())

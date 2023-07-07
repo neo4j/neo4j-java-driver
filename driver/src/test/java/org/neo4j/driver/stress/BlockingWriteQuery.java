@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.summary.ResultSummary;
 
 public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlockingQuery<C> {
@@ -39,7 +38,7 @@ public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlock
         ResultSummary summary = null;
         Throwable queryError = null;
 
-        try (Session session = newSession(AccessMode.WRITE, context)) {
+        try (var session = newSession(AccessMode.WRITE, context)) {
             summary = session.run("CREATE ()").consume();
             context.setBookmark(session.lastBookmark());
         } catch (Throwable error) {

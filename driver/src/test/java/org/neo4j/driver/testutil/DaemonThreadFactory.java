@@ -38,7 +38,7 @@ public class DaemonThreadFactory implements ThreadFactory {
 
     @Override
     public Thread newThread(Runnable runnable) {
-        Thread thread = new Thread(runnable);
+        var thread = new Thread(runnable);
         thread.setName(namePrefix + threadId.incrementAndGet());
         thread.setDaemon(true);
         return thread;

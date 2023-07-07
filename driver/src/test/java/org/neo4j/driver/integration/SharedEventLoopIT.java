@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.testutil.DatabaseExtension;
@@ -42,11 +41,11 @@ class SharedEventLoopIT {
 
     @Test
     void testDriverShouldNotCloseSharedEventLoop() {
-        NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
+        var eventLoopGroup = new NioEventLoopGroup(1);
 
         try {
-            Driver driver1 = createDriver(eventLoopGroup);
-            Driver driver2 = createDriver(eventLoopGroup);
+            var driver1 = createDriver(eventLoopGroup);
+            var driver2 = createDriver(eventLoopGroup);
 
             testConnection(driver1);
             testConnection(driver2);
@@ -62,9 +61,9 @@ class SharedEventLoopIT {
 
     @Test
     void testDriverShouldUseSharedEventLoop() {
-        NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
+        var eventLoopGroup = new NioEventLoopGroup(1);
 
-        Driver driver = createDriver(eventLoopGroup);
+        var driver = createDriver(eventLoopGroup);
         testConnection(driver);
 
         eventLoopGroup.shutdownGracefully(100, 100, TimeUnit.MILLISECONDS);
@@ -90,7 +89,7 @@ class SharedEventLoopIT {
     }
 
     private void testConnection(Driver driver) {
-        try (Session session = driver.session()) {
+        try (var session = driver.session()) {
             session.run("RETURN 1");
         }
     }

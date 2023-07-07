@@ -56,7 +56,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Logger;
@@ -95,9 +94,9 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldDequeHandlerOnSuccess() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
+        var dispatcher = newDispatcher();
 
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var handler = mock(ResponseHandler.class);
         dispatcher.enqueue(handler);
         assertEquals(1, dispatcher.queuedHandlersCount());
 
@@ -112,9 +111,9 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldDequeHandlerOnFailure() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
+        var dispatcher = newDispatcher();
 
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var handler = mock(ResponseHandler.class);
         dispatcher.enqueue(handler);
         assertEquals(1, dispatcher.queuedHandlersCount());
 
@@ -129,8 +128,8 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldSendResetOnFailure() {
-        Channel channel = newChannelMock();
-        InboundMessageDispatcher dispatcher = newDispatcher(channel);
+        var channel = newChannelMock();
+        var dispatcher = newDispatcher(channel);
 
         dispatcher.enqueue(mock(ResponseHandler.class));
         assertEquals(1, dispatcher.queuedHandlersCount());
@@ -142,7 +141,7 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldClearFailureOnSuccessOfResetAfterFailure() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
+        var dispatcher = newDispatcher();
 
         dispatcher.enqueue(mock(ResponseHandler.class));
         assertEquals(1, dispatcher.queuedHandlersCount());
@@ -155,9 +154,9 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldPeekHandlerOnRecord() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
+        var dispatcher = newDispatcher();
 
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var handler = mock(ResponseHandler.class);
         dispatcher.enqueue(handler);
         assertEquals(1, dispatcher.queuedHandlersCount());
 
@@ -177,20 +176,20 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldFailAllHandlersOnChannelError() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
+        var dispatcher = newDispatcher();
 
-        ResponseHandler handler1 = mock(ResponseHandler.class);
-        ResponseHandler handler2 = mock(ResponseHandler.class);
-        ResponseHandler handler3 = mock(ResponseHandler.class);
+        var handler1 = mock(ResponseHandler.class);
+        var handler2 = mock(ResponseHandler.class);
+        var handler3 = mock(ResponseHandler.class);
 
         dispatcher.enqueue(handler1);
         dispatcher.enqueue(handler2);
         dispatcher.enqueue(handler3);
 
-        RuntimeException fatalError = new RuntimeException("Fatal!");
+        var fatalError = new RuntimeException("Fatal!");
         dispatcher.handleChannelError(fatalError);
 
-        InOrder inOrder = inOrder(handler1, handler2, handler3);
+        var inOrder = inOrder(handler1, handler2, handler3);
         inOrder.verify(handler1).onFailure(fatalError);
         inOrder.verify(handler2).onFailure(fatalError);
         inOrder.verify(handler3).onFailure(fatalError);
@@ -198,12 +197,12 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldFailNewHandlerAfterChannelError() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
+        var dispatcher = newDispatcher();
 
-        RuntimeException fatalError = new RuntimeException("Fatal!");
+        var fatalError = new RuntimeException("Fatal!");
         dispatcher.handleChannelError(fatalError);
 
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var handler = mock(ResponseHandler.class);
         dispatcher.enqueue(handler);
 
         verify(handler).onFailure(fatalError);
@@ -211,13 +210,13 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldAttachChannelErrorOnExistingError() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
+        var dispatcher = newDispatcher();
 
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var handler = mock(ResponseHandler.class);
         dispatcher.enqueue(handler);
 
         dispatcher.handleFailureMessage("Neo.ClientError", "First error!");
-        RuntimeException fatalError = new RuntimeException("Second Error!");
+        var fatalError = new RuntimeException("Second Error!");
         dispatcher.handleChannelError(fatalError);
 
         verify(handler)
@@ -229,8 +228,8 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldDequeHandlerOnIgnored() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var dispatcher = newDispatcher();
+        var handler = mock(ResponseHandler.class);
 
         dispatcher.enqueue(handler);
         dispatcher.handleIgnoredMessage();
@@ -240,9 +239,9 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldFailHandlerOnIgnoredMessageWithExistingError() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-        ResponseHandler handler1 = mock(ResponseHandler.class);
-        ResponseHandler handler2 = mock(ResponseHandler.class);
+        var dispatcher = newDispatcher();
+        var handler1 = mock(ResponseHandler.class);
+        var handler2 = mock(ResponseHandler.class);
 
         dispatcher.enqueue(handler1);
         dispatcher.enqueue(handler2);
@@ -257,8 +256,8 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldFailHandlerOnIgnoredMessageWhenNoErrorAndNotHandlingReset() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var dispatcher = newDispatcher();
+        var handler = mock(ResponseHandler.class);
         dispatcher.enqueue(handler);
 
         dispatcher.handleIgnoredMessage();
@@ -268,9 +267,9 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldDequeAndFailHandlerOnIgnoredWhenErrorHappened() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-        ResponseHandler handler1 = mock(ResponseHandler.class);
-        ResponseHandler handler2 = mock(ResponseHandler.class);
+        var dispatcher = newDispatcher();
+        var handler1 = mock(ResponseHandler.class);
+        var handler2 = mock(ResponseHandler.class);
 
         dispatcher.enqueue(handler1);
         dispatcher.enqueue(handler2);
@@ -285,7 +284,7 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldThrowWhenNoHandlerToHandleRecordMessage() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
+        var dispatcher = newDispatcher();
 
         assertThrows(
                 IllegalStateException.class, () -> dispatcher.handleRecordMessage(new Value[] {value(1), value(2)}));
@@ -293,17 +292,17 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldKeepSingleAutoReadManagingHandler() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
+        var dispatcher = newDispatcher();
 
-        ResponseHandler handler1 = newAutoReadManagingResponseHandler();
-        ResponseHandler handler2 = newAutoReadManagingResponseHandler();
-        ResponseHandler handler3 = newAutoReadManagingResponseHandler();
+        var handler1 = newAutoReadManagingResponseHandler();
+        var handler2 = newAutoReadManagingResponseHandler();
+        var handler3 = newAutoReadManagingResponseHandler();
 
         dispatcher.enqueue(handler1);
         dispatcher.enqueue(handler2);
         dispatcher.enqueue(handler3);
 
-        InOrder inOrder = inOrder(handler1, handler2, handler3);
+        var inOrder = inOrder(handler1, handler2, handler3);
         inOrder.verify(handler1).disableAutoReadManagement();
         inOrder.verify(handler2).disableAutoReadManagement();
         inOrder.verify(handler3, never()).disableAutoReadManagement();
@@ -311,10 +310,10 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldKeepTrackOfAutoReadManagingHandler() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
+        var dispatcher = newDispatcher();
 
-        ResponseHandler handler1 = newAutoReadManagingResponseHandler();
-        ResponseHandler handler2 = newAutoReadManagingResponseHandler();
+        var handler1 = newAutoReadManagingResponseHandler();
+        var handler2 = newAutoReadManagingResponseHandler();
 
         assertNull(dispatcher.autoReadManagingHandler());
 
@@ -327,11 +326,11 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldForgetAutoReadManagingHandlerWhenItIsRemoved() {
-        InboundMessageDispatcher dispatcher = newDispatcher();
+        var dispatcher = newDispatcher();
 
-        ResponseHandler handler1 = mock(ResponseHandler.class);
-        ResponseHandler handler2 = mock(ResponseHandler.class);
-        ResponseHandler handler3 = newAutoReadManagingResponseHandler();
+        var handler1 = mock(ResponseHandler.class);
+        var handler2 = mock(ResponseHandler.class);
+        var handler3 = newAutoReadManagingResponseHandler();
 
         dispatcher.enqueue(handler1);
         dispatcher.enqueue(handler2);
@@ -347,10 +346,10 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldReEnableAutoReadWhenAutoReadManagingHandlerIsRemoved() {
-        Channel channel = newChannelMock();
-        InboundMessageDispatcher dispatcher = newDispatcher(channel);
+        var channel = newChannelMock();
+        var dispatcher = newDispatcher(channel);
 
-        ResponseHandler handler = newAutoReadManagingResponseHandler();
+        var handler = newAutoReadManagingResponseHandler();
         dispatcher.enqueue(handler);
         assertEquals(handler, dispatcher.autoReadManagingHandler());
         verify(handler, never()).disableAutoReadManagement();
@@ -367,15 +366,15 @@ class InboundMessageDispatcherTest {
     @ValueSource(classes = {SuccessMessage.class, FailureMessage.class, RecordMessage.class, IgnoredMessage.class})
     void shouldCreateChannelActivityLoggerAndLogDebugMessageOnMessageHandling(Class<? extends Message> message) {
         // GIVEN
-        Channel channel = newChannelMock();
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var channel = newChannelMock();
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logger.isDebugEnabled()).thenReturn(true);
         when(logging.getLog(InboundMessageDispatcher.class)).thenReturn(logger);
-        ChannelErrorLogger errorLogger = mock(ChannelErrorLogger.class);
+        var errorLogger = mock(ChannelErrorLogger.class);
         when(logging.getLog(ChannelErrorLogger.class)).thenReturn(errorLogger);
-        InboundMessageDispatcher dispatcher = new InboundMessageDispatcher(channel, logging);
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var dispatcher = new InboundMessageDispatcher(channel, logging);
+        var handler = mock(ResponseHandler.class);
         dispatcher.enqueue(handler);
         Runnable loggerVerification = () -> {};
 
@@ -417,18 +416,18 @@ class InboundMessageDispatcherTest {
     @Test
     void shouldCreateChannelErrorLoggerAndLogDebugMessageOnChannelError() {
         // GIVEN
-        Channel channel = newChannelMock();
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var channel = newChannelMock();
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logger.isDebugEnabled()).thenReturn(true);
         when(logging.getLog(InboundMessageDispatcher.class)).thenReturn(logger);
-        ChannelErrorLogger errorLogger = mock(ChannelErrorLogger.class);
+        var errorLogger = mock(ChannelErrorLogger.class);
         when(errorLogger.isDebugEnabled()).thenReturn(true);
         when(logging.getLog(ChannelErrorLogger.class)).thenReturn(errorLogger);
-        InboundMessageDispatcher dispatcher = new InboundMessageDispatcher(channel, logging);
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var dispatcher = new InboundMessageDispatcher(channel, logging);
+        var handler = mock(ResponseHandler.class);
         dispatcher.enqueue(handler);
-        Throwable throwable = mock(Throwable.class);
+        var throwable = mock(Throwable.class);
 
         // WHEN
         dispatcher.handleChannelError(throwable);
@@ -501,7 +500,7 @@ class InboundMessageDispatcherTest {
 
     private static void verifyFailure(
             ResponseHandler handler, String code, String message, Class<? extends Neo4jException> exceptionCls) {
-        ArgumentCaptor<Neo4jException> captor = ArgumentCaptor.forClass(Neo4jException.class);
+        var captor = ArgumentCaptor.forClass(Neo4jException.class);
         verify(handler).onFailure(captor.capture());
         var value = captor.getValue();
         assertEquals(code, value.code());
@@ -521,9 +520,9 @@ class InboundMessageDispatcherTest {
 
     @SuppressWarnings("unchecked")
     private static Channel newChannelMock() {
-        Channel channel = mock(Channel.class);
+        var channel = mock(Channel.class);
         when(channel.id()).thenReturn(DefaultChannelId.newInstance());
-        ChannelConfig channelConfig = mock(ChannelConfig.class);
+        var channelConfig = mock(ChannelConfig.class);
         when(channel.config()).thenReturn(channelConfig);
         Attribute<Object> attribute = mock(Attribute.class);
         when(channel.attr(any())).thenReturn(attribute);
@@ -531,7 +530,7 @@ class InboundMessageDispatcherTest {
     }
 
     private static ResponseHandler newAutoReadManagingResponseHandler() {
-        ResponseHandler handler = mock(ResponseHandler.class);
+        var handler = mock(ResponseHandler.class);
         when(handler.canManageAutoRead()).thenReturn(true);
         return handler;
     }

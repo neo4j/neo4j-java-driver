@@ -22,8 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.summary.ResultSummary;
 
 public class BlockingWriteQueryWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C> {
     private final AbstractStressTestBase<C> stressTest;
@@ -36,8 +34,8 @@ public class BlockingWriteQueryWithRetries<C extends AbstractContext> extends Ab
     @Override
     @SuppressWarnings("deprecation")
     public void execute(C context) {
-        try (Session session = newSession(AccessMode.WRITE, context)) {
-            ResultSummary resultSummary =
+        try (var session = newSession(AccessMode.WRITE, context)) {
+            var resultSummary =
                     session.writeTransaction(tx -> tx.run("CREATE ()").consume());
             assertEquals(1, resultSummary.counters().nodesCreated());
             context.nodeCreated();

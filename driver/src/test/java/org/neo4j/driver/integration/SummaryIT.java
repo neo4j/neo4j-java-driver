@@ -29,23 +29,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.SessionConfig.forDatabase;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Neo4jFeature;
-import org.neo4j.driver.summary.Notification;
-import org.neo4j.driver.summary.Plan;
-import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.QueryType;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
@@ -72,17 +65,17 @@ class SummaryIT {
     @Test
     void shouldContainBasicMetadata() {
         // Given
-        Value parameters = Values.parameters("limit", 10);
-        String query = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT $limit";
+        var parameters = Values.parameters("limit", 10);
+        var query = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT $limit";
 
         // When
-        Result result = session.run(query, parameters);
+        var result = session.run(query, parameters);
 
         // Then
         assertTrue(result.hasNext());
 
         // When
-        ResultSummary summary = result.consume();
+        var summary = result.consume();
 
         // Then
         assertThat(summary.queryType(), equalTo(QueryType.READ_ONLY));
@@ -96,7 +89,7 @@ class SummaryIT {
     @Test
     void shouldContainTimeInformation() {
         // Given
-        ResultSummary summary =
+        var summary =
                 session.run("UNWIND range(1,1000) AS n RETURN n AS number").consume();
 
         // Then
@@ -180,8 +173,8 @@ class SummaryIT {
     @Test
     @EnabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
     void shouldGetSystemUpdates() {
-        try (Session session = neo4j.driver().session(forDatabase("system"))) {
-            Result result = session.run("CREATE USER foo SET PASSWORD 'Testing0'");
+        try (var session = neo4j.driver().session(forDatabase("system"))) {
+            var result = session.run("CREATE USER foo SET PASSWORD 'Testing0'");
             assertThat(result.consume().counters().containsUpdates(), equalTo(false));
             assertThat(result.consume().counters().containsSystemUpdates(), equalTo(true));
         }
@@ -204,12 +197,12 @@ class SummaryIT {
     @Test
     void shouldContainCorrectPlan() {
         // When
-        ResultSummary summary = session.run("EXPLAIN MATCH (n) RETURN 1").consume();
+        var summary = session.run("EXPLAIN MATCH (n) RETURN 1").consume();
 
         // Then
         assertTrue(summary.hasPlan());
 
-        Plan plan = summary.plan();
+        var plan = summary.plan();
         assertThat(plan.operatorType(), notNullValue());
         assertThat(plan.identifiers().size(), greaterThan(0));
         assertThat(plan.arguments().size(), greaterThan(0));
@@ -219,7 +212,7 @@ class SummaryIT {
     @Test
     void shouldContainProfile() {
         // When
-        ResultSummary summary = session.run("PROFILE RETURN 1").consume();
+        var summary = session.run("PROFILE RETURN 1").consume();
 
         // Then
         assertTrue(summary.hasProfile());
@@ -228,7 +221,7 @@ class SummaryIT {
         // available
         assertEquals(summary.plan(), summary.profile());
 
-        ProfiledPlan profile = summary.profile();
+        var profile = summary.profile();
 
         assertEquals(0, profile.time());
         assertEquals(0, profile.dbHits());
@@ -239,14 +232,14 @@ class SummaryIT {
     @SuppressWarnings("deprecation")
     void shouldContainNotifications() {
         // When
-        ResultSummary summary =
+        var summary =
                 session.run("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n").consume();
 
         // Then
-        List<Notification> notifications = summary.notifications();
+        var notifications = summary.notifications();
         assertNotNull(notifications);
         assertThat(notifications.size(), equalTo(1));
-        Notification notification = notifications.get(0);
+        var notification = notifications.get(0);
         assertThat(notification.code(), notNullValue());
         assertThat(notification.title(), notNullValue());
         assertThat(notification.description(), notNullValue());
@@ -259,7 +252,7 @@ class SummaryIT {
     @Test
     void shouldContainNoNotifications() throws Throwable {
         // When
-        ResultSummary summary = session.run("RETURN 1").consume();
+        var summary = session.run("RETURN 1").consume();
 
         // Then
         assertThat(summary.notifications().size(), equalTo(0));

@@ -23,7 +23,6 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
-import java.util.List;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.util.Iterables;
@@ -47,7 +46,7 @@ class InternalPathTest {
     @Test
     void pathSizeShouldReturnNumberOfRelationships() {
         // When
-        InternalPath path = testPath();
+        var path = testPath();
 
         // Then
         assertThat(path.length(), equalTo(3));
@@ -56,7 +55,7 @@ class InternalPathTest {
     @Test
     void shouldBeAbleToCreatePathWithSingleNode() {
         // When
-        InternalPath path = new InternalPath(new InternalNode(1));
+        var path = new InternalPath(new InternalNode(1));
 
         // Then
         assertThat(path.length(), equalTo(0));
@@ -65,10 +64,10 @@ class InternalPathTest {
     @Test
     void shouldBeAbleToIterateOverPathAsSegments() {
         // Given
-        InternalPath path = testPath();
+        var path = testPath();
 
         // When
-        List<Path.Segment> segments = Iterables.asList(path);
+        var segments = Iterables.asList(path);
 
         // Then
         MatcherAssert.assertThat(
@@ -87,10 +86,10 @@ class InternalPathTest {
     @Test
     void shouldBeAbleToIterateOverPathNodes() {
         // Given
-        InternalPath path = testPath();
+        var path = testPath();
 
         // When
-        List<Node> segments = Iterables.asList(path.nodes());
+        var segments = Iterables.asList(path.nodes());
 
         // Then
         assertThat(
@@ -102,10 +101,10 @@ class InternalPathTest {
     @Test
     void shouldBeAbleToIterateOverPathRelationships() {
         // Given
-        InternalPath path = testPath();
+        var path = testPath();
 
         // When
-        List<Relationship> segments = Iterables.asList(path.relationships());
+        var segments = Iterables.asList(path.relationships());
 
         // Then
         assertThat(

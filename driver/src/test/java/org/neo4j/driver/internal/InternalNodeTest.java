@@ -26,7 +26,6 @@ import static org.neo4j.driver.Values.value;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
@@ -36,14 +35,14 @@ class InternalNodeTest {
     @Test
     void extractValuesFromNode() {
         // GIVEN
-        InternalNode node = createNode();
+        var node = createNode();
         Function<Value, Integer> extractor = Value::asInt;
 
         // WHEN
-        Iterable<Integer> values = node.values(extractor);
+        var values = node.values(extractor);
 
         // THEN
-        Iterator<Integer> iterator = values.iterator();
+        var iterator = values.iterator();
         assertThat(iterator.next(), equalTo(1));
         assertThat(iterator.next(), equalTo(2));
         assertFalse(iterator.hasNext());
@@ -51,7 +50,7 @@ class InternalNodeTest {
 
     @Test
     void accessUnknownKeyShouldBeNull() {
-        InternalNode node = createNode();
+        var node = createNode();
 
         assertThat(node.get("k1"), equalTo(value(1)));
         assertThat(node.get("k2"), equalTo(value(2)));

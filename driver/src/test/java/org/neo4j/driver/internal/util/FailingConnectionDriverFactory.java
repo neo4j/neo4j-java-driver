@@ -51,7 +51,7 @@ public class FailingConnectionDriverFactory extends DriverFactory {
             Config config,
             boolean ownsEventLoopGroup,
             RoutingContext routingContext) {
-        ConnectionPool pool = super.createConnectionPool(
+        var pool = super.createConnectionPool(
                 authTokenManager, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext);
         return new ConnectionPoolWithFailingConnections(pool, nextRunFailure);
     }
@@ -178,9 +178,9 @@ public class FailingConnectionDriverFactory extends DriverFactory {
         }
 
         private boolean tryFail(ResponseHandler handler1, ResponseHandler handler2) {
-            Throwable failure = nextRunFailure.getAndSet(null);
+            var failure = nextRunFailure.getAndSet(null);
             if (failure != null) {
-                int reportCount = count.get();
+                var reportCount = count.get();
                 if (handler1 != null) {
                     handler1.onFailure(failure);
                     reportCount = count.decrementAndGet();

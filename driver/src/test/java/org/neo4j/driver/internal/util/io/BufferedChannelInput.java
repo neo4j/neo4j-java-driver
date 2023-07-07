@@ -75,7 +75,7 @@ public class BufferedChannelInput implements PackInput {
 
     @Override
     public void readBytes(byte[] into, int index, int toRead) throws IOException {
-        int endIndex = index + toRead;
+        var endIndex = index + toRead;
         while (index < endIndex) {
             toRead = Math.min(buffer.remaining(), endIndex - index);
             buffer.get(into, index, toRead);

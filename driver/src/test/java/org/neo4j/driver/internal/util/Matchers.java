@@ -28,7 +28,6 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DirectConnectionProvider;
 import org.neo4j.driver.internal.InternalDriver;
-import org.neo4j.driver.internal.SessionFactory;
 import org.neo4j.driver.internal.SessionFactoryImpl;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -55,7 +54,7 @@ public final class Matchers {
         return new TypeSafeMatcher<Driver>() {
             @Override
             protected boolean matchesSafely(Driver driver) {
-                DirectConnectionProvider provider = extractConnectionProvider(driver, DirectConnectionProvider.class);
+                var provider = extractConnectionProvider(driver, DirectConnectionProvider.class);
                 return provider != null && Objects.equals(provider.getAddress(), address);
             }
 
@@ -119,7 +118,7 @@ public final class Matchers {
             @Override
             protected boolean matchesSafely(Throwable error) {
                 if (error instanceof ClientException) {
-                    ClientException clientError = (ClientException) error;
+                    var clientError = (ClientException) error;
                     return clientError.code().contains("SyntaxError")
                             && (messagePrefix == null
                                     || clientError.getMessage().startsWith(messagePrefix));
@@ -139,7 +138,7 @@ public final class Matchers {
             @Override
             protected boolean matchesSafely(Throwable error) {
                 if (error instanceof ClientException) {
-                    String expectedMessage = "Unable to acquire connection from the pool within "
+                    var expectedMessage = "Unable to acquire connection from the pool within "
                             + "configured maximum time of " + timeoutMillis + "ms";
                     return expectedMessage.equals(error.getMessage());
                 }
@@ -175,9 +174,9 @@ public final class Matchers {
 
     private static <T extends ConnectionProvider> T extractConnectionProvider(Driver driver, Class<T> providerClass) {
         if (driver instanceof InternalDriver) {
-            SessionFactory sessionFactory = ((InternalDriver) driver).getSessionFactory();
+            var sessionFactory = ((InternalDriver) driver).getSessionFactory();
             if (sessionFactory instanceof SessionFactoryImpl) {
-                ConnectionProvider provider = ((SessionFactoryImpl) sessionFactory).getConnectionProvider();
+                var provider = ((SessionFactoryImpl) sessionFactory).getConnectionProvider();
                 if (providerClass.isInstance(provider)) {
                     return providerClass.cast(provider);
                 }

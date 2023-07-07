@@ -49,12 +49,10 @@ import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.CertIOException;
-import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
@@ -76,9 +74,9 @@ public class CertificateUtil {
     }
 
     private static KeyPair generateKeyPair() throws NoSuchProviderException, NoSuchAlgorithmException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(DEFAULT_ENCRYPTION);
+        var keyPairGenerator = KeyPairGenerator.getInstance(DEFAULT_ENCRYPTION);
         keyPairGenerator.initialize(2048, new SecureRandom());
-        KeyPair keyPair = keyPairGenerator.generateKeyPair();
+        var keyPair = keyPairGenerator.generateKeyPair();
         return keyPair;
     }
 
@@ -86,9 +84,9 @@ public class CertificateUtil {
             X500Name issuer, X500Name subject, KeyPair issuerKeys, PublicKey publicKey, GeneralName... generalNames)
             throws GeneralSecurityException, OperatorCreationException, CertIOException {
         // Create x509 certificate
-        Date startDate = new Date(System.currentTimeMillis());
-        Date endDate = new Date(System.currentTimeMillis() + 365L * 24L * 60L * 60L * 1000L);
-        BigInteger serialNum = BigInteger.valueOf(System.currentTimeMillis());
+        var startDate = new Date(System.currentTimeMillis());
+        var endDate = new Date(System.currentTimeMillis() + 365L * 24L * 60L * 60L * 1000L);
+        var serialNum = BigInteger.valueOf(System.currentTimeMillis());
         X509v3CertificateBuilder certBuilder =
                 new JcaX509v3CertificateBuilder(issuer, serialNum, startDate, endDate, subject, publicKey);
 
@@ -96,15 +94,14 @@ public class CertificateUtil {
         Set<GeneralName> names = new HashSet<>();
         names.add(new GeneralName(GeneralName.dNSName, DEFAULT_HOST_NAME));
         names.addAll(Arrays.asList(generalNames));
-        GeneralNames subjectAlternativeName = new GeneralNames(names.toArray(new GeneralName[0]));
+        var subjectAlternativeName = new GeneralNames(names.toArray(new GeneralName[0]));
         certBuilder.addExtension(Extension.subjectAlternativeName, false, subjectAlternativeName);
         certBuilder.addExtension(Extension.basicConstraints, false, new BasicConstraints(true));
 
         // Get the certificate back
-        ContentSigner signer = new JcaContentSignerBuilder("SHA512WithRSAEncryption").build(issuerKeys.getPrivate());
-        X509CertificateHolder certHolder = certBuilder.build(signer);
-        X509Certificate certificate =
-                new JcaX509CertificateConverter().setProvider("BC").getCertificate(certHolder);
+        var signer = new JcaContentSignerBuilder("SHA512WithRSAEncryption").build(issuerKeys.getPrivate());
+        var certHolder = certBuilder.build(signer);
+        var certificate = new JcaX509CertificateConverter().setProvider("BC").getCertificate(certHolder);
 
         certificate.verify(issuerKeys.getPublic());
         return certificate;
@@ -154,12 +151,12 @@ public class CertificateUtil {
         private final PKCS10CertificationRequest csr;
 
         public CertificateSigningRequestGenerator() throws NoSuchAlgorithmException, OperatorCreationException {
-            KeyPairGenerator gen = KeyPairGenerator.getInstance(DEFAULT_ENCRYPTION);
+            var gen = KeyPairGenerator.getInstance(DEFAULT_ENCRYPTION);
             gen.initialize(2048, new SecureRandom());
             keyPair = gen.generateKeyPair();
 
-            X500Principal subject = new X500Principal("CN=" + DEFAULT_HOST_NAME);
-            ContentSigner signGen = new JcaContentSignerBuilder("SHA512WithRSAEncryption").build(keyPair.getPrivate());
+            var subject = new X500Principal("CN=" + DEFAULT_HOST_NAME);
+            var signGen = new JcaContentSignerBuilder("SHA512WithRSAEncryption").build(keyPair.getPrivate());
 
             PKCS10CertificationRequestBuilder builder =
                     new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
@@ -198,7 +195,7 @@ public class CertificateUtil {
         if (path.getParentFile() != null && path.getParentFile().exists()) {
             path.getParentFile().mkdirs();
         }
-        try (PemWriter writer = new PemWriter(new FileWriter(path))) {
+        try (var writer = new PemWriter(new FileWriter(path))) {
             writer.writeObject(new PemObject(type, encodedContent));
             writer.flush();
         }
@@ -207,11 +204,10 @@ public class CertificateUtil {
     public static CertificateKeyPair<File, File> createNewCertificateAndKeySignedBy(
             CertificateKeyPair<File, File> root, GeneralName... generalNames) throws Throwable {
         Objects.requireNonNull(root.certGenerator);
-        File cert = tempFile("driver", ".cert");
-        File key = tempFile("driver", ".key");
-        CertificateUtil.CertificateSigningRequestGenerator csrGenerator =
-                new CertificateUtil.CertificateSigningRequestGenerator();
-        X509Certificate signedCert = root.certGenerator.sign(
+        var cert = tempFile("driver", ".cert");
+        var key = tempFile("driver", ".key");
+        var csrGenerator = new CertificateUtil.CertificateSigningRequestGenerator();
+        var signedCert = root.certGenerator.sign(
                 csrGenerator.certificateSigningRequest(), csrGenerator.publicKey(), generalNames);
         csrGenerator.savePrivateKey(key);
         saveX509Cert(signedCert, cert);
@@ -221,10 +217,9 @@ public class CertificateUtil {
 
     public static CertificateKeyPair<File, File> createNewCertificateAndKey(GeneralName... ipAddresses)
             throws Throwable {
-        File cert = tempFile("driver", ".cert");
-        File key = tempFile("driver", ".key");
-        CertificateUtil.SelfSignedCertificateGenerator certGenerator =
-                new CertificateUtil.SelfSignedCertificateGenerator(ipAddresses);
+        var cert = tempFile("driver", ".cert");
+        var key = tempFile("driver", ".key");
+        var certGenerator = new CertificateUtil.SelfSignedCertificateGenerator(ipAddresses);
         certGenerator.saveSelfSignedCertificate(cert);
         certGenerator.savePrivateKey(key);
 
@@ -270,7 +265,7 @@ public class CertificateUtil {
                 return false;
             }
 
-            CertificateKeyPair<?, ?> that = (CertificateKeyPair<?, ?>) o;
+            var that = (CertificateKeyPair<?, ?>) o;
 
             return pair.equals(that.pair);
         }

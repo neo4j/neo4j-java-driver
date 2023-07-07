@@ -36,7 +36,6 @@ import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.messaging.response.SuccessMessage;
 import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
 import org.neo4j.driver.internal.packstream.PackOutput;
-import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.types.Entity;
@@ -96,20 +95,20 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
 
         @Override
         protected void packInternalValue(InternalValue value) throws IOException {
-            TypeConstructor typeConstructor = value.typeConstructor();
+            var typeConstructor = value.typeConstructor();
             switch (typeConstructor) {
                 case NODE:
-                    Node node = value.asNode();
+                    var node = value.asNode();
                     packNode(node);
                     break;
 
                 case RELATIONSHIP:
-                    Relationship rel = value.asRelationship();
+                    var rel = value.asRelationship();
                     packRelationship(rel);
                     break;
 
                 case PATH:
-                    Path path = value.asPath();
+                    var path = value.asPath();
                     packPath(path);
                     break;
                 default:
@@ -123,25 +122,25 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
 
             // Unique nodes
             Map<Node, Integer> nodeIdx = Iterables.newLinkedHashMapWithSize(path.length() + 1);
-            for (Node node : path.nodes()) {
+            for (var node : path.nodes()) {
                 if (!nodeIdx.containsKey(node)) {
                     nodeIdx.put(node, nodeIdx.size());
                 }
             }
             packer.packListHeader(nodeIdx.size());
-            for (Node node : nodeIdx.keySet()) {
+            for (var node : nodeIdx.keySet()) {
                 packNode(node);
             }
 
             // Unique rels
             Map<Relationship, Integer> relIdx = Iterables.newLinkedHashMapWithSize(path.length());
-            for (Relationship rel : path.relationships()) {
+            for (var rel : path.relationships()) {
                 if (!relIdx.containsKey(rel)) {
                     relIdx.put(rel, relIdx.size() + 1);
                 }
             }
             packer.packListHeader(relIdx.size());
-            for (Relationship rel : relIdx.keySet()) {
+            for (var rel : relIdx.keySet()) {
                 packer.packStructHeader(elementIdEnabled ? 4 : 3, CommonValueUnpacker.UNBOUND_RELATIONSHIP);
                 packer.pack(rel.id());
                 packer.pack(rel.type());
@@ -153,11 +152,11 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
 
             // Sequence
             packer.packListHeader(path.length() * 2);
-            for (Path.Segment seg : path) {
-                Relationship rel = seg.relationship();
-                long relEndId = rel.endNodeId();
-                long segEndId = seg.end().id();
-                int size = relEndId == segEndId ? relIdx.get(rel) : -relIdx.get(rel);
+            for (var seg : path) {
+                var rel = seg.relationship();
+                var relEndId = rel.endNodeId();
+                var segEndId = seg.end().id();
+                var size = relEndId == segEndId ? relIdx.get(rel) : -relIdx.get(rel);
                 packer.pack(size);
                 packer.pack(nodeIdx.get(seg.end()));
             }
@@ -186,9 +185,9 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
             packer.packStructHeader(elementIdEnabled ? 4 : 3, CommonValueUnpacker.NODE);
             packer.pack(node.id());
 
-            Iterable<String> labels = node.labels();
+            var labels = node.labels();
             packer.packListHeader(Iterables.count(labels));
-            for (String label : labels) {
+            for (var label : labels) {
                 packer.pack(label);
             }
 
@@ -200,9 +199,9 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
         }
 
         private void packProperties(Entity entity) throws IOException {
-            Iterable<String> keys = entity.keys();
+            var keys = entity.keys();
             packer.packMapHeader(entity.size());
-            for (String propKey : keys) {
+            for (var propKey : keys) {
                 packer.pack(propKey);
                 packInternalValue((InternalValue) entity.get(propKey));
             }

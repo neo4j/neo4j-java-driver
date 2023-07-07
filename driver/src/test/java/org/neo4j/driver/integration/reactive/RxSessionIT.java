@@ -30,15 +30,12 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -66,8 +63,8 @@ class RxSessionIT {
     @Test
     void shouldAllowSessionRun() {
         // When
-        RxSession session = neo4j.driver().rxSession();
-        RxResult res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
+        var session = neo4j.driver().rxSession();
+        var res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
 
         // Then I should be able to iterate over the result
         StepVerifier.create(Flux.from(res.records()).map(r -> r.get("a").asInt()))
@@ -82,13 +79,13 @@ class RxSessionIT {
     @Test
     void shouldBeAbleToReuseSessionAfterFailure() {
         // Given
-        RxSession session = neo4j.driver().rxSession();
-        RxResult res1 = session.run("INVALID");
+        var session = neo4j.driver().rxSession();
+        var res1 = session.run("INVALID");
 
         StepVerifier.create(res1.records()).expectError(ClientException.class).verify();
 
         // When
-        RxResult res2 = session.run("RETURN 1");
+        var res2 = session.run("RETURN 1");
 
         // Then
         StepVerifier.create(res2.records())
@@ -101,9 +98,9 @@ class RxSessionIT {
 
     @Test
     void shouldRunAsyncTransactionWithoutRetries() {
-        RxSession session = neo4j.driver().rxSession();
-        InvocationTrackingWork work = new InvocationTrackingWork("CREATE (:Apa) RETURN 42");
-        Publisher<Integer> publisher = session.writeTransaction(work);
+        var session = neo4j.driver().rxSession();
+        var work = new InvocationTrackingWork("CREATE (:Apa) RETURN 42");
+        var publisher = session.writeTransaction(work);
 
         StepVerifier.create(publisher).expectNext(42).verifyComplete();
 
@@ -113,14 +110,14 @@ class RxSessionIT {
 
     @Test
     void shouldRunAsyncTransactionWithRetriesOnAsyncFailures() {
-        RxSession session = neo4j.driver().rxSession();
-        InvocationTrackingWork work = new InvocationTrackingWork("CREATE (:Node) RETURN 24")
+        var session = neo4j.driver().rxSession();
+        var work = new InvocationTrackingWork("CREATE (:Node) RETURN 24")
                 .withAsyncFailures(
                         new ServiceUnavailableException("Oh!"),
                         new SessionExpiredException("Ah!"),
                         new TransientException("Code", "Message"));
 
-        Publisher<Integer> publisher = session.writeTransaction(work);
+        var publisher = session.writeTransaction(work);
         StepVerifier.create(publisher).expectNext(24).verifyComplete();
 
         assertEquals(4, work.invocationCount());
@@ -130,13 +127,13 @@ class RxSessionIT {
 
     @Test
     void shouldRunAsyncTransactionWithRetriesOnSyncFailures() {
-        RxSession session = neo4j.driver().rxSession();
-        InvocationTrackingWork work = new InvocationTrackingWork("CREATE (:Test) RETURN 12")
+        var session = neo4j.driver().rxSession();
+        var work = new InvocationTrackingWork("CREATE (:Test) RETURN 12")
                 .withSyncFailures(
                         new TransientException("Oh!", "Deadlock!"),
                         new ServiceUnavailableException("Oh! Network Failure"));
 
-        Publisher<Integer> publisher = session.writeTransaction(work);
+        var publisher = session.writeTransaction(work);
         StepVerifier.create(publisher).expectNext(12).verifyComplete();
 
         assertEquals(3, work.invocationCount());
@@ -146,9 +143,9 @@ class RxSessionIT {
 
     @Test
     void shouldRunAsyncTransactionThatCanNotBeRetried() {
-        RxSession session = neo4j.driver().rxSession();
-        InvocationTrackingWork work = new InvocationTrackingWork("UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x");
-        Publisher<Integer> publisher = session.writeTransaction(work);
+        var session = neo4j.driver().rxSession();
+        var work = new InvocationTrackingWork("UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x");
+        var publisher = session.writeTransaction(work);
 
         StepVerifier.create(publisher)
                 .expectNext(1)
@@ -163,13 +160,13 @@ class RxSessionIT {
 
     @Test
     void shouldRunAsyncTransactionThatCanNotBeRetriedAfterATransientFailure() {
-        RxSession session = neo4j.driver().rxSession();
+        var session = neo4j.driver().rxSession();
         // first throw TransientException directly from work, retry can happen afterwards
         // then return a future failed with DatabaseException, retry can't happen afterwards
-        InvocationTrackingWork work = new InvocationTrackingWork("CREATE (:Person) RETURN 1")
+        var work = new InvocationTrackingWork("CREATE (:Person) RETURN 1")
                 .withSyncFailures(new TransientException("Oh!", "Deadlock!"))
                 .withAsyncFailures(new DatabaseException("Oh!", "OutOfMemory!"));
-        Publisher<Integer> publisher = session.writeTransaction(work);
+        var publisher = session.writeTransaction(work);
 
         StepVerifier.create(publisher)
                 .expectErrorSatisfies(e -> {
@@ -207,16 +204,16 @@ class RxSessionIT {
     }
 
     private void assertNoParallelScheduler() {
-        Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
-        for (Thread t : threadSet) {
-            String name = t.getName();
+        var threadSet = Thread.getAllStackTraces().keySet();
+        for (var t : threadSet) {
+            var name = t.getName();
             assertThat(name, not(startsWith("parallel")));
         }
     }
 
     private long countNodesByLabel(String label) {
-        try (Session session = neo4j.driver().session()) {
-            Result result = session.run("MATCH (n:" + label + ") RETURN count(n)");
+        try (var session = neo4j.driver().session()) {
+            var result = session.run("MATCH (n:" + label + ") RETURN count(n)");
             return result.single().get(0).asLong();
         }
     }

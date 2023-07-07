@@ -25,32 +25,32 @@ import org.junit.jupiter.api.Test;
 class RoundRobinArrayIndexTest {
     @Test
     void shouldHandleZeroLength() {
-        RoundRobinArrayIndex roundRobinIndex = new RoundRobinArrayIndex();
+        var roundRobinIndex = new RoundRobinArrayIndex();
 
-        int index = roundRobinIndex.next(0);
+        var index = roundRobinIndex.next(0);
 
         assertEquals(-1, index);
     }
 
     @Test
     void shouldReturnIndexesInRoundRobinOrder() {
-        RoundRobinArrayIndex roundRobinIndex = new RoundRobinArrayIndex();
+        var roundRobinIndex = new RoundRobinArrayIndex();
 
-        for (int i = 0; i < 10; i++) {
-            int index = roundRobinIndex.next(10);
+        for (var i = 0; i < 10; i++) {
+            var index = roundRobinIndex.next(10);
             assertEquals(i, index);
         }
 
-        for (int i = 0; i < 5; i++) {
-            int index = roundRobinIndex.next(5);
+        for (var i = 0; i < 5; i++) {
+            var index = roundRobinIndex.next(5);
             assertEquals(i, index);
         }
     }
 
     @Test
     void shouldHandleOverflow() {
-        int arrayLength = 10;
-        RoundRobinArrayIndex roundRobinIndex = new RoundRobinArrayIndex(Integer.MAX_VALUE - 1);
+        var arrayLength = 10;
+        var roundRobinIndex = new RoundRobinArrayIndex(Integer.MAX_VALUE - 1);
 
         assertEquals((Integer.MAX_VALUE - 1) % arrayLength, roundRobinIndex.next(arrayLength));
         assertEquals(Integer.MAX_VALUE % arrayLength, roundRobinIndex.next(arrayLength));

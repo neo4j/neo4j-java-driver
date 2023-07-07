@@ -32,14 +32,11 @@ import static org.neo4j.driver.Values.parameters;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
@@ -54,10 +51,10 @@ class ResultStreamIT {
     @Test
     void shouldAllowIteratingOverResultStream() {
         // When
-        Result res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
+        var res = session.run("UNWIND [1,2,3,4] AS a RETURN a");
 
         // Then I should be able to iterate over the result
-        int idx = 1;
+        var idx = 1;
         while (res.hasNext()) {
             assertEquals(idx++, res.next().get("a").asLong());
         }
@@ -66,7 +63,7 @@ class ResultStreamIT {
     @Test
     void shouldHaveFieldNamesInResult() {
         // When
-        Result res = session.run("CREATE (n:TestNode {name:'test'}) RETURN n");
+        var res = session.run("CREATE (n:TestNode {name:'test'}) RETURN n");
 
         // Then
         assertEquals("[n]", res.keys().toString());
@@ -77,10 +74,10 @@ class ResultStreamIT {
     @Test
     void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField() {
         // Given
-        Result rs = session.run("CREATE (n:Person {name:$name}) RETURN n", parameters("name", "Tom Hanks"));
+        var rs = session.run("CREATE (n:Person {name:$name}) RETURN n", parameters("name", "Tom Hanks"));
 
         // When
-        Record single = rs.single();
+        var single = rs.single();
 
         // Then
         assertTrue(single.get("m").isNull());
@@ -89,10 +86,10 @@ class ResultStreamIT {
     @Test
     void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode() {
         // Given
-        Result rs = session.run("CREATE (n:Person {name:$name}) RETURN n", parameters("name", "Tom Hanks"));
+        var rs = session.run("CREATE (n:Person {name:$name}) RETURN n", parameters("name", "Tom Hanks"));
 
         // When
-        Record record = rs.single();
+        var record = rs.single();
 
         // Then
         assertTrue(record.get("n").get("age").isNull());
@@ -101,7 +98,7 @@ class ResultStreamIT {
     @Test
     void shouldNotReturnNullKeysOnEmptyResult() {
         // Given
-        Result rs = session.run("CREATE (n:Person {name:$name})", parameters("name", "Tom Hanks"));
+        var rs = session.run("CREATE (n:Person {name:$name})", parameters("name", "Tom Hanks"));
 
         // THEN
         assertNotNull(rs.keys());
@@ -113,7 +110,7 @@ class ResultStreamIT {
         assertThrows(Exception.class, () -> session.run("INVALID"));
 
         // When
-        Result res2 = session.run("RETURN 1");
+        var res2 = session.run("RETURN 1");
 
         // Then
         assertTrue(res2.hasNext());
@@ -122,28 +119,28 @@ class ResultStreamIT {
 
     @Test
     void shouldBeAbleToAccessSummaryAfterTransactionFailure() {
-        AtomicReference<Result> resultRef = new AtomicReference<>();
+        var resultRef = new AtomicReference<Result>();
 
         assertThrows(ClientException.class, () -> {
-            try (Transaction tx = session.beginTransaction()) {
-                Result result = tx.run("UNWIND [1,2,0] AS x RETURN 10/x");
+            try (var tx = session.beginTransaction()) {
+                var result = tx.run("UNWIND [1,2,0] AS x RETURN 10/x");
                 resultRef.set(result);
                 tx.commit();
             }
         });
 
-        Result result = resultRef.get();
+        var result = resultRef.get();
         assertNotNull(result);
         assertEquals(0, result.consume().counters().nodesCreated());
     }
 
     @Test
     void shouldConvertEmptyResultToStream() {
-        long count = session.run("MATCH (n:WrongLabel) RETURN n").stream().count();
+        var count = session.run("MATCH (n:WrongLabel) RETURN n").stream().count();
 
         assertEquals(0, count);
 
-        Optional<Record> anyRecord =
+        var anyRecord =
                 session.run("MATCH (n:OtherWrongLabel) RETURN n").stream().findAny();
 
         assertFalse(anyRecord.isPresent());
@@ -151,7 +148,7 @@ class ResultStreamIT {
 
     @Test
     void shouldConvertResultToStream() {
-        List<Integer> receivedList = session.run("UNWIND range(1, 10) AS x RETURN x").stream()
+        var receivedList = session.run("UNWIND range(1, 10) AS x RETURN x").stream()
                 .map(record -> record.get(0))
                 .map(Value::asInt)
                 .collect(toList());
@@ -163,7 +160,7 @@ class ResultStreamIT {
     void shouldConvertImmediatelyFailingResultToStream() {
         List<Integer> seen = new ArrayList<>();
 
-        ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN 10 / 0").stream()
+        var e = assertThrows(ClientException.class, () -> session.run("RETURN 10 / 0").stream()
                 .forEach(record -> seen.add(record.get(0).asInt())));
 
         assertThat(e.getMessage(), containsString("/ by zero"));
@@ -175,7 +172,7 @@ class ResultStreamIT {
     void shouldConvertEventuallyFailingResultToStream() {
         List<Integer> seen = new ArrayList<>();
 
-        ClientException e = assertThrows(
+        var e = assertThrows(
                 ClientException.class,
                 () -> session.run("CYPHER runtime=interpreted UNWIND range(5, 0, -1) AS x RETURN x / x").stream()
                         .forEach(record -> seen.add(record.get(0).asInt())));
@@ -188,7 +185,7 @@ class ResultStreamIT {
 
     @Test
     void shouldEmptyResultWhenConvertedToStream() {
-        Result result = session.run("UNWIND range(1, 10) AS x RETURN x");
+        var result = session.run("UNWIND range(1, 10) AS x RETURN x");
 
         assertTrue(result.hasNext());
         assertEquals(1, result.next().get(0).asInt());
@@ -196,8 +193,7 @@ class ResultStreamIT {
         assertTrue(result.hasNext());
         assertEquals(2, result.next().get(0).asInt());
 
-        List<Integer> list =
-                result.stream().map(record -> record.get(0).asInt()).collect(toList());
+        var list = result.stream().map(record -> record.get(0).asInt()).collect(toList());
         assertEquals(asList(3, 4, 5, 6, 7, 8, 9, 10), list);
 
         assertFalse(result.hasNext());
@@ -208,13 +204,13 @@ class ResultStreamIT {
 
     @Test
     void shouldConsumeLargeResultAsParallelStream() {
-        List<String> receivedList = session.run("UNWIND range(1, 200000) AS x RETURN 'value-' + x").stream()
+        var receivedList = session.run("UNWIND range(1, 200000) AS x RETURN 'value-' + x").stream()
                 .parallel()
                 .map(record -> record.get(0))
                 .map(Value::asString)
                 .collect(toList());
 
-        List<String> expectedList =
+        var expectedList =
                 IntStream.range(1, 200001).mapToObj(i -> "value-" + i).collect(toList());
 
         assertEquals(expectedList, receivedList);

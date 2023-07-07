@@ -27,7 +27,7 @@ import org.neo4j.driver.internal.messaging.response.SuccessMessage;
 public class SuccessMessageEncoder implements MessageEncoder {
     @Override
     public void encode(Message message, ValuePacker packer) throws IOException {
-        SuccessMessage successMessage = (SuccessMessage) message;
+        var successMessage = (SuccessMessage) message;
         packer.packStructHeader(1, successMessage.signature());
         packer.pack(successMessage.metadata());
     }

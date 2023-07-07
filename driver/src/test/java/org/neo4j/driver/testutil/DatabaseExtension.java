@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,7 +47,6 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.testutil.CertificateUtil.CertificateKeyPair;
@@ -88,7 +86,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         defaultConfig.put(BOLT_TLS_LEVEL, OPTIONAL.toString());
 
         if (dockerAvailable) {
-            CertificateKeyPair<File, File> pair = generateCertificateAndKey();
+            var pair = generateCertificateAndKey();
             cert = pair.cert();
             key = pair.key();
 
@@ -99,8 +97,8 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
             nginx.start();
             nginxRunning = true;
 
-            URI neo4jBoltUri = URI.create(neo4jContainer.getBoltUrl());
-            URI neo4jHttpUri = URI.create(neo4jContainer.getHttpUrl());
+            var neo4jBoltUri = URI.create(neo4jContainer.getBoltUrl());
+            var neo4jHttpUri = URI.create(neo4jContainer.getHttpUrl());
 
             boltUri = URI.create(String.format(
                     "%s://%s:%d", neo4jBoltUri.getScheme(), neo4jBoltUri.getHost(), nginx.getMappedPort(BOLT_PORT)));
@@ -172,13 +170,13 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     }
 
     public String addImportFile(String prefix, String suffix, String contents) throws IOException {
-        File tmpFile = File.createTempFile(prefix, suffix, null);
+        var tmpFile = File.createTempFile(prefix, suffix, null);
         tmpFile.deleteOnExit();
-        try (PrintWriter out = new PrintWriter(tmpFile)) {
+        try (var out = new PrintWriter(tmpFile)) {
             out.println(contents);
         }
-        Path tmpFilePath = tmpFile.toPath();
-        Path targetPath =
+        var tmpFilePath = tmpFile.toPath();
+        var targetPath =
                 Paths.get("/var/lib/neo4j/import", tmpFilePath.getFileName().toString());
         neo4jContainer.copyFileToContainer(MountableFile.forHostPath(tmpFilePath), targetPath.toString());
         return String.format("file:///%s", tmpFile.getName());
@@ -248,13 +246,13 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     }
 
     private boolean isNeo4jVersionOrEarlier(int major, int minor) {
-        try (Session session = driver.session()) {
-            String neo4jVersion = session.executeRead(
+        try (var session = driver.session()) {
+            var neo4jVersion = session.executeRead(
                     tx -> tx.run("CALL dbms.components() YIELD versions " + "RETURN versions[0] AS version")
                             .single()
                             .get("version")
                             .asString());
-            String[] versions = neo4jVersion.split("\\.");
+            var versions = neo4jVersion.split("\\.");
             return parseInt(versions[0]) <= major && parseInt(versions[1]) <= minor;
         }
     }
@@ -264,7 +262,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     }
 
     public static GeneralName getDockerHostGeneralName() {
-        String host = DockerClientFactory.instance().dockerHostIpAddress();
+        var host = DockerClientFactory.instance().dockerHostIpAddress();
         GeneralName generalName;
         try {
             generalName = new GeneralName(GeneralName.iPAddress, host);
@@ -283,10 +281,9 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     }
 
     private static Neo4jContainer<?> setupNeo4jContainer(File cert, File key, Map<String, String> config) {
-        String neo4JVersion =
-                Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
+        var neo4JVersion = Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
 
-        ImageFromDockerfile extendedNeo4jImage = new ImageFromDockerfile()
+        var extendedNeo4jImage = new ImageFromDockerfile()
                 .withDockerfileFromBuilder(builder -> builder.from(String.format("neo4j:%s-enterprise", neo4JVersion))
                         .run("mkdir /var/lib/neo4j/certificates/bolt")
                         .copy("public.crt", "/var/lib/neo4j/certificates/bolt/")
@@ -295,14 +292,14 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
                 .withFileFromPath("public.crt", cert.toPath())
                 .withFileFromPath("private.key", key.toPath());
 
-        DockerImageName extendedNeo4jImageAsSubstitute =
+        var extendedNeo4jImageAsSubstitute =
                 DockerImageName.parse(extendedNeo4jImage.get()).asCompatibleSubstituteFor("neo4j");
 
         neo4jContainer = new Neo4jContainer<>(extendedNeo4jImageAsSubstitute)
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
                 .withNetwork(network)
                 .withNetworkAliases("neo4j");
-        for (Map.Entry<String, String> entry : config.entrySet()) {
+        for (var entry : config.entrySet()) {
             neo4jContainer.withNeo4jConfig(entry.getKey(), entry.getValue());
         }
 
@@ -311,7 +308,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
 
     @SuppressWarnings("rawtypes")
     private static GenericContainer<?> setupNginxContainer() {
-        ImageFromDockerfile extendedNginxImage = new ImageFromDockerfile()
+        var extendedNginxImage = new ImageFromDockerfile()
                 .withDockerfileFromBuilder(builder -> builder.from("nginx:1.23.0-alpine")
                         .copy("nginx.conf", "/etc/nginx/")
                         .build())
@@ -324,8 +321,8 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     }
 
     private static void waitForBoltAvailability() {
-        int maxAttempts = 600;
-        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+        var maxAttempts = 600;
+        for (var attempt = 0; attempt < maxAttempts; attempt++) {
             try {
                 driver.verifyConnectivity();
                 return;

@@ -65,9 +65,8 @@ abstract class BasicPullResponseHandlerTestBase {
     @Test
     void shouldRequestMoreWithHasMore() throws Throwable {
         // Given a handler in streaming state
-        Connection conn = mockConnection();
-        BasicPullResponseHandler handler =
-                newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.STREAMING_STATE);
+        var conn = mockConnection();
+        var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.STREAMING_STATE);
 
         // When
         handler.request(100); // I append a request to ask for more
@@ -82,12 +81,12 @@ abstract class BasicPullResponseHandlerTestBase {
     @Test
     void shouldInformSummaryConsumerSuccessWithHasMore() throws Throwable {
         // Given
-        Connection conn = mockConnection();
+        var conn = mockConnection();
         @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
         @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
-        BasicPullResponseHandler handler = newResponseHandlerWithStatus(
+        var handler = newResponseHandlerWithStatus(
                 conn, recordConsumer, summaryConsumer, BasicPullResponseHandler.State.STREAMING_STATE);
         // When
 
@@ -103,9 +102,8 @@ abstract class BasicPullResponseHandlerTestBase {
     @Test
     void shouldDiscardIfStreamingIsCanceled() throws Throwable {
         // Given a handler in streaming state
-        Connection conn = mockConnection();
-        BasicPullResponseHandler handler =
-                newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.CANCELLED_STATE);
+        var conn = mockConnection();
+        var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.CANCELLED_STATE);
         handler.onSuccess(metaWithHasMoreEqualsTrue());
 
         // Then
@@ -124,12 +122,12 @@ abstract class BasicPullResponseHandlerTestBase {
     @Test
     void shouldReportRecordInStreaming() throws Throwable {
         // Given a handler in streaming state
-        Connection conn = mockConnection();
+        var conn = mockConnection();
         @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
         @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
-        BasicPullResponseHandler handler = newResponseHandlerWithStatus(
+        var handler = newResponseHandlerWithStatus(
                 conn, recordConsumer, summaryConsumer, BasicPullResponseHandler.State.STREAMING_STATE);
 
         // When
@@ -146,12 +144,12 @@ abstract class BasicPullResponseHandlerTestBase {
     @MethodSource("allStatusExceptStreaming")
     void shouldNotReportRecordWhenNotStreaming(BasicPullResponseHandler.State state) throws Throwable {
         // Given a handler in streaming state
-        Connection conn = mockConnection();
+        var conn = mockConnection();
         @SuppressWarnings("unchecked")
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
         @SuppressWarnings("unchecked")
         BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
-        BasicPullResponseHandler handler = newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
+        var handler = newResponseHandlerWithStatus(conn, recordConsumer, summaryConsumer, state);
 
         // When
         handler.onRecord(new Value[0]);
@@ -166,9 +164,8 @@ abstract class BasicPullResponseHandlerTestBase {
     @Test
     void shouldStayInStreaming() throws Throwable {
         // Given
-        Connection conn = mockConnection();
-        BasicPullResponseHandler handler =
-                newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.STREAMING_STATE);
+        var conn = mockConnection();
+        var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.STREAMING_STATE);
 
         // When
         handler.request(100);
@@ -180,9 +177,8 @@ abstract class BasicPullResponseHandlerTestBase {
     @Test
     void shouldPullAndSwitchStreamingInReady() throws Throwable {
         // Given
-        Connection conn = mockConnection();
-        BasicPullResponseHandler handler =
-                newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.READY_STATE);
+        var conn = mockConnection();
+        var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.READY_STATE);
 
         // When
         handler.request(100);
@@ -196,9 +192,8 @@ abstract class BasicPullResponseHandlerTestBase {
     @Test
     void shouldStayInCancel() throws Throwable {
         // Given
-        Connection conn = mockConnection();
-        BasicPullResponseHandler handler =
-                newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.CANCELLED_STATE);
+        var conn = mockConnection();
+        var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.CANCELLED_STATE);
 
         // When
         handler.cancel();
@@ -211,9 +206,8 @@ abstract class BasicPullResponseHandlerTestBase {
     @Test
     void shouldSwitchFromStreamingToCancel() throws Throwable {
         // Given
-        Connection conn = mockConnection();
-        BasicPullResponseHandler handler =
-                newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.STREAMING_STATE);
+        var conn = mockConnection();
+        var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.STREAMING_STATE);
 
         // When
         handler.cancel();
@@ -226,9 +220,8 @@ abstract class BasicPullResponseHandlerTestBase {
     @Test
     void shouldSwitchFromReadyToCancel() throws Throwable {
         // Given
-        Connection conn = mockConnection();
-        BasicPullResponseHandler handler =
-                newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.READY_STATE);
+        var conn = mockConnection();
+        var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.READY_STATE);
 
         // When
         handler.cancel();
@@ -239,7 +232,7 @@ abstract class BasicPullResponseHandlerTestBase {
     }
 
     static Connection mockConnection() {
-        Connection conn = mock(Connection.class);
+        var conn = mock(Connection.class);
         when(conn.serverAddress()).thenReturn(mock(BoltServerAddress.class));
         when(conn.protocol()).thenReturn(BoltProtocolV43.INSTANCE);
         when(conn.serverAgent()).thenReturn("Neo4j/4.2.5");
@@ -256,7 +249,7 @@ abstract class BasicPullResponseHandlerTestBase {
     }
 
     private static HashMap<String, Value> metaWithHasMoreEqualsTrue() {
-        HashMap<String, Value> meta = new HashMap<>(1);
+        var meta = new HashMap<String, Value>(1);
         meta.put("has_more", BooleanValue.TRUE);
         return meta;
     }

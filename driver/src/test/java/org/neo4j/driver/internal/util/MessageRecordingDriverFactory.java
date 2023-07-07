@@ -86,8 +86,7 @@ public class MessageRecordingDriverFactory extends DriverFactory {
     private class MessageRecordingHandler extends MessageToMessageEncoder<Message> {
         @Override
         protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
-            List<Message> messages =
-                    messagesByChannel.computeIfAbsent(ctx.channel(), ignore -> new CopyOnWriteArrayList<>());
+            var messages = messagesByChannel.computeIfAbsent(ctx.channel(), ignore -> new CopyOnWriteArrayList<>());
             messages.add(msg);
             out.add(msg);
         }

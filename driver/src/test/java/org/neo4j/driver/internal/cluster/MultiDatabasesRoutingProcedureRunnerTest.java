@@ -47,15 +47,14 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.spi.Connection;
 
 class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest {
     @ParameterizedTest
     @ValueSource(strings = {"", SYSTEM_DATABASE_NAME, " this is a db name "})
     void shouldCallGetRoutingTableWithEmptyMapOnSystemDatabaseForDatabase(String db) {
-        TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner(RoutingContext.EMPTY);
-        RoutingProcedureResponse response = await(runner.run(connection(), database(db), Collections.emptySet(), null));
+        var runner = new TestRoutingProcedureRunner(RoutingContext.EMPTY);
+        var response = await(runner.run(connection(), database(db), Collections.emptySet(), null));
 
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());
@@ -64,18 +63,18 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertThat(runner.connection.databaseName(), equalTo(systemDatabase()));
         assertThat(runner.connection.mode(), equalTo(AccessMode.READ));
 
-        Query query = generateMultiDatabaseRoutingQuery(Collections.emptyMap(), db);
+        var query = generateMultiDatabaseRoutingQuery(Collections.emptyMap(), db);
         assertThat(runner.procedure, equalTo(query));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", SYSTEM_DATABASE_NAME, " this is a db name "})
     void shouldCallGetRoutingTableWithParamOnSystemDatabaseForDatabase(String db) {
-        URI uri = URI.create("neo4j://localhost/?key1=value1&key2=value2");
-        RoutingContext context = new RoutingContext(uri);
+        var uri = URI.create("neo4j://localhost/?key1=value1&key2=value2");
+        var context = new RoutingContext(uri);
 
-        TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner(context);
-        RoutingProcedureResponse response = await(runner.run(connection(), database(db), Collections.emptySet(), null));
+        var runner = new TestRoutingProcedureRunner(context);
+        var response = await(runner.run(connection(), database(db), Collections.emptySet(), null));
 
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());
@@ -84,7 +83,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertThat(runner.connection.databaseName(), equalTo(systemDatabase()));
         assertThat(runner.connection.mode(), equalTo(AccessMode.READ));
 
-        Query query = generateMultiDatabaseRoutingQuery(context.toMap(), db);
+        var query = generateMultiDatabaseRoutingQuery(context.toMap(), db);
         assertThat(response.procedure(), equalTo(query));
         assertThat(runner.procedure, equalTo(query));
     }
@@ -101,7 +100,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     }
 
     private static Query generateMultiDatabaseRoutingQuery(Map<String, String> context, String db) {
-        Value parameters = parameters(ROUTING_CONTEXT, context, DATABASE_NAME, db);
+        var parameters = parameters(ROUTING_CONTEXT, context, DATABASE_NAME, db);
         return new Query(MULTI_DB_GET_ROUTING_TABLE, parameters);
     }
 

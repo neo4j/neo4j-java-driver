@@ -31,33 +31,33 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 class MapValueTest {
     @Test
     void shouldHaveSensibleToString() {
-        MapValue mapValue = mapValue();
+        var mapValue = mapValue();
         assertThat(mapValue.toString(), equalTo("{k1: \"v1\", k2: 42}"));
     }
 
     @Test
     void shouldHaveCorrectPropertyCount() {
-        MapValue mapValue = mapValue();
+        var mapValue = mapValue();
         assertThat(mapValue.size(), equalTo(2));
     }
 
     @Test
     void shouldHaveCorrectType() {
 
-        MapValue map = mapValue();
+        var map = mapValue();
 
         assertThat(map.type(), equalTo(InternalTypeSystem.TYPE_SYSTEM.MAP()));
     }
 
     @Test
     void shouldNotBeNull() {
-        MapValue map = mapValue();
+        var map = mapValue();
 
         assertFalse(map.isNull());
     }
 
     private MapValue mapValue() {
-        HashMap<String, Value> map = new HashMap<>();
+        var map = new HashMap<String, Value>();
         map.put("k1", value("v1"));
         map.put("k2", value(42));
         return new MapValue(map);

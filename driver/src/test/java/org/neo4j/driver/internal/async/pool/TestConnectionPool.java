@@ -37,7 +37,6 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 
@@ -73,16 +72,16 @@ public class TestConnectionPool extends ConnectionPoolImpl {
 
     @Override
     ExtendedChannelPool newPool(BoltServerAddress address) {
-        ExtendedChannelPool channelPool = new ExtendedChannelPool() {
+        var channelPool = new ExtendedChannelPool() {
             private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
             @Override
             public CompletionStage<Channel> acquire(AuthToken overrideAuthToken) {
-                EmbeddedChannel channel = new EmbeddedChannel();
+                var channel = new EmbeddedChannel();
                 setServerAddress(channel, address);
                 setPoolId(channel, id());
 
-                ListenerEvent<?> event = nettyChannelTracker.channelCreating(id());
+                var event = nettyChannelTracker.channelCreating(id());
                 nettyChannelTracker.channelCreated(channel, event);
                 nettyChannelTracker.channelAcquired(channel);
 
@@ -123,7 +122,7 @@ public class TestConnectionPool extends ConnectionPoolImpl {
 
     private static ConnectionFactory newConnectionFactory() {
         return (channel, pool) -> {
-            Connection conn = mock(Connection.class);
+            var conn = mock(Connection.class);
             when(conn.release()).thenAnswer(invocation -> pool.release(channel));
             return conn;
         };

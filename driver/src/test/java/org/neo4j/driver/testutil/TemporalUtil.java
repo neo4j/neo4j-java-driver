@@ -36,10 +36,8 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
-import java.time.temporal.ValueRange;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.types.IsoDuration;
@@ -78,7 +76,7 @@ public final class TemporalUtil {
     }
 
     public static OffsetTime randomOffsetTime() {
-        ZoneOffset offset = randomZoneOffset();
+        var offset = randomZoneOffset();
         return OffsetTime.of(
                 random(HOUR_OF_DAY), random(MINUTE_OF_HOUR), random(SECOND_OF_MINUTE), random(NANO_OF_SECOND), offset);
     }
@@ -112,7 +110,7 @@ public final class TemporalUtil {
     }
 
     public static IsoDuration randomDuration() {
-        int sign = random().nextBoolean() ? 1 : -1; // duration can be negative
+        var sign = random().nextBoolean() ? 1 : -1; // duration can be negative
         return new InternalIsoDuration(
                 sign * randomInt(), sign * randomInt(), sign * randomInt(), Math.abs(random(NANO_OF_SECOND)));
     }
@@ -130,19 +128,19 @@ public final class TemporalUtil {
     }
 
     private static ZoneOffset randomZoneOffset() {
-        int min = ZoneOffset.MIN.getTotalSeconds();
-        int max = ZoneOffset.MAX.getTotalSeconds();
+        var min = ZoneOffset.MIN.getTotalSeconds();
+        var max = ZoneOffset.MAX.getTotalSeconds();
         return ZoneOffset.ofTotalSeconds(random().nextInt(min, max));
     }
 
     private static ZoneId randomZoneId() {
-        Set<String> availableZoneIds = ZoneId.getAvailableZoneIds().stream()
+        var availableZoneIds = ZoneId.getAvailableZoneIds().stream()
                 .filter(id -> !EXCLUDED_ZONE_IDS.contains(id))
                 .collect(toSet());
 
-        int randomIndex = random().nextInt(availableZoneIds.size());
-        int index = 0;
-        for (String id : availableZoneIds) {
+        var randomIndex = random().nextInt(availableZoneIds.size());
+        var index = 0;
+        for (var id : availableZoneIds) {
             if (index == randomIndex) {
                 return ZoneId.of(id);
             } else {
@@ -153,10 +151,10 @@ public final class TemporalUtil {
     }
 
     private static int random(ChronoField field) {
-        ValueRange range = field.range();
-        long min = range.getMinimum();
-        long max = range.getSmallestMaximum();
-        long value = random().nextLong(min, max);
+        var range = field.range();
+        var min = range.getMinimum();
+        var max = range.getSmallestMaximum();
+        var value = random().nextLong(min, max);
         return Math.toIntExact(value);
     }
 

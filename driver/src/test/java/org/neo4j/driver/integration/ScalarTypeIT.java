@@ -35,7 +35,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.value.ListValue;
@@ -68,7 +67,7 @@ class ScalarTypeIT {
     @MethodSource("typesToTest")
     void shouldHandleType(String query, Value expectedValue) {
         // When
-        Result cursor = session.run(query);
+        var cursor = session.run(query);
 
         // Then
         assertThat(cursor.single().get("v"), equalTo(expectedValue));
@@ -88,10 +87,10 @@ class ScalarTypeIT {
     void shouldEchoVeryLongMap(Value collectionItem) {
         // Given
         Map<String, Value> input = new HashMap<>();
-        for (int i = 0; i < 1000; i++) {
+        for (var i = 0; i < 1000; i++) {
             input.put(String.valueOf(i), collectionItem);
         }
-        MapValue mapValue = new MapValue(input);
+        var mapValue = new MapValue(input);
 
         // When & Then
         verifyCanEncodeAndDecode(mapValue);
@@ -101,11 +100,11 @@ class ScalarTypeIT {
     @MethodSource("collectionItems")
     void shouldEchoVeryLongList(Value collectionItem) {
         // Given
-        Value[] input = new Value[1000];
-        for (int i = 0; i < 1000; i++) {
+        var input = new Value[1000];
+        for (var i = 0; i < 1000; i++) {
             input[i] = collectionItem;
         }
-        ListValue listValue = new ListValue(input);
+        var listValue = new ListValue(input);
 
         // When & Then
         verifyCanEncodeAndDecode(listValue);
@@ -114,10 +113,10 @@ class ScalarTypeIT {
     @Test
     void shouldEchoVeryLongString() {
         // Given
-        char[] chars = new char[10000];
+        var chars = new char[10000];
         Arrays.fill(chars, '*');
-        String longText = new String(chars);
-        StringValue input = new StringValue(longText);
+        var longText = new String(chars);
+        var input = new StringValue(longText);
 
         // When & Then
         verifyCanEncodeAndDecode(input);
@@ -176,7 +175,7 @@ class ScalarTypeIT {
 
     @Test
     void shouldEchoNestedList() throws Throwable {
-        Value input = Values.value(toValueStream(listToTest()));
+        var input = Values.value(toValueStream(listToTest()));
 
         // When & Then
         assertTrue(input instanceof ListValue);
@@ -203,7 +202,7 @@ class ScalarTypeIT {
 
     @Test
     void shouldEchoNestedMap() throws Throwable {
-        MapValue input = new MapValue(
+        var input = new MapValue(
                 toValueStream(mapToTest()).collect(Collectors.toMap(Object::toString, Function.identity())));
 
         // When & Then
@@ -212,7 +211,7 @@ class ScalarTypeIT {
 
     private Stream<Value> toValueStream(Stream<Arguments> arguments) {
         return arguments.map(arg -> {
-            Object obj = arg.get()[0];
+            var obj = arg.get()[0];
             assertTrue(obj instanceof Value);
             return (Value) obj;
         });
@@ -220,7 +219,7 @@ class ScalarTypeIT {
 
     private void verifyCanEncodeAndDecode(Value input) {
         // When
-        Result cursor = session.run("RETURN $x as y", parameters("x", input));
+        var cursor = session.run("RETURN $x as y", parameters("x", input));
 
         // Then
         assertThat(cursor.single().get("y"), equalTo(input));

@@ -43,12 +43,10 @@ import org.neo4j.driver.internal.spi.Connection;
 abstract class AbstractRoutingProcedureRunnerTest {
     @Test
     void shouldReturnFailedResponseOnClientException() {
-        ClientException error = new ClientException("Hi");
-        SingleDatabaseRoutingProcedureRunner runner =
-                singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY, failedFuture(error));
+        var error = new ClientException("Hi");
+        var runner = singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY, failedFuture(error));
 
-        RoutingProcedureResponse response =
-                await(runner.run(connection(), defaultDatabase(), Collections.emptySet(), null));
+        var response = await(runner.run(connection(), defaultDatabase(), Collections.emptySet(), null));
 
         assertFalse(response.isSuccess());
         assertEquals(error, response.error());
@@ -56,11 +54,10 @@ abstract class AbstractRoutingProcedureRunnerTest {
 
     @Test
     void shouldReturnFailedStageOnError() {
-        Exception error = new Exception("Hi");
-        SingleDatabaseRoutingProcedureRunner runner =
-                singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY, failedFuture(error));
+        var error = new Exception("Hi");
+        var runner = singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY, failedFuture(error));
 
-        Exception e = assertThrows(
+        var e = assertThrows(
                 Exception.class,
                 () -> await(runner.run(connection(), defaultDatabase(), Collections.emptySet(), null)));
         assertEquals(error, e);
@@ -68,11 +65,10 @@ abstract class AbstractRoutingProcedureRunnerTest {
 
     @Test
     void shouldReleaseConnectionOnSuccess() {
-        SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY);
+        var runner = singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY);
 
-        Connection connection = connection();
-        RoutingProcedureResponse response =
-                await(runner.run(connection, defaultDatabase(), Collections.emptySet(), null));
+        var connection = connection();
+        var response = await(runner.run(connection, defaultDatabase(), Collections.emptySet(), null));
 
         assertTrue(response.isSuccess());
         verify(connection).release();
@@ -80,12 +76,12 @@ abstract class AbstractRoutingProcedureRunnerTest {
 
     @Test
     void shouldPropagateReleaseError() {
-        SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY);
+        var runner = singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY);
 
-        RuntimeException releaseError = new RuntimeException("Release failed");
-        Connection connection = connection(failedFuture(releaseError));
+        var releaseError = new RuntimeException("Release failed");
+        var connection = connection(failedFuture(releaseError));
 
-        RuntimeException e = assertThrows(
+        var e = assertThrows(
                 RuntimeException.class,
                 () -> await(runner.run(connection, defaultDatabase(), Collections.emptySet(), null)));
         assertEquals(releaseError, e);
@@ -102,9 +98,9 @@ abstract class AbstractRoutingProcedureRunnerTest {
     }
 
     static Connection connection(CompletionStage<Void> releaseStage) {
-        Connection connection = mock(Connection.class);
-        BoltProtocol boltProtocol = mock(BoltProtocol.class);
-        BoltProtocolVersion protocolVersion = new BoltProtocolVersion(4, 4);
+        var connection = mock(Connection.class);
+        var boltProtocol = mock(BoltProtocol.class);
+        var protocolVersion = new BoltProtocolVersion(4, 4);
         when(boltProtocol.version()).thenReturn(protocolVersion);
         when(connection.protocol()).thenReturn(boltProtocol);
         when(connection.release()).thenReturn(releaseStage);

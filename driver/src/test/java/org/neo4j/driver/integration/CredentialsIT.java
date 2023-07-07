@@ -30,13 +30,9 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.testutil.DatabaseExtension;
@@ -50,19 +46,18 @@ class CredentialsIT {
     @Test
     void basicCredentialsShouldWork() {
         // When & Then
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), basic("neo4j", neo4j.adminPassword()));
-                Session session = driver.session()) {
-            Value single = session.run("RETURN 1").single().get(0);
+        try (var driver = GraphDatabase.driver(neo4j.uri(), basic("neo4j", neo4j.adminPassword()));
+                var session = driver.session()) {
+            var single = session.run("RETURN 1").single().get(0);
             assertThat(single.asLong(), equalTo(1L));
         }
     }
 
     @Test
     void shouldGetHelpfulErrorOnInvalidCredentials() {
-        SecurityException e = assertThrows(SecurityException.class, () -> {
-            try (Driver driver =
-                            GraphDatabase.driver(neo4j.uri(), basic("thisisnotthepassword", neo4j.adminPassword()));
-                    Session session = driver.session()) {
+        var e = assertThrows(SecurityException.class, () -> {
+            try (var driver = GraphDatabase.driver(neo4j.uri(), basic("thisisnotthepassword", neo4j.adminPassword()));
+                    var session = driver.session()) {
                 session.run("RETURN 1");
             }
         });
@@ -72,9 +67,9 @@ class CredentialsIT {
     @Test
     void shouldBeAbleToProvideRealmWithBasicAuth() {
         // When & Then
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), basic("neo4j", neo4j.adminPassword(), "native"));
-                Session session = driver.session()) {
-            Value single = session.run("CREATE () RETURN 1").single().get(0);
+        try (var driver = GraphDatabase.driver(neo4j.uri(), basic("neo4j", neo4j.adminPassword(), "native"));
+                var session = driver.session()) {
+            var single = session.run("CREATE () RETURN 1").single().get(0);
             assertThat(single.asLong(), equalTo(1L));
         }
     }
@@ -82,10 +77,9 @@ class CredentialsIT {
     @Test
     void shouldBeAbleToConnectWithCustomToken() {
         // When & Then
-        try (Driver driver =
-                        GraphDatabase.driver(neo4j.uri(), custom("neo4j", neo4j.adminPassword(), "native", "basic"));
-                Session session = driver.session()) {
-            Value single = session.run("CREATE () RETURN 1").single().get(0);
+        try (var driver = GraphDatabase.driver(neo4j.uri(), custom("neo4j", neo4j.adminPassword(), "native", "basic"));
+                var session = driver.session()) {
+            var single = session.run("CREATE () RETURN 1").single().get(0);
             assertThat(single.asLong(), equalTo(1L));
         }
     }
@@ -95,10 +89,10 @@ class CredentialsIT {
         Map<String, Object> params = singletonMap("secret", 16);
 
         // When & Then
-        try (Driver driver = GraphDatabase.driver(
+        try (var driver = GraphDatabase.driver(
                         neo4j.uri(), custom("neo4j", neo4j.adminPassword(), "native", "basic", params));
-                Session session = driver.session()) {
-            Value single = session.run("CREATE () RETURN 1").single().get(0);
+                var session = driver.session()) {
+            var single = session.run("CREATE () RETURN 1").single().get(0);
             assertThat(single.asLong(), equalTo(1L));
         }
     }
@@ -114,10 +108,10 @@ class CredentialsIT {
     }
 
     private void testDriverFailureOnWrongCredentials(String uri) {
-        Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
-        AuthToken authToken = AuthTokens.basic("neo4j", "wrongSecret");
+        var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
+        var authToken = AuthTokens.basic("neo4j", "wrongSecret");
 
-        final Driver driver = GraphDatabase.driver(uri, authToken, config);
+        final var driver = GraphDatabase.driver(uri, authToken, config);
         assertThrows(AuthenticationException.class, driver::verifyConnectivity);
     }
 }

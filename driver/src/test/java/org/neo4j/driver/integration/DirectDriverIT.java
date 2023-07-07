@@ -51,8 +51,8 @@ class DirectDriverIT {
     @Test
     void shouldAllowIPv6Address() {
         // Given
-        URI uri = URI.create("bolt://[::1]:" + neo4j.boltPort());
-        BoltServerAddress address = new BoltServerAddress(uri);
+        var uri = URI.create("bolt://[::1]:" + neo4j.boltPort());
+        var address = new BoltServerAddress(uri);
 
         // When
         driver = GraphDatabase.driver(uri, neo4j.authTokenManager());
@@ -64,19 +64,18 @@ class DirectDriverIT {
     @Test
     void shouldRejectInvalidAddress() {
         // Given
-        URI uri = URI.create("*");
+        var uri = URI.create("*");
 
         // When & Then
-        IllegalArgumentException e =
-                assertThrows(IllegalArgumentException.class, () -> GraphDatabase.driver(uri, neo4j.authTokenManager()));
+        var e = assertThrows(IllegalArgumentException.class, () -> GraphDatabase.driver(uri, neo4j.authTokenManager()));
         assertThat(e.getMessage(), equalTo("Scheme must not be null"));
     }
 
     @Test
     void shouldRegisterSingleServer() {
         // Given
-        URI uri = neo4j.uri();
-        BoltServerAddress address = new BoltServerAddress(uri);
+        var uri = neo4j.uri();
+        var address = new BoltServerAddress(uri);
 
         // When
         driver = GraphDatabase.driver(uri, neo4j.authTokenManager());

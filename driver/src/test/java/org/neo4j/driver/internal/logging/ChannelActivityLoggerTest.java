@@ -29,41 +29,41 @@ import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 class ChannelActivityLoggerTest {
     @Test
     void shouldReformatWhenChannelIsNull() {
-        ChannelActivityLogger activityLogger = new ChannelActivityLogger(null, Logging.none(), getClass());
+        var activityLogger = new ChannelActivityLogger(null, Logging.none(), getClass());
 
-        String reformatted = activityLogger.reformat("Hello!");
+        var reformatted = activityLogger.reformat("Hello!");
 
         assertEquals("Hello!", reformatted);
     }
 
     @Test
     void shouldReformatWithChannelId() {
-        EmbeddedChannel channel = new EmbeddedChannel();
-        ChannelActivityLogger activityLogger = new ChannelActivityLogger(channel, Logging.none(), getClass());
+        var channel = new EmbeddedChannel();
+        var activityLogger = new ChannelActivityLogger(channel, Logging.none(), getClass());
 
-        String reformatted = activityLogger.reformat("Hello!");
+        var reformatted = activityLogger.reformat("Hello!");
 
         assertEquals("[0x" + channel.id() + "][][] Hello!", reformatted);
     }
 
     @Test
     void shouldReformatWithChannelIdAndServerAddress() {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        var channel = new EmbeddedChannel();
         ChannelAttributes.setServerAddress(channel, new BoltServerAddress("somewhere", 1234));
-        ChannelActivityLogger activityLogger = new ChannelActivityLogger(channel, Logging.none(), getClass());
+        var activityLogger = new ChannelActivityLogger(channel, Logging.none(), getClass());
 
-        String reformatted = activityLogger.reformat("Hello!");
+        var reformatted = activityLogger.reformat("Hello!");
 
         assertEquals("[0x" + channel.id() + "][somewhere:1234][] Hello!", reformatted);
     }
 
     @Test
     void shouldReformatWithChannelIdAndConnectionId() {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        var channel = new EmbeddedChannel();
         ChannelAttributes.setConnectionId(channel, "bolt-12345");
-        ChannelActivityLogger activityLogger = new ChannelActivityLogger(channel, Logging.none(), getClass());
+        var activityLogger = new ChannelActivityLogger(channel, Logging.none(), getClass());
 
-        String reformatted = activityLogger.reformat("Hello!");
+        var reformatted = activityLogger.reformat("Hello!");
 
         assertEquals("[0x" + channel.id() + "][][bolt-12345] Hello!", reformatted);
     }

@@ -29,11 +29,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.summary.ResultSummary;
 
 public class AsyncWrongQueryWithRetries<C extends AbstractContext> extends AbstractAsyncQuery<C> {
     public AsyncWrongQueryWithRetries(Driver driver) {
@@ -43,12 +41,12 @@ public class AsyncWrongQueryWithRetries<C extends AbstractContext> extends Abstr
     @Override
     @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
-        AsyncSession session = newSession(AccessMode.READ, context);
+        var session = newSession(AccessMode.READ, context);
 
-        AtomicReference<Record> recordRef = new AtomicReference<>();
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        var recordRef = new AtomicReference<Record>();
+        var throwableRef = new AtomicReference<Throwable>();
 
-        CompletionStage<ResultSummary> txStage = session.readTransactionAsync(tx -> tx.runAsync("RETURN Wrong")
+        var txStage = session.readTransactionAsync(tx -> tx.runAsync("RETURN Wrong")
                 .thenCompose(cursor -> cursor.nextAsync().thenCompose(record -> {
                     recordRef.set(record);
                     return cursor.consumeAsync();
@@ -61,7 +59,7 @@ public class AsyncWrongQueryWithRetries<C extends AbstractContext> extends Abstr
                 .thenApply(nothing -> {
                     assertNull(recordRef.get());
 
-                    Throwable cause = Futures.completionExceptionCause(throwableRef.get());
+                    var cause = Futures.completionExceptionCause(throwableRef.get());
                     assertNotNull(cause);
                     assertThat(cause, instanceOf(ClientException.class));
                     assertThat(((Neo4jException) cause).code(), containsString("SyntaxError"));

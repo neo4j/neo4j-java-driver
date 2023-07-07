@@ -48,13 +48,13 @@ public class DelegatingAsyncTransactionContextTest {
     @Test
     void shouldDelegateRunWithValueParams() {
         // GIVEN
-        String query = "something";
-        Value params = mock(Value.class);
+        var query = "something";
+        var params = mock(Value.class);
         CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture(null);
         given(transaction.runAsync(query, params)).willReturn(expected);
 
         // WHEN
-        CompletionStage<ResultCursor> actual = context.runAsync(query, params);
+        var actual = context.runAsync(query, params);
 
         // THEN
         assertEquals(expected, actual);
@@ -64,13 +64,13 @@ public class DelegatingAsyncTransactionContextTest {
     @Test
     void shouldDelegateRunWithMapParams() {
         // GIVEN
-        String query = "something";
+        var query = "something";
         Map<String, Object> params = Collections.emptyMap();
         CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture(null);
         given(transaction.runAsync(query, params)).willReturn(expected);
 
         // WHEN
-        CompletionStage<ResultCursor> actual = context.runAsync(query, params);
+        var actual = context.runAsync(query, params);
 
         // THEN
         assertEquals(expected, actual);
@@ -80,13 +80,13 @@ public class DelegatingAsyncTransactionContextTest {
     @Test
     void shouldDelegateRunWithRecordParams() {
         // GIVEN
-        String query = "something";
-        Record params = mock(Record.class);
+        var query = "something";
+        var params = mock(Record.class);
         CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture(null);
         given(transaction.runAsync(query, params)).willReturn(expected);
 
         // WHEN
-        CompletionStage<ResultCursor> actual = context.runAsync(query, params);
+        var actual = context.runAsync(query, params);
 
         // THEN
         assertEquals(expected, actual);
@@ -96,12 +96,12 @@ public class DelegatingAsyncTransactionContextTest {
     @Test
     void shouldDelegateRun() {
         // GIVEN
-        String query = "something";
+        var query = "something";
         CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture(null);
         given(transaction.runAsync(query)).willReturn(expected);
 
         // WHEN
-        CompletionStage<ResultCursor> actual = context.runAsync(query);
+        var actual = context.runAsync(query);
 
         // THEN
         assertEquals(expected, actual);
@@ -111,12 +111,12 @@ public class DelegatingAsyncTransactionContextTest {
     @Test
     void shouldDelegateRunWithQueryType() {
         // GIVEN
-        Query query = mock(Query.class);
+        var query = mock(Query.class);
         CompletionStage<ResultCursor> expected = CompletableFuture.completedFuture(null);
         given(transaction.runAsync(query)).willReturn(expected);
 
         // WHEN
-        CompletionStage<ResultCursor> actual = context.runAsync(query);
+        var actual = context.runAsync(query);
 
         // THEN
         assertEquals(expected, actual);

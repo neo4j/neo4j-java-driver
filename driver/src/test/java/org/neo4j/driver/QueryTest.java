@@ -31,10 +31,10 @@ class QueryTest {
     @Test
     void shouldConstructQueryWithParameters() {
         // given
-        String text = "MATCH (n) RETURN n";
+        var text = "MATCH (n) RETURN n";
 
         // when
-        Query query = new Query(text, Values.EmptyMap);
+        var query = new Query(text, Values.EmptyMap);
 
         // then
         assertThat(query.text(), equalTo(text));
@@ -44,10 +44,10 @@ class QueryTest {
     @Test
     void shouldConstructQueryWithNoParameters() {
         // given
-        String text = "MATCH (n) RETURN n";
+        var text = "MATCH (n) RETURN n";
 
         // when
-        Query query = new Query(text);
+        var query = new Query(text);
 
         // then
         assertThat(query.text(), equalTo(text));
@@ -57,7 +57,7 @@ class QueryTest {
     @Test
     void shouldUpdateQueryText() {
         // when
-        Query query = new Query("MATCH (n) RETURN n").withText("BOO");
+        var query = new Query("MATCH (n) RETURN n").withText("BOO");
 
         // then
         assertThat(query.text(), equalTo("BOO"));
@@ -67,9 +67,9 @@ class QueryTest {
     @Test
     void shouldReplaceQueryParameters() {
         // when
-        String text = "MATCH (n) RETURN n";
-        Value initialParameters = parameters("a", 1, "b", 2);
-        Query query = new Query("MATCH (n) RETURN n").withParameters(initialParameters);
+        var text = "MATCH (n) RETURN n";
+        var initialParameters = parameters("a", 1, "b", 2);
+        var query = new Query("MATCH (n) RETURN n").withParameters(initialParameters);
 
         // then
         assertThat(query.text(), equalTo(text));
@@ -79,10 +79,10 @@ class QueryTest {
     @Test
     void shouldReplaceMapParameters() {
         // when
-        String text = "MATCH (n) RETURN n";
+        var text = "MATCH (n) RETURN n";
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("a", 1);
-        Query query = new Query("MATCH (n) RETURN n").withParameters(parameters);
+        var query = new Query("MATCH (n) RETURN n").withParameters(parameters);
 
         // then
         assertThat(query.text(), equalTo(text));
@@ -92,9 +92,9 @@ class QueryTest {
     @Test
     void shouldUpdateQueryParameters() {
         // when
-        String text = "MATCH (n) RETURN n";
-        Value initialParameters = parameters("a", 1, "b", 2, "c", 3);
-        Query query = new Query("MATCH (n) RETURN n", initialParameters)
+        var text = "MATCH (n) RETURN n";
+        var initialParameters = parameters("a", 1, "b", 2, "c", 3);
+        var query = new Query("MATCH (n) RETURN n", initialParameters)
                 .withUpdatedParameters(parameters("a", 0, "b", Values.NULL));
 
         // then

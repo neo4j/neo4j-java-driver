@@ -33,8 +33,8 @@ public class MessageToByteBufWriter {
 
     public ByteBuf asByteBuf(Message message) {
         try {
-            ByteBuf buf = Unpooled.buffer();
-            ByteBufOutput output = new ByteBufOutput(buf);
+            var buf = Unpooled.buffer();
+            var output = new ByteBufOutput(buf);
             messageFormat.newWriter(output).write(message);
             return buf;
         } catch (IOException e) {

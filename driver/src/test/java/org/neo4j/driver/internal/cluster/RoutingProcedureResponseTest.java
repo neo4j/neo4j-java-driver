@@ -41,48 +41,48 @@ class RoutingProcedureResponseTest {
 
     @Test
     void shouldBeSuccessfulWithRecords() {
-        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
+        var response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
         assertTrue(response.isSuccess());
     }
 
     @Test
     void shouldNotBeSuccessfulWithError() {
-        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, new RuntimeException());
+        var response = new RoutingProcedureResponse(PROCEDURE, new RuntimeException());
         assertFalse(response.isSuccess());
     }
 
     @Test
     void shouldThrowWhenFailedAndAskedForRecords() {
-        RuntimeException error = new RuntimeException();
-        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, error);
+        var error = new RuntimeException();
+        var response = new RoutingProcedureResponse(PROCEDURE, error);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, response::records);
+        var e = assertThrows(IllegalStateException.class, response::records);
         assertEquals(e.getCause(), error);
     }
 
     @Test
     void shouldThrowWhenSuccessfulAndAskedForError() {
-        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
+        var response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
 
         assertThrows(IllegalStateException.class, response::error);
     }
 
     @Test
     void shouldHaveErrorWhenFailed() {
-        RuntimeException error = new RuntimeException("Hi!");
-        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, error);
+        var error = new RuntimeException("Hi!");
+        var response = new RoutingProcedureResponse(PROCEDURE, error);
         assertEquals(error, response.error());
     }
 
     @Test
     void shouldHaveRecordsWhenSuccessful() {
-        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
+        var response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
         assertEquals(asList(RECORD_1, RECORD_2), response.records());
     }
 
     @Test
     void shouldHaveProcedure() {
-        RoutingProcedureResponse response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
+        var response = new RoutingProcedureResponse(PROCEDURE, asList(RECORD_1, RECORD_2));
         assertEquals(PROCEDURE, response.procedure());
     }
 }

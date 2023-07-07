@@ -33,7 +33,6 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMe
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setProtocolVersion;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.io.IOException;
 import java.time.Clock;
@@ -69,8 +68,8 @@ class HandshakeCompletedListenerTest {
 
     @Test
     void shouldFailConnectionInitializedPromiseWhenHandshakeFails() {
-        ChannelPromise channelInitializedPromise = channel.newPromise();
-        HandshakeCompletedListener listener = new HandshakeCompletedListener(
+        var channelInitializedPromise = channel.newPromise();
+        var listener = new HandshakeCompletedListener(
                 USER_AGENT,
                 BoltAgentUtil.VALUE,
                 RoutingContext.EMPTY,
@@ -78,13 +77,13 @@ class HandshakeCompletedListenerTest {
                 null,
                 mock(Clock.class));
 
-        ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        IOException cause = new IOException("Bad handshake");
+        var handshakeCompletedPromise = channel.newPromise();
+        var cause = new IOException("Bad handshake");
         handshakeCompletedPromise.setFailure(cause);
 
         listener.operationComplete(handshakeCompletedPromise);
 
-        Exception error = assertThrows(Exception.class, () -> await(channelInitializedPromise));
+        var error = assertThrows(Exception.class, () -> await(channelInitializedPromise));
         assertEquals(cause, error);
     }
 
@@ -139,12 +138,12 @@ class HandshakeCompletedListenerTest {
             BoltProtocolVersion protocolVersion,
             Message expectedMessage,
             Class<? extends ResponseHandler> handlerType) {
-        InboundMessageDispatcher messageDispatcher = mock(InboundMessageDispatcher.class);
+        var messageDispatcher = mock(InboundMessageDispatcher.class);
         setProtocolVersion(channel, protocolVersion);
         setMessageDispatcher(channel, messageDispatcher);
 
-        ChannelPromise channelInitializedPromise = channel.newPromise();
-        HandshakeCompletedListener listener = new HandshakeCompletedListener(
+        var channelInitializedPromise = channel.newPromise();
+        var listener = new HandshakeCompletedListener(
                 USER_AGENT,
                 BoltAgentUtil.VALUE,
                 RoutingContext.EMPTY,
@@ -152,14 +151,14 @@ class HandshakeCompletedListenerTest {
                 null,
                 mock(Clock.class));
 
-        ChannelPromise handshakeCompletedPromise = channel.newPromise();
+        var handshakeCompletedPromise = channel.newPromise();
         handshakeCompletedPromise.setSuccess();
 
         listener.operationComplete(handshakeCompletedPromise);
         assertTrue(channel.finish());
 
         verify(messageDispatcher).enqueue(any(handlerType));
-        Object outboundMessage = channel.readOutbound();
+        var outboundMessage = channel.readOutbound();
         assertEquals(expectedMessage, outboundMessage);
     }
 

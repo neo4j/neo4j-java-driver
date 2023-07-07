@@ -26,9 +26,7 @@ import static org.neo4j.driver.Values.parameters;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -40,12 +38,12 @@ class LoadCSVIT {
 
     @Test
     void shouldLoadCSV() throws Throwable {
-        try (Driver driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager());
-                Session session = driver.session()) {
-            String csvFileUrl = createLocalIrisData(session);
+        try (var driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager());
+                var session = driver.session()) {
+            var csvFileUrl = createLocalIrisData(session);
 
             // When
-            String query = neo4j.isNeo4j44OrEarlier()
+            var query = neo4j.isNeo4j44OrEarlier()
                     ? "USING PERIODIC COMMIT 40\n" + "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l\n"
                             + "MATCH (c:Class {name: l.class_name})\n"
                             + "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l.petal_length, petal_width: l.petal_width})\n"
@@ -59,7 +57,7 @@ class LoadCSVIT {
                             + "} IN TRANSACTIONS\n"
                             + "RETURN count(*) AS c";
 
-            Result result = session.run(query, parameters("csvFileUrl", csvFileUrl));
+            var result = session.run(query, parameters("csvFileUrl", csvFileUrl));
 
             // Then
             assertThat(result.next().get("c").asInt(), equalTo(150));
@@ -68,7 +66,7 @@ class LoadCSVIT {
     }
 
     private String createLocalIrisData(Session session) throws IOException {
-        for (String className : IRIS_CLASS_NAMES) {
+        for (var className : IRIS_CLASS_NAMES) {
             session.run("CREATE (c:Class {name: $className}) RETURN c", parameters("className", className));
         }
 

@@ -44,7 +44,7 @@ public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery
     @Override
     @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
-        CompletableFuture<Void> queryFinished = new CompletableFuture<>();
+        var queryFinished = new CompletableFuture<Void>();
 
         Function<RxSession, Publisher<ResultSummary>> sessionToResultSummaryPublisher =
                 (RxSession session) -> Flux.usingWhen(
@@ -54,7 +54,7 @@ public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery
                         (tx, error) -> tx.rollback(),
                         RxTransaction::rollback);
 
-        AtomicInteger createdNodesNum = new AtomicInteger();
+        var createdNodesNum = new AtomicInteger();
         Flux.usingWhen(
                         Mono.fromSupplier(driver::rxSession),
                         sessionToResultSummaryPublisher,

@@ -35,12 +35,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 
-import io.netty.channel.Channel;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -49,11 +47,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
@@ -72,8 +67,8 @@ class ErrorIT {
 
     @Test
     void shouldThrowHelpfulSyntaxError() {
-        ClientException e = assertThrows(ClientException.class, () -> {
-            Result result = session.run("invalid query");
+        var e = assertThrows(ClientException.class, () -> {
+            var result = session.run("invalid query");
             result.consume();
         });
 
@@ -83,7 +78,7 @@ class ErrorIT {
     @Test
     void shouldNotAllowMoreTxAfterClientException() {
         // Given
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
 
         // And Given an error has occurred
         try {
@@ -93,8 +88,8 @@ class ErrorIT {
         }
 
         // Expect
-        ClientException e = assertThrows(ClientException.class, () -> {
-            Result cursor = tx.run("RETURN 1");
+        var e = assertThrows(ClientException.class, () -> {
+            var cursor = tx.run("RETURN 1");
             cursor.single().get("1").asInt();
         });
         assertThat(e.getMessage(), startsWith("Cannot run more queries in this transaction"));
@@ -110,8 +105,8 @@ class ErrorIT {
         }
 
         // When
-        Result cursor = session.run("RETURN 1");
-        int val = cursor.single().get("1").asInt();
+        var cursor = session.run("RETURN 1");
+        var val = cursor.single().get("1").asInt();
 
         // Then
         assertThat(val, equalTo(1));
@@ -120,16 +115,16 @@ class ErrorIT {
     @Test
     void shouldAllowNewTransactionAfterRecoverableError() {
         // Given an error has occurred in a prior transaction
-        try (Transaction tx = session.beginTransaction()) {
+        try (var tx = session.beginTransaction()) {
             tx.run("invalid").consume();
         } catch (ClientException e) {
             /*empty*/
         }
 
         // When
-        try (Transaction tx = session.beginTransaction()) {
-            Result cursor = tx.run("RETURN 1");
-            int val = cursor.single().get("1").asInt();
+        try (var tx = session.beginTransaction()) {
+            var cursor = tx.run("RETURN 1");
+            var val = cursor.single().get("1").asInt();
 
             // Then
             assertThat(val, equalTo(1));
@@ -138,8 +133,8 @@ class ErrorIT {
 
     @Test
     void shouldExplainConnectionError() {
-        final Driver driver = GraphDatabase.driver("bolt://localhost:7777");
-        ServiceUnavailableException e = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
+        final var driver = GraphDatabase.driver("bolt://localhost:7777");
+        var e = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
 
         assertEquals(
                 "Unable to connect to localhost:7777, ensure the database is running "
@@ -149,7 +144,7 @@ class ErrorIT {
 
     @Test
     void shouldHandleFailureAtRunTime() {
-        String label = UUID.randomUUID().toString(); // avoid clashes with other tests
+        var label = UUID.randomUUID().toString(); // avoid clashes with other tests
         String query;
 
         if (session.isNeo4j43OrEarlier()) {
@@ -159,15 +154,15 @@ class ErrorIT {
         }
 
         // given
-        Transaction tx = session.beginTransaction();
+        var tx = session.beginTransaction();
         tx.run(query);
         tx.commit();
 
         // and
-        Transaction anotherTx = session.beginTransaction();
+        var anotherTx = session.beginTransaction();
 
         // then expect
-        ClientException e = assertThrows(ClientException.class, () -> anotherTx.run(query));
+        var e = assertThrows(ClientException.class, () -> anotherTx.run(query));
         anotherTx.rollback();
         assertThat(e.getMessage(), containsString(label));
         assertThat(e.getMessage(), containsString("name"));
@@ -175,12 +170,12 @@ class ErrorIT {
 
     @Test
     void shouldGetHelpfulErrorWhenTryingToConnectToHttpPort() {
-        Config config = Config.builder().withoutEncryption().build();
+        var config = Config.builder().withoutEncryption().build();
 
-        URI boltUri = session.uri();
-        URI uri = URI.create(String.format("%s://%s:%d", boltUri.getScheme(), boltUri.getHost(), session.httpPort()));
-        final Driver driver = GraphDatabase.driver(uri, config);
-        ClientException e = assertThrows(ClientException.class, driver::verifyConnectivity);
+        var boltUri = session.uri();
+        var uri = URI.create(String.format("%s://%s:%d", boltUri.getScheme(), boltUri.getHost(), session.httpPort()));
+        final var driver = GraphDatabase.driver(uri, config);
+        var e = assertThrows(ClientException.class, driver::verifyConnectivity);
         assertEquals(
                 "Server responded HTTP. Make sure you are not trying to connect to the http endpoint "
                         + "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)",
@@ -189,16 +184,16 @@ class ErrorIT {
 
     @Test
     void shouldCloseChannelOnRuntimeExceptionInOutboundMessage() throws InterruptedException {
-        RuntimeException error = new RuntimeException("Unable to encode message");
-        Throwable queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeWriterThrow(error));
+        var error = new RuntimeException("Unable to encode message");
+        var queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeWriterThrow(error));
 
         assertEquals(error, queryError);
     }
 
     @Test
     void shouldCloseChannelOnIOExceptionInOutboundMessage() throws InterruptedException {
-        IOException error = new IOException("Unable to write");
-        Throwable queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeWriterThrow(error));
+        var error = new IOException("Unable to write");
+        var queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeWriterThrow(error));
 
         assertThat(queryError, instanceOf(ServiceUnavailableException.class));
         assertEquals("Connection to the database failed", queryError.getMessage());
@@ -207,16 +202,16 @@ class ErrorIT {
 
     @Test
     void shouldCloseChannelOnRuntimeExceptionInInboundMessage() throws InterruptedException {
-        RuntimeException error = new RuntimeException("Unable to decode message");
-        Throwable queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeReaderThrow(error));
+        var error = new RuntimeException("Unable to decode message");
+        var queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeReaderThrow(error));
 
         assertEquals(error, queryError);
     }
 
     @Test
     void shouldCloseChannelOnIOExceptionInInboundMessage() throws InterruptedException {
-        IOException error = new IOException("Unable to read");
-        Throwable queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeReaderThrow(error));
+        var error = new IOException("Unable to read");
+        var queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeReaderThrow(error));
 
         assertThat(queryError, instanceOf(ServiceUnavailableException.class));
         assertEquals("Connection to the database failed", queryError.getMessage());
@@ -225,11 +220,11 @@ class ErrorIT {
 
     @Test
     void shouldCloseChannelOnInboundFatalFailureMessage() throws InterruptedException {
-        String errorCode = "Neo.ClientError.Request.Invalid";
-        String errorMessage = "Very wrong request";
-        FailureMessage failureMsg = new FailureMessage(errorCode, errorMessage);
+        var errorCode = "Neo.ClientError.Request.Invalid";
+        var errorMessage = "Very wrong request";
+        var failureMsg = new FailureMessage(errorCode, errorMessage);
 
-        Throwable queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeReaderFail(failureMsg));
+        var queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeReaderFail(failureMsg));
 
         assertThat(queryError, instanceOf(ClientException.class));
         assertEquals(((ClientException) queryError).code(), errorCode);
@@ -238,11 +233,11 @@ class ErrorIT {
 
     @Test
     void shouldThrowErrorWithNiceStackTrace(TestInfo testInfo) {
-        ClientException error = assertThrows(
+        var error = assertThrows(
                 ClientException.class, () -> session.run("RETURN 10 / 0").consume());
 
         // thrown error should have this class & method in the stacktrace
-        StackTraceElement[] stackTrace = error.getStackTrace();
+        var stackTrace = error.getStackTrace();
         assertTrue(
                 Stream.of(stackTrace).anyMatch(element -> testClassAndMethodMatch(testInfo, element)),
                 () -> "Expected stacktrace element is absent:\n" + Arrays.toString(stackTrace));
@@ -253,18 +248,17 @@ class ErrorIT {
 
     private Throwable testChannelErrorHandling(Consumer<FailingMessageFormat> messageFormatSetup)
             throws InterruptedException {
-        ChannelTrackingDriverFactoryWithFailingMessageFormat driverFactory =
-                new ChannelTrackingDriverFactoryWithFailingMessageFormat(new FakeClock());
+        var driverFactory = new ChannelTrackingDriverFactoryWithFailingMessageFormat(new FakeClock());
 
-        URI uri = session.uri();
+        var uri = session.uri();
         var authTokenProvider = session.authTokenManager();
-        Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
+        var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
         Throwable queryError = null;
 
-        try (Driver driver =
+        try (var driver =
                 driverFactory.newInstance(uri, authTokenProvider, config, SecurityPlanImpl.insecure(), null, null)) {
             driver.verifyConnectivity();
-            try (Session session = driver.session()) {
+            try (var session = driver.session()) {
                 messageFormatSetup.accept(driverFactory.getFailingMessageFormat());
 
                 try {
@@ -283,15 +277,15 @@ class ErrorIT {
     }
 
     private void assertSingleChannelIsClosed(ChannelTrackingDriverFactory driverFactory) throws InterruptedException {
-        Channel channel = single(driverFactory.channels());
+        var channel = single(driverFactory.channels());
         assertTrue(channel.closeFuture().await(10, SECONDS));
         assertFalse(channel.isActive());
     }
 
     private void assertNewQueryCanBeExecuted(Session session, ChannelTrackingDriverFactory driverFactory) {
         assertEquals(42, session.run("RETURN 42").single().get(0).asInt());
-        List<Channel> channels = driverFactory.channels();
-        Channel lastChannel = channels.get(channels.size() - 1);
+        var channels = driverFactory.channels();
+        var lastChannel = channels.get(channels.size() - 1);
         assertTrue(lastChannel.isActive());
     }
 
@@ -300,14 +294,14 @@ class ErrorIT {
     }
 
     private static boolean testClassMatches(TestInfo testInfo, StackTraceElement element) {
-        String expectedName = testInfo.getTestClass().map(Class::getName).orElse("");
-        String actualName = element.getClassName();
+        var expectedName = testInfo.getTestClass().map(Class::getName).orElse("");
+        var actualName = element.getClassName();
         return Objects.equals(expectedName, actualName);
     }
 
     private static boolean testMethodMatches(TestInfo testInfo, StackTraceElement element) {
-        String expectedName = testInfo.getTestMethod().map(Method::getName).orElse("");
-        String actualName = element.getMethodName();
+        var expectedName = testInfo.getTestMethod().map(Method::getName).orElse("");
+        var actualName = element.getMethodName();
         return Objects.equals(expectedName, actualName);
     }
 }

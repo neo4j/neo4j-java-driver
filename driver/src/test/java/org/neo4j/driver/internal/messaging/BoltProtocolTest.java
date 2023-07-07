@@ -57,7 +57,7 @@ class BoltProtocolTest {
 
     @Test
     void shouldThrowForChannelWithUnknownProtocolVersion() {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        var channel = new EmbeddedChannel();
         setProtocolVersion(channel, new BoltProtocolVersion(42, 0));
 
         assertThrows(ClientException.class, () -> BoltProtocol.forChannel(channel));

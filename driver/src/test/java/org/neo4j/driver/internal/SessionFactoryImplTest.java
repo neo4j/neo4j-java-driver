@@ -35,31 +35,31 @@ import org.neo4j.driver.internal.util.FixedRetryLogic;
 class SessionFactoryImplTest {
     @Test
     void createsNetworkSessions() {
-        Config config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
-        SessionFactory factory = newSessionFactory(config);
+        var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
+        var factory = newSessionFactory(config);
 
-        NetworkSession readSession = factory.newInstance(
+        var readSession = factory.newInstance(
                 builder().withDefaultAccessMode(AccessMode.READ).build(), null);
         assertThat(readSession, instanceOf(NetworkSession.class));
 
-        NetworkSession writeSession = factory.newInstance(
+        var writeSession = factory.newInstance(
                 builder().withDefaultAccessMode(AccessMode.WRITE).build(), null);
         assertThat(writeSession, instanceOf(NetworkSession.class));
     }
 
     @Test
     void createsLeakLoggingNetworkSessions() {
-        Config config = Config.builder()
+        var config = Config.builder()
                 .withLogging(DEV_NULL_LOGGING)
                 .withLeakedSessionsLogging()
                 .build();
-        SessionFactory factory = newSessionFactory(config);
+        var factory = newSessionFactory(config);
 
-        NetworkSession readSession = factory.newInstance(
+        var readSession = factory.newInstance(
                 builder().withDefaultAccessMode(AccessMode.READ).build(), null);
         assertThat(readSession, instanceOf(LeakLoggingNetworkSession.class));
 
-        NetworkSession writeSession = factory.newInstance(
+        var writeSession = factory.newInstance(
                 builder().withDefaultAccessMode(AccessMode.WRITE).build(), null);
         assertThat(writeSession, instanceOf(LeakLoggingNetworkSession.class));
     }

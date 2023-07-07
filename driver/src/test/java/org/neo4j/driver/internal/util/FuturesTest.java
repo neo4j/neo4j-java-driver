@@ -30,10 +30,8 @@ import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLo
 import static org.neo4j.driver.testutil.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.testutil.TestUtil.sleep;
 
-import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.FailedFuture;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.SucceededFuture;
 import java.io.IOException;
@@ -41,7 +39,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -50,10 +47,10 @@ import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 class FuturesTest {
     @Test
     void shouldConvertCanceledNettyFutureToCompletionStage() throws Exception {
-        DefaultPromise<String> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
+        var promise = new DefaultPromise<String>(ImmediateEventExecutor.INSTANCE);
         promise.cancel(true);
 
-        CompletableFuture<String> future = Futures.asCompletionStage(promise).toCompletableFuture();
+        var future = Futures.asCompletionStage(promise).toCompletableFuture();
 
         assertTrue(future.isCancelled());
         assertTrue(future.isCompletedExceptionally());
@@ -62,10 +59,9 @@ class FuturesTest {
 
     @Test
     void shouldConvertSucceededNettyFutureToCompletionStage() throws Exception {
-        SucceededFuture<String> nettyFuture = new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, "Hello");
+        var nettyFuture = new SucceededFuture<String>(ImmediateEventExecutor.INSTANCE, "Hello");
 
-        CompletableFuture<String> future =
-                Futures.asCompletionStage(nettyFuture).toCompletableFuture();
+        var future = Futures.asCompletionStage(nettyFuture).toCompletableFuture();
 
         assertTrue(future.isDone());
         assertFalse(future.isCompletedExceptionally());
@@ -74,22 +70,21 @@ class FuturesTest {
 
     @Test
     void shouldConvertFailedNettyFutureToCompletionStage() throws Exception {
-        RuntimeException error = new RuntimeException("Hello");
-        FailedFuture<Object> nettyFuture = new FailedFuture<>(ImmediateEventExecutor.INSTANCE, error);
+        var error = new RuntimeException("Hello");
+        var nettyFuture = new FailedFuture<Object>(ImmediateEventExecutor.INSTANCE, error);
 
-        CompletableFuture<Object> future =
-                Futures.asCompletionStage(nettyFuture).toCompletableFuture();
+        var future = Futures.asCompletionStage(nettyFuture).toCompletableFuture();
 
         assertTrue(future.isCompletedExceptionally());
-        ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        var e = assertThrows(ExecutionException.class, future::get);
         assertEquals(error, e.getCause());
     }
 
     @Test
     void shouldConvertRunningNettyFutureToCompletionStageWhenFutureCanceled() throws Exception {
-        DefaultPromise<String> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
+        var promise = new DefaultPromise<String>(ImmediateEventExecutor.INSTANCE);
 
-        CompletableFuture<String> future = Futures.asCompletionStage(promise).toCompletableFuture();
+        var future = Futures.asCompletionStage(promise).toCompletableFuture();
 
         assertFalse(future.isDone());
         promise.cancel(true);
@@ -101,9 +96,9 @@ class FuturesTest {
 
     @Test
     void shouldConvertRunningNettyFutureToCompletionStageWhenFutureSucceeded() throws Exception {
-        DefaultPromise<String> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
+        var promise = new DefaultPromise<String>(ImmediateEventExecutor.INSTANCE);
 
-        CompletableFuture<String> future = Futures.asCompletionStage(promise).toCompletableFuture();
+        var future = Futures.asCompletionStage(promise).toCompletableFuture();
 
         assertFalse(future.isDone());
         promise.setSuccess("Hello");
@@ -115,45 +110,45 @@ class FuturesTest {
 
     @Test
     void shouldConvertRunningNettyFutureToCompletionStageWhenFutureFailed() throws Exception {
-        RuntimeException error = new RuntimeException("Hello");
-        DefaultPromise<String> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
+        var error = new RuntimeException("Hello");
+        var promise = new DefaultPromise<String>(ImmediateEventExecutor.INSTANCE);
 
-        CompletableFuture<String> future = Futures.asCompletionStage(promise).toCompletableFuture();
+        var future = Futures.asCompletionStage(promise).toCompletableFuture();
 
         assertFalse(future.isDone());
         promise.setFailure(error);
 
         assertTrue(future.isCompletedExceptionally());
-        ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        var e = assertThrows(ExecutionException.class, future::get);
         assertEquals(error, e.getCause());
     }
 
     @Test
     void shouldCreateFailedFutureWithUncheckedException() throws Exception {
-        RuntimeException error = new RuntimeException("Hello");
-        CompletableFuture<Object> future = Futures.failedFuture(error).toCompletableFuture();
+        var error = new RuntimeException("Hello");
+        var future = Futures.failedFuture(error).toCompletableFuture();
         assertTrue(future.isCompletedExceptionally());
-        ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        var e = assertThrows(ExecutionException.class, future::get);
         assertEquals(error, e.getCause());
     }
 
     @Test
     void shouldCreateFailedFutureWithCheckedException() throws Exception {
-        IOException error = new IOException("Hello");
-        CompletableFuture<Object> future = Futures.failedFuture(error).toCompletableFuture();
+        var error = new IOException("Hello");
+        var future = Futures.failedFuture(error).toCompletableFuture();
         assertTrue(future.isCompletedExceptionally());
-        ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        var e = assertThrows(ExecutionException.class, future::get);
         assertEquals(error, e.getCause());
     }
 
     @Test
     void shouldFailBlockingGetInEventLoopThread() throws Exception {
-        EventLoopGroup eventExecutor = EventLoopGroupFactory.newEventLoopGroup(1);
+        var eventExecutor = EventLoopGroupFactory.newEventLoopGroup(1);
         try {
-            CompletableFuture<String> future = new CompletableFuture<>();
-            Future<String> result = eventExecutor.submit(() -> Futures.blockingGet(future));
+            var future = new CompletableFuture<String>();
+            var result = eventExecutor.submit(() -> Futures.blockingGet(future));
 
-            ExecutionException e = assertThrows(ExecutionException.class, result::get);
+            var e = assertThrows(ExecutionException.class, result::get);
             assertThat(e.getCause(), is(blockingOperationInEventLoopError()));
         } finally {
             eventExecutor.shutdownGracefully();
@@ -162,29 +157,29 @@ class FuturesTest {
 
     @Test
     void shouldThrowInBlockingGetWhenFutureThrowsUncheckedException() {
-        RuntimeException error = new RuntimeException("Hello");
+        var error = new RuntimeException("Hello");
 
-        CompletableFuture<String> future = new CompletableFuture<>();
+        var future = new CompletableFuture<String>();
         future.completeExceptionally(error);
 
-        Exception e = assertThrows(Exception.class, () -> Futures.blockingGet(future));
+        var e = assertThrows(Exception.class, () -> Futures.blockingGet(future));
         assertEquals(error, e);
     }
 
     @Test
     void shouldThrowInBlockingGetWhenFutureThrowsCheckedException() {
-        IOException error = new IOException("Hello");
+        var error = new IOException("Hello");
 
-        CompletableFuture<String> future = new CompletableFuture<>();
+        var future = new CompletableFuture<String>();
         future.completeExceptionally(error);
 
-        Neo4jException e = assertThrows(Neo4jException.class, () -> Futures.blockingGet(future));
+        var e = assertThrows(Neo4jException.class, () -> Futures.blockingGet(future));
         assertEquals(error, e.getCause());
     }
 
     @Test
     void shouldReturnFromBlockingGetWhenFutureCompletes() {
-        CompletableFuture<String> future = new CompletableFuture<>();
+        var future = new CompletableFuture<String>();
         future.complete("Hello");
 
         assertEquals("Hello", Futures.blockingGet(future));
@@ -192,9 +187,9 @@ class FuturesTest {
 
     @Test
     void shouldWaitForFutureInBlockingGetEvenWhenInterrupted() {
-        ExecutorService executor = Executors.newSingleThreadExecutor(daemon("InterruptThread"));
+        var executor = Executors.newSingleThreadExecutor(daemon("InterruptThread"));
         try {
-            CompletableFuture<String> future = new CompletableFuture<>();
+            var future = new CompletableFuture<String>();
 
             Thread.currentThread().interrupt();
             executor.submit(() -> {
@@ -213,7 +208,7 @@ class FuturesTest {
     @Test
     void shouldHandleInterruptsInBlockingGet() {
         try {
-            CompletableFuture<String> future = new CompletableFuture<>();
+            var future = new CompletableFuture<String>();
             Thread.currentThread().interrupt();
 
             Runnable interruptHandler = () -> future.complete("Hello");
@@ -226,7 +221,7 @@ class FuturesTest {
 
     @Test
     void shouldGetNowWhenFutureDone() {
-        CompletableFuture<String> future = new CompletableFuture<>();
+        var future = new CompletableFuture<String>();
         future.complete("Hello");
 
         assertEquals("Hello", Futures.getNow(future));
@@ -234,46 +229,46 @@ class FuturesTest {
 
     @Test
     void shouldGetNowWhenFutureNotDone() {
-        CompletableFuture<String> future = new CompletableFuture<>();
+        var future = new CompletableFuture<String>();
 
         assertNull(Futures.getNow(future));
     }
 
     @Test
     void shouldGetCauseFromCompletionException() {
-        RuntimeException error = new RuntimeException("Hello");
-        CompletionException completionException = new CompletionException(error);
+        var error = new RuntimeException("Hello");
+        var completionException = new CompletionException(error);
 
         assertEquals(error, Futures.completionExceptionCause(completionException));
     }
 
     @Test
     void shouldReturnSameExceptionWhenItIsNotCompletionException() {
-        RuntimeException error = new RuntimeException("Hello");
+        var error = new RuntimeException("Hello");
 
         assertEquals(error, Futures.completionExceptionCause(error));
     }
 
     @Test
     void shouldWrapWithCompletionException() {
-        RuntimeException error = new RuntimeException("Hello");
-        CompletionException completionException = Futures.asCompletionException(error);
+        var error = new RuntimeException("Hello");
+        var completionException = Futures.asCompletionException(error);
         assertEquals(error, completionException.getCause());
     }
 
     @Test
     void shouldKeepCompletionExceptionAsIs() {
-        CompletionException error = new CompletionException(new RuntimeException("Hello"));
+        var error = new CompletionException(new RuntimeException("Hello"));
         assertEquals(error, Futures.asCompletionException(error));
     }
 
     @Test
     void shouldCombineTwoErrors() {
-        RuntimeException error1 = new RuntimeException("Error1");
-        RuntimeException error2Cause = new RuntimeException("Error2");
-        CompletionException error2 = new CompletionException(error2Cause);
+        var error1 = new RuntimeException("Error1");
+        var error2Cause = new RuntimeException("Error2");
+        var error2 = new CompletionException(error2Cause);
 
-        CompletionException combined = Futures.combineErrors(error1, error2);
+        var combined = Futures.combineErrors(error1, error2);
 
         assertEquals(error1, combined.getCause());
         assertArrayEquals(new Throwable[] {error2Cause}, combined.getCause().getSuppressed());
@@ -281,18 +276,18 @@ class FuturesTest {
 
     @Test
     void shouldCombineErrorAndNull() {
-        RuntimeException error1 = new RuntimeException("Error1");
+        var error1 = new RuntimeException("Error1");
 
-        CompletionException combined = Futures.combineErrors(error1, null);
+        var combined = Futures.combineErrors(error1, null);
 
         assertEquals(error1, combined.getCause());
     }
 
     @Test
     void shouldCombineNullAndError() {
-        RuntimeException error2 = new RuntimeException("Error2");
+        var error2 = new RuntimeException("Error2");
 
-        CompletionException combined = Futures.combineErrors(null, error2);
+        var combined = Futures.combineErrors(null, error2);
 
         assertEquals(error2, combined.getCause());
     }

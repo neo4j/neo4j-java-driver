@@ -55,15 +55,14 @@ class TransactionPullResponseCompletionListenerTest {
     }
 
     private static void testErrorHandling(Throwable error) {
-        Connection connection = mock(Connection.class);
+        var connection = mock(Connection.class);
         when(connection.serverAddress()).thenReturn(BoltServerAddress.LOCAL_DEFAULT);
         when(connection.protocol()).thenReturn(BoltProtocolV43.INSTANCE);
         when(connection.serverAgent()).thenReturn("Neo4j/4.2.5");
-        UnmanagedTransaction tx = mock(UnmanagedTransaction.class);
+        var tx = mock(UnmanagedTransaction.class);
         when(tx.isOpen()).thenReturn(true);
-        TransactionPullResponseCompletionListener listener = new TransactionPullResponseCompletionListener(tx);
-        RunResponseHandler runHandler =
-                new RunResponseHandler(new CompletableFuture<>(), METADATA_EXTRACTOR, null, null);
+        var listener = new TransactionPullResponseCompletionListener(tx);
+        var runHandler = new RunResponseHandler(new CompletableFuture<>(), METADATA_EXTRACTOR, null, null);
         PullResponseHandler handler = new BasicPullResponseHandler(
                 new Query("RETURN 1"), runHandler, connection, METADATA_EXTRACTOR, listener);
         handler.installRecordConsumer((record, throwable) -> {});

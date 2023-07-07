@@ -30,11 +30,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.Scheme;
 import org.neo4j.driver.testutil.DatabaseExtension;
@@ -94,17 +90,17 @@ class EncryptionIT {
             config = newConfig(driverEncrypted);
         }
 
-        URI uri = URI.create(String.format(
+        var uri = URI.create(String.format(
                 "%s://%s:%s", scheme, neo4j.uri().getHost(), neo4j.uri().getPort()));
 
-        try (Driver driver = GraphDatabase.driver(uri, neo4j.authTokenManager(), config)) {
+        try (var driver = GraphDatabase.driver(uri, neo4j.authTokenManager(), config)) {
             assertThat(driver.isEncrypted(), equalTo(driverEncrypted));
 
-            try (Session session = driver.session()) {
-                Result result = session.run("RETURN 1");
+            try (var session = driver.session()) {
+                var result = session.run("RETURN 1");
 
-                Record record = result.next();
-                int value = record.get(0).asInt();
+                var record = result.next();
+                var value = record.get(0).asInt();
                 assertThat(value, equalTo(1));
             }
         }
@@ -114,9 +110,9 @@ class EncryptionIT {
         Map<String, String> tlsConfig = new HashMap<>();
         tlsConfig.put(Neo4jSettings.BOLT_TLS_LEVEL, tlsLevel.toString());
         neo4j.deleteAndStartNeo4j(tlsConfig);
-        Config config = newConfig(driverEncrypted);
+        var config = newConfig(driverEncrypted);
 
-        ServiceUnavailableException e = assertThrows(ServiceUnavailableException.class, () -> GraphDatabase.driver(
+        var e = assertThrows(ServiceUnavailableException.class, () -> GraphDatabase.driver(
                         neo4j.uri(), neo4j.authTokenManager(), config)
                 .verifyConnectivity());
 

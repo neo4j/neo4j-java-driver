@@ -94,7 +94,7 @@ class DisposableAsyncResultCursorTest {
     @Test
     void shouldReturnItselfOnMapSuccessfulRunCompletionAsync() {
         // When
-        AsyncResultCursor actual = await(cursor.mapSuccessfulRunCompletionAsync());
+        var actual = await(cursor.mapSuccessfulRunCompletionAsync());
 
         // Then
         then(delegate).should().mapSuccessfulRunCompletionAsync();
@@ -104,11 +104,11 @@ class DisposableAsyncResultCursorTest {
     @Test
     void shouldFailOnMapSuccessfulRunCompletionAsyncFailure() {
         // Given
-        Throwable error = mock(Throwable.class);
+        var error = mock(Throwable.class);
         given(delegate.mapSuccessfulRunCompletionAsync()).willReturn(Futures.failedFuture(error));
 
         // When
-        Throwable actual = assertThrows(Throwable.class, () -> await(cursor.mapSuccessfulRunCompletionAsync()));
+        var actual = assertThrows(Throwable.class, () -> await(cursor.mapSuccessfulRunCompletionAsync()));
 
         // Then
         then(delegate).should().mapSuccessfulRunCompletionAsync();

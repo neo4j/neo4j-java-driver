@@ -37,7 +37,7 @@ class BooleanValueTest {
     @Test
     void testBooleanTrue() {
         // Given
-        BooleanValue value = TRUE;
+        var value = TRUE;
 
         // Then
         assertThat(value.asBoolean(), equalTo(true));
@@ -48,7 +48,7 @@ class BooleanValueTest {
     @Test
     void testBooleanFalse() {
         // Given
-        BooleanValue value = FALSE;
+        var value = FALSE;
 
         // Then
         assertThat(value.asBoolean(), equalTo(false));
@@ -59,7 +59,7 @@ class BooleanValueTest {
     @Test
     void testIsBoolean() {
         // Given
-        BooleanValue value = TRUE;
+        var value = TRUE;
 
         // Then
         assertThat(typeSystem.BOOLEAN().isTypeOf(value), equalTo(true));
@@ -68,8 +68,8 @@ class BooleanValueTest {
     @Test
     void testEquals() {
         // Given
-        BooleanValue firstValue = TRUE;
-        BooleanValue secondValue = TRUE;
+        var firstValue = TRUE;
+        var secondValue = TRUE;
 
         // Then
         assertThat(firstValue, equalTo(secondValue));
@@ -78,7 +78,7 @@ class BooleanValueTest {
     @Test
     void testHashCode() {
         // Given
-        BooleanValue value = TRUE;
+        var value = TRUE;
 
         // Then
         assertThat(value.hashCode(), notNullValue());

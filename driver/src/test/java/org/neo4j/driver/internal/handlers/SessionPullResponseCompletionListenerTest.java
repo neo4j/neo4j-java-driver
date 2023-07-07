@@ -44,10 +44,10 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 class SessionPullResponseCompletionListenerTest {
     @Test
     void shouldReleaseConnectionOnSuccess() {
-        Connection connection = newConnectionMock();
+        var connection = newConnectionMock();
         PullResponseCompletionListener listener =
                 new SessionPullResponseCompletionListener(connection, (ignored) -> {});
-        ResponseHandler handler = newHandler(connection, listener);
+        var handler = newHandler(connection, listener);
 
         handler.onSuccess(emptyMap());
 
@@ -56,10 +56,10 @@ class SessionPullResponseCompletionListenerTest {
 
     @Test
     void shouldReleaseConnectionOnFailure() {
-        Connection connection = newConnectionMock();
+        var connection = newConnectionMock();
         PullResponseCompletionListener listener =
                 new SessionPullResponseCompletionListener(connection, (ignored) -> {});
-        ResponseHandler handler = newHandler(connection, listener);
+        var handler = newHandler(connection, listener);
 
         handler.onFailure(new RuntimeException());
 
@@ -68,13 +68,13 @@ class SessionPullResponseCompletionListenerTest {
 
     @Test
     void shouldUpdateBookmarksOnSuccess() {
-        Connection connection = newConnectionMock();
-        String bookmarkValue = "neo4j:bookmark:v1:tx42";
+        var connection = newConnectionMock();
+        var bookmarkValue = "neo4j:bookmark:v1:tx42";
         @SuppressWarnings("unchecked")
         Consumer<DatabaseBookmark> bookmarkConsumer = mock(Consumer.class);
         PullResponseCompletionListener listener =
                 new SessionPullResponseCompletionListener(connection, bookmarkConsumer);
-        ResponseHandler handler = newHandler(connection, listener);
+        var handler = newHandler(connection, listener);
 
         handler.onSuccess(singletonMap("bookmark", value(bookmarkValue)));
 
@@ -83,11 +83,11 @@ class SessionPullResponseCompletionListenerTest {
 
     @Test
     void shouldReleaseConnectionImmediatelyOnAuthorizationExpiredExceptionFailure() {
-        Connection connection = newConnectionMock();
+        var connection = newConnectionMock();
         PullResponseCompletionListener listener =
                 new SessionPullResponseCompletionListener(connection, (ignored) -> {});
-        ResponseHandler handler = newHandler(connection, listener);
-        AuthorizationExpiredException exception = new AuthorizationExpiredException("code", "message");
+        var handler = newHandler(connection, listener);
+        var exception = new AuthorizationExpiredException("code", "message");
 
         handler.onFailure(exception);
 
@@ -97,10 +97,10 @@ class SessionPullResponseCompletionListenerTest {
 
     @Test
     void shouldReleaseConnectionImmediatelyOnConnectionReadTimeoutExceptionFailure() {
-        Connection connection = newConnectionMock();
+        var connection = newConnectionMock();
         PullResponseCompletionListener listener =
                 new SessionPullResponseCompletionListener(connection, (ignored) -> {});
-        ResponseHandler handler = newHandler(connection, listener);
+        var handler = newHandler(connection, listener);
 
         handler.onFailure(ConnectionReadTimeoutException.INSTANCE);
 
@@ -109,9 +109,9 @@ class SessionPullResponseCompletionListenerTest {
     }
 
     private static ResponseHandler newHandler(Connection connection, PullResponseCompletionListener listener) {
-        RunResponseHandler runHandler = new RunResponseHandler(
+        var runHandler = new RunResponseHandler(
                 new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock(Connection.class), null);
-        BasicPullResponseHandler handler = new BasicPullResponseHandler(
+        var handler = new BasicPullResponseHandler(
                 new Query("RETURN 1"), runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, listener);
         handler.installRecordConsumer((record, throwable) -> {});
         handler.installSummaryConsumer((resultSummary, throwable) -> {});
@@ -119,7 +119,7 @@ class SessionPullResponseCompletionListenerTest {
     }
 
     private static Connection newConnectionMock() {
-        Connection connection = mock(Connection.class);
+        var connection = mock(Connection.class);
         when(connection.serverAddress()).thenReturn(BoltServerAddress.LOCAL_DEFAULT);
         when(connection.protocol()).thenReturn(BoltProtocolV43.INSTANCE);
         when(connection.serverAgent()).thenReturn("Neo4j/4.2.5");

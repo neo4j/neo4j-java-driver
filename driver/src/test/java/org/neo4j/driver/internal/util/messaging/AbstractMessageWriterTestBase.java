@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.Mockito.mock;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -58,25 +57,25 @@ public abstract class AbstractMessageWriterTestBase {
     protected abstract Stream<Message> unsupportedMessages();
 
     private void testSupportedMessageWriting(Message message) throws IOException {
-        ByteBuf buffer = Unpooled.buffer();
+        var buffer = Unpooled.buffer();
         PackOutput output = new ByteBufOutput(buffer);
 
-        MessageFormat.Writer writer = newWriter(output);
+        var writer = newWriter(output);
         writer.write(message);
 
-        ByteBufInput input = new ByteBufInput();
+        var input = new ByteBufInput();
         input.start(buffer);
-        PackStream.Unpacker unpacker = new PackStream.Unpacker(input);
+        var unpacker = new PackStream.Unpacker(input);
 
-        long structHeader = unpacker.unpackStructHeader();
+        var structHeader = unpacker.unpackStructHeader();
         assertThat(structHeader, greaterThanOrEqualTo(0L));
 
-        byte structSignature = unpacker.unpackStructSignature();
+        var structSignature = unpacker.unpackStructSignature();
         assertEquals(message.signature(), structSignature);
     }
 
     private void testUnsupportedMessageWriting(Message message) {
-        MessageFormat.Writer writer = newWriter(mock(PackOutput.class));
+        var writer = newWriter(mock(PackOutput.class));
         assertThrows(Exception.class, () -> writer.write(message));
     }
 }

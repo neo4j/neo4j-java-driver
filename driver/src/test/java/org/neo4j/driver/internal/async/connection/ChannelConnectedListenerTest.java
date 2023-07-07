@@ -44,26 +44,25 @@ class ChannelConnectedListenerTest {
 
     @Test
     void shouldFailPromiseWhenChannelConnectionFails() {
-        ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        ChannelConnectedListener listener = newListener(handshakeCompletedPromise);
+        var handshakeCompletedPromise = channel.newPromise();
+        var listener = newListener(handshakeCompletedPromise);
 
-        ChannelPromise channelConnectedPromise = channel.newPromise();
-        IOException cause = new IOException("Unable to connect!");
+        var channelConnectedPromise = channel.newPromise();
+        var cause = new IOException("Unable to connect!");
         channelConnectedPromise.setFailure(cause);
 
         listener.operationComplete(channelConnectedPromise);
 
-        ServiceUnavailableException error =
-                assertThrows(ServiceUnavailableException.class, () -> await(handshakeCompletedPromise));
+        var error = assertThrows(ServiceUnavailableException.class, () -> await(handshakeCompletedPromise));
         assertEquals(cause, error.getCause());
     }
 
     @Test
     void shouldWriteHandshakeWhenChannelConnected() {
-        ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        ChannelConnectedListener listener = newListener(handshakeCompletedPromise);
+        var handshakeCompletedPromise = channel.newPromise();
+        var listener = newListener(handshakeCompletedPromise);
 
-        ChannelPromise channelConnectedPromise = channel.newPromise();
+        var channelConnectedPromise = channel.newPromise();
         channelConnectedPromise.setSuccess();
 
         listener.operationComplete(channelConnectedPromise);

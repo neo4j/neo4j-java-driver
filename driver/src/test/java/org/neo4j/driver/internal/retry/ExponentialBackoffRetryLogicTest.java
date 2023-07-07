@@ -50,7 +50,6 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -84,54 +83,53 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void throwsForIllegalMaxRetryTime() {
-        IllegalArgumentException error = assertThrows(
+        var error = assertThrows(
                 IllegalArgumentException.class, () -> newRetryLogic(-100, 1, 1, 1, Clock.systemUTC(), (ignored) -> {}));
         assertThat(error.getMessage(), containsString("Max retry time"));
     }
 
     @Test
     void throwsForIllegalInitialRetryDelay() {
-        IllegalArgumentException error = assertThrows(
+        var error = assertThrows(
                 IllegalArgumentException.class, () -> newRetryLogic(1, -100, 1, 1, Clock.systemUTC(), (ignored) -> {}));
         assertThat(error.getMessage(), containsString("Initial retry delay"));
     }
 
     @Test
     void throwsForIllegalMultiplier() {
-        IllegalArgumentException error = assertThrows(
+        var error = assertThrows(
                 IllegalArgumentException.class, () -> newRetryLogic(1, 1, 0.42, 1, Clock.systemUTC(), (ignored) -> {}));
         assertThat(error.getMessage(), containsString("Multiplier"));
     }
 
     @Test
     void throwsForIllegalJitterFactor() {
-        IllegalArgumentException error1 = assertThrows(
+        var error1 = assertThrows(
                 IllegalArgumentException.class,
                 () -> newRetryLogic(1, 1, 1, -0.42, Clock.systemUTC(), (ignored) -> {}));
         assertThat(error1.getMessage(), containsString("Jitter"));
 
-        IllegalArgumentException error2 = assertThrows(
+        var error2 = assertThrows(
                 IllegalArgumentException.class, () -> newRetryLogic(1, 1, 1, 1.42, Clock.systemUTC(), (ignored) -> {}));
         assertThat(error2.getMessage(), containsString("Jitter"));
     }
 
     @Test
     void throwsForIllegalClock() {
-        IllegalArgumentException error =
+        var error =
                 assertThrows(IllegalArgumentException.class, () -> newRetryLogic(1, 1, 1, 1, null, (ignored) -> {}));
         assertThat(error.getMessage(), containsString("Clock"));
     }
 
     @Test
     void nextDelayCalculatedAccordingToMultiplier() throws Exception {
-        int retries = 27;
-        int initialDelay = 1;
-        int multiplier = 3;
-        int noJitter = 0;
-        Clock clock = mock(Clock.class);
+        var retries = 27;
+        var initialDelay = 1;
+        var multiplier = 3;
+        var noJitter = 0;
+        var clock = mock(Clock.class);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
-        ExponentialBackoffRetryLogic logic =
-                newRetryLogic(MAX_VALUE, initialDelay, multiplier, noJitter, clock, sleepTask);
+        var logic = newRetryLogic(MAX_VALUE, initialDelay, multiplier, noJitter, clock, sleepTask);
 
         retry(logic, retries);
 
@@ -140,16 +138,16 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void nextDelayCalculatedAccordingToMultiplierAsync() {
-        String result = "The Result";
-        int retries = 14;
-        int initialDelay = 1;
-        int multiplier = 2;
-        int noJitter = 0;
+        var result = "The Result";
+        var retries = 14;
+        var initialDelay = 1;
+        var multiplier = 2;
+        var noJitter = 0;
 
-        ExponentialBackoffRetryLogic retryLogic =
+        var retryLogic =
                 newRetryLogic(MAX_VALUE, initialDelay, multiplier, noJitter, Clock.systemUTC(), (ignored) -> {});
 
-        CompletionStage<Object> future = retryAsync(retryLogic, retries, result);
+        var future = retryAsync(retryLogic, retries, result);
 
         assertEquals(result, await(future));
         assertEquals(delaysWithoutJitter(initialDelay, multiplier, retries), eventExecutor.scheduleDelays());
@@ -157,16 +155,16 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void nextDelayCalculatedAccordingToMultiplierRx() {
-        String result = "The Result";
-        int retries = 14;
-        int initialDelay = 1;
-        int multiplier = 2;
-        int noJitter = 0;
+        var result = "The Result";
+        var retries = 14;
+        var initialDelay = 1;
+        var multiplier = 2;
+        var noJitter = 0;
 
-        ExponentialBackoffRetryLogic retryLogic =
+        var retryLogic =
                 newRetryLogic(MAX_VALUE, initialDelay, multiplier, noJitter, Clock.systemUTC(), (ignored) -> {});
 
-        Mono<Object> single = Flux.from(retryRx(retryLogic, retries, result)).single();
+        var single = Flux.from(retryRx(retryLogic, retries, result)).single();
 
         assertEquals(result, await(single));
         assertEquals(delaysWithoutJitter(initialDelay, multiplier, retries), eventExecutor.scheduleDelays());
@@ -174,84 +172,82 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void nextDelayCalculatedAccordingToJitter() throws Exception {
-        int retries = 32;
-        double jitterFactor = 0.2;
-        int initialDelay = 1;
-        int multiplier = 2;
-        Clock clock = mock(Clock.class);
+        var retries = 32;
+        var jitterFactor = 0.2;
+        var initialDelay = 1;
+        var multiplier = 2;
+        var clock = mock(Clock.class);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
-        ExponentialBackoffRetryLogic logic =
-                newRetryLogic(MAX_VALUE, initialDelay, multiplier, jitterFactor, clock, sleepTask);
+        var logic = newRetryLogic(MAX_VALUE, initialDelay, multiplier, jitterFactor, clock, sleepTask);
 
         retry(logic, retries);
 
-        List<Long> sleepValues = sleepValues(sleepTask, retries);
-        List<Long> delaysWithoutJitter = delaysWithoutJitter(initialDelay, multiplier, retries);
+        var sleepValues = sleepValues(sleepTask, retries);
+        var delaysWithoutJitter = delaysWithoutJitter(initialDelay, multiplier, retries);
 
         assertDelaysApproximatelyEqual(delaysWithoutJitter, sleepValues, jitterFactor);
     }
 
     @Test
     void nextDelayCalculatedAccordingToJitterAsync() {
-        String result = "The Result";
-        int retries = 24;
-        double jitterFactor = 0.2;
-        int initialDelay = 1;
-        int multiplier = 2;
+        var result = "The Result";
+        var retries = 24;
+        var jitterFactor = 0.2;
+        var initialDelay = 1;
+        var multiplier = 2;
 
-        ExponentialBackoffRetryLogic retryLogic =
+        var retryLogic =
                 newRetryLogic(MAX_VALUE, initialDelay, multiplier, jitterFactor, mock(Clock.class), (ignored) -> {});
 
-        CompletionStage<Object> future = retryAsync(retryLogic, retries, result);
+        var future = retryAsync(retryLogic, retries, result);
         assertEquals(result, await(future));
 
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
-        List<Long> delaysWithoutJitter = delaysWithoutJitter(initialDelay, multiplier, retries);
+        var scheduleDelays = eventExecutor.scheduleDelays();
+        var delaysWithoutJitter = delaysWithoutJitter(initialDelay, multiplier, retries);
 
         assertDelaysApproximatelyEqual(delaysWithoutJitter, scheduleDelays, jitterFactor);
     }
 
     @Test
     void nextDelayCalculatedAccordingToJitterRx() {
-        String result = "The Result";
-        int retries = 24;
-        double jitterFactor = 0.2;
-        int initialDelay = 1;
-        int multiplier = 2;
+        var result = "The Result";
+        var retries = 24;
+        var jitterFactor = 0.2;
+        var initialDelay = 1;
+        var multiplier = 2;
 
-        ExponentialBackoffRetryLogic retryLogic =
+        var retryLogic =
                 newRetryLogic(MAX_VALUE, initialDelay, multiplier, jitterFactor, mock(Clock.class), (ignored) -> {});
 
-        Mono<Object> single = Flux.from(retryRx(retryLogic, retries, result)).single();
+        var single = Flux.from(retryRx(retryLogic, retries, result)).single();
         assertEquals(result, await(single));
 
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
-        List<Long> delaysWithoutJitter = delaysWithoutJitter(initialDelay, multiplier, retries);
+        var scheduleDelays = eventExecutor.scheduleDelays();
+        var delaysWithoutJitter = delaysWithoutJitter(initialDelay, multiplier, retries);
 
         assertDelaysApproximatelyEqual(delaysWithoutJitter, scheduleDelays, jitterFactor);
     }
 
     @Test
     void doesNotRetryWhenMaxRetryTimeExceeded() throws Exception {
-        long retryStart = Clock.systemUTC().millis();
-        int initialDelay = 100;
-        int multiplier = 2;
+        var retryStart = Clock.systemUTC().millis();
+        var initialDelay = 100;
+        var multiplier = 2;
         long maxRetryTimeMs = 45;
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
         when(clock.millis())
                 .thenReturn(retryStart)
                 .thenReturn(retryStart + maxRetryTimeMs - 5)
                 .thenReturn(retryStart + maxRetryTimeMs + 7);
 
-        ExponentialBackoffRetryLogic logic =
-                newRetryLogic(maxRetryTimeMs, initialDelay, multiplier, 0, clock, sleepTask);
+        var logic = newRetryLogic(maxRetryTimeMs, initialDelay, multiplier, 0, clock, sleepTask);
 
         Supplier<Void> workMock = newWorkMock();
-        SessionExpiredException error = sessionExpired();
+        var error = sessionExpired();
         when(workMock.get()).thenThrow(error);
 
-        Exception e = assertThrows(Exception.class, () -> logic.retry(workMock));
+        var e = assertThrows(Exception.class, () -> logic.retry(workMock));
         assertEquals(error, e);
 
         verify(sleepTask).sleep(initialDelay);
@@ -261,29 +257,28 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesNotRetryWhenMaxRetryTimeExceededAsync() {
-        long retryStart = Clock.systemUTC().millis();
-        int initialDelay = 100;
-        int multiplier = 2;
+        var retryStart = Clock.systemUTC().millis();
+        var initialDelay = 100;
+        var multiplier = 2;
         long maxRetryTimeMs = 45;
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         when(clock.millis())
                 .thenReturn(retryStart)
                 .thenReturn(retryStart + maxRetryTimeMs - 5)
                 .thenReturn(retryStart + maxRetryTimeMs + 7);
 
-        ExponentialBackoffRetryLogic retryLogic =
-                newRetryLogic(maxRetryTimeMs, initialDelay, multiplier, 0, clock, (ignored) -> {});
+        var retryLogic = newRetryLogic(maxRetryTimeMs, initialDelay, multiplier, 0, clock, (ignored) -> {});
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        SessionExpiredException error = sessionExpired();
+        var error = sessionExpired();
         when(workMock.get()).thenReturn(failedFuture(error));
 
-        CompletionStage<Object> future = retryLogic.retryAsync(workMock);
+        var future = retryLogic.retryAsync(workMock);
 
-        Exception e = assertThrows(Exception.class, () -> await(future));
+        var e = assertThrows(Exception.class, () -> await(future));
         assertEquals(error, e);
 
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        var scheduleDelays = eventExecutor.scheduleDelays();
         assertEquals(2, scheduleDelays.size());
         assertEquals(initialDelay, scheduleDelays.get(0).intValue());
         assertEquals(initialDelay * multiplier, scheduleDelays.get(1).intValue());
@@ -293,28 +288,26 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesNotRetryWhenMaxRetryTimeExceededRx() {
-        long retryStart = Clock.systemUTC().millis();
-        int initialDelay = 100;
-        int multiplier = 2;
+        var retryStart = Clock.systemUTC().millis();
+        var initialDelay = 100;
+        var multiplier = 2;
         long maxRetryTimeMs = 45;
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         when(clock.millis())
                 .thenReturn(retryStart)
                 .thenReturn(retryStart + maxRetryTimeMs - 5)
                 .thenReturn(retryStart + maxRetryTimeMs + 7);
 
-        ExponentialBackoffRetryLogic retryLogic =
-                newRetryLogic(maxRetryTimeMs, initialDelay, multiplier, 0, clock, (ignored) -> {});
+        var retryLogic = newRetryLogic(maxRetryTimeMs, initialDelay, multiplier, 0, clock, (ignored) -> {});
 
-        SessionExpiredException error = sessionExpired();
-        AtomicInteger executionCount = new AtomicInteger();
-        Publisher<Object> publisher =
-                retryLogic.retryRx(Mono.error(error).doOnTerminate(executionCount::getAndIncrement));
+        var error = sessionExpired();
+        var executionCount = new AtomicInteger();
+        var publisher = retryLogic.retryRx(Mono.error(error).doOnTerminate(executionCount::getAndIncrement));
 
-        Exception e = assertThrows(Exception.class, () -> await(publisher));
+        var e = assertThrows(Exception.class, () -> await(publisher));
         assertEquals(error, e);
 
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        var scheduleDelays = eventExecutor.scheduleDelays();
         assertEquals(2, scheduleDelays.size());
         assertEquals(initialDelay, scheduleDelays.get(0).intValue());
         assertEquals(initialDelay * multiplier, scheduleDelays.get(1).intValue());
@@ -324,12 +317,12 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void sleepsOnServiceUnavailableException() throws Exception {
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
-        ExponentialBackoffRetryLogic logic = newRetryLogic(1, 42, 1, 0, clock, sleepTask);
+        var logic = newRetryLogic(1, 42, 1, 0, clock, sleepTask);
 
         Supplier<Void> workMock = newWorkMock();
-        ServiceUnavailableException error = serviceUnavailable();
+        var error = serviceUnavailable();
         when(workMock.get()).thenThrow(error).thenReturn(null);
 
         assertNull(logic.retry(workMock));
@@ -340,31 +333,31 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void schedulesRetryOnServiceUnavailableExceptionAsync() {
-        String result = "The Result";
-        Clock clock = mock(Clock.class);
+        var result = "The Result";
+        var clock = mock(Clock.class);
 
-        ExponentialBackoffRetryLogic retryLogic = newRetryLogic(1, 42, 1, 0, clock, (ignored) -> {});
+        var retryLogic = newRetryLogic(1, 42, 1, 0, clock, (ignored) -> {});
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        ServiceUnavailableException error = serviceUnavailable();
+        var error = serviceUnavailable();
         when(workMock.get()).thenReturn(failedFuture(error)).thenReturn(completedFuture(result));
 
         assertEquals(result, await(retryLogic.retryAsync(workMock)));
 
         verify(workMock, times(2)).get();
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        var scheduleDelays = eventExecutor.scheduleDelays();
         assertEquals(1, scheduleDelays.size());
         assertEquals(42, scheduleDelays.get(0).intValue());
     }
 
     @Test
     void sleepsOnSessionExpiredException() throws Exception {
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
-        ExponentialBackoffRetryLogic logic = newRetryLogic(1, 4242, 1, 0, clock, sleepTask);
+        var logic = newRetryLogic(1, 4242, 1, 0, clock, sleepTask);
 
         Supplier<Void> workMock = newWorkMock();
-        SessionExpiredException error = sessionExpired();
+        var error = sessionExpired();
         when(workMock.get()).thenThrow(error).thenReturn(null);
 
         assertNull(logic.retry(workMock));
@@ -375,31 +368,31 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void schedulesRetryOnSessionExpiredExceptionAsync() {
-        String result = "The Result";
-        Clock clock = mock(Clock.class);
+        var result = "The Result";
+        var clock = mock(Clock.class);
 
-        ExponentialBackoffRetryLogic retryLogic = newRetryLogic(1, 4242, 1, 0, clock, (ignored) -> {});
+        var retryLogic = newRetryLogic(1, 4242, 1, 0, clock, (ignored) -> {});
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        SessionExpiredException error = sessionExpired();
+        var error = sessionExpired();
         when(workMock.get()).thenReturn(failedFuture(error)).thenReturn(completedFuture(result));
 
         assertEquals(result, await(retryLogic.retryAsync(workMock)));
 
         verify(workMock, times(2)).get();
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        var scheduleDelays = eventExecutor.scheduleDelays();
         assertEquals(1, scheduleDelays.size());
         assertEquals(4242, scheduleDelays.get(0).intValue());
     }
 
     @Test
     void sleepsOnTransientException() throws Exception {
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
-        ExponentialBackoffRetryLogic logic = newRetryLogic(1, 23, 1, 0, clock, sleepTask);
+        var logic = newRetryLogic(1, 23, 1, 0, clock, sleepTask);
 
         Supplier<Void> workMock = newWorkMock();
-        TransientException error = transientException();
+        var error = transientException();
         when(workMock.get()).thenThrow(error).thenReturn(null);
 
         assertNull(logic.retry(workMock));
@@ -410,34 +403,34 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void schedulesRetryOnTransientExceptionAsync() {
-        String result = "The Result";
-        Clock clock = mock(Clock.class);
+        var result = "The Result";
+        var clock = mock(Clock.class);
 
-        ExponentialBackoffRetryLogic retryLogic = newRetryLogic(1, 23, 1, 0, clock, (ignored) -> {});
+        var retryLogic = newRetryLogic(1, 23, 1, 0, clock, (ignored) -> {});
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        TransientException error = transientException();
+        var error = transientException();
         when(workMock.get()).thenReturn(failedFuture(error)).thenReturn(completedFuture(result));
 
         assertEquals(result, await(retryLogic.retryAsync(workMock)));
 
         verify(workMock, times(2)).get();
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        var scheduleDelays = eventExecutor.scheduleDelays();
         assertEquals(1, scheduleDelays.size());
         assertEquals(23, scheduleDelays.get(0).intValue());
     }
 
     @Test
     void throwsWhenUnknownError() throws Exception {
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
-        ExponentialBackoffRetryLogic logic = newRetryLogic(1, 1, 1, 1, clock, sleepTask);
+        var logic = newRetryLogic(1, 1, 1, 1, clock, sleepTask);
 
         Supplier<Void> workMock = newWorkMock();
-        IllegalStateException error = new IllegalStateException();
+        var error = new IllegalStateException();
         when(workMock.get()).thenThrow(error);
 
-        Exception e = assertThrows(Exception.class, () -> logic.retry(workMock));
+        var e = assertThrows(Exception.class, () -> logic.retry(workMock));
         assertEquals(error, e);
 
         verify(workMock).get();
@@ -446,14 +439,14 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesNotRetryOnUnknownErrorAsync() {
-        Clock clock = mock(Clock.class);
-        ExponentialBackoffRetryLogic retryLogic = newRetryLogic(1, 1, 1, 1, clock, (ignored) -> {});
+        var clock = mock(Clock.class);
+        var retryLogic = newRetryLogic(1, 1, 1, 1, clock, (ignored) -> {});
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        IllegalStateException error = new IllegalStateException();
+        var error = new IllegalStateException();
         when(workMock.get()).thenReturn(failedFuture(error));
 
-        Exception e = assertThrows(Exception.class, () -> await(retryLogic.retryAsync(workMock)));
+        var e = assertThrows(Exception.class, () -> await(retryLogic.retryAsync(workMock)));
         assertEquals(error, e);
 
         verify(workMock).get();
@@ -462,15 +455,15 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void throwsWhenTransactionTerminatedError() throws Exception {
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
-        ExponentialBackoffRetryLogic logic = newRetryLogic(1, 13, 1, 0, clock, sleepTask);
+        var logic = newRetryLogic(1, 13, 1, 0, clock, sleepTask);
 
         Supplier<Void> workMock = newWorkMock();
-        ClientException error = new ClientException("Neo.ClientError.Transaction.Terminated", "");
+        var error = new ClientException("Neo.ClientError.Transaction.Terminated", "");
         when(workMock.get()).thenThrow(error).thenReturn(null);
 
-        Exception e = assertThrows(Exception.class, () -> logic.retry(workMock));
+        var e = assertThrows(Exception.class, () -> logic.retry(workMock));
         assertEquals(error, e);
 
         verify(workMock).get();
@@ -479,14 +472,14 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesNotRetryOnTransactionTerminatedErrorAsync() {
-        Clock clock = mock(Clock.class);
-        ExponentialBackoffRetryLogic retryLogic = newRetryLogic(1, 13, 1, 0, clock, (ignored) -> {});
+        var clock = mock(Clock.class);
+        var retryLogic = newRetryLogic(1, 13, 1, 0, clock, (ignored) -> {});
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        ClientException error = new ClientException("Neo.ClientError.Transaction.Terminated", "");
+        var error = new ClientException("Neo.ClientError.Transaction.Terminated", "");
         when(workMock.get()).thenReturn(failedFuture(error));
 
-        Exception e = assertThrows(Exception.class, () -> await(retryLogic.retryAsync(workMock)));
+        var e = assertThrows(Exception.class, () -> await(retryLogic.retryAsync(workMock)));
         assertEquals(error, e);
 
         verify(workMock).get();
@@ -495,15 +488,15 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void throwsWhenTransactionLockClientStoppedError() throws Exception {
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
-        ExponentialBackoffRetryLogic logic = newRetryLogic(1, 13, 1, 0, clock, sleepTask);
+        var logic = newRetryLogic(1, 13, 1, 0, clock, sleepTask);
 
         Supplier<Void> workMock = newWorkMock();
-        ClientException error = new ClientException("Neo.ClientError.Transaction.LockClientStopped", "");
+        var error = new ClientException("Neo.ClientError.Transaction.LockClientStopped", "");
         when(workMock.get()).thenThrow(error).thenReturn(null);
 
-        Exception e = assertThrows(Exception.class, () -> logic.retry(workMock));
+        var e = assertThrows(Exception.class, () -> logic.retry(workMock));
         assertEquals(error, e);
 
         verify(workMock).get();
@@ -512,14 +505,14 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesNotRetryOnTransactionLockClientStoppedErrorAsync() {
-        Clock clock = mock(Clock.class);
-        ExponentialBackoffRetryLogic retryLogic = newRetryLogic(1, 15, 1, 0, clock, (ignored) -> {});
+        var clock = mock(Clock.class);
+        var retryLogic = newRetryLogic(1, 15, 1, 0, clock, (ignored) -> {});
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        ClientException error = new ClientException("Neo.ClientError.Transaction.LockClientStopped", "");
+        var error = new ClientException("Neo.ClientError.Transaction.LockClientStopped", "");
         when(workMock.get()).thenReturn(failedFuture(error));
 
-        Exception e = assertThrows(Exception.class, () -> await(retryLogic.retryAsync(workMock)));
+        var e = assertThrows(Exception.class, () -> await(retryLogic.retryAsync(workMock)));
         assertEquals(error, e);
 
         verify(workMock).get();
@@ -529,16 +522,16 @@ class ExponentialBackoffRetryLogicTest {
     @ParameterizedTest
     @MethodSource("canBeRetriedErrors")
     void schedulesRetryOnErrorRx(Exception error) {
-        String result = "The Result";
-        Clock clock = mock(Clock.class);
-        ExponentialBackoffRetryLogic retryLogic = newRetryLogic(1, 4242, 1, 0, clock, (ignored) -> {});
+        var result = "The Result";
+        var clock = mock(Clock.class);
+        var retryLogic = newRetryLogic(1, 4242, 1, 0, clock, (ignored) -> {});
 
         Publisher<String> publisher = createMono(result, error);
-        Mono<String> single = Flux.from(retryLogic.retryRx(publisher)).single();
+        var single = Flux.from(retryLogic.retryRx(publisher)).single();
 
         assertEquals(result, await(single));
 
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        var scheduleDelays = eventExecutor.scheduleDelays();
         assertEquals(1, scheduleDelays.size());
         assertEquals(4242, scheduleDelays.get(0).intValue());
     }
@@ -546,12 +539,12 @@ class ExponentialBackoffRetryLogicTest {
     @ParameterizedTest
     @MethodSource("cannotBeRetriedErrors")
     void scheduleNoRetryOnErrorRx(Exception error) {
-        Clock clock = mock(Clock.class);
-        ExponentialBackoffRetryLogic retryLogic = newRetryLogic(1, 10, 1, 1, clock, (ignored) -> {});
+        var clock = mock(Clock.class);
+        var retryLogic = newRetryLogic(1, 10, 1, 1, clock, (ignored) -> {});
 
-        Mono<Object> single = Flux.from(retryLogic.retryRx(Mono.error(error))).single();
+        var single = Flux.from(retryLogic.retryRx(Mono.error(error))).single();
 
-        Exception e = assertThrows(Exception.class, () -> await(single));
+        var e = assertThrows(Exception.class, () -> await(single));
         assertEquals(error, e);
 
         assertEquals(0, eventExecutor.scheduleDelays().size());
@@ -559,16 +552,16 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void throwsWhenSleepInterrupted() throws Exception {
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
         doThrow(new InterruptedException()).when(sleepTask).sleep(1);
-        ExponentialBackoffRetryLogic logic = newRetryLogic(1, 1, 1, 0, clock, sleepTask);
+        var logic = newRetryLogic(1, 1, 1, 0, clock, sleepTask);
 
         Supplier<Void> workMock = newWorkMock();
         when(workMock.get()).thenThrow(serviceUnavailable());
 
         try {
-            IllegalStateException e = assertThrows(IllegalStateException.class, () -> logic.retry(workMock));
+            var e = assertThrows(IllegalStateException.class, () -> logic.retry(workMock));
             assertThat(e.getCause(), instanceOf(InterruptedException.class));
         } finally {
             // Clear the interruption flag so all subsequent tests do not see this thread as interrupted
@@ -579,23 +572,23 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void collectsSuppressedErrors() throws Exception {
         long maxRetryTime = 20;
-        int initialDelay = 15;
-        int multiplier = 2;
-        Clock clock = mock(Clock.class);
+        var initialDelay = 15;
+        var multiplier = 2;
+        var clock = mock(Clock.class);
         when(clock.millis()).thenReturn(0L).thenReturn(10L).thenReturn(15L).thenReturn(25L);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
-        ExponentialBackoffRetryLogic logic = newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, sleepTask);
+        var logic = newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, sleepTask);
 
         Supplier<Void> workMock = newWorkMock();
-        SessionExpiredException error1 = sessionExpired();
-        SessionExpiredException error2 = sessionExpired();
-        ServiceUnavailableException error3 = serviceUnavailable();
-        TransientException error4 = transientException();
+        var error1 = sessionExpired();
+        var error2 = sessionExpired();
+        var error3 = serviceUnavailable();
+        var error4 = transientException();
         when(workMock.get()).thenThrow(error1, error2, error3, error4).thenReturn(null);
 
-        Exception e = assertThrows(Exception.class, () -> logic.retry(workMock));
+        var e = assertThrows(Exception.class, () -> logic.retry(workMock));
         assertEquals(error4, e);
-        Throwable[] suppressed = e.getSuppressed();
+        var suppressed = e.getSuppressed();
         assertEquals(3, suppressed.length);
         assertEquals(error1, suppressed[0]);
         assertEquals(error2, suppressed[1]);
@@ -611,21 +604,20 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void collectsSuppressedErrorsAsync() {
-        String result = "The Result";
+        var result = "The Result";
         long maxRetryTime = 20;
-        int initialDelay = 15;
-        int multiplier = 2;
-        Clock clock = mock(Clock.class);
+        var initialDelay = 15;
+        var multiplier = 2;
+        var clock = mock(Clock.class);
         when(clock.millis()).thenReturn(0L).thenReturn(10L).thenReturn(15L).thenReturn(25L);
 
-        ExponentialBackoffRetryLogic retryLogic =
-                newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, (ignored) -> {});
+        var retryLogic = newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, (ignored) -> {});
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        SessionExpiredException error1 = sessionExpired();
-        SessionExpiredException error2 = sessionExpired();
-        ServiceUnavailableException error3 = serviceUnavailable();
-        TransientException error4 = transientException();
+        var error1 = sessionExpired();
+        var error2 = sessionExpired();
+        var error3 = serviceUnavailable();
+        var error4 = transientException();
 
         when(workMock.get())
                 .thenReturn(failedFuture(error1))
@@ -634,9 +626,9 @@ class ExponentialBackoffRetryLogicTest {
                 .thenReturn(failedFuture(error4))
                 .thenReturn(completedFuture(result));
 
-        Exception e = assertThrows(Exception.class, () -> await(retryLogic.retryAsync(workMock)));
+        var e = assertThrows(Exception.class, () -> await(retryLogic.retryAsync(workMock)));
         assertEquals(error4, e);
-        Throwable[] suppressed = e.getSuppressed();
+        var suppressed = e.getSuppressed();
         assertEquals(3, suppressed.length);
         assertEquals(error1, suppressed[0]);
         assertEquals(error2, suppressed[1]);
@@ -644,7 +636,7 @@ class ExponentialBackoffRetryLogicTest {
 
         verify(workMock, times(4)).get();
 
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        var scheduleDelays = eventExecutor.scheduleDelays();
         assertEquals(3, scheduleDelays.size());
         assertEquals(initialDelay, scheduleDelays.get(0).intValue());
         assertEquals(initialDelay * multiplier, scheduleDelays.get(1).intValue());
@@ -655,23 +647,22 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void collectsSuppressedErrorsRx() {
         long maxRetryTime = 20;
-        int initialDelay = 15;
-        int multiplier = 2;
-        Clock clock = mock(Clock.class);
+        var initialDelay = 15;
+        var multiplier = 2;
+        var clock = mock(Clock.class);
         when(clock.millis()).thenReturn(0L).thenReturn(10L).thenReturn(15L).thenReturn(25L);
-        ExponentialBackoffRetryLogic logic =
-                newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, (ignored) -> {});
+        var logic = newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, (ignored) -> {});
 
-        SessionExpiredException error1 = sessionExpired();
-        SessionExpiredException error2 = sessionExpired();
-        ServiceUnavailableException error3 = serviceUnavailable();
-        TransientException error4 = transientException();
-        Mono<String> mono = createMono("A result", error1, error2, error3, error4);
+        var error1 = sessionExpired();
+        var error2 = sessionExpired();
+        var error3 = serviceUnavailable();
+        var error4 = transientException();
+        var mono = createMono("A result", error1, error2, error3, error4);
 
         StepVerifier.create(logic.retryRx(mono))
                 .expectErrorSatisfies(e -> {
                     assertEquals(error4, e);
-                    Throwable[] suppressed = e.getSuppressed();
+                    var suppressed = e.getSuppressed();
                     assertEquals(3, suppressed.length);
                     assertEquals(error1, suppressed[0]);
                     assertEquals(error2, suppressed[1]);
@@ -679,7 +670,7 @@ class ExponentialBackoffRetryLogicTest {
                 })
                 .verify();
 
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        var scheduleDelays = eventExecutor.scheduleDelays();
         assertEquals(3, scheduleDelays.size());
         assertEquals(initialDelay, scheduleDelays.get(0).intValue());
         assertEquals(initialDelay * multiplier, scheduleDelays.get(1).intValue());
@@ -690,18 +681,18 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesNotCollectSuppressedErrorsWhenSameErrorIsThrown() throws Exception {
         long maxRetryTime = 20;
-        int initialDelay = 15;
-        int multiplier = 2;
-        Clock clock = mock(Clock.class);
+        var initialDelay = 15;
+        var multiplier = 2;
+        var clock = mock(Clock.class);
         when(clock.millis()).thenReturn(0L).thenReturn(10L).thenReturn(25L);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
-        ExponentialBackoffRetryLogic logic = newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, sleepTask);
+        var logic = newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, sleepTask);
 
         Supplier<Void> workMock = newWorkMock();
-        SessionExpiredException error = sessionExpired();
+        var error = sessionExpired();
         when(workMock.get()).thenThrow(error);
 
-        Exception e = assertThrows(Exception.class, () -> logic.retry(workMock));
+        var e = assertThrows(Exception.class, () -> logic.retry(workMock));
         assertEquals(error, e);
         assertEquals(0, e.getSuppressed().length);
 
@@ -715,25 +706,24 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesNotCollectSuppressedErrorsWhenSameErrorIsThrownAsync() {
         long maxRetryTime = 20;
-        int initialDelay = 15;
-        int multiplier = 2;
-        Clock clock = mock(Clock.class);
+        var initialDelay = 15;
+        var multiplier = 2;
+        var clock = mock(Clock.class);
         when(clock.millis()).thenReturn(0L).thenReturn(10L).thenReturn(25L);
 
-        ExponentialBackoffRetryLogic retryLogic =
-                newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, (ignored) -> {});
+        var retryLogic = newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, (ignored) -> {});
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        SessionExpiredException error = sessionExpired();
+        var error = sessionExpired();
         when(workMock.get()).thenReturn(failedFuture(error));
 
-        Exception e = assertThrows(Exception.class, () -> await(retryLogic.retryAsync(workMock)));
+        var e = assertThrows(Exception.class, () -> await(retryLogic.retryAsync(workMock)));
         assertEquals(error, e);
         assertEquals(0, e.getSuppressed().length);
 
         verify(workMock, times(3)).get();
 
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        var scheduleDelays = eventExecutor.scheduleDelays();
         assertEquals(2, scheduleDelays.size());
         assertEquals(initialDelay, scheduleDelays.get(0).intValue());
         assertEquals(initialDelay * multiplier, scheduleDelays.get(1).intValue());
@@ -742,20 +732,19 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesNotCollectSuppressedErrorsWhenSameErrorIsThrownRx() {
         long maxRetryTime = 20;
-        int initialDelay = 15;
-        int multiplier = 2;
-        Clock clock = mock(Clock.class);
+        var initialDelay = 15;
+        var multiplier = 2;
+        var clock = mock(Clock.class);
         when(clock.millis()).thenReturn(0L).thenReturn(10L).thenReturn(25L);
 
-        ExponentialBackoffRetryLogic retryLogic =
-                newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, (ignored) -> {});
+        var retryLogic = newRetryLogic(maxRetryTime, initialDelay, multiplier, 0, clock, (ignored) -> {});
 
-        SessionExpiredException error = sessionExpired();
+        var error = sessionExpired();
         StepVerifier.create(retryLogic.retryRx(Mono.error(error)))
                 .expectErrorSatisfies(e -> assertEquals(error, e))
                 .verify();
 
-        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        var scheduleDelays = eventExecutor.scheduleDelays();
         assertEquals(2, scheduleDelays.size());
         assertEquals(initialDelay, scheduleDelays.get(0).intValue());
         assertEquals(initialDelay * multiplier, scheduleDelays.get(1).intValue());
@@ -763,15 +752,15 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesRetryOnClientExceptionWithRetryableCause() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-        String result = logic.retry(() -> {
+        var exceptionThrown = new AtomicBoolean(false);
+        var result = logic.retry(() -> {
             if (exceptionThrown.compareAndSet(false, true)) {
                 throw clientExceptionWithValidTerminationCause();
             }
@@ -783,15 +772,15 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesRetryOnAuthorizationExpiredException() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-        String result = logic.retry(() -> {
+        var exceptionThrown = new AtomicBoolean(false);
+        var result = logic.retry(() -> {
             if (exceptionThrown.compareAndSet(false, true)) {
                 throw authorizationExpiredException();
             }
@@ -803,15 +792,15 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesRetryOnConnectionReadTimeoutException() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-        String result = logic.retry(() -> {
+        var exceptionThrown = new AtomicBoolean(false);
+        var result = logic.retry(() -> {
             if (exceptionThrown.compareAndSet(false, true)) {
                 throw ConnectionReadTimeoutException.INSTANCE;
             }
@@ -823,15 +812,15 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesNotRetryOnRandomClientException() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-        ClientException exception = Assertions.assertThrows(
+        var exceptionThrown = new AtomicBoolean(false);
+        var exception = Assertions.assertThrows(
                 ClientException.class,
                 () -> logic.retry(() -> {
                     if (exceptionThrown.compareAndSet(false, true)) {
@@ -845,12 +834,12 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void eachRetryIsLogged() {
-        int retries = 9;
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var retries = 9;
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic(
+        var logic = new ExponentialBackoffRetryLogic(
                 RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging, (ignored) -> {});
 
         retry(logic, retries);
@@ -861,16 +850,16 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesRetryOnClientExceptionWithRetryableCauseAsync() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-        String result = await(logic.retryAsync(() -> {
+        var exceptionThrown = new AtomicBoolean(false);
+        var result = await(logic.retryAsync(() -> {
             if (exceptionThrown.compareAndSet(false, true)) {
                 throw clientExceptionWithValidTerminationCause();
             }
@@ -882,15 +871,15 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesRetryOnAuthorizationExpiredExceptionAsync() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-        String result = await(logic.retryAsync(() -> {
+        var exceptionThrown = new AtomicBoolean(false);
+        var result = await(logic.retryAsync(() -> {
             if (exceptionThrown.compareAndSet(false, true)) {
                 throw authorizationExpiredException();
             }
@@ -902,16 +891,16 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesNotRetryOnRandomClientExceptionAsync() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
 
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-        ClientException exception = Assertions.assertThrows(
+        var exceptionThrown = new AtomicBoolean(false);
+        var exception = Assertions.assertThrows(
                 ClientException.class,
                 () -> await(logic.retryAsync(() -> {
                     if (exceptionThrown.compareAndSet(false, true)) {
@@ -925,14 +914,14 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void eachRetryIsLoggedAsync() {
-        String result = "The Result";
-        int retries = 9;
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var result = "The Result";
+        var retries = 9;
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         assertEquals(result, await(retryAsync(logic, retries, result)));
@@ -945,16 +934,16 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesRetryOnClientExceptionWithRetryableCauseRx() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-        String result = await(Mono.from(logic.retryRx(Mono.fromSupplier(() -> {
+        var exceptionThrown = new AtomicBoolean(false);
+        var result = await(Mono.from(logic.retryRx(Mono.fromSupplier(() -> {
             if (exceptionThrown.compareAndSet(false, true)) {
                 throw clientExceptionWithValidTerminationCause();
             }
@@ -966,15 +955,15 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesRetryOnAuthorizationExpiredExceptionRx() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-        String result = await(Mono.from(logic.retryRx(Mono.fromSupplier(() -> {
+        var exceptionThrown = new AtomicBoolean(false);
+        var result = await(Mono.from(logic.retryRx(Mono.fromSupplier(() -> {
             if (exceptionThrown.compareAndSet(false, true)) {
                 throw authorizationExpiredException();
             }
@@ -986,15 +975,15 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesRetryOnAsyncResourceCleanupRuntimeExceptionRx() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-        String result = await(Mono.from(logic.retryRx(Mono.fromSupplier(() -> {
+        var exceptionThrown = new AtomicBoolean(false);
+        var result = await(Mono.from(logic.retryRx(Mono.fromSupplier(() -> {
             if (exceptionThrown.compareAndSet(false, true)) {
                 throw new RuntimeException("Async resource cleanup failed after", authorizationExpiredException());
             }
@@ -1006,16 +995,16 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void doesNotRetryOnRandomClientExceptionRx() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
 
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-        ClientException exception = Assertions.assertThrows(
+        var exceptionThrown = new AtomicBoolean(false);
+        var exception = Assertions.assertThrows(
                 ClientException.class,
                 () -> await(Mono.from(logic.retryRx(Mono.fromSupplier(() -> {
                     if (exceptionThrown.compareAndSet(false, true)) {
@@ -1029,14 +1018,14 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void eachRetryIsLoggedRx() {
-        String result = "The Result";
-        int retries = 9;
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var result = "The Result";
+        var retries = 9;
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
-        ExponentialBackoffRetryLogic logic =
+        var logic =
                 new ExponentialBackoffRetryLogic(RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, clock, logging);
 
         assertEquals(result, await(Flux.from(retryRx(logic, retries, result)).single()));
@@ -1049,13 +1038,13 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void nothingIsLoggedOnFatalFailure() {
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic(
+        var logic = new ExponentialBackoffRetryLogic(
                 RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, mock(Clock.class), logging);
 
-        RuntimeException error = assertThrows(
+        var error = assertThrows(
                 RuntimeException.class,
                 () -> logic.retry(() -> {
                     throw new RuntimeException("Fatal blocking");
@@ -1066,13 +1055,13 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void nothingIsLoggedOnFatalFailureAsync() {
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic(
+        var logic = new ExponentialBackoffRetryLogic(
                 RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, mock(Clock.class), logging);
 
-        RuntimeException error = assertThrows(
+        var error = assertThrows(
                 RuntimeException.class,
                 () -> await(logic.retryAsync(() -> failedFuture(new RuntimeException("Fatal async")))));
 
@@ -1082,14 +1071,14 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void nothingIsLoggedOnFatalFailureRx() {
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
-        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic(
+        var logic = new ExponentialBackoffRetryLogic(
                 RetrySettings.DEFAULT.maxRetryTimeMs(), eventExecutor, mock(Clock.class), logging);
 
-        Publisher<Object> retryRx = logic.retryRx(Mono.error(new RuntimeException("Fatal rx")));
-        RuntimeException error = assertThrows(RuntimeException.class, () -> await(retryRx));
+        var retryRx = logic.retryRx(Mono.error(new RuntimeException("Fatal rx")));
+        var error = assertThrows(RuntimeException.class, () -> await(retryRx));
 
         assertEquals("Fatal rx", error.getMessage());
         verifyNoInteractions(logger);
@@ -1097,14 +1086,14 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void correctNumberOfRetiesAreLoggedOnFailure() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
-        RetrySettings settings = RetrySettings.DEFAULT;
+        var settings = RetrySettings.DEFAULT;
         RetryLogic logic = new ExponentialBackoffRetryLogic(settings.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        ServiceUnavailableException error = assertThrows(
+        var error = assertThrows(
                 ServiceUnavailableException.class,
                 () -> logic.retry(new Supplier<Long>() {
                     boolean invoked;
@@ -1128,14 +1117,14 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void correctNumberOfRetiesAreLoggedOnFailureAsync() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
-        RetrySettings settings = RetrySettings.DEFAULT;
+        var settings = RetrySettings.DEFAULT;
         RetryLogic logic = new ExponentialBackoffRetryLogic(settings.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        SessionExpiredException error = assertThrows(
+        var error = assertThrows(
                 SessionExpiredException.class,
                 () -> await(logic.retryAsync(new Supplier<CompletionStage<Void>>() {
                     volatile boolean invoked;
@@ -1161,15 +1150,15 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void correctNumberOfRetiesAreLoggedOnFailureRx() {
-        Clock clock = mock(Clock.class);
-        Logging logging = mock(Logging.class);
-        Logger logger = mock(Logger.class);
+        var clock = mock(Clock.class);
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
-        RetrySettings settings = RetrySettings.DEFAULT;
+        var settings = RetrySettings.DEFAULT;
         RetryLogic logic = new ExponentialBackoffRetryLogic(settings.maxRetryTimeMs(), eventExecutor, clock, logging);
 
-        AtomicBoolean invoked = new AtomicBoolean(false);
-        SessionExpiredException error = assertThrows(
+        var invoked = new AtomicBoolean(false);
+        var error = assertThrows(
                 SessionExpiredException.class,
                 () -> await(logic.retryRx(Mono.create(e -> {
                     if (invoked.get()) {
@@ -1190,19 +1179,19 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void shouldRetryWithBackOffRx() {
         Exception exception = new TransientException("Unknown", "Retry this error.");
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         when(clock.millis()).thenReturn(0L, 100L, 200L, 400L, 800L);
-        ExponentialBackoffRetryLogic retryLogic = new ExponentialBackoffRetryLogic(
+        var retryLogic = new ExponentialBackoffRetryLogic(
                 500, 100, 2, 0, eventExecutor, clock, DEV_NULL_LOGGING, (ignored) -> {});
 
-        Flux<Integer> source = Flux.concat(Flux.range(0, 2), Flux.error(exception));
-        Flux<Integer> retriedSource = Flux.from(retryLogic.retryRx(source));
+        var source = Flux.concat(Flux.range(0, 2), Flux.error(exception));
+        var retriedSource = Flux.from(retryLogic.retryRx(source));
         StepVerifier.create(retriedSource)
                 .expectNext(0, 1) // first run
                 .expectNext(0, 1, 0, 1, 0, 1, 0, 1) // 4 retry attempts
                 .verifyErrorSatisfies(e -> assertThat(e, equalTo(exception)));
 
-        List<Long> delays = eventExecutor.scheduleDelays();
+        var delays = eventExecutor.scheduleDelays();
         assertThat(delays.size(), equalTo(4));
         assertThat(delays, contains(100L, 200L, 400L, 800L));
     }
@@ -1210,19 +1199,19 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void shouldRetryWithRandomBackOffRx() {
         Exception exception = new TransientException("Unknown", "Retry this error.");
-        Clock clock = mock(Clock.class);
+        var clock = mock(Clock.class);
         when(clock.millis()).thenReturn(0L, 100L, 200L, 400L, 800L);
-        ExponentialBackoffRetryLogic retryLogic = new ExponentialBackoffRetryLogic(
+        var retryLogic = new ExponentialBackoffRetryLogic(
                 500, 100, 2, 0.1, eventExecutor, clock, DEV_NULL_LOGGING, (ignored) -> {});
 
-        Flux<Integer> source = Flux.concat(Flux.range(0, 2), Flux.error(exception));
-        Flux<Integer> retriedSource = Flux.from(retryLogic.retryRx(source));
+        var source = Flux.concat(Flux.range(0, 2), Flux.error(exception));
+        var retriedSource = Flux.from(retryLogic.retryRx(source));
         StepVerifier.create(retriedSource)
                 .expectNext(0, 1) // first run
                 .expectNext(0, 1, 0, 1, 0, 1, 0, 1) // 4 retry attempts
                 .verifyErrorSatisfies(e -> assertThat(e, equalTo(exception)));
 
-        List<Long> delays = eventExecutor.scheduleDelays();
+        var delays = eventExecutor.scheduleDelays();
         assertThat(delays.size(), equalTo(4));
         assertThat(delays.get(0), allOf(greaterThanOrEqualTo(90L), lessThanOrEqualTo(110L)));
         assertThat(delays.get(1), allOf(greaterThanOrEqualTo(180L), lessThanOrEqualTo(220L)));
@@ -1261,7 +1250,7 @@ class ExponentialBackoffRetryLogicTest {
     }
 
     private Publisher<Object> retryRx(ExponentialBackoffRetryLogic retryLogic, int times, Object result) {
-        AtomicInteger invoked = new AtomicInteger();
+        var invoked = new AtomicInteger();
         return retryLogic.retryRx(Mono.create(e -> {
             if (invoked.get() < times) {
                 invoked.getAndIncrement();
@@ -1274,7 +1263,7 @@ class ExponentialBackoffRetryLogicTest {
 
     private static List<Long> delaysWithoutJitter(long initialDelay, double multiplier, int count) {
         List<Long> values = new ArrayList<>();
-        long delay = initialDelay;
+        var delay = initialDelay;
         do {
             values.add(delay);
             delay *= multiplier;
@@ -1284,7 +1273,7 @@ class ExponentialBackoffRetryLogicTest {
 
     private static List<Long> sleepValues(ExponentialBackoffRetryLogic.SleepTask sleepTask, int expectedCount)
             throws InterruptedException {
-        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(long.class);
+        var captor = ArgumentCaptor.forClass(long.class);
         verify(sleepTask, times(expectedCount)).sleep(captor.capture());
         return captor.getAllValues();
     }
@@ -1340,8 +1329,8 @@ class ExponentialBackoffRetryLogicTest {
             List<Long> expectedDelays, List<Long> actualDelays, double delta) {
         assertEquals(expectedDelays.size(), actualDelays.size());
 
-        for (int i = 0; i < actualDelays.size(); i++) {
-            double actualValue = actualDelays.get(i).doubleValue();
+        for (var i = 0; i < actualDelays.size(); i++) {
+            var actualValue = actualDelays.get(i).doubleValue();
             long expectedValue = expectedDelays.get(i);
 
             assertThat(actualValue, closeTo(expectedValue, expectedValue * delta));
@@ -1349,8 +1338,8 @@ class ExponentialBackoffRetryLogicTest {
     }
 
     private <T> Mono<T> createMono(T result, Exception... errors) {
-        AtomicInteger executionCount = new AtomicInteger();
-        Iterator<Exception> iterator = Arrays.asList(errors).iterator();
+        var executionCount = new AtomicInteger();
+        var iterator = Arrays.asList(errors).iterator();
         return Mono.create((Consumer<MonoSink<T>>) e -> {
                     if (iterator.hasNext()) {
                         e.error(iterator.next());

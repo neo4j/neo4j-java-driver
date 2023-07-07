@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.Metrics;
 
 class MicrometerMetricsProviderTest {
     MetricsProvider provider;
@@ -35,7 +34,7 @@ class MicrometerMetricsProviderTest {
     @Test
     void shouldReturnMicrometerMetricsOnMetrics() {
         // GIVEN & WHEN
-        Metrics metrics = provider.metrics();
+        var metrics = provider.metrics();
 
         // THEN
         assertTrue(metrics instanceof MicrometerMetrics);
@@ -44,7 +43,7 @@ class MicrometerMetricsProviderTest {
     @Test
     void shouldReturnMicrometerMetricsOnMetricsListener() {
         // GIVEN & WHEN
-        MetricsListener listener = provider.metricsListener();
+        var listener = provider.metricsListener();
 
         // THEN
         assertTrue(listener instanceof MicrometerMetrics);

@@ -27,7 +27,6 @@ import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.writeE
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.writeMessageBoundary;
 import static org.neo4j.driver.testutil.TestUtil.assertByteBufContains;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
@@ -54,7 +53,7 @@ class BoltProtocolUtilTest {
 
     @Test
     void shouldWriteMessageBoundary() {
-        ByteBuf buf = Unpooled.buffer();
+        var buf = Unpooled.buffer();
 
         buf.writeInt(1);
         buf.writeInt(2);
@@ -66,7 +65,7 @@ class BoltProtocolUtilTest {
 
     @Test
     void shouldWriteEmptyChunkHeader() {
-        ByteBuf buf = Unpooled.buffer();
+        var buf = Unpooled.buffer();
 
         writeEmptyChunkHeader(buf);
         buf.writeInt(1);
@@ -78,7 +77,7 @@ class BoltProtocolUtilTest {
 
     @Test
     void shouldWriteChunkHeader() {
-        ByteBuf buf = Unpooled.buffer();
+        var buf = Unpooled.buffer();
 
         writeEmptyChunkHeader(buf);
         buf.writeInt(1);

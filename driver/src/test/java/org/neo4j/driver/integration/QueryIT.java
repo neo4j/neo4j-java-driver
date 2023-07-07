@@ -26,13 +26,10 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -46,7 +43,7 @@ class QueryIT {
     @Test
     void shouldRunWithResult() {
         // When I execute a query that yields a result
-        List<Record> result = session.run("UNWIND [1,2,3] AS k RETURN k").list();
+        var result = session.run("UNWIND [1,2,3] AS k RETURN k").list();
 
         // Then the result object should contain the returned values
         assertThat(result.size(), equalTo(3));
@@ -58,7 +55,7 @@ class QueryIT {
 
         // And it should allow iteration
         long expected = 0;
-        for (Record value : result) {
+        for (var value : result) {
             expected += 1;
             assertThat(value.get("k"), equalTo(Values.value(expected)));
         }
@@ -119,7 +116,7 @@ class QueryIT {
 
     @Test
     void shouldRunWithIteratorAsParameter() {
-        Iterator<String> values = asList("FOO", "BAR", "BAZ").iterator();
+        var values = asList("FOO", "BAR", "BAZ").iterator();
         // When
         session.run("RETURN $param", parameters("param", values));
 
@@ -137,7 +134,7 @@ class QueryIT {
     @Test
     void shouldRunParameterizedWithResult() {
         // When
-        List<Record> result = session.run("UNWIND $list AS k RETURN k", parameters("list", asList(1, 2, 3)))
+        var result = session.run("UNWIND $list AS k RETURN k", parameters("list", asList(1, 2, 3)))
                 .list();
 
         // Then
@@ -151,7 +148,7 @@ class QueryIT {
         session.run("CREATE (a {name:'Adam'})");
 
         // And I run a read query
-        Result result2 = session.run("MATCH (a) RETURN a.name");
+        var result2 = session.run("MATCH (a) RETURN a.name");
 
         // Then I expect to get the name back
         Value name = null;

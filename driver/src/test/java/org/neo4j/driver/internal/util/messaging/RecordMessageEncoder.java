@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.util.messaging;
 import static org.neo4j.driver.Values.value;
 
 import java.io.IOException;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
@@ -30,8 +29,8 @@ import org.neo4j.driver.internal.messaging.response.RecordMessage;
 public class RecordMessageEncoder implements MessageEncoder {
     @Override
     public void encode(Message message, ValuePacker packer) throws IOException {
-        RecordMessage recordMessage = (RecordMessage) message;
-        Value[] fields = recordMessage.fields();
+        var recordMessage = (RecordMessage) message;
+        var fields = recordMessage.fields();
         packer.packStructHeader(1, recordMessage.signature());
         packer.pack(value(fields)); // pack list of fields
     }

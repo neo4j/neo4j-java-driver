@@ -42,8 +42,6 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -174,13 +172,13 @@ class TemporalTypesIT {
 
     @Test
     void shouldSendDateTimeWithZoneOffset() {
-        ZoneOffset offset = ZoneOffset.ofHoursMinutes(-4, -15);
+        var offset = ZoneOffset.ofHoursMinutes(-4, -15);
         testSendValue(ZonedDateTime.of(1845, 3, 25, 19, 15, 45, 22, offset), Value::asZonedDateTime);
     }
 
     @Test
     void shouldReceiveDateTimeWithZoneOffset() {
-        ZoneOffset offset = ZoneOffset.ofHoursMinutes(3, 30);
+        var offset = ZoneOffset.ofHoursMinutes(3, 30);
         testReceiveValue(
                 "RETURN datetime({year:1984, month:10, day:11, hour:21, minute:30, second:34, timezone:'+03:30'})",
                 ZonedDateTime.of(1984, 10, 11, 21, 30, 34, 0, offset),
@@ -189,7 +187,7 @@ class TemporalTypesIT {
 
     @Test
     void shouldSendAndReceiveDateTimeWithZoneOffset() {
-        ZoneOffset offset = ZoneOffset.ofHoursMinutes(-7, -15);
+        var offset = ZoneOffset.ofHoursMinutes(-7, -15);
         testSendAndReceiveValue(ZonedDateTime.of(2017, 3, 9, 11, 12, 13, 14, offset), Value::asZonedDateTime);
     }
 
@@ -235,13 +233,13 @@ class TemporalTypesIT {
 
     @Test
     void shouldSendDateTimeWithZoneId() {
-        ZoneId zoneId = ZoneId.of("Europe/Stockholm");
+        var zoneId = ZoneId.of("Europe/Stockholm");
         testSendValue(ZonedDateTime.of(2049, 9, 11, 19, 10, 40, 20, zoneId), Value::asZonedDateTime);
     }
 
     @Test
     void shouldReceiveDateTimeWithZoneId() {
-        ZoneId zoneId = ZoneId.of("Europe/London");
+        var zoneId = ZoneId.of("Europe/London");
         testReceiveValue(
                 "RETURN datetime({year:2000, month:1, day:1, hour:9, minute:5, second:1, timezone:'Europe/London'})",
                 ZonedDateTime.of(2000, 1, 1, 9, 5, 1, 0, zoneId),
@@ -250,7 +248,7 @@ class TemporalTypesIT {
 
     @Test
     void shouldSendAndReceiveDateTimeWithZoneId() {
-        ZoneId zoneId = ZoneId.of("Europe/Stockholm");
+        var zoneId = ZoneId.of("Europe/Stockholm");
         testSendAndReceiveValue(ZonedDateTime.of(2099, 12, 29, 12, 59, 59, 59, zoneId), Value::asZonedDateTime);
     }
 
@@ -325,7 +323,7 @@ class TemporalTypesIT {
     }
 
     private static <T> void testSendAndReceiveRandomValues(Supplier<T> valueSupplier, Function<Value, T> converter) {
-        for (int i = 0; i < RANDOM_VALUES_TO_TEST; i++) {
+        for (var i = 0; i < RANDOM_VALUES_TO_TEST; i++) {
             testSendAndReceiveValue(valueSupplier.get(), converter);
         }
     }
@@ -336,38 +334,38 @@ class TemporalTypesIT {
 
     private static <T> void testSendAndReceiveRandomLists(
             Supplier<T> valueSupplier, Function<Value, List<T>> converter) {
-        for (int i = 0; i < RANDOM_LISTS_TO_TEST; i++) {
-            int listSize = ThreadLocalRandom.current().nextInt(MIN_LIST_SIZE, MAX_LIST_SIZE);
-            List<T> list = Stream.generate(valueSupplier).limit(listSize).collect(toList());
+        for (var i = 0; i < RANDOM_LISTS_TO_TEST; i++) {
+            var listSize = ThreadLocalRandom.current().nextInt(MIN_LIST_SIZE, MAX_LIST_SIZE);
+            var list = Stream.generate(valueSupplier).limit(listSize).collect(toList());
 
             testSendAndReceiveValue(list, converter);
         }
     }
 
     private static <T> void testSendValue(T value, Function<Value, T> converter) {
-        Record record1 = session.run("CREATE (n:Node {value: $value}) RETURN 42", singletonMap("value", value))
+        var record1 = session.run("CREATE (n:Node {value: $value}) RETURN 42", singletonMap("value", value))
                 .single();
         assertEquals(42, record1.get(0).asInt());
 
-        Record record2 = session.run("MATCH (n:Node) RETURN n.value").single();
+        var record2 = session.run("MATCH (n:Node) RETURN n.value").single();
         assertEquals(value, converter.apply(record2.get(0)));
     }
 
     private static <T> void testReceiveValue(String query, T expectedValue, Function<Value, T> converter) {
-        Record record = session.run(query).single();
+        var record = session.run(query).single();
         assertEquals(expectedValue, converter.apply(record.get(0)));
     }
 
     private static <T> void testSendAndReceiveValue(T value, Function<Value, T> converter) {
-        Record record = session.run("CREATE (n:Node {value: $value}) RETURN n.value", singletonMap("value", value))
+        var record = session.run("CREATE (n:Node {value: $value}) RETURN n.value", singletonMap("value", value))
                 .single();
         assertEquals(value, converter.apply(record.get(0)));
     }
 
     private static void testDurationToString(long seconds, int nanoseconds, String expectedValue) {
-        Result result = session.run(
+        var result = session.run(
                 "RETURN duration({seconds: $s, nanoseconds: $n})", parameters("s", seconds, "n", nanoseconds));
-        IsoDuration duration = result.single().get(0).asIsoDuration();
+        var duration = result.single().get(0).asIsoDuration();
         assertEquals(expectedValue, duration.toString());
     }
 

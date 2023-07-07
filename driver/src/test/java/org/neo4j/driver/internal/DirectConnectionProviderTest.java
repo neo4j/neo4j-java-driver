@@ -40,7 +40,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InOrder;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
@@ -50,18 +49,18 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 class DirectConnectionProviderTest {
     @Test
     void acquiresConnectionsFromThePool() {
-        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
-        Connection connection1 = mock(Connection.class);
-        Connection connection2 = mock(Connection.class);
+        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var connection1 = mock(Connection.class);
+        var connection2 = mock(Connection.class);
 
-        ConnectionPool pool = poolMock(address, connection1, connection2);
-        DirectConnectionProvider provider = new DirectConnectionProvider(address, pool);
+        var pool = poolMock(address, connection1, connection2);
+        var provider = new DirectConnectionProvider(address, pool);
 
-        Connection acquired1 = await(provider.acquireConnection(contextWithMode(READ)));
+        var acquired1 = await(provider.acquireConnection(contextWithMode(READ)));
         assertThat(acquired1, instanceOf(DirectConnection.class));
         assertSame(connection1, ((DirectConnection) acquired1).connection());
 
-        Connection acquired2 = await(provider.acquireConnection(contextWithMode(WRITE)));
+        var acquired2 = await(provider.acquireConnection(contextWithMode(WRITE)));
         assertThat(acquired2, instanceOf(DirectConnection.class));
         assertSame(connection2, ((DirectConnection) acquired2).connection());
     }
@@ -69,20 +68,20 @@ class DirectConnectionProviderTest {
     @ParameterizedTest
     @EnumSource(AccessMode.class)
     void returnsCorrectAccessMode(AccessMode mode) {
-        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
-        ConnectionPool pool = poolMock(address, mock(Connection.class));
-        DirectConnectionProvider provider = new DirectConnectionProvider(address, pool);
+        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var pool = poolMock(address, mock(Connection.class));
+        var provider = new DirectConnectionProvider(address, pool);
 
-        Connection acquired = await(provider.acquireConnection(contextWithMode(mode)));
+        var acquired = await(provider.acquireConnection(contextWithMode(mode)));
 
         assertEquals(mode, acquired.mode());
     }
 
     @Test
     void closesPool() {
-        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
-        ConnectionPool pool = poolMock(address, mock(Connection.class));
-        DirectConnectionProvider provider = new DirectConnectionProvider(address, pool);
+        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var pool = poolMock(address, mock(Connection.class));
+        var provider = new DirectConnectionProvider(address, pool);
 
         provider.close();
 
@@ -91,22 +90,22 @@ class DirectConnectionProviderTest {
 
     @Test
     void returnsCorrectAddress() {
-        BoltServerAddress address = new BoltServerAddress("server-1", 25000);
+        var address = new BoltServerAddress("server-1", 25000);
 
-        DirectConnectionProvider provider = new DirectConnectionProvider(address, mock(ConnectionPool.class));
+        var provider = new DirectConnectionProvider(address, mock(ConnectionPool.class));
 
         assertEquals(address, provider.getAddress());
     }
 
     @Test
     void shouldIgnoreDatabaseNameAndAccessModeWhenObtainConnectionFromPool() throws Throwable {
-        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
-        Connection connection = mock(Connection.class);
+        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var connection = mock(Connection.class);
 
-        ConnectionPool pool = poolMock(address, connection);
-        DirectConnectionProvider provider = new DirectConnectionProvider(address, pool);
+        var pool = poolMock(address, connection);
+        var provider = new DirectConnectionProvider(address, pool);
 
-        Connection acquired1 = await(provider.acquireConnection(contextWithMode(READ)));
+        var acquired1 = await(provider.acquireConnection(contextWithMode(READ)));
         assertThat(acquired1, instanceOf(DirectConnection.class));
         assertSame(connection, ((DirectConnection) acquired1).connection());
 
@@ -116,11 +115,11 @@ class DirectConnectionProviderTest {
     @ParameterizedTest
     @ValueSource(strings = {"", "foo", "data"})
     void shouldObtainDatabaseNameOnConnection(String databaseName) throws Throwable {
-        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
-        ConnectionPool pool = poolMock(address, mock(Connection.class));
-        DirectConnectionProvider provider = new DirectConnectionProvider(address, pool);
+        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var pool = poolMock(address, mock(Connection.class));
+        var provider = new DirectConnectionProvider(address, pool);
 
-        Connection acquired = await(provider.acquireConnection(contextWithDatabase(databaseName)));
+        var acquired = await(provider.acquireConnection(contextWithDatabase(databaseName)));
 
         assertEquals(databaseName, acquired.databaseName().description());
     }
@@ -128,10 +127,10 @@ class DirectConnectionProviderTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void ensuresCompletedDatabaseNameBeforeAccessingValue(boolean completed) {
-        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
-        ConnectionPool pool = poolMock(address, mock(Connection.class));
-        DirectConnectionProvider provider = new DirectConnectionProvider(address, pool);
-        ConnectionContext context = mock(ConnectionContext.class);
+        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var pool = poolMock(address, mock(Connection.class));
+        var provider = new DirectConnectionProvider(address, pool);
+        var context = mock(ConnectionContext.class);
         CompletableFuture<DatabaseName> databaseNameFuture = spy(
                 completed
                         ? CompletableFuture.completedFuture(DatabaseNameUtil.systemDatabase())
@@ -141,7 +140,7 @@ class DirectConnectionProviderTest {
 
         await(provider.acquireConnection(context));
 
-        InOrder inOrder = inOrder(context, databaseNameFuture);
+        var inOrder = inOrder(context, databaseNameFuture);
         inOrder.verify(context).databaseNameFuture();
         inOrder.verify(databaseNameFuture).complete(DatabaseNameUtil.defaultDatabase());
         inOrder.verify(databaseNameFuture).isDone();
@@ -151,7 +150,7 @@ class DirectConnectionProviderTest {
     @SuppressWarnings("unchecked")
     private static ConnectionPool poolMock(
             BoltServerAddress address, Connection connection, Connection... otherConnections) {
-        ConnectionPool pool = mock(ConnectionPool.class);
+        var pool = mock(ConnectionPool.class);
         CompletableFuture<Connection>[] otherConnectionFutures = Stream.of(otherConnections)
                 .map(CompletableFuture::completedFuture)
                 .toArray(CompletableFuture[]::new);

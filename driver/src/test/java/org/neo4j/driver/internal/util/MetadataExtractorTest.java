@@ -43,11 +43,9 @@ import static org.neo4j.driver.summary.QueryType.SCHEMA_WRITE;
 import static org.neo4j.driver.summary.QueryType.WRITE_ONLY;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.NotificationCategory;
 import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.Query;
@@ -60,10 +58,6 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalInputPosition;
-import org.neo4j.driver.summary.DatabaseInfo;
-import org.neo4j.driver.summary.Notification;
-import org.neo4j.driver.summary.Plan;
-import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.ResultSummary;
 
 class MetadataExtractorTest {
@@ -75,53 +69,53 @@ class MetadataExtractorTest {
 
     @Test
     void shouldExtractQueryKeys() {
-        List<String> keys = asList("hello", " ", "world", "!");
+        var keys = asList("hello", " ", "world", "!");
         Map<String, Integer> keyIndex = new HashMap<>();
         keyIndex.put("hello", 0);
         keyIndex.put(" ", 1);
         keyIndex.put("world", 2);
         keyIndex.put("!", 3);
 
-        QueryKeys extracted = extractor.extractQueryKeys(singletonMap("fields", value(keys)));
+        var extracted = extractor.extractQueryKeys(singletonMap("fields", value(keys)));
         assertEquals(keys, extracted.keys());
         assertEquals(keyIndex, extracted.keyIndex());
     }
 
     @Test
     void shouldExtractEmptyQueryKeysWhenNoneInMetadata() {
-        QueryKeys extracted = extractor.extractQueryKeys(emptyMap());
+        var extracted = extractor.extractQueryKeys(emptyMap());
         assertEquals(emptyList(), extracted.keys());
         assertEquals(emptyMap(), extracted.keyIndex());
     }
 
     @Test
     void shouldExtractResultAvailableAfter() {
-        Map<String, Value> metadata = singletonMap(RESULT_AVAILABLE_AFTER_KEY, value(424242));
-        long extractedResultAvailableAfter = extractor.extractResultAvailableAfter(metadata);
+        var metadata = singletonMap(RESULT_AVAILABLE_AFTER_KEY, value(424242));
+        var extractedResultAvailableAfter = extractor.extractResultAvailableAfter(metadata);
         assertEquals(424242L, extractedResultAvailableAfter);
     }
 
     @Test
     void shouldExtractNoResultAvailableAfterWhenNoneInMetadata() {
-        long extractedResultAvailableAfter = extractor.extractResultAvailableAfter(emptyMap());
+        var extractedResultAvailableAfter = extractor.extractResultAvailableAfter(emptyMap());
         assertEquals(-1, extractedResultAvailableAfter);
     }
 
     @Test
     void shouldBuildResultSummaryWithQuery() {
-        Query query =
+        var query =
                 new Query("UNWIND range(10, 100) AS x CREATE (:Node {name: $name, x: x})", singletonMap("name", "Apa"));
 
-        ResultSummary summary = extractor.extractSummary(query, connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query, connectionMock(), 42, emptyMap());
 
         assertEquals(query, summary.query());
     }
 
     @Test
     void shouldBuildResultSummaryWithServerAddress() {
-        Connection connection = connectionMock(new BoltServerAddress("server:42"));
+        var connection = connectionMock(new BoltServerAddress("server:42"));
 
-        ResultSummary summary = extractor.extractSummary(query(), connection, 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connection, 42, emptyMap());
 
         assertEquals("server:42", summary.server().address());
     }
@@ -138,7 +132,7 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithCounters() {
-        Value stats = parameters(
+        var stats = parameters(
                 "nodes-created", value(42),
                 "nodes-deleted", value(4242),
                 "relationships-created", value(24),
@@ -151,9 +145,9 @@ class MetadataExtractorTest {
                 "constraints-added", null,
                 "constraints-removed", value(2));
 
-        Map<String, Value> metadata = singletonMap("stats", stats);
+        var metadata = singletonMap("stats", stats);
 
-        ResultSummary summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
 
         assertEquals(42, summary.counters().nodesCreated());
         assertEquals(4242, summary.counters().nodesDeleted());
@@ -170,13 +164,13 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutCounters() {
-        ResultSummary summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
         assertEquals(EMPTY_STATS, summary.counters());
     }
 
     @Test
     void shouldBuildResultSummaryWithPlan() {
-        Value plan = value(parameters(
+        var plan = value(parameters(
                 "operatorType", "Projection",
                 "args", parameters("n", 42),
                 "identifiers", values("a", "b"),
@@ -185,18 +179,18 @@ class MetadataExtractorTest {
                                 "operatorType", "AllNodeScan",
                                 "args", parameters("x", 4242),
                                 "identifiers", values("n", "t", "f")))));
-        Map<String, Value> metadata = singletonMap("plan", plan);
+        var metadata = singletonMap("plan", plan);
 
-        ResultSummary summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
 
         assertTrue(summary.hasPlan());
         assertEquals("Projection", summary.plan().operatorType());
         assertEquals(singletonMap("n", value(42)), summary.plan().arguments());
         assertEquals(asList("a", "b"), summary.plan().identifiers());
 
-        List<? extends Plan> children = summary.plan().children();
+        var children = summary.plan().children();
         assertEquals(1, children.size());
-        Plan child = children.get(0);
+        var child = children.get(0);
 
         assertEquals("AllNodeScan", child.operatorType());
         assertEquals(singletonMap("x", value(4242)), child.arguments());
@@ -206,14 +200,14 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutPlan() {
-        ResultSummary summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
         assertFalse(summary.hasPlan());
         assertNull(summary.plan());
     }
 
     @Test
     void shouldBuildResultSummaryWithProfiledPlan() {
-        Value profile = value(parameters(
+        var profile = value(parameters(
                 "operatorType", "ProduceResult",
                 "args", parameters("a", 42),
                 "identifiers", values("a", "b"),
@@ -227,9 +221,9 @@ class MetadataExtractorTest {
                                 "identifiers", values("y", "z"),
                                 "rows", value(2),
                                 "dbHits", value(4)))));
-        Map<String, Value> metadata = singletonMap("profile", profile);
+        var metadata = singletonMap("profile", profile);
 
-        ResultSummary summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
 
         assertTrue(summary.hasPlan());
         assertTrue(summary.hasProfile());
@@ -244,9 +238,9 @@ class MetadataExtractorTest {
         assertEquals(0, summary.profile().pageCacheMisses());
         assertEquals(0, summary.profile().pageCacheHits());
 
-        List<ProfiledPlan> children = summary.profile().children();
+        var children = summary.profile().children();
         assertEquals(1, children.size());
-        ProfiledPlan child = children.get(0);
+        var child = children.get(0);
 
         assertEquals("LabelScan", child.operatorType());
         assertEquals(singletonMap("x", value(1)), child.arguments());
@@ -257,7 +251,7 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutProfiledPlan() {
-        ResultSummary summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
         assertFalse(summary.hasProfile());
         assertNull(summary.profile());
     }
@@ -265,7 +259,7 @@ class MetadataExtractorTest {
     @Test
     @SuppressWarnings("deprecation")
     void shouldBuildResultSummaryWithNotifications() {
-        Value notification1 = parameters(
+        var notification1 = parameters(
                 "description", "Almost bad thing",
                 "code", "Neo.DummyNotification",
                 "title", "A title",
@@ -276,7 +270,7 @@ class MetadataExtractorTest {
                                 "offset", 42,
                                 "line", 4242,
                                 "column", 424242));
-        Value notification2 = parameters(
+        var notification2 = parameters(
                 "description", "Almost good thing",
                 "code", "Neo.GoodNotification",
                 "title", "Good",
@@ -286,14 +280,14 @@ class MetadataExtractorTest {
                                 "offset", 1,
                                 "line", 2,
                                 "column", 3));
-        Value notifications = value(notification1, notification2);
-        Map<String, Value> metadata = singletonMap("notifications", notifications);
+        var notifications = value(notification1, notification2);
+        var metadata = singletonMap("notifications", notifications);
 
-        ResultSummary summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
 
         assertEquals(2, summary.notifications().size());
-        Notification firstNotification = summary.notifications().get(0);
-        Notification secondNotification = summary.notifications().get(1);
+        var firstNotification = summary.notifications().get(0);
+        var secondNotification = summary.notifications().get(1);
 
         assertEquals("Almost bad thing", firstNotification.description());
         assertEquals("Neo.DummyNotification", firstNotification.code());
@@ -316,15 +310,15 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutNotifications() {
-        ResultSummary summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
         assertEquals(0, summary.notifications().size());
     }
 
     @Test
     void shouldBuildResultSummaryWithResultAvailableAfter() {
-        int value = 42_000;
+        var value = 42_000;
 
-        ResultSummary summary = extractor.extractSummary(query(), connectionMock(), value, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), value, emptyMap());
 
         assertEquals(42, summary.resultAvailableAfter(TimeUnit.SECONDS));
         assertEquals(value, summary.resultAvailableAfter(TimeUnit.MILLISECONDS));
@@ -332,10 +326,10 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithResultConsumedAfter() {
-        int value = 42_000;
-        Map<String, Value> metadata = singletonMap(RESULT_CONSUMED_AFTER_KEY, value(value));
+        var value = 42_000;
+        var metadata = singletonMap(RESULT_CONSUMED_AFTER_KEY, value(value));
 
-        ResultSummary summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
 
         assertEquals(42, summary.resultConsumedAfter(TimeUnit.SECONDS));
         assertEquals(value, summary.resultConsumedAfter(TimeUnit.MILLISECONDS));
@@ -343,47 +337,47 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutResultConsumedAfter() {
-        ResultSummary summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
         assertEquals(-1, summary.resultConsumedAfter(TimeUnit.SECONDS));
         assertEquals(-1, summary.resultConsumedAfter(TimeUnit.MILLISECONDS));
     }
 
     @Test
     void shouldExtractBookmark() {
-        String bookmarkValue = "neo4j:bookmark:v1:tx123456";
+        var bookmarkValue = "neo4j:bookmark:v1:tx123456";
 
-        Bookmark bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", value(bookmarkValue)));
+        var bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", value(bookmarkValue)));
 
         assertEquals(InternalBookmark.parse(bookmarkValue), bookmark);
     }
 
     @Test
     void shouldExtractNoBookmarkWhenMetadataContainsNull() {
-        Bookmark bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", null));
+        var bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", null));
 
         assertNull(bookmark);
     }
 
     @Test
     void shouldExtractNoBookmarkWhenMetadataContainsNullValue() {
-        Bookmark bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", Values.NULL));
+        var bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", Values.NULL));
 
         assertNull(bookmark);
     }
 
     @Test
     void shouldExtractNoBookmarkWhenMetadataContainsValueOfIncorrectType() {
-        Bookmark bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", value(42)));
+        var bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", value(42)));
 
         assertNull(bookmark);
     }
 
     @Test
     void shouldExtractServer() {
-        String agent = "Neo4j/3.5.0";
-        Map<String, Value> metadata = singletonMap("server", value(agent));
+        var agent = "Neo4j/3.5.0";
+        var metadata = singletonMap("server", value(agent));
 
-        Value serverValue = extractServer(metadata);
+        var serverValue = extractServer(metadata);
 
         assertEquals(agent, serverValue.asString());
     }
@@ -391,10 +385,10 @@ class MetadataExtractorTest {
     @Test
     void shouldExtractDatabase() {
         // Given
-        Map<String, Value> metadata = singletonMap("db", value("MyAwesomeDatabase"));
+        var metadata = singletonMap("db", value("MyAwesomeDatabase"));
 
         // When
-        DatabaseInfo db = extractDatabaseInfo(metadata);
+        var db = extractDatabaseInfo(metadata);
 
         // Then
         assertEquals("MyAwesomeDatabase", db.name());
@@ -403,10 +397,10 @@ class MetadataExtractorTest {
     @Test
     void shouldDefaultToNullDatabaseName() {
         // Given
-        Map<String, Value> metadata = singletonMap("no_db", value("no_db"));
+        var metadata = singletonMap("no_db", value("no_db"));
 
         // When
-        DatabaseInfo db = extractDatabaseInfo(metadata);
+        var db = extractDatabaseInfo(metadata);
 
         // Then
         assertNull(db.name());
@@ -415,10 +409,10 @@ class MetadataExtractorTest {
     @Test
     void shouldErrorWhenTypeIsWrong() {
         // Given
-        Map<String, Value> metadata = singletonMap("db", value(10L));
+        var metadata = singletonMap("db", value(10L));
 
         // When
-        Uncoercible error = assertThrows(Uncoercible.class, () -> extractDatabaseInfo(metadata));
+        var error = assertThrows(Uncoercible.class, () -> extractDatabaseInfo(metadata));
 
         // Then
         assertThat(error.getMessage(), startsWith("Cannot coerce INTEGER to Java String"));
@@ -437,7 +431,7 @@ class MetadataExtractorTest {
     }
 
     private ResultSummary createWithQueryType(Value typeValue) {
-        Map<String, Value> metadata = singletonMap("type", typeValue);
+        var metadata = singletonMap("type", typeValue);
         return extractor.extractSummary(query(), connectionMock(), 42, metadata);
     }
 
@@ -450,7 +444,7 @@ class MetadataExtractorTest {
     }
 
     private static Connection connectionMock(BoltServerAddress address) {
-        Connection connection = mock(Connection.class);
+        var connection = mock(Connection.class);
         when(connection.serverAddress()).thenReturn(address);
         when(connection.protocol()).thenReturn(BoltProtocolV43.INSTANCE);
         when(connection.serverAgent()).thenReturn("Neo4j/4.2.5");

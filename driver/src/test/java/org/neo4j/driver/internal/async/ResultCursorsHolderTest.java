@@ -39,65 +39,65 @@ import org.neo4j.driver.internal.util.Futures;
 class ResultCursorsHolderTest {
     @Test
     void shouldReturnNoErrorWhenNoCursorStages() {
-        ResultCursorsHolder holder = new ResultCursorsHolder();
+        var holder = new ResultCursorsHolder();
 
-        Throwable error = await(holder.retrieveNotConsumedError());
+        var error = await(holder.retrieveNotConsumedError());
         assertNull(error);
     }
 
     @Test
     void shouldFailToAddNullCursorStage() {
-        ResultCursorsHolder holder = new ResultCursorsHolder();
+        var holder = new ResultCursorsHolder();
 
         assertThrows(NullPointerException.class, () -> holder.add(null));
     }
 
     @Test
     void shouldReturnNoErrorWhenCursorStagesHaveNoErrors() {
-        ResultCursorsHolder holder = new ResultCursorsHolder();
+        var holder = new ResultCursorsHolder();
 
         holder.add(cursorWithoutError());
         holder.add(cursorWithoutError());
         holder.add(cursorWithoutError());
         holder.add(cursorWithoutError());
 
-        Throwable error = await(holder.retrieveNotConsumedError());
+        var error = await(holder.retrieveNotConsumedError());
         assertNull(error);
     }
 
     @Test
     void shouldNotReturnStageErrors() {
-        ResultCursorsHolder holder = new ResultCursorsHolder();
+        var holder = new ResultCursorsHolder();
 
         holder.add(Futures.failedFuture(new RuntimeException("Failed to acquire a connection")));
         holder.add(cursorWithoutError());
         holder.add(cursorWithoutError());
         holder.add(Futures.failedFuture(new IOException("Failed to do IO")));
 
-        Throwable error = await(holder.retrieveNotConsumedError());
+        var error = await(holder.retrieveNotConsumedError());
         assertNull(error);
     }
 
     @Test
     void shouldReturnErrorWhenOneCursorFailed() {
-        IOException error = new IOException("IO failed");
-        ResultCursorsHolder holder = new ResultCursorsHolder();
+        var error = new IOException("IO failed");
+        var holder = new ResultCursorsHolder();
 
         holder.add(cursorWithoutError());
         holder.add(cursorWithoutError());
         holder.add(cursorWithError(error));
         holder.add(cursorWithoutError());
 
-        Throwable retrievedError = await(holder.retrieveNotConsumedError());
+        var retrievedError = await(holder.retrieveNotConsumedError());
         assertEquals(error, retrievedError);
     }
 
     @Test
     void shouldReturnFirstError() {
-        RuntimeException error1 = new RuntimeException("Error 1");
-        IOException error2 = new IOException("Error 2");
-        TimeoutException error3 = new TimeoutException("Error 3");
-        ResultCursorsHolder holder = new ResultCursorsHolder();
+        var error1 = new RuntimeException("Error 1");
+        var error2 = new IOException("Error 2");
+        var error3 = new TimeoutException("Error 3");
+        var holder = new ResultCursorsHolder();
 
         holder.add(cursorWithoutError());
         holder.add(cursorWithError(error1));
@@ -109,16 +109,15 @@ class ResultCursorsHolderTest {
 
     @Test
     void shouldWaitForAllFailuresToArrive() {
-        RuntimeException error1 = new RuntimeException("Error 1");
-        CompletableFuture<Throwable> error2Future = new CompletableFuture<>();
-        ResultCursorsHolder holder = new ResultCursorsHolder();
+        var error1 = new RuntimeException("Error 1");
+        var error2Future = new CompletableFuture<Throwable>();
+        var holder = new ResultCursorsHolder();
 
         holder.add(cursorWithoutError());
         holder.add(cursorWithError(error1));
         holder.add(cursorWithFailureFuture(error2Future));
 
-        CompletableFuture<Throwable> failureFuture =
-                holder.retrieveNotConsumedError().toCompletableFuture();
+        var failureFuture = holder.retrieveNotConsumedError().toCompletableFuture();
         assertFalse(failureFuture.isDone());
 
         error2Future.complete(null);
@@ -136,7 +135,7 @@ class ResultCursorsHolderTest {
     }
 
     private static CompletionStage<AsyncResultCursorImpl> cursorWithFailureFuture(CompletableFuture<Throwable> future) {
-        AsyncResultCursorImpl cursor = mock(AsyncResultCursorImpl.class);
+        var cursor = mock(AsyncResultCursorImpl.class);
         when(cursor.discardAllFailureAsync()).thenReturn(future);
         return completedFuture(cursor);
     }

@@ -32,8 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InOrder;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.Message;
@@ -48,11 +46,11 @@ class RouteMessageEncoderTest {
     @ValueSource(strings = {"neo4j"})
     @NullSource
     void shouldEncodeRouteMessage(String databaseName) throws IOException {
-        Map<String, Value> routingContext = getRoutingContext();
+        var routingContext = getRoutingContext();
 
         encoder.encode(new RouteMessage(getRoutingContext(), Collections.emptySet(), databaseName, null), packer);
 
-        InOrder inOrder = inOrder(packer);
+        var inOrder = inOrder(packer);
 
         inOrder.verify(packer).packStructHeader(3, (byte) 0x66);
         inOrder.verify(packer).pack(routingContext);
@@ -64,13 +62,13 @@ class RouteMessageEncoderTest {
     @ValueSource(strings = {"neo4j"})
     @NullSource
     void shouldEncodeRouteMessageWithBookmark(String databaseName) throws IOException {
-        Map<String, Value> routingContext = getRoutingContext();
-        Bookmark bookmark = InternalBookmark.parse("somebookmark");
+        var routingContext = getRoutingContext();
+        var bookmark = InternalBookmark.parse("somebookmark");
 
         encoder.encode(
                 new RouteMessage(getRoutingContext(), Collections.singleton(bookmark), databaseName, null), packer);
 
-        InOrder inOrder = inOrder(packer);
+        var inOrder = inOrder(packer);
 
         inOrder.verify(packer).packStructHeader(3, (byte) 0x66);
         inOrder.verify(packer).pack(routingContext);
@@ -80,7 +78,7 @@ class RouteMessageEncoderTest {
 
     @Test
     void shouldThrowIllegalArgumentIfMessageIsNotRouteMessage() {
-        Message message = mock(Message.class);
+        var message = mock(Message.class);
 
         assertThrows(IllegalArgumentException.class, () -> encoder.encode(message, packer));
     }

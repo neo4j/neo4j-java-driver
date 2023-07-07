@@ -43,11 +43,11 @@ class ResultCursorFactoryImplTest {
     @Test
     void shouldReturnAsyncResultWhenRunSucceeded() {
         // Given
-        Connection connection = mock(Connection.class);
+        var connection = mock(Connection.class);
         ResultCursorFactory cursorFactory = newResultCursorFactory(connection, null);
 
         // When
-        CompletionStage<AsyncResultCursor> cursorFuture = cursorFactory.asyncResult();
+        var cursorFuture = cursorFactory.asyncResult();
 
         // Then
         verifyRunCompleted(connection, cursorFuture);
@@ -60,25 +60,25 @@ class ResultCursorFactoryImplTest {
         ResultCursorFactory cursorFactory = newResultCursorFactory(error);
 
         // When
-        CompletionStage<AsyncResultCursor> cursorFuture = cursorFactory.asyncResult();
+        var cursorFuture = cursorFactory.asyncResult();
 
         // Then
-        AsyncResultCursor cursor = getNow(cursorFuture);
-        Throwable actual = assertThrows(error.getClass(), () -> await(cursor.mapSuccessfulRunCompletionAsync()));
+        var cursor = getNow(cursorFuture);
+        var actual = assertThrows(error.getClass(), () -> await(cursor.mapSuccessfulRunCompletionAsync()));
         assertSame(error, actual);
     }
 
     @Test
     void shouldPrePopulateRecords() {
         // Given
-        Connection connection = mock(Connection.class);
-        Message runMessage = mock(Message.class);
+        var connection = mock(Connection.class);
+        var runMessage = mock(Message.class);
 
-        RunResponseHandler runHandler = mock(RunResponseHandler.class);
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        var runHandler = mock(RunResponseHandler.class);
+        var runFuture = new CompletableFuture<Void>();
 
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
-        PullAllResponseHandler pullAllHandler = mock(PullAllResponseHandler.class);
+        var pullHandler = mock(PullResponseHandler.class);
+        var pullAllHandler = mock(PullAllResponseHandler.class);
 
         ResultCursorFactory cursorFactory =
                 new ResultCursorFactoryImpl(connection, runMessage, runHandler, runFuture, pullHandler, pullAllHandler);
@@ -95,11 +95,11 @@ class ResultCursorFactoryImplTest {
     @Test
     void shouldReturnRxResultWhenRunSucceeded() {
         // Given
-        Connection connection = mock(Connection.class);
+        var connection = mock(Connection.class);
         ResultCursorFactory cursorFactory = newResultCursorFactory(connection, null);
 
         // When
-        CompletionStage<RxResultCursor> cursorFuture = cursorFactory.rxResult();
+        var cursorFuture = cursorFactory.rxResult();
 
         // Then
         verifyRxRunCompleted(connection, cursorFuture);
@@ -108,36 +108,36 @@ class ResultCursorFactoryImplTest {
     @Test
     void shouldReturnRxResultWhenRunFailed() {
         // Given
-        Connection connection = mock(Connection.class);
+        var connection = mock(Connection.class);
         Throwable error = new RuntimeException("Hi there");
         ResultCursorFactory cursorFactory = newResultCursorFactory(connection, error);
 
         // When
-        CompletionStage<RxResultCursor> cursorFuture = cursorFactory.rxResult();
+        var cursorFuture = cursorFactory.rxResult();
 
         // Then
         verifyRxRunCompleted(connection, cursorFuture);
     }
 
     private ResultCursorFactoryImpl newResultCursorFactory(Connection connection, Throwable runError) {
-        Message runMessage = mock(Message.class);
+        var runMessage = mock(Message.class);
 
-        RunResponseHandler runHandler = mock(RunResponseHandler.class);
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        var runHandler = mock(RunResponseHandler.class);
+        var runFuture = new CompletableFuture<Void>();
         if (runError != null) {
             runFuture.completeExceptionally(runError);
         } else {
             runFuture.complete(null);
         }
 
-        PullResponseHandler pullHandler = mock(PullResponseHandler.class);
-        PullAllResponseHandler pullAllHandler = mock(PullAllResponseHandler.class);
+        var pullHandler = mock(PullResponseHandler.class);
+        var pullAllHandler = mock(PullAllResponseHandler.class);
 
         return new ResultCursorFactoryImpl(connection, runMessage, runHandler, runFuture, pullHandler, pullAllHandler);
     }
 
     private ResultCursorFactoryImpl newResultCursorFactory(Throwable runError) {
-        Connection connection = mock(Connection.class);
+        var connection = mock(Connection.class);
         return newResultCursorFactory(connection, runError);
     }
 

@@ -24,7 +24,6 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,7 +57,7 @@ class MicrometerConnectionPoolMetricsTest {
     @Test
     void shouldIncrementCreatingAndStartTimerOnBeforeCreating() {
         // GIVEN
-        ConnectionPoolMetrics expectedMetrics = mock(ConnectionPoolMetrics.class);
+        var expectedMetrics = mock(ConnectionPoolMetrics.class);
         given(expectedMetrics.creating()).willReturn(1);
         ListenerEvent<?> event = mock(ListenerEvent.class);
 
@@ -73,7 +72,7 @@ class MicrometerConnectionPoolMetricsTest {
     @Test
     void shouldIncrementFailedToCreateAndDecrementCreatingOnAfterFailedToCreate() {
         // GIVEN
-        ConnectionPoolMetrics expectedMetrics = mock(ConnectionPoolMetrics.class);
+        var expectedMetrics = mock(ConnectionPoolMetrics.class);
         given(expectedMetrics.failedToCreate()).willReturn(1L);
         given(expectedMetrics.creating()).willReturn(-1);
 
@@ -87,12 +86,12 @@ class MicrometerConnectionPoolMetricsTest {
     @Test
     void shouldDecrementCreatingAndIncrementCreatedAndStopTimerOnAfterCreated() {
         // GIVEN
-        ConnectionPoolMetrics expectedMetrics = mock(ConnectionPoolMetrics.class);
+        var expectedMetrics = mock(ConnectionPoolMetrics.class);
         given(expectedMetrics.creating()).willReturn(-1);
         given(expectedMetrics.created()).willReturn(1L);
-        Timer timer = registry.get(MicrometerConnectionPoolMetrics.CREATION).timer();
-        long timerCount = timer.count();
-        MicrometerTimerListenerEvent event = new MicrometerTimerListenerEvent(registry);
+        var timer = registry.get(MicrometerConnectionPoolMetrics.CREATION).timer();
+        var timerCount = timer.count();
+        var event = new MicrometerTimerListenerEvent(registry);
         event.start();
 
         // WHEN
@@ -106,7 +105,7 @@ class MicrometerConnectionPoolMetricsTest {
     @Test
     void shouldIncrementClosedOnAfterClosed() {
         // GIVEN
-        ConnectionPoolMetrics expectedMetrics = mock(ConnectionPoolMetrics.class);
+        var expectedMetrics = mock(ConnectionPoolMetrics.class);
         given(expectedMetrics.closed()).willReturn(1L);
 
         // WHEN
@@ -120,7 +119,7 @@ class MicrometerConnectionPoolMetricsTest {
     void shouldStartTimerAndIncrementAcquiringOnBeforeAcquiringOrCreating() {
         // GIVEN
         ListenerEvent<?> event = mock(ListenerEvent.class);
-        ConnectionPoolMetrics expectedMetrics = mock(ConnectionPoolMetrics.class);
+        var expectedMetrics = mock(ConnectionPoolMetrics.class);
         given(expectedMetrics.acquiring()).willReturn(1);
 
         // WHEN
@@ -134,7 +133,7 @@ class MicrometerConnectionPoolMetricsTest {
     @Test
     void shouldDecrementAcquiringOnAfterAcquiringOrCreating() {
         // GIVEN
-        ConnectionPoolMetrics expectedMetrics = mock(ConnectionPoolMetrics.class);
+        var expectedMetrics = mock(ConnectionPoolMetrics.class);
         given(expectedMetrics.acquiring()).willReturn(-1);
 
         // WHEN
@@ -147,11 +146,11 @@ class MicrometerConnectionPoolMetricsTest {
     @Test
     void shouldIncrementAcquiredAndStopTimerOnAfterAcquiredOrCreated() {
         // GIVEN
-        ConnectionPoolMetrics expectedMetrics = mock(ConnectionPoolMetrics.class);
+        var expectedMetrics = mock(ConnectionPoolMetrics.class);
         given(expectedMetrics.acquired()).willReturn(1L);
-        Timer timer = registry.get(MicrometerConnectionPoolMetrics.ACQUISITION).timer();
-        long timerCount = timer.count();
-        MicrometerTimerListenerEvent event = new MicrometerTimerListenerEvent(registry);
+        var timer = registry.get(MicrometerConnectionPoolMetrics.ACQUISITION).timer();
+        var timerCount = timer.count();
+        var event = new MicrometerTimerListenerEvent(registry);
         event.start();
 
         // WHEN
@@ -165,7 +164,7 @@ class MicrometerConnectionPoolMetricsTest {
     @Test
     void shouldIncrementTimedOutToAcquireOnAfterTimedOutToAcquireOrCreate() {
         // GIVEN
-        ConnectionPoolMetrics expectedMetrics = mock(ConnectionPoolMetrics.class);
+        var expectedMetrics = mock(ConnectionPoolMetrics.class);
         given(expectedMetrics.timedOutToAcquire()).willReturn(1L);
 
         // WHEN
@@ -190,11 +189,11 @@ class MicrometerConnectionPoolMetricsTest {
     @Test
     void shouldIncrementReleasedAndStopTimerOnReleased() {
         // GIVEN
-        ConnectionPoolMetrics expectedMetrics = mock(ConnectionPoolMetrics.class);
+        var expectedMetrics = mock(ConnectionPoolMetrics.class);
         given(expectedMetrics.totalInUseCount()).willReturn(1L);
-        Timer timer = registry.get(MicrometerConnectionPoolMetrics.USAGE).timer();
-        long timerCount = timer.count();
-        MicrometerTimerListenerEvent event = new MicrometerTimerListenerEvent(registry);
+        var timer = registry.get(MicrometerConnectionPoolMetrics.USAGE).timer();
+        var timerCount = timer.count();
+        var event = new MicrometerTimerListenerEvent(registry);
         event.start();
 
         // WHEN
@@ -209,13 +208,13 @@ class MicrometerConnectionPoolMetricsTest {
     void shouldUseInUseSupplier() {
         try {
             // GIVEN
-            int expected = 5;
+            var expected = 5;
             inUse.compareAndSet(0, expected);
-            ConnectionPoolMetrics expectedMetrics = mock(ConnectionPoolMetrics.class);
+            var expectedMetrics = mock(ConnectionPoolMetrics.class);
             given(expectedMetrics.inUse()).willReturn(expected);
 
             // WHEN
-            int actual = metrics.inUse();
+            var actual = metrics.inUse();
 
             // THEN
             assertEquals(expected, actual);
@@ -229,13 +228,13 @@ class MicrometerConnectionPoolMetricsTest {
     void shouldUseIdleSupplier() {
         try {
             // GIVEN
-            int expected = 5;
+            var expected = 5;
             idle.compareAndSet(0, expected);
-            ConnectionPoolMetrics expectedMetrics = mock(ConnectionPoolMetrics.class);
+            var expectedMetrics = mock(ConnectionPoolMetrics.class);
             given(expectedMetrics.idle()).willReturn(expected);
 
             // WHEN
-            int actual = metrics.idle();
+            var actual = metrics.idle();
 
             // THEN
             assertEquals(expected, actual);

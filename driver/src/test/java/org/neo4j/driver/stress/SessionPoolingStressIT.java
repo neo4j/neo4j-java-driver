@@ -37,8 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
@@ -74,12 +72,12 @@ class SessionPoolingStressIT {
 
     @Test
     void shouldWorkFine() throws Throwable {
-        Config config = Config.builder().withoutEncryption().build();
+        var config = Config.builder().withoutEncryption().build();
 
         driver = driver(neo4j.uri(), neo4j.authTokenManager(), config);
 
-        AtomicBoolean stop = new AtomicBoolean();
-        AtomicReference<Throwable> failureReference = new AtomicReference<>();
+        var stop = new AtomicBoolean();
+        var failureReference = new AtomicReference<Throwable>();
 
         doWork(stop, failureReference);
 
@@ -89,14 +87,14 @@ class SessionPoolingStressIT {
         executor.shutdown();
         assertTrue(executor.awaitTermination(90, TimeUnit.SECONDS));
 
-        Throwable failure = failureReference.get();
+        var failure = failureReference.get();
         if (failure != null) {
             throw new AssertionError("Some workers have failed", failure);
         }
     }
 
     private void doWork(AtomicBoolean stop, AtomicReference<Throwable> failure) {
-        for (int i = 0; i < N_THREADS; i++) {
+        for (var i = 0; i < N_THREADS; i++) {
             executor.execute(new Worker(driver, stop, failure));
         }
     }
@@ -117,13 +115,13 @@ class SessionPoolingStressIT {
         public void run() {
             try {
                 while (!stop.get()) {
-                    for (String query : QUERIES) {
+                    for (var query : QUERIES) {
                         runQuery(query);
                     }
                 }
             } catch (Throwable failure) {
                 if (!failureReference.compareAndSet(null, failure)) {
-                    Throwable firstFailure = failureReference.get();
+                    var firstFailure = failureReference.get();
                     synchronized (firstFailure) {
                         firstFailure.addSuppressed(failure);
                     }
@@ -132,8 +130,8 @@ class SessionPoolingStressIT {
         }
 
         private void runQuery(String query) throws InterruptedException {
-            try (Session session = driver.session()) {
-                Result run = session.run(query);
+            try (var session = driver.session()) {
+                var run = session.run(query);
                 Thread.sleep(random.nextInt(100));
                 run.consume();
                 Thread.sleep(random.nextInt(100));

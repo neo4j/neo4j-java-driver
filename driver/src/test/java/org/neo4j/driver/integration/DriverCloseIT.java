@@ -30,7 +30,6 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -42,7 +41,7 @@ class DriverCloseIT {
 
     @Test
     void isEncryptedThrowsForClosedDriver() {
-        Driver driver = createDriver();
+        var driver = createDriver();
 
         driver.close();
 
@@ -51,7 +50,7 @@ class DriverCloseIT {
 
     @Test
     void sessionThrowsForClosedDriver() {
-        Driver driver = createDriver();
+        var driver = createDriver();
 
         driver.close();
 
@@ -60,7 +59,7 @@ class DriverCloseIT {
 
     @Test
     void sessionWithModeThrowsForClosedDriver() {
-        Driver driver = createDriver();
+        var driver = createDriver();
 
         driver.close();
 
@@ -72,7 +71,7 @@ class DriverCloseIT {
 
     @Test
     void closeClosedDriver() {
-        Driver driver = createDriver();
+        var driver = createDriver();
 
         driver.close();
         driver.close();
@@ -81,8 +80,8 @@ class DriverCloseIT {
 
     @Test
     void useSessionAfterDriverIsClosed() {
-        Driver driver = createDriver();
-        Session session = driver.session();
+        var driver = createDriver();
+        var session = driver.session();
 
         driver.close();
 

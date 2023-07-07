@@ -32,9 +32,6 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMe
 import static org.neo4j.driver.internal.async.outbound.OutboundMessageHandler.NAME;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.time.Clock;
 import java.util.HashMap;
@@ -63,7 +60,7 @@ class HelloResponseHandlerTest {
     void setUp() {
         setAuthContext(channel, new AuthContext(new StaticAuthTokenManager(AuthTokens.none())));
         setMessageDispatcher(channel, new InboundMessageDispatcher(channel, DEV_NULL_LOGGING));
-        ChannelPipeline pipeline = channel.pipeline();
+        var pipeline = channel.pipeline();
         pipeline.addLast(NAME, new OutboundMessageHandler(new MessageFormatV3(), DEV_NULL_LOGGING));
         pipeline.addLast(new ChannelErrorHandler(DEV_NULL_LOGGING));
     }
@@ -75,10 +72,10 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldSetServerAgentOnChannel() {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        Map<String, Value> metadata = metadata(SERVER_AGENT, "bolt-1");
+        var metadata = metadata(SERVER_AGENT, "bolt-1");
         handler.onSuccess(metadata);
 
         assertTrue(channelPromise.isSuccess());
@@ -87,10 +84,10 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldThrowWhenServerVersionNotReturned() {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        Map<String, Value> metadata = metadata(null, "bolt-1");
+        var metadata = metadata(null, "bolt-1");
         assertThrows(UntrustedServerException.class, () -> handler.onSuccess(metadata));
 
         assertFalse(channelPromise.isSuccess()); // initialization failed
@@ -99,10 +96,10 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldThrowWhenServerVersionIsNull() {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        Map<String, Value> metadata = metadata(Values.NULL, "bolt-x");
+        var metadata = metadata(Values.NULL, "bolt-x");
         assertThrows(UntrustedServerException.class, () -> handler.onSuccess(metadata));
 
         assertFalse(channelPromise.isSuccess()); // initialization failed
@@ -111,10 +108,10 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldThrowWhenServerAgentIsUnrecognised() {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        Map<String, Value> metadata = metadata("WrongServerVersion", "bolt-x");
+        var metadata = metadata("WrongServerVersion", "bolt-x");
         assertThrows(UntrustedServerException.class, () -> handler.onSuccess(metadata));
 
         assertFalse(channelPromise.isSuccess()); // initialization failed
@@ -123,10 +120,10 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldSetConnectionIdOnChannel() {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        Map<String, Value> metadata = metadata(SERVER_AGENT, "bolt-42");
+        var metadata = metadata(SERVER_AGENT, "bolt-42");
         handler.onSuccess(metadata);
 
         assertTrue(channelPromise.isSuccess());
@@ -135,10 +132,10 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldThrowWhenConnectionIdNotReturned() {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        Map<String, Value> metadata = metadata(SERVER_AGENT, null);
+        var metadata = metadata(SERVER_AGENT, null);
         assertThrows(IllegalStateException.class, () -> handler.onSuccess(metadata));
 
         assertFalse(channelPromise.isSuccess()); // initialization failed
@@ -147,10 +144,10 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldThrowWhenConnectionIdIsNull() {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        Map<String, Value> metadata = metadata(SERVER_AGENT, Values.NULL);
+        var metadata = metadata(SERVER_AGENT, Values.NULL);
         assertThrows(IllegalStateException.class, () -> handler.onSuccess(metadata));
 
         assertFalse(channelPromise.isSuccess()); // initialization failed
@@ -159,13 +156,13 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldCloseChannelOnFailure() throws Exception {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        RuntimeException error = new RuntimeException("Hi!");
+        var error = new RuntimeException("Hi!");
         handler.onFailure(error);
 
-        ChannelFuture channelCloseFuture = channel.closeFuture();
+        var channelCloseFuture = channel.closeFuture();
         channelCloseFuture.await(5, TimeUnit.SECONDS);
 
         assertTrue(channelCloseFuture.isSuccess());
@@ -175,10 +172,10 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldNotThrowWhenConfigurationHintsAreAbsent() {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        Map<String, Value> metadata = metadata(SERVER_AGENT, "bolt-x");
+        var metadata = metadata(SERVER_AGENT, "bolt-x");
         handler.onSuccess(metadata);
 
         assertTrue(channelPromise.isSuccess());
@@ -187,10 +184,10 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldNotThrowWhenConfigurationHintsAreEmpty() {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        Map<String, Value> metadata = metadata(SERVER_AGENT, "bolt-x", value(new HashMap<>()));
+        var metadata = metadata(SERVER_AGENT, "bolt-x", value(new HashMap<>()));
         handler.onSuccess(metadata);
 
         assertTrue(channelPromise.isSuccess());
@@ -199,10 +196,10 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldNotThrowWhenConfigurationHintsAreNull() {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        Map<String, Value> metadata = metadata(SERVER_AGENT, "bolt-x", Values.NULL);
+        var metadata = metadata(SERVER_AGENT, "bolt-x", Values.NULL);
         handler.onSuccess(metadata);
 
         assertTrue(channelPromise.isSuccess());
@@ -211,13 +208,13 @@ class HelloResponseHandlerTest {
 
     @Test
     void shouldSetConnectionTimeoutHint() {
-        ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
+        var channelPromise = channel.newPromise();
+        var handler = new HelloResponseHandler(channelPromise, mock(Clock.class));
 
-        long timeout = 15L;
+        var timeout = 15L;
         Map<String, Value> hints = new HashMap<>();
         hints.put(HelloResponseHandler.CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY, value(timeout));
-        Map<String, Value> metadata = metadata(SERVER_AGENT, "bolt-x", value(hints));
+        var metadata = metadata(SERVER_AGENT, "bolt-x", value(hints));
         handler.onSuccess(metadata);
 
         assertEquals(timeout, connectionReadTimeout(channel).orElse(null));

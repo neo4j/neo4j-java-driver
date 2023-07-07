@@ -32,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.Period;
-import java.time.temporal.Temporal;
 import java.time.temporal.UnsupportedTemporalTypeException;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.types.IsoDuration;
@@ -40,69 +39,69 @@ import org.neo4j.driver.types.IsoDuration;
 class InternalIsoDurationTest {
     @Test
     void shouldExposeMonths() {
-        IsoDuration duration = newDuration(42, 1, 2, 3);
+        var duration = newDuration(42, 1, 2, 3);
         assertEquals(42, duration.months());
         assertEquals(42, duration.get(MONTHS));
     }
 
     @Test
     void shouldExposeDays() {
-        IsoDuration duration = newDuration(1, 42, 2, 3);
+        var duration = newDuration(1, 42, 2, 3);
         assertEquals(42, duration.days());
         assertEquals(42, duration.get(DAYS));
     }
 
     @Test
     void shouldExposeSeconds() {
-        IsoDuration duration = newDuration(1, 2, 42, 3);
+        var duration = newDuration(1, 2, 42, 3);
         assertEquals(42, duration.seconds());
         assertEquals(42, duration.get(SECONDS));
     }
 
     @Test
     void shouldExposeNanoseconds() {
-        IsoDuration duration = newDuration(1, 2, 3, 42);
+        var duration = newDuration(1, 2, 3, 42);
         assertEquals(42, duration.nanoseconds());
         assertEquals(42, duration.get(NANOS));
     }
 
     @Test
     void shouldFailToGetUnsupportedTemporalUnit() {
-        IsoDuration duration = newDuration(1, 2, 3, 4);
+        var duration = newDuration(1, 2, 3, 4);
 
         assertThrows(UnsupportedTemporalTypeException.class, () -> duration.get(YEARS));
     }
 
     @Test
     void shouldExposeSupportedTemporalUnits() {
-        IsoDuration duration = newDuration(1, 2, 3, 4);
+        var duration = newDuration(1, 2, 3, 4);
         assertEquals(asList(MONTHS, DAYS, SECONDS, NANOS), duration.getUnits());
     }
 
     @Test
     void shouldAddTo() {
-        IsoDuration duration = newDuration(1, 2, 3, 4);
-        LocalDateTime dateTime = LocalDateTime.of(1990, 1, 1, 0, 0, 0, 0);
+        var duration = newDuration(1, 2, 3, 4);
+        var dateTime = LocalDateTime.of(1990, 1, 1, 0, 0, 0, 0);
 
-        Temporal result = duration.addTo(dateTime);
+        var result = duration.addTo(dateTime);
 
         assertEquals(LocalDateTime.of(1990, 2, 3, 0, 0, 3, 4), result);
     }
 
     @Test
     void shouldSubtractFrom() {
-        IsoDuration duration = newDuration(4, 3, 2, 1);
-        LocalDateTime dateTime = LocalDateTime.of(1990, 7, 19, 0, 0, 59, 999);
+        var duration = newDuration(4, 3, 2, 1);
+        var dateTime = LocalDateTime.of(1990, 7, 19, 0, 0, 59, 999);
 
-        Temporal result = duration.subtractFrom(dateTime);
+        var result = duration.subtractFrom(dateTime);
 
         assertEquals(LocalDateTime.of(1990, 3, 16, 0, 0, 57, 998), result);
     }
 
     @Test
     void shouldImplementEqualsAndHashCode() {
-        IsoDuration duration1 = newDuration(1, 2, 3, 4);
-        IsoDuration duration2 = newDuration(1, 2, 3, 4);
+        var duration1 = newDuration(1, 2, 3, 4);
+        var duration2 = newDuration(1, 2, 3, 4);
 
         assertEquals(duration1, duration2);
         assertEquals(duration1.hashCode(), duration2.hashCode());
@@ -110,9 +109,9 @@ class InternalIsoDurationTest {
 
     @Test
     void shouldCreateFromPeriod() {
-        Period period = Period.of(3, 5, 12);
+        var period = Period.of(3, 5, 12);
 
-        InternalIsoDuration duration = new InternalIsoDuration(period);
+        var duration = new InternalIsoDuration(period);
 
         assertEquals(period.toTotalMonths(), duration.months());
         assertEquals(period.getDays(), duration.days());
@@ -122,9 +121,9 @@ class InternalIsoDurationTest {
 
     @Test
     void shouldCreateFromDuration() {
-        Duration duration = Duration.ofSeconds(391784, 4879173);
+        var duration = Duration.ofSeconds(391784, 4879173);
 
-        InternalIsoDuration isoDuration = new InternalIsoDuration(duration);
+        var isoDuration = new InternalIsoDuration(duration);
 
         assertEquals(0, isoDuration.months());
         assertEquals(0, isoDuration.days());

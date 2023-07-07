@@ -37,7 +37,7 @@ class BytesValueTest {
     @Test
     void testBytesValue() {
         // Given
-        BytesValue value = new BytesValue(TEST_BYTES);
+        var value = new BytesValue(TEST_BYTES);
 
         // Then
         assertThat(value.asObject(), equalTo(TEST_BYTES));
@@ -46,7 +46,7 @@ class BytesValueTest {
     @Test
     void testIsBytes() {
         // Given
-        BytesValue value = new BytesValue(TEST_BYTES);
+        var value = new BytesValue(TEST_BYTES);
 
         // Then
         assertThat(typeSystem.BYTES().isTypeOf(value), equalTo(true));
@@ -55,8 +55,8 @@ class BytesValueTest {
     @Test
     void testEquals() {
         // Given
-        BytesValue firstValue = new BytesValue(TEST_BYTES);
-        BytesValue secondValue = new BytesValue(TEST_BYTES);
+        var firstValue = new BytesValue(TEST_BYTES);
+        var secondValue = new BytesValue(TEST_BYTES);
 
         // Then
         assertThat(firstValue, equalTo(secondValue));
@@ -65,7 +65,7 @@ class BytesValueTest {
     @Test
     void testHashCode() {
         // Given
-        BytesValue value = new BytesValue(TEST_BYTES);
+        var value = new BytesValue(TEST_BYTES);
 
         // Then
         assertThat(value.hashCode(), notNullValue());

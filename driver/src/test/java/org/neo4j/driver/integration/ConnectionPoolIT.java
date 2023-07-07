@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 
-import io.netty.channel.Channel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -87,11 +86,11 @@ class ConnectionPoolIT {
 
     @Test
     void shouldDisposeChannelsBasedOnMaxLifetime() throws Exception {
-        FakeClock clock = new FakeClock();
-        ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory(clock);
+        var clock = new FakeClock();
+        var driverFactory = new ChannelTrackingDriverFactory(clock);
 
-        int maxConnLifetimeHours = 3;
-        Config config = Config.builder()
+        var maxConnLifetimeHours = 3;
+        var config = Config.builder()
                 .withMaxConnectionLifetime(maxConnLifetimeHours, TimeUnit.HOURS)
                 .build();
         driver = driverFactory.newInstance(
@@ -101,7 +100,7 @@ class ConnectionPoolIT {
         startAndCloseTransactions(driver, 1);
 
         // verify that channel was created, it should be open and idle in the pool
-        List<Channel> channels1 = driverFactory.channels();
+        var channels1 = driverFactory.channels();
         assertEquals(1, channels1.size());
         assertTrue(channels1.get(0).isActive());
 
@@ -114,11 +113,11 @@ class ConnectionPoolIT {
         startAndCloseTransactions(driver, 1);
 
         // old existing channel should not be reused because it is too old
-        List<Channel> channels2 = driverFactory.channels();
+        var channels2 = driverFactory.channels();
         assertEquals(2, channels2.size());
 
-        Channel channel1 = channels2.get(0);
-        Channel channel2 = channels2.get(1);
+        var channel1 = channels2.get(0);
+        var channel2 = channels2.get(1);
 
         // old existing should be closed in reasonable time
         assertTrue(channel1.closeFuture().await(20, SECONDS));
@@ -130,8 +129,8 @@ class ConnectionPoolIT {
 
     @Test
     void shouldRespectMaxConnectionPoolSize() {
-        int maxPoolSize = 3;
-        Config config = Config.builder()
+        var maxPoolSize = 3;
+        var config = Config.builder()
                 .withMaxConnectionPoolSize(maxPoolSize)
                 .withConnectionAcquisitionTimeout(542, TimeUnit.MILLISECONDS)
                 .withEventLoopThreads(1)
@@ -139,8 +138,7 @@ class ConnectionPoolIT {
 
         driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config);
 
-        ClientException e =
-                assertThrows(ClientException.class, () -> startAndCloseTransactions(driver, maxPoolSize + 1));
+        var e = assertThrows(ClientException.class, () -> startAndCloseTransactions(driver, maxPoolSize + 1));
         assertThat(e, is(connectionAcquisitionTimeoutError(542)));
     }
 
@@ -149,24 +147,24 @@ class ConnectionPoolIT {
         List<Transaction> transactions = new ArrayList<>(txCount);
         List<Result> results = new ArrayList<>(txCount);
         try {
-            for (int i = 0; i < txCount; i++) {
-                Session session = driver.session();
+            for (var i = 0; i < txCount; i++) {
+                var session = driver.session();
                 sessions.add(session);
 
-                Transaction tx = session.beginTransaction();
+                var tx = session.beginTransaction();
                 transactions.add(tx);
 
-                Result result = tx.run("RETURN 1");
+                var result = tx.run("RETURN 1");
                 results.add(result);
             }
         } finally {
-            for (Result result : results) {
+            for (var result : results) {
                 result.consume();
             }
-            for (Transaction tx : transactions) {
+            for (var tx : transactions) {
                 tx.commit();
             }
-            for (Session session : sessions) {
+            for (var session : sessions) {
                 session.close();
             }
         }
@@ -174,8 +172,8 @@ class ConnectionPoolIT {
 
     private void awaitNoActiveChannels(ChannelTrackingDriverFactory driverFactory, long value, TimeUnit unit)
             throws InterruptedException {
-        long deadline = System.currentTimeMillis() + unit.toMillis(value);
-        int activeChannels = -1;
+        var deadline = System.currentTimeMillis() + unit.toMillis(value);
+        var activeChannels = -1;
         while (System.currentTimeMillis() < deadline) {
             activeChannels = driverFactory.activeChannels(neo4j.address());
             if (activeChannels == 0) {
@@ -235,7 +233,7 @@ class ConnectionPoolIT {
         }
 
         void assertSessionsAvailableWithin(int timeoutSeconds) throws InterruptedException {
-            long deadline = System.currentTimeMillis() + 1000 * timeoutSeconds;
+            var deadline = System.currentTimeMillis() + 1000 * timeoutSeconds;
             while (System.currentTimeMillis() < deadline) {
                 if (sessionsAreAvailable) {
                     // Success!
