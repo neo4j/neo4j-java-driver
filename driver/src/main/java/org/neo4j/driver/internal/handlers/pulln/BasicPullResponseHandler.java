@@ -222,7 +222,7 @@ public class BasicPullResponseHandler implements PullResponseHandler {
     }
 
     private ResultSummary extractResultSummary(Map<String, Value> metadata) {
-        long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
+        var resultAvailableAfter = runResponseHandler.resultAvailableAfter();
         return metadataExtractor.extractSummary(query, connection, resultAvailableAfter, metadata);
     }
 

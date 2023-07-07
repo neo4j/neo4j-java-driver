@@ -48,7 +48,6 @@ import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.messaging.ValueUnpacker;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackStream;
-import org.neo4j.driver.internal.packstream.PackType;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.ListValue;
@@ -117,13 +116,13 @@ public class CommonValueUnpacker implements ValueUnpacker {
 
     @Override
     public Map<String, Value> unpackMap() throws IOException {
-        int size = (int) unpacker.unpackMapHeader();
+        var size = (int) unpacker.unpackMapHeader();
         if (size == 0) {
             return Collections.emptyMap();
         }
         Map<String, Value> map = Iterables.newHashMapWithSize(size);
-        for (int i = 0; i < size; i++) {
-            String key = unpacker.unpackString();
+        for (var i = 0; i < size; i++) {
+            var key = unpacker.unpackString();
             map.put(key, unpack());
         }
         return map;
@@ -131,16 +130,16 @@ public class CommonValueUnpacker implements ValueUnpacker {
 
     @Override
     public Value[] unpackArray() throws IOException {
-        int size = (int) unpacker.unpackListHeader();
-        Value[] values = new Value[size];
-        for (int i = 0; i < size; i++) {
+        var size = (int) unpacker.unpackListHeader();
+        var values = new Value[size];
+        for (var i = 0; i < size; i++) {
             values[i] = unpack();
         }
         return values;
     }
 
     protected Value unpack() throws IOException {
-        PackType type = unpacker.peekNextType();
+        var type = unpacker.peekNextType();
         switch (type) {
             case NULL:
                 return value(unpacker.unpackNull());
@@ -158,16 +157,16 @@ public class CommonValueUnpacker implements ValueUnpacker {
                 return new MapValue(unpackMap());
             }
             case LIST: {
-                int size = (int) unpacker.unpackListHeader();
-                Value[] vals = new Value[size];
-                for (int j = 0; j < size; j++) {
+                var size = (int) unpacker.unpackListHeader();
+                var vals = new Value[size];
+                for (var j = 0; j < size; j++) {
                     vals[j] = unpack();
                 }
                 return new ListValue(vals);
             }
             case STRUCT: {
-                long size = unpacker.unpackStructHeader();
-                byte structType = unpacker.unpackStructSignature();
+                var size = unpacker.unpackStructHeader();
+                var structType = unpacker.unpackStructSignature();
                 return unpackStruct(size, structType);
             }
         }
@@ -227,7 +226,7 @@ public class CommonValueUnpacker implements ValueUnpacker {
                 return unpackPoint3D();
             case NODE:
                 ensureCorrectStructSize(TypeConstructor.NODE, getNodeFields(), size);
-                InternalNode adapted = unpackNode();
+                var adapted = unpackNode();
                 return new NodeValue(adapted);
             case RELATIONSHIP:
                 ensureCorrectStructSize(TypeConstructor.RELATIONSHIP, getRelationshipFields(), size);
@@ -241,13 +240,13 @@ public class CommonValueUnpacker implements ValueUnpacker {
     }
 
     protected Value unpackRelationship() throws IOException {
-        long urn = unpacker.unpackLong();
-        long startUrn = unpacker.unpackLong();
-        long endUrn = unpacker.unpackLong();
-        String relType = unpacker.unpackString();
-        Map<String, Value> props = unpackMap();
+        var urn = unpacker.unpackLong();
+        var startUrn = unpacker.unpackLong();
+        var endUrn = unpacker.unpackLong();
+        var relType = unpacker.unpackString();
+        var props = unpackMap();
 
-        InternalRelationship adapted = new InternalRelationship(
+        var adapted = new InternalRelationship(
                 urn,
                 String.valueOf(urn),
                 startUrn,
@@ -260,17 +259,17 @@ public class CommonValueUnpacker implements ValueUnpacker {
     }
 
     protected InternalNode unpackNode() throws IOException {
-        long urn = unpacker.unpackLong();
+        var urn = unpacker.unpackLong();
 
-        int numLabels = (int) unpacker.unpackListHeader();
+        var numLabels = (int) unpacker.unpackListHeader();
         List<String> labels = new ArrayList<>(numLabels);
-        for (int i = 0; i < numLabels; i++) {
+        for (var i = 0; i < numLabels; i++) {
             labels.add(unpacker.unpackString());
         }
-        int numProps = (int) unpacker.unpackMapHeader();
+        var numProps = (int) unpacker.unpackMapHeader();
         Map<String, Value> props = Iterables.newHashMapWithSize(numProps);
-        for (int j = 0; j < numProps; j++) {
-            String key = unpacker.unpackString();
+        for (var j = 0; j < numProps; j++) {
+            var key = unpacker.unpackString();
             props.put(key, unpack());
         }
 
@@ -280,40 +279,40 @@ public class CommonValueUnpacker implements ValueUnpacker {
     @SuppressWarnings("deprecation")
     protected Value unpackPath() throws IOException {
         // List of unique nodes
-        Node[] uniqNodes = new Node[(int) unpacker.unpackListHeader()];
-        for (int i = 0; i < uniqNodes.length; i++) {
+        var uniqNodes = new Node[(int) unpacker.unpackListHeader()];
+        for (var i = 0; i < uniqNodes.length; i++) {
             ensureCorrectStructSize(TypeConstructor.NODE, getNodeFields(), unpacker.unpackStructHeader());
             ensureCorrectStructSignature("NODE", NODE, unpacker.unpackStructSignature());
             uniqNodes[i] = unpackNode();
         }
 
         // List of unique relationships, without start/end information
-        InternalRelationship[] uniqRels = new InternalRelationship[(int) unpacker.unpackListHeader()];
-        for (int i = 0; i < uniqRels.length; i++) {
+        var uniqRels = new InternalRelationship[(int) unpacker.unpackListHeader()];
+        for (var i = 0; i < uniqRels.length; i++) {
             ensureCorrectStructSize(TypeConstructor.RELATIONSHIP, 3, unpacker.unpackStructHeader());
             ensureCorrectStructSignature(
                     "UNBOUND_RELATIONSHIP", UNBOUND_RELATIONSHIP, unpacker.unpackStructSignature());
-            long id = unpacker.unpackLong();
-            String relType = unpacker.unpackString();
-            Map<String, Value> props = unpackMap();
+            var id = unpacker.unpackLong();
+            var relType = unpacker.unpackString();
+            var props = unpackMap();
             uniqRels[i] = new InternalRelationship(
                     id, String.valueOf(id), -1, String.valueOf(-1), -1, String.valueOf(-1), relType, props);
         }
 
         // Path sequence
-        int length = (int) unpacker.unpackListHeader();
+        var length = (int) unpacker.unpackListHeader();
 
         // Knowing the sequence length, we can create the arrays that will represent the nodes, rels and segments in
         // their "path order"
-        Path.Segment[] segments = new Path.Segment[length / 2];
-        Node[] nodes = new Node[segments.length + 1];
-        Relationship[] rels = new Relationship[segments.length];
+        var segments = new Path.Segment[length / 2];
+        var nodes = new Node[segments.length + 1];
+        var rels = new Relationship[segments.length];
 
         Node prevNode = uniqNodes[0], nextNode; // Start node is always 0, and isn't encoded in the sequence
         nodes[0] = prevNode;
         InternalRelationship rel;
-        for (int i = 0; i < segments.length; i++) {
-            int relIdx = (int) unpacker.unpackLong();
+        for (var i = 0; i < segments.length; i++) {
+            var relIdx = (int) unpacker.unpackLong();
             nextNode = uniqNodes[(int) unpacker.unpackLong()];
             // Negative rel index means this rel was traversed "inversed" from its direction
             if (relIdx < 0) {
@@ -336,7 +335,7 @@ public class CommonValueUnpacker implements ValueUnpacker {
 
     protected final void ensureCorrectStructSize(TypeConstructor typeConstructor, int expected, long actual) {
         if (expected != actual) {
-            String structName = typeConstructor.toString();
+            var structName = typeConstructor.toString();
             throw new ClientException(String.format(
                     "Invalid message received, serialized %s structures should have %d fields, "
                             + "received %s structure has %d fields.",
@@ -353,27 +352,27 @@ public class CommonValueUnpacker implements ValueUnpacker {
     }
 
     private Value unpackDate() throws IOException {
-        long epochDay = unpacker.unpackLong();
+        var epochDay = unpacker.unpackLong();
         return value(LocalDate.ofEpochDay(epochDay));
     }
 
     private Value unpackTime() throws IOException {
-        long nanoOfDayLocal = unpacker.unpackLong();
-        int offsetSeconds = Math.toIntExact(unpacker.unpackLong());
+        var nanoOfDayLocal = unpacker.unpackLong();
+        var offsetSeconds = Math.toIntExact(unpacker.unpackLong());
 
-        LocalTime localTime = LocalTime.ofNanoOfDay(nanoOfDayLocal);
-        ZoneOffset offset = ZoneOffset.ofTotalSeconds(offsetSeconds);
+        var localTime = LocalTime.ofNanoOfDay(nanoOfDayLocal);
+        var offset = ZoneOffset.ofTotalSeconds(offsetSeconds);
         return value(OffsetTime.of(localTime, offset));
     }
 
     private Value unpackLocalTime() throws IOException {
-        long nanoOfDayLocal = unpacker.unpackLong();
+        var nanoOfDayLocal = unpacker.unpackLong();
         return value(LocalTime.ofNanoOfDay(nanoOfDayLocal));
     }
 
     private Value unpackLocalDateTime() throws IOException {
-        long epochSecondUtc = unpacker.unpackLong();
-        int nano = Math.toIntExact(unpacker.unpackLong());
+        var epochSecondUtc = unpacker.unpackLong();
+        var nano = Math.toIntExact(unpacker.unpackLong());
         return value(LocalDateTime.ofEpochSecond(epochSecondUtc, nano, UTC));
     }
 
@@ -400,37 +399,37 @@ public class CommonValueUnpacker implements ValueUnpacker {
     }
 
     private Value unpackDuration() throws IOException {
-        long months = unpacker.unpackLong();
-        long days = unpacker.unpackLong();
-        long seconds = unpacker.unpackLong();
-        int nanoseconds = Math.toIntExact(unpacker.unpackLong());
+        var months = unpacker.unpackLong();
+        var days = unpacker.unpackLong();
+        var seconds = unpacker.unpackLong();
+        var nanoseconds = Math.toIntExact(unpacker.unpackLong());
         return isoDuration(months, days, seconds, nanoseconds);
     }
 
     private Value unpackPoint2D() throws IOException {
-        int srid = Math.toIntExact(unpacker.unpackLong());
-        double x = unpacker.unpackDouble();
-        double y = unpacker.unpackDouble();
+        var srid = Math.toIntExact(unpacker.unpackLong());
+        var x = unpacker.unpackDouble();
+        var y = unpacker.unpackDouble();
         return point(srid, x, y);
     }
 
     private Value unpackPoint3D() throws IOException {
-        int srid = Math.toIntExact(unpacker.unpackLong());
-        double x = unpacker.unpackDouble();
-        double y = unpacker.unpackDouble();
-        double z = unpacker.unpackDouble();
+        var srid = Math.toIntExact(unpacker.unpackLong());
+        var x = unpacker.unpackDouble();
+        var y = unpacker.unpackDouble();
+        var z = unpacker.unpackDouble();
         return point(srid, x, y, z);
     }
 
     private static ZonedDateTime newZonedDateTime(long epochSecondLocal, long nano, ZoneId zoneId) {
-        Instant instant = Instant.ofEpochSecond(epochSecondLocal, nano);
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, UTC);
+        var instant = Instant.ofEpochSecond(epochSecondLocal, nano);
+        var localDateTime = LocalDateTime.ofInstant(instant, UTC);
         return ZonedDateTime.of(localDateTime, zoneId);
     }
 
     private ZonedDateTime newZonedDateTimeUsingUtcBaseline(long epochSecondLocal, int nano, ZoneId zoneId) {
-        Instant instant = Instant.ofEpochSecond(epochSecondLocal, nano);
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, zoneId);
+        var instant = Instant.ofEpochSecond(epochSecondLocal, nano);
+        var localDateTime = LocalDateTime.ofInstant(instant, zoneId);
         return ZonedDateTime.of(localDateTime, zoneId);
     }
 

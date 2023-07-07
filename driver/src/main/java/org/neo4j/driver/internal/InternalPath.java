@@ -69,13 +69,13 @@ public class InternalPath implements Path, AsValue {
                 return false;
             }
 
-            SelfContainedSegment that = (SelfContainedSegment) other;
+            var that = (SelfContainedSegment) other;
             return start.equals(that.start) && end.equals(that.end) && relationship.equals(that.relationship);
         }
 
         @Override
         public int hashCode() {
-            int result = start.hashCode();
+            var result = start.hashCode();
             result = 31 * result + relationship.hashCode();
             result = 31 * result + end.hashCode();
             return result;
@@ -112,8 +112,8 @@ public class InternalPath implements Path, AsValue {
         }
         Node lastNode = null;
         Relationship lastRelationship = null;
-        int index = 0;
-        for (Entity entity : alternatingNodeAndRel) {
+        var index = 0;
+        for (var entity : alternatingNodeAndRel) {
             if (entity == null) {
                 throw new IllegalArgumentException("Path entities cannot be null");
             }
@@ -128,7 +128,7 @@ public class InternalPath implements Path, AsValue {
                                 + " is not an endpoint of relationship argument " + (index - 1));
                     }
                 } catch (ClassCastException e) {
-                    String cls = entity.getClass().getName();
+                    var cls = entity.getClass().getName();
                     throw new IllegalArgumentException("Expected argument " + index + " to be a node " + index
                             + " but found a " + cls + " " + "instead");
                 }
@@ -143,7 +143,7 @@ public class InternalPath implements Path, AsValue {
                                 + " is not an endpoint of relationship argument " + index);
                     }
                 } catch (ClassCastException e) {
-                    String cls = entity.getClass().getName();
+                    var cls = entity.getClass().getName();
                     throw new IllegalArgumentException(
                             "Expected argument " + index + " to be a relationship but found a " + cls + " instead");
                 }
@@ -221,7 +221,7 @@ public class InternalPath implements Path, AsValue {
             return false;
         }
 
-        InternalPath segments1 = (InternalPath) o;
+        var segments1 = (InternalPath) o;
 
         return segments.equals(segments1.segments);
     }
@@ -238,7 +238,7 @@ public class InternalPath implements Path, AsValue {
     }
 
     private void buildSegments() {
-        for (int i = 0; i < relationships.size(); i++) {
+        for (var i = 0; i < relationships.size(); i++) {
             segments.add(new SelfContainedSegment(nodes.get(i), relationships.get(i), nodes.get(i + 1)));
         }
     }

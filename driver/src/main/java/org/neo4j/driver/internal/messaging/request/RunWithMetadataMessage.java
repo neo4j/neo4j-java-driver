@@ -68,7 +68,7 @@ public class RunWithMetadataMessage extends MessageWithMetadata {
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             NotificationConfig notificationConfig) {
-        Map<String, Value> metadata = buildMetadata(
+        var metadata = buildMetadata(
                 txTimeout, txMetadata, databaseName, mode, bookmarks, impersonatedUser, null, notificationConfig);
         return new RunWithMetadataMessage(query.text(), query.parameters().asMap(ofValue()), metadata);
     }
@@ -104,7 +104,7 @@ public class RunWithMetadataMessage extends MessageWithMetadata {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        RunWithMetadataMessage that = (RunWithMetadataMessage) o;
+        var that = (RunWithMetadataMessage) o;
         return Objects.equals(query, that.query)
                 && Objects.equals(parameters, that.parameters)
                 && Objects.equals(metadata(), that.metadata());

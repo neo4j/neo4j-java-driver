@@ -66,7 +66,7 @@ public class BytesValue extends ValueAdapter {
             return false;
         }
 
-        BytesValue values = (BytesValue) o;
+        var values = (BytesValue) o;
         return Arrays.equals(val, values.val);
     }
 
@@ -77,8 +77,8 @@ public class BytesValue extends ValueAdapter {
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder("#");
-        for (byte b : val) {
+        var s = new StringBuilder("#");
+        for (var b : val) {
             if (b < 0x10) {
                 s.append('0');
             }

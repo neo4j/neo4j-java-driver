@@ -45,7 +45,7 @@ public class HelloV51ResponseHandler implements ResponseHandler {
             var serverAgent = extractServer(metadata).asString();
             setServerAgent(channel, serverAgent);
 
-            String connectionId = extractConnectionId(metadata);
+            var connectionId = extractConnectionId(metadata);
             setConnectionId(channel, connectionId);
 
             helloFuture.complete(null);
@@ -66,7 +66,7 @@ public class HelloV51ResponseHandler implements ResponseHandler {
     }
 
     private static String extractConnectionId(Map<String, Value> metadata) {
-        Value value = metadata.get(CONNECTION_ID_METADATA_KEY);
+        var value = metadata.get(CONNECTION_ID_METADATA_KEY);
         if (value == null || value.isNull()) {
             throw new IllegalStateException("Unable to extract " + CONNECTION_ID_METADATA_KEY
                     + " from a response to HELLO message. " + "Received metadata: " + metadata);

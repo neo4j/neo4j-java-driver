@@ -30,7 +30,7 @@ public class HelloMessageEncoder implements MessageEncoder {
     @Override
     public void encode(Message message, ValuePacker packer) throws IOException {
         checkArgument(message, HelloMessage.class);
-        HelloMessage helloMessage = (HelloMessage) message;
+        var helloMessage = (HelloMessage) message;
         packer.packStructHeader(1, helloMessage.signature());
         packer.pack(helloMessage.metadata());
     }

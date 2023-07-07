@@ -57,7 +57,7 @@ public class RoutingResponseHandler implements ResponseHandler {
 
     @Override
     public void onFailure(Throwable error) {
-        Throwable newError = handledError(error);
+        var newError = handledError(error);
         delegate.onFailure(newError);
     }
 
@@ -77,7 +77,7 @@ public class RoutingResponseHandler implements ResponseHandler {
     }
 
     private Throwable handledError(Throwable receivedError) {
-        Throwable error = Futures.completionExceptionCause(receivedError);
+        var error = Futures.completionExceptionCause(receivedError);
 
         if (error instanceof ServiceUnavailableException) {
             return handledServiceUnavailableException(((ServiceUnavailableException) error));
@@ -96,7 +96,7 @@ public class RoutingResponseHandler implements ResponseHandler {
     }
 
     private Throwable handledTransientException(TransientException e) {
-        String errorCode = e.code();
+        var errorCode = e.code();
         if (Objects.equals(errorCode, "Neo.TransientError.General.DatabaseUnavailable")) {
             errorHandler.onConnectionFailure(address);
         }
@@ -121,7 +121,7 @@ public class RoutingResponseHandler implements ResponseHandler {
     }
 
     private static boolean isFailureToWrite(ClientException e) {
-        String errorCode = e.code();
+        var errorCode = e.code();
         return Objects.equals(errorCode, "Neo.ClientError.Cluster.NotALeader")
                 || Objects.equals(errorCode, "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
     }

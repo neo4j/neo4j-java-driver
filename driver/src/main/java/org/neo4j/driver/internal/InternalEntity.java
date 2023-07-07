@@ -80,7 +80,7 @@ public abstract class InternalEntity implements Entity, AsValue {
             return false;
         }
 
-        InternalEntity that = (InternalEntity) o;
+        var that = (InternalEntity) o;
 
         return id == that.id;
     }
@@ -107,7 +107,7 @@ public abstract class InternalEntity implements Entity, AsValue {
 
     @Override
     public Value get(String key) {
-        Value value = properties.get(key);
+        var value = properties.get(key);
         return value == null ? Values.NULL : value;
     }
 

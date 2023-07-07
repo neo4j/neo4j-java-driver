@@ -40,7 +40,7 @@ public class Iterables {
         if (it instanceof Collection) {
             return ((Collection) it).size();
         }
-        int size = 0;
+        var size = 0;
         for (Object o : it) {
             size++;
         }
@@ -52,18 +52,18 @@ public class Iterables {
             return (List<T>) it;
         }
         List<T> list = new ArrayList<>();
-        for (T t : it) {
+        for (var t : it) {
             list.add(t);
         }
         return list;
     }
 
     public static <T> T single(Iterable<T> it) {
-        Iterator<T> iterator = it.iterator();
+        var iterator = it.iterator();
         if (!iterator.hasNext()) {
             throw new IllegalArgumentException("Given iterable is empty");
         }
-        T result = iterator.next();
+        var result = iterator.next();
         if (iterator.hasNext()) {
             throw new IllegalArgumentException("Given iterable contains more than one element: " + it);
         }
@@ -72,7 +72,7 @@ public class Iterables {
 
     public static Map<String, String> map(String... alternatingKeyValue) {
         Map<String, String> out = newHashMapWithSize(alternatingKeyValue.length / 2);
-        for (int i = 0; i < alternatingKeyValue.length; i += 2) {
+        for (var i = 0; i < alternatingKeyValue.length; i += 2) {
             out.put(alternatingKeyValue[i], alternatingKeyValue[i + 1]);
         }
         return out;
@@ -82,7 +82,7 @@ public class Iterables {
         return new Iterable<B>() {
             @Override
             public Iterator<B> iterator() {
-                final Iterator<A> aIterator = it.iterator();
+                final var aIterator = it.iterator();
                 return new Iterator<B>() {
                     @Override
                     public boolean hasNext() {

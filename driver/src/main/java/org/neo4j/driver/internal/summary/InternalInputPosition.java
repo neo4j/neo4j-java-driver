@@ -65,7 +65,7 @@ public class InternalInputPosition implements InputPosition {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        InternalInputPosition that = (InternalInputPosition) o;
+        var that = (InternalInputPosition) o;
         return offset == that.offset && line == that.line && column == that.column;
     }
 

@@ -147,7 +147,7 @@ public class NetworkConnection implements Connection {
     @Override
     public CompletionStage<Void> release() {
         if (executeWithLock(lock, () -> updateStateIfOpen(Status.RELEASED))) {
-            ChannelReleasingResetResponseHandler handler = new ChannelReleasingResetResponseHandler(
+            var handler = new ChannelReleasingResetResponseHandler(
                     channel, channelPool, messageDispatcher, clock, releaseFuture);
 
             writeResetMessageIfNeeded(handler, false);

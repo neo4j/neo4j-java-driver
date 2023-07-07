@@ -23,13 +23,10 @@ import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supp
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsRouteMessage;
 
 import java.time.Clock;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Query;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.value.ValueException;
 import org.neo4j.driver.internal.DatabaseName;
@@ -88,9 +85,9 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
                     response.error());
         }
 
-        List<Record> records = response.records();
+        var records = response.records();
 
-        long now = clock.millis();
+        var now = clock.millis();
 
         // the record size is wrong
         if (records.size() != 1) {
@@ -122,7 +119,7 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     }
 
     private static String invokedProcedureString(RoutingProcedureResponse response) {
-        Query query = response.procedure();
+        var query = response.procedure();
         return query.text() + " " + query.parameters();
     }
 }

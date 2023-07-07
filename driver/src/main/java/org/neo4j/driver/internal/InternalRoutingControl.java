@@ -40,7 +40,7 @@ public final class InternalRoutingControl implements RoutingControl {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        InternalRoutingControl that = (InternalRoutingControl) o;
+        var that = (InternalRoutingControl) o;
         return mode.equals(that.mode);
     }
 

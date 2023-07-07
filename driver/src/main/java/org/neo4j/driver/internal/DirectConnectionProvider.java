@@ -20,7 +20,6 @@ package org.neo4j.driver.internal;
 
 import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import org.neo4j.driver.AuthToken;
@@ -47,7 +46,7 @@ public class DirectConnectionProvider implements ConnectionProvider {
 
     @Override
     public CompletionStage<Connection> acquireConnection(ConnectionContext context) {
-        CompletableFuture<DatabaseName> databaseNameFuture = context.databaseNameFuture();
+        var databaseNameFuture = context.databaseNameFuture();
         databaseNameFuture.complete(DatabaseNameUtil.defaultDatabase());
         return acquirePooledConnection(context.overrideAuthToken())
                 .thenApply(connection -> new DirectConnection(

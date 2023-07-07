@@ -145,7 +145,7 @@ public final class ChannelAttributes {
     }
 
     public static void addBoltPatchesListener(Channel channel, BoltPatchesListener listener) {
-        Set<BoltPatchesListener> boltPatchesListeners = get(channel, BOLT_PATCHES_LISTENERS);
+        var boltPatchesListeners = get(channel, BOLT_PATCHES_LISTENERS);
         if (boltPatchesListeners == null) {
             boltPatchesListeners = new HashSet<>();
             setOnce(channel, BOLT_PATCHES_LISTENERS, boltPatchesListeners);
@@ -154,7 +154,7 @@ public final class ChannelAttributes {
     }
 
     public static Set<BoltPatchesListener> boltPatchesListeners(Channel channel) {
-        Set<BoltPatchesListener> boltPatchesListeners = get(channel, BOLT_PATCHES_LISTENERS);
+        var boltPatchesListeners = get(channel, BOLT_PATCHES_LISTENERS);
         return boltPatchesListeners != null ? boltPatchesListeners : Collections.emptySet();
     }
 
@@ -183,7 +183,7 @@ public final class ChannelAttributes {
     }
 
     private static <T> void setOnce(Channel channel, AttributeKey<T> key, T value) {
-        T existingValue = channel.attr(key).setIfAbsent(value);
+        var existingValue = channel.attr(key).setIfAbsent(value);
         if (existingValue != null) {
             throw new IllegalStateException(
                     "Unable to set " + key.name() + " because it is already set to " + existingValue);

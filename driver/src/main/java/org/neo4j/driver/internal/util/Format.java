@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.util;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -29,7 +28,7 @@ public abstract class Format {
 
     // formats map using ':' as key-value separator instead of default '='
     public static <V> String formatPairs(Map<String, V> entries) {
-        Iterator<Entry<String, V>> iterator = entries.entrySet().iterator();
+        var iterator = entries.entrySet().iterator();
         switch (entries.size()) {
             case 0:
                 return "{}";
@@ -39,7 +38,7 @@ public abstract class Format {
             }
 
             default: {
-                StringBuilder builder = new StringBuilder();
+                var builder = new StringBuilder();
                 builder.append("{");
                 builder.append(keyValueString(iterator.next()));
                 while (iterator.hasNext()) {

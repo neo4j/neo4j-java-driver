@@ -43,7 +43,7 @@ public abstract class BooleanValue extends ValueAdapter {
 
     @Override
     public int hashCode() {
-        Boolean value = asBoolean() ? Boolean.TRUE : Boolean.FALSE;
+        var value = asBoolean() ? Boolean.TRUE : Boolean.FALSE;
         return value.hashCode();
     }
 

@@ -121,7 +121,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
     }
 
     public synchronized CompletionStage<Record> peekAsync() {
-        Record record = records.peek();
+        var record = records.peek();
         if (record == null) {
             if (isDone()) {
                 return completedWithValueIfNoFailure(null);
@@ -199,7 +199,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
     }
 
     private Record dequeueRecord() {
-        Record record = records.poll();
+        var record = records.poll();
 
         if (records.size() <= lowRecordWatermark) {
             // if not in streaming state we need to restart streaming
@@ -219,7 +219,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
 
         List<T> result = new ArrayList<>(records.size());
         while (!records.isEmpty()) {
-            Record record = records.poll();
+            var record = records.poll();
             result.add(mapFunction.apply(record));
         }
         return result;
@@ -230,14 +230,14 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
             throw new IllegalStateException("Can't extract failure because it does not exist");
         }
 
-        Throwable error = failure;
+        var error = failure;
         failure = null; // propagate failure only once
         return error;
     }
 
     private void completeRecordFuture(Record record) {
         if (recordFuture != null) {
-            CompletableFuture<Record> future = recordFuture;
+            var future = recordFuture;
             recordFuture = null;
             future.complete(record);
         }
@@ -245,7 +245,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
 
     private void completeSummaryFuture(ResultSummary summary) {
         if (summaryFuture != null) {
-            CompletableFuture<ResultSummary> future = summaryFuture;
+            var future = summaryFuture;
             summaryFuture = null;
             future.complete(summary);
         }
@@ -253,7 +253,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
 
     private boolean failRecordFuture(Throwable error) {
         if (recordFuture != null) {
-            CompletableFuture<Record> future = recordFuture;
+            var future = recordFuture;
             recordFuture = null;
             future.completeExceptionally(error);
             return true;
@@ -263,7 +263,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
 
     private boolean failSummaryFuture(Throwable error) {
         if (summaryFuture != null) {
-            CompletableFuture<ResultSummary> future = summaryFuture;
+            var future = summaryFuture;
             summaryFuture = null;
             future.completeExceptionally(error);
             return true;

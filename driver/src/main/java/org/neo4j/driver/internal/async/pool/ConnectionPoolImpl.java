@@ -31,7 +31,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import java.time.Clock;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -50,7 +49,6 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -123,18 +121,18 @@ public class ConnectionPoolImpl implements ConnectionPool {
         log.trace("Acquiring a connection from pool towards %s", address);
 
         assertNotClosed();
-        ExtendedChannelPool pool = getOrCreatePool(address);
+        var pool = getOrCreatePool(address);
 
-        ListenerEvent<?> acquireEvent = metricsListener.createListenerEvent();
+        var acquireEvent = metricsListener.createListenerEvent();
         metricsListener.beforeAcquiringOrCreating(pool.id(), acquireEvent);
-        CompletionStage<Channel> channelFuture = pool.acquire(overrideAuthToken);
+        var channelFuture = pool.acquire(overrideAuthToken);
 
         return channelFuture.handle((channel, error) -> {
             try {
                 processAcquisitionError(pool, address, error);
                 assertNotClosed(address, channel, pool);
                 setAuthorizationStateListener(channel, pool.healthChecker());
-                Connection connection = connectionFactory.createConnection(channel, pool);
+                var connection = connectionFactory.createConnection(channel, pool);
 
                 metricsListener.afterAcquiredOrCreated(pool.id(), acquireEvent);
                 return connection;
@@ -147,17 +145,16 @@ public class ConnectionPoolImpl implements ConnectionPool {
     @Override
     public void retainAll(Set<BoltServerAddress> addressesToRetain) {
         executeWithLock(addressToPoolLock.writeLock(), () -> {
-            Iterator<Map.Entry<BoltServerAddress, ExtendedChannelPool>> entryIterator =
-                    addressToPool.entrySet().iterator();
+            var entryIterator = addressToPool.entrySet().iterator();
             while (entryIterator.hasNext()) {
-                Map.Entry<BoltServerAddress, ExtendedChannelPool> entry = entryIterator.next();
-                BoltServerAddress address = entry.getKey();
+                var entry = entryIterator.next();
+                var address = entry.getKey();
                 if (!addressesToRetain.contains(address)) {
-                    int activeChannels = nettyChannelTracker.inUseChannelCount(address);
+                    var activeChannels = nettyChannelTracker.inUseChannelCount(address);
                     if (activeChannels == 0) {
                         // address is not present in updated routing table and has no active connections
                         // it's now safe to terminate corresponding connection pool and forget about it
-                        ExtendedChannelPool pool = entry.getValue();
+                        var pool = entry.getValue();
                         entryIterator.remove();
                         if (pool != null) {
                             log.info(
@@ -215,7 +212,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
     }
 
     private void processAcquisitionError(ExtendedChannelPool pool, BoltServerAddress serverAddress, Throwable error) {
-        Throwable cause = Futures.completionExceptionCause(error);
+        var cause = Futures.completionExceptionCause(error);
         if (cause != null) {
             if (cause instanceof TimeoutException) {
                 // NettyChannelPool returns future failed with TimeoutException if acquire operation takes more than
@@ -272,12 +269,11 @@ public class ConnectionPoolImpl implements ConnectionPool {
     }
 
     private ExtendedChannelPool getOrCreatePool(BoltServerAddress address) {
-        ExtendedChannelPool existingPool =
-                executeWithLock(addressToPoolLock.readLock(), () -> addressToPool.get(address));
+        var existingPool = executeWithLock(addressToPoolLock.readLock(), () -> addressToPool.get(address));
         return existingPool != null
                 ? existingPool
                 : executeWithLock(addressToPoolLock.writeLock(), () -> {
-                    ExtendedChannelPool pool = addressToPool.get(address);
+                    var pool = addressToPool.get(address);
                     if (pool == null) {
                         pool = newPool(address);
                         // before the connection pool is added I can register the metrics for the pool.
@@ -320,7 +316,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
 
         Futures.asCompletionStage(eventLoopGroup().terminationFuture())
                 .whenComplete((ignore, eventLoopGroupTerminationError) -> {
-                    CompletionException combinedErrors = combineErrors(pollCloseError, eventLoopGroupTerminationError);
+                    var combinedErrors = combineErrors(pollCloseError, eventLoopGroupTerminationError);
                     completeWithNullIfNoError(closeFuture, combinedErrors);
                 });
     }
@@ -328,8 +324,8 @@ public class ConnectionPoolImpl implements ConnectionPool {
     private CompletableFuture<Void> closeAllPools() {
         return CompletableFuture.allOf(addressToPool.entrySet().stream()
                 .map(entry -> {
-                    BoltServerAddress address = entry.getKey();
-                    ExtendedChannelPool pool = entry.getValue();
+                    var address = entry.getKey();
+                    var pool = entry.getValue();
                     log.info("Closing connection pool towards %s", address);
                     // Wait for all pools to be closed.
                     return closePool(pool).toCompletableFuture();

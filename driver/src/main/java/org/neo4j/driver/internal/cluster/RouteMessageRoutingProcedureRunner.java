@@ -63,9 +63,9 @@ public class RouteMessageRoutingProcedureRunner implements RoutingProcedureRunne
     @Override
     public CompletionStage<RoutingProcedureResponse> run(
             Connection connection, DatabaseName databaseName, Set<Bookmark> bookmarks, String impersonatedUser) {
-        CompletableFuture<Map<String, Value>> completableFuture = createCompletableFuture.get();
+        var completableFuture = createCompletableFuture.get();
 
-        DirectConnection directConnection = toDirectConnection(connection, databaseName, impersonatedUser);
+        var directConnection = toDirectConnection(connection, databaseName, impersonatedUser);
         directConnection.writeAndFlush(
                 new RouteMessage(
                         routingContext, bookmarks, databaseName.databaseName().orElse(null), impersonatedUser),

@@ -55,7 +55,7 @@ public class InternalResult implements Result {
 
     @Override
     public Record next() {
-        Record record = blockingGet(cursor.nextAsync());
+        var record = blockingGet(cursor.nextAsync());
         if (record == null) {
             throw new NoSuchRecordException("No more records");
         }
@@ -69,7 +69,7 @@ public class InternalResult implements Result {
 
     @Override
     public Record peek() {
-        Record record = blockingGet(cursor.peekAsync());
+        var record = blockingGet(cursor.peekAsync());
         if (record == null) {
             throw new NoSuchRecordException("Cannot peek past the last record");
         }
@@ -78,8 +78,7 @@ public class InternalResult implements Result {
 
     @Override
     public Stream<Record> stream() {
-        Spliterator<Record> spliterator =
-                Spliterators.spliteratorUnknownSize(this, Spliterator.IMMUTABLE | Spliterator.ORDERED);
+        var spliterator = Spliterators.spliteratorUnknownSize(this, Spliterator.IMMUTABLE | Spliterator.ORDERED);
         return StreamSupport.stream(spliterator, false);
     }
 

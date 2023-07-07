@@ -34,7 +34,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
@@ -120,7 +119,7 @@ public class NettyChannelTracker implements ChannelPoolHandler {
     }
 
     public ListenerEvent<?> channelCreating(String poolId) {
-        ListenerEvent<?> creatingEvent = metricsListener.createListenerEvent();
+        var creatingEvent = metricsListener.createListenerEvent();
         metricsListener.beforeCreating(poolId, creatingEvent);
         return creatingEvent;
     }
@@ -143,8 +142,8 @@ public class NettyChannelTracker implements ChannelPoolHandler {
     }
 
     public void prepareToCloseChannels() {
-        for (Channel channel : allChannels) {
-            BoltProtocol protocol = BoltProtocol.forChannel(channel);
+        for (var channel : allChannels) {
+            var protocol = BoltProtocol.forChannel(channel);
             try {
                 protocol.prepareToCloseChannel(channel);
             } catch (Throwable e) {
@@ -162,11 +161,11 @@ public class NettyChannelTracker implements ChannelPoolHandler {
     }
 
     private void decrementInUse(Channel channel) {
-        BoltServerAddress address = serverAddress(channel);
+        var address = serverAddress(channel);
         if (!addressToInUseChannelCount.containsKey(address)) {
             throw new IllegalStateException("No count exists for address '" + address + "' in the 'in use' count");
         }
-        Integer count = addressToInUseChannelCount.get(address);
+        var count = addressToInUseChannelCount.get(address);
         addressToInUseChannelCount.put(address, count - 1);
     }
 
@@ -175,17 +174,17 @@ public class NettyChannelTracker implements ChannelPoolHandler {
     }
 
     private void decrementIdle(Channel channel) {
-        BoltServerAddress address = serverAddress(channel);
+        var address = serverAddress(channel);
         if (!addressToIdleChannelCount.containsKey(address)) {
             throw new IllegalStateException("No count exists for address '" + address + "' in the 'idle' count");
         }
-        Integer count = addressToIdleChannelCount.get(address);
+        var count = addressToIdleChannelCount.get(address);
         addressToIdleChannelCount.put(address, count - 1);
     }
 
     private void increment(Channel channel, Map<ServerAddress, Integer> countMap) {
         ServerAddress address = serverAddress(channel);
-        Integer count = countMap.computeIfAbsent(address, k -> 0);
+        var count = countMap.computeIfAbsent(address, k -> 0);
         countMap.put(address, count + 1);
     }
 }

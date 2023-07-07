@@ -65,7 +65,7 @@ public final class Extract {
     }
 
     public static <T> List<T> list(Value[] data, Function<Value, T> mapFunction) {
-        int size = data.length;
+        var size = data.length;
         switch (size) {
             case 0:
                 return emptyList();
@@ -73,7 +73,7 @@ public final class Extract {
                 return singletonList(mapFunction.apply(data[0]));
             default:
                 List<T> result = new ArrayList<>(size);
-                for (Value value : data) {
+                for (var value : data) {
                     result.add(mapFunction.apply(value));
                 }
                 return unmodifiableList(result);
@@ -84,13 +84,13 @@ public final class Extract {
         if (data.isEmpty()) {
             return emptyMap();
         } else {
-            int size = data.size();
+            var size = data.size();
             if (size == 1) {
-                Map.Entry<String, Value> head = data.entrySet().iterator().next();
+                var head = data.entrySet().iterator().next();
                 return singletonMap(head.getKey(), mapFunction.apply(head.getValue()));
             } else {
                 Map<String, T> map = Iterables.newLinkedHashMapWithSize(size);
-                for (Map.Entry<String, Value> entry : data.entrySet()) {
+                for (var entry : data.entrySet()) {
                     map.put(entry.getKey(), mapFunction.apply(entry.getValue()));
                 }
                 return unmodifiableMap(map);
@@ -99,7 +99,7 @@ public final class Extract {
     }
 
     public static <T> Map<String, T> map(Record record, Function<Value, T> mapFunction) {
-        int size = record.size();
+        var size = record.size();
         switch (size) {
             case 0:
                 return emptyMap();
@@ -109,8 +109,8 @@ public final class Extract {
 
             default:
                 Map<String, T> map = Iterables.newLinkedHashMapWithSize(size);
-                List<String> keys = record.keys();
-                for (int i = 0; i < size; i++) {
+                var keys = record.keys();
+                for (var i = 0; i < size; i++) {
                     map.put(keys.get(i), mapFunction.apply(record.get(i)));
                 }
                 return unmodifiableMap(map);
@@ -119,21 +119,21 @@ public final class Extract {
 
     public static <V> Iterable<Pair<String, V>> properties(
             final MapAccessor map, final Function<Value, V> mapFunction) {
-        int size = map.size();
+        var size = map.size();
         switch (size) {
             case 0:
                 return emptyList();
 
             case 1: {
-                String key = map.keys().iterator().next();
-                Value value = map.get(key);
+                var key = map.keys().iterator().next();
+                var value = map.get(key);
                 return singletonList(InternalPair.of(key, mapFunction.apply(value)));
             }
 
             default: {
                 List<Pair<String, V>> list = new ArrayList<>(size);
-                for (String key : map.keys()) {
-                    Value value = map.get(key);
+                for (var key : map.keys()) {
+                    var value = map.get(key);
                     list.add(InternalPair.of(key, mapFunction.apply(value)));
                 }
                 return unmodifiableList(list);
@@ -142,23 +142,23 @@ public final class Extract {
     }
 
     public static <V> List<Pair<String, V>> fields(final Record map, final Function<Value, V> mapFunction) {
-        int size = map.keys().size();
+        var size = map.keys().size();
         switch (size) {
             case 0:
                 return emptyList();
 
             case 1: {
-                String key = map.keys().iterator().next();
-                Value value = map.get(key);
+                var key = map.keys().iterator().next();
+                var value = map.get(key);
                 return singletonList(InternalPair.of(key, mapFunction.apply(value)));
             }
 
             default: {
                 List<Pair<String, V>> list = new ArrayList<>(size);
-                List<String> keys = map.keys();
-                for (int i = 0; i < size; i++) {
-                    String key = keys.get(i);
-                    Value value = map.get(i);
+                var keys = map.keys();
+                for (var i = 0; i < size; i++) {
+                    var key = keys.get(i);
+                    var value = map.get(i);
                     list.add(InternalPair.of(key, mapFunction.apply(value)));
                 }
                 return unmodifiableList(list);
@@ -172,8 +172,8 @@ public final class Extract {
         }
 
         Map<String, Value> result = newHashMapWithSize(map.size());
-        for (Map.Entry<String, Object> entry : map.entrySet()) {
-            Object value = entry.getValue();
+        for (var entry : map.entrySet()) {
+            var value = entry.getValue();
             assertParameter(value);
             result.put(entry.getKey(), value(value));
         }

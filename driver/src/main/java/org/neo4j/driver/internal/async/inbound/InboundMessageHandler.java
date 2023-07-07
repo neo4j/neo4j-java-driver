@@ -23,7 +23,6 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
@@ -52,7 +51,7 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
-        Channel channel = ctx.channel();
+        var channel = ctx.channel();
         messageDispatcher = requireNonNull(messageDispatcher(channel));
         log = new ChannelActivityLogger(channel, logging, getClass());
     }

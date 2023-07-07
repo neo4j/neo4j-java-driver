@@ -41,7 +41,7 @@ public class FloatValue extends NumberValueAdapter<Double> {
 
     @Override
     public long asLong() {
-        long longVal = (long) val;
+        var longVal = (long) val;
         if ((double) longVal != val) {
             throw new LossyCoercion(type().name(), "Java long");
         }
@@ -51,7 +51,7 @@ public class FloatValue extends NumberValueAdapter<Double> {
 
     @Override
     public int asInt() {
-        int intVal = (int) val;
+        var intVal = (int) val;
         if ((double) intVal != val) {
             throw new LossyCoercion(type().name(), "Java int");
         }
@@ -66,7 +66,7 @@ public class FloatValue extends NumberValueAdapter<Double> {
 
     @Override
     public float asFloat() {
-        float floatVal = (float) val;
+        var floatVal = (float) val;
         if ((double) floatVal != val) {
             throw new LossyCoercion(type().name(), "Java float");
         }
@@ -83,13 +83,13 @@ public class FloatValue extends NumberValueAdapter<Double> {
             return false;
         }
 
-        FloatValue values = (FloatValue) o;
+        var values = (FloatValue) o;
         return Double.compare(values.val, val) == 0;
     }
 
     @Override
     public int hashCode() {
-        long temp = Double.doubleToLongBits(val);
+        var temp = Double.doubleToLongBits(val);
         return (int) (temp ^ (temp >>> 32));
     }
 

@@ -30,7 +30,7 @@ public final class BootstrapFactory {
     }
 
     public static Bootstrap newBootstrap(EventLoopGroup eventLoopGroup) {
-        Bootstrap bootstrap = new Bootstrap();
+        var bootstrap = new Bootstrap();
         bootstrap.group(eventLoopGroup);
         bootstrap.channel(EventLoopGroupFactory.channelClass());
         bootstrap.option(ChannelOption.SO_KEEPALIVE, true);

@@ -53,7 +53,7 @@ public final class Futures {
     }
 
     public static <T> CompletionStage<T> asCompletionStage(io.netty.util.concurrent.Future<T> future) {
-        CompletableFuture<T> result = new CompletableFuture<>();
+        var result = new CompletableFuture<T>();
         return asCompletionStage(future, result);
     }
 
@@ -80,7 +80,7 @@ public final class Futures {
     }
 
     public static <T> CompletableFuture<T> failedFuture(Throwable error) {
-        CompletableFuture<T> result = new CompletableFuture<>();
+        var result = new CompletableFuture<T>();
         result.completeExceptionally(error);
         return result;
     }
@@ -93,7 +93,7 @@ public final class Futures {
         EventLoopGroupFactory.assertNotInEventLoopThread();
 
         Future<V> future = stage.toCompletableFuture();
-        boolean interrupted = false;
+        var interrupted = false;
         try {
             while (true) {
                 try {
@@ -170,8 +170,8 @@ public final class Futures {
      */
     public static CompletionException combineErrors(Throwable error1, Throwable error2) {
         if (error1 != null && error2 != null) {
-            Throwable cause1 = completionExceptionCause(error1);
-            Throwable cause2 = completionExceptionCause(error2);
+            var cause1 = completionExceptionCause(error1);
+            var cause2 = completionExceptionCause(error2);
             addSuppressed(cause1, cause2);
             return asCompletionException(cause1);
         } else if (error1 != null) {

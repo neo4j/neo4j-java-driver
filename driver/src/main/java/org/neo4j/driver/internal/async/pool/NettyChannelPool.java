@@ -29,7 +29,6 @@ import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.pool.FixedChannelPool;
 import java.time.Clock;
 import java.util.concurrent.CompletableFuture;
@@ -44,7 +43,6 @@ import org.neo4j.driver.internal.handlers.LogoffResponseHandler;
 import org.neo4j.driver.internal.handlers.LogonResponseHandler;
 import org.neo4j.driver.internal.messaging.request.LogoffMessage;
 import org.neo4j.driver.internal.messaging.request.LogonMessage;
-import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.SessionAuthUtil;
@@ -94,12 +92,12 @@ public class NettyChannelPool implements ExtendedChannelPool {
                         RELEASE_HEALTH_CHECK) {
                     @Override
                     protected ChannelFuture connectChannel(Bootstrap bootstrap) {
-                        ListenerEvent<?> creatingEvent = handler.channelCreating(id);
-                        ChannelFuture connectedChannelFuture = connector.connect(address, bootstrap);
-                        Channel channel = connectedChannelFuture.channel();
+                        var creatingEvent = handler.channelCreating(id);
+                        var connectedChannelFuture = connector.connect(address, bootstrap);
+                        var channel = connectedChannelFuture.channel();
                         // This ensures that handler.channelCreated is called before SimpleChannelPool calls
                         // handler.channelAcquired
-                        ChannelPromise trackedChannelFuture = channel.newPromise();
+                        var trackedChannelFuture = channel.newPromise();
                         connectedChannelFuture.addListener(future -> {
                             if (future.isSuccess()) {
                                 // notify pool handler about a successful connection

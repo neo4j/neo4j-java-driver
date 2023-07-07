@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.async.outbound;
 
 import static io.netty.buffer.ByteBufUtil.hexDump;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageEncoder;
@@ -64,7 +63,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message> imp
     protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
         log.debug("C: %s", msg);
 
-        ByteBuf messageBuf = ctx.alloc().ioBuffer();
+        var messageBuf = ctx.alloc().ioBuffer();
         output.start(messageBuf);
         try {
             writer.write(msg);

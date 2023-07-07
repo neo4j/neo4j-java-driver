@@ -61,14 +61,14 @@ public class TransactionMetadataBuilder {
             String impersonatedUser,
             String txType,
             NotificationConfig notificationConfig) {
-        boolean bookmarksPresent = !bookmarks.isEmpty();
-        boolean txTimeoutPresent = txTimeout != null;
-        boolean txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
-        boolean accessModePresent = mode == AccessMode.READ;
-        boolean databaseNamePresent = databaseName.databaseName().isPresent();
-        boolean impersonatedUserPresent = impersonatedUser != null;
-        boolean txTypePresent = txType != null;
-        boolean notificationConfigPresent = notificationConfig != null;
+        var bookmarksPresent = !bookmarks.isEmpty();
+        var txTimeoutPresent = txTimeout != null;
+        var txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
+        var accessModePresent = mode == AccessMode.READ;
+        var databaseNamePresent = databaseName.databaseName().isPresent();
+        var impersonatedUserPresent = impersonatedUser != null;
+        var txTypePresent = txType != null;
+        var notificationConfigPresent = notificationConfig != null;
 
         if (!bookmarksPresent
                 && !txTimeoutPresent

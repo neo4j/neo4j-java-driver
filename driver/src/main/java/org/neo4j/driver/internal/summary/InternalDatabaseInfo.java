@@ -43,7 +43,7 @@ public class InternalDatabaseInfo implements DatabaseInfo {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        InternalDatabaseInfo that = (InternalDatabaseInfo) o;
+        var that = (InternalDatabaseInfo) o;
         return Objects.equals(name, that.name);
     }
 

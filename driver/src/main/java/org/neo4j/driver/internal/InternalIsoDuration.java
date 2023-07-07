@@ -144,7 +144,7 @@ public class InternalIsoDuration implements IsoDuration {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        InternalIsoDuration that = (InternalIsoDuration) o;
+        var that = (InternalIsoDuration) o;
         return months == that.months && days == that.days && seconds == that.seconds && nanoseconds == that.nanoseconds;
     }
 
@@ -155,7 +155,7 @@ public class InternalIsoDuration implements IsoDuration {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
         sb.append('P');
         sb.append(months).append('M');
         sb.append(days).append('D');
@@ -170,7 +170,7 @@ public class InternalIsoDuration implements IsoDuration {
             sb.append(seconds);
         }
         if (nanoseconds > 0) {
-            int pos = sb.length();
+            var pos = sb.length();
             // append nanoseconds as a 10-digit string with leading '1' that is later replaced by a '.'
             if (seconds < 0) {
                 sb.append(2 * NANOS_PER_SECOND - nanoseconds);

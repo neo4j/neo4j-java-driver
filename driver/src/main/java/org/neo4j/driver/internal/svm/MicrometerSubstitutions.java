@@ -41,7 +41,7 @@ final class Target_org_neo4j_driver_internal_DriverFactory {
      */
     @Substitute
     protected static MetricsProvider getOrCreateMetricsProvider(Config config, Clock clock) {
-        MetricsAdapter metricsAdapter = config.metricsAdapter();
+        var metricsAdapter = config.metricsAdapter();
         if (metricsAdapter == null) {
             metricsAdapter = config.isMetricsEnabled() ? MetricsAdapter.DEFAULT : MetricsAdapter.DEV_NULL;
         }
@@ -53,7 +53,7 @@ final class Target_org_neo4j_driver_internal_DriverFactory {
             case MICROMETER:
                 try {
                     @SuppressWarnings("unused")
-                    Class<?> metricsClass = Class.forName("io.micrometer.core.instrument.Metrics");
+                    var metricsClass = Class.forName("io.micrometer.core.instrument.Metrics");
                     return MicrometerMetricsProvider.forGlobalRegistry();
                 } catch (ClassNotFoundException e) {
                     return DevNullMetricsProvider.INSTANCE;

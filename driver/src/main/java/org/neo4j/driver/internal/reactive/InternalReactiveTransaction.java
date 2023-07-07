@@ -48,7 +48,7 @@ public class InternalReactiveTransaction extends AbstractReactiveTransaction
         return publisherToFlowPublisher(Mono.fromCompletionStage(cursorStage)
                 .flatMap(cursor -> {
                     Mono<RxResultCursor> publisher;
-                    Throwable runError = cursor.getRunError();
+                    var runError = cursor.getRunError();
                     if (runError != null) {
                         publisher = Mono.error(runError);
                         tx.markTerminated(runError);

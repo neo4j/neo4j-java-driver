@@ -92,7 +92,7 @@ public interface Logging {
      * @return {@link Logger} instance
      */
     default Logger getLog(Class<?> clazz) {
-        String canonicalName = clazz.getCanonicalName();
+        var canonicalName = clazz.getCanonicalName();
         return getLog(canonicalName != null ? canonicalName : clazz.getName());
     }
 
@@ -111,7 +111,7 @@ public interface Logging {
      * @throws IllegalStateException if SLF4J is not available.
      */
     static Logging slf4j() {
-        RuntimeException unavailabilityError = Slf4jLogging.checkAvailability();
+        var unavailabilityError = Slf4jLogging.checkAvailability();
         if (unavailabilityError != null) {
             throw unavailabilityError;
         }

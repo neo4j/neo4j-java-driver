@@ -73,7 +73,7 @@ public class ClusterRoutingTable implements RoutingTable {
 
     @Override
     public boolean hasBeenStaleFor(long extraTime) {
-        long totalTime = executeWithLock(tableLock.readLock(), () -> expirationTimestamp) + extraTime;
+        var totalTime = executeWithLock(tableLock.readLock(), () -> expirationTimestamp) + extraTime;
         if (totalTime < 0) {
             totalTime = Long.MAX_VALUE;
         }
@@ -170,7 +170,7 @@ public class ClusterRoutingTable implements RoutingTable {
     private List<BoltServerAddress> newWithoutAddressIfPresent(
             List<BoltServerAddress> addresses, BoltServerAddress addressToSkip) {
         List<BoltServerAddress> newList = new ArrayList<>(addresses.size());
-        for (BoltServerAddress address : addresses) {
+        for (var address : addresses) {
             if (!address.equals(addressToSkip)) {
                 newList.add(address);
             }
@@ -181,7 +181,7 @@ public class ClusterRoutingTable implements RoutingTable {
     private List<BoltServerAddress> newWithAddressReplacedIfPresent(
             List<BoltServerAddress> addresses, BoltServerAddress oldAddress, BoltServerAddress newAddress) {
         List<BoltServerAddress> newList = new ArrayList<>(addresses.size());
-        for (BoltServerAddress address : addresses) {
+        for (var address : addresses) {
             newList.add(address.equals(oldAddress) ? newAddress : address);
         }
         return Collections.unmodifiableList(newList);

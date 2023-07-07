@@ -116,12 +116,12 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
 
         completionListener.afterFailure(error);
 
-        boolean failedRecordFuture = failRecordFuture(error);
+        var failedRecordFuture = failRecordFuture(error);
         if (failedRecordFuture) {
             // error propagated through the record future
             completeFailureFuture(null);
         } else {
-            boolean completedFailureFuture = completeFailureFuture(error);
+            var completedFailureFuture = completeFailureFuture(error);
             if (!completedFailureFuture) {
                 // error has not been propagated to the user, remember it
                 failure = error;
@@ -146,7 +146,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
     }
 
     public synchronized CompletionStage<Record> peekAsync() {
-        Record record = records.peek();
+        var record = records.peek();
         if (record == null) {
             if (failure != null) {
                 return failedFuture(extractFailure());
@@ -218,7 +218,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
 
         records.add(record);
 
-        boolean shouldBufferAllRecords = failureFuture != null;
+        var shouldBufferAllRecords = failureFuture != null;
         // when failure is requested we have to buffer all remaining records and then return the error
         // do not disable auto-read in this case, otherwise records will not be consumed and trailing
         // SUCCESS or FAILURE message will not arrive as well, so callers will get stuck waiting for the error
@@ -231,7 +231,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
     }
 
     private Record dequeueRecord() {
-        Record record = records.poll();
+        var record = records.poll();
 
         if (records.size() < RECORD_BUFFER_LOW_WATERMARK) {
             // less than low watermark records are now available in the buffer, tell connection to pre-fetch more
@@ -249,7 +249,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
 
         List<T> result = new ArrayList<>(records.size());
         while (!records.isEmpty()) {
-            Record record = records.poll();
+            var record = records.poll();
             result.add(mapFunction.apply(record));
         }
         return result;
@@ -260,14 +260,14 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
             throw new IllegalStateException("Can't extract failure because it does not exist");
         }
 
-        Throwable error = failure;
+        var error = failure;
         failure = null; // propagate failure only once
         return error;
     }
 
     private void completeRecordFuture(Record record) {
         if (recordFuture != null) {
-            CompletableFuture<Record> future = recordFuture;
+            var future = recordFuture;
             recordFuture = null;
             future.complete(record);
         }
@@ -275,7 +275,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
 
     private boolean failRecordFuture(Throwable error) {
         if (recordFuture != null) {
-            CompletableFuture<Record> future = recordFuture;
+            var future = recordFuture;
             recordFuture = null;
             future.completeExceptionally(error);
             return true;
@@ -285,7 +285,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
 
     private boolean completeFailureFuture(Throwable error) {
         if (failureFuture != null) {
-            CompletableFuture<Throwable> future = failureFuture;
+            var future = failureFuture;
             failureFuture = null;
             future.complete(error);
             return true;
@@ -294,7 +294,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
     }
 
     private ResultSummary extractResultSummary(Map<String, Value> metadata) {
-        long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
+        var resultAvailableAfter = runResponseHandler.resultAvailableAfter();
         return metadataExtractor.extractSummary(query, connection, resultAvailableAfter, metadata);
     }
 

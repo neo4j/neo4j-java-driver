@@ -33,10 +33,8 @@ import io.netty.channel.ChannelPromise;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -60,17 +58,17 @@ public class HelloResponseHandler implements ResponseHandler {
     @Override
     public void onSuccess(Map<String, Value> metadata) {
         try {
-            String serverAgent = extractServer(metadata).asString();
+            var serverAgent = extractServer(metadata).asString();
             setServerAgent(channel, serverAgent);
 
-            String connectionId = extractConnectionId(metadata);
+            var connectionId = extractConnectionId(metadata);
             setConnectionId(channel, connectionId);
 
             processConfigurationHints(metadata);
 
-            BoltProtocolVersion protocolVersion = protocolVersion(channel);
+            var protocolVersion = protocolVersion(channel);
             if (BoltProtocolV44.VERSION.equals(protocolVersion) || BoltProtocolV43.VERSION.equals(protocolVersion)) {
-                Set<String> boltPatches = extractBoltPatches(metadata);
+                var boltPatches = extractBoltPatches(metadata);
                 if (!boltPatches.isEmpty()) {
                     boltPatchesListeners(channel).forEach(listener -> listener.handle(boltPatches));
                 }
@@ -98,7 +96,7 @@ public class HelloResponseHandler implements ResponseHandler {
     }
 
     private static String extractConnectionId(Map<String, Value> metadata) {
-        Value value = metadata.get(CONNECTION_ID_METADATA_KEY);
+        var value = metadata.get(CONNECTION_ID_METADATA_KEY);
         if (value == null || value.isNull()) {
             throw new IllegalStateException("Unable to extract " + CONNECTION_ID_METADATA_KEY
                     + " from a response to HELLO message. " + "Received metadata: " + metadata);
@@ -107,7 +105,7 @@ public class HelloResponseHandler implements ResponseHandler {
     }
 
     private void processConfigurationHints(Map<String, Value> metadata) {
-        Value configurationHints = metadata.get(CONFIGURATION_HINTS_KEY);
+        var configurationHints = metadata.get(CONFIGURATION_HINTS_KEY);
         if (configurationHints != null) {
             getFromSupplierOrEmptyOnException(() -> configurationHints
                             .get(CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY)

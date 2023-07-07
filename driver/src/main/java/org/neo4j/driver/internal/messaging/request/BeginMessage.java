@@ -79,7 +79,7 @@ public class BeginMessage extends MessageWithMetadata {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        BeginMessage that = (BeginMessage) o;
+        var that = (BeginMessage) o;
         return Objects.equals(metadata(), that.metadata());
     }
 

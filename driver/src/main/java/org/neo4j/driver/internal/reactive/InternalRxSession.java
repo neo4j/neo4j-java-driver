@@ -95,7 +95,7 @@ public class InternalRxSession extends AbstractReactiveSession<RxTransaction> im
     @Override
     public RxResult run(Query query, TransactionConfig config) {
         return new InternalRxResult(() -> {
-            CompletableFuture<RxResultCursor> resultCursorFuture = new CompletableFuture<>();
+            var resultCursorFuture = new CompletableFuture<RxResultCursor>();
             session.runRx(query, config).whenComplete((cursor, completionError) -> {
                 if (cursor != null) {
                     resultCursorFuture.complete(cursor);
@@ -114,7 +114,7 @@ public class InternalRxSession extends AbstractReactiveSession<RxTransaction> im
         // The logic here shall be the same as `SessionPullResponseHandler#afterFailure`.
         // The reason we need to release connection in session is that we made `rxSession.close()` optional;
         // Otherwise, session.close shall handle everything for us.
-        Throwable error = Futures.completionExceptionCause(completionError);
+        var error = Futures.completionExceptionCause(completionError);
         if (error instanceof TransactionNestingException) {
             returnFuture.completeExceptionally(error);
         } else {

@@ -57,7 +57,7 @@ public class TypeRepresentation implements Type {
             return false;
         }
 
-        TypeRepresentation that = (TypeRepresentation) o;
+        var that = (TypeRepresentation) o;
 
         return tyCon == that.tyCon;
     }

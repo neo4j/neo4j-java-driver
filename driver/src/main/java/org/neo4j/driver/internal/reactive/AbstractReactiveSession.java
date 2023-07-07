@@ -60,7 +60,7 @@ public abstract class AbstractReactiveSession<S> {
     protected Publisher<S> doBeginTransaction(TransactionConfig config, String txType) {
         return createSingleItemPublisher(
                 () -> {
-                    CompletableFuture<S> txFuture = new CompletableFuture<>();
+                    var txFuture = new CompletableFuture<S>();
                     session.beginTransactionAsync(config, txType).whenComplete((tx, completionError) -> {
                         if (tx != null) {
                             txFuture.complete(createTransaction(tx));
@@ -78,7 +78,7 @@ public abstract class AbstractReactiveSession<S> {
     private Publisher<S> beginTransaction(AccessMode mode, TransactionConfig config) {
         return createSingleItemPublisher(
                 () -> {
-                    CompletableFuture<S> txFuture = new CompletableFuture<>();
+                    var txFuture = new CompletableFuture<S>();
                     session.beginTransactionAsync(mode, config).whenComplete((tx, completionError) -> {
                         if (tx != null) {
                             txFuture.complete(createTransaction(tx));
@@ -112,7 +112,7 @@ public abstract class AbstractReactiveSession<S> {
             }
             return value;
         }));
-        Flux<T> repeatableWork = Flux.usingWhen(
+        var repeatableWork = Flux.usingWhen(
                 beginTransaction(mode, config),
                 work,
                 tx -> closeTransaction(tx, true),
@@ -128,7 +128,7 @@ public abstract class AbstractReactiveSession<S> {
         // The logic here shall be the same as `SessionPullResponseHandler#afterFailure`.
         // The reason we need to release connection in session is that we made `rxSession.close()` optional;
         // Otherwise, session.close shall handle everything for us.
-        Throwable error = Futures.completionExceptionCause(completionError);
+        var error = Futures.completionExceptionCause(completionError);
         if (error instanceof TransactionNestingException) {
             returnFuture.completeExceptionally(error);
         } else {

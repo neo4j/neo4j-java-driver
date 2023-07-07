@@ -30,7 +30,7 @@ public class RunWithMetadataMessageEncoder implements MessageEncoder {
     @Override
     public void encode(Message message, ValuePacker packer) throws IOException {
         checkArgument(message, RunWithMetadataMessage.class);
-        RunWithMetadataMessage runMessage = (RunWithMetadataMessage) message;
+        var runMessage = (RunWithMetadataMessage) message;
         packer.packStructHeader(3, runMessage.signature());
         packer.pack(runMessage.query());
         packer.pack(runMessage.parameters());

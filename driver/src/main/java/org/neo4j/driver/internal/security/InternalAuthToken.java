@@ -52,7 +52,7 @@ public final class InternalAuthToken implements AuthToken {
             return false;
         }
 
-        InternalAuthToken that = (InternalAuthToken) o;
+        var that = (InternalAuthToken) o;
 
         return content != null ? content.equals(that.content) : that.content == null;
     }

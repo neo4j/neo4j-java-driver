@@ -63,7 +63,7 @@ public class InternalReactiveResult implements ReactiveResult {
     @Override
     public Publisher<ResultSummary> consume() {
         return Mono.create(sink -> cursor.summaryAsync().whenComplete((summary, summaryCompletionError) -> {
-            Throwable error = Futures.completionExceptionCause(summaryCompletionError);
+            var error = Futures.completionExceptionCause(summaryCompletionError);
             if (summary != null) {
                 sink.success(summary);
             } else {

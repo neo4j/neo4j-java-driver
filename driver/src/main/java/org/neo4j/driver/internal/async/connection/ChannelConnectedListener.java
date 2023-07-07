@@ -22,10 +22,8 @@ import static java.lang.String.format;
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.handshakeBuf;
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.handshakeString;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -52,13 +50,13 @@ public class ChannelConnectedListener implements ChannelFutureListener {
 
     @Override
     public void operationComplete(ChannelFuture future) {
-        Channel channel = future.channel();
+        var channel = future.channel();
         Logger log = new ChannelActivityLogger(channel, logging, getClass());
 
         if (future.isSuccess()) {
             log.trace("Channel %s connected, initiating bolt handshake", channel);
 
-            ChannelPipeline pipeline = channel.pipeline();
+            var pipeline = channel.pipeline();
             pipeline.addLast(new HandshakeHandler(pipelineBuilder, handshakeCompletedPromise, logging));
             log.debug("C: [Bolt Handshake] %s", handshakeString());
             channel.writeAndFlush(handshakeBuf(), channel.voidPromise());

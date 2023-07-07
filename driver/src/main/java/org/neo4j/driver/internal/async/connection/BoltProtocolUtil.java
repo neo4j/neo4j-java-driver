@@ -72,7 +72,7 @@ public final class BoltProtocolUtil {
     }
 
     private static String createHandshakeString() {
-        ByteBuf buf = handshakeBuf();
+        var buf = handshakeBuf();
         return String.format(
                 "[0x%s, %s, %s, %s, %s]",
                 toHexString(buf.readInt()), buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt());

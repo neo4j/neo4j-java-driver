@@ -34,8 +34,8 @@ public abstract class AbstractMessageWriter implements MessageFormat.Writer {
 
     @Override
     public final void write(Message msg) throws IOException {
-        byte signature = msg.signature();
-        MessageEncoder encoder = encodersByMessageSignature.get(signature);
+        var signature = msg.signature();
+        var encoder = encodersByMessageSignature.get(signature);
         if (encoder == null) {
             throw new IOException("No encoder found for message " + msg + " with signature " + signature);
         }

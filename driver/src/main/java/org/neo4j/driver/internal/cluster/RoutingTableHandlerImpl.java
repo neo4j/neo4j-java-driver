@@ -80,7 +80,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler {
             // existing routing table is not fresh and should be updated
             log.debug("Routing table for database '%s' is stale. %s", databaseName.description(), routingTable);
 
-            CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
+            var resultFuture = new CompletableFuture<RoutingTable>();
             refreshRoutingTableFuture = resultFuture;
 
             rediscovery
@@ -91,7 +91,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler {
                             null,
                             context.overrideAuthToken())
                     .whenComplete((composition, completionError) -> {
-                        Throwable error = Futures.completionExceptionCause(completionError);
+                        var error = Futures.completionExceptionCause(completionError);
                         if (error != null) {
                             clusterCompositionLookupFailed(error);
                         } else {
@@ -117,7 +117,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler {
                     < routingTable.expirationTimestamp()) {
                 return completedFuture(routingTable);
             }
-            CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
+            var resultFuture = new CompletableFuture<RoutingTable>();
             refreshRoutingTableFuture = resultFuture;
             freshClusterCompositionFetched(compositionLookupResult);
             return resultFuture;
@@ -145,7 +145,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler {
 
             log.debug("Updated routing table for database '%s'. %s", databaseName.description(), routingTable);
 
-            CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
+            var routingTableFuture = refreshRoutingTableFuture;
             refreshRoutingTableFuture = null;
             routingTableFuture.complete(routingTable);
         } catch (Throwable error) {
@@ -160,7 +160,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler {
                         databaseName.description(), routingTable),
                 error);
         routingTableRegistry.remove(databaseName);
-        CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
+        var routingTableFuture = refreshRoutingTableFuture;
         refreshRoutingTableFuture = null;
         routingTableFuture.completeExceptionally(error);
     }

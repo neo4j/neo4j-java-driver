@@ -36,7 +36,7 @@ public class InternalRxTransaction extends AbstractReactiveTransaction implement
     @Override
     public RxResult run(Query query) {
         return new InternalRxResult(() -> {
-            CompletableFuture<RxResultCursor> cursorFuture = new CompletableFuture<>();
+            var cursorFuture = new CompletableFuture<RxResultCursor>();
             tx.runRx(query).whenComplete((cursor, completionError) -> {
                 if (cursor != null) {
                     cursorFuture.complete(cursor);
@@ -46,7 +46,7 @@ public class InternalRxTransaction extends AbstractReactiveTransaction implement
                     // where cursor handling failure
                     // This is optional as tx still holds a reference to all cursor futures and they will be clean up
                     // properly in commit
-                    Throwable error = Futures.completionExceptionCause(completionError);
+                    var error = Futures.completionExceptionCause(completionError);
                     tx.markTerminated(error);
                     cursorFuture.completeExceptionally(error);
                 }

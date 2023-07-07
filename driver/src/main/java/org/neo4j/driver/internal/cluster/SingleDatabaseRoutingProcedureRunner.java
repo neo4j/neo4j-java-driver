@@ -58,8 +58,8 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
     @Override
     public CompletionStage<RoutingProcedureResponse> run(
             Connection connection, DatabaseName databaseName, Set<Bookmark> bookmarks, String impersonatedUser) {
-        DirectConnection delegate = connection(connection);
-        Query procedure = procedureQuery(connection.protocol().version(), databaseName);
+        var delegate = connection(connection);
+        var procedure = procedureQuery(connection.protocol().version(), databaseName);
         return runProcedure(delegate, procedure, adaptBookmarks(bookmarks))
                 .thenCompose(records -> releaseConnection(delegate, records))
                 .handle((records, error) -> processProcedureResponse(procedure, records, error));
@@ -109,7 +109,7 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
 
     private static RoutingProcedureResponse processProcedureResponse(
             Query procedure, List<Record> records, Throwable error) {
-        Throwable cause = Futures.completionExceptionCause(error);
+        var cause = Futures.completionExceptionCause(error);
         if (cause != null) {
             return handleError(procedure, cause);
         } else {

@@ -52,7 +52,7 @@ public class MultiDatabasesRoutingProcedureRunner extends SingleDatabaseRoutingP
 
     @Override
     Query procedureQuery(BoltProtocolVersion protocolVersion, DatabaseName databaseName) {
-        HashMap<String, Value> map = new HashMap<>();
+        var map = new HashMap<String, Value>();
         map.put(ROUTING_CONTEXT, value(context.toMap()));
         map.put(DATABASE_NAME, value((Object) databaseName.databaseName().orElse(null)));
         return new Query(MULTI_DB_GET_ROUTING_TABLE, value(map));

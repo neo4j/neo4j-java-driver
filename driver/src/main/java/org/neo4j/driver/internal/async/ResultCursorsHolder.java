@@ -38,7 +38,7 @@ public class ResultCursorsHolder {
     }
 
     CompletionStage<Throwable> retrieveNotConsumedError() {
-        CompletableFuture<Throwable>[] failures = retrieveAllFailures();
+        var failures = retrieveAllFailures();
 
         return CompletableFuture.allOf(failures).thenApply(ignore -> findFirstFailure(failures));
     }
@@ -54,8 +54,8 @@ public class ResultCursorsHolder {
     private static Throwable findFirstFailure(CompletableFuture<Throwable>[] completedFailureFutures) {
         // all given futures should be completed, it is thus safe to get their values
 
-        for (CompletableFuture<Throwable> failureFuture : completedFailureFutures) {
-            Throwable failure = failureFuture.getNow(null); // does not block
+        for (var failureFuture : completedFailureFutures) {
+            var failure = failureFuture.getNow(null); // does not block
             if (failure != null) {
                 return failure;
             }

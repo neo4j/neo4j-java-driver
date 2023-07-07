@@ -27,9 +27,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.ssl.SslHandler;
 import java.time.Clock;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -63,7 +61,7 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel> {
     @Override
     protected void initChannel(Channel channel) {
         if (securityPlan.requiresEncryption()) {
-            SslHandler sslHandler = createSslHandler();
+            var sslHandler = createSslHandler();
             channel.pipeline().addFirst(sslHandler);
         }
 
@@ -71,18 +69,18 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel> {
     }
 
     private SslHandler createSslHandler() {
-        SSLEngine sslEngine = createSslEngine();
-        SslHandler sslHandler = new SslHandler(sslEngine);
+        var sslEngine = createSslEngine();
+        var sslHandler = new SslHandler(sslEngine);
         sslHandler.setHandshakeTimeoutMillis(connectTimeoutMillis);
         return sslHandler;
     }
 
     private SSLEngine createSslEngine() {
-        SSLContext sslContext = securityPlan.sslContext();
-        SSLEngine sslEngine = sslContext.createSSLEngine(address.host(), address.port());
+        var sslContext = securityPlan.sslContext();
+        var sslEngine = sslContext.createSSLEngine(address.host(), address.port());
         sslEngine.setUseClientMode(true);
         if (securityPlan.requiresHostnameVerification()) {
-            SSLParameters sslParameters = sslEngine.getSSLParameters();
+            var sslParameters = sslEngine.getSSLParameters();
             sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
             sslEngine.setSSLParameters(sslParameters);
         }

@@ -90,7 +90,7 @@ public class RouteMessage implements Message {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        RouteMessage that = (RouteMessage) o;
+        var that = (RouteMessage) o;
         return routingContext.equals(that.routingContext)
                 && Objects.equals(databaseName, that.databaseName)
                 && Objects.equals(impersonatedUser, that.impersonatedUser);

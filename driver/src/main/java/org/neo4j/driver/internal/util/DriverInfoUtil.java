@@ -57,7 +57,7 @@ public class DriverInfoUtil {
         // "Session" is arbitrary - the only thing that matters is that the class we use here is in the
         // 'org.neo4j.driver' package, because that is where the jar manifest specifies the version.
         // This is done as part of the build, adding a MANIFEST.MF file to the generated jarfile.
-        Package pkg = Session.class.getPackage();
+        var pkg = Session.class.getPackage();
         if (pkg != null && pkg.getImplementationVersion() != null) {
             return pkg.getImplementationVersion();
         }

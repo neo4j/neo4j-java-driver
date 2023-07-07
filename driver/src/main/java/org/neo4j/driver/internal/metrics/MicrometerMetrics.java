@@ -116,8 +116,7 @@ final class MicrometerMetrics implements Metrics, MetricsListener {
     }
 
     private ConnectionPoolMetricsListener poolMetricsListener(String poolId) {
-        ConnectionPoolMetricsListener poolMetrics =
-                (ConnectionPoolMetricsListener) this.connectionPoolMetrics.get(poolId);
+        var poolMetrics = (ConnectionPoolMetricsListener) this.connectionPoolMetrics.get(poolId);
         if (poolMetrics == null) {
             return DevNullPoolMetricsListener.INSTANCE;
         }

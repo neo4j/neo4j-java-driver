@@ -114,7 +114,7 @@ public class ListValue extends ValueAdapter {
             return false;
         }
 
-        ListValue otherValues = (ListValue) o;
+        var otherValues = (ListValue) o;
         return Arrays.equals(values, otherValues.values);
     }
 

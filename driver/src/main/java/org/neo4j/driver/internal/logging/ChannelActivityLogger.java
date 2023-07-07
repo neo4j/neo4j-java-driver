@@ -24,7 +24,6 @@ import static org.neo4j.driver.internal.util.Format.valueOrEmpty;
 import io.netty.channel.Channel;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 
 public class ChannelActivityLogger extends ReformattedLogger {
@@ -50,8 +49,8 @@ public class ChannelActivityLogger extends ReformattedLogger {
             return message;
         }
 
-        String dbConnectionId = getDbConnectionId();
-        String serverAddress = getServerAddress();
+        var dbConnectionId = getDbConnectionId();
+        var serverAddress = getServerAddress();
 
         return format(
                 "[0x%s][%s][%s] %s",
@@ -68,7 +67,7 @@ public class ChannelActivityLogger extends ReformattedLogger {
     private String getServerAddress() {
 
         if (serverAddress == null) {
-            BoltServerAddress serverAddress = ChannelAttributes.serverAddress(channel);
+            var serverAddress = ChannelAttributes.serverAddress(channel);
             this.serverAddress = serverAddress != null ? serverAddress.toString() : null;
         }
 

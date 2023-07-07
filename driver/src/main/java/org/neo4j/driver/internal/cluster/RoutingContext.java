@@ -62,7 +62,7 @@ public class RoutingContext {
     }
 
     private static Map<String, String> parseParameters(URI uri) {
-        String query = uri.getQuery();
+        var query = uri.getQuery();
         String address;
 
         if (uri.getPort() == -1) {
@@ -78,14 +78,14 @@ public class RoutingContext {
             return parameters;
         }
 
-        String[] pairs = query.split("&");
-        for (String pair : pairs) {
-            String[] keyValue = pair.split("=");
+        var pairs = query.split("&");
+        for (var pair : pairs) {
+            var keyValue = pair.split("=");
             if (keyValue.length != 2) {
                 throw new IllegalArgumentException("Invalid parameters: '" + pair + "' in URI '" + uri + "'");
             }
 
-            String previousValue =
+            var previousValue =
                     parameters.put(trimAndVerifyKey(keyValue[0], "key", uri), trimAndVerify(keyValue[1], "value", uri));
             if (previousValue != null) {
                 throw new IllegalArgumentException(
@@ -96,7 +96,7 @@ public class RoutingContext {
     }
 
     private static String trimAndVerifyKey(String s, String key, URI uri) {
-        String trimmed = trimAndVerify(s, key, uri);
+        var trimmed = trimAndVerify(s, key, uri);
 
         if (trimmed.equals(ROUTING_ADDRESS_KEY)) {
             throw new IllegalArgumentException("The key 'address' is reserved for routing context.");
@@ -106,7 +106,7 @@ public class RoutingContext {
     }
 
     private static String trimAndVerify(String string, String name, URI uri) {
-        String result = string.trim();
+        var result = string.trim();
         if (result.isEmpty()) {
             throw new IllegalArgumentException("Illegal empty " + name + " in URI query '" + uri + "'");
         }

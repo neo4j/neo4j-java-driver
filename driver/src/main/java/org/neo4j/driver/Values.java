@@ -223,8 +223,8 @@ public final class Values {
      * @return the array of values
      */
     public static Value[] values(final Object... input) {
-        Value[] values = new Value[input.length];
-        for (int i = 0; i < input.length; i++) {
+        var values = new Value[input.length];
+        for (var i = 0; i < input.length; i++) {
             values[i] = value(input[i]);
         }
         return values;
@@ -236,8 +236,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(Value... input) {
-        int size = input.length;
-        Value[] values = new Value[size];
+        var size = input.length;
+        var values = new Value[size];
         System.arraycopy(input, 0, values, 0, size);
         return new ListValue(values);
     }
@@ -257,8 +257,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(String... input) {
-        StringValue[] values = new StringValue[input.length];
-        for (int i = 0; i < input.length; i++) {
+        var values = new StringValue[input.length];
+        for (var i = 0; i < input.length; i++) {
             values[i] = new StringValue(input[i]);
         }
         return new ListValue(values);
@@ -270,8 +270,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(boolean... input) {
-        Value[] values = new Value[input.length];
-        for (int i = 0; i < input.length; i++) {
+        var values = new Value[input.length];
+        for (var i = 0; i < input.length; i++) {
             values[i] = value(input[i]);
         }
         return new ListValue(values);
@@ -283,8 +283,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(char... input) {
-        Value[] values = new Value[input.length];
-        for (int i = 0; i < input.length; i++) {
+        var values = new Value[input.length];
+        for (var i = 0; i < input.length; i++) {
             values[i] = value(input[i]);
         }
         return new ListValue(values);
@@ -296,8 +296,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(long... input) {
-        Value[] values = new Value[input.length];
-        for (int i = 0; i < input.length; i++) {
+        var values = new Value[input.length];
+        for (var i = 0; i < input.length; i++) {
             values[i] = value(input[i]);
         }
         return new ListValue(values);
@@ -309,8 +309,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(short... input) {
-        Value[] values = new Value[input.length];
-        for (int i = 0; i < input.length; i++) {
+        var values = new Value[input.length];
+        for (var i = 0; i < input.length; i++) {
             values[i] = value(input[i]);
         }
         return new ListValue(values);
@@ -321,8 +321,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(int... input) {
-        Value[] values = new Value[input.length];
-        for (int i = 0; i < input.length; i++) {
+        var values = new Value[input.length];
+        for (var i = 0; i < input.length; i++) {
             values[i] = value(input[i]);
         }
         return new ListValue(values);
@@ -333,8 +333,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(double... input) {
-        Value[] values = new Value[input.length];
-        for (int i = 0; i < input.length; i++) {
+        var values = new Value[input.length];
+        for (var i = 0; i < input.length; i++) {
             values[i] = value(input[i]);
         }
         return new ListValue(values);
@@ -346,8 +346,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(float... input) {
-        Value[] values = new Value[input.length];
-        for (int i = 0; i < input.length; i++) {
+        var values = new Value[input.length];
+        for (var i = 0; i < input.length; i++) {
             values[i] = value(input[i]);
         }
         return new ListValue(values);
@@ -359,9 +359,9 @@ public final class Values {
      * @return the value
      */
     public static Value value(List<Object> vals) {
-        Value[] values = new Value[vals.size()];
-        int i = 0;
-        for (Object val : vals) {
+        var values = new Value[vals.size()];
+        var i = 0;
+        for (var val : vals) {
             values[i++] = value(val);
         }
         return new ListValue(values);
@@ -395,7 +395,7 @@ public final class Values {
      * @return the value
      */
     public static Value value(Stream<Object> stream) {
-        Value[] values = stream.map(Values::value).toArray(Value[]::new);
+        var values = stream.map(Values::value).toArray(Value[]::new);
         return new ListValue(values);
     }
 
@@ -460,7 +460,7 @@ public final class Values {
      */
     public static Value value(final Map<String, Object> val) {
         Map<String, Value> asValues = newHashMapWithSize(val.size());
-        for (Map.Entry<String, Object> entry : val.entrySet()) {
+        for (var entry : val.entrySet()) {
             asValues.put(entry.getKey(), value(entry.getValue()));
         }
         return new MapValue(asValues);
@@ -619,8 +619,8 @@ public final class Values {
                     + ".");
         }
         HashMap<String, Value> map = newHashMapWithSize(keysAndValues.length / 2);
-        for (int i = 0; i < keysAndValues.length; i += 2) {
-            Object value = keysAndValues[i + 1];
+        for (var i = 0; i < keysAndValues.length; i += 2) {
+            var value = keysAndValues[i + 1];
             assertParameter(value);
             map.put(keysAndValues[i].toString(), value(value));
         }

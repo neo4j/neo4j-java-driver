@@ -34,7 +34,6 @@ import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
@@ -99,17 +98,15 @@ public class DriverFactory {
 
         authTokenManager = authTokenManager == null ? new StaticAuthTokenManager(AuthTokens.none()) : authTokenManager;
 
-        BoltServerAddress address = new BoltServerAddress(uri);
-        RoutingSettings routingSettings =
-                new RoutingSettings(config.routingTablePurgeDelayMillis(), new RoutingContext(uri));
+        var address = new BoltServerAddress(uri);
+        var routingSettings = new RoutingSettings(config.routingTablePurgeDelayMillis(), new RoutingContext(uri));
 
         InternalLoggerFactory.setDefaultFactory(new NettyLogging(config.logging()));
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
-        RetryLogic retryLogic =
-                createRetryLogic(config.maxTransactionRetryTimeMillis(), eventExecutorGroup, config.logging());
+        var retryLogic = createRetryLogic(config.maxTransactionRetryTimeMillis(), eventExecutorGroup, config.logging());
 
-        MetricsProvider metricsProvider = getOrCreateMetricsProvider(config, createClock());
-        ConnectionPool connectionPool = createConnectionPool(
+        var metricsProvider = getOrCreateMetricsProvider(config, createClock());
+        var connectionPool = createConnectionPool(
                 authTokenManager,
                 securityPlan,
                 bootstrap,
@@ -139,12 +136,11 @@ public class DriverFactory {
             Config config,
             boolean ownsEventLoopGroup,
             RoutingContext routingContext) {
-        Clock clock = createClock();
-        ConnectionSettings settings =
-                new ConnectionSettings(authTokenManager, config.userAgent(), config.connectionTimeoutMillis());
+        var clock = createClock();
+        var settings = new ConnectionSettings(authTokenManager, config.userAgent(), config.connectionTimeoutMillis());
         var boltAgent = DriverInfoUtil.boltAgent();
-        ChannelConnector connector = createConnector(settings, securityPlan, config, clock, routingContext, boltAgent);
-        PoolSettings poolSettings = new PoolSettings(
+        var connector = createConnector(settings, securityPlan, config, clock, routingContext, boltAgent);
+        var poolSettings = new PoolSettings(
                 config.maxConnectionPoolSize(),
                 config.connectionAcquisitionTimeoutMillis(),
                 config.maxConnectionLifetimeMillis(),
@@ -160,7 +156,7 @@ public class DriverFactory {
     }
 
     protected static MetricsProvider getOrCreateMetricsProvider(Config config, Clock clock) {
-        MetricsAdapter metricsAdapter = config.metricsAdapter();
+        var metricsAdapter = config.metricsAdapter();
         // This can actually only happen when someone mocks the config
         if (metricsAdapter == null) {
             metricsAdapter = config.isMetricsEnabled() ? MetricsAdapter.DEFAULT : MetricsAdapter.DEV_NULL;
@@ -206,7 +202,7 @@ public class DriverFactory {
             Supplier<Rediscovery> rediscoverySupplier,
             Config config) {
         try {
-            String scheme = uri.getScheme().toLowerCase();
+            var scheme = uri.getScheme().toLowerCase();
 
             if (isRoutingScheme(scheme)) {
                 return createRoutingDriver(
@@ -243,9 +239,9 @@ public class DriverFactory {
             MetricsProvider metricsProvider,
             Config config) {
         ConnectionProvider connectionProvider = new DirectConnectionProvider(address, connectionPool);
-        SessionFactory sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
-        InternalDriver driver = createDriver(securityPlan, sessionFactory, metricsProvider, config);
-        Logger log = config.logging().getLog(getClass());
+        var sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
+        var driver = createDriver(securityPlan, sessionFactory, metricsProvider, config);
+        var log = config.logging().getLog(getClass());
         log.info("Direct driver instance %s created for server address %s", driver.hashCode(), address);
         return driver;
     }
@@ -267,9 +263,9 @@ public class DriverFactory {
             Config config) {
         ConnectionProvider connectionProvider = createLoadBalancer(
                 address, connectionPool, eventExecutorGroup, config, routingSettings, rediscoverySupplier);
-        SessionFactory sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
-        InternalDriver driver = createDriver(securityPlan, sessionFactory, metricsProvider, config);
-        Logger log = config.logging().getLog(getClass());
+        var sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
+        var driver = createDriver(securityPlan, sessionFactory, metricsProvider, config);
+        var log = config.logging().getLog(getClass());
         log.info("Routing driver instance %s created for server address %s", driver.hashCode(), address);
         return driver;
     }
@@ -339,7 +335,7 @@ public class DriverFactory {
     protected void handleNewLoadBalancer(LoadBalancer loadBalancer) {}
 
     private static ServerAddressResolver createResolver(Config config) {
-        ServerAddressResolver configuredResolver = config.resolver();
+        var configuredResolver = config.resolver();
         return configuredResolver != null ? configuredResolver : IDENTITY_RESOLVER;
     }
 
@@ -400,7 +396,7 @@ public class DriverFactory {
     }
 
     private static void assertNoRoutingContext(URI uri, RoutingSettings routingSettings) {
-        RoutingContext routingContext = routingSettings.routingContext();
+        var routingContext = routingSettings.routingContext();
         if (routingContext.isDefined()) {
             throw new IllegalArgumentException(NO_ROUTING_CONTEXT_ERROR_MESSAGE + "'" + uri + "'");
         }

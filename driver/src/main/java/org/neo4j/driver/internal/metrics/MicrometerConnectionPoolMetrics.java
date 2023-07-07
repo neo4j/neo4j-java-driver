@@ -86,7 +86,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
         this.id = poolId;
         this.inUseSupplier = inUseSupplier;
         this.idleSupplier = idleSupplier;
-        String host =
+        var host =
                 address instanceof BoltServerAddress ? ((BoltServerAddress) address).connectionHost() : address.host();
         Iterable<Tag> tags = Tags.concat(initialTags, "address", String.format("%s:%d", host, address.port()));
 
@@ -117,7 +117,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     @Override
     public void afterCreated(ListenerEvent<?> connEvent) {
         creating.decrementAndGet();
-        Timer.Sample sample = ((MicrometerTimerListenerEvent) connEvent).getSample();
+        var sample = ((MicrometerTimerListenerEvent) connEvent).getSample();
         sample.stop(totalConnectionTimer);
     }
 
@@ -139,7 +139,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
 
     @Override
     public void afterAcquiredOrCreated(ListenerEvent<?> acquireEvent) {
-        Timer.Sample sample = ((MicrometerTimerListenerEvent) acquireEvent).getSample();
+        var sample = ((MicrometerTimerListenerEvent) acquireEvent).getSample();
         sample.stop(totalAcquisitionTimer);
     }
 
@@ -155,7 +155,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
 
     @Override
     public void released(ListenerEvent<?> inUseEvent) {
-        Timer.Sample sample = ((MicrometerTimerListenerEvent) inUseEvent).getSample();
+        var sample = ((MicrometerTimerListenerEvent) inUseEvent).getSample();
         sample.stop(totalInUseTimer);
     }
 

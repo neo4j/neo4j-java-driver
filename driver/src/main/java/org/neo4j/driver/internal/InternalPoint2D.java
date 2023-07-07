@@ -60,7 +60,7 @@ public class InternalPoint2D implements Point {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        InternalPoint2D that = (InternalPoint2D) o;
+        var that = (InternalPoint2D) o;
         return srid == that.srid && Double.compare(that.x, x) == 0 && Double.compare(that.y, y) == 0;
     }
 

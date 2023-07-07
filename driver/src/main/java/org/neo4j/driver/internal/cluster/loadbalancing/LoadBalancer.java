@@ -122,7 +122,7 @@ public class LoadBalancer implements ConnectionProvider {
                 .thenCompose(supports -> routingTables.ensureRoutingTable(simple(supports)))
                 .handle((ignored, error) -> {
                     if (error != null) {
-                        Throwable cause = completionExceptionCause(error);
+                        var cause = completionExceptionCause(error);
                         if (cause instanceof ServiceUnavailableException) {
                             throw Futures.asCompletionException(new ServiceUnavailableException(
                                     "Unable to connect to database management service, ensure the database is running and that there is a working network connection to it.",
@@ -165,10 +165,10 @@ public class LoadBalancer implements ConnectionProvider {
         CompletableFuture<Boolean> result = completedWithNull();
         Throwable baseError = new ServiceUnavailableException(baseErrorMessagePrefix + addresses);
 
-        for (BoltServerAddress address : addresses) {
+        for (var address : addresses) {
             result = onErrorContinue(result, baseError, completionError -> {
                 // We fail fast on security errors
-                Throwable error = completionExceptionCause(completionError);
+                var error = completionExceptionCause(completionError);
                 if (error instanceof SecurityException) {
                     return failedFuture(error);
                 }
@@ -181,7 +181,7 @@ public class LoadBalancer implements ConnectionProvider {
         return onErrorContinue(result, baseError, completionError -> {
             // If we failed with security errors, then we rethrow the security error out, otherwise we throw the chained
             // errors.
-            Throwable error = completionExceptionCause(completionError);
+            var error = completionExceptionCause(completionError);
             if (error instanceof SecurityException) {
                 return failedFuture(error);
             }
@@ -195,7 +195,7 @@ public class LoadBalancer implements ConnectionProvider {
 
     private CompletionStage<Connection> acquire(
             AccessMode mode, RoutingTable routingTable, AuthToken overrideAuthToken) {
-        CompletableFuture<Connection> result = new CompletableFuture<>();
+        var result = new CompletableFuture<Connection>();
         List<Throwable> attemptExceptions = new ArrayList<>();
         acquire(mode, routingTable, result, overrideAuthToken, attemptExceptions);
         return result;
@@ -207,11 +207,11 @@ public class LoadBalancer implements ConnectionProvider {
             CompletableFuture<Connection> result,
             AuthToken overrideAuthToken,
             List<Throwable> attemptErrors) {
-        List<BoltServerAddress> addresses = getAddressesByMode(mode, routingTable);
-        BoltServerAddress address = selectAddress(mode, addresses);
+        var addresses = getAddressesByMode(mode, routingTable);
+        var address = selectAddress(mode, addresses);
 
         if (address == null) {
-            SessionExpiredException completionError = new SessionExpiredException(
+            var completionError = new SessionExpiredException(
                     format(CONNECTION_ACQUISITION_COMPLETION_EXCEPTION_MESSAGE, mode, routingTable));
             attemptErrors.forEach(completionError::addSuppressed);
             log.error(CONNECTION_ACQUISITION_COMPLETION_FAILURE_MESSAGE, completionError);
@@ -220,10 +220,10 @@ public class LoadBalancer implements ConnectionProvider {
         }
 
         connectionPool.acquire(address, overrideAuthToken).whenComplete((connection, completionError) -> {
-            Throwable error = completionExceptionCause(completionError);
+            var error = completionExceptionCause(completionError);
             if (error != null) {
                 if (error instanceof ServiceUnavailableException) {
-                    String attemptMessage = format(CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE, address);
+                    var attemptMessage = format(CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE, address);
                     log.warn(attemptMessage);
                     log.debug(attemptMessage, error);
                     attemptErrors.add(error);
