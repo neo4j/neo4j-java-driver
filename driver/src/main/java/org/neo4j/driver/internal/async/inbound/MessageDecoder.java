@@ -49,7 +49,7 @@ public class MessageDecoder extends ByteToMessageDecoder {
 
             // increment ref count of the buffer and create it's duplicate that shares the content
             // duplicate will be the output of this decoded and input for the next one
-            ByteBuf messageBuf = in.retainedDuplicate();
+            var messageBuf = in.retainedDuplicate();
 
             // signal that whole message was read by making input buffer seem like it was fully read/consumed
             in.readerIndex(in.readableBytes());
@@ -62,7 +62,7 @@ public class MessageDecoder extends ByteToMessageDecoder {
     }
 
     private static Cumulator determineDefaultCumulator() {
-        String value = System.getProperty("messageDecoderCumulator", "");
+        var value = System.getProperty("messageDecoderCumulator", "");
         if ("merge".equals(value)) {
             return MERGE_CUMULATOR;
         }

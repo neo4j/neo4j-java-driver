@@ -67,7 +67,7 @@ public class FailureMessage implements Message {
             return false;
         }
 
-        FailureMessage that = (FailureMessage) o;
+        var that = (FailureMessage) o;
 
         return !(code != null ? !code.equals(that.code) : that.code != null)
                 && !(message != null ? !message.equals(that.message) : that.message != null);
@@ -75,7 +75,7 @@ public class FailureMessage implements Message {
 
     @Override
     public int hashCode() {
-        int result = code != null ? code.hashCode() : 0;
+        var result = code != null ? code.hashCode() : 0;
         result = 31 * result + (message != null ? message.hashCode() : 0);
         return result;
     }

@@ -58,7 +58,7 @@ public class HandshakeCompletedListener implements ChannelFutureListener {
     @Override
     public void operationComplete(ChannelFuture future) {
         if (future.isSuccess()) {
-            BoltProtocol protocol = BoltProtocol.forChannel(future.channel());
+            var protocol = BoltProtocol.forChannel(future.channel());
             // pre Bolt 5.1
             if (BoltProtocolV51.VERSION.compareTo(protocol.version()) > 0) {
                 var channel = connectionInitializedPromise.channel();

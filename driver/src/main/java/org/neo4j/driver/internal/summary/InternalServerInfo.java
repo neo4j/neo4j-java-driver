@@ -59,7 +59,7 @@ public class InternalServerInfo implements ServerInfo {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        InternalServerInfo that = (InternalServerInfo) o;
+        var that = (InternalServerInfo) o;
         return Objects.equals(address, that.address);
     }
 

@@ -131,13 +131,13 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker, Authoriz
 
     private boolean isTooOld(Channel channel) {
         if (poolSettings.maxConnectionLifetimeEnabled()) {
-            long creationTimestampMillis = creationTimestamp(channel);
-            long currentTimestampMillis = clock.millis();
+            var creationTimestampMillis = creationTimestamp(channel);
+            var currentTimestampMillis = clock.millis();
 
-            long ageMillis = currentTimestampMillis - creationTimestampMillis;
-            long maxAgeMillis = poolSettings.maxConnectionLifetime();
+            var ageMillis = currentTimestampMillis - creationTimestampMillis;
+            var maxAgeMillis = poolSettings.maxConnectionLifetime();
 
-            boolean tooOld = ageMillis > maxAgeMillis;
+            var tooOld = ageMillis > maxAgeMillis;
             if (tooOld) {
                 log.trace(
                         "Failed acquire channel %s from the pool because it is too old: %s > %s",
@@ -150,10 +150,10 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker, Authoriz
 
     private boolean hasBeenIdleForTooLong(Channel channel) {
         if (poolSettings.idleTimeBeforeConnectionTestEnabled()) {
-            Long lastUsedTimestamp = lastUsedTimestamp(channel);
+            var lastUsedTimestamp = lastUsedTimestamp(channel);
             if (lastUsedTimestamp != null) {
-                long idleTime = clock.millis() - lastUsedTimestamp;
-                boolean idleTooLong = idleTime > poolSettings.idleTimeBeforeConnectionTest();
+                var idleTime = clock.millis() - lastUsedTimestamp;
+                var idleTooLong = idleTime > poolSettings.idleTimeBeforeConnectionTest();
 
                 if (idleTooLong) {
                     log.trace("Channel %s has been idle for %s and needs a ping", channel, idleTime);

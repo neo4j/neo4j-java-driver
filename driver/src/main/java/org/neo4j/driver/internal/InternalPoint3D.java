@@ -62,7 +62,7 @@ public class InternalPoint3D implements Point {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        InternalPoint3D that = (InternalPoint3D) o;
+        var that = (InternalPoint3D) o;
         return srid == that.srid
                 && Double.compare(that.x, x) == 0
                 && Double.compare(that.y, y) == 0

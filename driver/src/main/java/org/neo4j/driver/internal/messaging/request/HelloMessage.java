@@ -66,7 +66,7 @@ public class HelloMessage extends MessageWithMetadata {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        HelloMessage that = (HelloMessage) o;
+        var that = (HelloMessage) o;
         return Objects.equals(metadata(), that.metadata());
     }
 

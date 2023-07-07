@@ -54,7 +54,7 @@ public class RecordMessage implements Message {
             return false;
         }
 
-        RecordMessage that = (RecordMessage) o;
+        var that = (RecordMessage) o;
 
         return Arrays.equals(fields, that.fields);
     }

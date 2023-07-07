@@ -54,7 +54,7 @@ public class IntegerValue extends NumberValueAdapter<Long> {
 
     @Override
     public double asDouble() {
-        double doubleVal = (double) val;
+        var doubleVal = (double) val;
         if ((long) doubleVal != val) {
             throw new LossyCoercion(type().name(), "Java double");
         }
@@ -81,7 +81,7 @@ public class IntegerValue extends NumberValueAdapter<Long> {
             return false;
         }
 
-        IntegerValue values = (IntegerValue) o;
+        var values = (IntegerValue) o;
         return val == values.val;
     }
 

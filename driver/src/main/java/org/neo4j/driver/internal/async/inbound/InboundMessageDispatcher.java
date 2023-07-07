@@ -89,7 +89,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
     public void handleSuccessMessage(Map<String, Value> meta) {
         log.debug("S: SUCCESS %s", meta);
         invokeBeforeLastHandlerHook(HandlerHook.MessageType.SUCCESS);
-        ResponseHandler handler = removeHandler();
+        var handler = removeHandler();
         handler.onSuccess(meta);
     }
 
@@ -98,7 +98,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         if (log.isDebugEnabled()) {
             log.debug("S: RECORD %s", Arrays.toString(fields));
         }
-        ResponseHandler handler = handlers.peek();
+        var handler = handlers.peek();
         if (handler == null) {
             throw new IllegalStateException(
                     "No handler exists to handle RECORD message with fields: " + Arrays.toString(fields));
@@ -119,7 +119,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
             return;
         }
 
-        Throwable currentError = this.currentError;
+        var currentError = this.currentError;
         if (currentError instanceof AuthorizationExpiredException authorizationExpiredException) {
             authorizationStateListener(channel).onExpired(authorizationExpiredException, channel);
         } else if (currentError instanceof TokenExpiredException tokenExpiredException) {
@@ -140,7 +140,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         }
 
         invokeBeforeLastHandlerHook(HandlerHook.MessageType.FAILURE);
-        ResponseHandler handler = removeHandler();
+        var handler = removeHandler();
         handler.onFailure(currentError);
     }
 
@@ -174,7 +174,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
             handleChannelError(cause);
         } else {
             while (!handlers.isEmpty()) {
-                ResponseHandler handler = removeHandler();
+                var handler = removeHandler();
                 handler.onFailure(cause);
             }
             channel.close();
@@ -192,7 +192,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         fatalErrorOccurred = true;
 
         while (!handlers.isEmpty()) {
-            ResponseHandler handler = removeHandler();
+            var handler = removeHandler();
             handler.onFailure(currentError);
         }
 
@@ -224,7 +224,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
     }
 
     private ResponseHandler removeHandler() {
-        ResponseHandler handler = handlers.remove();
+        var handler = handlers.remove();
         if (handler == autoReadManagingHandler) {
             // the auto-read managing handler is being removed
             // make sure this dispatcher does not hold on to a removed handler

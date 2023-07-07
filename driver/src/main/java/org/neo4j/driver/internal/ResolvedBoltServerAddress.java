@@ -77,7 +77,7 @@ public class ResolvedBoltServerAddress extends BoltServerAddress {
         if (!super.equals(o)) {
             return false;
         }
-        ResolvedBoltServerAddress that = (ResolvedBoltServerAddress) o;
+        var that = (ResolvedBoltServerAddress) o;
         return resolvedAddresses.equals(that.resolvedAddresses);
     }
 
@@ -92,7 +92,7 @@ public class ResolvedBoltServerAddress extends BoltServerAddress {
     }
 
     private String createStringRepresentation() {
-        String hostAddresses = resolvedAddresses.stream()
+        var hostAddresses = resolvedAddresses.stream()
                 .limit(MAX_HOST_ADDRESSES_IN_STRING_VALUE)
                 .map(InetAddress::getHostAddress)
                 .collect(joining(

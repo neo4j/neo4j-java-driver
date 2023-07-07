@@ -98,7 +98,7 @@ public class NetworkSession {
         this.mode = mode;
         this.retryLogic = retryLogic;
         this.log = new PrefixedLogger("[" + hashCode() + "]", logging.getLog(getClass()));
-        CompletableFuture<DatabaseName> databaseNameFuture = databaseName
+        var databaseNameFuture = databaseName
                 .databaseName()
                 .map(ignored -> CompletableFuture.completedFuture(databaseName))
                 .orElse(new CompletableFuture<>());
@@ -111,7 +111,7 @@ public class NetworkSession {
     }
 
     public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config) {
-        CompletionStage<AsyncResultCursor> newResultCursorStage =
+        var newResultCursorStage =
                 buildResultCursorFactory(query, config).thenCompose(ResultCursorFactory::asyncResult);
 
         resultCursorStage = newResultCursorStage.exceptionally(error -> null);
@@ -121,8 +121,7 @@ public class NetworkSession {
     }
 
     public CompletionStage<RxResultCursor> runRx(Query query, TransactionConfig config) {
-        CompletionStage<RxResultCursor> newResultCursorStage =
-                buildResultCursorFactory(query, config).thenCompose(ResultCursorFactory::rxResult);
+        var newResultCursorStage = buildResultCursorFactory(query, config).thenCompose(ResultCursorFactory::rxResult);
 
         resultCursorStage = newResultCursorStage.exceptionally(error -> null);
         return newResultCursorStage;
@@ -145,18 +144,18 @@ public class NetworkSession {
         ensureSessionIsOpen();
 
         // create a chain that acquires connection and starts a transaction
-        CompletionStage<UnmanagedTransaction> newTransactionStage = ensureNoOpenTxBeforeStartingTx()
+        var newTransactionStage = ensureNoOpenTxBeforeStartingTx()
                 .thenCompose(ignore -> acquireConnection(mode))
                 .thenApply(connection ->
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
-                    UnmanagedTransaction tx = new UnmanagedTransaction(
+                    var tx = new UnmanagedTransaction(
                             connection, this::handleNewBookmark, fetchSize, notificationConfig);
                     return tx.beginAsync(determineBookmarks(true), config, txType);
                 });
 
         // update the reference to the only known transaction
-        CompletionStage<UnmanagedTransaction> currentTransactionStage = transactionStage;
+        var currentTransactionStage = transactionStage;
 
         transactionStage = newTransactionStage
                 .exceptionally(error -> null) // ignore errors from starting new transaction
@@ -233,7 +232,7 @@ public class NetworkSession {
                                 // now we have cursor error, active transaction has been closed and connection has been
                                 // released
                                 // back to the pool; try to propagate cursor and transaction close errors, if any
-                                CompletionException combinedError = Futures.combineErrors(cursorError, txCloseError);
+                                var combinedError = Futures.combineErrors(cursorError, txCloseError);
                                 if (combinedError != null) {
                                     throw combinedError;
                                 }
@@ -260,7 +259,7 @@ public class NetworkSession {
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
                     try {
-                        ResultCursorFactory factory = connection
+                        var factory = connection
                                 .protocol()
                                 .runInAutoCommitTransaction(
                                         connection,
@@ -278,9 +277,9 @@ public class NetworkSession {
     }
 
     private CompletionStage<Connection> acquireConnection(AccessMode mode) {
-        CompletionStage<Connection> currentConnectionStage = connectionStage;
+        var currentConnectionStage = connectionStage;
 
-        CompletionStage<Connection> newConnectionStage = resultCursorStage
+        var newConnectionStage = resultCursorStage
                 .thenCompose(cursor -> {
                     if (cursor == null) {
                         return completedWithNull();

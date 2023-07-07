@@ -21,10 +21,8 @@ package org.neo4j.driver.internal.async.connection;
 import static java.util.Objects.requireNonNull;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.resolver.AddressResolverGroup;
 import java.net.InetSocketAddress;
@@ -115,11 +113,11 @@ public class ChannelConnectorImpl implements ChannelConnector {
             socketAddress = InetSocketAddress.createUnresolved(address.connectionHost(), address.port());
         }
 
-        ChannelFuture channelConnected = bootstrap.connect(socketAddress);
+        var channelConnected = bootstrap.connect(socketAddress);
 
-        Channel channel = channelConnected.channel();
-        ChannelPromise handshakeCompleted = channel.newPromise();
-        ChannelPromise connectionInitialized = channel.newPromise();
+        var channel = channelConnected.channel();
+        var handshakeCompleted = channel.newPromise();
+        var connectionInitialized = channel.newPromise();
 
         installChannelConnectedListeners(address, channelConnected, handshakeCompleted);
         installHandshakeCompletedListeners(handshakeCompleted, connectionInitialized);
@@ -129,7 +127,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
 
     private void installChannelConnectedListeners(
             BoltServerAddress address, ChannelFuture channelConnected, ChannelPromise handshakeCompleted) {
-        ChannelPipeline pipeline = channelConnected.channel().pipeline();
+        var pipeline = channelConnected.channel().pipeline();
 
         // add timeout handler to the pipeline when channel is connected. it's needed to limit amount of time code
         // spends in TLS and Bolt handshakes. prevents infinite waiting when database does not respond
@@ -142,7 +140,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
 
     private void installHandshakeCompletedListeners(
             ChannelPromise handshakeCompleted, ChannelPromise connectionInitialized) {
-        ChannelPipeline pipeline = handshakeCompleted.channel().pipeline();
+        var pipeline = handshakeCompleted.channel().pipeline();
 
         // remove timeout handler from the pipeline once TLS and Bolt handshakes are completed. regular protocol
         // messages will flow next and we do not want to have read timeout for them

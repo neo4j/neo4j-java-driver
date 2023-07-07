@@ -134,8 +134,8 @@ public class Query {
         } else {
             Map<String, Value> newParameters = newHashMapWithSize(Math.max(parameters.size(), updates.size()));
             newParameters.putAll(parameters.asMap(ofValue()));
-            for (Map.Entry<String, Value> entry : updates.asMap(ofValue()).entrySet()) {
-                Value value = entry.getValue();
+            for (var entry : updates.asMap(ofValue()).entrySet()) {
+                var value = entry.getValue();
                 if (value.isNull()) {
                     newParameters.remove(entry.getKey());
                 } else {
@@ -155,13 +155,13 @@ public class Query {
             return false;
         }
 
-        Query query = (Query) o;
+        var query = (Query) o;
         return text.equals(query.text) && parameters.equals(query.parameters);
     }
 
     @Override
     public int hashCode() {
-        int result = text.hashCode();
+        var result = text.hashCode();
         result = 31 * result + parameters.hashCode();
         return result;
     }

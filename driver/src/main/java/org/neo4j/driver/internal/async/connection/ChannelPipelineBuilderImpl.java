@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.async.connection;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.addBoltPatchesListener;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
@@ -36,13 +35,13 @@ public class ChannelPipelineBuilderImpl implements ChannelPipelineBuilder {
         // inbound handlers
         pipeline.addLast(new ChunkDecoder(logging));
         pipeline.addLast(new MessageDecoder());
-        Channel channel = pipeline.channel();
-        InboundMessageHandler inboundMessageHandler = new InboundMessageHandler(messageFormat, logging);
+        var channel = pipeline.channel();
+        var inboundMessageHandler = new InboundMessageHandler(messageFormat, logging);
         addBoltPatchesListener(channel, inboundMessageHandler);
         pipeline.addLast(inboundMessageHandler);
 
         // outbound handlers
-        OutboundMessageHandler outboundMessageHandler = new OutboundMessageHandler(messageFormat, logging);
+        var outboundMessageHandler = new OutboundMessageHandler(messageFormat, logging);
         addBoltPatchesListener(channel, outboundMessageHandler);
         pipeline.addLast(OutboundMessageHandler.NAME, outboundMessageHandler);
 

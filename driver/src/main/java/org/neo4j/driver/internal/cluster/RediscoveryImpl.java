@@ -104,9 +104,9 @@ public class RediscoveryImpl implements Rediscovery {
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             AuthToken overrideAuthToken) {
-        CompletableFuture<ClusterCompositionLookupResult> result = new CompletableFuture<>();
+        var result = new CompletableFuture<ClusterCompositionLookupResult>();
         // if we failed discovery, we will chain all errors into this one.
-        ServiceUnavailableException baseError = new ServiceUnavailableException(
+        var baseError = new ServiceUnavailableException(
                 String.format(NO_ROUTERS_AVAILABLE, routingTable.database().description()));
         lookupClusterComposition(
                 routingTable, connectionPool, result, bookmarks, impersonatedUser, overrideAuthToken, baseError);
@@ -123,7 +123,7 @@ public class RediscoveryImpl implements Rediscovery {
             Throwable baseError) {
         lookup(routingTable, pool, bookmarks, impersonatedUser, overrideAuthToken, baseError)
                 .whenComplete((compositionLookupResult, completionError) -> {
-                    Throwable error = Futures.completionExceptionCause(completionError);
+                    var error = Futures.completionExceptionCause(completionError);
                     if (error != null) {
                         result.completeExceptionally(error);
                     } else if (compositionLookupResult != null) {
@@ -219,7 +219,7 @@ public class RediscoveryImpl implements Rediscovery {
             AuthToken authToken,
             Throwable baseError) {
         CompletableFuture<ClusterComposition> result = completedWithNull();
-        for (BoltServerAddress address : routingTable.routers()) {
+        for (var address : routingTable.routers()) {
             result = result.thenCompose(composition -> {
                 if (composition != null) {
                     return completedFuture(composition);
@@ -259,7 +259,7 @@ public class RediscoveryImpl implements Rediscovery {
         resolvedRouters.removeAll(seenServers);
 
         CompletableFuture<ClusterComposition> result = completedWithNull();
-        for (BoltServerAddress address : resolvedRouters) {
+        for (var address : resolvedRouters) {
             result = result.thenCompose(composition -> {
                 if (composition != null) {
                     return completedFuture(composition);
@@ -290,7 +290,7 @@ public class RediscoveryImpl implements Rediscovery {
             String impersonatedUser,
             AuthToken overrideAuthToken,
             Throwable baseError) {
-        CompletableFuture<BoltServerAddress> addressFuture = CompletableFuture.completedFuture(routerAddress);
+        var addressFuture = CompletableFuture.completedFuture(routerAddress);
 
         return addressFuture
                 .thenApply(address ->
@@ -301,7 +301,7 @@ public class RediscoveryImpl implements Rediscovery {
                 .thenCompose(connection -> provider.getClusterComposition(
                         connection, routingTable.database(), bookmarks, impersonatedUser))
                 .handle((response, error) -> {
-                    Throwable cause = Futures.completionExceptionCause(error);
+                    var cause = Futures.completionExceptionCause(error);
                     if (cause != null) {
                         return handleRoutingProcedureError(cause, routingTable, routerAddress, baseError);
                     } else {
@@ -326,7 +326,7 @@ public class RediscoveryImpl implements Rediscovery {
     }
 
     private boolean mustAbortDiscovery(Throwable throwable) {
-        boolean abort = false;
+        var abort = false;
 
         if (!(throwable instanceof AuthorizationExpiredException) && throwable instanceof SecurityException) {
             abort = true;
@@ -340,7 +340,7 @@ public class RediscoveryImpl implements Rediscovery {
         } else if (throwable instanceof UnsupportedFeatureException) {
             abort = true;
         } else if (throwable instanceof ClientException) {
-            String code = ((ClientException) throwable).code();
+            var code = ((ClientException) throwable).code();
             abort = switch (code) {
                 case TRANSACTION_INVALID_BOOKMARK_CODE,
                         TRANSACTION_INVALID_BOOKMARK_MIXTURE_CODE,
@@ -357,7 +357,7 @@ public class RediscoveryImpl implements Rediscovery {
     public List<BoltServerAddress> resolve() throws UnknownHostException {
         List<BoltServerAddress> resolvedAddresses = new LinkedList<>();
         UnknownHostException exception = null;
-        for (ServerAddress serverAddress : resolver.resolve(initialRouter)) {
+        for (var serverAddress : resolver.resolve(initialRouter)) {
             try {
                 resolveAllByDomainName(serverAddress).unicastStream().forEach(resolvedAddresses::add);
             } catch (UnknownHostException e) {
@@ -387,7 +387,7 @@ public class RediscoveryImpl implements Rediscovery {
     private BoltServerAddress resolveByDomainNameOrThrowCompletionException(
             BoltServerAddress address, RoutingTable routingTable) {
         try {
-            ResolvedBoltServerAddress resolvedAddress = resolveAllByDomainName(address);
+            var resolvedAddress = resolveAllByDomainName(address);
             routingTable.replaceRouterIfPresent(address, resolvedAddress);
             return resolvedAddress
                     .unicastStream()

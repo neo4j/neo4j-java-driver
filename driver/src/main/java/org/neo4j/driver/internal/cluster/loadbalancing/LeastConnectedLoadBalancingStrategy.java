@@ -53,23 +53,23 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
 
     private BoltServerAddress select(
             List<BoltServerAddress> addresses, RoundRobinArrayIndex addressesIndex, String addressType) {
-        int size = addresses.size();
+        var size = addresses.size();
         if (size == 0) {
             log.trace("Unable to select %s, no known addresses given", addressType);
             return null;
         }
 
         // choose start index for iteration in round-robin fashion
-        int startIndex = addressesIndex.next(size);
-        int index = startIndex;
+        var startIndex = addressesIndex.next(size);
+        var index = startIndex;
 
         BoltServerAddress leastConnectedAddress = null;
-        int leastActiveConnections = Integer.MAX_VALUE;
+        var leastActiveConnections = Integer.MAX_VALUE;
 
         // iterate over the array to find the least connected address
         do {
-            BoltServerAddress address = addresses.get(index);
-            int activeConnections = connectionPool.inUseConnections(address);
+            var address = addresses.get(index);
+            var activeConnections = connectionPool.inUseConnections(address);
 
             if (activeConnections < leastActiveConnections) {
                 leastConnectedAddress = address;

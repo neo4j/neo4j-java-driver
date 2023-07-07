@@ -34,7 +34,7 @@ public enum TypeConstructor {
     NUMBER {
         @Override
         public boolean covers(Value value) {
-            TypeConstructor valueType = typeConstructorOf(value);
+            var valueType = typeConstructorOf(value);
             return valueType == this || valueType == INTEGER || valueType == FLOAT;
         }
     },
@@ -44,7 +44,7 @@ public enum TypeConstructor {
     MAP {
         @Override
         public boolean covers(Value value) {
-            TypeConstructor valueType = typeConstructorOf(value);
+            var valueType = typeConstructorOf(value);
             return valueType == MAP || valueType == NODE || valueType == RELATIONSHIP;
         }
     },

@@ -38,7 +38,7 @@ public class RouteV44MessageEncoder implements MessageEncoder {
     @Override
     public void encode(Message message, ValuePacker packer) throws IOException {
         checkArgument(message, RouteMessage.class);
-        RouteMessage routeMessage = (RouteMessage) message;
+        var routeMessage = (RouteMessage) message;
         packer.packStructHeader(3, message.signature());
         packer.pack(routeMessage.getRoutingContext());
         packer.pack(value(routeMessage.getBookmarks().stream().map(Bookmark::value)));

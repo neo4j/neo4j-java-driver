@@ -215,7 +215,7 @@ public class InternalDriver implements Driver {
 
     public NetworkSession newSession(SessionConfig config, AuthToken overrideAuthToken) {
         assertOpen();
-        NetworkSession session = sessionFactory.newInstance(config, overrideAuthToken);
+        var session = sessionFactory.newInstance(config, overrideAuthToken);
         if (closed.get()) {
             // session does not immediately acquire connection, it is fine to just throw
             throw driverCloseException();

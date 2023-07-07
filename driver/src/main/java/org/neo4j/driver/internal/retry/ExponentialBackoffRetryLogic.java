@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.retry;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
 import java.time.Clock;
 import java.time.Duration;
@@ -108,22 +107,22 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
     public <T> T retry(Supplier<T> work) {
         List<Throwable> errors = null;
         long startTime = -1;
-        long nextDelayMs = initialRetryDelayMs;
+        var nextDelayMs = initialRetryDelayMs;
 
         while (true) {
             try {
                 return work.get();
             } catch (Throwable throwable) {
-                Throwable error = extractPossibleTerminationCause(throwable);
+                var error = extractPossibleTerminationCause(throwable);
                 if (canRetryOn(error)) {
-                    long currentTime = clock.millis();
+                    var currentTime = clock.millis();
                     if (startTime == -1) {
                         startTime = currentTime;
                     }
 
-                    long elapsedTime = currentTime - startTime;
+                    var elapsedTime = currentTime - startTime;
                     if (elapsedTime < maxRetryTimeMs) {
-                        long delayWithJitterMs = computeDelayWithJitter(nextDelayMs);
+                        var delayWithJitterMs = computeDelayWithJitter(nextDelayMs);
                         log.warn("Transaction failed and will be retried in " + delayWithJitterMs + "ms", error);
 
                         sleep(delayWithJitterMs);
@@ -142,7 +141,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
 
     @Override
     public <T> CompletionStage<T> retryAsync(Supplier<CompletionStage<T>> work) {
-        CompletableFuture<T> resultFuture = new CompletableFuture<>();
+        var resultFuture = new CompletableFuture<T>();
         executeWorkInEventLoop(resultFuture, work);
         return resultFuture;
     }
@@ -173,7 +172,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
 
     private Retry exponentialBackoffRetryRx() {
         return Retry.from(retrySignals -> retrySignals.flatMap(retrySignal -> Mono.deferContextual(contextView -> {
-            Throwable throwable = retrySignal.failure();
+            var throwable = retrySignal.failure();
             // Extract nested Neo4jException from not Neo4jException. Reactor usingWhen returns RuntimeException on
             // async resource cleanup failure.
             if (throwable != null
@@ -181,19 +180,19 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
                     && throwable.getCause() instanceof Neo4jException) {
                 throwable = throwable.getCause();
             }
-            Throwable error = extractPossibleTerminationCause(throwable);
+            var error = extractPossibleTerminationCause(throwable);
 
             List<Throwable> errors = contextView.getOrDefault("errors", null);
 
             if (canRetryOn(error)) {
-                long currentTime = clock.millis();
+                var currentTime = clock.millis();
 
                 long startTime = contextView.getOrDefault("startTime", currentTime);
                 long nextDelayMs = contextView.getOrDefault("nextDelayMs", initialRetryDelayMs);
 
-                long elapsedTime = currentTime - startTime;
+                var elapsedTime = currentTime - startTime;
                 if (elapsedTime < maxRetryTimeMs) {
-                    long delayWithJitterMs = computeDelayWithJitter(nextDelayMs);
+                    var delayWithJitterMs = computeDelayWithJitter(nextDelayMs);
                     log.warn(
                             "Reactive transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms",
                             error);
@@ -202,8 +201,8 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
                     errors = recordError(error, errors);
 
                     // retry on netty event loop thread
-                    EventExecutor eventExecutor = eventExecutorGroup.next();
-                    Context context = Context.of(
+                    var eventExecutor = eventExecutorGroup.next();
+                    var context = Context.of(
                             "errors", errors,
                             "startTime", startTime,
                             "nextDelayMs", nextDelayMs);
@@ -221,7 +220,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
 
     private <T> void executeWorkInEventLoop(CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work) {
         // this is the very first time we execute given work
-        EventExecutor eventExecutor = eventExecutorGroup.next();
+        var eventExecutor = eventExecutorGroup.next();
 
         eventExecutor.execute(() -> executeWork(resultFuture, work, -1, initialRetryDelayMs, null));
     }
@@ -234,14 +233,14 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
             long delayMs,
             List<Throwable> errors) {
         // work has failed before, we need to schedule retry with the given delay
-        EventExecutor eventExecutor = eventExecutorGroup.next();
+        var eventExecutor = eventExecutorGroup.next();
 
-        long delayWithJitterMs = computeDelayWithJitter(delayMs);
+        var delayWithJitterMs = computeDelayWithJitter(delayMs);
         log.warn("Async transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", error);
 
         eventExecutor.schedule(
                 () -> {
-                    long newRetryDelayMs = (long) (delayMs * multiplier);
+                    var newRetryDelayMs = (long) (delayMs * multiplier);
                     executeWork(resultFuture, work, startTime, newRetryDelayMs, errors);
                 },
                 delayWithJitterMs,
@@ -264,7 +263,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
         }
 
         workStage.whenComplete((result, completionError) -> {
-            Throwable error = Futures.completionExceptionCause(completionError);
+            var error = Futures.completionExceptionCause(completionError);
             if (error != null) {
                 // work failed in async way, attempt to schedule a retry
                 retryOnError(resultFuture, work, startTime, retryDelayMs, error, errors);
@@ -281,14 +280,14 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
             long retryDelayMs,
             Throwable throwable,
             List<Throwable> errors) {
-        Throwable error = extractPossibleTerminationCause(throwable);
+        var error = extractPossibleTerminationCause(throwable);
         if (canRetryOn(error)) {
-            long currentTime = clock.millis();
+            var currentTime = clock.millis();
             if (startTime == -1) {
                 startTime = currentTime;
             }
 
-            long elapsedTime = currentTime - startTime;
+            var elapsedTime = currentTime - startTime;
             if (elapsedTime < maxRetryTimeMs) {
                 errors = recordError(error, errors);
                 retryWorkInEventLoop(resultFuture, work, error, startTime, retryDelayMs, errors);
@@ -305,9 +304,9 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
             delayMs = MAX_RETRY_DELAY;
         }
 
-        long jitter = (long) (delayMs * jitterFactor);
-        long min = delayMs - jitter;
-        long max = delayMs + jitter;
+        var jitter = (long) (delayMs * jitterFactor);
+        var min = delayMs - jitter;
+        var max = delayMs + jitter;
         return ThreadLocalRandom.current().nextLong(min, max + 1);
     }
 
@@ -348,7 +347,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
 
     private static void addSuppressed(Throwable error, List<Throwable> suppressedErrors) {
         if (suppressedErrors != null) {
-            for (Throwable suppressedError : suppressedErrors) {
+            for (var suppressedError : suppressedErrors) {
                 if (error != suppressedError) {
                     error.addSuppressed(suppressedError);
                 }

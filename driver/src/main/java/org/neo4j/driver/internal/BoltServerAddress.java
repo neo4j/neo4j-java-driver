@@ -74,7 +74,7 @@ public class BoltServerAddress implements ServerAddress {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        BoltServerAddress address = (BoltServerAddress) o;
+        var address = (BoltServerAddress) o;
         return port == address.port && host.equals(address.host) && connectionHost.equals(address.connectionHost);
     }
 
@@ -114,7 +114,7 @@ public class BoltServerAddress implements ServerAddress {
     }
 
     private static String hostFrom(URI uri) {
-        String host = uri.getHost();
+        var host = uri.getHost();
         if (host == null) {
             throw invalidAddressFormat(uri);
         }
@@ -122,7 +122,7 @@ public class BoltServerAddress implements ServerAddress {
     }
 
     private static int portFrom(URI uri) {
-        int port = uri.getPort();
+        var port = uri.getPort();
         return port == -1 ? DEFAULT_PORT : port;
     }
 
@@ -130,7 +130,7 @@ public class BoltServerAddress implements ServerAddress {
         String scheme;
         String hostPort;
 
-        String[] schemeSplit = address.split("://");
+        var schemeSplit = address.split("://");
         if (schemeSplit.length == 1) {
             // URI can't parse addresses without scheme, prepend fake "bolt://" to reuse the parsing facility
             scheme = "bolt://";
@@ -151,7 +151,7 @@ public class BoltServerAddress implements ServerAddress {
             return address;
         }
 
-        boolean containsSingleColon = address.indexOf(":") == address.lastIndexOf(":");
+        var containsSingleColon = address.indexOf(":") == address.lastIndexOf(":");
         if (containsSingleColon) {
             // expected to be an IPv4 address with or without port like 127.0.0.1 or 127.0.0.1:7687
             return address;

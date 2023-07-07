@@ -48,7 +48,7 @@ public class InternalDatabaseName implements DatabaseName {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        InternalDatabaseName that = (InternalDatabaseName) o;
+        var that = (InternalDatabaseName) o;
         return databaseName.equals(that.databaseName);
     }
 

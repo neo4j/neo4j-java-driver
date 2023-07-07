@@ -182,7 +182,7 @@ public final class SessionConfig implements Serializable {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        SessionConfig that = (SessionConfig) o;
+        var that = (SessionConfig) o;
         return Objects.equals(bookmarks, that.bookmarks)
                 && defaultAccessMode == that.defaultAccessMode
                 && Objects.equals(database, that.database)

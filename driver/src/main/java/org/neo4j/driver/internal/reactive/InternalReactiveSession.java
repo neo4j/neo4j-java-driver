@@ -102,7 +102,7 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
                         .then(Mono.error(error)))
                 .flatMap(cursor -> {
                     Mono<RxResultCursor> publisher;
-                    Throwable runError = cursor.getRunError();
+                    var runError = cursor.getRunError();
                     if (runError != null) {
                         publisher = Mono.fromCompletionStage(session.releaseConnectionAsync())
                                 .onErrorMap(releaseError -> Futures.combineErrors(runError, releaseError))

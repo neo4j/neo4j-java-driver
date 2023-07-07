@@ -86,8 +86,8 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
     @Override
     public CompletionStage<RoutingTableHandler> ensureRoutingTable(ConnectionContext context) {
         return ensureDatabaseNameIsCompleted(context).thenCompose(ctxAndHandler -> {
-            ConnectionContext completedContext = ctxAndHandler.getContext();
-            RoutingTableHandler handler = ctxAndHandler.getHandler() != null
+            var completedContext = ctxAndHandler.getContext();
+            var handler = ctxAndHandler.getHandler() != null
                     ? ctxAndHandler.getHandler()
                     : getOrCreate(Futures.joinNowOrElseThrow(
                             completedContext.databaseNameFuture(), PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER));
@@ -97,7 +97,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
 
     private CompletionStage<ConnectionContextAndHandler> ensureDatabaseNameIsCompleted(ConnectionContext context) {
         CompletionStage<ConnectionContextAndHandler> contextAndHandlerStage;
-        CompletableFuture<DatabaseName> contextDatabaseNameFuture = context.databaseNameFuture();
+        var contextDatabaseNameFuture = context.databaseNameFuture();
 
         if (contextDatabaseNameFuture.isDone()) {
             contextAndHandlerStage = CompletableFuture.completedFuture(new ConnectionContextAndHandler(context, null));
@@ -107,18 +107,17 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
                     contextAndHandlerStage =
                             CompletableFuture.completedFuture(new ConnectionContextAndHandler(context, null));
                 } else {
-                    String impersonatedUser = context.impersonatedUser();
-                    Principal principal = new Principal(impersonatedUser);
-                    CompletionStage<DatabaseName> databaseNameStage = principalToDatabaseNameStage.get(principal);
-                    AtomicReference<RoutingTableHandler> handlerRef = new AtomicReference<>();
+                    var impersonatedUser = context.impersonatedUser();
+                    var principal = new Principal(impersonatedUser);
+                    var databaseNameStage = principalToDatabaseNameStage.get(principal);
+                    var handlerRef = new AtomicReference<RoutingTableHandler>();
 
                     if (databaseNameStage == null) {
-                        CompletableFuture<DatabaseName> databaseNameFuture = new CompletableFuture<>();
+                        var databaseNameFuture = new CompletableFuture<DatabaseName>();
                         principalToDatabaseNameStage.put(principal, databaseNameFuture);
                         databaseNameStage = databaseNameFuture;
 
-                        ClusterRoutingTable routingTable =
-                                new ClusterRoutingTable(DatabaseNameUtil.defaultDatabase(), clock);
+                        var routingTable = new ClusterRoutingTable(DatabaseNameUtil.defaultDatabase(), clock);
                         rediscovery
                                 .lookupClusterComposition(
                                         routingTable,
@@ -127,10 +126,10 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
                                         impersonatedUser,
                                         context.overrideAuthToken())
                                 .thenCompose(compositionLookupResult -> {
-                                    DatabaseName databaseName = DatabaseNameUtil.database(compositionLookupResult
+                                    var databaseName = DatabaseNameUtil.database(compositionLookupResult
                                             .getClusterComposition()
                                             .databaseName());
-                                    RoutingTableHandler handler = getOrCreate(databaseName);
+                                    var handler = getOrCreate(databaseName);
                                     handlerRef.set(handler);
                                     return handler.updateRoutingTable(compositionLookupResult)
                                             .thenApply(ignored -> databaseName);
@@ -167,7 +166,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
         // obviously we just had a snapshot of all servers in all routing tables
         // after we read it, the set could already be changed.
         Set<BoltServerAddress> servers = new HashSet<>();
-        for (RoutingTableHandler tableHandler : routingTableHandlers.values()) {
+        for (var tableHandler : routingTableHandlers.values()) {
             servers.addAll(tableHandler.servers());
         }
         return servers;
@@ -203,7 +202,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
 
     private RoutingTableHandler getOrCreate(DatabaseName databaseName) {
         return routingTableHandlers.computeIfAbsent(databaseName, name -> {
-            RoutingTableHandler handler = factory.newInstance(name, this);
+            var handler = factory.newInstance(name, this);
             log.debug("Routing table handler for database '%s' is added.", databaseName.description());
             return handler;
         });
@@ -230,7 +229,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
         }
 
         RoutingTableHandler newInstance(DatabaseName databaseName, RoutingTableRegistry allTables) {
-            ClusterRoutingTable routingTable = new ClusterRoutingTable(databaseName, clock);
+            var routingTable = new ClusterRoutingTable(databaseName, clock);
             return new RoutingTableHandlerImpl(
                     routingTable, rediscovery, connectionPool, allTables, logging, routingTablePurgeDelayMs);
         }
@@ -251,7 +250,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            Principal principal = (Principal) o;
+            var principal = (Principal) o;
             return Objects.equals(id, principal.id);
         }
 

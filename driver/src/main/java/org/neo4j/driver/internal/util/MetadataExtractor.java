@@ -64,11 +64,11 @@ public class MetadataExtractor {
     }
 
     public QueryKeys extractQueryKeys(Map<String, Value> metadata) {
-        Value keysValue = metadata.get("fields");
+        var keysValue = metadata.get("fields");
         if (keysValue != null) {
             if (!keysValue.isEmpty()) {
-                QueryKeys keys = new QueryKeys(keysValue.size());
-                for (Value value : keysValue.values()) {
+                var keys = new QueryKeys(keysValue.size());
+                for (var value : keysValue.values()) {
                     keys.add(value.asString());
                 }
 
@@ -79,7 +79,7 @@ public class MetadataExtractor {
     }
 
     public long extractQueryId(Map<String, Value> metadata) {
-        Value queryId = metadata.get("qid");
+        var queryId = metadata.get("qid");
         if (queryId != null) {
             return queryId.asLong();
         }
@@ -87,7 +87,7 @@ public class MetadataExtractor {
     }
 
     public long extractResultAvailableAfter(Map<String, Value> metadata) {
-        Value resultAvailableAfterValue = metadata.get(resultAvailableAfterMetadataKey);
+        var resultAvailableAfterValue = metadata.get(resultAvailableAfterMetadataKey);
         if (resultAvailableAfterValue != null) {
             return resultAvailableAfterValue.asLong();
         }
@@ -100,7 +100,7 @@ public class MetadataExtractor {
                 connection.serverAgent(),
                 connection.serverAddress(),
                 connection.protocol().version());
-        DatabaseInfo dbInfo = extractDatabaseInfo(metadata);
+        var dbInfo = extractDatabaseInfo(metadata);
         return new InternalResultSummary(
                 query,
                 serverInfo,
@@ -121,11 +121,11 @@ public class MetadataExtractor {
     }
 
     public static Value extractServer(Map<String, Value> metadata) {
-        Value versionValue = metadata.get("server");
+        var versionValue = metadata.get("server");
         if (versionValue == null || versionValue.isNull()) {
             throw new UntrustedServerException("Server provides no product identifier");
         }
-        String serverAgent = versionValue.asString();
+        var serverAgent = versionValue.asString();
         if (!serverAgent.startsWith("Neo4j/")) {
             throw new UntrustedServerException(
                     "Server does not identify as a genuine Neo4j instance: '" + serverAgent + "'");
@@ -134,7 +134,7 @@ public class MetadataExtractor {
     }
 
     static DatabaseInfo extractDatabaseInfo(Map<String, Value> metadata) {
-        Value dbValue = metadata.get("db");
+        var dbValue = metadata.get("db");
         if (dbValue == null || dbValue.isNull()) {
             return DEFAULT_DATABASE_INFO;
         } else {
@@ -143,7 +143,7 @@ public class MetadataExtractor {
     }
 
     static Bookmark extractBookmark(Map<String, Value> metadata) {
-        Value bookmarkValue = metadata.get("bookmark");
+        var bookmarkValue = metadata.get("bookmark");
         Bookmark bookmark = null;
         if (bookmarkValue != null && !bookmarkValue.isNull() && bookmarkValue.hasType(TYPE_SYSTEM.STRING())) {
             bookmark = InternalBookmark.parse(bookmarkValue.asString());
@@ -152,7 +152,7 @@ public class MetadataExtractor {
     }
 
     private static QueryType extractQueryType(Map<String, Value> metadata) {
-        Value typeValue = metadata.get("type");
+        var typeValue = metadata.get("type");
         if (typeValue != null) {
             return QueryType.fromCode(typeValue.asString(), UNEXPECTED_TYPE_EXCEPTION_SUPPLIER);
         }
@@ -160,7 +160,7 @@ public class MetadataExtractor {
     }
 
     private static InternalSummaryCounters extractCounters(Map<String, Value> metadata) {
-        Value countersValue = metadata.get("stats");
+        var countersValue = metadata.get("stats");
         if (countersValue != null) {
             return new InternalSummaryCounters(
                     counterValue(countersValue, "nodes-created"),
@@ -180,12 +180,12 @@ public class MetadataExtractor {
     }
 
     private static int counterValue(Value countersValue, String name) {
-        Value value = countersValue.get(name);
+        var value = countersValue.get(name);
         return value.isNull() ? 0 : value.asInt();
     }
 
     private static Plan extractPlan(Map<String, Value> metadata) {
-        Value planValue = metadata.get("plan");
+        var planValue = metadata.get("plan");
         if (planValue != null) {
             return InternalPlan.EXPLAIN_PLAN_FROM_VALUE.apply(planValue);
         }
@@ -193,7 +193,7 @@ public class MetadataExtractor {
     }
 
     private static ProfiledPlan extractProfiledPlan(Map<String, Value> metadata) {
-        Value profiledPlanValue = metadata.get("profile");
+        var profiledPlanValue = metadata.get("profile");
         if (profiledPlanValue != null) {
             return InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(profiledPlanValue);
         }
@@ -201,7 +201,7 @@ public class MetadataExtractor {
     }
 
     private static List<Notification> extractNotifications(Map<String, Value> metadata) {
-        Value notificationsValue = metadata.get("notifications");
+        var notificationsValue = metadata.get("notifications");
         if (notificationsValue != null) {
             return notificationsValue.asList(InternalNotification.VALUE_TO_NOTIFICATION);
         }
@@ -209,7 +209,7 @@ public class MetadataExtractor {
     }
 
     private static long extractResultConsumedAfter(Map<String, Value> metadata, String key) {
-        Value resultConsumedAfterValue = metadata.get(key);
+        var resultConsumedAfterValue = metadata.get(key);
         if (resultConsumedAfterValue != null) {
             return resultConsumedAfterValue.asLong();
         }
@@ -217,7 +217,7 @@ public class MetadataExtractor {
     }
 
     public static Set<String> extractBoltPatches(Map<String, Value> metadata) {
-        Value boltPatch = metadata.get("patch_bolt");
+        var boltPatch = metadata.get("patch_bolt");
         if (boltPatch != null && !boltPatch.isNull()) {
             return new HashSet<>(boltPatch.asList(Value::asString));
         } else {

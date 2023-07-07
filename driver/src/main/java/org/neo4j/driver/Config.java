@@ -492,7 +492,7 @@ public final class Config implements Serializable {
          * @see #withMaxConnectionPoolSize(int)
          */
         public ConfigBuilder withConnectionAcquisitionTimeout(long value, TimeUnit unit) {
-            long valueInMillis = unit.toMillis(value);
+            var valueInMillis = unit.toMillis(value);
             if (value >= 0) {
                 this.connectionAcquisitionTimeoutMillis = valueInMillis;
             } else {
@@ -557,7 +557,7 @@ public final class Config implements Serializable {
          * @return this builder
          */
         public ConfigBuilder withRoutingTablePurgeDelay(long delay, TimeUnit unit) {
-            long routingTablePurgeDelayMillis = unit.toMillis(delay);
+            var routingTablePurgeDelayMillis = unit.toMillis(delay);
             if (routingTablePurgeDelayMillis < 0) {
                 throw new IllegalArgumentException(String.format(
                         "The routing table purge delay may not be smaller than 0, but was %d %s.", delay, unit));
@@ -605,12 +605,12 @@ public final class Config implements Serializable {
          *                                  converted to milliseconds.
          */
         public ConfigBuilder withConnectionTimeout(long value, TimeUnit unit) {
-            long connectionTimeoutMillis = unit.toMillis(value);
+            var connectionTimeoutMillis = unit.toMillis(value);
             if (connectionTimeoutMillis < 0) {
                 throw new IllegalArgumentException(
                         String.format("The connection timeout may not be smaller than 0, but was %d %s.", value, unit));
             }
-            int connectionTimeoutMillisInt = (int) connectionTimeoutMillis;
+            var connectionTimeoutMillisInt = (int) connectionTimeoutMillis;
             if (connectionTimeoutMillisInt != connectionTimeoutMillis) {
                 throw new IllegalArgumentException(String.format(
                         "The connection timeout must represent int value when converted to milliseconds %d.",
@@ -633,7 +633,7 @@ public final class Config implements Serializable {
          * @throws IllegalArgumentException when given value is negative
          */
         public ConfigBuilder withMaxTransactionRetryTime(long value, TimeUnit unit) {
-            long maxRetryTimeMs = unit.toMillis(value);
+            var maxRetryTimeMs = unit.toMillis(value);
             if (maxRetryTimeMs < 0) {
                 throw new IllegalArgumentException(
                         String.format("The max retry time may not be smaller than 0, but was %d %s.", value, unit));

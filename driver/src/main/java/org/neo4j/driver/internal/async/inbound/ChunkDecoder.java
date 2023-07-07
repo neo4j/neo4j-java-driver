@@ -55,10 +55,10 @@ public class ChunkDecoder extends LengthFieldBasedFrameDecoder {
     @Override
     protected ByteBuf extractFrame(ChannelHandlerContext ctx, ByteBuf buffer, int index, int length) {
         if (log.isTraceEnabled()) {
-            int originalReaderIndex = buffer.readerIndex();
-            int readerIndexWithChunkHeader = originalReaderIndex - INITIAL_BYTES_TO_STRIP;
-            int lengthWithChunkHeader = INITIAL_BYTES_TO_STRIP + length;
-            String hexDump = ByteBufUtil.hexDump(buffer, readerIndexWithChunkHeader, lengthWithChunkHeader);
+            var originalReaderIndex = buffer.readerIndex();
+            var readerIndexWithChunkHeader = originalReaderIndex - INITIAL_BYTES_TO_STRIP;
+            var lengthWithChunkHeader = INITIAL_BYTES_TO_STRIP + length;
+            var hexDump = ByteBufUtil.hexDump(buffer, readerIndexWithChunkHeader, lengthWithChunkHeader);
             log.trace("S: %s", hexDump);
         }
         return super.extractFrame(ctx, buffer, index, length);

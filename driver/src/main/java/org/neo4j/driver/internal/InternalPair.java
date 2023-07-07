@@ -58,14 +58,14 @@ public class InternalPair<K, V> implements Pair<K, V> {
             return false;
         }
 
-        InternalPair<?, ?> that = (InternalPair<?, ?>) o;
+        var that = (InternalPair<?, ?>) o;
 
         return key.equals(that.key) && value.equals(that.value);
     }
 
     @Override
     public int hashCode() {
-        int result = key.hashCode();
+        var result = key.hashCode();
         result = 31 * result + value.hashCode();
         return result;
     }

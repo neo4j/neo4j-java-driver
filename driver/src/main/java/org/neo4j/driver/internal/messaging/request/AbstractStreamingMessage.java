@@ -50,7 +50,7 @@ public abstract class AbstractStreamingMessage implements Message {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        AbstractStreamingMessage that = (AbstractStreamingMessage) o;
+        var that = (AbstractStreamingMessage) o;
         return Objects.equals(metadata, that.metadata);
     }
 

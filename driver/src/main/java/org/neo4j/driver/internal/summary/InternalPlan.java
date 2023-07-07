@@ -80,7 +80,7 @@ public class InternalPlan<T extends Plan> implements Plan {
             return false;
         }
 
-        InternalPlan<?> that = (InternalPlan<?>) o;
+        var that = (InternalPlan<?>) o;
 
         return operatorType.equals(that.operatorType)
                 && arguments.equals(that.arguments)
@@ -90,7 +90,7 @@ public class InternalPlan<T extends Plan> implements Plan {
 
     @Override
     public int hashCode() {
-        int result = operatorType.hashCode();
+        var result = operatorType.hashCode();
         result = 31 * result + identifiers.hashCode();
         result = 31 * result + arguments.hashCode();
         result = 31 * result + children.hashCode();
@@ -140,19 +140,19 @@ public class InternalPlan<T extends Plan> implements Plan {
 
         @Override
         public T apply(Value plan) {
-            final String operatorType = plan.get("operatorType").asString();
+            final var operatorType = plan.get("operatorType").asString();
 
-            final Value argumentsValue = plan.get("args");
-            final Map<String, Value> arguments = argumentsValue.isNull()
+            final var argumentsValue = plan.get("args");
+            final var arguments = argumentsValue.isNull()
                     ? Collections.<String, Value>emptyMap()
                     : argumentsValue.asMap(Values.ofValue());
 
-            final Value identifiersValue = plan.get("identifiers");
-            final List<String> identifiers =
+            final var identifiersValue = plan.get("identifiers");
+            final var identifiers =
                     identifiersValue.isNull() ? Collections.<String>emptyList() : identifiersValue.asList(ofString());
 
-            final Value childrenValue = plan.get("children");
-            final List<T> children = childrenValue.isNull() ? Collections.<T>emptyList() : childrenValue.asList(this);
+            final var childrenValue = plan.get("children");
+            final var children = childrenValue.isNull() ? Collections.<T>emptyList() : childrenValue.asList(this);
 
             return planCreator.create(operatorType, arguments, identifiers, children, plan);
         }

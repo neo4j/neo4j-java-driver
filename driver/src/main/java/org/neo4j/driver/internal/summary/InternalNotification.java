@@ -32,9 +32,9 @@ import org.neo4j.driver.summary.Notification;
 
 public class InternalNotification implements Notification {
     public static final Function<Value, Notification> VALUE_TO_NOTIFICATION = value -> {
-        String code = value.get("code").asString();
-        String title = value.get("title").asString();
-        String description = value.get("description").asString();
+        var code = value.get("code").asString();
+        var title = value.get("title").asString();
+        var description = value.get("description").asString();
         var rawSeverityLevel =
                 value.containsKey("severity") ? value.get("severity").asString() : null;
         var severityLevel =
@@ -42,7 +42,7 @@ public class InternalNotification implements Notification {
         var rawCategory = value.containsKey("category") ? value.get("category").asString() : null;
         var category = InternalNotificationCategory.valueOf(rawCategory).orElse(null);
 
-        Value posValue = value.get("position");
+        var posValue = value.get("position");
         InputPosition position = null;
         if (posValue != NULL) {
             position = new InternalInputPosition(

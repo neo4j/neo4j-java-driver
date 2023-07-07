@@ -108,12 +108,12 @@ public final class ErrorUtil {
     }
 
     public static void rethrowAsyncException(ExecutionException e) {
-        Throwable error = e.getCause();
+        var error = e.getCause();
 
-        InternalExceptionCause internalCause = new InternalExceptionCause(error.getStackTrace());
+        var internalCause = new InternalExceptionCause(error.getStackTrace());
         error.addSuppressed(internalCause);
 
-        StackTraceElement[] currentStackTrace = Stream.of(Thread.currentThread().getStackTrace())
+        var currentStackTrace = Stream.of(Thread.currentThread().getStackTrace())
                 .skip(2) // do not include Thread.currentThread() and this method in the stacktrace
                 .toArray(StackTraceElement[]::new);
         error.setStackTrace(currentStackTrace);
@@ -128,17 +128,17 @@ public final class ErrorUtil {
     }
 
     private static boolean isProtocolViolationError(Neo4jException error) {
-        String errorCode = error.code();
+        var errorCode = error.code();
         return errorCode != null && errorCode.startsWith("Neo.ClientError.Request");
     }
 
     private static boolean isClientOrTransientError(Neo4jException error) {
-        String errorCode = error.code();
+        var errorCode = error.code();
         return errorCode != null && (errorCode.contains("ClientError") || errorCode.contains("TransientError"));
     }
 
     private static String extractErrorClass(String code) {
-        String[] parts = code.split("\\.");
+        var parts = code.split("\\.");
         if (parts.length < 2) {
             return "";
         }
@@ -146,7 +146,7 @@ public final class ErrorUtil {
     }
 
     private static String extractErrorSubClass(String code) {
-        String[] parts = code.split("\\.");
+        var parts = code.split("\\.");
         if (parts.length < 3) {
             return "";
         }
@@ -161,7 +161,7 @@ public final class ErrorUtil {
 
     public static Throwable getRootCause(Throwable error) {
         Objects.requireNonNull(error);
-        Throwable cause = error.getCause();
+        var cause = error.getCause();
         if (cause == null) {
             // Nothing causes this error, returns the error itself
             return error;

@@ -64,7 +64,7 @@ public class InternalRxResult implements RxResult {
                             sink.onRequest(cursor::request);
                         }
                     } else {
-                        Throwable error = Futures.completionExceptionCause(completionError);
+                        var error = Futures.completionExceptionCause(completionError);
                         sink.error(error);
                     }
                 }),
@@ -115,7 +115,7 @@ public class InternalRxResult implements RxResult {
         return Mono.create(sink -> getCursorFuture().whenComplete((cursor, completionError) -> {
             if (cursor != null) {
                 cursor.summaryAsync().whenComplete((summary, summaryCompletionError) -> {
-                    Throwable error = Futures.completionExceptionCause(summaryCompletionError);
+                    var error = Futures.completionExceptionCause(summaryCompletionError);
                     if (summary != null) {
                         sink.success(summary);
                     } else {
@@ -123,7 +123,7 @@ public class InternalRxResult implements RxResult {
                     }
                 });
             } else {
-                Throwable error = Futures.completionExceptionCause(completionError);
+                var error = Futures.completionExceptionCause(completionError);
                 sink.error(error);
             }
         }));

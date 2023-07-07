@@ -139,7 +139,7 @@ public class InternalResultSummary implements ResultSummary {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        InternalResultSummary that = (InternalResultSummary) o;
+        var that = (InternalResultSummary) o;
         return resultAvailableAfter == that.resultAvailableAfter
                 && resultConsumedAfter == that.resultConsumedAfter
                 && Objects.equals(query, that.query)

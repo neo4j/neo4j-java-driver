@@ -21,12 +21,10 @@ package org.neo4j.driver.internal.messaging.common;
 import static java.time.ZoneOffset.UTC;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
@@ -103,7 +101,7 @@ public class CommonValuePacker implements ValuePacker {
             return;
         }
         packer.packMapHeader(map.size());
-        for (Map.Entry<String, Value> entry : map.entrySet()) {
+        for (var entry : map.entrySet()) {
             packer.pack(entry.getKey());
             pack(entry.getValue());
         }
@@ -162,7 +160,7 @@ public class CommonValuePacker implements ValuePacker {
 
             case MAP:
                 packer.packMapHeader(value.size());
-                for (String s : value.keys()) {
+                for (var s : value.keys()) {
                     packer.pack(s);
                     pack(value.get(s));
                 }
@@ -170,7 +168,7 @@ public class CommonValuePacker implements ValuePacker {
 
             case LIST:
                 packer.packListHeader(value.size());
-                for (Value item : value.values()) {
+                for (var item : value.values()) {
                     pack(item);
                 }
                 break;
@@ -186,8 +184,8 @@ public class CommonValuePacker implements ValuePacker {
     }
 
     private void packTime(OffsetTime offsetTime) throws IOException {
-        long nanoOfDayLocal = offsetTime.toLocalTime().toNanoOfDay();
-        int offsetSeconds = offsetTime.getOffset().getTotalSeconds();
+        var nanoOfDayLocal = offsetTime.toLocalTime().toNanoOfDay();
+        var offsetSeconds = offsetTime.getOffset().getTotalSeconds();
 
         packer.packStructHeader(TIME_STRUCT_SIZE, TIME);
         packer.pack(nanoOfDayLocal);
@@ -200,8 +198,8 @@ public class CommonValuePacker implements ValuePacker {
     }
 
     private void packLocalDateTime(LocalDateTime localDateTime) throws IOException {
-        long epochSecondUtc = localDateTime.toEpochSecond(UTC);
-        int nano = localDateTime.getNano();
+        var epochSecondUtc = localDateTime.toEpochSecond(UTC);
+        var nano = localDateTime.getNano();
 
         packer.packStructHeader(LOCAL_DATE_TIME_STRUCT_SIZE, LOCAL_DATE_TIME);
         packer.pack(epochSecondUtc);
@@ -209,20 +207,20 @@ public class CommonValuePacker implements ValuePacker {
     }
 
     private void packZonedDateTimeUsingUtcBaseline(ZonedDateTime zonedDateTime) throws IOException {
-        Instant instant = zonedDateTime.toInstant();
-        long epochSecondLocal = instant.getEpochSecond();
-        int nano = zonedDateTime.getNano();
-        ZoneId zone = zonedDateTime.getZone();
+        var instant = zonedDateTime.toInstant();
+        var epochSecondLocal = instant.getEpochSecond();
+        var nano = zonedDateTime.getNano();
+        var zone = zonedDateTime.getZone();
 
         if (zone instanceof ZoneOffset) {
-            int offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
+            var offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
 
             packer.packStructHeader(DATE_TIME_STRUCT_SIZE, DATE_TIME_WITH_ZONE_OFFSET_UTC);
             packer.pack(epochSecondLocal);
             packer.pack(nano);
             packer.pack(offsetSeconds);
         } else {
-            String zoneId = zone.getId();
+            var zoneId = zone.getId();
 
             packer.packStructHeader(DATE_TIME_STRUCT_SIZE, DATE_TIME_WITH_ZONE_ID_UTC);
             packer.pack(epochSecondLocal);
@@ -232,19 +230,19 @@ public class CommonValuePacker implements ValuePacker {
     }
 
     private void packZonedDateTime(ZonedDateTime zonedDateTime) throws IOException {
-        long epochSecondLocal = zonedDateTime.toLocalDateTime().toEpochSecond(UTC);
-        int nano = zonedDateTime.getNano();
+        var epochSecondLocal = zonedDateTime.toLocalDateTime().toEpochSecond(UTC);
+        var nano = zonedDateTime.getNano();
 
-        ZoneId zone = zonedDateTime.getZone();
+        var zone = zonedDateTime.getZone();
         if (zone instanceof ZoneOffset) {
-            int offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
+            var offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
 
             packer.packStructHeader(DATE_TIME_STRUCT_SIZE, DATE_TIME_WITH_ZONE_OFFSET);
             packer.pack(epochSecondLocal);
             packer.pack(nano);
             packer.pack(offsetSeconds);
         } else {
-            String zoneId = zone.getId();
+            var zoneId = zone.getId();
 
             packer.packStructHeader(DATE_TIME_STRUCT_SIZE, DATE_TIME_WITH_ZONE_ID);
             packer.pack(epochSecondLocal);

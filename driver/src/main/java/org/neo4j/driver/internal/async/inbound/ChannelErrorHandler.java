@@ -63,7 +63,7 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) {
         log.debug("Channel is inactive");
 
-        String terminationReason = terminationReason(ctx.channel());
+        var terminationReason = terminationReason(ctx.channel());
         Throwable error = ErrorUtil.newConnectionTerminatedError(terminationReason);
 
         if (!failed) {
@@ -94,7 +94,7 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void fail(Throwable error) {
-        Throwable cause = transformError(error);
+        var cause = transformError(error);
         messageDispatcher.handleChannelError(cause);
     }
 

@@ -185,7 +185,7 @@ public class NettyLogger extends AbstractInternalLogger {
             return;
         }
 
-        Object arg = arguments[arguments.length - 1];
+        var arg = arguments[arguments.length - 1];
         if (arg instanceof Throwable) {
             // still give all arguments to string format,
             // for the worst case, the redundant parameter will be ignored.

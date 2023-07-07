@@ -57,21 +57,21 @@ public class ValueUnpackerV5 extends CommonValueUnpacker {
 
     @Override
     protected InternalNode unpackNode() throws IOException {
-        long urn = unpacker.unpackLong();
+        var urn = unpacker.unpackLong();
 
-        int numLabels = (int) unpacker.unpackListHeader();
+        var numLabels = (int) unpacker.unpackListHeader();
         List<String> labels = new ArrayList<>(numLabels);
-        for (int i = 0; i < numLabels; i++) {
+        for (var i = 0; i < numLabels; i++) {
             labels.add(unpacker.unpackString());
         }
-        int numProps = (int) unpacker.unpackMapHeader();
+        var numProps = (int) unpacker.unpackMapHeader();
         Map<String, Value> props = Iterables.newHashMapWithSize(numProps);
-        for (int j = 0; j < numProps; j++) {
-            String key = unpacker.unpackString();
+        for (var j = 0; j < numProps; j++) {
+            var key = unpacker.unpackString();
             props.put(key, unpack());
         }
 
-        String elementId = unpacker.unpackString();
+        var elementId = unpacker.unpackString();
 
         return new InternalNode(urn, elementId, labels, props);
     }
@@ -79,41 +79,41 @@ public class ValueUnpackerV5 extends CommonValueUnpacker {
     @Override
     protected Value unpackPath() throws IOException {
         // List of unique nodes
-        InternalNode[] uniqNodes = new InternalNode[(int) unpacker.unpackListHeader()];
-        for (int i = 0; i < uniqNodes.length; i++) {
+        var uniqNodes = new InternalNode[(int) unpacker.unpackListHeader()];
+        for (var i = 0; i < uniqNodes.length; i++) {
             ensureCorrectStructSize(TypeConstructor.NODE, getNodeFields(), unpacker.unpackStructHeader());
             ensureCorrectStructSignature("NODE", NODE, unpacker.unpackStructSignature());
             uniqNodes[i] = unpackNode();
         }
 
         // List of unique relationships, without start/end information
-        InternalRelationship[] uniqRels = new InternalRelationship[(int) unpacker.unpackListHeader()];
-        for (int i = 0; i < uniqRels.length; i++) {
+        var uniqRels = new InternalRelationship[(int) unpacker.unpackListHeader()];
+        for (var i = 0; i < uniqRels.length; i++) {
             ensureCorrectStructSize(TypeConstructor.RELATIONSHIP, 4, unpacker.unpackStructHeader());
             ensureCorrectStructSignature(
                     "UNBOUND_RELATIONSHIP", UNBOUND_RELATIONSHIP, unpacker.unpackStructSignature());
-            long id = unpacker.unpackLong();
-            String relType = unpacker.unpackString();
-            Map<String, Value> props = unpackMap();
-            String elementId = unpacker.unpackString();
+            var id = unpacker.unpackLong();
+            var relType = unpacker.unpackString();
+            var props = unpackMap();
+            var elementId = unpacker.unpackString();
             uniqRels[i] = new InternalRelationship(
                     id, elementId, -1, String.valueOf(-1), -1, String.valueOf(-1), relType, props);
         }
 
         // Path sequence
-        int length = (int) unpacker.unpackListHeader();
+        var length = (int) unpacker.unpackListHeader();
 
         // Knowing the sequence length, we can create the arrays that will represent the nodes, rels and segments in
         // their "path order"
-        Path.Segment[] segments = new Path.Segment[length / 2];
-        Node[] nodes = new Node[segments.length + 1];
-        Relationship[] rels = new Relationship[segments.length];
+        var segments = new Path.Segment[length / 2];
+        var nodes = new Node[segments.length + 1];
+        var rels = new Relationship[segments.length];
 
         InternalNode prevNode = uniqNodes[0], nextNode; // Start node is always 0, and isn't encoded in the sequence
         nodes[0] = prevNode;
         InternalRelationship rel;
-        for (int i = 0; i < segments.length; i++) {
-            int relIdx = (int) unpacker.unpackLong();
+        for (var i = 0; i < segments.length; i++) {
+            var relIdx = (int) unpacker.unpackLong();
             nextNode = uniqNodes[(int) unpacker.unpackLong()];
             // Negative rel index means this rel was traversed "inversed" from its direction
             if (relIdx < 0) {
@@ -139,16 +139,16 @@ public class ValueUnpackerV5 extends CommonValueUnpacker {
 
     @Override
     protected Value unpackRelationship() throws IOException {
-        long urn = unpacker.unpackLong();
-        long startUrn = unpacker.unpackLong();
-        long endUrn = unpacker.unpackLong();
-        String relType = unpacker.unpackString();
-        Map<String, Value> props = unpackMap();
-        String elementId = unpacker.unpackString();
-        String startElementId = unpacker.unpackString();
-        String endElementId = unpacker.unpackString();
+        var urn = unpacker.unpackLong();
+        var startUrn = unpacker.unpackLong();
+        var endUrn = unpacker.unpackLong();
+        var relType = unpacker.unpackString();
+        var props = unpackMap();
+        var elementId = unpacker.unpackString();
+        var startElementId = unpacker.unpackString();
+        var endElementId = unpacker.unpackString();
 
-        InternalRelationship adapted = new InternalRelationship(
+        var adapted = new InternalRelationship(
                 urn, elementId, startUrn, startElementId, endUrn, endElementId, relType, props);
         return new RelationshipValue(adapted);
     }

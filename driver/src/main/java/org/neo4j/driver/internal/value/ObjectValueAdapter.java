@@ -46,7 +46,7 @@ public abstract class ObjectValueAdapter<V> extends ValueAdapter {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ObjectValueAdapter<?> that = (ObjectValueAdapter<?>) o;
+        var that = (ObjectValueAdapter<?>) o;
         return Objects.equals(adapted, that.adapted);
     }
 

@@ -58,8 +58,8 @@ public class SecurityPlans {
     }
 
     private static boolean hasEqualTrustStrategy(SecuritySettings settings) {
-        Config.TrustStrategy t1 = SecuritySettings.DEFAULT.trustStrategy();
-        Config.TrustStrategy t2 = settings.trustStrategy();
+        var t1 = SecuritySettings.DEFAULT.trustStrategy();
+        var t2 = settings.trustStrategy();
         if (t1 == t2) {
             return true;
         }
@@ -86,8 +86,8 @@ public class SecurityPlans {
     private static SecurityPlan createSecurityPlanImpl(boolean encrypted, Config.TrustStrategy trustStrategy)
             throws GeneralSecurityException, IOException {
         if (encrypted) {
-            boolean hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();
-            RevocationCheckingStrategy revocationCheckingStrategy = trustStrategy.revocationCheckingStrategy();
+            var hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();
+            var revocationCheckingStrategy = trustStrategy.revocationCheckingStrategy();
             switch (trustStrategy.strategy()) {
                 case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
                     return SecurityPlanImpl.forCustomCASignedCertificates(

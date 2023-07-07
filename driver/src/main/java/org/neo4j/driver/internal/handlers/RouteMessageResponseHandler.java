@@ -67,7 +67,7 @@ public class RouteMessageResponseHandler implements ResponseHandler {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        RouteMessageResponseHandler that = (RouteMessageResponseHandler) o;
+        var that = (RouteMessageResponseHandler) o;
         return completableFuture.equals(that.completableFuture);
     }
 

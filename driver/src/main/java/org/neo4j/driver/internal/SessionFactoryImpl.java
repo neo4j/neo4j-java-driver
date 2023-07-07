@@ -73,15 +73,15 @@ public class SessionFactoryImpl implements SessionFactory {
     private Set<Bookmark> toDistinctSet(Iterable<Bookmark> bookmarks) {
         Set<Bookmark> set = new HashSet<>();
         if (bookmarks != null) {
-            for (Bookmark bookmark : bookmarks) {
+            for (var bookmark : bookmarks) {
                 if (bookmark != null) {
                     @SuppressWarnings("deprecation")
-                    Set<String> values = bookmark.values();
-                    int size = values.size();
+                    var values = bookmark.values();
+                    var size = values.size();
                     if (size == 1) {
                         set.add(bookmark);
                     } else if (size > 1) {
-                        for (String value : values) {
+                        for (var value : values) {
                             set.add(Bookmark.from(value));
                         }
                     }

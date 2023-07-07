@@ -137,11 +137,11 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
             @SuppressWarnings("deprecation") AsyncTransactionWork<CompletionStage<T>> work,
             TransactionConfig config) {
         return session.retryLogic().retryAsync(() -> {
-            CompletableFuture<T> resultFuture = new CompletableFuture<>();
-            CompletionStage<UnmanagedTransaction> txFuture = session.beginTransactionAsync(mode, config);
+            var resultFuture = new CompletableFuture<T>();
+            var txFuture = session.beginTransactionAsync(mode, config);
 
             txFuture.whenComplete((tx, completionError) -> {
-                Throwable error = Futures.completionExceptionCause(completionError);
+                var error = Futures.completionExceptionCause(completionError);
                 if (error != null) {
                     resultFuture.completeExceptionally(error);
                 } else {
@@ -157,9 +157,9 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
             CompletableFuture<T> resultFuture,
             UnmanagedTransaction tx,
             @SuppressWarnings("deprecation") AsyncTransactionWork<CompletionStage<T>> work) {
-        CompletionStage<T> workFuture = safeExecuteWork(tx, work);
+        var workFuture = safeExecuteWork(tx, work);
         workFuture.whenComplete((result, completionError) -> {
-            Throwable error = Futures.completionExceptionCause(completionError);
+            var error = Futures.completionExceptionCause(completionError);
             if (error != null) {
                 closeTxAfterFailedTransactionWork(tx, resultFuture, error);
             } else if (result instanceof ResultCursor) {
@@ -179,7 +179,7 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
         // async failure will result in a failed future being returned
         // sync failure will result in an exception being thrown
         try {
-            CompletionStage<T> result = work.execute(new InternalAsyncTransaction(tx));
+            var result = work.execute(new InternalAsyncTransaction(tx));
 
             // protect from given transaction function returning null
             return result == null ? completedWithNull() : result;
@@ -202,7 +202,7 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     private <T> void closeTxAfterSucceededTransactionWork(
             UnmanagedTransaction tx, CompletableFuture<T> resultFuture, T result) {
         tx.closeAsync(true).whenComplete((ignored, completionError) -> {
-            Throwable commitError = Futures.completionExceptionCause(completionError);
+            var commitError = Futures.completionExceptionCause(completionError);
             if (commitError != null) {
                 resultFuture.completeExceptionally(commitError);
             } else {

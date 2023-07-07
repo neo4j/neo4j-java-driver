@@ -200,7 +200,7 @@ public class PackStream {
             if (value == null) {
                 packNull();
             } else {
-                byte[] utf8 = value.getBytes(UTF_8);
+                var utf8 = value.getBytes(UTF_8);
                 packStringHeader(utf8.length);
                 packRaw(utf8);
             }
@@ -344,9 +344,9 @@ public class PackStream {
         }
 
         public long unpackStructHeader() throws IOException {
-            final byte markerByte = in.readByte();
-            final byte markerHighNibble = (byte) (markerByte & 0xF0);
-            final byte markerLowNibble = (byte) (markerByte & 0x0F);
+            final var markerByte = in.readByte();
+            final var markerHighNibble = (byte) (markerByte & 0xF0);
+            final var markerLowNibble = (byte) (markerByte & 0x0F);
 
             if (markerHighNibble == TINY_STRUCT) {
                 return markerLowNibble;
@@ -366,9 +366,9 @@ public class PackStream {
         }
 
         public long unpackListHeader() throws IOException {
-            final byte markerByte = in.readByte();
-            final byte markerHighNibble = (byte) (markerByte & 0xF0);
-            final byte markerLowNibble = (byte) (markerByte & 0x0F);
+            final var markerByte = in.readByte();
+            final var markerHighNibble = (byte) (markerByte & 0xF0);
+            final var markerLowNibble = (byte) (markerByte & 0x0F);
 
             if (markerHighNibble == TINY_LIST) {
                 return markerLowNibble;
@@ -386,9 +386,9 @@ public class PackStream {
         }
 
         public long unpackMapHeader() throws IOException {
-            final byte markerByte = in.readByte();
-            final byte markerHighNibble = (byte) (markerByte & 0xF0);
-            final byte markerLowNibble = (byte) (markerByte & 0x0F);
+            final var markerByte = in.readByte();
+            final var markerHighNibble = (byte) (markerByte & 0xF0);
+            final var markerLowNibble = (byte) (markerByte & 0x0F);
 
             if (markerHighNibble == TINY_MAP) {
                 return markerLowNibble;
@@ -406,7 +406,7 @@ public class PackStream {
         }
 
         public long unpackLong() throws IOException {
-            final byte markerByte = in.readByte();
+            final var markerByte = in.readByte();
             if (markerByte >= MINUS_2_TO_THE_4) {
                 return markerByte;
             }
@@ -425,7 +425,7 @@ public class PackStream {
         }
 
         public double unpackDouble() throws IOException {
-            final byte markerByte = in.readByte();
+            final var markerByte = in.readByte();
             if (markerByte == FLOAT_64) {
                 return in.readDouble();
             }
@@ -433,14 +433,14 @@ public class PackStream {
         }
 
         public byte[] unpackBytes() throws IOException {
-            final byte markerByte = in.readByte();
+            final var markerByte = in.readByte();
             switch (markerByte) {
                 case BYTES_8:
                     return unpackRawBytes(unpackUINT8());
                 case BYTES_16:
                     return unpackRawBytes(unpackUINT16());
                 case BYTES_32: {
-                    long size = unpackUINT32();
+                    var size = unpackUINT32();
                     if (size <= Integer.MAX_VALUE) {
                         return unpackRawBytes((int) size);
                     } else {
@@ -453,7 +453,7 @@ public class PackStream {
         }
 
         public String unpackString() throws IOException {
-            final byte markerByte = in.readByte();
+            final var markerByte = in.readByte();
             if (markerByte == TINY_STRING) // Note no mask, so we compare to 0x80.
             {
                 return EMPTY_STRING;
@@ -470,7 +470,7 @@ public class PackStream {
          * @throws IOException if the unpacked value was not null
          */
         public Object unpackNull() throws IOException {
-            final byte markerByte = in.readByte();
+            final var markerByte = in.readByte();
             if (markerByte != NULL) {
                 throw new Unexpected("Expected a null, but got: 0x" + toHexString(markerByte & 0xFF));
             }
@@ -478,8 +478,8 @@ public class PackStream {
         }
 
         private byte[] unpackUtf8(byte markerByte) throws IOException {
-            final byte markerHighNibble = (byte) (markerByte & 0xF0);
-            final byte markerLowNibble = (byte) (markerByte & 0x0F);
+            final var markerHighNibble = (byte) (markerByte & 0xF0);
+            final var markerLowNibble = (byte) (markerByte & 0x0F);
 
             if (markerHighNibble == TINY_STRING) {
                 return unpackRawBytes(markerLowNibble);
@@ -490,7 +490,7 @@ public class PackStream {
                 case STRING_16:
                     return unpackRawBytes(unpackUINT16());
                 case STRING_32: {
-                    long size = unpackUINT32();
+                    var size = unpackUINT32();
                     if (size <= Integer.MAX_VALUE) {
                         return unpackRawBytes((int) size);
                     } else {
@@ -503,7 +503,7 @@ public class PackStream {
         }
 
         public boolean unpackBoolean() throws IOException {
-            final byte markerByte = in.readByte();
+            final var markerByte = in.readByte();
             switch (markerByte) {
                 case TRUE:
                     return true;
@@ -530,14 +530,14 @@ public class PackStream {
             if (size == 0) {
                 return EMPTY_BYTE_ARRAY;
             }
-            byte[] heapBuffer = new byte[size];
+            var heapBuffer = new byte[size];
             in.readBytes(heapBuffer, 0, heapBuffer.length);
             return heapBuffer;
         }
 
         public PackType peekNextType() throws IOException {
-            final byte markerByte = in.peekByte();
-            final byte markerHighNibble = (byte) (markerByte & 0xF0);
+            final var markerByte = in.peekByte();
+            final var markerHighNibble = (byte) (markerByte & 0xF0);
 
             switch (markerHighNibble) {
                 case TINY_STRING:

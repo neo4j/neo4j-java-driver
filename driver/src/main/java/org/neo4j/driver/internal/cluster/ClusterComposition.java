@@ -96,7 +96,7 @@ public final class ClusterComposition {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ClusterComposition that = (ClusterComposition) o;
+        var that = (ClusterComposition) o;
         return expirationTimestamp == that.expirationTimestamp
                 && Objects.equals(databaseName, that.databaseName)
                 && Objects.equals(readers, that.readers)
@@ -124,7 +124,7 @@ public final class ClusterComposition {
             return null;
         }
 
-        final ClusterComposition result = new ClusterComposition(
+        final var result = new ClusterComposition(
                 expirationTimestamp(now, record), record.get("db").asString(null));
         record.get("servers").asList((Function<Value, Void>) value -> {
             result.servers(value.get("role").asString())
@@ -135,8 +135,8 @@ public final class ClusterComposition {
     }
 
     private static long expirationTimestamp(long now, Record record) {
-        long ttl = record.get("ttl").asLong();
-        long expirationTimestamp = now + ttl * 1000;
+        var ttl = record.get("ttl").asLong();
+        var expirationTimestamp = now + ttl * 1000;
         if (ttl < 0 || ttl >= MAX_TTL || expirationTimestamp < 0) {
             expirationTimestamp = Long.MAX_VALUE;
         }

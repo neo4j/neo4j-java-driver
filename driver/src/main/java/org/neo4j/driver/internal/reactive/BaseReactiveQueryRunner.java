@@ -36,7 +36,7 @@ interface BaseReactiveQueryRunner extends ReactiveQueryRunner {
     @Override
     default Publisher<ReactiveResult> run(String queryStr, Value parameters) {
         try {
-            Query query = new Query(queryStr, parameters);
+            var query = new Query(queryStr, parameters);
             return run(query);
         } catch (Throwable t) {
             return publisherToFlowPublisher(Mono.error(t));
@@ -56,7 +56,7 @@ interface BaseReactiveQueryRunner extends ReactiveQueryRunner {
     @Override
     default Publisher<ReactiveResult> run(String queryStr) {
         try {
-            Query query = new Query(queryStr);
+            var query = new Query(queryStr);
             return run(query);
         } catch (Throwable t) {
             return publisherToFlowPublisher(Mono.error(t));

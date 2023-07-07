@@ -87,7 +87,7 @@ public class MapValue extends ValueAdapter {
 
     @Override
     public Value get(String key) {
-        Value value = val.get(key);
+        var value = val.get(key);
         return value == null ? Values.NULL : value;
     }
 
@@ -110,7 +110,7 @@ public class MapValue extends ValueAdapter {
             return false;
         }
 
-        MapValue values = (MapValue) o;
+        var values = (MapValue) o;
         return val.equals(values.val);
     }
 

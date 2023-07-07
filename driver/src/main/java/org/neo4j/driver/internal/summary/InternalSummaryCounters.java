@@ -152,7 +152,7 @@ public class InternalSummaryCounters implements SummaryCounters {
             return false;
         }
 
-        InternalSummaryCounters that = (InternalSummaryCounters) o;
+        var that = (InternalSummaryCounters) o;
 
         return nodesCreated == that.nodesCreated
                 && nodesDeleted == that.nodesDeleted
@@ -170,7 +170,7 @@ public class InternalSummaryCounters implements SummaryCounters {
 
     @Override
     public int hashCode() {
-        int result = nodesCreated;
+        var result = nodesCreated;
         result = 31 * result + nodesDeleted;
         result = 31 * result + relationshipsCreated;
         result = 31 * result + relationshipsDeleted;

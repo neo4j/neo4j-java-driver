@@ -123,8 +123,7 @@ final class InternalMetrics implements Metrics, MetricsListener {
     }
 
     private ConnectionPoolMetricsListener poolMetrics(String poolId) {
-        InternalConnectionPoolMetrics poolMetrics =
-                (InternalConnectionPoolMetrics) this.connectionPoolMetrics.get(poolId);
+        var poolMetrics = (InternalConnectionPoolMetrics) this.connectionPoolMetrics.get(poolId);
         if (poolMetrics == null) {
             log.warn(format("Failed to find pool metrics with id `%s` in %s.", poolId, this.connectionPoolMetrics));
             return DevNullPoolMetricsListener.INSTANCE;

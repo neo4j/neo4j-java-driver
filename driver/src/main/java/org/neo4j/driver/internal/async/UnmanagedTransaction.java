@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -160,8 +159,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
 
     public CompletionStage<ResultCursor> runAsync(Query query) {
         ensureCanRunQueries();
-        CompletionStage<AsyncResultCursor> cursorStage = protocol.runInUnmanagedTransaction(
-                        connection, query, this, fetchSize)
+        var cursorStage = protocol.runInUnmanagedTransaction(connection, query, this, fetchSize)
                 .asyncResult();
         resultCursors.add(cursorStage);
         return cursorStage
@@ -171,8 +169,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
 
     public CompletionStage<RxResultCursor> runRx(Query query) {
         ensureCanRunQueries();
-        CompletionStage<RxResultCursor> cursorStage = protocol.runInUnmanagedTransaction(
-                        connection, query, this, fetchSize)
+        var cursorStage = protocol.runInUnmanagedTransaction(connection, query, this, fetchSize)
                 .rxResult();
         resultCursors.add(cursorStage);
         return cursorStage;
@@ -199,8 +196,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
 
     private void addSuppressedWhenNotCaptured(Throwable currentCause, Throwable newCause) {
         if (currentCause != newCause) {
-            boolean noneMatch =
-                    Arrays.stream(currentCause.getSuppressed()).noneMatch(suppressed -> suppressed == newCause);
+            var noneMatch = Arrays.stream(currentCause.getSuppressed()).noneMatch(suppressed -> suppressed == newCause);
             if (noneMatch) {
                 currentCause.addSuppressed(newCause);
             }
@@ -277,7 +273,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
 
     private static BiFunction<Void, Throwable, Void> handleCommitOrRollback(Throwable cursorFailure) {
         return (ignore, commitOrRollbackError) -> {
-            CompletionException combinedError = combineErrors(cursorFailure, commitOrRollbackError);
+            var combinedError = combineErrors(cursorFailure, commitOrRollbackError);
             if (combinedError != null) {
                 throw combinedError;
             }
@@ -303,7 +299,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     }
 
     private CompletionStage<Void> closeAsync(boolean commit, boolean completeWithNullIfNotOpen) {
-        CompletionStage<Void> stage = executeWithLock(lock, () -> {
+        var stage = executeWithLock(lock, () -> {
             CompletionStage<Void> resultStage = null;
             if (completeWithNullIfNotOpen && !isOpen()) {
                 resultStage = completedWithNull();

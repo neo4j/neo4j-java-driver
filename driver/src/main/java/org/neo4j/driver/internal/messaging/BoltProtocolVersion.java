@@ -30,8 +30,8 @@ public class BoltProtocolVersion implements Comparable<BoltProtocolVersion> {
     }
 
     public static BoltProtocolVersion fromRawBytes(int rawVersion) {
-        int major = rawVersion & 0x000000FF;
-        int minor = (rawVersion >> 8) & 0x000000FF;
+        var major = rawVersion & 0x000000FF;
+        var minor = (rawVersion >> 8) & 0x000000FF;
 
         return new BoltProtocolVersion(major, minor);
     }
@@ -45,7 +45,7 @@ public class BoltProtocolVersion implements Comparable<BoltProtocolVersion> {
     }
 
     public int toInt() {
-        int shiftedMinor = minorVersion << 8;
+        var shiftedMinor = minorVersion << 8;
         return shiftedMinor | majorVersion;
     }
 
@@ -55,8 +55,8 @@ public class BoltProtocolVersion implements Comparable<BoltProtocolVersion> {
         } else if (minorVersion < minVersion.minorVersion) {
             throw new IllegalArgumentException("Max version should be newer than min version");
         }
-        int range = minorVersion - minVersion.minorVersion;
-        int shiftedRange = range << 16;
+        var range = minorVersion - minVersion.minorVersion;
+        var shiftedRange = range << 16;
         return shiftedRange | toInt();
     }
 
@@ -80,7 +80,7 @@ public class BoltProtocolVersion implements Comparable<BoltProtocolVersion> {
         } else if (!(o instanceof BoltProtocolVersion)) {
             return false;
         } else {
-            BoltProtocolVersion other = (BoltProtocolVersion) o;
+            var other = (BoltProtocolVersion) o;
             return this.getMajorVersion() == other.getMajorVersion()
                     && this.getMinorVersion() == other.getMinorVersion();
         }
@@ -88,7 +88,7 @@ public class BoltProtocolVersion implements Comparable<BoltProtocolVersion> {
 
     @Override
     public int compareTo(BoltProtocolVersion other) {
-        int result = Integer.compare(majorVersion, other.majorVersion);
+        var result = Integer.compare(majorVersion, other.majorVersion);
 
         if (result == 0) {
             return Integer.compare(minorVersion, other.minorVersion);

@@ -70,7 +70,7 @@ public class StringValue extends ValueAdapter {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        StringValue that = (StringValue) o;
+        var that = (StringValue) o;
         return Objects.equals(val, that.val);
     }
 

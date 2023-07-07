@@ -31,10 +31,8 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
-import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.async.NetworkSession;
-import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -62,12 +60,12 @@ public class InternalSession extends AbstractQueryRunner implements Session {
 
     @Override
     public Result run(Query query, TransactionConfig config) {
-        ResultCursor cursor = Futures.blockingGet(
+        var cursor = Futures.blockingGet(
                 session.runAsync(query, config),
                 () -> terminateConnectionOnThreadInterrupt("Thread interrupted while running query in session"));
 
         // query executed, it is safe to obtain a connection in a blocking way
-        Connection connection = Futures.getNow(session.connectionAsync());
+        var connection = Futures.getNow(session.connectionAsync());
         return new InternalResult(connection, cursor);
     }
 
@@ -160,9 +158,9 @@ public class InternalSession extends AbstractQueryRunner implements Session {
         // it is unsafe to execute retries in the event loop threads because this can cause a deadlock
         // event loop thread will bock and wait for itself to read some data
         return session.retryLogic().retry(() -> {
-            try (Transaction tx = beginTransaction(mode, config)) {
+            try (var tx = beginTransaction(mode, config)) {
 
-                T result = work.execute(tx);
+                var result = work.execute(tx);
                 if (result instanceof Result) {
                     throw new ClientException(String.format(
                             "%s is not a valid return value, it should be consumed before producing a return value",
@@ -178,7 +176,7 @@ public class InternalSession extends AbstractQueryRunner implements Session {
     }
 
     private Transaction beginTransaction(AccessMode mode, TransactionConfig config) {
-        UnmanagedTransaction tx = Futures.blockingGet(
+        var tx = Futures.blockingGet(
                 session.beginTransactionAsync(mode, config),
                 () -> terminateConnectionOnThreadInterrupt("Thread interrupted while starting a transaction"));
         return new InternalTransaction(tx);

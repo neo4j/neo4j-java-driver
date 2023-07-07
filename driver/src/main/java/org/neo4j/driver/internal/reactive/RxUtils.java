@@ -37,7 +37,7 @@ public class RxUtils {
      */
     public static <T> Publisher<T> createEmptyPublisher(Supplier<CompletionStage<Void>> supplier) {
         return Mono.create(sink -> supplier.get().whenComplete((ignore, completionError) -> {
-            Throwable error = Futures.completionExceptionCause(completionError);
+            var error = Futures.completionExceptionCause(completionError);
             if (error != null) {
                 sink.error(error);
             } else {
@@ -85,7 +85,7 @@ public class RxUtils {
                             sink.error(nullResultThrowableSupplier.get());
                         }
                     } else {
-                        Throwable error = Optional.ofNullable(Futures.completionExceptionCause(completionError))
+                        var error = Optional.ofNullable(Futures.completionExceptionCause(completionError))
                                 .orElse(completionError);
                         sink.error(error);
                     }

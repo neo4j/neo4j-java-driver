@@ -74,7 +74,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
 
     @Override
     public int index(String key) {
-        int result = queryKeys.indexOf(key);
+        var result = queryKeys.indexOf(key);
         if (result == -1) {
             throw new NoSuchElementException("Unknown key: " + key);
         } else {
@@ -89,7 +89,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
 
     @Override
     public Value get(String key) {
-        int fieldIndex = queryKeys.indexOf(key);
+        var fieldIndex = queryKeys.indexOf(key);
 
         if (fieldIndex == -1) {
             return Values.NULL;
@@ -128,17 +128,17 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
         if (this == other) {
             return true;
         } else if (other instanceof Record) {
-            Record otherRecord = (Record) other;
-            int size = size();
+            var otherRecord = (Record) other;
+            var size = size();
             if (!(size == otherRecord.size())) {
                 return false;
             }
             if (!queryKeys.keys().equals(otherRecord.keys())) {
                 return false;
             }
-            for (int i = 0; i < size; i++) {
-                Value value = get(i);
-                Value otherValue = otherRecord.get(i);
+            for (var i = 0; i < size; i++) {
+                var value = get(i);
+                var otherValue = otherRecord.get(i);
                 if (!value.equals(otherValue)) {
                     return false;
                 }

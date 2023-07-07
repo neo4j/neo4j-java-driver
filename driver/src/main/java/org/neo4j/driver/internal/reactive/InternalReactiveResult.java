@@ -65,7 +65,7 @@ public class InternalReactiveResult implements ReactiveResult {
     public Publisher<ResultSummary> consume() {
         return publisherToFlowPublisher(
                 Mono.create(sink -> cursor.summaryAsync().whenComplete((summary, summaryCompletionError) -> {
-                    Throwable error = Futures.completionExceptionCause(summaryCompletionError);
+                    var error = Futures.completionExceptionCause(summaryCompletionError);
                     if (summary != null) {
                         sink.success(summary);
                     } else {

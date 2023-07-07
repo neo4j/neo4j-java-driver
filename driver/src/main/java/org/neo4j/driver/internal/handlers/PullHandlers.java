@@ -36,8 +36,7 @@ public class PullHandlers {
             Connection connection,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             UnmanagedTransaction tx) {
-        PullResponseCompletionListener completionListener =
-                createPullResponseCompletionListener(connection, bookmarkConsumer, tx);
+        var completionListener = createPullResponseCompletionListener(connection, bookmarkConsumer, tx);
 
         return new LegacyPullAllResponseHandler(
                 query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener);
@@ -50,8 +49,7 @@ public class PullHandlers {
             Consumer<DatabaseBookmark> bookmarkConsumer,
             UnmanagedTransaction tx,
             long fetchSize) {
-        PullResponseCompletionListener completionListener =
-                createPullResponseCompletionListener(connection, bookmarkConsumer, tx);
+        var completionListener = createPullResponseCompletionListener(connection, bookmarkConsumer, tx);
 
         return new AutoPullResponseHandler(
                 query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener, fetchSize);
@@ -63,8 +61,7 @@ public class PullHandlers {
             Connection connection,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             UnmanagedTransaction tx) {
-        PullResponseCompletionListener completionListener =
-                createPullResponseCompletionListener(connection, bookmarkConsumer, tx);
+        var completionListener = createPullResponseCompletionListener(connection, bookmarkConsumer, tx);
 
         return new BasicPullResponseHandler(
                 query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener);

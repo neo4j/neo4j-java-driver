@@ -119,7 +119,7 @@ public final class TransactionConfig implements Serializable {
      * @return metadata or empty map when it is not configured.
      */
     public Map<String, Value> metadata() {
-        Map<String, Value> result = this.convertedMetadata;
+        var result = this.convertedMetadata;
         if (result == null) {
             synchronized (this) {
                 result = this.convertedMetadata;
@@ -149,7 +149,7 @@ public final class TransactionConfig implements Serializable {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        TransactionConfig that = (TransactionConfig) o;
+        var that = (TransactionConfig) o;
         return Objects.equals(timeout, that.timeout) && Objects.equals(metadata, that.metadata);
     }
 

@@ -64,14 +64,14 @@ public class ChunkAwareByteBufOutput implements PackOutput {
 
     @Override
     public PackOutput writeBytes(byte[] data) {
-        int offset = 0;
-        int length = data.length;
+        var offset = 0;
+        var length = data.length;
         while (offset < length) {
             // Ensure there is an open chunk, and that it has at least one byte of space left
             ensureCanFitInCurrentChunk(1);
 
             // Write as much as we can into the current chunk
-            int amountToWrite = Math.min(availableBytesInCurrentChunk(), length - offset);
+            var amountToWrite = Math.min(availableBytesInCurrentChunk(), length - offset);
 
             buf.writeBytes(data, offset, amountToWrite);
             currentChunkSize += amountToWrite;
@@ -113,7 +113,7 @@ public class ChunkAwareByteBufOutput implements PackOutput {
     }
 
     private void ensureCanFitInCurrentChunk(int numberOfBytes) {
-        int targetChunkSize = currentChunkSize + numberOfBytes;
+        var targetChunkSize = currentChunkSize + numberOfBytes;
         if (targetChunkSize > maxChunkSize) {
             writeChunkSizeHeader();
             startNewChunk(buf.writerIndex());
@@ -128,7 +128,7 @@ public class ChunkAwareByteBufOutput implements PackOutput {
 
     private void writeChunkSizeHeader() {
         // go to the beginning of the chunk and write the size header
-        int chunkBodySize = currentChunkSize - CHUNK_HEADER_SIZE_BYTES;
+        var chunkBodySize = currentChunkSize - CHUNK_HEADER_SIZE_BYTES;
         BoltProtocolUtil.writeChunkHeader(buf, currentChunkStartIndex, chunkBodySize);
     }
 

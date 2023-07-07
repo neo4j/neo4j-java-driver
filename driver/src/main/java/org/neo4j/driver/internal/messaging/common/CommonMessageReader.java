@@ -19,8 +19,6 @@
 package org.neo4j.driver.internal.messaging.common;
 
 import java.io.IOException;
-import java.util.Map;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.messaging.ValueUnpacker;
@@ -44,7 +42,7 @@ public class CommonMessageReader implements MessageFormat.Reader {
     @Override
     public void read(ResponseMessageHandler handler) throws IOException {
         unpacker.unpackStructHeader();
-        int type = unpacker.unpackStructSignature();
+        var type = unpacker.unpackStructSignature();
         switch (type) {
             case SuccessMessage.SIGNATURE:
                 unpackSuccessMessage(handler);
@@ -64,14 +62,14 @@ public class CommonMessageReader implements MessageFormat.Reader {
     }
 
     private void unpackSuccessMessage(ResponseMessageHandler output) throws IOException {
-        Map<String, Value> map = unpacker.unpackMap();
+        var map = unpacker.unpackMap();
         output.handleSuccessMessage(map);
     }
 
     private void unpackFailureMessage(ResponseMessageHandler output) throws IOException {
-        Map<String, Value> params = unpacker.unpackMap();
-        String code = params.get("code").asString();
-        String message = params.get("message").asString();
+        var params = unpacker.unpackMap();
+        var code = params.get("code").asString();
+        var message = params.get("message").asString();
         output.handleFailureMessage(code, message);
     }
 
@@ -80,7 +78,7 @@ public class CommonMessageReader implements MessageFormat.Reader {
     }
 
     private void unpackRecordMessage(ResponseMessageHandler output) throws IOException {
-        Value[] fields = unpacker.unpackArray();
+        var fields = unpacker.unpackArray();
         output.handleRecordMessage(fields);
     }
 }

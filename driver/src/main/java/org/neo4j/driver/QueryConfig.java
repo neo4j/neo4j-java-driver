@@ -125,7 +125,7 @@ public final class QueryConfig implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        QueryConfig that = (QueryConfig) o;
+        var that = (QueryConfig) o;
         return useDefaultBookmarkManager == that.useDefaultBookmarkManager
                 && routing == that.routing
                 && Objects.equals(database, that.database)

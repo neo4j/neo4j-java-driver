@@ -44,7 +44,6 @@ import org.neo4j.driver.internal.BoltAgent;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -52,7 +51,6 @@ import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.HelloResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
-import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -93,7 +91,7 @@ public class BoltProtocolV3 implements BoltProtocol {
             channelInitializedPromise.setFailure(exception);
             return;
         }
-        Channel channel = channelInitializedPromise.channel();
+        var channel = channelInitializedPromise.channel();
         HelloMessage message;
 
         if (routingContext.isServerRoutingEnabled()) {
@@ -114,7 +112,7 @@ public class BoltProtocolV3 implements BoltProtocol {
                     notificationConfig);
         }
 
-        HelloResponseHandler handler = new HelloResponseHandler(channelInitializedPromise, clock);
+        var handler = new HelloResponseHandler(channelInitializedPromise, clock);
 
         messageDispatcher(channel).enqueue(handler);
         channel.writeAndFlush(message, channel.voidPromise());
@@ -122,9 +120,9 @@ public class BoltProtocolV3 implements BoltProtocol {
 
     @Override
     public void prepareToCloseChannel(Channel channel) {
-        InboundMessageDispatcher messageDispatcher = messageDispatcher(channel);
+        var messageDispatcher = messageDispatcher(channel);
 
-        GoodbyeMessage message = GoodbyeMessage.GOODBYE;
+        var message = GoodbyeMessage.GOODBYE;
         messageDispatcher.enqueue(NoOpResponseHandler.INSTANCE);
         channel.writeAndFlush(message, channel.voidPromise());
 
@@ -148,8 +146,8 @@ public class BoltProtocolV3 implements BoltProtocol {
             return Futures.failedFuture(error);
         }
 
-        CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
-        BeginMessage beginMessage = new BeginMessage(
+        var beginTxFuture = new CompletableFuture<Void>();
+        var beginMessage = new BeginMessage(
                 bookmarks,
                 config,
                 connection.databaseName(),
@@ -163,14 +161,14 @@ public class BoltProtocolV3 implements BoltProtocol {
 
     @Override
     public CompletionStage<DatabaseBookmark> commitTransaction(Connection connection) {
-        CompletableFuture<DatabaseBookmark> commitFuture = new CompletableFuture<>();
+        var commitFuture = new CompletableFuture<DatabaseBookmark>();
         connection.writeAndFlush(COMMIT, new CommitTxResponseHandler(commitFuture));
         return commitFuture;
     }
 
     @Override
     public CompletionStage<Void> rollbackTransaction(Connection connection) {
-        CompletableFuture<Void> rollbackFuture = new CompletableFuture<>();
+        var rollbackFuture = new CompletableFuture<Void>();
         connection.writeAndFlush(ROLLBACK, new RollbackTxResponseHandler(rollbackFuture));
         return rollbackFuture;
     }
@@ -189,7 +187,7 @@ public class BoltProtocolV3 implements BoltProtocol {
             throw exception;
         }
         verifyDatabaseNameBeforeTransaction(connection.databaseName());
-        RunWithMetadataMessage runMessage = autoCommitTxRunMessage(
+        var runMessage = autoCommitTxRunMessage(
                 query,
                 config,
                 connection.databaseName(),
@@ -203,7 +201,7 @@ public class BoltProtocolV3 implements BoltProtocol {
     @Override
     public ResultCursorFactory runInUnmanagedTransaction(
             Connection connection, Query query, UnmanagedTransaction tx, long fetchSize) {
-        RunWithMetadataMessage runMessage = unmanagedTxRunMessage(query);
+        var runMessage = unmanagedTxRunMessage(query);
         return buildResultCursorFactory(connection, query, (ignored) -> {}, tx, runMessage, fetchSize);
     }
 
@@ -214,10 +212,9 @@ public class BoltProtocolV3 implements BoltProtocol {
             UnmanagedTransaction tx,
             RunWithMetadataMessage runMessage,
             long ignored) {
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
-        RunResponseHandler runHandler = new RunResponseHandler(runFuture, METADATA_EXTRACTOR, connection, tx);
-        PullAllResponseHandler pullHandler =
-                newBoltV3PullAllHandler(query, runHandler, connection, bookmarkConsumer, tx);
+        var runFuture = new CompletableFuture<Void>();
+        var runHandler = new RunResponseHandler(runFuture, METADATA_EXTRACTOR, connection, tx);
+        var pullHandler = newBoltV3PullAllHandler(query, runHandler, connection, bookmarkConsumer, tx);
 
         return new AsyncResultCursorOnlyFactory(connection, runMessage, runHandler, runFuture, pullHandler);
     }

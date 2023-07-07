@@ -30,7 +30,7 @@ public class BeginMessageEncoder implements MessageEncoder {
     @Override
     public void encode(Message message, ValuePacker packer) throws IOException {
         checkArgument(message, BeginMessage.class);
-        BeginMessage beginMessage = (BeginMessage) message;
+        var beginMessage = (BeginMessage) message;
         packer.packStructHeader(1, beginMessage.signature());
         packer.pack(beginMessage.metadata());
     }

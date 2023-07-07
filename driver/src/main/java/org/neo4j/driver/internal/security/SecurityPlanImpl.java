@@ -50,7 +50,7 @@ public class SecurityPlanImpl implements SecurityPlan {
     public static SecurityPlan forAllCertificates(
             boolean requiresHostnameVerification, RevocationCheckingStrategy revocationCheckingStrategy)
             throws GeneralSecurityException {
-        SSLContext sslContext = SSLContext.getInstance("TLS");
+        var sslContext = SSLContext.getInstance("TLS");
         sslContext.init(new KeyManager[0], new TrustManager[] {new TrustAllTrustManager()}, null);
 
         return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationCheckingStrategy);
@@ -61,21 +61,21 @@ public class SecurityPlanImpl implements SecurityPlan {
             boolean requiresHostnameVerification,
             RevocationCheckingStrategy revocationCheckingStrategy)
             throws GeneralSecurityException, IOException {
-        SSLContext sslContext = configureSSLContext(certFiles, revocationCheckingStrategy);
+        var sslContext = configureSSLContext(certFiles, revocationCheckingStrategy);
         return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationCheckingStrategy);
     }
 
     public static SecurityPlan forSystemCASignedCertificates(
             boolean requiresHostnameVerification, RevocationCheckingStrategy revocationCheckingStrategy)
             throws GeneralSecurityException, IOException {
-        SSLContext sslContext = configureSSLContext(Collections.emptyList(), revocationCheckingStrategy);
+        var sslContext = configureSSLContext(Collections.emptyList(), revocationCheckingStrategy);
         return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationCheckingStrategy);
     }
 
     private static SSLContext configureSSLContext(
             List<File> customCertFiles, RevocationCheckingStrategy revocationCheckingStrategy)
             throws GeneralSecurityException, IOException {
-        KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        var trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         trustedKeyStore.load(null, null);
 
         if (!customCertFiles.isEmpty()) {
@@ -85,12 +85,10 @@ public class SecurityPlanImpl implements SecurityPlan {
             loadSystemCertificates(trustedKeyStore);
         }
 
-        PKIXBuilderParameters pkixBuilderParameters =
-                configurePKIXBuilderParameters(trustedKeyStore, revocationCheckingStrategy);
+        var pkixBuilderParameters = configurePKIXBuilderParameters(trustedKeyStore, revocationCheckingStrategy);
 
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        TrustManagerFactory trustManagerFactory =
-                TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        var sslContext = SSLContext.getInstance("TLS");
+        var trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 
         if (pkixBuilderParameters == null) {
             trustManagerFactory.init(trustedKeyStore);
@@ -128,12 +126,12 @@ public class SecurityPlanImpl implements SecurityPlan {
 
     private static void loadSystemCertificates(KeyStore trustedKeyStore) throws GeneralSecurityException, IOException {
         // To customize the PKIXParameters we need to get hold of the default KeyStore, no other elegant way available
-        TrustManagerFactory tempFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        var tempFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         tempFactory.init((KeyStore) null);
 
         // Get hold of the default trust manager
         X509TrustManager x509TrustManager = null;
-        for (TrustManager trustManager : tempFactory.getTrustManagers()) {
+        for (var trustManager : tempFactory.getTrustManagers()) {
             if (trustManager instanceof X509TrustManager) {
                 x509TrustManager = (X509TrustManager) trustManager;
                 break;

@@ -52,7 +52,7 @@ public final class InternalBookmark implements Bookmark, Serializable {
             return empty();
         }
 
-        int size = Iterables.count(bookmarks);
+        var size = Iterables.count(bookmarks);
         if (size == 0) {
             return empty();
         } else if (size == 1) {
@@ -60,7 +60,7 @@ public final class InternalBookmark implements Bookmark, Serializable {
         }
 
         Set<String> newValues = new HashSet<>();
-        for (Bookmark value : bookmarks) {
+        for (var value : bookmarks) {
             if (value == null) {
                 continue; // skip any null bookmark value
             }
@@ -122,7 +122,7 @@ public final class InternalBookmark implements Bookmark, Serializable {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        InternalBookmark bookmark = (InternalBookmark) o;
+        var bookmark = (InternalBookmark) o;
         return Objects.equals(values, bookmark.values);
     }
 

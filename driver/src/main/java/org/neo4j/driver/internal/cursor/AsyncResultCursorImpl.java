@@ -81,7 +81,7 @@ public class AsyncResultCursorImpl implements AsyncResultCursor {
 
     @Override
     public CompletionStage<ResultSummary> forEachAsync(Consumer<Record> action) {
-        CompletableFuture<Void> resultFuture = new CompletableFuture<>();
+        var resultFuture = new CompletableFuture<Void>();
         internalForEachAsync(action, resultFuture);
         return resultFuture.thenCompose(ignore -> consumeAsync());
     }
@@ -114,12 +114,12 @@ public class AsyncResultCursorImpl implements AsyncResultCursor {
     }
 
     private void internalForEachAsync(Consumer<Record> action, CompletableFuture<Void> resultFuture) {
-        CompletionStage<Record> recordFuture = nextAsync();
+        var recordFuture = nextAsync();
 
         // use async completion listener because of recursion, otherwise it is possible for
         // the caller thread to get StackOverflowError when result is large and buffered
         recordFuture.whenCompleteAsync((record, completionError) -> {
-            Throwable error = Futures.completionExceptionCause(completionError);
+            var error = Futures.completionExceptionCause(completionError);
             if (error != null) {
                 resultFuture.completeExceptionally(error);
             } else if (record != null) {

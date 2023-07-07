@@ -40,8 +40,8 @@ public class QueryKeys {
     public QueryKeys(List<String> keys) {
         this.keys = keys;
         Map<String, Integer> keyIndex = new HashMap<>(keys.size());
-        int i = 0;
-        for (String key : keys) {
+        var i = 0;
+        for (var key : keys) {
             keyIndex.put(key, i++);
         }
         this.keyIndex = keyIndex;
@@ -53,7 +53,7 @@ public class QueryKeys {
     }
 
     public void add(String key) {
-        int index = keys.size();
+        var index = keys.size();
         keys.add(key);
         keyIndex.put(key, index);
     }
@@ -86,7 +86,7 @@ public class QueryKeys {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        QueryKeys queryKeys = (QueryKeys) o;
+        var queryKeys = (QueryKeys) o;
         return keys.equals(queryKeys.keys) && keyIndex.equals(queryKeys.keyIndex);
     }
 

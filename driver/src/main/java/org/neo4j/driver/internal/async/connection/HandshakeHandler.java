@@ -73,7 +73,7 @@ public class HandshakeHandler extends ReplayingDecoder<Void> {
 
         if (!failed) {
             // channel became inactive while doing bolt handshake, not because of some previous error
-            ServiceUnavailableException error = ErrorUtil.newConnectionTerminatedError();
+            var error = ErrorUtil.newConnectionTerminatedError();
             fail(ctx, error);
         }
     }
@@ -84,20 +84,20 @@ public class HandshakeHandler extends ReplayingDecoder<Void> {
             errorLog.traceOrDebug("Another fatal error occurred in the pipeline", error);
         } else {
             failed = true;
-            Throwable cause = transformError(error);
+            var cause = transformError(error);
             fail(ctx, cause);
         }
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        BoltProtocolVersion serverSuggestedVersion = BoltProtocolVersion.fromRawBytes(in.readInt());
+        var serverSuggestedVersion = BoltProtocolVersion.fromRawBytes(in.readInt());
         log.debug("S: [Bolt Handshake] %s", serverSuggestedVersion);
 
         // this is a one-time handler, remove it when protocol version has been read
         ctx.pipeline().remove(this);
 
-        BoltProtocol protocol = protocolForVersion(serverSuggestedVersion);
+        var protocol = protocolForVersion(serverSuggestedVersion);
         if (protocol != null) {
             protocolSelected(serverSuggestedVersion, protocol.createMessageFormat(), ctx);
         } else {

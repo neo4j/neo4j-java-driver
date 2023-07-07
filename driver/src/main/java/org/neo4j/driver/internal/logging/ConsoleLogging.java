@@ -27,7 +27,6 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import org.neo4j.driver.Logger;
@@ -58,12 +57,12 @@ public class ConsoleLogging implements Logging, Serializable {
 
         public ConsoleLogger(String name, Level level) {
             super(name, level);
-            java.util.logging.Logger logger = java.util.logging.Logger.getLogger(name);
+            var logger = java.util.logging.Logger.getLogger(name);
 
             logger.setUseParentHandlers(false);
             // remove all other logging handlers
-            Handler[] handlers = logger.getHandlers();
-            for (Handler handlerToRemove : handlers) {
+            var handlers = logger.getHandlers();
+            for (var handlerToRemove : handlers) {
                 logger.removeHandler(handlerToRemove);
             }
 
@@ -86,10 +85,10 @@ public class ConsoleLogging implements Logging, Serializable {
         }
 
         private String formatThrowable(Throwable throwable) {
-            String throwableString = "";
+            var throwableString = "";
             if (throwable != null) {
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
+                var sw = new StringWriter();
+                var pw = new PrintWriter(sw);
                 pw.println();
                 throwable.printStackTrace(pw);
                 pw.close();

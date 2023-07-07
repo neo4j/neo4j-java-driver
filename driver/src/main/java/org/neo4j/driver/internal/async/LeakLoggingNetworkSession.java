@@ -70,7 +70,7 @@ public class LeakLoggingNetworkSession extends NetworkSession {
     }
 
     private void logLeakIfNeeded() {
-        Boolean isOpen = Futures.blockingGet(currentConnectionIsOpen());
+        var isOpen = Futures.blockingGet(currentConnectionIsOpen());
         if (isOpen) {
             log.error(
                     "Neo4j Session object leaked, please ensure that your application "
@@ -82,9 +82,9 @@ public class LeakLoggingNetworkSession extends NetworkSession {
     }
 
     private static String captureStackTrace() {
-        StringBuilder result = new StringBuilder();
-        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        for (StackTraceElement element : elements) {
+        var result = new StringBuilder();
+        var elements = Thread.currentThread().getStackTrace();
+        for (var element : elements) {
             result.append("\t").append(element).append(lineSeparator());
         }
         return result.toString();
