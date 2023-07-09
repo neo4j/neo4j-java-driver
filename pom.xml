@@ -53,6 +53,7 @@
     <lombok.version>1.18.28</lombok.version>
     <svm.version>23.0.0</svm.version>
     <micrometer.version>1.11.1</micrometer.version>
+    <blockhound.version>1.0.8.RELEASE</blockhound.version>
     <testcontainers.version>1.18.3</testcontainers.version>
     <build-resources.version>5.9.0</build-resources.version>
     <!-- To be overwritten by child projects -->
@@ -123,6 +124,12 @@
         <groupId>io.micrometer</groupId>
         <artifactId>micrometer-core</artifactId>
         <version>${micrometer.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.projectreactor.tools</groupId>
+        <artifactId>blockhound</artifactId>
+        <version>${blockhound.version}</version>
         <scope>provided</scope>
       </dependency>
 

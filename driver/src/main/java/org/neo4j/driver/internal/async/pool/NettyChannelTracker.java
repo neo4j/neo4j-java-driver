@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async.pool;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAddress;
+import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
@@ -31,7 +32,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Supplier;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -60,27 +60,9 @@ public class NettyChannelTracker implements ChannelPoolHandler {
         this.allChannels = channels;
     }
 
-    private void doInWriteLock(Runnable work) {
-        try {
-            write.lock();
-            work.run();
-        } finally {
-            write.unlock();
-        }
-    }
-
-    private <T> T retrieveInReadLock(Supplier<T> work) {
-        try {
-            read.lock();
-            return work.get();
-        } finally {
-            read.unlock();
-        }
-    }
-
     @Override
     public void channelReleased(Channel channel) {
-        doInWriteLock(() -> {
+        executeWithLock(write, () -> {
             decrementInUse(channel);
             incrementIdle(channel);
             channel.closeFuture().addListener(closeListener);
@@ -91,7 +73,7 @@ public class NettyChannelTracker implements ChannelPoolHandler {
 
     @Override
     public void channelAcquired(Channel channel) {
-        doInWriteLock(() -> {
+        executeWithLock(write, () -> {
             incrementInUse(channel);
             decrementIdle(channel);
             channel.closeFuture().removeListener(closeListener);
@@ -109,7 +91,7 @@ public class NettyChannelTracker implements ChannelPoolHandler {
 
     public void channelCreated(Channel channel, ListenerEvent<?> creatingEvent) {
         // when it is created, we count it as idle as it has not been acquired out of the pool
-        doInWriteLock(() -> incrementIdle(channel));
+        executeWithLock(write, () -> incrementIdle(channel));
 
         metricsListener.afterCreated(poolId(channel), creatingEvent);
         allChannels.add(channel);
@@ -129,16 +111,16 @@ public class NettyChannelTracker implements ChannelPoolHandler {
     }
 
     public void channelClosed(Channel channel) {
-        doInWriteLock(() -> decrementIdle(channel));
+        executeWithLock(write, () -> decrementIdle(channel));
         metricsListener.afterClosed(poolId(channel));
     }
 
     public int inUseChannelCount(ServerAddress address) {
-        return retrieveInReadLock(() -> addressToInUseChannelCount.getOrDefault(address, 0));
+        return executeWithLock(read, () -> addressToInUseChannelCount.getOrDefault(address, 0));
     }
 
     public int idleChannelCount(ServerAddress address) {
-        return retrieveInReadLock(() -> addressToIdleChannelCount.getOrDefault(address, 0));
+        return executeWithLock(read, () -> addressToIdleChannelCount.getOrDefault(address, 0));
     }
 
     public void prepareToCloseChannels() {

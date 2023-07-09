@@ -25,27 +25,49 @@ import java.util.function.Supplier;
 
 public class LockUtil {
     public static void executeWithLock(Lock lock, Runnable runnable) {
-        lock.lock();
+        lock(lock);
         try {
             runnable.run();
         } finally {
-            lock.unlock();
+            unlock(lock);
         }
     }
 
     public static <T> T executeWithLock(Lock lock, Supplier<T> supplier) {
-        lock.lock();
+        lock(lock);
         try {
             return supplier.get();
         } finally {
-            lock.unlock();
+            unlock(lock);
         }
     }
 
     public static <T> void executeWithLockAsync(Lock lock, Supplier<CompletionStage<T>> stageSupplier) {
-        lock.lock();
+        lock(lock);
         CompletableFuture.completedFuture(lock)
                 .thenCompose(ignored -> stageSupplier.get())
-                .whenComplete((ignored, throwable) -> lock.unlock());
+                .whenComplete((ignored, throwable) -> unlock(lock));
+    }
+
+    /**
+     * Invokes {@link Lock#lock()} on the supplied {@link Lock}.
+     * <p>
+     * This method is marked as allowed in the {@link org.neo4j.driver.internal.blockhound.Neo4jDriverBlockHoundIntegration}.
+     * @param lock the lock
+     * @since 5.11
+     */
+    private static void lock(Lock lock) {
+        lock.lock();
+    }
+
+    /**
+     * Invokes {@link Lock#unlock()} on the supplied {@link Lock}.
+     * <p>
+     * This method is marked as allowed in the {@link org.neo4j.driver.internal.blockhound.Neo4jDriverBlockHoundIntegration}.
+     * @param lock the lock
+     * @since 5.11
+     */
+    private static void unlock(Lock lock) {
+        lock.unlock();
     }
 }

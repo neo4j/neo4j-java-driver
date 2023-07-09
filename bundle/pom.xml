@@ -48,6 +48,11 @@
       <groupId>org.graalvm.nativeimage</groupId>
       <artifactId>svm</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.projectreactor.tools</groupId>
+      <artifactId>blockhound</artifactId>
+      <optional>true</optional>
+    </dependency>
 
     <!-- As we pretend the driver being provided only, we need be explicit about the one dependency we actually didn't shade. -->
     <dependency>
