@@ -22,6 +22,7 @@
     <maven.compiler.xlint.extras>,-try</maven.compiler.xlint.extras>
     <surefire.jpms.args>--add-opens org.neo4j.driver/org.neo4j.driver.internal.util.messaging=ALL-UNNAMED</surefire.jpms.args>
     <failsafe.parallelizable.jpms.args>--add-opens org.neo4j.driver/org.neo4j.driver.internal.util=ALL-UNNAMED --add-opens org.neo4j.driver/org.neo4j.driver.internal.async=ALL-UNNAMED</failsafe.parallelizable.jpms.args>
+    <blockhound.tag>blockHoundTest</blockhound.tag>
     <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
 
@@ -58,6 +59,11 @@
     <dependency>
       <groupId>org.graalvm.nativeimage</groupId>
       <artifactId>svm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.projectreactor.tools</groupId>
+      <artifactId>blockhound</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <!-- Test dependencies -->
@@ -126,6 +132,26 @@
               <arg>org.graalvm.sdk/com.oracle.svm.core.annotate=org.neo4j.driver</arg>
             </compilerArgs>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <excludedGroups>${blockhound.tag}</excludedGroups>
+          </configuration>
+          <executions>
+            <execution>
+              <id>blockhound-tests</id>
+              <goals>
+                <goal>test</goal>
+              </goals>
+              <configuration combine.self="override">
+                <useModulePath>false</useModulePath>
+                <argLine>-XX:+AllowRedefinitionToAddDeleteMethods</argLine>
+                <groups>${blockhound.tag}</groups>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
