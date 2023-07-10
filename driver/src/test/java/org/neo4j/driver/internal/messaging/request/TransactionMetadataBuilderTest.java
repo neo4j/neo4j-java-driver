@@ -21,6 +21,9 @@ package org.neo4j.driver.internal.messaging.request;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.Values.value;
@@ -42,6 +45,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.NotificationCategory;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.NotificationSeverity;
@@ -62,7 +67,8 @@ public class TransactionMetadataBuilderTest {
 
         var txTimeout = Duration.ofSeconds(7);
 
-        var metadata = buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null, null, null);
+        var metadata = buildMetadata(
+                txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null, null, null, Logging.none());
 
         Map<String, Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put(
@@ -89,7 +95,8 @@ public class TransactionMetadataBuilderTest {
 
         var txTimeout = Duration.ofSeconds(7);
 
-        var metadata = buildMetadata(txTimeout, txMetadata, database(databaseName), WRITE, bookmarks, null, null, null);
+        var metadata = buildMetadata(
+                txTimeout, txMetadata, database(databaseName), WRITE, bookmarks, null, null, null, Logging.none());
 
         Map<String, Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put(
@@ -103,7 +110,8 @@ public class TransactionMetadataBuilderTest {
 
     @Test
     void shouldNotHaveMetadataForDatabaseNameWhenIsNull() {
-        var metadata = buildMetadata(null, null, defaultDatabase(), WRITE, Collections.emptySet(), null, null, null);
+        var metadata = buildMetadata(
+                null, null, defaultDatabase(), WRITE, Collections.emptySet(), null, null, null, Logging.none());
         assertTrue(metadata.isEmpty());
     }
 
@@ -119,11 +127,44 @@ public class TransactionMetadataBuilderTest {
                 null,
                 NotificationConfig.defaultConfig()
                         .enableMinimumSeverity(NotificationSeverity.WARNING)
-                        .disableCategories(Set.of(NotificationCategory.UNSUPPORTED)));
+                        .disableCategories(Set.of(NotificationCategory.UNSUPPORTED)),
+                Logging.none());
 
         var expectedMetadata = new HashMap<String, Value>();
         expectedMetadata.put("notifications_minimum_severity", value("WARNING"));
         expectedMetadata.put("notifications_disabled_categories", value(Set.of("UNSUPPORTED")));
         assertEquals(expectedMetadata, metadata);
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {1, 1_000_001, 100_500_000, 100_700_000, 1_000_000_001})
+    void shouldRoundUpFractionalTimeoutAndLog(long nanosValue) {
+        // given
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
+        given(logging.getLog(TransactionMetadataBuilder.class)).willReturn(logger);
+
+        // when
+        var metadata = buildMetadata(
+                Duration.ofNanos(nanosValue),
+                null,
+                defaultDatabase(),
+                WRITE,
+                Collections.emptySet(),
+                null,
+                null,
+                null,
+                logging);
+
+        // then
+        var expectedMetadata = new HashMap<String, Value>();
+        var expectedMillis = nanosValue / 1_000_000 + 1;
+        expectedMetadata.put("tx_timeout", value(expectedMillis));
+        assertEquals(expectedMetadata, metadata);
+        then(logging).should().getLog(TransactionMetadataBuilder.class);
+        then(logger)
+                .should()
+                .info(
+                        "The transaction timeout has been rounded up to next millisecond value since the config had a fractional millisecond value");
     }
 }

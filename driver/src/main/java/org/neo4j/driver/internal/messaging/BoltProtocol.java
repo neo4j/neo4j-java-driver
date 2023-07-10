@@ -28,6 +28,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
@@ -93,6 +94,7 @@ public interface BoltProtocol {
      * @param config             the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
      * @param txType             the Kernel transaction type
      * @param notificationConfig the notification configuration
+     * @param logging            the driver logging
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
      */
     CompletionStage<Void> beginTransaction(
@@ -100,7 +102,8 @@ public interface BoltProtocol {
             Set<Bookmark> bookmarks,
             TransactionConfig config,
             String txType,
-            NotificationConfig notificationConfig);
+            NotificationConfig notificationConfig,
+            Logging logging);
 
     /**
      * Commit the unmanaged transaction.
@@ -127,6 +130,7 @@ public interface BoltProtocol {
      * @param config             the transaction config for the implicitly started auto-commit transaction.
      * @param fetchSize          the record fetch size for PULL message.
      * @param notificationConfig the notification configuration
+     * @param logging            the driver logging
      * @return stage with cursor.
      */
     ResultCursorFactory runInAutoCommitTransaction(
@@ -136,7 +140,8 @@ public interface BoltProtocol {
             Consumer<DatabaseBookmark> bookmarkConsumer,
             TransactionConfig config,
             long fetchSize,
-            NotificationConfig notificationConfig);
+            NotificationConfig notificationConfig,
+            Logging logging);
 
     /**
      * Execute the given query in a running unmanaged transaction, i.e. {@link Transaction#run(Query)}.

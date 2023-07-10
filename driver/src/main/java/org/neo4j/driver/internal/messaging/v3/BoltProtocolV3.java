@@ -35,6 +35,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
@@ -135,7 +136,8 @@ public class BoltProtocolV3 implements BoltProtocol {
             Set<Bookmark> bookmarks,
             TransactionConfig config,
             String txType,
-            NotificationConfig notificationConfig) {
+            NotificationConfig notificationConfig,
+            Logging logging) {
         var exception = verifyNotificationConfigSupported(notificationConfig);
         if (exception != null) {
             return CompletableFuture.failedStage(exception);
@@ -154,7 +156,8 @@ public class BoltProtocolV3 implements BoltProtocol {
                 connection.mode(),
                 connection.impersonatedUser(),
                 txType,
-                notificationConfig);
+                notificationConfig,
+                logging);
         connection.writeAndFlush(beginMessage, new BeginTxResponseHandler(beginTxFuture));
         return beginTxFuture;
     }
@@ -181,7 +184,8 @@ public class BoltProtocolV3 implements BoltProtocol {
             Consumer<DatabaseBookmark> bookmarkConsumer,
             TransactionConfig config,
             long fetchSize,
-            NotificationConfig notificationConfig) {
+            NotificationConfig notificationConfig,
+            Logging logging) {
         var exception = verifyNotificationConfigSupported(notificationConfig);
         if (exception != null) {
             throw exception;
@@ -194,7 +198,8 @@ public class BoltProtocolV3 implements BoltProtocol {
                 connection.mode(),
                 bookmarks,
                 connection.impersonatedUser(),
-                notificationConfig);
+                notificationConfig,
+                logging);
         return buildResultCursorFactory(connection, query, bookmarkConsumer, null, runMessage, fetchSize);
     }
 

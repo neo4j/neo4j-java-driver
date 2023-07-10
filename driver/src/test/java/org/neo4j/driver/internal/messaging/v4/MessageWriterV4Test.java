@@ -47,6 +47,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.stream.Stream;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -121,7 +122,8 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         defaultDatabase(),
                         null,
                         null,
-                        null),
+                        null,
+                        Logging.none()),
                 new BeginMessage(
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx123")),
                         ofSeconds(5),
@@ -130,7 +132,8 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         database("foo"),
                         null,
                         null,
-                        null),
+                        null,
+                        Logging.none()),
                 COMMIT,
                 ROLLBACK,
                 RESET,
@@ -142,7 +145,8 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         READ,
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx1")),
                         null,
-                        null),
+                        null,
+                        Logging.none()),
                 autoCommitTxRunMessage(
                         new Query("RETURN 1"),
                         ofSeconds(5),
@@ -151,7 +155,8 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         WRITE,
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx1")),
                         null,
-                        null),
+                        null,
+                        Logging.none()),
                 unmanagedTxRunMessage(new Query("RETURN 1")),
 
                 // Bolt V3 messages with struct values
@@ -163,7 +168,8 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         READ,
                         Collections.emptySet(),
                         null,
-                        null),
+                        null,
+                        Logging.none()),
                 autoCommitTxRunMessage(
                         new Query("RETURN $x", singletonMap("x", value(ZonedDateTime.now()))),
                         ofSeconds(1),
@@ -172,7 +178,8 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         WRITE,
                         Collections.emptySet(),
                         null,
-                        null),
+                        null,
+                        Logging.none()),
                 unmanagedTxRunMessage(new Query("RETURN $x", singletonMap("x", point(42, 1, 2, 3)))));
     }
 

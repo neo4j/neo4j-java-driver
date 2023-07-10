@@ -45,6 +45,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.spi.Connection;
@@ -115,7 +116,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         }
 
         TestRoutingProcedureRunner(RoutingContext context, CompletionStage<List<Record>> runProcedureResult) {
-            super(context);
+            super(context, Logging.none());
             this.runProcedureResult = runProcedureResult;
         }
 

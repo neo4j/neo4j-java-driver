@@ -67,6 +67,7 @@ public class NetworkSession {
     private final NetworkSessionConnectionContext connectionContext;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
+    private final Logging logging;
     protected final Logger log;
 
     private final long fetchSize;
@@ -97,6 +98,7 @@ public class NetworkSession {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
+        this.logging = logging;
         this.log = new PrefixedLogger("[" + hashCode() + "]", logging.getLog(getClass()));
         var databaseNameFuture = databaseName
                 .databaseName()
@@ -150,7 +152,7 @@ public class NetworkSession {
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
                     var tx = new UnmanagedTransaction(
-                            connection, this::handleNewBookmark, fetchSize, notificationConfig);
+                            connection, this::handleNewBookmark, fetchSize, notificationConfig, logging);
                     return tx.beginAsync(determineBookmarks(true), config, txType);
                 });
 
@@ -268,7 +270,8 @@ public class NetworkSession {
                                         this::handleNewBookmark,
                                         config,
                                         fetchSize,
-                                        notificationConfig);
+                                        notificationConfig,
+                                        logging);
                         return completedFuture(factory);
                     } catch (Throwable e) {
                         return Futures.failedFuture(e);
