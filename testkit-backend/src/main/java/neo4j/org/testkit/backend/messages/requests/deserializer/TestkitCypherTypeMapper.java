@@ -23,18 +23,17 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import java.io.IOException;
-import java.lang.reflect.Field;
 
 public class TestkitCypherTypeMapper {
     public TestkitCypherTypeMapper() {}
 
     public <T> T mapData(JsonParser p, DeserializationContext ctxt, T data) throws IOException, JacksonException {
-        JsonToken token = p.currentToken();
+        var token = p.currentToken();
         while (token == JsonToken.FIELD_NAME
                 || token == JsonToken.VALUE_NUMBER_INT
                 || token == JsonToken.VALUE_STRING) {
             if (token == JsonToken.VALUE_NUMBER_INT) {
-                String field = p.getCurrentName();
+                var field = p.getCurrentName();
                 if (fieldIsType(data, field, Long.class)) {
                     setField(data, field, p.getLongValue());
                 } else if (fieldIsType(data, field, Integer.class)) {
@@ -43,8 +42,8 @@ public class TestkitCypherTypeMapper {
                     throw new RuntimeException("Unhandled field type: " + field);
                 }
             } else if (token == JsonToken.VALUE_STRING) {
-                String field = p.getCurrentName();
-                String value = p.getValueAsString();
+                var field = p.getCurrentName();
+                var value = p.getValueAsString();
                 setField(data, field, value);
             }
             token = p.nextToken();
@@ -54,7 +53,7 @@ public class TestkitCypherTypeMapper {
 
     private boolean fieldIsType(Object data, String field, Class<?> type) {
         try {
-            Field f = data.getClass().getDeclaredField(field);
+            var f = data.getClass().getDeclaredField(field);
             return f.getType().equals(type);
         } catch (NoSuchFieldException e) {
             return false;
@@ -63,7 +62,7 @@ public class TestkitCypherTypeMapper {
 
     private void setField(Object data, String fieldName, Object value) {
         try {
-            Field field = data.getClass().getDeclaredField(fieldName);
+            var field = data.getClass().getDeclaredField(fieldName);
             field.set(data, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(String.format(

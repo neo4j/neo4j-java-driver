@@ -18,7 +18,6 @@
  */
 package neo4j.org.testkit.backend.channel.handler;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -28,9 +27,9 @@ import java.nio.charset.StandardCharsets;
 public class TestkitMessageOutboundHandler extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-        String testkitResponseStr = (String) msg;
-        String testkitMessage = String.format("#response begin\n%s\n#response end\n", testkitResponseStr);
-        ByteBuf byteBuf = Unpooled.copiedBuffer(testkitMessage, StandardCharsets.UTF_8);
+        var testkitResponseStr = (String) msg;
+        var testkitMessage = String.format("#response begin\n%s\n#response end\n", testkitResponseStr);
+        var byteBuf = Unpooled.copiedBuffer(testkitMessage, StandardCharsets.UTF_8);
         ctx.writeAndFlush(byteBuf, promise);
     }
 }

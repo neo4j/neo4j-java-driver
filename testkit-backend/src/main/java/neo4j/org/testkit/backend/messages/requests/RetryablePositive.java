@@ -22,7 +22,6 @@ import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
@@ -33,7 +32,7 @@ public class RetryablePositive implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        SessionHolder sessionHolder = testkitState.getSessionHolder(data.sessionId);
+        var sessionHolder = testkitState.getSessionHolder(data.sessionId);
         if (sessionHolder == null) {
             throw new RuntimeException("Could not find session");
         }

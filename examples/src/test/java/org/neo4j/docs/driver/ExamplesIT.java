@@ -71,7 +71,7 @@ class ExamplesIT {
         } else {
             sessionConfig = SessionConfig.forDatabase(database);
         }
-        try (Session session = neo4j.driver().session(sessionConfig)) {
+        try (var session = neo4j.driver().session(sessionConfig)) {
             return session.executeRead(
                     tx -> tx.run(query, parameters).single().get(0).asInt());
         }
@@ -86,7 +86,7 @@ class ExamplesIT {
     }
 
     private void write(final String query, final Value parameters) {
-        try (Session session = neo4j.driver().session()) {
+        try (var session = neo4j.driver().session()) {
             session.executeWriteWithoutResult(tx -> tx.run(query, parameters).consume());
         }
     }
@@ -112,7 +112,7 @@ class ExamplesIT {
     @Test
     void testShouldRunAutocommitTransactionExample() {
         // Given
-        try (AutocommitTransactionExample example =
+        try (var example =
                 new AutocommitTransactionExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addPerson("Alice");
@@ -124,16 +124,16 @@ class ExamplesIT {
 
     @Test
     void testShouldRunAsyncAutocommitTransactionExample() {
-        try (AsyncAutocommitTransactionExample example =
+        try (var example =
                 new AsyncAutocommitTransactionExample(uri, USER, neo4j.adminPassword())) {
             // create some 'Product' nodes
-            try (Session session = neo4j.driver().session()) {
+            try (var session = neo4j.driver().session()) {
                 session.run("UNWIND ['Tesseract', 'Orb', 'Eye of Agamotto'] AS item "
                         + "CREATE (:Product {id: 0, title: item})");
             }
 
             // read all 'Product' nodes
-            List<String> titles = await(example.readProductTitles());
+            var titles = await(example.readProductTitles());
             assertEquals(new HashSet<>(asList("Tesseract", "Orb", "Eye of Agamotto")), new HashSet<>(titles));
         }
     }
@@ -143,9 +143,9 @@ class ExamplesIT {
         // Given
         write("CREATE (a:Person {name: 'Alice'})");
         write("CREATE (a:Person {name: 'Bob'})");
-        try (AsyncResultConsumeExample example = new AsyncResultConsumeExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new AsyncResultConsumeExample(uri, USER, neo4j.adminPassword())) {
             // When
-            List<String> names = await(example.getPeople());
+            var names = await(example.getPeople());
 
             // Then
             assertThat(names, equalTo(asList("Alice", "Bob")));
@@ -157,13 +157,13 @@ class ExamplesIT {
         // Given
         write("CREATE (a:Person {name: 'Alice'})");
         write("CREATE (a:Person {name: 'Bob'})");
-        try (AsyncRunMultipleTransactionExample example =
+        try (var example =
                 new AsyncRunMultipleTransactionExample(uri, USER, neo4j.adminPassword())) {
             // When
-            Integer nodesCreated = await(example.addEmployees("Acme"));
+            var nodesCreated = await(example.addEmployees("Acme"));
 
             // Then
-            int employeeCount =
+            var employeeCount =
                     readInt("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
             assertThat(employeeCount, equalTo(2));
             assertThat(nodesCreated, equalTo(1));
@@ -173,7 +173,7 @@ class ExamplesIT {
     @Test
     void testShouldRunConfigConnectionPoolExample() {
         // Given
-        try (ConfigConnectionPoolExample example = new ConfigConnectionPoolExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new ConfigConnectionPoolExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertTrue(example.canConnect());
         }
@@ -182,7 +182,7 @@ class ExamplesIT {
     @Test
     void testShouldRunBasicAuthExample() {
         // Given
-        try (BasicAuthExample example = new BasicAuthExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new BasicAuthExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertTrue(example.canConnect());
         }
@@ -191,7 +191,7 @@ class ExamplesIT {
     @Test
     void testShouldRunConfigConnectionTimeoutExample() {
         // Given
-        try (ConfigConnectionTimeoutExample example =
+        try (var example =
                 new ConfigConnectionTimeoutExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertThat(example, instanceOf(ConfigConnectionTimeoutExample.class));
@@ -201,7 +201,7 @@ class ExamplesIT {
     @Test
     void testShouldRunConfigMaxRetryTimeExample() {
         // Given
-        try (ConfigMaxRetryTimeExample example = new ConfigMaxRetryTimeExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new ConfigMaxRetryTimeExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertThat(example, instanceOf(ConfigMaxRetryTimeExample.class));
         }
@@ -210,7 +210,7 @@ class ExamplesIT {
     @Test
     void testShouldRunConfigTrustExample() {
         // Given
-        try (ConfigTrustExample example = new ConfigTrustExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new ConfigTrustExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertThat(example, instanceOf(ConfigTrustExample.class));
         }
@@ -219,7 +219,7 @@ class ExamplesIT {
     @Test
     void testShouldRunConfigUnencryptedExample() {
         // Given
-        try (ConfigUnencryptedExample example = new ConfigUnencryptedExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new ConfigUnencryptedExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertThat(example, instanceOf(ConfigUnencryptedExample.class));
         }
@@ -228,7 +228,7 @@ class ExamplesIT {
     @Test
     void testShouldRunDriverLifecycleExample() {
         // Given
-        try (DriverLifecycleExample example = new DriverLifecycleExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new DriverLifecycleExample(uri, USER, neo4j.adminPassword())) {
             // Then
             assertThat(example, instanceOf(DriverLifecycleExample.class));
         }
@@ -237,9 +237,9 @@ class ExamplesIT {
     @Test
     void testShouldRunHelloWorld() throws Exception {
         // Given
-        try (HelloWorldExample greeter = new HelloWorldExample(uri, USER, neo4j.adminPassword())) {
+        try (var greeter = new HelloWorldExample(uri, USER, neo4j.adminPassword())) {
             // When
-            StdIOCapture stdIO = StdIOCapture.capture();
+            var stdIO = StdIOCapture.capture();
 
             try (stdIO) {
                 greeter.printGreeting("hello, world");
@@ -254,9 +254,9 @@ class ExamplesIT {
     @Test
     void testShouldRunReadWriteTransactionExample() {
         // Given
-        try (ReadWriteTransactionExample example = new ReadWriteTransactionExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new ReadWriteTransactionExample(uri, USER, neo4j.adminPassword())) {
             // When
-            long nodeID = example.addPerson("Alice");
+            var nodeID = example.addPerson("Alice");
 
             // Then
             assertThat(nodeID, greaterThanOrEqualTo(0L));
@@ -268,9 +268,9 @@ class ExamplesIT {
         // Given
         write("CREATE (a:Person {name: 'Alice'})");
         write("CREATE (a:Person {name: 'Bob'})");
-        try (ResultConsumeExample example = new ResultConsumeExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new ResultConsumeExample(uri, USER, neo4j.adminPassword())) {
             // When
-            List<String> names = example.getPeople();
+            var names = example.getPeople();
 
             // Then
             assertThat(names, equalTo(asList("Alice", "Bob")));
@@ -282,12 +282,12 @@ class ExamplesIT {
         // Given
         write("CREATE (a:Person {name: 'Alice'})");
         write("CREATE (a:Person {name: 'Bob'})");
-        try (ResultRetainExample example = new ResultRetainExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new ResultRetainExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addEmployees("Acme");
 
             // Then
-            int employeeCount =
+            var employeeCount =
                     readInt("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
             assertThat(employeeCount, equalTo(2));
         }
@@ -296,7 +296,7 @@ class ExamplesIT {
     @Test
     void testShouldRunTransactionFunctionExample() {
         // Given
-        try (TransactionFunctionExample example = new TransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new TransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addPerson("Alice");
 
@@ -308,7 +308,7 @@ class ExamplesIT {
     @Test
     void testShouldConfigureTransactionTimeoutExample() {
         // Given
-        try (TransactionTimeoutConfigExample example =
+        try (var example =
                 new TransactionTimeoutConfigExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addPerson("Alice");
@@ -321,7 +321,7 @@ class ExamplesIT {
     @Test
     void testShouldConfigureTransactionMetadataExample() {
         // Given
-        try (TransactionMetadataConfigExample example =
+        try (var example =
                 new TransactionMetadataConfigExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addPerson("Alice");
@@ -333,19 +333,19 @@ class ExamplesIT {
 
     @Test
     void testShouldRunAsyncTransactionFunctionExample() throws Exception {
-        try (AsyncTransactionFunctionExample example =
+        try (var example =
                 new AsyncTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
             // create some 'Product' nodes
-            try (Session session = neo4j.driver().session()) {
+            try (var session = neo4j.driver().session()) {
                 session.run(
                         "UNWIND ['Infinity Gauntlet', 'Mjölnir'] AS item " + "CREATE (:Product {id: 0, title: item})");
             }
 
-            StdIOCapture stdIOCapture = StdIOCapture.capture();
+            var stdIOCapture = StdIOCapture.capture();
 
             // print all 'Product' nodes to fake stdout
             try (stdIOCapture) {
-                ResultSummary summary = await(example.printAllProducts());
+                var summary = await(example.printAllProducts());
                 assertEquals(QueryType.READ_ONLY, summary.queryType());
             }
 
@@ -356,7 +356,7 @@ class ExamplesIT {
 
     @Test
     void testPassBookmarksExample() {
-        try (PassBookmarkExample example = new PassBookmarkExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new PassBookmarkExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.addEmployAndMakeFriends();
 
@@ -366,15 +366,15 @@ class ExamplesIT {
             assertThat(personCount("Alice"), is(1));
             assertThat(personCount("Bob"), is(1));
 
-            int employeeCountOfWayne = readInt(
+            var employeeCountOfWayne = readInt(
                     "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Wayne Enterprises' RETURN count(emp)");
             assertThat(employeeCountOfWayne, is(1));
 
-            int employeeCountOfLexCorp = readInt(
+            var employeeCountOfLexCorp = readInt(
                     "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'LexCorp' RETURN count(emp)");
             assertThat(employeeCountOfLexCorp, is(1));
 
-            int friendCount =
+            var friendCount =
                     readInt("MATCH (a:Person {name: 'Alice'})-[:KNOWS]->(b:Person {name: 'Bob'}) RETURN count(a)");
             assertThat(friendCount, is(1));
         }
@@ -383,16 +383,16 @@ class ExamplesIT {
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
     void testShouldRunRxAutocommitTransactionExample() {
-        try (RxAutocommitTransactionExample example =
+        try (var example =
                 new RxAutocommitTransactionExample(uri, USER, neo4j.adminPassword())) {
             // create some 'Product' nodes
-            try (Session session = neo4j.driver().session()) {
+            try (var session = neo4j.driver().session()) {
                 session.run("UNWIND ['Tesseract', 'Orb', 'Eye of Agamotto'] AS item "
                         + "CREATE (:Product {id: 0, title: item})");
             }
 
             // read all 'Product' nodes
-            List<String> titles = await(example.readProductTitles());
+            var titles = await(example.readProductTitles());
             assertEquals(new HashSet<>(asList("Tesseract", "Orb", "Eye of Agamotto")), new HashSet<>(titles));
         }
     }
@@ -400,21 +400,21 @@ class ExamplesIT {
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
     void testShouldRunRxTransactionFunctionExampleReactor() throws Exception {
-        try (RxTransactionFunctionExample example =
+        try (var example =
                 new RxTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
             // create some 'Product' nodes
-            try (Session session = neo4j.driver().session()) {
+            try (var session = neo4j.driver().session()) {
                 session.run(
                         "UNWIND ['Infinity Gauntlet', 'Mjölnir'] AS item " + "CREATE (:Product {id: 0, title: item})");
             }
 
-            StdIOCapture stdIOCapture = StdIOCapture.capture();
+            var stdIOCapture = StdIOCapture.capture();
 
             // print all 'Product' nodes to fake stdout
             try (stdIOCapture) {
-                final List<ResultSummary> summaryList = await(example.printAllProducts());
+                final var summaryList = await(example.printAllProducts());
                 assertThat(summaryList.size(), equalTo(1));
-                ResultSummary summary = summaryList.get(0);
+                var summary = summaryList.get(0);
                 assertEquals(QueryType.READ_ONLY, summary.queryType());
             }
 
@@ -429,9 +429,9 @@ class ExamplesIT {
         // Given
         write("CREATE (a:Person {name: 'Alice'})");
         write("CREATE (a:Person {name: 'Bob'})");
-        try (RxResultConsumeExample example = new RxResultConsumeExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new RxResultConsumeExample(uri, USER, neo4j.adminPassword())) {
             // When
-            List<String> names = await(example.getPeople());
+            var names = await(example.getPeople());
 
             // Then
             assertThat(names, equalTo(asList("Alice", "Bob")));
@@ -441,16 +441,16 @@ class ExamplesIT {
     @Test
     @EnabledOnNeo4jWith(value = BOLT_V4, edition = ENTERPRISE)
     void testUseAnotherDatabaseExample() {
-        Driver driver = neo4j.driver();
+        var driver = neo4j.driver();
         dropDatabase(driver, "examples");
         createDatabase(driver, "examples");
 
-        try (DatabaseSelectionExample example = new DatabaseSelectionExample(uri, USER, neo4j.adminPassword())) {
+        try (var example = new DatabaseSelectionExample(uri, USER, neo4j.adminPassword())) {
             // When
             example.useAnotherDatabaseExample();
 
             // Then
-            int greetingCount = readInt("examples", "MATCH (a:Greeting) RETURN count(a)", Values.parameters());
+            var greetingCount = readInt("examples", "MATCH (a:Greeting) RETURN count(a)", Values.parameters());
             assertThat(greetingCount, is(1));
         }
     }

@@ -263,13 +263,13 @@ public class TestkitState {
     }
 
     private <T> String add(T value, Map<String, T> idToT) {
-        String id = newId();
+        var id = newId();
         idToT.put(id, value);
         return id;
     }
 
     private <T> T get(String id, Map<String, T> idToT, String notFoundMessage) {
-        T value = idToT.get(id);
+        var value = idToT.get(id);
         if (value == null) {
             throw new RuntimeException(notFoundMessage);
         }
@@ -277,8 +277,8 @@ public class TestkitState {
     }
 
     private <T> CompletableFuture<T> getAsync(String id, Map<String, T> idToT, String notFoundMessage) {
-        CompletableFuture<T> result = new CompletableFuture<>();
-        T value = idToT.get(id);
+        var result = new CompletableFuture<T>();
+        var value = idToT.get(id);
         if (value == null) {
             result.completeExceptionally(new RuntimeException(notFoundMessage));
         } else {

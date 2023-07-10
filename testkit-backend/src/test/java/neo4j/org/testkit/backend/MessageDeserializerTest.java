@@ -44,7 +44,7 @@ class MessageDeserializerTest {
 
         assertThat(message, instanceOf(NewDriver.class));
 
-        NewDriver newDriver = (NewDriver) message;
+        var newDriver = (NewDriver) message;
         assertThat(newDriver.getData().getUri(), equalTo("bolt://localhost:7687"));
         assertThat(newDriver.getData().getAuthorizationToken().getTokens().getScheme(), equalTo("basic"));
         assertThat(newDriver.getData().getAuthorizationToken().getTokens().getPrincipal(), equalTo("neo4j"));
@@ -59,7 +59,7 @@ class MessageDeserializerTest {
 
         assertThat(message, instanceOf(NewSession.class));
 
-        NewSession sessionRequest = (NewSession) message;
+        var sessionRequest = (NewSession) message;
         assertThat(sessionRequest.getData().getDriverId(), equalTo("0"));
         assertThat(sessionRequest.getData().getAccessMode(), equalTo("w"));
     }
@@ -73,7 +73,7 @@ class MessageDeserializerTest {
 
         assertThat(message, instanceOf(SessionRun.class));
 
-        SessionRun sessionRun = (SessionRun) message;
+        var sessionRun = (SessionRun) message;
         assertThat(sessionRun.getData().getSessionId(), equalTo("1"));
         assertThat(sessionRun.getData().getCypher(), equalTo("RETURN $x as y"));
     }

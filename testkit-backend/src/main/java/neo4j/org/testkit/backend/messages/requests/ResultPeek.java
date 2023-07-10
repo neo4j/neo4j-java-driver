@@ -25,7 +25,6 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import reactor.core.publisher.Mono;
 
@@ -37,7 +36,7 @@ public class ResultPeek implements TestkitRequest {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         try {
-            Result result = testkitState.getResultHolder(data.getResultId()).getResult();
+            var result = testkitState.getResultHolder(data.getResultId()).getResult();
             return createResponse(result.peek());
         } catch (NoSuchRecordException ignored) {
             return NullRecord.builder().build();

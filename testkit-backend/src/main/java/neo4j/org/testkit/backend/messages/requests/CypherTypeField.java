@@ -29,7 +29,6 @@ import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.Field;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.Path;
 
@@ -40,9 +39,9 @@ public class CypherTypeField extends AbstractResultNext {
 
     @Override
     protected neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponse(Record record) {
-        Value value = record.get(data.getRecordKey());
-        String type = data.getType();
-        String field = data.getField();
+        var value = record.get(data.getRecordKey());
+        var type = data.getType();
+        var field = data.getField();
         String fieldValue = null;
         TestkitResponse testkitResponse = null;
 
@@ -79,10 +78,10 @@ public class CypherTypeField extends AbstractResultNext {
     }
 
     private String readPath(Path path) throws Throwable {
-        String[] parts = data.getField().split("\\.");
-        String propertyName = parts[0];
-        int index = Integer.parseInt(parts[1]);
-        String methodName = parts[2];
+        var parts = data.getField().split("\\.");
+        var propertyName = parts[0];
+        var index = Integer.parseInt(parts[1]);
+        var methodName = parts[2];
 
         Supplier<Iterable<? extends Entity>> iterableSupplier;
         if ("nodes".equals(propertyName)) {
@@ -93,7 +92,7 @@ public class CypherTypeField extends AbstractResultNext {
             throw new RuntimeException("Unexpected");
         }
 
-        Entity entity = getEntity(iterableSupplier.get(), index);
+        var entity = getEntity(iterableSupplier.get(), index);
         return readProperty(entity, methodName);
     }
 

@@ -32,10 +32,10 @@ public class AsyncTransactionFunctionExample extends BaseApplication {
 
     // tag::async-transaction-function[]
     public CompletionStage<ResultSummary> printAllProducts() {
-        String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
+        var query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String, Object> parameters = Collections.singletonMap("id", 0);
 
-        AsyncSession session = driver.session(AsyncSession.class);
+        var session = driver.session(AsyncSession.class);
 
         return session.executeReadAsync(tx -> tx.runAsync(query, parameters)
                 .thenCompose(cursor -> cursor.forEachAsync(record ->

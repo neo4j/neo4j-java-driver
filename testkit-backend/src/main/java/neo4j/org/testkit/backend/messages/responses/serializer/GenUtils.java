@@ -39,7 +39,7 @@ public final class GenUtils {
 
     public static <T> void list(JsonGenerator gen, List<T> list) throws IOException {
         gen.writeStartArray();
-        for (T element : list) {
+        for (var element : list) {
             gen.writeObject(element);
         }
         gen.writeEndArray();

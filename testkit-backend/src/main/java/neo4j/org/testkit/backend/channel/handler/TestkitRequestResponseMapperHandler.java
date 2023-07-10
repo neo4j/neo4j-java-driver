@@ -39,7 +39,7 @@ public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        String testkitMessage = (String) msg;
+        var testkitMessage = (String) msg;
         log.debug("Inbound Testkit message '%s'", testkitMessage.trim());
         TestkitRequest testkitRequest;
         testkitRequest = objectMapper.readValue(testkitMessage, TestkitRequest.class);
@@ -48,15 +48,15 @@ public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        TestkitResponse testkitResponse = (TestkitResponse) msg;
-        String responseStr = objectMapper.writeValueAsString(testkitResponse);
+        var testkitResponse = (TestkitResponse) msg;
+        var responseStr = objectMapper.writeValueAsString(testkitResponse);
         log.debug("Outbound Testkit message '%s'", responseStr.trim());
         ctx.writeAndFlush(responseStr, promise);
     }
 
     public static ObjectMapper newObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        TestkitModule testkitModule = new TestkitModule();
+        var objectMapper = new ObjectMapper();
+        var testkitModule = new TestkitModule();
         objectMapper.registerModule(testkitModule);
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         return objectMapper;

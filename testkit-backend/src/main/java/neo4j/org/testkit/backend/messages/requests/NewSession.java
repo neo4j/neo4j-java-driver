@@ -116,8 +116,8 @@ public class NewSession implements TestkitRequest {
                 ? AuthTokenUtil.parseAuthToken(data.getAuthorizationToken())
                 : null;
 
-        T sessionStateHolder = sessionStateProducer.apply(driverHolder, builder.build(), userSwitchAuthToken);
-        String newId = addSessionHolder.apply(sessionStateHolder);
+        var sessionStateHolder = sessionStateProducer.apply(driverHolder, builder.build(), userSwitchAuthToken);
+        var newId = addSessionHolder.apply(sessionStateHolder);
 
         return Session.builder()
                 .data(Session.SessionBody.builder().id(newId).build())

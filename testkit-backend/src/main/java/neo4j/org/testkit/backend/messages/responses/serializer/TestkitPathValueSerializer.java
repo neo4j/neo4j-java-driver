@@ -30,7 +30,6 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.types.Path;
 
 public class TestkitPathValueSerializer extends StdSerializer<PathValue> {
     @Serial
@@ -43,13 +42,12 @@ public class TestkitPathValueSerializer extends StdSerializer<PathValue> {
     @Override
     public void serialize(PathValue pathValue, JsonGenerator gen, SerializerProvider provider) throws IOException {
         cypherObject(gen, "Path", () -> {
-            Path path = pathValue.asPath();
-            NodeValue[] nodes = StreamSupport.stream(path.nodes().spliterator(), false)
+            var path = pathValue.asPath();
+            var nodes = StreamSupport.stream(path.nodes().spliterator(), false)
                     .map(NodeValue::new)
                     .toArray(NodeValue[]::new);
             gen.writeObjectField("nodes", new ListValue(nodes));
-            RelationshipValue[] relationships = StreamSupport.stream(
-                            path.relationships().spliterator(), false)
+            var relationships = StreamSupport.stream(path.relationships().spliterator(), false)
                     .map(RelationshipValue::new)
                     .toArray(RelationshipValue[]::new);
             gen.writeObjectField("relationships", new ListValue(relationships));

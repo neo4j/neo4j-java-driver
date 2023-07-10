@@ -65,7 +65,7 @@ public class ResultList implements TestkitRequest {
     }
 
     private RecordList createResponse(List<org.neo4j.driver.Record> records) {
-        List<Record.RecordBody> mappedRecords = records.stream()
+        var mappedRecords = records.stream()
                 .map(record -> Record.RecordBody.builder().values(record).build())
                 .collect(Collectors.toList());
         return RecordList.builder()

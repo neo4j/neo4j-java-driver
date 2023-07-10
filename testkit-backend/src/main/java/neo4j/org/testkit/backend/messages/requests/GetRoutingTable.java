@@ -29,10 +29,7 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RoutingTable;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.DatabaseNameUtil;
-import org.neo4j.driver.internal.cluster.RoutingTableHandler;
-import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -47,22 +44,21 @@ public class GetRoutingTable implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        RoutingTableRegistry routingTableRegistry =
-                testkitState.getRoutingTableRegistry().get(data.getDriverId());
+        var routingTableRegistry = testkitState.getRoutingTableRegistry().get(data.getDriverId());
         if (routingTableRegistry == null) {
             throw new IllegalStateException(String.format(
                     "There is no routing table registry for '%s' driver. (It might be a direct driver)",
                     data.getDriverId()));
         }
 
-        DatabaseName databaseName = DatabaseNameUtil.database(data.getDatabase());
-        RoutingTableHandler routingTableHandler = routingTableRegistry
+        var databaseName = DatabaseNameUtil.database(data.getDatabase());
+        var routingTableHandler = routingTableRegistry
                 .getRoutingTableHandler(databaseName)
                 .orElseThrow(() -> new IllegalStateException(String.format(
                         "There is no routing table handler for the '%s' database.",
                         databaseName.databaseName().orElse("null"))));
 
-        org.neo4j.driver.internal.cluster.RoutingTable routingTable = routingTableHandler.routingTable();
+        var routingTable = routingTableHandler.routingTable();
 
         return RoutingTable.builder()
                 .data(RoutingTable.RoutingTableBody.builder()

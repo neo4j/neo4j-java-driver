@@ -55,7 +55,7 @@ public class CypherDateTime implements CypherType {
     @Override
     public Value asValue() {
         if (zoneId != null) {
-            ZonedDateTime dateTime = ZonedDateTime.of(year, month, day, hour, minute, second, nano, ZoneId.of(zoneId));
+            var dateTime = ZonedDateTime.of(year, month, day, hour, minute, second, nano, ZoneId.of(zoneId));
             if (dateTime.getOffset().getTotalSeconds() != offset) {
                 throw new RuntimeException(String.format(
                         "TestKit's and driver's tz info diverge. "
@@ -66,7 +66,7 @@ public class CypherDateTime implements CypherType {
         }
 
         if (offset != null) {
-            ZoneOffset zoneOffset = ZoneOffset.ofTotalSeconds(offset);
+            var zoneOffset = ZoneOffset.ofTotalSeconds(offset);
             return new DateTimeValue(ZonedDateTime.of(year, month, day, hour, minute, second, nano, zoneOffset));
         }
         return new LocalDateTimeValue(LocalDateTime.of(year, month, day, hour, minute, second, nano));

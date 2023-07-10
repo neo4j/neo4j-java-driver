@@ -33,14 +33,14 @@ public class VerifyConnectivity implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        String id = data.getDriverId();
+        var id = data.getDriverId();
         testkitState.getDriverHolder(id).getDriver().verifyConnectivity();
         return createResponse(id);
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
-        String id = data.getDriverId();
+        var id = data.getDriverId();
         return testkitState
                 .getDriverHolder(id)
                 .getDriver()

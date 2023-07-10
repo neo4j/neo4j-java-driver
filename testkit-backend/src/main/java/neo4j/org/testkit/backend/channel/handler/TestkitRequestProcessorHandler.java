@@ -79,8 +79,8 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
         // resolvers support, is blocking.
         requestExecutorService.execute(() -> {
             try {
-                TestkitRequest request = (TestkitRequest) msg;
-                CompletionStage<TestkitResponse> responseStage = processorImpl.apply(request, testkitState);
+                var request = (TestkitRequest) msg;
+                var responseStage = processorImpl.apply(request, testkitState);
                 responseStage.whenComplete((response, throwable) -> {
                     if (throwable != null) {
                         ctx.writeAndFlush(createErrorResponse(throwable));
@@ -96,7 +96,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
 
     private static CompletionStage<TestkitResponse> wrapSyncRequest(
             TestkitRequest testkitRequest, TestkitState testkitState) {
-        CompletableFuture<TestkitResponse> result = new CompletableFuture<>();
+        var result = new CompletableFuture<TestkitResponse>();
         try {
             result.complete(testkitRequest.process(testkitState));
         } catch (Throwable t) {
@@ -115,8 +115,8 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
             throwable = throwable.getCause();
         }
         if (throwable instanceof Neo4jException) {
-            String id = testkitState.newId();
-            Neo4jException e = (Neo4jException) throwable;
+            var id = testkitState.newId();
+            var e = (Neo4jException) throwable;
             testkitState.getErrors().put(id, e);
             return DriverError.builder()
                     .data(DriverError.DriverErrorBody.builder()
@@ -130,7 +130,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                 || throwable instanceof UntrustedServerException
                 || throwable instanceof NoSuchRecordException
                 || throwable instanceof ZoneRulesException) {
-            String id = testkitState.newId();
+            var id = testkitState.newId();
             testkitState.getErrors().put(id, (Exception) throwable);
             return DriverError.builder()
                     .data(DriverError.DriverErrorBody.builder()
@@ -141,7 +141,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                     .build();
         } else if (throwable instanceof CustomDriverError) {
             throwable = throwable.getCause();
-            String id = testkitState.newId();
+            var id = testkitState.newId();
             return DriverError.builder()
                     .data(DriverError.DriverErrorBody.builder()
                             .id(id)

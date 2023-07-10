@@ -72,7 +72,7 @@ public class StartSubTest implements TestkitRequest {
     private static final Map<String, SkipDeciderInterface> REACTIVE_SKIP_PATTERN_TO_CHECK = new HashMap<>();
 
     private static SkipDecision checkTzIdSupported(Map<String, Object> params) {
-        String tzId = (String) params.get("tz_id");
+        var tzId = (String) params.get("tz_id");
         try {
             ZoneId.of(tzId);
             return SkipDecision.ofNonSkipped();
@@ -83,26 +83,26 @@ public class StartSubTest implements TestkitRequest {
 
     private static SkipDecision checkDateTimeSupported(Map<String, Object> params) {
         @SuppressWarnings("unchecked")
-        HashMap<String, Object> dt_param = (HashMap<String, Object>) params.get("dt");
+        var dt_param = (HashMap<String, Object>) params.get("dt");
         if (dt_param == null) {
             throw new RuntimeException("params expected to contain 'dt'");
         }
         @SuppressWarnings("unchecked")
-        HashMap<String, Object> data = (HashMap<String, Object>) dt_param.get("data");
+        var data = (HashMap<String, Object>) dt_param.get("data");
         if (data == null) {
             throw new RuntimeException("param 'dt' expected to contain 'data'");
         }
-        Integer year = (Integer) data.get("year");
-        Integer month = (Integer) data.get("month");
-        Integer day = (Integer) data.get("day");
-        Integer hour = (Integer) data.get("hour");
-        Integer minute = (Integer) data.get("minute");
-        Integer second = (Integer) data.get("second");
-        Integer nano = (Integer) data.get("nanosecond");
-        Integer utcOffset = (Integer) data.get("utc_offset_s");
-        String tzId = (String) data.get("timezone_id");
+        var year = (Integer) data.get("year");
+        var month = (Integer) data.get("month");
+        var day = (Integer) data.get("day");
+        var hour = (Integer) data.get("hour");
+        var minute = (Integer) data.get("minute");
+        var second = (Integer) data.get("second");
+        var nano = (Integer) data.get("nanosecond");
+        var utcOffset = (Integer) data.get("utc_offset_s");
+        var tzId = (String) data.get("timezone_id");
         try {
-            ZonedDateTime dt = ZonedDateTime.of(year, month, day, hour, minute, second, nano, ZoneId.of(tzId));
+            var dt = ZonedDateTime.of(year, month, day, hour, minute, second, nano, ZoneId.of(tzId));
             if (dt.getOffset().getTotalSeconds() != utcOffset) {
                 throw new DateTimeException(String.format(
                         "Unmatched UTC offset. TestKit expected %d, local zone db yielded %d",
@@ -159,25 +159,25 @@ public class StartSubTest implements TestkitRequest {
 
     @Override
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createResponse(ASYNC_SKIP_PATTERN_TO_CHECK);
+        var testkitResponse = createResponse(ASYNC_SKIP_PATTERN_TO_CHECK);
         return CompletableFuture.completedFuture(testkitResponse);
     }
 
     @Override
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_CHECK);
+        var testkitResponse = createResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_CHECK);
         return Mono.just(testkitResponse);
     }
 
     @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createResponse(REACTIVE_SKIP_PATTERN_TO_CHECK);
+        var testkitResponse = createResponse(REACTIVE_SKIP_PATTERN_TO_CHECK);
         return Mono.just(testkitResponse);
     }
 
     @Override
     public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
-        TestkitResponse testkitResponse = createResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_CHECK);
+        var testkitResponse = createResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_CHECK);
         return Mono.just(testkitResponse);
     }
 
@@ -186,7 +186,7 @@ public class StartSubTest implements TestkitRequest {
                 .filter(entry -> data.getTestName().matches(entry.getKey()))
                 .findFirst()
                 .map(entry -> {
-                    SkipDecision decision = entry.getValue().check(data.getSubtestArguments());
+                    var decision = entry.getValue().check(data.getSubtestArguments());
                     if (decision.isSkipped()) {
                         return SkipTest.builder()
                                 .data(SkipTest.SkipTestBody.builder()

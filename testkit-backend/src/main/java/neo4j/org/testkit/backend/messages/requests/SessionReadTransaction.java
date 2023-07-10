@@ -38,9 +38,7 @@ import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.responses.RetryableDone;
 import neo4j.org.testkit.backend.messages.responses.RetryableTry;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionWork;
-import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.reactive.ReactiveTransactionCallback;
 import org.neo4j.driver.reactive.RxTransactionWork;
@@ -52,8 +50,8 @@ public class SessionReadTransaction
     @Override
     @SuppressWarnings("deprecation")
     public TestkitResponse process(TestkitState testkitState) {
-        SessionHolder sessionHolder = testkitState.getSessionHolder(data.getSessionId());
-        Session session = sessionHolder.getSession();
+        var sessionHolder = testkitState.getSessionHolder(data.getSessionId());
+        var session = sessionHolder.getSession();
         session.readTransaction(handle(testkitState, sessionHolder), buildTxConfig());
         return retryableDone();
     }
@@ -64,13 +62,13 @@ public class SessionReadTransaction
         return testkitState
                 .getAsyncSessionHolder(data.getSessionId())
                 .thenCompose(sessionHolder -> {
-                    AsyncSession session = sessionHolder.getSession();
+                    var session = sessionHolder.getSession();
 
                     AsyncTransactionWork<CompletionStage<Void>> workWrapper = tx -> {
-                        String txId =
+                        var txId =
                                 testkitState.addAsyncTransactionHolder(new AsyncTransactionHolder(sessionHolder, tx));
                         testkitState.getResponseWriter().accept(retryableTry(txId));
-                        CompletableFuture<Void> txWorkFuture = new CompletableFuture<>();
+                        var txWorkFuture = new CompletableFuture<Void>();
                         sessionHolder.setTxWorkFuture(txWorkFuture);
                         return txWorkFuture;
                     };
@@ -87,9 +85,9 @@ public class SessionReadTransaction
                 .getRxSessionHolder(data.getSessionId())
                 .flatMap(sessionHolder -> {
                     RxTransactionWork<Publisher<Void>> workWrapper = tx -> {
-                        String txId = testkitState.addRxTransactionHolder(new RxTransactionHolder(sessionHolder, tx));
+                        var txId = testkitState.addRxTransactionHolder(new RxTransactionHolder(sessionHolder, tx));
                         testkitState.getResponseWriter().accept(retryableTry(txId));
-                        CompletableFuture<Void> tryResult = new CompletableFuture<>();
+                        var tryResult = new CompletableFuture<Void>();
                         sessionHolder.setTxWorkFuture(tryResult);
                         return Mono.fromCompletionStage(tryResult);
                     };
@@ -105,10 +103,10 @@ public class SessionReadTransaction
                 .getReactiveSessionHolder(data.getSessionId())
                 .flatMap(sessionHolder -> {
                     ReactiveTransactionCallback<java.util.concurrent.Flow.Publisher<Void>> workWrapper = tx -> {
-                        String txId = testkitState.addReactiveTransactionHolder(new ReactiveTransactionHolder(
+                        var txId = testkitState.addReactiveTransactionHolder(new ReactiveTransactionHolder(
                                 sessionHolder, new ReactiveTransactionContextAdapter(tx)));
                         testkitState.getResponseWriter().accept(retryableTry(txId));
-                        CompletableFuture<Void> tryResult = new CompletableFuture<>();
+                        var tryResult = new CompletableFuture<Void>();
                         sessionHolder.setTxWorkFuture(tryResult);
                         return publisherToFlowPublisher(Mono.fromCompletionStage(tryResult));
                     };
@@ -125,11 +123,11 @@ public class SessionReadTransaction
                 .getReactiveSessionStreamsHolder(data.getSessionId())
                 .flatMap(sessionHolder -> {
                     org.neo4j.driver.reactivestreams.ReactiveTransactionCallback<Publisher<Void>> workWrapper = tx -> {
-                        String txId =
+                        var txId =
                                 testkitState.addReactiveTransactionStreamsHolder(new ReactiveTransactionStreamsHolder(
                                         sessionHolder, new ReactiveTransactionContextStreamsAdapter(tx)));
                         testkitState.getResponseWriter().accept(retryableTry(txId));
-                        CompletableFuture<Void> tryResult = new CompletableFuture<>();
+                        var tryResult = new CompletableFuture<Void>();
                         sessionHolder.setTxWorkFuture(tryResult);
                         return Mono.fromCompletionStage(tryResult);
                     };
@@ -142,15 +140,15 @@ public class SessionReadTransaction
     @SuppressWarnings("deprecation")
     private TransactionWork<Void> handle(TestkitState testkitState, SessionHolder sessionHolder) {
         return tx -> {
-            String txId = testkitState.addTransactionHolder(new TransactionHolder(sessionHolder, tx));
+            var txId = testkitState.addTransactionHolder(new TransactionHolder(sessionHolder, tx));
             testkitState.getResponseWriter().accept(retryableTry(txId));
-            CompletableFuture<Void> txWorkFuture = new CompletableFuture<>();
+            var txWorkFuture = new CompletableFuture<Void>();
             sessionHolder.setTxWorkFuture(txWorkFuture);
 
             try {
                 return txWorkFuture.get();
             } catch (Throwable throwable) {
-                Throwable workThrowable = throwable;
+                var workThrowable = throwable;
                 if (workThrowable instanceof ExecutionException) {
                     workThrowable = workThrowable.getCause();
                 }

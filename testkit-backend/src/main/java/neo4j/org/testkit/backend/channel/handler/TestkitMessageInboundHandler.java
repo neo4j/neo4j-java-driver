@@ -31,11 +31,11 @@ public class TestkitMessageInboundHandler extends SimpleChannelInboundHandler<By
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, ByteBuf byteBuf) {
-        String requestStr = byteBuf.toString(CharsetUtil.UTF_8);
+        var requestStr = byteBuf.toString(CharsetUtil.UTF_8);
         requestBuffer.append(requestStr);
 
         List<String> testkitMessages = new ArrayList<>();
-        Optional<String> testkitMessageOpt = extractTestkitMessage();
+        var testkitMessageOpt = extractTestkitMessage();
         while (testkitMessageOpt.isPresent()) {
             testkitMessages.add(testkitMessageOpt.get());
             testkitMessageOpt = extractTestkitMessage();
@@ -45,18 +45,18 @@ public class TestkitMessageInboundHandler extends SimpleChannelInboundHandler<By
     }
 
     private Optional<String> extractTestkitMessage() {
-        String requestEndMarker = "#request end\n";
-        int endMarkerIndex = requestBuffer.indexOf(requestEndMarker);
+        var requestEndMarker = "#request end\n";
+        var endMarkerIndex = requestBuffer.indexOf(requestEndMarker);
         if (endMarkerIndex < 0) {
             return Optional.empty();
         }
-        String requestBeginMarker = "#request begin\n";
-        int beginMarkerIndex = requestBuffer.indexOf(requestBeginMarker);
+        var requestBeginMarker = "#request begin\n";
+        var beginMarkerIndex = requestBuffer.indexOf(requestBeginMarker);
         if (beginMarkerIndex != 0) {
             throw new RuntimeException("Unexpected data in message buffer");
         }
         // extract Testkit message without markers
-        String testkitMessage = requestBuffer.substring(requestBeginMarker.length(), endMarkerIndex);
+        var testkitMessage = requestBuffer.substring(requestBeginMarker.length(), endMarkerIndex);
         if (testkitMessage.contains(requestBeginMarker) || testkitMessage.contains(requestEndMarker)) {
             throw new RuntimeException("Testkit message contains request markers");
         }

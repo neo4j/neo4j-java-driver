@@ -31,7 +31,6 @@ import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.types.Relationship;
 
 public class TestkitRelationshipValueSerializer extends StdSerializer<RelationshipValue> {
     @Serial
@@ -46,7 +45,7 @@ public class TestkitRelationshipValueSerializer extends StdSerializer<Relationsh
     public void serialize(RelationshipValue relationshipValue, JsonGenerator gen, SerializerProvider provider)
             throws IOException {
         cypherObject(gen, "Relationship", () -> {
-            Relationship relationship = relationshipValue.asRelationship();
+            var relationship = relationshipValue.asRelationship();
             gen.writeObjectField("id", new IntegerValue(getId(relationship::id)));
             gen.writeObjectField("elementId", new StringValue(relationship.elementId()));
             gen.writeObjectField("startNodeId", new IntegerValue(getId(relationship::startNodeId)));

@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.io.Serial;
 import org.neo4j.driver.internal.value.DurationValue;
-import org.neo4j.driver.types.IsoDuration;
 
 public class TestkitDurationValueSerializer extends StdSerializer<DurationValue> {
     @Serial
@@ -40,7 +39,7 @@ public class TestkitDurationValueSerializer extends StdSerializer<DurationValue>
     public void serialize(DurationValue durationValue, JsonGenerator gen, SerializerProvider provider)
             throws IOException {
         cypherObject(gen, "CypherDuration", () -> {
-            IsoDuration duration = durationValue.asIsoDuration();
+            var duration = durationValue.asIsoDuration();
             gen.writeFieldName("months");
             gen.writeNumber(duration.months());
             gen.writeFieldName("days");

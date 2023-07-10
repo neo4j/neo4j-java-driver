@@ -44,9 +44,9 @@ class RoutingExamplesIT {
     @Test
     void testShouldRunConfigCustomResolverExample() {
         // Given
-        URI boltUri = URI.create(NEO4J_CONTAINER.getBoltUrl());
-        String neo4jUrl = String.format("neo4j://%s:%d", boltUri.getHost(), boltUri.getPort());
-        try (ConfigCustomResolverExample example = new ConfigCustomResolverExample(
+        var boltUri = URI.create(NEO4J_CONTAINER.getBoltUrl());
+        var neo4jUrl = String.format("neo4j://%s:%d", boltUri.getHost(), boltUri.getPort());
+        try (var example = new ConfigCustomResolverExample(
                 neo4jUrl, AuthTokens.none(), ServerAddress.of(boltUri.getHost(), boltUri.getPort()))) {
             // Then
             assertTrue(example.canConnect());

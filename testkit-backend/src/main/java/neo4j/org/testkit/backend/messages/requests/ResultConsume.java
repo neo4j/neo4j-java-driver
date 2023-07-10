@@ -27,7 +27,6 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.Summary;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.summary.ResultSummary;
 import reactor.core.publisher.Mono;
@@ -40,7 +39,7 @@ public class ResultConsume implements TestkitRequest {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         try {
-            Result result = testkitState.getResultHolder(data.getResultId()).getResult();
+            var result = testkitState.getResultHolder(data.getResultId()).getResult();
             return createResponse(result.consume());
         } catch (NoSuchRecordException ignored) {
             return NullRecord.builder().build();

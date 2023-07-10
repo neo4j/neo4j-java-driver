@@ -95,7 +95,7 @@ public class NewAuthTokenManager extends AbstractBasicTestkitRequest {
 
         private CompletionStage<TestkitCallbackResult> dispatchTestkitCallback(
                 TestkitState testkitState, TestkitCallback response) {
-            CompletableFuture<TestkitCallbackResult> future = new CompletableFuture<>();
+            var future = new CompletableFuture<TestkitCallbackResult>();
             testkitState.getCallbackIdToFuture().put(response.getCallbackId(), future);
             testkitState.getResponseWriter().accept(response);
             return future;

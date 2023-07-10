@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.io.Serial;
-import java.time.OffsetTime;
 import org.neo4j.driver.internal.value.TimeValue;
 
 public class TestkitTimeValueSerializer extends StdSerializer<TimeValue> {
@@ -39,7 +38,7 @@ public class TestkitTimeValueSerializer extends StdSerializer<TimeValue> {
     @Override
     public void serialize(TimeValue timeValue, JsonGenerator gen, SerializerProvider provider) throws IOException {
         cypherObject(gen, "CypherTime", () -> {
-            OffsetTime time = timeValue.asOffsetTime();
+            var time = timeValue.asOffsetTime();
             GenUtils.writeTime(gen, time.getHour(), time.getMinute(), time.getSecond(), time.getNano());
             gen.writeFieldName("utc_offset_s");
             gen.writeNumber(time.getOffset().getTotalSeconds());
