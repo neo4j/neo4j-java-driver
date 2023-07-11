@@ -52,6 +52,7 @@ public class NetworkSession {
     private final NetworkSessionConnectionContext connectionContext;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
+    private final Logging logging;
     protected final Logger log;
 
     private final BookmarkHolder bookmarkHolder;
@@ -74,6 +75,7 @@ public class NetworkSession {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
+        this.logging = logging;
         this.log = new PrefixedLogger("[" + hashCode() + "]", logging.getLog(getClass()));
         this.bookmarkHolder = bookmarkHolder;
         CompletableFuture<DatabaseName> databaseNameFuture = databaseName
@@ -116,7 +118,7 @@ public class NetworkSession {
                 .thenApply(connection ->
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
-                    UnmanagedTransaction tx = new UnmanagedTransaction(connection, bookmarkHolder, fetchSize);
+                    UnmanagedTransaction tx = new UnmanagedTransaction(connection, bookmarkHolder, fetchSize, logging);
                     return tx.beginAsync(bookmarkHolder.getBookmark(), config);
                 });
 
@@ -226,7 +228,8 @@ public class NetworkSession {
                     try {
                         ResultCursorFactory factory = connection
                                 .protocol()
-                                .runInAutoCommitTransaction(connection, query, bookmarkHolder, config, fetchSize);
+                                .runInAutoCommitTransaction(
+                                        connection, query, bookmarkHolder, config, fetchSize, logging);
                         return completedFuture(factory);
                     } catch (Throwable e) {
                         return Futures.failedFuture(e);

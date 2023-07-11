@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
@@ -37,8 +38,9 @@ public class BeginMessage extends MessageWithMetadata {
             TransactionConfig config,
             DatabaseName databaseName,
             AccessMode mode,
-            String impersonatedUser) {
-        this(bookmark, config.timeout(), config.metadata(), mode, databaseName, impersonatedUser);
+            String impersonatedUser,
+            Logging logging) {
+        this(bookmark, config.timeout(), config.metadata(), mode, databaseName, impersonatedUser, logging);
     }
 
     public BeginMessage(
@@ -47,8 +49,9 @@ public class BeginMessage extends MessageWithMetadata {
             Map<String, Value> txMetadata,
             AccessMode mode,
             DatabaseName databaseName,
-            String impersonatedUser) {
-        super(buildMetadata(txTimeout, txMetadata, databaseName, mode, bookmark, impersonatedUser));
+            String impersonatedUser,
+            Logging logging) {
+        super(buildMetadata(txTimeout, txMetadata, databaseName, mode, bookmark, impersonatedUser, logging));
     }
 
     @Override

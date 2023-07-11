@@ -27,6 +27,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.TransactionConfig;
@@ -49,9 +50,11 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
     static final String GET_ROUTING_TABLE = "CALL dbms.cluster.routing.getRoutingTable($" + ROUTING_CONTEXT + ")";
 
     final RoutingContext context;
+    private Logging logging;
 
-    public SingleDatabaseRoutingProcedureRunner(RoutingContext context) {
+    public SingleDatabaseRoutingProcedureRunner(RoutingContext context, Logging logging) {
         this.context = context;
+        this.logging = logging;
     }
 
     @Override
@@ -87,7 +90,7 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
         return connection
                 .protocol()
                 .runInAutoCommitTransaction(
-                        connection, procedure, bookmarkHolder, TransactionConfig.empty(), UNLIMITED_FETCH_SIZE)
+                        connection, procedure, bookmarkHolder, TransactionConfig.empty(), UNLIMITED_FETCH_SIZE, logging)
                 .asyncResult()
                 .thenCompose(ResultCursor::listAsync);
     }

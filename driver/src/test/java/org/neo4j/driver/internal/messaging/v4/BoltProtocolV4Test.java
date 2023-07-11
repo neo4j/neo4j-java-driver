@@ -175,13 +175,18 @@ public final class BoltProtocolV4Test {
     void shouldBeginTransactionWithoutBookmark() {
         Connection connection = connectionMock(protocol);
 
-        CompletionStage<Void> stage =
-                protocol.beginTransaction(connection, InternalBookmark.empty(), TransactionConfig.empty());
+        CompletionStage<Void> stage = protocol.beginTransaction(
+                connection, InternalBookmark.empty(), TransactionConfig.empty(), Logging.none());
 
         verify(connection)
                 .writeAndFlush(
                         eq(new BeginMessage(
-                                InternalBookmark.empty(), TransactionConfig.empty(), defaultDatabase(), WRITE, null)),
+                                InternalBookmark.empty(),
+                                TransactionConfig.empty(),
+                                defaultDatabase(),
+                                WRITE,
+                                null,
+                                Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -191,11 +196,13 @@ public final class BoltProtocolV4Test {
         Connection connection = connectionMock(protocol);
         Bookmark bookmark = InternalBookmark.parse("neo4j:bookmark:v1:tx100");
 
-        CompletionStage<Void> stage = protocol.beginTransaction(connection, bookmark, TransactionConfig.empty());
+        CompletionStage<Void> stage =
+                protocol.beginTransaction(connection, bookmark, TransactionConfig.empty(), Logging.none());
 
         verify(connection)
                 .writeAndFlush(
-                        eq(new BeginMessage(bookmark, TransactionConfig.empty(), defaultDatabase(), WRITE, null)),
+                        eq(new BeginMessage(
+                                bookmark, TransactionConfig.empty(), defaultDatabase(), WRITE, null, Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -204,11 +211,13 @@ public final class BoltProtocolV4Test {
     void shouldBeginTransactionWithConfig() {
         Connection connection = connectionMock(protocol);
 
-        CompletionStage<Void> stage = protocol.beginTransaction(connection, InternalBookmark.empty(), txConfig);
+        CompletionStage<Void> stage =
+                protocol.beginTransaction(connection, InternalBookmark.empty(), txConfig, Logging.none());
 
         verify(connection)
                 .writeAndFlush(
-                        eq(new BeginMessage(InternalBookmark.empty(), txConfig, defaultDatabase(), WRITE, null)),
+                        eq(new BeginMessage(
+                                InternalBookmark.empty(), txConfig, defaultDatabase(), WRITE, null, Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -218,11 +227,11 @@ public final class BoltProtocolV4Test {
         Connection connection = connectionMock(protocol);
         Bookmark bookmark = InternalBookmark.parse("neo4j:bookmark:v1:tx4242");
 
-        CompletionStage<Void> stage = protocol.beginTransaction(connection, bookmark, txConfig);
+        CompletionStage<Void> stage = protocol.beginTransaction(connection, bookmark, txConfig, Logging.none());
 
         verify(connection)
                 .writeAndFlush(
-                        eq(new BeginMessage(bookmark, txConfig, defaultDatabase(), WRITE, null)),
+                        eq(new BeginMessage(bookmark, txConfig, defaultDatabase(), WRITE, null, Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -329,7 +338,7 @@ public final class BoltProtocolV4Test {
     @Test
     void shouldSupportDatabaseNameInBeginTransaction() {
         CompletionStage<Void> txStage = protocol.beginTransaction(
-                connectionMock("foo", protocol), InternalBookmark.empty(), TransactionConfig.empty());
+                connectionMock("foo", protocol), InternalBookmark.empty(), TransactionConfig.empty(), Logging.none());
 
         assertDoesNotThrow(() -> await(txStage));
     }
@@ -341,7 +350,8 @@ public final class BoltProtocolV4Test {
                 new Query("RETURN 1"),
                 BookmarkHolder.NO_OP,
                 TransactionConfig.empty(),
-                UNLIMITED_FETCH_SIZE));
+                UNLIMITED_FETCH_SIZE,
+                Logging.none()));
     }
 
     private BoltProtocol createProtocol() {
@@ -363,7 +373,7 @@ public final class BoltProtocolV4Test {
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder(bookmark);
 
         CompletableFuture<AsyncResultCursor> cursorFuture = protocol.runInAutoCommitTransaction(
-                        connection, QUERY, bookmarkHolder, config, UNLIMITED_FETCH_SIZE)
+                        connection, QUERY, bookmarkHolder, config, UNLIMITED_FETCH_SIZE, Logging.none())
                 .asyncResult()
                 .toCompletableFuture();
 
@@ -389,7 +399,7 @@ public final class BoltProtocolV4Test {
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder(bookmark);
 
         CompletableFuture<AsyncResultCursor> cursorFuture = protocol.runInAutoCommitTransaction(
-                        connection, QUERY, bookmarkHolder, config, UNLIMITED_FETCH_SIZE)
+                        connection, QUERY, bookmarkHolder, config, UNLIMITED_FETCH_SIZE, Logging.none())
                 .asyncResult()
                 .toCompletableFuture();
 
@@ -447,7 +457,7 @@ public final class BoltProtocolV4Test {
         if (autoCommitTx) {
             BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder(initialBookmark);
             cursorStage = protocol.runInAutoCommitTransaction(
-                            connection, QUERY, bookmarkHolder, config, UNLIMITED_FETCH_SIZE)
+                            connection, QUERY, bookmarkHolder, config, UNLIMITED_FETCH_SIZE, Logging.none())
                     .asyncResult();
         } else {
             cursorStage = protocol.runInUnmanagedTransaction(
@@ -472,15 +482,20 @@ public final class BoltProtocolV4Test {
         Connection connection = connectionMock("foo", protocol);
         if (autoCommitTx) {
             ResultCursorFactory factory = protocol.runInAutoCommitTransaction(
-                    connection, QUERY, BookmarkHolder.NO_OP, TransactionConfig.empty(), UNLIMITED_FETCH_SIZE);
+                    connection,
+                    QUERY,
+                    BookmarkHolder.NO_OP,
+                    TransactionConfig.empty(),
+                    UNLIMITED_FETCH_SIZE,
+                    Logging.none());
             CompletionStage<AsyncResultCursor> resultStage = factory.asyncResult();
             ResponseHandler runHandler = verifySessionRunInvoked(
                     connection, InternalBookmark.empty(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));
             runHandler.onSuccess(emptyMap());
             await(resultStage);
         } else {
-            CompletionStage<Void> txStage =
-                    protocol.beginTransaction(connection, InternalBookmark.empty(), TransactionConfig.empty());
+            CompletionStage<Void> txStage = protocol.beginTransaction(
+                    connection, InternalBookmark.empty(), TransactionConfig.empty(), Logging.none());
             await(txStage);
             verifyBeginInvoked(
                     connection, InternalBookmark.empty(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));
@@ -497,8 +512,8 @@ public final class BoltProtocolV4Test {
             TransactionConfig config,
             AccessMode mode,
             DatabaseName databaseName) {
-        RunWithMetadataMessage runMessage =
-                RunWithMetadataMessage.autoCommitTxRunMessage(QUERY, config, databaseName, mode, bookmark, null);
+        RunWithMetadataMessage runMessage = RunWithMetadataMessage.autoCommitTxRunMessage(
+                QUERY, config, databaseName, mode, bookmark, null, Logging.none());
         return verifyRunInvoked(connection, runMessage);
     }
 
@@ -522,7 +537,7 @@ public final class BoltProtocolV4Test {
             AccessMode mode,
             DatabaseName databaseName) {
         ArgumentCaptor<ResponseHandler> beginHandlerCaptor = ArgumentCaptor.forClass(ResponseHandler.class);
-        BeginMessage beginMessage = new BeginMessage(bookmark, config, databaseName, mode, null);
+        BeginMessage beginMessage = new BeginMessage(bookmark, config, databaseName, mode, null, Logging.none());
         verify(connection).writeAndFlush(eq(beginMessage), beginHandlerCaptor.capture());
         assertThat(beginHandlerCaptor.getValue(), instanceOf(BeginTxResponseHandler.class));
     }

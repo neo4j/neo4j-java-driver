@@ -32,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.BookmarkHolder;
@@ -110,7 +111,8 @@ public class BoltProtocolV3 implements BoltProtocol {
     }
 
     @Override
-    public CompletionStage<Void> beginTransaction(Connection connection, Bookmark bookmark, TransactionConfig config) {
+    public CompletionStage<Void> beginTransaction(
+            Connection connection, Bookmark bookmark, TransactionConfig config, Logging logging) {
         try {
             verifyDatabaseNameBeforeTransaction(connection.databaseName());
         } catch (Exception error) {
@@ -119,7 +121,7 @@ public class BoltProtocolV3 implements BoltProtocol {
 
         CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
         BeginMessage beginMessage = new BeginMessage(
-                bookmark, config, connection.databaseName(), connection.mode(), connection.impersonatedUser());
+                bookmark, config, connection.databaseName(), connection.mode(), connection.impersonatedUser(), logging);
         connection.writeAndFlush(beginMessage, new BeginTxResponseHandler(beginTxFuture));
         return beginTxFuture;
     }
@@ -144,7 +146,8 @@ public class BoltProtocolV3 implements BoltProtocol {
             Query query,
             BookmarkHolder bookmarkHolder,
             TransactionConfig config,
-            long fetchSize) {
+            long fetchSize,
+            Logging logging) {
         verifyDatabaseNameBeforeTransaction(connection.databaseName());
         RunWithMetadataMessage runMessage = autoCommitTxRunMessage(
                 query,
@@ -152,7 +155,8 @@ public class BoltProtocolV3 implements BoltProtocol {
                 connection.databaseName(),
                 connection.mode(),
                 bookmarkHolder.getBookmark(),
-                connection.impersonatedUser());
+                connection.impersonatedUser(),
+                logging);
         return buildResultCursorFactory(connection, query, bookmarkHolder, null, runMessage, fetchSize);
     }
 
