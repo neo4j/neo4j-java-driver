@@ -162,7 +162,7 @@ class SessionMixIT {
         var node = await(nodeStage);
 
         assertEquals(42, node.get("value").asInt());
-        assertEquals(1, countNodesByLabel());
+        assertEquals(1, countNodes());
     }
 
     private void runNestedQueries(
@@ -205,9 +205,9 @@ class SessionMixIT {
         });
     }
 
-    private long countNodesByLabel() {
+    private long countNodes() {
         var countStage = asyncSession
-                .runAsync("MATCH (n:" + "Node" + ") RETURN count(n)")
+                .runAsync("MATCH (n:Node) RETURN count(n)")
                 .thenCompose(ResultCursor::singleAsync)
                 .thenApply(record -> record.get(0).asLong());
 
