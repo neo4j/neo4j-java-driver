@@ -242,5 +242,6 @@ public final class Futures {
         }
     }
 
+    @SuppressWarnings("EmptyMethod")
     private static void noOpInterruptHandler() {}
 }

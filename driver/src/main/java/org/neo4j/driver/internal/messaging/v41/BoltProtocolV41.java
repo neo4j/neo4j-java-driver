@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.DatabaseBookmark;
-import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
 import org.neo4j.driver.internal.cursor.ResultCursorFactoryImpl;
@@ -62,11 +61,6 @@ public class BoltProtocolV41 extends BoltProtocolV4 {
         var pullHandler = newBoltV4BasicPullHandler(query, runHandler, connection, bookmarkConsumer, tx);
 
         return new ResultCursorFactoryImpl(connection, runMessage, runHandler, runFuture, pullHandler, pullAllHandler);
-    }
-
-    @Override
-    protected void verifyDatabaseNameBeforeTransaction(DatabaseName databaseName) {
-        // Bolt V4.1 accepts database name
     }
 
     @Override
