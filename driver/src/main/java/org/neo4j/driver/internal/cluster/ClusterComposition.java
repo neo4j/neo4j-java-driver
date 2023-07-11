@@ -144,15 +144,11 @@ public final class ClusterComposition {
     }
 
     private Set<BoltServerAddress> servers(String role) {
-        switch (role) {
-            case "READ":
-                return readers;
-            case "WRITE":
-                return writers;
-            case "ROUTE":
-                return routers;
-            default:
-                throw new IllegalArgumentException("invalid server role: " + role);
-        }
+        return switch (role) {
+            case "READ" -> readers;
+            case "WRITE" -> writers;
+            case "ROUTE" -> routers;
+            default -> throw new IllegalArgumentException("invalid server role: " + role);
+        };
     }
 }

@@ -351,14 +351,11 @@ public class PackStream {
             if (markerHighNibble == TINY_STRUCT) {
                 return markerLowNibble;
             }
-            switch (markerByte) {
-                case STRUCT_8:
-                    return unpackUINT8();
-                case STRUCT_16:
-                    return unpackUINT16();
-                default:
-                    throw new Unexpected("Expected a struct, but got: " + toHexString(markerByte));
-            }
+            return switch (markerByte) {
+                case STRUCT_8 -> unpackUINT8();
+                case STRUCT_16 -> unpackUINT16();
+                default -> throw new Unexpected("Expected a struct, but got: " + toHexString(markerByte));
+            };
         }
 
         public byte unpackStructSignature() throws IOException {
@@ -373,16 +370,12 @@ public class PackStream {
             if (markerHighNibble == TINY_LIST) {
                 return markerLowNibble;
             }
-            switch (markerByte) {
-                case LIST_8:
-                    return unpackUINT8();
-                case LIST_16:
-                    return unpackUINT16();
-                case LIST_32:
-                    return unpackUINT32();
-                default:
-                    throw new Unexpected("Expected a list, but got: " + toHexString(markerByte & 0xFF));
-            }
+            return switch (markerByte) {
+                case LIST_8 -> unpackUINT8();
+                case LIST_16 -> unpackUINT16();
+                case LIST_32 -> unpackUINT32();
+                default -> throw new Unexpected("Expected a list, but got: " + toHexString(markerByte & 0xFF));
+            };
         }
 
         public long unpackMapHeader() throws IOException {
@@ -393,16 +386,12 @@ public class PackStream {
             if (markerHighNibble == TINY_MAP) {
                 return markerLowNibble;
             }
-            switch (markerByte) {
-                case MAP_8:
-                    return unpackUINT8();
-                case MAP_16:
-                    return unpackUINT16();
-                case MAP_32:
-                    return unpackUINT32();
-                default:
-                    throw new Unexpected("Expected a map, but got: " + toHexString(markerByte));
-            }
+            return switch (markerByte) {
+                case MAP_8 -> unpackUINT8();
+                case MAP_16 -> unpackUINT16();
+                case MAP_32 -> unpackUINT32();
+                default -> throw new Unexpected("Expected a map, but got: " + toHexString(markerByte));
+            };
         }
 
         public long unpackLong() throws IOException {
@@ -410,18 +399,13 @@ public class PackStream {
             if (markerByte >= MINUS_2_TO_THE_4) {
                 return markerByte;
             }
-            switch (markerByte) {
-                case INT_8:
-                    return in.readByte();
-                case INT_16:
-                    return in.readShort();
-                case INT_32:
-                    return in.readInt();
-                case INT_64:
-                    return in.readLong();
-                default:
-                    throw new Unexpected("Expected an integer, but got: " + toHexString(markerByte));
-            }
+            return switch (markerByte) {
+                case INT_8 -> in.readByte();
+                case INT_16 -> in.readShort();
+                case INT_32 -> in.readInt();
+                case INT_64 -> in.readLong();
+                default -> throw new Unexpected("Expected an integer, but got: " + toHexString(markerByte));
+            };
         }
 
         public double unpackDouble() throws IOException {
@@ -435,11 +419,13 @@ public class PackStream {
         public byte[] unpackBytes() throws IOException {
             final var markerByte = in.readByte();
             switch (markerByte) {
-                case BYTES_8:
+                case BYTES_8 -> {
                     return unpackRawBytes(unpackUINT8());
-                case BYTES_16:
+                }
+                case BYTES_16 -> {
                     return unpackRawBytes(unpackUINT16());
-                case BYTES_32: {
+                }
+                case BYTES_32 -> {
                     var size = unpackUINT32();
                     if (size <= Integer.MAX_VALUE) {
                         return unpackRawBytes((int) size);
@@ -447,8 +433,7 @@ public class PackStream {
                         throw new Overflow("BYTES_32 too long for Java");
                     }
                 }
-                default:
-                    throw new Unexpected("Expected bytes, but got: 0x" + toHexString(markerByte & 0xFF));
+                default -> throw new Unexpected("Expected bytes, but got: 0x" + toHexString(markerByte & 0xFF));
             }
         }
 
@@ -485,11 +470,13 @@ public class PackStream {
                 return unpackRawBytes(markerLowNibble);
             }
             switch (markerByte) {
-                case STRING_8:
+                case STRING_8 -> {
                     return unpackRawBytes(unpackUINT8());
-                case STRING_16:
+                }
+                case STRING_16 -> {
                     return unpackRawBytes(unpackUINT16());
-                case STRING_32: {
+                }
+                case STRING_32 -> {
                     var size = unpackUINT32();
                     if (size <= Integer.MAX_VALUE) {
                         return unpackRawBytes((int) size);
@@ -497,21 +484,17 @@ public class PackStream {
                         throw new Overflow("STRING_32 too long for Java");
                     }
                 }
-                default:
-                    throw new Unexpected("Expected a string, but got: 0x" + toHexString(markerByte & 0xFF));
+                default -> throw new Unexpected("Expected a string, but got: 0x" + toHexString(markerByte & 0xFF));
             }
         }
 
         public boolean unpackBoolean() throws IOException {
             final var markerByte = in.readByte();
-            switch (markerByte) {
-                case TRUE:
-                    return true;
-                case FALSE:
-                    return false;
-                default:
-                    throw new Unexpected("Expected a boolean, but got: 0x" + toHexString(markerByte & 0xFF));
-            }
+            return switch (markerByte) {
+                case TRUE -> true;
+                case FALSE -> false;
+                default -> throw new Unexpected("Expected a boolean, but got: 0x" + toHexString(markerByte & 0xFF));
+            };
         }
 
         private int unpackUINT8() throws IOException {
@@ -539,47 +522,23 @@ public class PackStream {
             final var markerByte = in.peekByte();
             final var markerHighNibble = (byte) (markerByte & 0xF0);
 
-            switch (markerHighNibble) {
-                case TINY_STRING:
-                    return PackType.STRING;
-                case TINY_LIST:
-                    return PackType.LIST;
-                case TINY_MAP:
-                    return PackType.MAP;
-                case TINY_STRUCT:
-                    return PackType.STRUCT;
-            }
-
-            switch (markerByte) {
-                case NULL:
-                    return PackType.NULL;
-                case TRUE:
-                case FALSE:
-                    return PackType.BOOLEAN;
-                case FLOAT_64:
-                    return PackType.FLOAT;
-                case BYTES_8:
-                case BYTES_16:
-                case BYTES_32:
-                    return PackType.BYTES;
-                case STRING_8:
-                case STRING_16:
-                case STRING_32:
-                    return PackType.STRING;
-                case LIST_8:
-                case LIST_16:
-                case LIST_32:
-                    return PackType.LIST;
-                case MAP_8:
-                case MAP_16:
-                case MAP_32:
-                    return PackType.MAP;
-                case STRUCT_8:
-                case STRUCT_16:
-                    return PackType.STRUCT;
-                default:
-                    return PackType.INTEGER;
-            }
+            return switch (markerHighNibble) {
+                case TINY_STRING -> PackType.STRING;
+                case TINY_LIST -> PackType.LIST;
+                case TINY_MAP -> PackType.MAP;
+                case TINY_STRUCT -> PackType.STRUCT;
+                default -> switch (markerByte) {
+                    case NULL -> PackType.NULL;
+                    case TRUE, FALSE -> PackType.BOOLEAN;
+                    case FLOAT_64 -> PackType.FLOAT;
+                    case BYTES_8, BYTES_16, BYTES_32 -> PackType.BYTES;
+                    case STRING_8, STRING_16, STRING_32 -> PackType.STRING;
+                    case LIST_8, LIST_16, LIST_32 -> PackType.LIST;
+                    case MAP_8, MAP_16, MAP_32 -> PackType.MAP;
+                    case STRUCT_8, STRUCT_16 -> PackType.STRUCT;
+                    default -> PackType.INTEGER;
+                };
+            };
         }
     }
 

@@ -50,19 +50,12 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
 
     public TestkitRequestProcessorHandler(BackendMode backendMode, Logging logging) {
         switch (backendMode) {
-            case ASYNC:
-                processorImpl = TestkitRequest::processAsync;
-                break;
-            case REACTIVE_LEGACY:
-                processorImpl = (request, state) -> request.processRx(state).toFuture();
-                break;
-            case REACTIVE:
-                processorImpl =
-                        (request, state) -> request.processReactive(state).toFuture();
-                break;
-            default:
-                processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
-                break;
+            case ASYNC -> processorImpl = TestkitRequest::processAsync;
+            case REACTIVE_LEGACY -> processorImpl =
+                    (request, state) -> request.processRx(state).toFuture();
+            case REACTIVE -> processorImpl =
+                    (request, state) -> request.processReactive(state).toFuture();
+            default -> processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
         }
         testkitState = new TestkitState(this::writeAndFlush, logging);
     }
