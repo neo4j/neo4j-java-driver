@@ -130,7 +130,7 @@ class NettyChannelPoolIT {
     }
 
     @Test
-    void shouldAllowAcquireAfterFailures() throws Exception {
+    void shouldAllowAcquireAfterFailures() {
         var maxConnections = 2;
 
         Map<String, Value> authTokenMap = new HashMap<>();
@@ -151,7 +151,7 @@ class NettyChannelPoolIT {
     }
 
     @Test
-    void shouldLimitNumberOfConcurrentConnections() throws Exception {
+    void shouldLimitNumberOfConcurrentConnections() {
         var maxConnections = 5;
         pool = newPool(neo4j.authTokenManager(), maxConnections);
 
@@ -164,7 +164,7 @@ class NettyChannelPoolIT {
     }
 
     @Test
-    void shouldTrackActiveChannels() throws Exception {
+    void shouldTrackActiveChannels() {
         var tracker = new NettyChannelTracker(
                 DevNullMetricsListener.INSTANCE, new ImmediateSchedulingEventExecutor(), DEV_NULL_LOGGING);
 

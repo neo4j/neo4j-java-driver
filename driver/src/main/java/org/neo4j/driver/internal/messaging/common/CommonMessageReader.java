@@ -73,7 +73,7 @@ public class CommonMessageReader implements MessageFormat.Reader {
         output.handleFailureMessage(code, message);
     }
 
-    private void unpackIgnoredMessage(ResponseMessageHandler output) throws IOException {
+    private void unpackIgnoredMessage(ResponseMessageHandler output) {
         output.handleIgnoredMessage();
     }
 

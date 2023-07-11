@@ -98,7 +98,7 @@ class DirectConnectionProviderTest {
     }
 
     @Test
-    void shouldIgnoreDatabaseNameAndAccessModeWhenObtainConnectionFromPool() throws Throwable {
+    void shouldIgnoreDatabaseNameAndAccessModeWhenObtainConnectionFromPool() {
         var address = BoltServerAddress.LOCAL_DEFAULT;
         var connection = mock(Connection.class);
 
@@ -114,7 +114,7 @@ class DirectConnectionProviderTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "foo", "data"})
-    void shouldObtainDatabaseNameOnConnection(String databaseName) throws Throwable {
+    void shouldObtainDatabaseNameOnConnection(String databaseName) {
         var address = BoltServerAddress.LOCAL_DEFAULT;
         var pool = poolMock(address, mock(Connection.class));
         var provider = new DirectConnectionProvider(address, pool);

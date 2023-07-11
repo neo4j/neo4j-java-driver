@@ -124,7 +124,7 @@ public class SecurityPlanImpl implements SecurityPlan {
         return pkixBuilderParameters;
     }
 
-    private static void loadSystemCertificates(KeyStore trustedKeyStore) throws GeneralSecurityException, IOException {
+    private static void loadSystemCertificates(KeyStore trustedKeyStore) throws GeneralSecurityException {
         // To customize the PKIXParameters we need to get hold of the default KeyStore, no other elegant way available
         var tempFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         tempFactory.init((KeyStore) null);
@@ -191,7 +191,7 @@ public class SecurityPlanImpl implements SecurityPlan {
             throw new CertificateException("All client connections to this client are forbidden.");
         }
 
-        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+        public void checkServerTrusted(X509Certificate[] chain, String authType) {
             // all fine, pass through
         }
 

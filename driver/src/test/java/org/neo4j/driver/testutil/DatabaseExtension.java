@@ -133,7 +133,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     }
 
     @Override
-    public void afterEach(ExtensionContext context) throws Exception {
+    public void afterEach(ExtensionContext context) {
         if (!nginxRunning) {
             startProxy();
         }

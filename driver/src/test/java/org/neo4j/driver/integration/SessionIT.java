@@ -1068,7 +1068,7 @@ class SessionIT {
     @Test
     @DisabledOnNeo4jWith(BOLT_V4)
     @SuppressWarnings("deprecation")
-    void shouldErrorWhenTryingToUseRxAPIWithoutBoltV4() throws Throwable {
+    void shouldErrorWhenTryingToUseRxAPIWithoutBoltV4() {
         // Given
         var session = neo4j.driver().rxSession();
         var result = session.run("RETURN 1");
@@ -1088,7 +1088,7 @@ class SessionIT {
 
     @Test
     @DisabledOnNeo4jWith(BOLT_V4)
-    void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4() throws Throwable {
+    void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4() {
         // Given
         var session = neo4j.driver().session(forDatabase("foo"));
 
@@ -1101,7 +1101,7 @@ class SessionIT {
 
     @Test
     @DisabledOnNeo4jWith(BOLT_V4)
-    void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4UsingTx() throws Throwable {
+    void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4UsingTx() {
         // Given
         var session = neo4j.driver().session(forDatabase("foo"));
 
@@ -1114,7 +1114,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
-    void shouldAllowDatabaseName() throws Throwable {
+    void shouldAllowDatabaseName() {
         // Given
         try (var session = neo4j.driver().session(forDatabase("neo4j"))) {
             var result = session.run("RETURN 1");
@@ -1124,7 +1124,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
-    void shouldAllowDatabaseNameUsingTx() throws Throwable {
+    void shouldAllowDatabaseNameUsingTx() {
         try (var session = neo4j.driver().session(forDatabase("neo4j"));
                 var transaction = session.beginTransaction()) {
             var result = transaction.run("RETURN 1");
@@ -1135,7 +1135,7 @@ class SessionIT {
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
     @SuppressWarnings("deprecation")
-    void shouldAllowDatabaseNameUsingTxWithRetries() throws Throwable {
+    void shouldAllowDatabaseNameUsingTxWithRetries() {
         try (var session = neo4j.driver().session(forDatabase("neo4j"))) {
             int num = session.readTransaction(
                     tx -> tx.run("RETURN 1").single().get(0).asInt());
@@ -1145,7 +1145,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
-    void shouldErrorDatabaseWhenDatabaseIsAbsent() throws Throwable {
+    void shouldErrorDatabaseWhenDatabaseIsAbsent() {
         var session = neo4j.driver().session(forDatabase("foo"));
 
         var error = assertThrows(ClientException.class, () -> {
@@ -1159,7 +1159,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
-    void shouldErrorDatabaseNameUsingTxWhenDatabaseIsAbsent() throws Throwable {
+    void shouldErrorDatabaseNameUsingTxWhenDatabaseIsAbsent() {
         // Given
         var session = neo4j.driver().session(forDatabase("foo"));
 
@@ -1176,7 +1176,7 @@ class SessionIT {
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
     @SuppressWarnings("deprecation")
-    void shouldErrorDatabaseNameUsingTxWithRetriesWhenDatabaseIsAbsent() throws Throwable {
+    void shouldErrorDatabaseNameUsingTxWithRetriesWhenDatabaseIsAbsent() {
         // Given
         var session = neo4j.driver().session(forDatabase("foo"));
 

@@ -62,7 +62,7 @@ class SecurityPlansTest {
 
     @ParameterizedTest
     @MethodSource("systemCertSchemes")
-    void testSystemCertCompatibleConfiguration(String scheme) throws Exception {
+    void testSystemCertCompatibleConfiguration(String scheme) {
         var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
@@ -74,7 +74,7 @@ class SecurityPlansTest {
 
     @ParameterizedTest
     @MethodSource("selfSignedSchemes")
-    void testSelfSignedCertConfigDisablesHostnameVerification(String scheme) throws Exception {
+    void testSelfSignedCertConfigDisablesHostnameVerification(String scheme) {
         var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);

@@ -57,7 +57,7 @@ class BookmarkIT {
     @Test
     @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
     @SuppressWarnings("deprecation")
-    void shouldReceiveBookmarkOnSuccessfulCommit() throws Throwable {
+    void shouldReceiveBookmarkOnSuccessfulCommit() {
         // Given
         assertBookmarkIsEmpty(session.lastBookmark());
 
@@ -71,7 +71,7 @@ class BookmarkIT {
     @Test
     @EnabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
     @SuppressWarnings("deprecation")
-    void shouldReceiveNewBookmarkOnSuccessfulCommit() throws Throwable {
+    void shouldReceiveNewBookmarkOnSuccessfulCommit() {
         // Given
         var initialBookmark = session.lastBookmark();
         assertBookmarkIsEmpty(initialBookmark);

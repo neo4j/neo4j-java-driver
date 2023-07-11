@@ -250,7 +250,7 @@ class SummaryIT {
     }
 
     @Test
-    void shouldContainNoNotifications() throws Throwable {
+    void shouldContainNoNotifications() {
         // When
         var summary = session.run("RETURN 1").consume();
 

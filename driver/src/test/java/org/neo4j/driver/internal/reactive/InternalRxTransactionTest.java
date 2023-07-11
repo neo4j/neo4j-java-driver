@@ -89,7 +89,7 @@ class InternalRxTransactionTest {
 
     @ParameterizedTest
     @MethodSource("allTxRunMethods")
-    void shouldDelegateRun(Function<RxTransaction, RxResult> runReturnOne) throws Throwable {
+    void shouldDelegateRun(Function<RxTransaction, RxResult> runReturnOne) {
         // Given
         var tx = mock(UnmanagedTransaction.class);
         RxResultCursor cursor = mock(RxResultCursorImpl.class);
@@ -110,7 +110,7 @@ class InternalRxTransactionTest {
 
     @ParameterizedTest
     @MethodSource("allTxRunMethods")
-    void shouldMarkTxIfFailedToRun(Function<RxTransaction, RxResult> runReturnOne) throws Throwable {
+    void shouldMarkTxIfFailedToRun(Function<RxTransaction, RxResult> runReturnOne) {
         // Given
         Throwable error = new RuntimeException("Hi there");
         var tx = mock(UnmanagedTransaction.class);

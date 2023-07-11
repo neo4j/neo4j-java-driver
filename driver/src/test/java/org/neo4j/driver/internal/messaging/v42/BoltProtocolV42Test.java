@@ -326,14 +326,13 @@ public final class BoltProtocolV42Test {
 
     @ParameterizedTest
     @EnumSource(AccessMode.class)
-    void shouldRunInAutoCommitTransactionAndWaitForFailureRunResponse(AccessMode mode) throws Exception {
+    void shouldRunInAutoCommitTransactionAndWaitForFailureRunResponse(AccessMode mode) {
         testFailedRunInAutoCommitTxWithWaitingForResponse(Collections.emptySet(), TransactionConfig.empty(), mode);
     }
 
     @ParameterizedTest
     @EnumSource(AccessMode.class)
-    void shouldRunInAutoCommitTransactionWithBookmarkAndConfigAndWaitForFailureRunResponse(AccessMode mode)
-            throws Exception {
+    void shouldRunInAutoCommitTransactionWithBookmarkAndConfigAndWaitForFailureRunResponse(AccessMode mode) {
         testFailedRunInAutoCommitTxWithWaitingForResponse(
                 Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx163")), txConfig, mode);
     }
@@ -397,7 +396,7 @@ public final class BoltProtocolV42Test {
     }
 
     private void testFailedRunInAutoCommitTxWithWaitingForResponse(
-            Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) throws Exception {
+            Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) {
         // Given
         var connection = connectionMock(mode, protocol);
         @SuppressWarnings("unchecked")

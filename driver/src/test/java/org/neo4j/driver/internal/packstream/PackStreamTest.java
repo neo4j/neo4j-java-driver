@@ -645,7 +645,7 @@ public class PackStreamTest {
     }
 
     @Test
-    void shouldFailForUnknownValue() throws IOException {
+    void shouldFailForUnknownValue() {
         // Given
         var machine = new Machine();
         var packer = machine.packer();

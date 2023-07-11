@@ -188,7 +188,7 @@ class RoutingTableHandlerTest {
     }
 
     @Test
-    void shouldRemoveRoutingTableHandlerIfFailedToLookup() throws Throwable {
+    void shouldRemoveRoutingTableHandlerIfFailedToLookup() {
         // Given
         RoutingTable routingTable = new ClusterRoutingTable(defaultDatabase(), new FakeClock());
 

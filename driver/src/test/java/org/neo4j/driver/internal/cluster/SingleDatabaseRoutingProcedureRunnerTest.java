@@ -91,7 +91,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
 
     @ParameterizedTest
     @MethodSource("invalidDatabaseNames")
-    void shouldErrorWhenDatabaseIsNotAbsent(String db) throws Throwable {
+    void shouldErrorWhenDatabaseIsNotAbsent(String db) {
         var runner = new TestRoutingProcedureRunner(RoutingContext.EMPTY);
         assertThrows(
                 FatalDiscoveryException.class,
