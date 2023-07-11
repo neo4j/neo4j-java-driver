@@ -42,7 +42,7 @@ class MetricsIT {
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private Driver driver;
-    private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     @BeforeEach
     void createDriver() {

@@ -25,7 +25,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.summary.ResultSummary;
 
 public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlockingQuery<C> {
-    private AbstractStressTestBase<C> stressTest;
+    private final AbstractStressTestBase<C> stressTest;
 
     public BlockingWriteQuery(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
         super(driver, useBookmark);

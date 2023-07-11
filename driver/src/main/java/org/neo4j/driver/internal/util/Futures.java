@@ -226,8 +226,8 @@ public final class Futures {
     }
 
     private static class CompletionResult<T> {
-        T value;
-        Throwable error;
+        final T value;
+        final Throwable error;
 
         CompletionResult(T value, Throwable error) {
             this.value = value;

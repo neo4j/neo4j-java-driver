@@ -21,7 +21,6 @@ package neo4j.org.testkit.backend.messages.requests.deserializer;
 import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherTypeToJavaType;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
@@ -43,7 +42,7 @@ public class TestkitListDeserializer extends StdDeserializer<List<?>> {
     }
 
     @Override
-    public List<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+    public List<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         List<Object> result = new ArrayList<>();
 
         var t = p.getCurrentToken();

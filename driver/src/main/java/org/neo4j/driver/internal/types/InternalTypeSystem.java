@@ -50,7 +50,7 @@ import org.neo4j.driver.types.TypeSystem;
  * @see Type
  */
 public class InternalTypeSystem implements TypeSystem {
-    public static InternalTypeSystem TYPE_SYSTEM = new InternalTypeSystem();
+    public static final InternalTypeSystem TYPE_SYSTEM = new InternalTypeSystem();
 
     private final TypeRepresentation anyType = constructType(ANY);
     private final TypeRepresentation booleanType = constructType(BOOLEAN);

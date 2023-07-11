@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.types.TypeSystem;
 
 class IntegerValueTest {
-    private TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
+    private final TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
 
     @Test
     void testZeroIntegerValue() {

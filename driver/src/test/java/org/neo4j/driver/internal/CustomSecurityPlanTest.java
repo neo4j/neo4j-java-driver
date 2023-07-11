@@ -56,7 +56,7 @@ class CustomSecurityPlanTest {
     }
 
     private static class SecurityPlanCapturingDriverFactory extends DriverFactory {
-        List<SecurityPlan> capturedSecurityPlans = new ArrayList<>();
+        final List<SecurityPlan> capturedSecurityPlans = new ArrayList<>();
 
         @Override
         protected InternalDriver createDriver(

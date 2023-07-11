@@ -34,7 +34,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery<C> {
-    private AbstractStressTestBase<C> stressTest;
+    private final AbstractStressTestBase<C> stressTest;
 
     public RxWriteQueryInTx(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
         super(driver, useBookmark);

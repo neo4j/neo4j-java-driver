@@ -32,7 +32,7 @@ import org.neo4j.driver.types.TypeSystem;
 class BytesValueTest {
     private static final byte[] TEST_BYTES = "0123".getBytes();
 
-    private TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
+    private final TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
 
     @Test
     void testBytesValue() {

@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.logging.ConsoleLogging.ConsoleLogger;
 
 class ConsoleLoggingTest {
-    private static ByteArrayOutputStream out = new ByteArrayOutputStream();
+    private static final ByteArrayOutputStream out = new ByteArrayOutputStream();
     private static PrintStream sysErr;
 
     @BeforeAll

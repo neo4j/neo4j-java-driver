@@ -51,7 +51,7 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
     static final String GET_ROUTING_TABLE = "CALL dbms.cluster.routing.getRoutingTable($" + ROUTING_CONTEXT + ")";
 
     final RoutingContext context;
-    private Logging logging;
+    private final Logging logging;
 
     public SingleDatabaseRoutingProcedureRunner(RoutingContext context, Logging logging) {
         this.context = context;
