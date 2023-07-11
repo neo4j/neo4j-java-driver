@@ -128,7 +128,7 @@ public class NewSession implements TestkitRequest {
             DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new SessionHolder(
                 driverHolder,
-                driverHolder.getDriver().session(org.neo4j.driver.Session.class, sessionConfig, userSwitchAuthToken),
+                driverHolder.driver().session(org.neo4j.driver.Session.class, sessionConfig, userSwitchAuthToken),
                 sessionConfig);
     }
 
@@ -136,7 +136,7 @@ public class NewSession implements TestkitRequest {
             DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new AsyncSessionHolder(
                 driverHolder,
-                driverHolder.getDriver().session(AsyncSession.class, sessionConfig, userSwitchAuthToken),
+                driverHolder.driver().session(AsyncSession.class, sessionConfig, userSwitchAuthToken),
                 sessionConfig);
     }
 
@@ -145,7 +145,7 @@ public class NewSession implements TestkitRequest {
             DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new RxSessionHolder(
                 driverHolder,
-                driverHolder.getDriver().session(RxSession.class, sessionConfig, userSwitchAuthToken),
+                driverHolder.driver().session(RxSession.class, sessionConfig, userSwitchAuthToken),
                 sessionConfig);
     }
 
@@ -153,7 +153,7 @@ public class NewSession implements TestkitRequest {
             DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new ReactiveSessionHolder(
                 driverHolder,
-                driverHolder.getDriver().session(ReactiveSession.class, sessionConfig, userSwitchAuthToken),
+                driverHolder.driver().session(ReactiveSession.class, sessionConfig, userSwitchAuthToken),
                 sessionConfig);
     }
 
@@ -162,7 +162,7 @@ public class NewSession implements TestkitRequest {
         return new ReactiveSessionStreamsHolder(
                 driverHolder,
                 driverHolder
-                        .getDriver()
+                        .driver()
                         .session(
                                 org.neo4j.driver.reactivestreams.ReactiveSession.class,
                                 sessionConfig,

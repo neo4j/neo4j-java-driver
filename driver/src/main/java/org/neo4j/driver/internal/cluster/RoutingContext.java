@@ -86,7 +86,7 @@ public class RoutingContext {
             }
 
             var previousValue =
-                    parameters.put(trimAndVerifyKey(keyValue[0], "key", uri), trimAndVerify(keyValue[1], "value", uri));
+                    parameters.put(trimAndVerifyKey(keyValue[0], uri), trimAndVerify(keyValue[1], "value", uri));
             if (previousValue != null) {
                 throw new IllegalArgumentException(
                         "Duplicated query parameters with key '" + previousValue + "' in URI '" + uri + "'");
@@ -95,8 +95,8 @@ public class RoutingContext {
         return parameters;
     }
 
-    private static String trimAndVerifyKey(String s, String key, URI uri) {
-        var trimmed = trimAndVerify(s, key, uri);
+    private static String trimAndVerifyKey(String s, URI uri) {
+        var trimmed = trimAndVerify(s, "key", uri);
 
         if (trimmed.equals(ROUTING_ADDRESS_KEY)) {
             throw new IllegalArgumentException("The key 'address' is reserved for routing context.");

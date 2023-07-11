@@ -87,7 +87,7 @@ class InternalDriverTest {
     }
 
     @Test
-    void shouldThrowClientExceptionIfMetricsNotEnabled() throws Throwable {
+    void shouldThrowClientExceptionIfMetricsNotEnabled() {
         // Given
         var driver = newDriver(false);
 

@@ -35,7 +35,7 @@ import org.neo4j.driver.Values;
 class RouteMessageResponseHandlerTest {
 
     @Test
-    void onSuccessShouldSuccessFullyCompleteFutureWithRoutingTable() throws Exception {
+    void onSuccessShouldSuccessFullyCompleteFutureWithRoutingTable() {
         var completableFuture = new CompletableFuture<Map<String, Value>>();
         var responseHandler = new RouteMessageResponseHandler(completableFuture);
         var routingTable = getRoutingTable();
@@ -47,7 +47,7 @@ class RouteMessageResponseHandlerTest {
     }
 
     @Test
-    void onSuccessShouldExceptionallyCompleteFutureWhenMetadataDoesNotHaveRoutingTable() throws Exception {
+    void onSuccessShouldExceptionallyCompleteFutureWhenMetadataDoesNotHaveRoutingTable() {
         var completableFuture = new CompletableFuture<Map<String, Value>>();
         var responseHandler = new RouteMessageResponseHandler(completableFuture);
         Map<String, Value> metadata = new HashMap<>();

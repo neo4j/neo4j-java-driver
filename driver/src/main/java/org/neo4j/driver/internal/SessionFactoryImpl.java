@@ -43,7 +43,6 @@ public class SessionFactoryImpl implements SessionFactory {
     private final Logging logging;
     private final boolean leakedSessionsLoggingEnabled;
     private final long defaultFetchSize;
-    private final NotificationConfig driverNotificationConfig;
 
     SessionFactoryImpl(ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config) {
         this.connectionProvider = connectionProvider;
@@ -51,7 +50,6 @@ public class SessionFactoryImpl implements SessionFactory {
         this.retryLogic = retryLogic;
         this.logging = config.logging();
         this.defaultFetchSize = config.fetchSize();
-        this.driverNotificationConfig = config.notificationConfig();
     }
 
     @Override

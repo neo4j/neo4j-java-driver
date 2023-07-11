@@ -47,7 +47,6 @@ import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.handlers.HelloResponseHandler;
-import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
@@ -96,9 +95,7 @@ class HandshakeCompletedListenerTest {
         given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
         setAuthContext(channel, authContext);
         testWritingOfInitializationMessage(
-                BoltProtocolV3.VERSION,
-                new HelloMessage(USER_AGENT, null, authToken().toMap(), Collections.emptyMap(), false, null),
-                HelloResponseHandler.class);
+                new HelloMessage(USER_AGENT, null, authToken().toMap(), Collections.emptyMap(), false, null));
         then(authContext).should().initiateAuth(authToken);
     }
 
@@ -134,12 +131,9 @@ class HandshakeCompletedListenerTest {
         assertEquals(exception, actualException);
     }
 
-    private void testWritingOfInitializationMessage(
-            BoltProtocolVersion protocolVersion,
-            Message expectedMessage,
-            Class<? extends ResponseHandler> handlerType) {
+    private void testWritingOfInitializationMessage(Message expectedMessage) {
         var messageDispatcher = mock(InboundMessageDispatcher.class);
-        setProtocolVersion(channel, protocolVersion);
+        setProtocolVersion(channel, BoltProtocolV3.VERSION);
         setMessageDispatcher(channel, messageDispatcher);
 
         var channelInitializedPromise = channel.newPromise();
@@ -157,7 +151,7 @@ class HandshakeCompletedListenerTest {
         listener.operationComplete(handshakeCompletedPromise);
         assertTrue(channel.finish());
 
-        verify(messageDispatcher).enqueue(any(handlerType));
+        verify(messageDispatcher).enqueue(any((Class<? extends ResponseHandler>) HelloResponseHandler.class));
         var outboundMessage = channel.readOutbound();
         assertEquals(expectedMessage, outboundMessage);
     }

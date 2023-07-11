@@ -62,7 +62,7 @@ public class GetConnectionPoolMetrics implements TestkitRequest {
 
     private ConnectionPoolMetrics getConnectionPoolMetrics(TestkitState testkitState) {
         var driverHolder = testkitState.getDriverHolder(data.getDriverId());
-        var metrics = driverHolder.getDriver().metrics();
+        var metrics = driverHolder.driver().metrics();
         var poolMetrics = metrics.connectionPoolMetrics().stream()
                 .filter(pm -> {
                     // Brute forcing the access via reflections avoid having the InternalConnectionPoolMetrics a public

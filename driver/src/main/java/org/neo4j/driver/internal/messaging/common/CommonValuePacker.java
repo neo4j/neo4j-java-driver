@@ -109,72 +109,39 @@ public class CommonValuePacker implements ValuePacker {
 
     protected void packInternalValue(InternalValue value) throws IOException {
         switch (value.typeConstructor()) {
-            case DATE:
-                packDate(value.asLocalDate());
-                break;
-            case TIME:
-                packTime(value.asOffsetTime());
-                break;
-            case LOCAL_TIME:
-                packLocalTime(value.asLocalTime());
-                break;
-            case LOCAL_DATE_TIME:
-                packLocalDateTime(value.asLocalDateTime());
-                break;
-            case DATE_TIME:
+            case DATE -> packDate(value.asLocalDate());
+            case TIME -> packTime(value.asOffsetTime());
+            case LOCAL_TIME -> packLocalTime(value.asLocalTime());
+            case LOCAL_DATE_TIME -> packLocalDateTime(value.asLocalDateTime());
+            case DATE_TIME -> {
                 if (dateTimeUtcEnabled) {
                     packZonedDateTimeUsingUtcBaseline(value.asZonedDateTime());
                 } else {
                     packZonedDateTime(value.asZonedDateTime());
                 }
-                break;
-            case DURATION:
-                packDuration(value.asIsoDuration());
-                break;
-            case POINT:
-                packPoint(value.asPoint());
-                break;
-            case NULL:
-                packer.packNull();
-                break;
-
-            case BYTES:
-                packer.pack(value.asByteArray());
-                break;
-
-            case STRING:
-                packer.pack(value.asString());
-                break;
-
-            case BOOLEAN:
-                packer.pack(value.asBoolean());
-                break;
-
-            case INTEGER:
-                packer.pack(value.asLong());
-                break;
-
-            case FLOAT:
-                packer.pack(value.asDouble());
-                break;
-
-            case MAP:
+            }
+            case DURATION -> packDuration(value.asIsoDuration());
+            case POINT -> packPoint(value.asPoint());
+            case NULL -> packer.packNull();
+            case BYTES -> packer.pack(value.asByteArray());
+            case STRING -> packer.pack(value.asString());
+            case BOOLEAN -> packer.pack(value.asBoolean());
+            case INTEGER -> packer.pack(value.asLong());
+            case FLOAT -> packer.pack(value.asDouble());
+            case MAP -> {
                 packer.packMapHeader(value.size());
                 for (var s : value.keys()) {
                     packer.pack(s);
                     pack(value.get(s));
                 }
-                break;
-
-            case LIST:
+            }
+            case LIST -> {
                 packer.packListHeader(value.size());
                 for (var item : value.values()) {
                     pack(item);
                 }
-                break;
-
-            default:
-                throw new IOException("Unknown type: " + value.type().name());
+            }
+            default -> throw new IOException("Unknown type: " + value.type().name());
         }
     }
 

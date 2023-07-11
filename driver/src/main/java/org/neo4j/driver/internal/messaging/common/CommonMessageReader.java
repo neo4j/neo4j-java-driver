@@ -44,20 +44,11 @@ public class CommonMessageReader implements MessageFormat.Reader {
         unpacker.unpackStructHeader();
         var type = unpacker.unpackStructSignature();
         switch (type) {
-            case SuccessMessage.SIGNATURE:
-                unpackSuccessMessage(handler);
-                break;
-            case FailureMessage.SIGNATURE:
-                unpackFailureMessage(handler);
-                break;
-            case IgnoredMessage.SIGNATURE:
-                unpackIgnoredMessage(handler);
-                break;
-            case RecordMessage.SIGNATURE:
-                unpackRecordMessage(handler);
-                break;
-            default:
-                throw new IOException("Unknown message type: " + type);
+            case SuccessMessage.SIGNATURE -> unpackSuccessMessage(handler);
+            case FailureMessage.SIGNATURE -> unpackFailureMessage(handler);
+            case IgnoredMessage.SIGNATURE -> unpackIgnoredMessage(handler);
+            case RecordMessage.SIGNATURE -> unpackRecordMessage(handler);
+            default -> throw new IOException("Unknown message type: " + type);
         }
     }
 
@@ -73,7 +64,7 @@ public class CommonMessageReader implements MessageFormat.Reader {
         output.handleFailureMessage(code, message);
     }
 
-    private void unpackIgnoredMessage(ResponseMessageHandler output) throws IOException {
+    private void unpackIgnoredMessage(ResponseMessageHandler output) {
         output.handleIgnoredMessage();
     }
 

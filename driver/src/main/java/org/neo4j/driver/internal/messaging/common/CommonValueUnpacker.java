@@ -141,22 +141,28 @@ public class CommonValueUnpacker implements ValueUnpacker {
     protected Value unpack() throws IOException {
         var type = unpacker.peekNextType();
         switch (type) {
-            case NULL:
+            case NULL -> {
                 return value(unpacker.unpackNull());
-            case BOOLEAN:
+            }
+            case BOOLEAN -> {
                 return value(unpacker.unpackBoolean());
-            case INTEGER:
+            }
+            case INTEGER -> {
                 return value(unpacker.unpackLong());
-            case FLOAT:
+            }
+            case FLOAT -> {
                 return value(unpacker.unpackDouble());
-            case BYTES:
+            }
+            case BYTES -> {
                 return value(unpacker.unpackBytes());
-            case STRING:
+            }
+            case STRING -> {
                 return value(unpacker.unpackString());
-            case MAP: {
+            }
+            case MAP -> {
                 return new MapValue(unpackMap());
             }
-            case LIST: {
+            case LIST -> {
                 var size = (int) unpacker.unpackListHeader();
                 var vals = new Value[size];
                 for (var j = 0; j < size; j++) {
@@ -164,7 +170,7 @@ public class CommonValueUnpacker implements ValueUnpacker {
                 }
                 return new ListValue(vals);
             }
-            case STRUCT: {
+            case STRUCT -> {
                 var size = unpacker.unpackStructHeader();
                 var structType = unpacker.unpackStructSignature();
                 return unpackStruct(size, structType);
@@ -175,67 +181,80 @@ public class CommonValueUnpacker implements ValueUnpacker {
 
     private Value unpackStruct(long size, byte type) throws IOException {
         switch (type) {
-            case DATE:
+            case DATE -> {
                 ensureCorrectStructSize(TypeConstructor.DATE, DATE_STRUCT_SIZE, size);
                 return unpackDate();
-            case TIME:
+            }
+            case TIME -> {
                 ensureCorrectStructSize(TypeConstructor.TIME, TIME_STRUCT_SIZE, size);
                 return unpackTime();
-            case LOCAL_TIME:
+            }
+            case LOCAL_TIME -> {
                 ensureCorrectStructSize(TypeConstructor.LOCAL_TIME, LOCAL_TIME_STRUCT_SIZE, size);
                 return unpackLocalTime();
-            case LOCAL_DATE_TIME:
+            }
+            case LOCAL_DATE_TIME -> {
                 ensureCorrectStructSize(TypeConstructor.LOCAL_DATE_TIME, LOCAL_DATE_TIME_STRUCT_SIZE, size);
                 return unpackLocalDateTime();
-            case DATE_TIME_WITH_ZONE_OFFSET:
+            }
+            case DATE_TIME_WITH_ZONE_OFFSET -> {
                 if (!dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
                     return unpackDateTime(ZoneMode.OFFSET, BaselineMode.LEGACY);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
-            case DATE_TIME_WITH_ZONE_OFFSET_UTC:
+            }
+            case DATE_TIME_WITH_ZONE_OFFSET_UTC -> {
                 if (dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
                     return unpackDateTime(ZoneMode.OFFSET, BaselineMode.UTC);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
-            case DATE_TIME_WITH_ZONE_ID:
+            }
+            case DATE_TIME_WITH_ZONE_ID -> {
                 if (!dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
                     return unpackDateTime(ZoneMode.ZONE_ID, BaselineMode.LEGACY);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
-            case DATE_TIME_WITH_ZONE_ID_UTC:
+            }
+            case DATE_TIME_WITH_ZONE_ID_UTC -> {
                 if (dateTimeUtcEnabled) {
                     ensureCorrectStructSize(TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size);
                     return unpackDateTime(ZoneMode.ZONE_ID, BaselineMode.UTC);
                 } else {
                     throw instantiateExceptionForUnknownType(type);
                 }
-            case DURATION:
+            }
+            case DURATION -> {
                 ensureCorrectStructSize(TypeConstructor.DURATION, DURATION_TIME_STRUCT_SIZE, size);
                 return unpackDuration();
-            case POINT_2D_STRUCT_TYPE:
+            }
+            case POINT_2D_STRUCT_TYPE -> {
                 ensureCorrectStructSize(TypeConstructor.POINT, POINT_2D_STRUCT_SIZE, size);
                 return unpackPoint2D();
-            case POINT_3D_STRUCT_TYPE:
+            }
+            case POINT_3D_STRUCT_TYPE -> {
                 ensureCorrectStructSize(TypeConstructor.POINT, POINT_3D_STRUCT_SIZE, size);
                 return unpackPoint3D();
-            case NODE:
+            }
+            case NODE -> {
                 ensureCorrectStructSize(TypeConstructor.NODE, getNodeFields(), size);
                 var adapted = unpackNode();
                 return new NodeValue(adapted);
-            case RELATIONSHIP:
+            }
+            case RELATIONSHIP -> {
                 ensureCorrectStructSize(TypeConstructor.RELATIONSHIP, getRelationshipFields(), size);
                 return unpackRelationship();
-            case PATH:
+            }
+            case PATH -> {
                 ensureCorrectStructSize(TypeConstructor.PATH, 3, size);
                 return unpackPath();
-            default:
-                throw instantiateExceptionForUnknownType(type);
+            }
+            default -> throw instantiateExceptionForUnknownType(type);
         }
     }
 

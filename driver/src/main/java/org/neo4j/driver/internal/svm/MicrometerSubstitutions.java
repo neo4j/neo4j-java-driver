@@ -47,11 +47,13 @@ final class Target_org_neo4j_driver_internal_DriverFactory {
             metricsAdapter = config.isMetricsEnabled() ? MetricsAdapter.DEFAULT : MetricsAdapter.DEV_NULL;
         }
         switch (metricsAdapter) {
-            case DEV_NULL:
+            case DEV_NULL -> {
                 return DevNullMetricsProvider.INSTANCE;
-            case DEFAULT:
+            }
+            case DEFAULT -> {
                 return new InternalMetricsProvider(clock, config.logging());
-            case MICROMETER:
+            }
+            case MICROMETER -> {
                 try {
                     @SuppressWarnings("unused")
                     var metricsClass = Class.forName("io.micrometer.core.instrument.Metrics");
@@ -59,6 +61,7 @@ final class Target_org_neo4j_driver_internal_DriverFactory {
                 } catch (ClassNotFoundException e) {
                     return DevNullMetricsProvider.INSTANCE;
                 }
+            }
         }
         throw new IllegalStateException("Unknown or unsupported MetricsAdapter: " + metricsAdapter);
     }

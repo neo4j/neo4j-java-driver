@@ -58,7 +58,7 @@ class ChannelReleasingResetResponseHandlerTest {
 
         handler.onSuccess(emptyMap());
 
-        verifyLastUsedTimestamp(5);
+        verifyLastUsedTimestamp();
         verify(pool).release(eq(channel));
         assertTrue(releaseFuture.isDone());
         assertFalse(releaseFuture.isCompletedExceptionally());
@@ -80,8 +80,8 @@ class ChannelReleasingResetResponseHandlerTest {
         assertFalse(releaseFuture.isCompletedExceptionally());
     }
 
-    private void verifyLastUsedTimestamp(int expectedValue) {
-        assertEquals(expectedValue, lastUsedTimestamp(channel).intValue());
+    private void verifyLastUsedTimestamp() {
+        assertEquals(5, lastUsedTimestamp(channel).intValue());
     }
 
     private ChannelReleasingResetResponseHandler newHandler(

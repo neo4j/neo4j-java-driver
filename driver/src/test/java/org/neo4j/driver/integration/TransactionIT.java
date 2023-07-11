@@ -379,7 +379,7 @@ class TransactionIT {
     }
 
     @Test
-    void shouldFailToCommitAfterFailure() throws Throwable {
+    void shouldFailToCommitAfterFailure() {
         try (var tx = session.beginTransaction()) {
             var xs = tx.run("UNWIND [1,2,3] AS x CREATE (:Node) RETURN x")
                     .list(record -> record.get(0).asInt());

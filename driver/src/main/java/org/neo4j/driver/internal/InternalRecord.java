@@ -127,8 +127,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
     public boolean equals(Object other) {
         if (this == other) {
             return true;
-        } else if (other instanceof Record) {
-            var otherRecord = (Record) other;
+        } else if (other instanceof Record otherRecord) {
             var size = size();
             if (!(size == otherRecord.size())) {
                 return false;

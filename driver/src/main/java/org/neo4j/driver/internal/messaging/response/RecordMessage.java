@@ -22,18 +22,8 @@ import java.util.Arrays;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.Message;
 
-public class RecordMessage implements Message {
+public record RecordMessage(Value[] fields) implements Message {
     public static final byte SIGNATURE = 0x71;
-
-    private final Value[] fields;
-
-    public RecordMessage(Value[] fields) {
-        this.fields = fields;
-    }
-
-    public Value[] fields() {
-        return fields;
-    }
 
     @Override
     public byte signature() {

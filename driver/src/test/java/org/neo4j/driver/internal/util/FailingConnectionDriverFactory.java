@@ -60,14 +60,8 @@ public class FailingConnectionDriverFactory extends DriverFactory {
         nextRunFailure.set(failure);
     }
 
-    private static class ConnectionPoolWithFailingConnections implements ConnectionPool {
-        final ConnectionPool delegate;
-        final AtomicReference<Throwable> nextRunFailure;
-
-        ConnectionPoolWithFailingConnections(ConnectionPool delegate, AtomicReference<Throwable> nextRunFailure) {
-            this.delegate = delegate;
-            this.nextRunFailure = nextRunFailure;
-        }
+    private record ConnectionPoolWithFailingConnections(
+            ConnectionPool delegate, AtomicReference<Throwable> nextRunFailure) implements ConnectionPool {
 
         @Override
         public CompletionStage<Connection> acquire(BoltServerAddress address, AuthToken overrideAuthToken) {
@@ -128,7 +122,7 @@ public class FailingConnectionDriverFactory extends DriverFactory {
 
         @Override
         public void write(Message message, ResponseHandler handler) {
-            if (tryFail(handler, null)) {
+            if (tryFail(handler)) {
                 return;
             }
             delegate.write(message, handler);
@@ -136,7 +130,7 @@ public class FailingConnectionDriverFactory extends DriverFactory {
 
         @Override
         public void writeAndFlush(Message message, ResponseHandler handler) {
-            if (tryFail(handler, null)) {
+            if (tryFail(handler)) {
                 return;
             }
             delegate.writeAndFlush(message, handler);
@@ -177,7 +171,7 @@ public class FailingConnectionDriverFactory extends DriverFactory {
             delegate.bindTerminationAwareStateLockingExecutor(executor);
         }
 
-        private boolean tryFail(ResponseHandler handler1, ResponseHandler handler2) {
+        private boolean tryFail(ResponseHandler handler1) {
             var failure = nextRunFailure.getAndSet(null);
             if (failure != null) {
                 var reportCount = count.get();
@@ -185,8 +179,8 @@ public class FailingConnectionDriverFactory extends DriverFactory {
                     handler1.onFailure(failure);
                     reportCount = count.decrementAndGet();
                 }
-                if (handler2 != null) {
-                    handler2.onFailure(failure);
+                if (null != null) {
+                    ((ResponseHandler) null).onFailure(failure);
                     reportCount = count.decrementAndGet();
                 }
 

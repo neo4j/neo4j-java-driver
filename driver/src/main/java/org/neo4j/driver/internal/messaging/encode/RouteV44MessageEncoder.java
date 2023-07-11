@@ -40,14 +40,14 @@ public class RouteV44MessageEncoder implements MessageEncoder {
         checkArgument(message, RouteMessage.class);
         var routeMessage = (RouteMessage) message;
         packer.packStructHeader(3, message.signature());
-        packer.pack(routeMessage.getRoutingContext());
-        packer.pack(value(routeMessage.getBookmarks().stream().map(Bookmark::value)));
+        packer.pack(routeMessage.routingContext());
+        packer.pack(value(routeMessage.bookmarks().stream().map(Bookmark::value)));
 
         Map<String, Value> params;
-        if (routeMessage.getImpersonatedUser() != null && routeMessage.getDatabaseName() == null) {
-            params = Collections.singletonMap("imp_user", value(routeMessage.getImpersonatedUser()));
-        } else if (routeMessage.getDatabaseName() != null) {
-            params = Collections.singletonMap("db", value(routeMessage.getDatabaseName()));
+        if (routeMessage.impersonatedUser() != null && routeMessage.databaseName() == null) {
+            params = Collections.singletonMap("imp_user", value(routeMessage.impersonatedUser()));
+        } else if (routeMessage.databaseName() != null) {
+            params = Collections.singletonMap("db", value(routeMessage.databaseName()));
         } else {
             params = Collections.emptyMap();
         }

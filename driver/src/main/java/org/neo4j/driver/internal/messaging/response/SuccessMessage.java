@@ -30,18 +30,8 @@ import org.neo4j.driver.internal.messaging.Message;
  * Sent by the server to signal a successful operation.
  * Terminates response sequence.
  */
-public class SuccessMessage implements Message {
+public record SuccessMessage(Map<String, Value> metadata) implements Message {
     public static final byte SIGNATURE = 0x70;
-
-    private final Map<String, Value> metadata;
-
-    public SuccessMessage(Map<String, Value> metadata) {
-        this.metadata = metadata;
-    }
-
-    public Map<String, Value> metadata() {
-        return metadata;
-    }
 
     @Override
     public byte signature() {

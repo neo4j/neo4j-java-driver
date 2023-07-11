@@ -64,11 +64,6 @@ public abstract class BooleanValue extends ValueAdapter {
             return true;
         }
 
-        @Override
-        public boolean isFalse() {
-            return false;
-        }
-
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         @Override
         public boolean equals(Object obj) {
@@ -89,11 +84,6 @@ public abstract class BooleanValue extends ValueAdapter {
 
         @Override
         public boolean asBoolean() {
-            return false;
-        }
-
-        @Override
-        public boolean isTrue() {
             return false;
         }
 

@@ -225,15 +225,7 @@ public final class Futures {
         };
     }
 
-    private static class CompletionResult<T> {
-        final T value;
-        final Throwable error;
-
-        CompletionResult(T value, Throwable error) {
-            this.value = value;
-            this.error = error;
-        }
-    }
+    private record CompletionResult<T>(T value, Throwable error) {}
 
     private static void safeRun(Runnable runnable) {
         try {
@@ -242,5 +234,6 @@ public final class Futures {
         }
     }
 
+    @SuppressWarnings("EmptyMethod")
     private static void noOpInterruptHandler() {}
 }

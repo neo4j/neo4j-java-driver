@@ -241,25 +241,19 @@ public class LoadBalancer implements ConnectionProvider {
     }
 
     private static List<BoltServerAddress> getAddressesByMode(AccessMode mode, RoutingTable routingTable) {
-        switch (mode) {
-            case READ:
-                return routingTable.readers();
-            case WRITE:
-                return routingTable.writers();
-            default:
-                throw unknownMode(mode);
-        }
+        return switch (mode) {
+            case READ -> routingTable.readers();
+            case WRITE -> routingTable.writers();
+            default -> throw unknownMode(mode);
+        };
     }
 
     private BoltServerAddress selectAddress(AccessMode mode, List<BoltServerAddress> addresses) {
-        switch (mode) {
-            case READ:
-                return loadBalancingStrategy.selectReader(addresses);
-            case WRITE:
-                return loadBalancingStrategy.selectWriter(addresses);
-            default:
-                throw unknownMode(mode);
-        }
+        return switch (mode) {
+            case READ -> loadBalancingStrategy.selectReader(addresses);
+            case WRITE -> loadBalancingStrategy.selectWriter(addresses);
+            default -> throw unknownMode(mode);
+        };
     }
 
     private static RoutingTableRegistry createRoutingTables(

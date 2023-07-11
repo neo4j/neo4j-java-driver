@@ -53,7 +53,6 @@ public class ConsoleLogging implements Logging, Serializable {
     }
 
     public static class ConsoleLogger extends JULogger {
-        private final ConsoleHandler handler;
 
         public ConsoleLogger(String name, Level level) {
             super(name, level);
@@ -66,7 +65,7 @@ public class ConsoleLogging implements Logging, Serializable {
                 logger.removeHandler(handlerToRemove);
             }
 
-            handler = new ConsoleHandler();
+            var handler = new ConsoleHandler();
             handler.setFormatter(new ConsoleFormatter());
             handler.setLevel(level);
             logger.addHandler(handler);

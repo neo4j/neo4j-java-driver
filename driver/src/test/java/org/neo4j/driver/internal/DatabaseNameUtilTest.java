@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 class DatabaseNameUtilTest {
     @Test
-    void shouldDatabaseNameBeEqual() throws Throwable {
+    void shouldDatabaseNameBeEqual() {
         assertEquals(defaultDatabase(), defaultDatabase());
         assertEquals(defaultDatabase(), database(null));
         assertEquals(defaultDatabase(), database(DEFAULT_DATABASE_NAME));
@@ -42,7 +42,7 @@ class DatabaseNameUtilTest {
     }
 
     @Test
-    void shouldReturnDatabaseNameInDescription() throws Throwable {
+    void shouldReturnDatabaseNameInDescription() {
         assertEquals("<default database>", defaultDatabase().description());
         assertEquals("system", systemDatabase().description());
         assertEquals("hello", database("hello").description());

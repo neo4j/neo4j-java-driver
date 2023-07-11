@@ -97,22 +97,19 @@ public class KnowledgeableMessageFormat extends MessageFormatV3 {
         protected void packInternalValue(InternalValue value) throws IOException {
             var typeConstructor = value.typeConstructor();
             switch (typeConstructor) {
-                case NODE:
+                case NODE -> {
                     var node = value.asNode();
                     packNode(node);
-                    break;
-
-                case RELATIONSHIP:
+                }
+                case RELATIONSHIP -> {
                     var rel = value.asRelationship();
                     packRelationship(rel);
-                    break;
-
-                case PATH:
+                }
+                case PATH -> {
                     var path = value.asPath();
                     packPath(path);
-                    break;
-                default:
-                    super.packInternalValue(value);
+                }
+                default -> super.packInternalValue(value);
             }
         }
 

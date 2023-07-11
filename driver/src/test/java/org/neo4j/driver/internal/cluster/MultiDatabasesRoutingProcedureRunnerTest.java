@@ -90,14 +90,14 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     }
 
     @Override
-    SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner(RoutingContext context) {
-        return new TestRoutingProcedureRunner(context);
+    SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner() {
+        return new TestRoutingProcedureRunner(RoutingContext.EMPTY);
     }
 
     @Override
     SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner(
-            RoutingContext context, CompletionStage<List<Record>> runProcedureResult) {
-        return new TestRoutingProcedureRunner(context, runProcedureResult);
+            CompletionStage<List<Record>> runProcedureResult) {
+        return new TestRoutingProcedureRunner(RoutingContext.EMPTY, runProcedureResult);
     }
 
     private static Query generateMultiDatabaseRoutingQuery(Map<String, String> context, String db) {

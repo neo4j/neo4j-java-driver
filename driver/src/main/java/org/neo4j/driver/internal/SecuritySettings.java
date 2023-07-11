@@ -21,26 +21,16 @@ package org.neo4j.driver.internal;
 import java.io.Serializable;
 import org.neo4j.driver.Config;
 
-public class SecuritySettings implements Serializable {
+public record SecuritySettings(boolean encrypted, Config.TrustStrategy trustStrategy) implements Serializable {
     private static final long serialVersionUID = 4494615367164106576L;
 
     private static final boolean DEFAULT_ENCRYPTED = false;
     private static final Config.TrustStrategy DEFAULT_TRUST_STRATEGY = Config.TrustStrategy.trustSystemCertificates();
     public static final SecuritySettings DEFAULT = new SecuritySettings(DEFAULT_ENCRYPTED, DEFAULT_TRUST_STRATEGY);
-    private final boolean encrypted;
-    private final Config.TrustStrategy trustStrategy;
 
     public SecuritySettings(boolean encrypted, Config.TrustStrategy trustStrategy) {
         this.encrypted = encrypted;
         this.trustStrategy = trustStrategy == null ? DEFAULT_TRUST_STRATEGY : trustStrategy;
-    }
-
-    public boolean encrypted() {
-        return encrypted;
-    }
-
-    public Config.TrustStrategy trustStrategy() {
-        return trustStrategy;
     }
 
     public static class SecuritySettingsBuilder {

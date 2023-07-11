@@ -34,7 +34,7 @@ public class VerifyConnectivity implements TestkitRequest {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         var id = data.getDriverId();
-        testkitState.getDriverHolder(id).getDriver().verifyConnectivity();
+        testkitState.getDriverHolder(id).driver().verifyConnectivity();
         return createResponse(id);
     }
 
@@ -43,7 +43,7 @@ public class VerifyConnectivity implements TestkitRequest {
         var id = data.getDriverId();
         return testkitState
                 .getDriverHolder(id)
-                .getDriver()
+                .driver()
                 .verifyConnectivityAsync()
                 .thenApply(ignored -> createResponse(id));
     }

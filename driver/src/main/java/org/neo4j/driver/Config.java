@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.Serial;
 import java.io.Serializable;
 import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -808,7 +807,7 @@ public final class Config implements Serializable {
         private TrustStrategy(Strategy strategy, List<File> certFiles) {
             Objects.requireNonNull(certFiles, "certFiles can't be null");
             this.strategy = strategy;
-            this.certFiles = Collections.unmodifiableList(new ArrayList<>(certFiles));
+            this.certFiles = List.copyOf(certFiles);
         }
 
         /**

@@ -33,7 +33,7 @@ public class DriverClose implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        testkitState.getDriverHolder(data.getDriverId()).getDriver().close();
+        testkitState.getDriverHolder(data.getDriverId()).driver().close();
         return createResponse();
     }
 
@@ -41,7 +41,7 @@ public class DriverClose implements TestkitRequest {
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
         return testkitState
                 .getDriverHolder(data.getDriverId())
-                .getDriver()
+                .driver()
                 .closeAsync()
                 .thenApply(ignored -> createResponse());
     }

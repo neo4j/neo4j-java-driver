@@ -101,12 +101,12 @@ class SessionResetIT {
 
     @Test
     void shouldTerminateAutoCommitQuery() {
-        testQueryTermination(LONG_QUERY, true);
+        testQueryTermination(true);
     }
 
     @Test
     void shouldTerminateQueryInUnmanagedTransaction() {
-        testQueryTermination(LONG_QUERY, false);
+        testQueryTermination(false);
     }
 
     @Test
@@ -433,8 +433,8 @@ class SessionResetIT {
         }
     }
 
-    private void testQueryTermination(String query, boolean autoCommit) {
-        var queryResult = runQueryInDifferentThreadAndResetSession(query, autoCommit);
+    private void testQueryTermination(boolean autoCommit) {
+        var queryResult = runQueryInDifferentThreadAndResetSession(SessionResetIT.LONG_QUERY, autoCommit);
         var e = assertThrows(ExecutionException.class, () -> queryResult.get(10, SECONDS));
         assertThat(e.getCause(), instanceOf(Neo4jException.class));
         awaitNoActiveQueries();

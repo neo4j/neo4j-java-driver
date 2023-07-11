@@ -21,19 +21,8 @@ package org.neo4j.driver.internal.summary;
 import java.util.Objects;
 import org.neo4j.driver.summary.DatabaseInfo;
 
-public class InternalDatabaseInfo implements DatabaseInfo {
+public record InternalDatabaseInfo(String name) implements DatabaseInfo {
     public static final DatabaseInfo DEFAULT_DATABASE_INFO = new InternalDatabaseInfo(null);
-
-    private final String name;
-
-    public InternalDatabaseInfo(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public String name() {
-        return this.name;
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -45,11 +34,6 @@ public class InternalDatabaseInfo implements DatabaseInfo {
         }
         var that = (InternalDatabaseInfo) o;
         return Objects.equals(name, that.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(name);
     }
 
     @Override

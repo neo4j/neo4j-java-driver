@@ -50,19 +50,12 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
 
     public TestkitRequestProcessorHandler(BackendMode backendMode, Logging logging) {
         switch (backendMode) {
-            case ASYNC:
-                processorImpl = TestkitRequest::processAsync;
-                break;
-            case REACTIVE_LEGACY:
-                processorImpl = (request, state) -> request.processRx(state).toFuture();
-                break;
-            case REACTIVE:
-                processorImpl =
-                        (request, state) -> request.processReactive(state).toFuture();
-                break;
-            default:
-                processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
-                break;
+            case ASYNC -> processorImpl = TestkitRequest::processAsync;
+            case REACTIVE_LEGACY -> processorImpl =
+                    (request, state) -> request.processRx(state).toFuture();
+            case REACTIVE -> processorImpl =
+                    (request, state) -> request.processReactive(state).toFuture();
+            default -> processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
         }
         testkitState = new TestkitState(this::writeAndFlush, logging);
     }
@@ -114,9 +107,8 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
         if (throwable instanceof CompletionException) {
             throwable = throwable.getCause();
         }
-        if (throwable instanceof Neo4jException) {
+        if (throwable instanceof Neo4jException e) {
             var id = testkitState.newId();
-            var e = (Neo4jException) throwable;
             testkitState.getErrors().put(id, e);
             return DriverError.builder()
                     .data(DriverError.DriverErrorBody.builder()

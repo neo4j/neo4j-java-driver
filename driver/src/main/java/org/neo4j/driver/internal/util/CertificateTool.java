@@ -135,8 +135,7 @@ public final class CertificateTool {
         }
     }
 
-    public static void loadX509Cert(X509Certificate[] certificates, KeyStore keyStore)
-            throws GeneralSecurityException, IOException {
+    public static void loadX509Cert(X509Certificate[] certificates, KeyStore keyStore) throws GeneralSecurityException {
         for (var i = 0; i < certificates.length; i++) {
             loadX509Cert(certificates[i], "neo4j.javadriver.trustedcert." + i, keyStore);
         }

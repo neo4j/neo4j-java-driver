@@ -40,7 +40,7 @@ class RoutingDriverIT {
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
-    void shouldBeAbleToConnectSingleInstanceWithNeo4jScheme() throws Throwable {
+    void shouldBeAbleToConnectSingleInstanceWithNeo4jScheme() {
         var uri = URI.create(String.format(
                 "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort()));
 
@@ -54,7 +54,7 @@ class RoutingDriverIT {
     }
 
     @Test
-    void shouldBeAbleToRunQueryOnNeo4j() throws Throwable {
+    void shouldBeAbleToRunQueryOnNeo4j() {
         var uri = URI.create(String.format(
                 "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort()));
         try (var driver = GraphDatabase.driver(uri, neo4j.authTokenManager());

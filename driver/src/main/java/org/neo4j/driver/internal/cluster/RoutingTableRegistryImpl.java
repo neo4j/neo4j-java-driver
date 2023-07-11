@@ -86,9 +86,9 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
     @Override
     public CompletionStage<RoutingTableHandler> ensureRoutingTable(ConnectionContext context) {
         return ensureDatabaseNameIsCompleted(context).thenCompose(ctxAndHandler -> {
-            var completedContext = ctxAndHandler.getContext();
-            var handler = ctxAndHandler.getHandler() != null
-                    ? ctxAndHandler.getHandler()
+            var completedContext = ctxAndHandler.context();
+            var handler = ctxAndHandler.handler() != null
+                    ? ctxAndHandler.handler()
                     : getOrCreate(Futures.joinNowOrElseThrow(
                             completedContext.databaseNameFuture(), PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER));
             return handler.ensureRoutingTable(completedContext).thenApply(ignored -> handler);
@@ -235,12 +235,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
         }
     }
 
-    private static class Principal {
-        private final String id;
-
-        private Principal(String id) {
-            this.id = id;
-        }
+    private record Principal(String id) {
 
         @Override
         public boolean equals(Object o) {
@@ -253,28 +248,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
             var principal = (Principal) o;
             return Objects.equals(id, principal.id);
         }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(id);
-        }
     }
 
-    private static class ConnectionContextAndHandler {
-        private final ConnectionContext context;
-        private final RoutingTableHandler handler;
-
-        private ConnectionContextAndHandler(ConnectionContext context, RoutingTableHandler handler) {
-            this.context = context;
-            this.handler = handler;
-        }
-
-        public ConnectionContext getContext() {
-            return context;
-        }
-
-        public RoutingTableHandler getHandler() {
-            return handler;
-        }
-    }
+    private record ConnectionContextAndHandler(ConnectionContext context, RoutingTableHandler handler) {}
 }

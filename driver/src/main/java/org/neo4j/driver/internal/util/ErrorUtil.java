@@ -59,7 +59,7 @@ public final class ErrorUtil {
 
     public static Neo4jException newNeo4jError(String code, String message) {
         switch (extractErrorClass(code)) {
-            case "ClientError":
+            case "ClientError" -> {
                 if ("Security".equals(extractErrorSubClass(code))) {
                     if (code.equalsIgnoreCase("Neo.ClientError.Security.Unauthorized")) {
                         return new AuthenticationException(code, message);
@@ -79,7 +79,8 @@ public final class ErrorUtil {
                         return new ClientException(code, message);
                     }
                 }
-            case "TransientError":
+            }
+            case "TransientError" -> {
                 // Since 5.0 these 2 errors have been moved to ClientError class.
                 // This mapping is required if driver is connection to earlier server versions.
                 if ("Neo.TransientError.Transaction.Terminated".equals(code)) {
@@ -89,8 +90,10 @@ public final class ErrorUtil {
                 } else {
                     return new TransientException(code, message);
                 }
-            default:
+            }
+            default -> {
                 return new DatabaseException(code, message);
+            }
         }
     }
 

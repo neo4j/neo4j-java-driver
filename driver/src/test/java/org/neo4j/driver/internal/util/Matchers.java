@@ -117,8 +117,7 @@ public final class Matchers {
         return new TypeSafeMatcher<Throwable>() {
             @Override
             protected boolean matchesSafely(Throwable error) {
-                if (error instanceof ClientException) {
-                    var clientError = (ClientException) error;
+                if (error instanceof ClientException clientError) {
                     return clientError.code().contains("SyntaxError")
                             && (messagePrefix == null
                                     || clientError.getMessage().startsWith(messagePrefix));

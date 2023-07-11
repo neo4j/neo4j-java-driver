@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,7 +40,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.DatabaseName;
@@ -88,7 +86,7 @@ class RouteMessageRoutingProcedureRunnerTest {
         assertEquals(routingTable.get("ttl"), record.get("ttl"));
         assertEquals(routingTable.get("servers"), record.get("servers"));
 
-        verifyMessageWasWrittenAndFlushed(connection, completableFuture, routingContext, null, databaseName);
+        verifyMessageWasWrittenAndFlushed(connection, completableFuture, routingContext, databaseName);
         verify(connection).release();
     }
 
@@ -111,7 +109,7 @@ class RouteMessageRoutingProcedureRunnerTest {
         assertThrows(IllegalStateException.class, () -> response.records().size());
 
         verifyMessageWasWrittenAndFlushed(
-                connection, completableFuture, RoutingContext.EMPTY, null, DatabaseNameUtil.defaultDatabase());
+                connection, completableFuture, RoutingContext.EMPTY, DatabaseNameUtil.defaultDatabase());
         verify(connection).release();
     }
 
@@ -119,7 +117,6 @@ class RouteMessageRoutingProcedureRunnerTest {
             Connection connection,
             CompletableFuture<Map<String, Value>> completableFuture,
             RoutingContext routingContext,
-            Set<Bookmark> bookmarks,
             DatabaseName databaseName) {
         var context = routingContext.toMap().entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> Values.value(entry.getValue())));
@@ -127,7 +124,7 @@ class RouteMessageRoutingProcedureRunnerTest {
         verify(connection)
                 .writeAndFlush(
                         eq(new RouteMessage(
-                                context, bookmarks, databaseName.databaseName().orElse(null), null)),
+                                context, null, databaseName.databaseName().orElse(null), null)),
                         eq(new RouteMessageResponseHandler(completableFuture)));
     }
 

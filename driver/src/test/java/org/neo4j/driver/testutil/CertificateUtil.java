@@ -29,7 +29,6 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.PublicKey;
@@ -73,7 +72,7 @@ public class CertificateUtil {
         Security.addProvider(PROVIDER);
     }
 
-    private static KeyPair generateKeyPair() throws NoSuchProviderException, NoSuchAlgorithmException {
+    private static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
         var keyPairGenerator = KeyPairGenerator.getInstance(DEFAULT_ENCRYPTION);
         keyPairGenerator.initialize(2048, new SecureRandom());
         var keyPair = keyPairGenerator.generateKeyPair();

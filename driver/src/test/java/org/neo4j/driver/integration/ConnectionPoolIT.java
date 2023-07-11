@@ -81,7 +81,7 @@ class ConnectionPoolIT {
         neo4j.startProxy();
 
         // Then we accept a hump with failing sessions, but demand that failures stop as soon as the server is back up.
-        sessionGrabber.assertSessionsAvailableWithin(120);
+        sessionGrabber.assertSessionsAvailableWithin();
     }
 
     @Test
@@ -105,7 +105,7 @@ class ConnectionPoolIT {
         assertTrue(channels1.get(0).isActive());
 
         // await channel to be returned to the pool
-        awaitNoActiveChannels(driverFactory, 20, SECONDS);
+        awaitNoActiveChannels(driverFactory);
         // move the clock forward so that idle channel seem too old
         clock.progress(TimeUnit.HOURS.toMillis(maxConnLifetimeHours + 1));
 
@@ -170,9 +170,8 @@ class ConnectionPoolIT {
         }
     }
 
-    private void awaitNoActiveChannels(ChannelTrackingDriverFactory driverFactory, long value, TimeUnit unit)
-            throws InterruptedException {
-        var deadline = System.currentTimeMillis() + unit.toMillis(value);
+    private void awaitNoActiveChannels(ChannelTrackingDriverFactory driverFactory) throws InterruptedException {
+        var deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(20);
         var activeChannels = -1;
         while (System.currentTimeMillis() < deadline) {
             activeChannels = driverFactory.activeChannels(neo4j.address());
@@ -191,7 +190,7 @@ class ConnectionPoolIT {
      *
      * This can thus be used to judge the state of the driver - is it currently healthy or not?
      */
-    private class SessionGrabber implements Runnable {
+    private static class SessionGrabber implements Runnable {
         private final Driver driver;
         private final CountDownLatch stopped = new CountDownLatch(1);
         private volatile boolean sessionsAreAvailable = false;
@@ -232,8 +231,8 @@ class ConnectionPoolIT {
             }
         }
 
-        void assertSessionsAvailableWithin(int timeoutSeconds) throws InterruptedException {
-            var deadline = System.currentTimeMillis() + 1000 * timeoutSeconds;
+        void assertSessionsAvailableWithin() throws InterruptedException {
+            var deadline = System.currentTimeMillis() + 1000 * 120;
             while (System.currentTimeMillis() < deadline) {
                 if (sessionsAreAvailable) {
                     // Success!
