@@ -321,7 +321,7 @@ public class DriverFactory {
             Logging logging,
             DomainNameResolver domainNameResolver) {
         var clusterCompositionProvider =
-                new RoutingProcedureClusterCompositionProvider(clock, settings.routingContext());
+                new RoutingProcedureClusterCompositionProvider(clock, settings.routingContext(), logging);
         return new RediscoveryImpl(initialRouter, clusterCompositionProvider, resolver, logging, domainNameResolver);
     }
 

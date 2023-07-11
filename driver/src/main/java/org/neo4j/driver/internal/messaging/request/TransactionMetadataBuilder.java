@@ -20,13 +20,13 @@ package org.neo4j.driver.internal.messaging.request;
 
 import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
@@ -45,22 +45,13 @@ public class TransactionMetadataBuilder {
     public static Map<String, Value> buildMetadata(
             Duration txTimeout,
             Map<String, Value> txMetadata,
-            AccessMode mode,
-            Set<Bookmark> bookmarks,
-            String impersonatedUser,
-            String txType) {
-        return buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, impersonatedUser, txType, null);
-    }
-
-    public static Map<String, Value> buildMetadata(
-            Duration txTimeout,
-            Map<String, Value> txMetadata,
             DatabaseName databaseName,
             AccessMode mode,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             String txType,
-            NotificationConfig notificationConfig) {
+            NotificationConfig notificationConfig,
+            Logging logging) {
         var bookmarksPresent = !bookmarks.isEmpty();
         var txTimeoutPresent = txTimeout != null;
         var txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
@@ -87,7 +78,14 @@ public class TransactionMetadataBuilder {
             result.put(BOOKMARKS_METADATA_KEY, value(bookmarks.stream().map(Bookmark::value)));
         }
         if (txTimeoutPresent) {
-            result.put(TX_TIMEOUT_METADATA_KEY, value(txTimeout.toMillis()));
+            var millis = txTimeout.toMillis();
+            if (txTimeout.toNanosPart() % 1_000_000 > 0) {
+                var log = logging.getLog(TransactionMetadataBuilder.class);
+                millis++;
+                log.info(
+                        "The transaction timeout has been rounded up to next millisecond value since the config had a fractional millisecond value");
+            }
+            result.put(TX_TIMEOUT_METADATA_KEY, value(millis));
         }
         if (txMetadataPresent) {
             result.put(TX_METADATA_METADATA_KEY, value(txMetadata));

@@ -38,6 +38,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -64,7 +65,8 @@ class RunWithMetadataMessageEncoderTest {
 
         var query = new Query("RETURN $answer", value(params));
         encoder.encode(
-                autoCommitTxRunMessage(query, txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null, null),
+                autoCommitTxRunMessage(
+                        query, txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null, null, Logging.none()),
                 packer);
 
         var order = inOrder(packer);

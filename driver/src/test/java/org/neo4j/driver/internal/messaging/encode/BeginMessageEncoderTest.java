@@ -39,6 +39,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.ValuePacker;
@@ -61,7 +62,15 @@ class BeginMessageEncoderTest {
 
         encoder.encode(
                 new BeginMessage(
-                        bookmarks, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser, txType, null),
+                        bookmarks,
+                        txTimeout,
+                        txMetadata,
+                        mode,
+                        defaultDatabase(),
+                        impersonatedUser,
+                        txType,
+                        null,
+                        Logging.none()),
                 packer);
 
         var order = inOrder(packer);

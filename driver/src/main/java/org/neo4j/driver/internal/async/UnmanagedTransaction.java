@@ -37,6 +37,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
@@ -98,13 +99,15 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     private Throwable causeOfTermination;
     private CompletionStage<Void> terminationStage;
     private final NotificationConfig notificationConfig;
+    private final Logging logging;
 
     public UnmanagedTransaction(
             Connection connection,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             long fetchSize,
-            NotificationConfig notificationConfig) {
-        this(connection, bookmarkConsumer, fetchSize, new ResultCursorsHolder(), notificationConfig);
+            NotificationConfig notificationConfig,
+            Logging logging) {
+        this(connection, bookmarkConsumer, fetchSize, new ResultCursorsHolder(), notificationConfig, logging);
     }
 
     protected UnmanagedTransaction(
@@ -112,20 +115,22 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             Consumer<DatabaseBookmark> bookmarkConsumer,
             long fetchSize,
             ResultCursorsHolder resultCursors,
-            NotificationConfig notificationConfig) {
+            NotificationConfig notificationConfig,
+            Logging logging) {
         this.connection = connection;
         this.protocol = connection.protocol();
         this.bookmarkConsumer = bookmarkConsumer;
         this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
         this.notificationConfig = notificationConfig;
+        this.logging = logging;
 
         connection.bindTerminationAwareStateLockingExecutor(this);
     }
 
     public CompletionStage<UnmanagedTransaction> beginAsync(
             Set<Bookmark> initialBookmarks, TransactionConfig config, String txType) {
-        return protocol.beginTransaction(connection, initialBookmarks, config, txType, notificationConfig)
+        return protocol.beginTransaction(connection, initialBookmarks, config, txType, notificationConfig, logging)
                 .handle((ignore, beginError) -> {
                     if (beginError != null) {
                         if (beginError instanceof AuthorizationExpiredException) {
