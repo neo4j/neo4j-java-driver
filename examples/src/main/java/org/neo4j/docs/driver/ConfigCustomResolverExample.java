@@ -44,12 +44,13 @@ public class ConfigCustomResolverExample implements AutoCloseable {
     }
 
     // tag::config-custom-resolver[]
-    private Driver createDriver(String user, String password, ServerAddress... addresses) {
+    @SuppressWarnings("SameParameterValue")
+    private Driver createDriver(String virtualUri, String user, String password, ServerAddress... addresses) {
         var config = Config.builder()
                 .withResolver(address -> new HashSet<>(Arrays.asList(addresses)))
                 .build();
 
-        return GraphDatabase.driver("neo4j://x.example.com", AuthTokens.basic(user, password), config);
+        return GraphDatabase.driver(virtualUri, AuthTokens.basic(user, password), config);
     }
 
     private void addPerson(String name) {
@@ -57,6 +58,7 @@ public class ConfigCustomResolverExample implements AutoCloseable {
         var password = "some password";
 
         try (var driver = createDriver(
+                "neo4j://x.example.com",
                 username,
                 password,
                 ServerAddress.of("a.example.com", 7676),

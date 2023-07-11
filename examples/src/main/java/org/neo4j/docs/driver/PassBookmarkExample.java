@@ -57,9 +57,10 @@ public class PassBookmarkExample extends BaseApplication {
     }
 
     // Create a friendship between two people.
-    private Result makeFriends(TransactionContext tx) {
+    @SuppressWarnings("SameParameterValue")
+    private Result makeFriends(TransactionContext tx, String person1, String person2) {
         return tx.run("MATCH (a:Person {name: $person_1}) MATCH (b:Person {name: $person_2}) MERGE (a)-[:KNOWS]->(b)",
-                parameters("person_1", "Alice", "person_2", "Bob"));
+                parameters("person_1", person1, "person_2", person2));
     }
 
     // Match and display all friendships.
@@ -102,7 +103,7 @@ public class PassBookmarkExample extends BaseApplication {
                 .withDefaultAccessMode(AccessMode.WRITE)
                 .withBookmarks(savedBookmarks)
                 .build())) {
-            session3.executeWrite(tx -> makeFriends(tx).consume());
+            session3.executeWrite(tx -> makeFriends(tx, "Alice", "Bob").consume());
 
             session3.executeWrite(this::printFriends);
         }
