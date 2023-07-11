@@ -41,7 +41,7 @@ public class BookmarkUtil {
     public static void assertBookmarkIsEmpty(Bookmark bookmark) {
         assertNotNull(bookmark);
         assertThat(bookmark, instanceOf(InternalBookmark.class));
-        assertTrue(((InternalBookmark) bookmark).isEmpty());
+        assertTrue(bookmark.isEmpty());
     }
 
     /**
@@ -51,7 +51,7 @@ public class BookmarkUtil {
     public static void assertBookmarkIsNotEmpty(Bookmark bookmark) {
         assertNotNull(bookmark);
         assertThat(bookmark, instanceOf(InternalBookmark.class));
-        assertFalse(((InternalBookmark) bookmark).isEmpty());
+        assertFalse(bookmark.isEmpty());
     }
 
     /**

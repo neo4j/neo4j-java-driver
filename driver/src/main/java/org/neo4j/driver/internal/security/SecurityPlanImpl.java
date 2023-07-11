@@ -33,6 +33,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import javax.net.ssl.CertPathTrustManagerParameters;
@@ -130,13 +131,10 @@ public class SecurityPlanImpl implements SecurityPlan {
         tempFactory.init((KeyStore) null);
 
         // Get hold of the default trust manager
-        X509TrustManager x509TrustManager = null;
-        for (var trustManager : tempFactory.getTrustManagers()) {
-            if (trustManager instanceof X509TrustManager) {
-                x509TrustManager = (X509TrustManager) trustManager;
-                break;
-            }
-        }
+        var x509TrustManager = (X509TrustManager) Arrays.stream(tempFactory.getTrustManagers())
+                .filter(trustManager -> trustManager instanceof X509TrustManager)
+                .findFirst()
+                .orElse(null);
 
         if (x509TrustManager == null) {
             throw new CertificateException("No system certificates found");

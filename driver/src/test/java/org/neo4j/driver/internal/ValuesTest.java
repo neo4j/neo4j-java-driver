@@ -75,6 +75,7 @@ import org.neo4j.driver.internal.value.TimeValue;
 
 class ValuesTest {
     @Test
+    @SuppressWarnings("RedundantArrayCreation")
     void shouldConvertPrimitiveArrays() {
         assertThat(value(new short[] {1, 2, 3}), equalTo(new ListValue(values(1, 2, 3))));
 
@@ -268,7 +269,7 @@ class ValuesTest {
         var val = value(collection);
 
         // When/Then
-        assertThat(val.asList(), Matchers.<Object>containsInAnyOrder("hello", "world"));
+        assertThat(val.asList(), Matchers.containsInAnyOrder("hello", "world"));
     }
 
     @Test
@@ -278,7 +279,7 @@ class ValuesTest {
         var val = value(iterator);
 
         // When/Then
-        assertThat(val.asList(), Matchers.<Object>containsInAnyOrder("hello", "world"));
+        assertThat(val.asList(), Matchers.containsInAnyOrder("hello", "world"));
     }
 
     @Test

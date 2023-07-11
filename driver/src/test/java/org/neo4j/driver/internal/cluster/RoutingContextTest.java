@@ -70,7 +70,7 @@ class RoutingContextTest {
         var uri = URI.create("bolt://localhost:7687/?key1=value1&key2=value2&key3=value3");
         var context = new RoutingContext(uri);
 
-        assertEquals(false, context.isServerRoutingEnabled());
+        assertFalse(context.isServerRoutingEnabled());
     }
 
     @Test
@@ -78,7 +78,7 @@ class RoutingContextTest {
         var uri = URI.create("neo4j://localhost:7687/?key1=value1&key2=value2&key3=value3");
         var context = new RoutingContext(uri);
 
-        assertEquals(true, context.isServerRoutingEnabled());
+        assertTrue(context.isServerRoutingEnabled());
     }
 
     @Test

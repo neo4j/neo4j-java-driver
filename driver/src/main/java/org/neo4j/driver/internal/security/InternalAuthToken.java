@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.security;
 
 import java.util.Map;
+import java.util.Objects;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Value;
 
@@ -54,7 +55,7 @@ public final class InternalAuthToken implements AuthToken {
 
         var that = (InternalAuthToken) o;
 
-        return content != null ? content.equals(that.content) : that.content == null;
+        return Objects.equals(content, that.content);
     }
 
     @Override

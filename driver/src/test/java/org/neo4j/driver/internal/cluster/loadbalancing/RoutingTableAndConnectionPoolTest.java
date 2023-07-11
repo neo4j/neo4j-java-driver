@@ -52,6 +52,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
@@ -260,13 +262,8 @@ class RoutingTableAndConnectionPoolTest {
         // When
         acquireAndReleaseConnections(loadBalancer);
         var servers = routingTables.allServers();
-        BoltServerAddress openServer = null;
-        for (var server : servers) {
-            if (connectionPool.isOpen(server)) {
-                openServer = server;
-                break;
-            }
-        }
+        var openServer =
+                servers.stream().filter(connectionPool::isOpen).findFirst().orElse(null);
         assertNotNull(servers);
 
         // if we remove the open server from servers, then the connection pool should remove the server from the pool.
@@ -349,7 +346,7 @@ class RoutingTableAndConnectionPoolTest {
 
     private CompletableFuture<ClusterCompositionLookupResult> clusterComposition(
             long expireAfterMs, BoltServerAddress... addresses) {
-        var servers = new HashSet<BoltServerAddress>(Arrays.asList(addresses));
+        var servers = new HashSet<>(Arrays.asList(addresses));
         var composition = new ClusterComposition(clock.millis() + expireAfterMs, servers, servers, servers, null);
         return CompletableFuture.completedFuture(new ClusterCompositionLookupResult(composition));
     }
@@ -363,14 +360,11 @@ class RoutingTableAndConnectionPoolTest {
                 String impersonatedUser,
                 AuthToken overrideAuthToken) {
             // when looking up a new routing table, we return a valid random routing table back
-            Set<BoltServerAddress> servers = new HashSet<>();
-            for (var i = 0; i < 3; i++) {
-                var index = random.nextInt(SERVERS.size());
-                var server = SERVERS.get(index);
-                if (server != null) {
-                    servers.add(server);
-                }
-            }
+            var servers = IntStream.range(0, 3)
+                    .map(i -> random.nextInt(SERVERS.size()))
+                    .mapToObj(SERVERS::get)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
             if (servers.size() == 0) {
                 var address = SERVERS.stream()
                         .filter(Objects::nonNull)

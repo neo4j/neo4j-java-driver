@@ -37,7 +37,6 @@ import static org.neo4j.driver.testutil.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.nio.channels.ClosedChannelException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -53,6 +52,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,7 +76,6 @@ class SessionResetIT {
     private static final String SHORT_QUERY_1 = "CREATE (n:Node {name: 'foo', occupation: 'bar'})";
     private static final String SHORT_QUERY_2 = "MATCH (n:Node {name: 'foo'}) RETURN count(n)";
     private static final String LONG_QUERY = "UNWIND range(0, 10000000) AS i CREATE (n:Node {idx: i}) DELETE n";
-    ;
 
     private static final int STRESS_TEST_THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2;
     private static final long STRESS_TEST_DURATION_MS = SECONDS.toMillis(5);
@@ -385,16 +384,14 @@ class SessionResetIT {
     private void testRandomQueryTermination(boolean autoCommit) throws InterruptedException {
         Set<InternalSession> runningSessions = newSetFromMap(new ConcurrentHashMap<>());
         var stop = new AtomicBoolean();
-        List<Future<?>> futures = new ArrayList<>();
-
-        for (var i = 0; i < STRESS_TEST_THREAD_COUNT; i++) {
-            futures.add(executor.submit(() -> {
-                var random = ThreadLocalRandom.current();
-                while (!stop.get()) {
-                    runRandomQuery(autoCommit, random, runningSessions, stop);
-                }
-            }));
-        }
+        List<Future<?>> futures = IntStream.range(0, STRESS_TEST_THREAD_COUNT)
+                .mapToObj(i -> executor.submit(() -> {
+                    var random = ThreadLocalRandom.current();
+                    while (!stop.get()) {
+                        runRandomQuery(autoCommit, random, runningSessions, stop);
+                    }
+                }))
+                .collect(toList());
 
         var deadline = System.currentTimeMillis() + STRESS_TEST_DURATION_MS;
         while (!stop.get()) {

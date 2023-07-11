@@ -104,7 +104,7 @@ public class InternalResultSummary implements ResultSummary {
 
     @Override
     public List<Notification> notifications() {
-        return notifications == null ? Collections.<Notification>emptyList() : notifications;
+        return notifications == null ? Collections.emptyList() : notifications;
     }
 
     @Override

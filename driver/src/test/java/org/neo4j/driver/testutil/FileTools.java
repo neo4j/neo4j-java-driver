@@ -113,16 +113,13 @@ public class FileTools {
     }
 
     public static void copyFile(File srcFile, File dstFile) throws IOException {
-        //noinspection ResultOfMethodCallIgnored
         var parentFile = dstFile.getParentFile();
         if (parentFile != null) {
+            //noinspection ResultOfMethodCallIgnored
             parentFile.mkdirs();
         }
-        FileInputStream input = null;
-        FileOutputStream output = null;
-        try {
-            input = new FileInputStream(srcFile);
-            output = new FileOutputStream(dstFile);
+        try (var input = new FileInputStream(srcFile);
+                var output = new FileOutputStream(dstFile)) {
             var bufferSize = 1024;
             var buffer = new byte[bufferSize];
             int bytesRead;
@@ -133,13 +130,6 @@ public class FileTools {
             // Because the message from this cause may not mention which file it's about
             throw new IOException(
                     "Could not copy '" + srcFile.getCanonicalPath() + "' to '" + dstFile.getCanonicalPath() + "'", e);
-        } finally {
-            if (input != null) {
-                input.close();
-            }
-            if (output != null) {
-                output.close();
-            }
         }
     }
 
@@ -158,7 +148,7 @@ public class FileTools {
     public static void updateProperty(File propFile, String key, String value) throws IOException {
         Map<String, String> propertiesMap = new HashMap<>(1);
         propertiesMap.put(key, value);
-        updateProperties(propFile, propertiesMap, Collections.<String>emptySet());
+        updateProperties(propFile, propertiesMap, Collections.emptySet());
     }
 
     public static void updateProperties(File propFile, Map<String, String> propertiesMap, Set<String> excludes)

@@ -38,10 +38,10 @@ public class Iterables {
 
     public static int count(Iterable<?> it) {
         if (it instanceof Collection) {
-            return ((Collection) it).size();
+            return ((Collection<?>) it).size();
         }
         var size = 0;
-        for (Object o : it) {
+        for (Object ignored : it) {
             size++;
         }
         return size;
@@ -79,27 +79,24 @@ public class Iterables {
     }
 
     public static <A, B> Iterable<B> map(final Iterable<A> it, final Function<A, B> f) {
-        return new Iterable<B>() {
-            @Override
-            public Iterator<B> iterator() {
-                final var aIterator = it.iterator();
-                return new Iterator<B>() {
-                    @Override
-                    public boolean hasNext() {
-                        return aIterator.hasNext();
-                    }
+        return () -> {
+            final var aIterator = it.iterator();
+            return new Iterator<>() {
+                @Override
+                public boolean hasNext() {
+                    return aIterator.hasNext();
+                }
 
-                    @Override
-                    public B next() {
-                        return f.apply(aIterator.next());
-                    }
+                @Override
+                public B next() {
+                    return f.apply(aIterator.next());
+                }
 
-                    @Override
-                    public void remove() {
-                        aIterator.remove();
-                    }
-                };
-            }
+                @Override
+                public void remove() {
+                    aIterator.remove();
+                }
+            };
         };
     }
 

@@ -26,21 +26,18 @@ public class ResultRetainExample extends BaseApplication {
     }
 
     // tag::result-retain[]
+    @SuppressWarnings("UnusedReturnValue")
     public int addEmployees(final String companyName) {
         try (var session = driver.session()) {
-            var employees = 0;
             var persons = session.executeRead(tx -> tx.run("MATCH (a:Person) RETURN a.name AS name").list());
-            for (var person : persons) {
-                employees += session.executeWrite(tx -> {
-                    var result = tx.run(
-                            "MATCH (emp:Person {name: $person_name}) " + "MERGE (com:Company {name: $company_name}) "
-                                    + "MERGE (emp)-[:WORKS_FOR]->(com)",
-                            parameters("person_name", person.get("name").asString(), "company_name", companyName));
-                    result.consume();
-                    return 1;
-                });
-            }
-            return employees;
+            return persons.stream().mapToInt(person -> session.executeWrite(tx -> {
+                var result = tx.run(
+                        "MATCH (emp:Person {name: $person_name}) " + "MERGE (com:Company {name: $company_name}) "
+                                + "MERGE (emp)-[:WORKS_FOR]->(com)",
+                        parameters("person_name", person.get("name").asString(), "company_name", companyName));
+                result.consume();
+                return 1;
+            })).sum();
         }
     }
     // end::result-retain[]

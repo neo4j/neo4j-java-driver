@@ -56,11 +56,12 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -157,11 +158,10 @@ class LoadBalancerTest {
 
         var loadBalancer = newLoadBalancer(connectionPool, routingTable);
 
-        Set<BoltServerAddress> seenAddresses = new HashSet<>();
-        for (var i = 0; i < 10; i++) {
-            var connection = await(loadBalancer.acquireConnection(newBoltV4ConnectionContext()));
-            seenAddresses.add(connection.serverAddress());
-        }
+        var seenAddresses = IntStream.range(0, 10)
+                .mapToObj(i -> await(loadBalancer.acquireConnection(newBoltV4ConnectionContext())))
+                .map(Connection::serverAddress)
+                .collect(Collectors.toSet());
 
         // server B should never be selected because it has many active connections
         assertEquals(2, seenAddresses.size());
@@ -178,11 +178,10 @@ class LoadBalancerTest {
 
         var loadBalancer = newLoadBalancer(connectionPool, routingTable);
 
-        Set<BoltServerAddress> seenAddresses = new HashSet<>();
-        for (var i = 0; i < 10; i++) {
-            var connection = await(loadBalancer.acquireConnection(newBoltV4ConnectionContext()));
-            seenAddresses.add(connection.serverAddress());
-        }
+        var seenAddresses = IntStream.range(0, 10)
+                .mapToObj(i -> await(loadBalancer.acquireConnection(newBoltV4ConnectionContext())))
+                .map(Connection::serverAddress)
+                .collect(Collectors.toSet());
 
         assertEquals(3, seenAddresses.size());
         assertTrue(seenAddresses.containsAll(asList(A, B, C)));

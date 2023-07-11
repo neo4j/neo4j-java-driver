@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -62,6 +63,7 @@ import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.util.Pair;
 
 class InternalResultTest {
     @Test
@@ -370,10 +372,10 @@ class InternalResultTest {
     }
 
     private List<Value> values(Record record) {
-        List<Value> result = new ArrayList<>(record.keys().size());
-        for (var property : record.fields()) {
-            result.add(property.value());
-        }
+        List<Value> result = record.fields().stream()
+                .map(Pair::value)
+                .collect(Collectors.toCollection(
+                        () -> new ArrayList<>(record.keys().size())));
         return result;
     }
 }

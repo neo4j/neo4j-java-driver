@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.logging;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 import java.io.PrintWriter;
+import java.io.Serial;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.time.LocalDateTime;
@@ -39,6 +40,7 @@ import org.neo4j.driver.Logging;
  * @see Logging#console(Level)
  */
 public class ConsoleLogging implements Logging, Serializable {
+    @Serial
     private static final long serialVersionUID = 9205935204074879150L;
 
     private final Level level;

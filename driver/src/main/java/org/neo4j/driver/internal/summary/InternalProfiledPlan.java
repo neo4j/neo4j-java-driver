@@ -87,15 +87,8 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
         return time;
     }
 
-    public static final PlanCreator<ProfiledPlan> PROFILED_PLAN = new PlanCreator<ProfiledPlan>() {
-        @Override
-        public ProfiledPlan create(
-                String operatorType,
-                Map<String, Value> arguments,
-                List<String> identifiers,
-                List<ProfiledPlan> children,
-                Value originalPlanValue) {
-            return new InternalProfiledPlan(
+    public static final PlanCreator<ProfiledPlan> PROFILED_PLAN =
+            (operatorType, arguments, identifiers, children, originalPlanValue) -> new InternalProfiledPlan(
                     operatorType,
                     arguments,
                     identifiers,
@@ -106,8 +99,6 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
                     originalPlanValue.get("pageCacheMisses").asLong(0),
                     originalPlanValue.get("pageCacheHitRatio").asDouble(0),
                     originalPlanValue.get("time").asLong(0));
-        }
-    };
 
     /**
      * Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` query

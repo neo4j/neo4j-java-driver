@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
@@ -269,9 +270,9 @@ public class PackStream {
             } else if (value instanceof String[]) {
                 pack(singletonList(value));
             } else if (value instanceof List) {
-                pack((List) value);
+                pack((List<?>) value);
             } else if (value instanceof Map) {
-                pack((Map) value);
+                pack((Map<?, ?>) value);
             } else {
                 throw new UnPackable(format("Cannot pack object %s", value));
             }
@@ -543,6 +544,7 @@ public class PackStream {
     }
 
     public static class PackStreamException extends IOException {
+        @Serial
         private static final long serialVersionUID = -1491422133282345421L;
 
         protected PackStreamException(String message) {
@@ -551,6 +553,7 @@ public class PackStream {
     }
 
     public static class EndOfStream extends PackStreamException {
+        @Serial
         private static final long serialVersionUID = 5102836237108105603L;
 
         public EndOfStream(String message) {
@@ -559,6 +562,7 @@ public class PackStream {
     }
 
     public static class Overflow extends PackStreamException {
+        @Serial
         private static final long serialVersionUID = -923071934446993659L;
 
         public Overflow(String message) {
@@ -567,6 +571,7 @@ public class PackStream {
     }
 
     public static class Unexpected extends PackStreamException {
+        @Serial
         private static final long serialVersionUID = 5004685868740125469L;
 
         public Unexpected(String message) {
@@ -575,6 +580,7 @@ public class PackStream {
     }
 
     public static class UnPackable extends PackStreamException {
+        @Serial
         private static final long serialVersionUID = 2408740707769711365L;
 
         public UnPackable(String message) {

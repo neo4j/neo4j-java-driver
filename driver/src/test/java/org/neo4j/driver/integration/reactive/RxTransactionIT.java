@@ -530,9 +530,7 @@ class RxTransactionIT {
                 null);
 
         StepVerifier.create(records)
-                .expectErrorSatisfies(error -> {
-                    assertEquals(e, error);
-                })
+                .expectErrorSatisfies(error -> assertEquals(e, error))
                 .verify();
     }
 
@@ -542,9 +540,7 @@ class RxTransactionIT {
         var result = tx.run("RETURN 1");
 
         assertThrows(ServiceUnavailableException.class, () -> {
-            await(Flux.from(result.records()).doOnSubscribe(subscription -> {
-                neo4j.stopProxy();
-            }));
+            await(Flux.from(result.records()).doOnSubscribe(subscription -> neo4j.stopProxy()));
             await(tx.commit());
         });
 

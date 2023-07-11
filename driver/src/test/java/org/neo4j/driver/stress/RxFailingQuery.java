@@ -48,9 +48,8 @@ public class RxFailingQuery<C extends AbstractContext> extends AbstractRxQuery<C
                                 .records(),
                         RxSession::close)
                 .subscribe(
-                        record -> {
-                            assertThat(record.get(0).asInt(), either(equalTo(1)).or(equalTo(2)));
-                        },
+                        record -> assertThat(
+                                record.get(0).asInt(), either(equalTo(1)).or(equalTo(2))),
                         error -> {
                             var cause = Futures.completionExceptionCause(error);
                             assertThat(cause, is(arithmeticError()));

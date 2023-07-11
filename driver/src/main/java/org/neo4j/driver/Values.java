@@ -38,6 +38,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.AsValue;
@@ -223,10 +224,7 @@ public final class Values {
      * @return the array of values
      */
     public static Value[] values(final Object... input) {
-        var values = new Value[input.length];
-        for (var i = 0; i < input.length; i++) {
-            values[i] = value(input[i]);
-        }
+        var values = Arrays.stream(input).map(Values::value).toArray(Value[]::new);
         return values;
     }
 
@@ -257,10 +255,7 @@ public final class Values {
      * @return the value
      */
     public static Value value(String... input) {
-        var values = new StringValue[input.length];
-        for (var i = 0; i < input.length; i++) {
-            values[i] = new StringValue(input[i]);
-        }
+        var values = Arrays.stream(input).map(StringValue::new).toArray(StringValue[]::new);
         return new ListValue(values);
     }
 
@@ -270,10 +265,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(boolean... input) {
-        var values = new Value[input.length];
-        for (var i = 0; i < input.length; i++) {
-            values[i] = value(input[i]);
-        }
+        var values =
+                IntStream.range(0, input.length).mapToObj(i -> value(input[i])).toArray(Value[]::new);
         return new ListValue(values);
     }
 
@@ -283,10 +276,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(char... input) {
-        var values = new Value[input.length];
-        for (var i = 0; i < input.length; i++) {
-            values[i] = value(input[i]);
-        }
+        var values =
+                IntStream.range(0, input.length).mapToObj(i -> value(input[i])).toArray(Value[]::new);
         return new ListValue(values);
     }
 
@@ -296,10 +287,7 @@ public final class Values {
      * @return the value
      */
     public static Value value(long... input) {
-        var values = new Value[input.length];
-        for (var i = 0; i < input.length; i++) {
-            values[i] = value(input[i]);
-        }
+        var values = Arrays.stream(input).mapToObj(Values::value).toArray(Value[]::new);
         return new ListValue(values);
     }
 
@@ -309,10 +297,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(short... input) {
-        var values = new Value[input.length];
-        for (var i = 0; i < input.length; i++) {
-            values[i] = value(input[i]);
-        }
+        var values =
+                IntStream.range(0, input.length).mapToObj(i -> value(input[i])).toArray(Value[]::new);
         return new ListValue(values);
     }
     /**
@@ -321,10 +307,7 @@ public final class Values {
      * @return the value
      */
     public static Value value(int... input) {
-        var values = new Value[input.length];
-        for (var i = 0; i < input.length; i++) {
-            values[i] = value(input[i]);
-        }
+        var values = Arrays.stream(input).mapToObj(Values::value).toArray(Value[]::new);
         return new ListValue(values);
     }
     /**
@@ -333,10 +316,7 @@ public final class Values {
      * @return the value
      */
     public static Value value(double... input) {
-        var values = new Value[input.length];
-        for (var i = 0; i < input.length; i++) {
-            values[i] = value(input[i]);
-        }
+        var values = Arrays.stream(input).mapToObj(Values::value).toArray(Value[]::new);
         return new ListValue(values);
     }
 
@@ -346,10 +326,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(float... input) {
-        var values = new Value[input.length];
-        for (var i = 0; i < input.length; i++) {
-            values[i] = value(input[i]);
-        }
+        var values =
+                IntStream.range(0, input.length).mapToObj(i -> value(input[i])).toArray(Value[]::new);
         return new ListValue(values);
     }
 

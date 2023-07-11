@@ -59,7 +59,7 @@ class FuturesTest {
 
     @Test
     void shouldConvertSucceededNettyFutureToCompletionStage() throws Exception {
-        var nettyFuture = new SucceededFuture<String>(ImmediateEventExecutor.INSTANCE, "Hello");
+        var nettyFuture = new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, "Hello");
 
         var future = Futures.asCompletionStage(nettyFuture).toCompletableFuture();
 
@@ -71,7 +71,7 @@ class FuturesTest {
     @Test
     void shouldConvertFailedNettyFutureToCompletionStage() {
         var error = new RuntimeException("Hello");
-        var nettyFuture = new FailedFuture<Object>(ImmediateEventExecutor.INSTANCE, error);
+        var nettyFuture = new FailedFuture<>(ImmediateEventExecutor.INSTANCE, error);
 
         var future = Futures.asCompletionStage(nettyFuture).toCompletableFuture();
 

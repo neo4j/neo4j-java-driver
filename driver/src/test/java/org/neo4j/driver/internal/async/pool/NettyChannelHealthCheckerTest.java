@@ -56,7 +56,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
@@ -290,7 +289,7 @@ class NettyChannelHealthCheckerTest {
         assertFalse(healthy.isDone());
 
         if (resetMessageSuccessful) {
-            dispatcher.handleSuccessMessage(Collections.<String, Value>emptyMap());
+            dispatcher.handleSuccessMessage(Collections.emptyMap());
             assertThat(await(healthy), is(true));
         } else {
             dispatcher.handleFailureMessage("Neo.ClientError.General.Unknown", "Error!");

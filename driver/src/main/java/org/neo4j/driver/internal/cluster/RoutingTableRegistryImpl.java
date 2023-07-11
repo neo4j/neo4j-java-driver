@@ -23,7 +23,6 @@ import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE
 
 import java.time.Clock;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,6 +32,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -165,10 +165,9 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
     public Set<BoltServerAddress> allServers() {
         // obviously we just had a snapshot of all servers in all routing tables
         // after we read it, the set could already be changed.
-        Set<BoltServerAddress> servers = new HashSet<>();
-        for (var tableHandler : routingTableHandlers.values()) {
-            servers.addAll(tableHandler.servers());
-        }
+        var servers = routingTableHandlers.values().stream()
+                .flatMap(tableHandler -> tableHandler.servers().stream())
+                .collect(Collectors.toSet());
         return servers;
     }
 

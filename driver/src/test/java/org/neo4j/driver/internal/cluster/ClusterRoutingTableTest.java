@@ -39,6 +39,7 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.createCluste
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -53,7 +54,7 @@ class ClusterRoutingTableTest {
         RoutingTable routingTable = newRoutingTable(clock);
 
         // When
-        routingTable.update(createClusterComposition(1000, asList(A, B), asList(C), asList(D, E)));
+        routingTable.update(createClusterComposition(1000, asList(A, B), List.of(C), asList(D, E)));
         clock.progress(1234);
 
         // Then
@@ -67,7 +68,7 @@ class ClusterRoutingTableTest {
         RoutingTable routingTable = newRoutingTable();
 
         // When
-        routingTable.update(createClusterComposition(EMPTY, asList(C), asList(D, E)));
+        routingTable.update(createClusterComposition(EMPTY, List.of(C), asList(D, E)));
 
         // Then
         assertTrue(routingTable.isStaleFor(READ));
@@ -80,7 +81,7 @@ class ClusterRoutingTableTest {
         RoutingTable routingTable = newRoutingTable();
 
         // When
-        routingTable.update(createClusterComposition(asList(A, B), asList(C), EMPTY));
+        routingTable.update(createClusterComposition(asList(A, B), List.of(C), EMPTY));
 
         // Then
         assertTrue(routingTable.isStaleFor(READ));
@@ -106,7 +107,7 @@ class ClusterRoutingTableTest {
         RoutingTable routingTable = newRoutingTable();
 
         // When
-        routingTable.update(createClusterComposition(asList(A, B), asList(C), asList(D, E)));
+        routingTable.update(createClusterComposition(asList(A, B), List.of(C), asList(D, E)));
 
         // Then
         assertFalse(routingTable.isStaleFor(READ));

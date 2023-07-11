@@ -60,6 +60,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -226,12 +227,9 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     private List<Future<?>> launchBlockingWorkerThreads(C context) {
         var commands = createBlockingCommands();
-        List<Future<?>> futures = new ArrayList<>();
-
-        for (var i = 0; i < THREAD_COUNT; i++) {
-            var future = launchBlockingWorkerThread(executor, commands, context);
-            futures.add(future);
-        }
+        List<Future<?>> futures = IntStream.range(0, THREAD_COUNT)
+                .mapToObj(i -> launchBlockingWorkerThread(executor, commands, context))
+                .collect(Collectors.toList());
 
         return futures;
     }
@@ -269,12 +267,10 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     private List<Future<?>> launchRxWorkerThreads(C context) {
         var commands = createRxCommands();
-        List<Future<?>> futures = new ArrayList<>();
+        List<Future<?>> futures = IntStream.range(0, THREAD_COUNT)
+                .mapToObj(i -> launchRxWorkerThread(executor, commands, context))
+                .collect(Collectors.toList());
 
-        for (var i = 0; i < THREAD_COUNT; i++) {
-            var future = launchRxWorkerThread(executor, commands, context);
-            futures.add(future);
-        }
         return futures;
     }
 
@@ -318,12 +314,9 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     private List<Future<?>> launchAsyncWorkerThreads(C context) {
         var commands = createAsyncCommands();
-        List<Future<?>> futures = new ArrayList<>();
-
-        for (var i = 0; i < THREAD_COUNT; i++) {
-            var future = launchAsyncWorkerThread(executor, commands, context);
-            futures.add(future);
-        }
+        List<Future<?>> futures = IntStream.range(0, THREAD_COUNT)
+                .mapToObj(i -> launchAsyncWorkerThread(executor, commands, context))
+                .collect(Collectors.toList());
 
         return futures;
     }

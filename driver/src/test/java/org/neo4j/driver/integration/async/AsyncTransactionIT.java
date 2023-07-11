@@ -41,12 +41,12 @@ import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -449,11 +449,11 @@ class AsyncTransactionIT {
         var cursor = await(tx.runAsync("RETURN 'Hi!'"));
         var error = new RuntimeException();
 
-        var e = assertThrows(RuntimeException.class, () -> {
-            await(cursor.forEachAsync(record -> {
-                throw error;
-            }));
-        });
+        var e = assertThrows(
+                RuntimeException.class,
+                () -> await(cursor.forEachAsync(record -> {
+                    throw error;
+                })));
         assertEquals(error, e);
     }
 
@@ -736,10 +736,8 @@ class AsyncTransactionIT {
         var tx = await(session.beginTransactionAsync());
         var cursor = await(tx.runAsync(query));
         var records = await(cursor.listAsync());
-        List<Object> actualList = new ArrayList<>();
-        for (var record : records) {
-            actualList.add(record.get(0).asObject());
-        }
+        var actualList =
+                records.stream().map(record -> record.get(0).asObject()).collect(Collectors.toList());
         assertEquals(expectedList, actualList);
     }
 

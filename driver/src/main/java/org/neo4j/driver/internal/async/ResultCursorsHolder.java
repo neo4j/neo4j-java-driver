@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -54,13 +55,11 @@ public class ResultCursorsHolder {
     private static Throwable findFirstFailure(CompletableFuture<Throwable>[] completedFailureFutures) {
         // all given futures should be completed, it is thus safe to get their values
 
-        for (var failureFuture : completedFailureFutures) {
-            var failure = failureFuture.getNow(null); // does not block
-            if (failure != null) {
-                return failure;
-            }
-        }
-        return null;
+        return Arrays.stream(completedFailureFutures)
+                .map(failureFuture -> failureFuture.getNow(null))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     private static CompletionStage<Throwable> retrieveFailure(CompletionStage<? extends FailableCursor> cursorStage) {

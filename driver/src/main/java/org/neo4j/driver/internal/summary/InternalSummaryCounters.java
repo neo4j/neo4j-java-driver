@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.summary;
 
+import java.util.stream.IntStream;
 import org.neo4j.driver.summary.SummaryCounters;
 
 public record InternalSummaryCounters(
@@ -39,17 +40,19 @@ public record InternalSummaryCounters(
 
     @Override
     public boolean containsUpdates() {
-        return isPositive(nodesCreated)
-                || isPositive(nodesDeleted)
-                || isPositive(relationshipsCreated)
-                || isPositive(relationshipsDeleted)
-                || isPositive(propertiesSet)
-                || isPositive(labelsAdded)
-                || isPositive(labelsRemoved)
-                || isPositive(indexesAdded)
-                || isPositive(indexesRemoved)
-                || isPositive(constraintsAdded)
-                || isPositive(constraintsRemoved);
+        return IntStream.of(
+                        nodesCreated,
+                        nodesDeleted,
+                        relationshipsCreated,
+                        relationshipsDeleted,
+                        propertiesSet,
+                        labelsAdded,
+                        labelsRemoved,
+                        indexesAdded,
+                        indexesRemoved,
+                        constraintsAdded,
+                        constraintsRemoved)
+                .anyMatch(this::isPositive);
     }
 
     @Override
