@@ -175,7 +175,7 @@ class UnmanagedTransactionIT {
                         .thenApply(ignore -> tx))
                 .thenCompose(UnmanagedTransaction::commitAsync));
 
-        assertEquals(1, countNodes());
+        assertEquals(1, countNodesWithId(42));
     }
 
     @Test
@@ -188,8 +188,9 @@ class UnmanagedTransactionIT {
         testCommitAndRollbackFailurePropagation(false);
     }
 
-    private int countNodes() {
-        var query = new Query("MATCH (n:Node {id: $id}) RETURN count(n)", parameters("id", 42));
+    @SuppressWarnings("SameParameterValue")
+    private int countNodesWithId(Object id) {
+        var query = new Query("MATCH (n:Node {id: $id}) RETURN count(n)", parameters("id", id));
         var cursor = sessionRun(session, query);
         return await(cursor.singleAsync()).get(0).asInt();
     }
