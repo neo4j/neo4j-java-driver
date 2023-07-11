@@ -99,7 +99,7 @@ class SessionPoolingStressIT {
         }
     }
 
-    private class Worker implements Runnable {
+    private static class Worker implements Runnable {
         private final Random random = ThreadLocalRandom.current();
         private final Driver driver;
         private final AtomicBoolean stop;

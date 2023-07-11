@@ -191,7 +191,7 @@ class ConnectionPoolIT {
      *
      * This can thus be used to judge the state of the driver - is it currently healthy or not?
      */
-    private class SessionGrabber implements Runnable {
+    private static class SessionGrabber implements Runnable {
         private final Driver driver;
         private final CountDownLatch stopped = new CountDownLatch(1);
         private volatile boolean sessionsAreAvailable = false;
