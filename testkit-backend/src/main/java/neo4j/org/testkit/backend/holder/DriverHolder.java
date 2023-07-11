@@ -18,11 +18,7 @@
  */
 package neo4j.org.testkit.backend.holder;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 
-@RequiredArgsConstructor
-@Getter
 public record DriverHolder(Driver driver, Config config) {}
