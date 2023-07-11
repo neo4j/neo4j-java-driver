@@ -31,7 +31,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,13 +57,11 @@ public class PackStreamTest {
     private static class Machine {
 
         private final ByteArrayOutputStream output;
-        private final WritableByteChannel writable;
         private final PackStream.Packer packer;
 
         Machine() {
             this.output = new ByteArrayOutputStream();
-            this.writable = Channels.newChannel(this.output);
-            this.packer = new PackStream.Packer(new ChannelOutput(this.writable));
+            this.packer = new PackStream.Packer(new ChannelOutput(Channels.newChannel(this.output)));
         }
 
         public void reset() {
