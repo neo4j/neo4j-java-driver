@@ -28,7 +28,6 @@ import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -57,7 +56,7 @@ public final class Extract {
         return switch (values.length) {
             case 0 -> emptyList();
             case 1 -> singletonList(values[0]);
-            default -> unmodifiableList(Arrays.asList(values));
+            default -> List.of(values);
         };
     }
 
