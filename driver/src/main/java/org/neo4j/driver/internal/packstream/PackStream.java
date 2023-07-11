@@ -151,7 +151,7 @@ public class PackStream {
     private PackStream() {}
 
     public static class Packer {
-        private PackOutput out;
+        private final PackOutput out;
 
         public Packer(PackOutput out) {
             this.out = out;
@@ -337,7 +337,7 @@ public class PackStream {
     }
 
     public static class Unpacker {
-        private PackInput in;
+        private final PackInput in;
 
         public Unpacker(PackInput in) {
             this.in = in;

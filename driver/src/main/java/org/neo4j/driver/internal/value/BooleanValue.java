@@ -26,8 +26,8 @@ public abstract class BooleanValue extends ValueAdapter {
         // do nothing
     }
 
-    public static BooleanValue TRUE = new TrueValue();
-    public static BooleanValue FALSE = new FalseValue();
+    public static final BooleanValue TRUE = new TrueValue();
+    public static final BooleanValue FALSE = new FalseValue();
 
     public static BooleanValue fromBoolean(boolean value) {
         return value ? TRUE : FALSE;

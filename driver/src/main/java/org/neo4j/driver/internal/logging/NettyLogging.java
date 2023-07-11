@@ -26,7 +26,7 @@ import org.neo4j.driver.Logging;
  * This is the logging factory to delegate netty's logging to our logging system
  */
 public class NettyLogging extends InternalLoggerFactory {
-    private Logging logging;
+    private final Logging logging;
 
     public NettyLogging(Logging logging) {
         this.logging = logging;

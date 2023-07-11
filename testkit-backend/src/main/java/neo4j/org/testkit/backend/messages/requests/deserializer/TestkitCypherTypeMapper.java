@@ -18,7 +18,6 @@
  */
 package neo4j.org.testkit.backend.messages.requests.deserializer;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -27,7 +26,7 @@ import java.io.IOException;
 public class TestkitCypherTypeMapper {
     public TestkitCypherTypeMapper() {}
 
-    public <T> T mapData(JsonParser p, DeserializationContext ctxt, T data) throws IOException, JacksonException {
+    public <T> T mapData(JsonParser p, DeserializationContext ctxt, T data) throws IOException {
         var token = p.currentToken();
         while (token == JsonToken.FIELD_NAME
                 || token == JsonToken.VALUE_NUMBER_INT

@@ -40,6 +40,7 @@ final class Target_org_neo4j_driver_internal_DriverFactory {
      * @return A metrics provider, never null
      */
     @Substitute
+    @SuppressWarnings("ProtectedMemberInFinalClass")
     protected static MetricsProvider getOrCreateMetricsProvider(Config config, Clock clock) {
         var metricsAdapter = config.metricsAdapter();
         if (metricsAdapter == null) {

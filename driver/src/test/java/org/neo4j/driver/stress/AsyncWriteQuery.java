@@ -27,7 +27,7 @@ import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 
 public class AsyncWriteQuery<C extends AbstractContext> extends AbstractAsyncQuery<C> {
-    private AbstractStressTestBase<C> stressTest;
+    private final AbstractStressTestBase<C> stressTest;
 
     public AsyncWriteQuery(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
         super(driver, useBookmark);

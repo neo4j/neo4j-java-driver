@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests.deserializer;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
@@ -38,8 +37,7 @@ public class TestkitCypherTimeDeserializer extends StdDeserializer<CypherTime> {
     }
 
     @Override
-    public CypherTime deserialize(JsonParser p, DeserializationContext ctxt)
-            throws IOException, JsonProcessingException {
+    public CypherTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         var data = mapper.mapData(p, ctxt, new CypherTimeData());
         return new CypherTime(data.hour, data.minute, data.second, data.nanosecond, data.utc_offset_s);
     }

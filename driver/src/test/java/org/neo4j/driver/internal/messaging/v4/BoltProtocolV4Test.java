@@ -98,11 +98,11 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 
 public final class BoltProtocolV4Test {
 
-    protected static final String QUERY_TEXT = "RETURN $x";
-    protected static final Map<String, Value> PARAMS = singletonMap("x", value(42));
-    protected static final Query QUERY = new Query(QUERY_TEXT, value(PARAMS));
+    private static final String QUERY_TEXT = "RETURN $x";
+    private static final Map<String, Value> PARAMS = singletonMap("x", value(42));
+    private static final Query QUERY = new Query(QUERY_TEXT, value(PARAMS));
 
-    protected final BoltProtocol protocol = createProtocol();
+    private final BoltProtocol protocol = createProtocol();
     private final EmbeddedChannel channel = new EmbeddedChannel();
     private final InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher(channel, Logging.none());
 
@@ -400,7 +400,7 @@ public final class BoltProtocolV4Test {
         return (InternalAuthToken) AuthTokens.basic("hello", "world");
     }
 
-    protected void testFailedRunInAutoCommitTxWithWaitingForResponse(
+    private void testFailedRunInAutoCommitTxWithWaitingForResponse(
             Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) throws Exception {
         // Given
         var connection = connectionMock(mode, protocol);
@@ -434,7 +434,7 @@ public final class BoltProtocolV4Test {
         assertSame(error, actual);
     }
 
-    protected void testSuccessfulRunInAutoCommitTxWithWaitingForResponse(
+    private void testSuccessfulRunInAutoCommitTxWithWaitingForResponse(
             Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) throws Exception {
         // Given
         var connection = connectionMock(mode, protocol);
@@ -465,8 +465,7 @@ public final class BoltProtocolV4Test {
         assertNotNull(cursorFuture.get());
     }
 
-    protected void testRunInUnmanagedTransactionAndWaitForRunResponse(boolean success, AccessMode mode)
-            throws Exception {
+    private void testRunInUnmanagedTransactionAndWaitForRunResponse(boolean success, AccessMode mode) throws Exception {
         // Given
         var connection = connectionMock(mode, protocol);
 
@@ -497,7 +496,7 @@ public final class BoltProtocolV4Test {
         }
     }
 
-    protected void testRunAndWaitForRunResponse(boolean autoCommitTx, TransactionConfig config, AccessMode mode)
+    private void testRunAndWaitForRunResponse(boolean autoCommitTx, TransactionConfig config, AccessMode mode)
             throws Exception {
         // Given
         var connection = connectionMock(mode, protocol);
@@ -534,7 +533,7 @@ public final class BoltProtocolV4Test {
         assertNotNull(cursorFuture.get());
     }
 
-    protected void testDatabaseNameSupport(boolean autoCommitTx) {
+    private void testDatabaseNameSupport(boolean autoCommitTx) {
         var connection = connectionMock("foo", protocol);
         if (autoCommitTx) {
             var factory = protocol.runInAutoCommitTransaction(

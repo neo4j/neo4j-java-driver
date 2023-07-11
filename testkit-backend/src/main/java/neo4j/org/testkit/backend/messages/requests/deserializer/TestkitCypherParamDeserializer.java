@@ -21,7 +21,6 @@ package neo4j.org.testkit.backend.messages.requests.deserializer;
 import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherTypeToJavaType;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
@@ -45,8 +44,7 @@ public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String, 
     }
 
     @Override
-    public Map<String, Object> deserialize(JsonParser p, DeserializationContext ctxt)
-            throws IOException, JsonProcessingException {
+    public Map<String, Object> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         Map<String, Object> result = new HashMap<>();
 
         String key;

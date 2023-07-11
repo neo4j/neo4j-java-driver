@@ -98,11 +98,11 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 public final class BoltProtocolV41Test {
-    protected static final String QUERY_TEXT = "RETURN $x";
-    protected static final Map<String, Value> PARAMS = singletonMap("x", value(42));
-    protected static final Query QUERY = new Query(QUERY_TEXT, value(PARAMS));
+    private static final String QUERY_TEXT = "RETURN $x";
+    private static final Map<String, Value> PARAMS = singletonMap("x", value(42));
+    private static final Query QUERY = new Query(QUERY_TEXT, value(PARAMS));
 
-    protected final BoltProtocol protocol = createProtocol();
+    private final BoltProtocol protocol = createProtocol();
     private final EmbeddedChannel channel = new EmbeddedChannel();
     private final InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher(channel, Logging.none());
 

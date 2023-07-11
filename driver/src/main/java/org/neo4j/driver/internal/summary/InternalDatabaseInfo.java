@@ -22,7 +22,7 @@ import java.util.Objects;
 import org.neo4j.driver.summary.DatabaseInfo;
 
 public class InternalDatabaseInfo implements DatabaseInfo {
-    public static DatabaseInfo DEFAULT_DATABASE_INFO = new InternalDatabaseInfo(null);
+    public static final DatabaseInfo DEFAULT_DATABASE_INFO = new InternalDatabaseInfo(null);
 
     private final String name;
 

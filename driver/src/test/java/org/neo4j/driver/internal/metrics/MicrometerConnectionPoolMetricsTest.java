@@ -41,10 +41,10 @@ class MicrometerConnectionPoolMetricsTest {
     BoltServerAddress address;
     ConnectionPool pool;
     MeterRegistry registry;
-    AtomicInteger inUse = new AtomicInteger(0);
-    IntSupplier inUseSupplier = inUse::get;
-    AtomicInteger idle = new AtomicInteger(0);
-    IntSupplier idleSupplier = idle::get;
+    final AtomicInteger inUse = new AtomicInteger(0);
+    final IntSupplier inUseSupplier = inUse::get;
+    final AtomicInteger idle = new AtomicInteger(0);
+    final IntSupplier idleSupplier = idle::get;
 
     @BeforeEach
     void beforeEach() {

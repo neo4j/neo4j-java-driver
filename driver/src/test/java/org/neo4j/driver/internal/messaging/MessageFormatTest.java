@@ -57,7 +57,7 @@ import org.neo4j.driver.internal.util.messaging.KnowledgeableMessageFormat;
 import org.neo4j.driver.internal.util.messaging.MemorizingInboundMessageDispatcher;
 
 class MessageFormatTest {
-    public MessageFormat format = new MessageFormatV3();
+    public final MessageFormat format = new MessageFormatV3();
 
     @Test
     void shouldUnpackAllResponses() throws Throwable {

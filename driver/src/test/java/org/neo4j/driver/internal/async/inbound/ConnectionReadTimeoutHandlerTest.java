@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 
 public class ConnectionReadTimeoutHandlerTest {
-    ConnectionReadTimeoutHandler handler = new ConnectionReadTimeoutHandler(15L, TimeUnit.SECONDS);
-    ChannelHandlerContext context = mock(ChannelHandlerContext.class);
+    final ConnectionReadTimeoutHandler handler = new ConnectionReadTimeoutHandler(15L, TimeUnit.SECONDS);
+    final ChannelHandlerContext context = mock(ChannelHandlerContext.class);
 
     @Test
     void shouldFireConnectionReadTimeoutExceptionAndCloseChannelOnReadTimeOutOnce() {

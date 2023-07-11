@@ -30,7 +30,7 @@ import org.neo4j.driver.internal.packstream.PackStream;
  */
 public class BufferedChannelInput implements PackInput {
     private final ByteBuffer buffer;
-    private ReadableByteChannel channel;
+    private final ReadableByteChannel channel;
     private static final int DEFAULT_BUFFER_CAPACITY = 8192;
 
     public BufferedChannelInput(ReadableByteChannel ch) {

@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.packstream.PackOutput;
  * It's done on this way to make easy to replace the implementation and still getting the same behaviour.
  */
 class MessageFormatV3Test {
-    private static MessageFormat messageFormat = BoltProtocolV3.INSTANCE.createMessageFormat();
+    private static final MessageFormat messageFormat = BoltProtocolV3.INSTANCE.createMessageFormat();
 
     @Test
     void shouldCreateCorrectWriter() {
