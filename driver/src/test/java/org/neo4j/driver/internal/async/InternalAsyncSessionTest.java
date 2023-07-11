@@ -402,13 +402,5 @@ class InternalAsyncSessionTest {
                 new ExecuteVariation(true, true));
     }
 
-    private static class ExecuteVariation {
-        private final boolean readOnly;
-        private final boolean explicitTxConfig;
-
-        private ExecuteVariation(boolean readOnly, boolean explicitTxConfig) {
-            this.readOnly = readOnly;
-            this.explicitTxConfig = explicitTxConfig;
-        }
-    }
+    private record ExecuteVariation(boolean readOnly, boolean explicitTxConfig) {}
 }

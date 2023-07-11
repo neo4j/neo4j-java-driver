@@ -40,7 +40,7 @@ public class ExecuteQuery implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
-        var driver = testkitState.getDriverHolder(data.getDriverId()).getDriver();
+        var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var configBuilder = QueryConfig.builder();
         var routing = data.getConfig().getRouting();
         if (data.getConfig().getRouting() != null) {

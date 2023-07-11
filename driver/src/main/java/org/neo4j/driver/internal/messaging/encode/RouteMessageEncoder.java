@@ -37,8 +37,8 @@ public class RouteMessageEncoder implements MessageEncoder {
         checkArgument(message, RouteMessage.class);
         var routeMessage = (RouteMessage) message;
         packer.packStructHeader(3, message.signature());
-        packer.pack(routeMessage.getRoutingContext());
-        packer.pack(value(routeMessage.getBookmarks().stream().map(Bookmark::value)));
-        packer.pack(routeMessage.getDatabaseName());
+        packer.pack(routeMessage.routingContext());
+        packer.pack(value(routeMessage.bookmarks().stream().map(Bookmark::value)));
+        packer.pack(routeMessage.databaseName());
     }
 }

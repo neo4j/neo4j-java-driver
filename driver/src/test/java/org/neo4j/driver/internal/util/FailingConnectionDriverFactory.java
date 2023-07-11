@@ -60,14 +60,8 @@ public class FailingConnectionDriverFactory extends DriverFactory {
         nextRunFailure.set(failure);
     }
 
-    private static class ConnectionPoolWithFailingConnections implements ConnectionPool {
-        final ConnectionPool delegate;
-        final AtomicReference<Throwable> nextRunFailure;
-
-        ConnectionPoolWithFailingConnections(ConnectionPool delegate, AtomicReference<Throwable> nextRunFailure) {
-            this.delegate = delegate;
-            this.nextRunFailure = nextRunFailure;
-        }
+    private record ConnectionPoolWithFailingConnections(
+            ConnectionPool delegate, AtomicReference<Throwable> nextRunFailure) implements ConnectionPool {
 
         @Override
         public CompletionStage<Connection> acquire(BoltServerAddress address, AuthToken overrideAuthToken) {

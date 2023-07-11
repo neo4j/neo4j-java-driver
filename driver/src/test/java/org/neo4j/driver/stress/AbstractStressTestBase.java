@@ -693,15 +693,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return session.closeAsync().exceptionally(ignore -> null).thenApply(ignore -> result);
     }
 
-    private static class ResourcesInfo {
-        final long openFileDescriptorCount;
-        final Set<String> acquiredLoggerNames;
-
-        ResourcesInfo(long openFileDescriptorCount, Set<String> acquiredLoggerNames) {
-            this.openFileDescriptorCount = openFileDescriptorCount;
-            this.acquiredLoggerNames = acquiredLoggerNames;
-        }
-    }
+    private record ResourcesInfo(long openFileDescriptorCount, Set<String> acquiredLoggerNames) {}
 
     private static class LoggerNameTrackingLogging implements Logging {
         private final Logging consoleLogging = Logging.console(Level.FINE);

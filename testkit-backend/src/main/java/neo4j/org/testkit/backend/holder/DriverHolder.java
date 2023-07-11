@@ -25,7 +25,4 @@ import org.neo4j.driver.Driver;
 
 @RequiredArgsConstructor
 @Getter
-public class DriverHolder {
-    private final Driver driver;
-    private final Config config;
-}
+public record DriverHolder(Driver driver, Config config) {}

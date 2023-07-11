@@ -20,48 +20,22 @@ package org.neo4j.driver.internal.summary;
 
 import org.neo4j.driver.summary.SummaryCounters;
 
-public class InternalSummaryCounters implements SummaryCounters {
+public record InternalSummaryCounters(
+        int nodesCreated,
+        int nodesDeleted,
+        int relationshipsCreated,
+        int relationshipsDeleted,
+        int propertiesSet,
+        int labelsAdded,
+        int labelsRemoved,
+        int indexesAdded,
+        int indexesRemoved,
+        int constraintsAdded,
+        int constraintsRemoved,
+        int systemUpdates)
+        implements SummaryCounters {
     public static final InternalSummaryCounters EMPTY_STATS =
             new InternalSummaryCounters(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    private final int nodesCreated;
-    private final int nodesDeleted;
-    private final int relationshipsCreated;
-    private final int relationshipsDeleted;
-    private final int propertiesSet;
-    private final int labelsAdded;
-    private final int labelsRemoved;
-    private final int indexesAdded;
-    private final int indexesRemoved;
-    private final int constraintsAdded;
-    private final int constraintsRemoved;
-    private final int systemUpdates;
-
-    public InternalSummaryCounters(
-            int nodesCreated,
-            int nodesDeleted,
-            int relationshipsCreated,
-            int relationshipsDeleted,
-            int propertiesSet,
-            int labelsAdded,
-            int labelsRemoved,
-            int indexesAdded,
-            int indexesRemoved,
-            int constraintsAdded,
-            int constraintsRemoved,
-            int systemUpdates) {
-        this.nodesCreated = nodesCreated;
-        this.nodesDeleted = nodesDeleted;
-        this.relationshipsCreated = relationshipsCreated;
-        this.relationshipsDeleted = relationshipsDeleted;
-        this.propertiesSet = propertiesSet;
-        this.labelsAdded = labelsAdded;
-        this.labelsRemoved = labelsRemoved;
-        this.indexesAdded = indexesAdded;
-        this.indexesRemoved = indexesRemoved;
-        this.constraintsAdded = constraintsAdded;
-        this.constraintsRemoved = constraintsRemoved;
-        this.systemUpdates = systemUpdates;
-    }
 
     @Override
     public boolean containsUpdates() {
@@ -79,68 +53,8 @@ public class InternalSummaryCounters implements SummaryCounters {
     }
 
     @Override
-    public int nodesCreated() {
-        return nodesCreated;
-    }
-
-    @Override
-    public int nodesDeleted() {
-        return nodesDeleted;
-    }
-
-    @Override
-    public int relationshipsCreated() {
-        return relationshipsCreated;
-    }
-
-    @Override
-    public int relationshipsDeleted() {
-        return relationshipsDeleted;
-    }
-
-    @Override
-    public int propertiesSet() {
-        return propertiesSet;
-    }
-
-    @Override
-    public int labelsAdded() {
-        return labelsAdded;
-    }
-
-    @Override
-    public int labelsRemoved() {
-        return labelsRemoved;
-    }
-
-    @Override
-    public int indexesAdded() {
-        return indexesAdded;
-    }
-
-    @Override
-    public int indexesRemoved() {
-        return indexesRemoved;
-    }
-
-    @Override
-    public int constraintsAdded() {
-        return constraintsAdded;
-    }
-
-    @Override
-    public int constraintsRemoved() {
-        return constraintsRemoved;
-    }
-
-    @Override
     public boolean containsSystemUpdates() {
         return isPositive(systemUpdates);
-    }
-
-    @Override
-    public int systemUpdates() {
-        return systemUpdates;
     }
 
     @Override
@@ -166,23 +80,6 @@ public class InternalSummaryCounters implements SummaryCounters {
                 && constraintsAdded == that.constraintsAdded
                 && constraintsRemoved == that.constraintsRemoved
                 && systemUpdates == that.systemUpdates;
-    }
-
-    @Override
-    public int hashCode() {
-        var result = nodesCreated;
-        result = 31 * result + nodesDeleted;
-        result = 31 * result + relationshipsCreated;
-        result = 31 * result + relationshipsDeleted;
-        result = 31 * result + propertiesSet;
-        result = 31 * result + labelsAdded;
-        result = 31 * result + labelsRemoved;
-        result = 31 * result + indexesAdded;
-        result = 31 * result + indexesRemoved;
-        result = 31 * result + constraintsAdded;
-        result = 31 * result + constraintsRemoved;
-        result = 31 * result + systemUpdates;
-        return result;
     }
 
     private boolean isPositive(int value) {

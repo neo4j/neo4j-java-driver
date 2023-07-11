@@ -60,14 +60,7 @@ public class FailingMessageFormat implements MessageFormat {
         return new ThrowingReader(delegate.newReader(input), readerThrowableRef, readerFailureRef);
     }
 
-    private static class ThrowingWriter implements MessageFormat.Writer {
-        final MessageFormat.Writer delegate;
-        final AtomicReference<Throwable> throwableRef;
-
-        ThrowingWriter(Writer delegate, AtomicReference<Throwable> throwableRef) {
-            this.delegate = delegate;
-            this.throwableRef = throwableRef;
-        }
+    private record ThrowingWriter(Writer delegate, AtomicReference<Throwable> throwableRef) implements Writer {
 
         @Override
         public void write(Message msg) throws IOException {
@@ -80,17 +73,9 @@ public class FailingMessageFormat implements MessageFormat {
         }
     }
 
-    private static class ThrowingReader implements MessageFormat.Reader {
-        final MessageFormat.Reader delegate;
-        final AtomicReference<Throwable> throwableRef;
-        final AtomicReference<FailureMessage> failureRef;
-
-        ThrowingReader(
-                Reader delegate, AtomicReference<Throwable> throwableRef, AtomicReference<FailureMessage> failureRef) {
-            this.delegate = delegate;
-            this.throwableRef = throwableRef;
-            this.failureRef = failureRef;
-        }
+    private record ThrowingReader(
+            Reader delegate, AtomicReference<Throwable> throwableRef, AtomicReference<FailureMessage> failureRef)
+            implements Reader {
 
         @Override
         public void read(ResponseMessageHandler handler) throws IOException {

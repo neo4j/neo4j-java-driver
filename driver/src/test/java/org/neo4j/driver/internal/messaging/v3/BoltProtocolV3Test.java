@@ -583,13 +583,5 @@ public class BoltProtocolV3Test {
         return new ResponseHandlers(runHandlerCaptor.getValue(), pullAllHandlerCaptor.getValue());
     }
 
-    private static class ResponseHandlers {
-        final ResponseHandler runHandler;
-        final ResponseHandler pullAllHandler;
-
-        ResponseHandlers(ResponseHandler runHandler, ResponseHandler pullAllHandler) {
-            this.runHandler = runHandler;
-            this.pullAllHandler = pullAllHandler;
-        }
-    }
+    private record ResponseHandlers(ResponseHandler runHandler, ResponseHandler pullAllHandler) {}
 }

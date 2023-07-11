@@ -117,7 +117,7 @@ public abstract class AbstractResultNext implements TestkitRequest {
                 .orElse(resultHolder
                         .getSessionHolder()
                         .getDriverHolder()
-                        .getConfig()
+                        .config()
                         .fetchSize());
         return fetchSize == -1 ? Long.MAX_VALUE : fetchSize;
     }
@@ -130,7 +130,7 @@ public abstract class AbstractResultNext implements TestkitRequest {
                 .orElse(resultHolder
                         .getSessionHolder()
                         .getDriverHolder()
-                        .getConfig()
+                        .config()
                         .fetchSize());
         return fetchSize == -1 ? Long.MAX_VALUE : fetchSize;
     }
@@ -143,7 +143,7 @@ public abstract class AbstractResultNext implements TestkitRequest {
                 .orElse(resultHolder
                         .getSessionHolder()
                         .getDriverHolder()
-                        .getConfig()
+                        .config()
                         .fetchSize());
         return fetchSize == -1 ? Long.MAX_VALUE : fetchSize;
     }

@@ -18,44 +18,20 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import java.util.Objects;
 import org.neo4j.driver.summary.InputPosition;
 
 /**
  * An input position refers to a specific point in a query string.
  */
-public class InternalInputPosition implements InputPosition {
-    private final int offset;
-    private final int line;
-    private final int column;
-
+public record InternalInputPosition(int offset, int line, int column) implements InputPosition {
     /**
      * Creating a position from and offset, line number and a column number.
      *
      * @param offset the offset from the start of the string, starting from 0.
-     * @param line the line number, starting from 1.
+     * @param line   the line number, starting from 1.
      * @param column the column number, starting from 1.
      */
-    public InternalInputPosition(int offset, int line, int column) {
-        this.offset = offset;
-        this.line = line;
-        this.column = column;
-    }
-
-    @Override
-    public int offset() {
-        return offset;
-    }
-
-    @Override
-    public int line() {
-        return line;
-    }
-
-    @Override
-    public int column() {
-        return column;
-    }
+    public InternalInputPosition {}
 
     @Override
     public boolean equals(Object o) {
@@ -67,11 +43,6 @@ public class InternalInputPosition implements InputPosition {
         }
         var that = (InternalInputPosition) o;
         return offset == that.offset && line == that.line && column == that.column;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(offset, line, column);
     }
 
     @Override

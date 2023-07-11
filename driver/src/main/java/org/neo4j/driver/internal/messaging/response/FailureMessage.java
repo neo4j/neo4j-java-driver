@@ -28,25 +28,8 @@ import org.neo4j.driver.internal.messaging.Message;
  * Sent by the server to signal a failed operation.
  * Terminates response sequence.
  */
-public class FailureMessage implements Message {
+public record FailureMessage(String code, String message) implements Message {
     public static final byte SIGNATURE = 0x7F;
-
-    private final String code;
-    private final String message;
-
-    public FailureMessage(String code, String message) {
-        super();
-        this.code = code;
-        this.message = message;
-    }
-
-    public String code() {
-        return code;
-    }
-
-    public String message() {
-        return message;
-    }
 
     @Override
     public byte signature() {
@@ -71,12 +54,5 @@ public class FailureMessage implements Message {
 
         return !(code != null ? !code.equals(that.code) : that.code != null)
                 && !(message != null ? !message.equals(that.message) : that.message != null);
-    }
-
-    @Override
-    public int hashCode() {
-        var result = code != null ? code.hashCode() : 0;
-        result = 31 * result + (message != null ? message.hashCode() : 0);
-        return result;
     }
 }
