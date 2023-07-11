@@ -108,13 +108,14 @@ public class RoutingResponseHandler implements ResponseHandler {
             // The server is unaware of the session mode, so we have to implement this logic in the driver.
             // In the future, we might be able to move this logic to the server.
             switch (accessMode) {
-                case READ:
+                case READ -> {
                     return new ClientException("Write queries cannot be performed in READ access mode.");
-                case WRITE:
+                }
+                case WRITE -> {
                     errorHandler.onWriteFailure(address);
                     return new SessionExpiredException(format("Server at %s no longer accepts writes", address));
-                default:
-                    throw new IllegalArgumentException(accessMode + " not supported.");
+                }
+                default -> throw new IllegalArgumentException(accessMode + " not supported.");
             }
         }
         return e;

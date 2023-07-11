@@ -18,41 +18,9 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Objects;
 import org.neo4j.driver.types.Point;
 
-public class InternalPoint3D implements Point {
-    private final int srid;
-    private final double x;
-    private final double y;
-    private final double z;
-
-    public InternalPoint3D(int srid, double x, double y, double z) {
-        this.srid = srid;
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-
-    @Override
-    public int srid() {
-        return srid;
-    }
-
-    @Override
-    public double x() {
-        return x;
-    }
-
-    @Override
-    public double y() {
-        return y;
-    }
-
-    @Override
-    public double z() {
-        return z;
-    }
+public record InternalPoint3D(int srid, double x, double y, double z) implements Point {
 
     @Override
     public boolean equals(Object o) {
@@ -67,11 +35,6 @@ public class InternalPoint3D implements Point {
                 && Double.compare(that.x, x) == 0
                 && Double.compare(that.y, y) == 0
                 && Double.compare(that.z, z) == 0;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(srid, x, y, z);
     }
 
     @Override

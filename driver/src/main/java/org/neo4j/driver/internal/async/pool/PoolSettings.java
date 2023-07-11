@@ -20,7 +20,11 @@ package org.neo4j.driver.internal.async.pool;
 
 import java.util.concurrent.TimeUnit;
 
-public class PoolSettings {
+public record PoolSettings(
+        int maxConnectionPoolSize,
+        long connectionAcquisitionTimeout,
+        long maxConnectionLifetime,
+        long idleTimeBeforeConnectionTest) {
     public static final int NOT_CONFIGURED = -1;
 
     public static final int DEFAULT_MAX_CONNECTION_POOL_SIZE = 100;
@@ -28,43 +32,11 @@ public class PoolSettings {
     public static final long DEFAULT_MAX_CONNECTION_LIFETIME = TimeUnit.HOURS.toMillis(1);
     public static final long DEFAULT_CONNECTION_ACQUISITION_TIMEOUT = TimeUnit.SECONDS.toMillis(60);
 
-    private final int maxConnectionPoolSize;
-    private final long connectionAcquisitionTimeout;
-    private final long maxConnectionLifetime;
-    private final long idleTimeBeforeConnectionTest;
-
-    public PoolSettings(
-            int maxConnectionPoolSize,
-            long connectionAcquisitionTimeout,
-            long maxConnectionLifetime,
-            long idleTimeBeforeConnectionTest) {
-        this.maxConnectionPoolSize = maxConnectionPoolSize;
-        this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
-        this.maxConnectionLifetime = maxConnectionLifetime;
-        this.idleTimeBeforeConnectionTest = idleTimeBeforeConnectionTest;
-    }
-
-    public long idleTimeBeforeConnectionTest() {
-        return idleTimeBeforeConnectionTest;
-    }
-
     public boolean idleTimeBeforeConnectionTestEnabled() {
         return idleTimeBeforeConnectionTest >= 0;
     }
 
-    public long maxConnectionLifetime() {
-        return maxConnectionLifetime;
-    }
-
     public boolean maxConnectionLifetimeEnabled() {
         return maxConnectionLifetime > 0;
-    }
-
-    public int maxConnectionPoolSize() {
-        return maxConnectionPoolSize;
-    }
-
-    public long connectionAcquisitionTimeout() {
-        return connectionAcquisitionTimeout;
     }
 }

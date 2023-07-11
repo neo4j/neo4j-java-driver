@@ -31,7 +31,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,13 +57,11 @@ public class PackStreamTest {
     private static class Machine {
 
         private final ByteArrayOutputStream output;
-        private final WritableByteChannel writable;
         private final PackStream.Packer packer;
 
         Machine() {
             this.output = new ByteArrayOutputStream();
-            this.writable = Channels.newChannel(this.output);
-            this.packer = new PackStream.Packer(new ChannelOutput(this.writable));
+            this.packer = new PackStream.Packer(new ChannelOutput(Channels.newChannel(this.output)));
         }
 
         public void reset() {
@@ -407,10 +404,10 @@ public class PackStreamTest {
 
     @Test
     void testCanPackAndUnpackListOfSpecialStrings() throws Throwable {
-        assertPackStringLists(3, "Mjölnir");
-        assertPackStringLists(126, "Mjölnir");
-        assertPackStringLists(3000, "Mjölnir");
-        assertPackStringLists(32768, "Mjölnir");
+        assertPackStringLists(3);
+        assertPackStringLists(126);
+        assertPackStringLists(3000);
+        assertPackStringLists(32768);
     }
 
     @Test
@@ -648,7 +645,7 @@ public class PackStreamTest {
     }
 
     @Test
-    void shouldFailForUnknownValue() throws IOException {
+    void shouldFailForUnknownValue() {
         // Given
         var machine = new Machine();
         var packer = machine.packer();
@@ -671,7 +668,7 @@ public class PackStreamTest {
         assertEquals(type, unpacker.peekNextType());
     }
 
-    private void assertPackStringLists(int size, String value) throws Throwable {
+    private void assertPackStringLists(int size) throws Throwable {
         // Given
         var machine = new Machine();
 
@@ -679,7 +676,7 @@ public class PackStreamTest {
         var packer = machine.packer();
         var strings = new ArrayList<String>(size);
         for (var i = 0; i < size; i++) {
-            strings.add(i, value);
+            strings.add(i, "Mjölnir");
         }
         packer.pack(strings);
 

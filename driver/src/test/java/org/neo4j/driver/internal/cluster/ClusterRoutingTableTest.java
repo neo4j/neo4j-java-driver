@@ -203,25 +203,25 @@ class ClusterRoutingTableTest {
     }
 
     @Test
-    void shouldHaveBeStaleForExpiredTime() throws Throwable {
+    void shouldHaveBeStaleForExpiredTime() {
         var routingTable = newRoutingTable(Clock.systemUTC());
         assertTrue(routingTable.hasBeenStaleFor(0));
     }
 
     @Test
-    void shouldNotHaveBeStaleForUnexpiredTime() throws Throwable {
+    void shouldNotHaveBeStaleForUnexpiredTime() {
         var routingTable = newRoutingTable(Clock.systemUTC());
         assertFalse(routingTable.hasBeenStaleFor(Duration.ofSeconds(30).toMillis()));
     }
 
     @Test
-    void shouldDefaultToPreferInitialRouter() throws Throwable {
+    void shouldDefaultToPreferInitialRouter() {
         var routingTable = newRoutingTable();
         assertTrue(routingTable.preferInitialRouter());
     }
 
     @Test
-    void shouldPreferInitialRouterIfNoWriter() throws Throwable {
+    void shouldPreferInitialRouterIfNoWriter() {
         var routingTable = newRoutingTable();
         routingTable.update(createClusterComposition(EMPTY, EMPTY, EMPTY));
         assertTrue(routingTable.preferInitialRouter());
@@ -240,7 +240,7 @@ class ClusterRoutingTableTest {
     }
 
     @Test
-    void shouldNotPreferInitialRouterIfHasWriter() throws Throwable {
+    void shouldNotPreferInitialRouterIfHasWriter() {
         var routingTable = newRoutingTable();
         routingTable.update(createClusterComposition(EMPTY, singletonList(A), EMPTY));
         assertFalse(routingTable.preferInitialRouter());

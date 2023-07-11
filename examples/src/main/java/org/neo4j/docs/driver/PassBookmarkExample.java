@@ -57,6 +57,7 @@ public class PassBookmarkExample extends BaseApplication {
     }
 
     // Create a friendship between two people.
+    @SuppressWarnings("SameParameterValue")
     private Result makeFriends(TransactionContext tx, String person1, String person2) {
         return tx.run("MATCH (a:Person {name: $person_1}) MATCH (b:Person {name: $person_2}) MERGE (a)-[:KNOWS]->(b)",
                 parameters("person_1", person1, "person_2", person2));

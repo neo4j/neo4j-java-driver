@@ -59,7 +59,7 @@ class MetricsIT {
 
     @Test
     void driverMetricsUpdatedWithDriverUse() {
-        var result = createNodesInNewSession(12);
+        var result = createNodesInNewSession();
         // assert in use
         var acquisitionTimer =
                 meterRegistry.get("neo4j.driver.connections.acquisition").timer();
@@ -77,8 +77,8 @@ class MetricsIT {
         assertEquals(1, usageTimer.count());
     }
 
-    private Result createNodesInNewSession(int nodesToCreate) {
-        return createNodes(nodesToCreate, driver.session());
+    private Result createNodesInNewSession() {
+        return createNodes(12, driver.session());
     }
 
     private Result createNodes(int nodesToCreate, QueryRunner queryRunner) {

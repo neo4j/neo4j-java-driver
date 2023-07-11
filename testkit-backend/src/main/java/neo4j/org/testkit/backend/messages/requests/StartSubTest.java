@@ -40,22 +40,7 @@ public class StartSubTest implements TestkitRequest {
         SkipDecision check(Map<String, Object> params);
     }
 
-    public static class SkipDecision {
-        private final boolean skipped;
-        private final String reason;
-
-        public SkipDecision(boolean skipped, String reason) {
-            this.skipped = skipped;
-            this.reason = reason;
-        }
-
-        public boolean isSkipped() {
-            return skipped;
-        }
-
-        public String getReason() {
-            return reason;
-        }
+    public record SkipDecision(boolean skipped, String reason) {
 
         static SkipDecision ofNonSkipped() {
             return new SkipDecision(false, null);
@@ -187,10 +172,10 @@ public class StartSubTest implements TestkitRequest {
                 .findFirst()
                 .map(entry -> {
                     var decision = entry.getValue().check(data.getSubtestArguments());
-                    if (decision.isSkipped()) {
+                    if (decision.skipped()) {
                         return SkipTest.builder()
                                 .data(SkipTest.SkipTestBody.builder()
-                                        .reason(decision.getReason())
+                                        .reason(decision.reason())
                                         .build())
                                 .build();
                     }

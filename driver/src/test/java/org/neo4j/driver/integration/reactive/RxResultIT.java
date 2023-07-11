@@ -89,7 +89,7 @@ class RxResultIT {
     }
 
     @Test
-    void shouldSecondVisitOfRecordReceiveEmptyRecordStream() throws Throwable {
+    void shouldSecondVisitOfRecordReceiveEmptyRecordStream() {
         // When
         var res = sessionRunUnwind();
 
@@ -118,7 +118,7 @@ class RxResultIT {
     }
 
     @Test
-    void shouldAllowAccessKeysAndSummaryAfterRecord() throws Throwable {
+    void shouldAllowAccessKeysAndSummaryAfterRecord() {
         // Given
         var res = sessionRunUnwind();
 
@@ -226,7 +226,7 @@ class RxResultIT {
     }
 
     @Test
-    void shouldErrorOnSummaryIfNoRecord() throws Throwable {
+    void shouldErrorOnSummaryIfNoRecord() {
         // Given
         var session = neo4j.driver().rxSession();
         var result = session.run("INVALID");

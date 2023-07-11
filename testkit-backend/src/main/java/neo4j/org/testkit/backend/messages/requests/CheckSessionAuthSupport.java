@@ -31,8 +31,7 @@ public class CheckSessionAuthSupport extends AbstractBasicTestkitRequest {
 
     @Override
     protected TestkitResponse processAndCreateResponse(TestkitState testkitState) {
-        var supports =
-                testkitState.getDriverHolder(data.getDriverId()).getDriver().supportsSessionAuth();
+        var supports = testkitState.getDriverHolder(data.getDriverId()).driver().supportsSessionAuth();
         return SessionAuthSupport.builder()
                 .data(SessionAuthSupport.SessionAuthSupportBody.builder()
                         .available(supports)

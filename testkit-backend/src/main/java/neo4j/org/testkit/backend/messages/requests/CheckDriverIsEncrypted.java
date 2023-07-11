@@ -61,7 +61,7 @@ public class CheckDriverIsEncrypted implements TestkitRequest {
         var driverHolder = testkitState.getDriverHolder(data.getDriverId());
         return DriverIsEncrypted.builder()
                 .data(DriverIsEncrypted.DriverIsEncryptedBody.builder()
-                        .encrypted(driverHolder.getDriver().isEncrypted())
+                        .encrypted(driverHolder.driver().isEncrypted())
                         .build())
                 .build();
     }

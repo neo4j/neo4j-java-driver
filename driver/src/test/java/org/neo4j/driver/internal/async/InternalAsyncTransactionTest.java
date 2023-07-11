@@ -63,7 +63,6 @@ import org.neo4j.driver.internal.value.IntegerValue;
 class InternalAsyncTransactionTest {
     private static final String DATABASE = "neo4j";
     private Connection connection;
-    private NetworkSession networkSession;
     private InternalAsyncTransaction tx;
 
     @BeforeEach
@@ -75,7 +74,7 @@ class InternalAsyncTransactionTest {
             context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
             return completedFuture(connection);
         });
-        networkSession = newSession(connectionProvider);
+        var networkSession = newSession(connectionProvider);
         var session = new InternalAsyncSession(networkSession);
         tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
     }

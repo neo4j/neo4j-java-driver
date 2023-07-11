@@ -88,19 +88,16 @@ public class SecurityPlans {
         if (encrypted) {
             var hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();
             var revocationCheckingStrategy = trustStrategy.revocationCheckingStrategy();
-            switch (trustStrategy.strategy()) {
-                case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
-                    return SecurityPlanImpl.forCustomCASignedCertificates(
-                            trustStrategy.certFiles(), hostnameVerificationEnabled, revocationCheckingStrategy);
-                case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
-                    return SecurityPlanImpl.forSystemCASignedCertificates(
-                            hostnameVerificationEnabled, revocationCheckingStrategy);
-                case TRUST_ALL_CERTIFICATES:
-                    return SecurityPlanImpl.forAllCertificates(hostnameVerificationEnabled, revocationCheckingStrategy);
-                default:
-                    throw new ClientException("Unknown TLS authentication strategy: "
-                            + trustStrategy.strategy().name());
-            }
+            return switch (trustStrategy.strategy()) {
+                case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES -> SecurityPlanImpl.forCustomCASignedCertificates(
+                        trustStrategy.certFiles(), hostnameVerificationEnabled, revocationCheckingStrategy);
+                case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES -> SecurityPlanImpl.forSystemCASignedCertificates(
+                        hostnameVerificationEnabled, revocationCheckingStrategy);
+                case TRUST_ALL_CERTIFICATES -> SecurityPlanImpl.forAllCertificates(
+                        hostnameVerificationEnabled, revocationCheckingStrategy);
+                default -> throw new ClientException("Unknown TLS authentication strategy: "
+                        + trustStrategy.strategy().name());
+            };
         } else {
             return insecure();
         }

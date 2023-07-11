@@ -57,13 +57,13 @@ abstract class BasicPullResponseHandlerTestBase {
     // on success with summary
     @ParameterizedTest
     @MethodSource("allStatus")
-    void shouldSuccessWithSummary(BasicPullResponseHandler.State state) throws Throwable {
+    void shouldSuccessWithSummary(BasicPullResponseHandler.State state) {
         shouldHandleSuccessWithSummary(state);
     }
 
     // on success with has_more
     @Test
-    void shouldRequestMoreWithHasMore() throws Throwable {
+    void shouldRequestMoreWithHasMore() {
         // Given a handler in streaming state
         var conn = mockConnection();
         var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.STREAMING_STATE);
@@ -79,7 +79,7 @@ abstract class BasicPullResponseHandlerTestBase {
     }
 
     @Test
-    void shouldInformSummaryConsumerSuccessWithHasMore() throws Throwable {
+    void shouldInformSummaryConsumerSuccessWithHasMore() {
         // Given
         var conn = mockConnection();
         @SuppressWarnings("unchecked")
@@ -100,7 +100,7 @@ abstract class BasicPullResponseHandlerTestBase {
     }
 
     @Test
-    void shouldDiscardIfStreamingIsCanceled() throws Throwable {
+    void shouldDiscardIfStreamingIsCanceled() {
         // Given a handler in streaming state
         var conn = mockConnection();
         var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.CANCELLED_STATE);
@@ -114,13 +114,13 @@ abstract class BasicPullResponseHandlerTestBase {
     // on failure
     @ParameterizedTest
     @MethodSource("allStatus")
-    void shouldErrorToRecordAndSummaryConsumer(BasicPullResponseHandler.State state) throws Throwable {
+    void shouldErrorToRecordAndSummaryConsumer(BasicPullResponseHandler.State state) {
         shouldHandleFailure(state);
     }
 
     // on record
     @Test
-    void shouldReportRecordInStreaming() throws Throwable {
+    void shouldReportRecordInStreaming() {
         // Given a handler in streaming state
         var conn = mockConnection();
         @SuppressWarnings("unchecked")
@@ -142,7 +142,7 @@ abstract class BasicPullResponseHandlerTestBase {
 
     @ParameterizedTest
     @MethodSource("allStatusExceptStreaming")
-    void shouldNotReportRecordWhenNotStreaming(BasicPullResponseHandler.State state) throws Throwable {
+    void shouldNotReportRecordWhenNotStreaming(BasicPullResponseHandler.State state) {
         // Given a handler in streaming state
         var conn = mockConnection();
         @SuppressWarnings("unchecked")
@@ -162,7 +162,7 @@ abstract class BasicPullResponseHandlerTestBase {
 
     // request
     @Test
-    void shouldStayInStreaming() throws Throwable {
+    void shouldStayInStreaming() {
         // Given
         var conn = mockConnection();
         var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.STREAMING_STATE);
@@ -175,7 +175,7 @@ abstract class BasicPullResponseHandlerTestBase {
     }
 
     @Test
-    void shouldPullAndSwitchStreamingInReady() throws Throwable {
+    void shouldPullAndSwitchStreamingInReady() {
         // Given
         var conn = mockConnection();
         var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.READY_STATE);
@@ -190,7 +190,7 @@ abstract class BasicPullResponseHandlerTestBase {
 
     // cancel
     @Test
-    void shouldStayInCancel() throws Throwable {
+    void shouldStayInCancel() {
         // Given
         var conn = mockConnection();
         var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.CANCELLED_STATE);
@@ -204,7 +204,7 @@ abstract class BasicPullResponseHandlerTestBase {
     }
 
     @Test
-    void shouldSwitchFromStreamingToCancel() throws Throwable {
+    void shouldSwitchFromStreamingToCancel() {
         // Given
         var conn = mockConnection();
         var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.STREAMING_STATE);
@@ -218,7 +218,7 @@ abstract class BasicPullResponseHandlerTestBase {
     }
 
     @Test
-    void shouldSwitchFromReadyToCancel() throws Throwable {
+    void shouldSwitchFromReadyToCancel() {
         // Given
         var conn = mockConnection();
         var handler = newResponseHandlerWithStatus(conn, BasicPullResponseHandler.State.READY_STATE);

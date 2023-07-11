@@ -46,7 +46,7 @@ import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 
 class FuturesTest {
     @Test
-    void shouldConvertCanceledNettyFutureToCompletionStage() throws Exception {
+    void shouldConvertCanceledNettyFutureToCompletionStage() {
         var promise = new DefaultPromise<String>(ImmediateEventExecutor.INSTANCE);
         promise.cancel(true);
 
@@ -69,7 +69,7 @@ class FuturesTest {
     }
 
     @Test
-    void shouldConvertFailedNettyFutureToCompletionStage() throws Exception {
+    void shouldConvertFailedNettyFutureToCompletionStage() {
         var error = new RuntimeException("Hello");
         var nettyFuture = new FailedFuture<Object>(ImmediateEventExecutor.INSTANCE, error);
 
@@ -81,7 +81,7 @@ class FuturesTest {
     }
 
     @Test
-    void shouldConvertRunningNettyFutureToCompletionStageWhenFutureCanceled() throws Exception {
+    void shouldConvertRunningNettyFutureToCompletionStageWhenFutureCanceled() {
         var promise = new DefaultPromise<String>(ImmediateEventExecutor.INSTANCE);
 
         var future = Futures.asCompletionStage(promise).toCompletableFuture();
@@ -109,7 +109,7 @@ class FuturesTest {
     }
 
     @Test
-    void shouldConvertRunningNettyFutureToCompletionStageWhenFutureFailed() throws Exception {
+    void shouldConvertRunningNettyFutureToCompletionStageWhenFutureFailed() {
         var error = new RuntimeException("Hello");
         var promise = new DefaultPromise<String>(ImmediateEventExecutor.INSTANCE);
 
@@ -124,7 +124,7 @@ class FuturesTest {
     }
 
     @Test
-    void shouldCreateFailedFutureWithUncheckedException() throws Exception {
+    void shouldCreateFailedFutureWithUncheckedException() {
         var error = new RuntimeException("Hello");
         var future = Futures.failedFuture(error).toCompletableFuture();
         assertTrue(future.isCompletedExceptionally());
@@ -133,7 +133,7 @@ class FuturesTest {
     }
 
     @Test
-    void shouldCreateFailedFutureWithCheckedException() throws Exception {
+    void shouldCreateFailedFutureWithCheckedException() {
         var error = new IOException("Hello");
         var future = Futures.failedFuture(error).toCompletableFuture();
         assertTrue(future.isCompletedExceptionally());
@@ -142,7 +142,7 @@ class FuturesTest {
     }
 
     @Test
-    void shouldFailBlockingGetInEventLoopThread() throws Exception {
+    void shouldFailBlockingGetInEventLoopThread() {
         var eventExecutor = EventLoopGroupFactory.newEventLoopGroup(1);
         try {
             var future = new CompletableFuture<String>();

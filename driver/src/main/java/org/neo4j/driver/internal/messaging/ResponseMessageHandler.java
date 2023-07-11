@@ -18,16 +18,15 @@
  */
 package org.neo4j.driver.internal.messaging;
 
-import java.io.IOException;
 import java.util.Map;
 import org.neo4j.driver.Value;
 
 public interface ResponseMessageHandler {
-    void handleSuccessMessage(Map<String, Value> meta) throws IOException;
+    void handleSuccessMessage(Map<String, Value> meta);
 
-    void handleRecordMessage(Value[] fields) throws IOException;
+    void handleRecordMessage(Value[] fields);
 
-    void handleFailureMessage(String code, String message) throws IOException;
+    void handleFailureMessage(String code, String message);
 
-    void handleIgnoredMessage() throws IOException;
+    void handleIgnoredMessage();
 }

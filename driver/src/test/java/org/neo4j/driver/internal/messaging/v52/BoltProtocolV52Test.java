@@ -298,14 +298,13 @@ public class BoltProtocolV52Test {
 
     @ParameterizedTest
     @EnumSource(AccessMode.class)
-    void shouldRunInAutoCommitTransactionAndWaitForFailureRunResponse(AccessMode mode) throws Exception {
+    void shouldRunInAutoCommitTransactionAndWaitForFailureRunResponse(AccessMode mode) {
         testFailedRunInAutoCommitTxWithWaitingForResponse(Collections.emptySet(), TransactionConfig.empty(), mode);
     }
 
     @ParameterizedTest
     @EnumSource(AccessMode.class)
-    void shouldRunInAutoCommitTransactionWithBookmarkAndConfigAndWaitForFailureRunResponse(AccessMode mode)
-            throws Exception {
+    void shouldRunInAutoCommitTransactionWithBookmarkAndConfigAndWaitForFailureRunResponse(AccessMode mode) {
         testFailedRunInAutoCommitTxWithWaitingForResponse(
                 Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx163")), txConfig, mode);
     }
@@ -369,7 +368,7 @@ public class BoltProtocolV52Test {
     }
 
     private void testFailedRunInAutoCommitTxWithWaitingForResponse(
-            Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) throws Exception {
+            Set<Bookmark> bookmarks, TransactionConfig config, AccessMode mode) {
         // Given
         var connection = connectionMock(mode, protocol);
         @SuppressWarnings("unchecked")
@@ -524,8 +523,7 @@ public class BoltProtocolV52Test {
             var txStage = protocol.beginTransaction(
                     connection, Collections.emptySet(), TransactionConfig.empty(), null, null, Logging.none());
             await(txStage);
-            verifyBeginInvoked(
-                    connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));
+            verifyBeginInvoked(connection, Collections.emptySet(), TransactionConfig.empty(), database("foo"));
         }
     }
 
@@ -558,13 +556,10 @@ public class BoltProtocolV52Test {
     }
 
     private void verifyBeginInvoked(
-            Connection connection,
-            Set<Bookmark> bookmarks,
-            TransactionConfig config,
-            AccessMode mode,
-            DatabaseName databaseName) {
+            Connection connection, Set<Bookmark> bookmarks, TransactionConfig config, DatabaseName databaseName) {
         var beginHandlerCaptor = ArgumentCaptor.forClass(ResponseHandler.class);
-        var beginMessage = new BeginMessage(bookmarks, config, databaseName, mode, null, null, null, Logging.none());
+        var beginMessage =
+                new BeginMessage(bookmarks, config, databaseName, AccessMode.WRITE, null, null, null, Logging.none());
         verify(connection).writeAndFlush(eq(beginMessage), beginHandlerCaptor.capture());
         assertThat(beginHandlerCaptor.getValue(), instanceOf(BeginTxResponseHandler.class));
     }

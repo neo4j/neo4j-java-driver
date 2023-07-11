@@ -84,7 +84,7 @@ class ConnectionPoolImplIT {
     }
 
     @Test
-    void shouldBeAbleToClosePoolInIOWorkerThread() throws Throwable {
+    void shouldBeAbleToClosePoolInIOWorkerThread() {
         // In the IO worker thread of a channel obtained from a pool, we shall be able to close the pool.
         var future = pool.acquire(neo4j.address(), null)
                 .thenCompose(Connection::release)

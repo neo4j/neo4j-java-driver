@@ -280,7 +280,7 @@ class InternalAsyncSessionTest {
         session = newSession(connectionProvider, retryLogic);
         asyncSession = new InternalAsyncSession(session);
 
-        var work = spy(new TxWork(42, failures, new SessionExpiredException("")));
+        var work = spy(new TxWork(failures, new SessionExpiredException("")));
         int answer = executeTransaction(asyncSession, mode, work);
 
         assertEquals(42, answer);
@@ -314,7 +314,7 @@ class InternalAsyncSessionTest {
         session = newSession(connectionProvider, retryLogic);
         asyncSession = new InternalAsyncSession(session);
 
-        var work = spy(new TxWork(42, failures, new SessionExpiredException("Oh!")));
+        var work = spy(new TxWork(failures, new SessionExpiredException("Oh!")));
 
         var e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, mode, work));
 
@@ -370,18 +370,18 @@ class InternalAsyncSessionTest {
 
         @SuppressWarnings("unchecked")
         TxWork(int result) {
-            this(result, 0, (Supplier) null);
+            this(result, (Supplier) null);
         }
 
-        TxWork(int result, int timesToThrow, final RuntimeException error) {
-            this.result = result;
+        TxWork(int timesToThrow, final RuntimeException error) {
+            this.result = 42;
             this.timesToThrow = timesToThrow;
             this.errorSupplier = () -> error;
         }
 
-        TxWork(int result, int timesToThrow, Supplier<RuntimeException> errorSupplier) {
+        TxWork(int result, Supplier<RuntimeException> errorSupplier) {
             this.result = result;
-            this.timesToThrow = timesToThrow;
+            this.timesToThrow = 0;
             this.errorSupplier = errorSupplier;
         }
 
@@ -402,13 +402,5 @@ class InternalAsyncSessionTest {
                 new ExecuteVariation(true, true));
     }
 
-    private static class ExecuteVariation {
-        private final boolean readOnly;
-        private final boolean explicitTxConfig;
-
-        private ExecuteVariation(boolean readOnly, boolean explicitTxConfig) {
-            this.readOnly = readOnly;
-            this.explicitTxConfig = explicitTxConfig;
-        }
-    }
+    private record ExecuteVariation(boolean readOnly, boolean explicitTxConfig) {}
 }

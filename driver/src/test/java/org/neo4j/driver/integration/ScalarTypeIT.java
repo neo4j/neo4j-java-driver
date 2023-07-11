@@ -174,7 +174,7 @@ class ScalarTypeIT {
     }
 
     @Test
-    void shouldEchoNestedList() throws Throwable {
+    void shouldEchoNestedList() {
         var input = Values.value(toValueStream(listToTest()));
 
         // When & Then
@@ -201,7 +201,7 @@ class ScalarTypeIT {
     }
 
     @Test
-    void shouldEchoNestedMap() throws Throwable {
+    void shouldEchoNestedMap() {
         var input = new MapValue(
                 toValueStream(mapToTest()).collect(Collectors.toMap(Object::toString, Function.identity())));
 

@@ -133,7 +133,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     }
 
     @Override
-    public void afterEach(ExtensionContext context) throws Exception {
+    public void afterEach(ExtensionContext context) {
         if (!nginxRunning) {
             startProxy();
         }
@@ -238,14 +238,14 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     }
 
     public boolean isNeo4j44OrEarlier() {
-        return isNeo4jVersionOrEarlier(4, 4);
+        return isNeo4jVersionOrEarlier(4);
     }
 
     public boolean isNeo4j43OrEarlier() {
-        return isNeo4jVersionOrEarlier(4, 3);
+        return isNeo4jVersionOrEarlier(3);
     }
 
-    private boolean isNeo4jVersionOrEarlier(int major, int minor) {
+    private boolean isNeo4jVersionOrEarlier(int minor) {
         try (var session = driver.session()) {
             var neo4jVersion = session.executeRead(
                     tx -> tx.run("CALL dbms.components() YIELD versions " + "RETURN versions[0] AS version")
@@ -253,7 +253,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
                             .get("version")
                             .asString());
             var versions = neo4jVersion.split("\\.");
-            return parseInt(versions[0]) <= major && parseInt(versions[1]) <= minor;
+            return parseInt(versions[0]) <= 4 && parseInt(versions[1]) <= minor;
         }
     }
 

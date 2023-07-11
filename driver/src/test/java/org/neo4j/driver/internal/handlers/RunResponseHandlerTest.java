@@ -120,7 +120,7 @@ class RunResponseHandlerTest {
 
     @Test
     void shouldReturnResultAvailableAfterWhenSucceededV3() {
-        testResultAvailableAfterOnSuccess("t_first", BoltProtocolV3.METADATA_EXTRACTOR);
+        testResultAvailableAfterOnSuccess();
     }
 
     @Test
@@ -192,10 +192,10 @@ class RunResponseHandlerTest {
         verify(connection, never()).release();
     }
 
-    private static void testResultAvailableAfterOnSuccess(String key, MetadataExtractor metadataExtractor) {
-        var handler = newHandler(metadataExtractor);
+    private static void testResultAvailableAfterOnSuccess() {
+        var handler = newHandler(BoltProtocolV3.METADATA_EXTRACTOR);
 
-        handler.onSuccess(singletonMap(key, value(42)));
+        handler.onSuccess(singletonMap("t_first", value(42)));
 
         assertEquals(42L, handler.resultAvailableAfter());
     }

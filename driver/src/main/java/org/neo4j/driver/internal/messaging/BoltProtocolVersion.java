@@ -77,10 +77,9 @@ public class BoltProtocolVersion implements Comparable<BoltProtocolVersion> {
     public boolean equals(Object o) {
         if (o == this) {
             return true;
-        } else if (!(o instanceof BoltProtocolVersion)) {
+        } else if (!(o instanceof BoltProtocolVersion other)) {
             return false;
         } else {
-            var other = (BoltProtocolVersion) o;
             return this.getMajorVersion() == other.getMajorVersion()
                     && this.getMinorVersion() == other.getMinorVersion();
         }

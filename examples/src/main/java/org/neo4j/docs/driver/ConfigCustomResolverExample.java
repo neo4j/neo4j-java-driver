@@ -44,6 +44,7 @@ public class ConfigCustomResolverExample implements AutoCloseable {
     }
 
     // tag::config-custom-resolver[]
+    @SuppressWarnings("SameParameterValue")
     private Driver createDriver(String virtualUri, String user, String password, ServerAddress... addresses) {
         var config = Config.builder()
                 .withResolver(address -> new HashSet<>(Arrays.asList(addresses)))

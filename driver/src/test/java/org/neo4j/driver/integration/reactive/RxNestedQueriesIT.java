@@ -133,7 +133,7 @@ class RxNestedQueriesIT {
     }
 
     @Test
-    void shouldHandleNestedQueriesInTheSameTransaction() throws Throwable {
+    void shouldHandleNestedQueriesInTheSameTransaction() {
         var size = 12555;
 
         var session = neo4j.driver().rxSession();

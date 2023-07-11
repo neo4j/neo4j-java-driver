@@ -34,31 +34,7 @@ import org.neo4j.driver.types.Relationship;
  * {@link Path} implementation that directly contains all nodes and relationships.
  */
 public class InternalPath implements Path, AsValue {
-    public static class SelfContainedSegment implements Segment {
-        private final Node start;
-        private final Relationship relationship;
-        private final Node end;
-
-        public SelfContainedSegment(Node start, Relationship relationship, Node end) {
-            this.start = start;
-            this.relationship = relationship;
-            this.end = end;
-        }
-
-        @Override
-        public Node start() {
-            return start;
-        }
-
-        @Override
-        public Relationship relationship() {
-            return relationship;
-        }
-
-        @Override
-        public Node end() {
-            return end;
-        }
+    public record SelfContainedSegment(Node start, Relationship relationship, Node end) implements Segment {
 
         @Override
         public boolean equals(Object other) {
@@ -71,14 +47,6 @@ public class InternalPath implements Path, AsValue {
 
             var that = (SelfContainedSegment) other;
             return start.equals(that.start) && end.equals(that.end) && relationship.equals(that.relationship);
-        }
-
-        @Override
-        public int hashCode() {
-            var result = start.hashCode();
-            result = 31 * result + relationship.hashCode();
-            result = 31 * result + end.hashCode();
-            return result;
         }
 
         @Override

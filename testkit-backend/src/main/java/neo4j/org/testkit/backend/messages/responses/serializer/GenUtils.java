@@ -79,32 +79,20 @@ public final class GenUtils {
     }
 
     public static Class<?> cypherTypeToJavaType(String typeString) {
-        switch (typeString) {
-            case "CypherBool":
-                return Boolean.class;
-            case "CypherInt":
-                return Long.class;
-            case "CypherFloat":
-                return Double.class;
-            case "CypherString":
-                return String.class;
-            case "CypherList":
-                return List.class;
-            case "CypherMap":
-                return Map.class;
-            case "CypherDateTime":
-                return CypherDateTime.class;
-            case "CypherTime":
-                return CypherTime.class;
-            case "CypherDate":
-                return LocalDate.class;
-            case "CypherDuration":
-                return IsoDuration.class;
-            case "CypherNull":
-                return null;
-            default:
-                return null;
-        }
+        return switch (typeString) {
+            case "CypherBool" -> Boolean.class;
+            case "CypherInt" -> Long.class;
+            case "CypherFloat" -> Double.class;
+            case "CypherString" -> String.class;
+            case "CypherList" -> List.class;
+            case "CypherMap" -> Map.class;
+            case "CypherDateTime" -> CypherDateTime.class;
+            case "CypherTime" -> CypherTime.class;
+            case "CypherDate" -> LocalDate.class;
+            case "CypherDuration" -> IsoDuration.class;
+            case "CypherNull" -> null;
+            default -> null;
+        };
     }
 
     interface RunnableWithIOException {

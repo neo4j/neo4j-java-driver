@@ -672,7 +672,7 @@ class RxTransactionIT {
     }
 
     @Test
-    void shouldFailToCommitWhenQueriesFailAndErrorNotConsumed() throws InterruptedException {
+    void shouldFailToCommitWhenQueriesFailAndErrorNotConsumed() {
         var tx = await(Mono.from(session.beginTransaction()));
 
         var result1 = tx.run("CREATE (:TestNode)");
@@ -690,7 +690,7 @@ class RxTransactionIT {
     }
 
     @Test
-    void shouldNotRunUntilPublisherIsConnected() throws Throwable {
+    void shouldNotRunUntilPublisherIsConnected() {
         var tx = await(Mono.from(session.beginTransaction()));
 
         var result1 = tx.run("RETURN 1");

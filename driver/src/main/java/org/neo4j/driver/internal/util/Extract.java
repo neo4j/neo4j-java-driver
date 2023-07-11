@@ -28,7 +28,6 @@ import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -54,29 +53,29 @@ public final class Extract {
     }
 
     public static List<Value> list(Value[] values) {
-        switch (values.length) {
-            case 0:
-                return emptyList();
-            case 1:
-                return singletonList(values[0]);
-            default:
-                return unmodifiableList(Arrays.asList(values));
-        }
+        return switch (values.length) {
+            case 0 -> emptyList();
+            case 1 -> singletonList(values[0]);
+            default -> List.of(values);
+        };
     }
 
     public static <T> List<T> list(Value[] data, Function<Value, T> mapFunction) {
         var size = data.length;
         switch (size) {
-            case 0:
+            case 0 -> {
                 return emptyList();
-            case 1:
+            }
+            case 1 -> {
                 return singletonList(mapFunction.apply(data[0]));
-            default:
+            }
+            default -> {
                 List<T> result = new ArrayList<>(size);
                 for (var value : data) {
                     result.add(mapFunction.apply(value));
                 }
                 return unmodifiableList(result);
+            }
         }
     }
 
@@ -101,19 +100,20 @@ public final class Extract {
     public static <T> Map<String, T> map(Record record, Function<Value, T> mapFunction) {
         var size = record.size();
         switch (size) {
-            case 0:
+            case 0 -> {
                 return emptyMap();
-
-            case 1:
+            }
+            case 1 -> {
                 return singletonMap(record.keys().get(0), mapFunction.apply(record.get(0)));
-
-            default:
+            }
+            default -> {
                 Map<String, T> map = Iterables.newLinkedHashMapWithSize(size);
                 var keys = record.keys();
                 for (var i = 0; i < size; i++) {
                     map.put(keys.get(i), mapFunction.apply(record.get(i)));
                 }
                 return unmodifiableMap(map);
+            }
         }
     }
 
@@ -121,16 +121,15 @@ public final class Extract {
             final MapAccessor map, final Function<Value, V> mapFunction) {
         var size = map.size();
         switch (size) {
-            case 0:
+            case 0 -> {
                 return emptyList();
-
-            case 1: {
+            }
+            case 1 -> {
                 var key = map.keys().iterator().next();
                 var value = map.get(key);
                 return singletonList(InternalPair.of(key, mapFunction.apply(value)));
             }
-
-            default: {
+            default -> {
                 List<Pair<String, V>> list = new ArrayList<>(size);
                 for (var key : map.keys()) {
                     var value = map.get(key);
@@ -144,16 +143,15 @@ public final class Extract {
     public static <V> List<Pair<String, V>> fields(final Record map, final Function<Value, V> mapFunction) {
         var size = map.keys().size();
         switch (size) {
-            case 0:
+            case 0 -> {
                 return emptyList();
-
-            case 1: {
+            }
+            case 1 -> {
                 var key = map.keys().iterator().next();
                 var value = map.get(key);
                 return singletonList(InternalPair.of(key, mapFunction.apply(value)));
             }
-
-            default: {
+            default -> {
                 List<Pair<String, V>> list = new ArrayList<>(size);
                 var keys = map.keys();
                 for (var i = 0; i < size; i++) {

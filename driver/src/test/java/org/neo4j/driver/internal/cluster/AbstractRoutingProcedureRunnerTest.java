@@ -44,7 +44,7 @@ abstract class AbstractRoutingProcedureRunnerTest {
     @Test
     void shouldReturnFailedResponseOnClientException() {
         var error = new ClientException("Hi");
-        var runner = singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY, failedFuture(error));
+        var runner = singleDatabaseRoutingProcedureRunner(failedFuture(error));
 
         var response = await(runner.run(connection(), defaultDatabase(), Collections.emptySet(), null));
 
@@ -55,7 +55,7 @@ abstract class AbstractRoutingProcedureRunnerTest {
     @Test
     void shouldReturnFailedStageOnError() {
         var error = new Exception("Hi");
-        var runner = singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY, failedFuture(error));
+        var runner = singleDatabaseRoutingProcedureRunner(failedFuture(error));
 
         var e = assertThrows(
                 Exception.class,
@@ -65,7 +65,7 @@ abstract class AbstractRoutingProcedureRunnerTest {
 
     @Test
     void shouldReleaseConnectionOnSuccess() {
-        var runner = singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY);
+        var runner = singleDatabaseRoutingProcedureRunner();
 
         var connection = connection();
         var response = await(runner.run(connection, defaultDatabase(), Collections.emptySet(), null));
@@ -76,7 +76,7 @@ abstract class AbstractRoutingProcedureRunnerTest {
 
     @Test
     void shouldPropagateReleaseError() {
-        var runner = singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY);
+        var runner = singleDatabaseRoutingProcedureRunner();
 
         var releaseError = new RuntimeException("Release failed");
         var connection = connection(failedFuture(releaseError));
@@ -88,10 +88,10 @@ abstract class AbstractRoutingProcedureRunnerTest {
         verify(connection).release();
     }
 
-    abstract SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner(RoutingContext context);
+    abstract SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner();
 
     abstract SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner(
-            RoutingContext context, CompletionStage<List<Record>> runProcedureResult);
+            CompletionStage<List<Record>> runProcedureResult);
 
     static Connection connection() {
         return connection(completedWithNull());

@@ -161,15 +161,11 @@ public class DriverFactory {
         if (metricsAdapter == null) {
             metricsAdapter = config.isMetricsEnabled() ? MetricsAdapter.DEFAULT : MetricsAdapter.DEV_NULL;
         }
-        switch (metricsAdapter) {
-            case DEV_NULL:
-                return DevNullMetricsProvider.INSTANCE;
-            case DEFAULT:
-                return new InternalMetricsProvider(clock, config.logging());
-            case MICROMETER:
-                return MicrometerMetricsProvider.forGlobalRegistry();
-        }
-        throw new IllegalStateException("Unknown or unsupported MetricsAdapter: " + metricsAdapter);
+        return switch (metricsAdapter) {
+            case DEV_NULL -> DevNullMetricsProvider.INSTANCE;
+            case DEFAULT -> new InternalMetricsProvider(clock, config.logging());
+            case MICROMETER -> MicrometerMetricsProvider.forGlobalRegistry();
+        };
     }
 
     protected ChannelConnector createConnector(

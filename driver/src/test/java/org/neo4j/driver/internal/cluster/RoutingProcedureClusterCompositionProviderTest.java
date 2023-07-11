@@ -311,7 +311,7 @@ class RoutingProcedureClusterCompositionProviderTest {
     }
 
     @Test
-    void shouldUseMultiDBProcedureRunnerWhenConnectingWith40Server() throws Throwable {
+    void shouldUseMultiDBProcedureRunnerWhenConnectingWith40Server() {
         var procedureRunner = newMultiDBProcedureRunnerMock();
         var connection = mock(Connection.class);
 
@@ -325,7 +325,7 @@ class RoutingProcedureClusterCompositionProviderTest {
     }
 
     @Test
-    void shouldUseProcedureRunnerWhenConnectingWith35AndPreviousServers() throws Throwable {
+    void shouldUseProcedureRunnerWhenConnectingWith35AndPreviousServers() {
         var procedureRunner = newProcedureRunnerMock();
         var connection = mock(Connection.class);
 
@@ -339,7 +339,7 @@ class RoutingProcedureClusterCompositionProviderTest {
     }
 
     @Test
-    void shouldUseRouteMessageProcedureRunnerWhenConnectingWithProtocol43() throws Throwable {
+    void shouldUseRouteMessageProcedureRunnerWhenConnectingWithProtocol43() {
         var procedureRunner = newRouteMessageRoutingProcedureRunnerMock();
         var connection = mock(Connection.class);
 

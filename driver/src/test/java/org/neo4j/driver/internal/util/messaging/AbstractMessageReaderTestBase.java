@@ -50,16 +50,13 @@ public abstract class AbstractMessageReaderTestBase {
     private void testSupportedMessageReading(Message message) throws IOException {
         var handler = testMessageReading(message);
 
-        if (message instanceof SuccessMessage) {
-            var successMessage = (SuccessMessage) message;
+        if (message instanceof SuccessMessage successMessage) {
             verify(handler).handleSuccessMessage(successMessage.metadata());
-        } else if (message instanceof FailureMessage) {
-            var failureMessage = (FailureMessage) message;
+        } else if (message instanceof FailureMessage failureMessage) {
             verify(handler).handleFailureMessage(failureMessage.code(), failureMessage.message());
         } else if (message instanceof IgnoredMessage) {
             verify(handler).handleIgnoredMessage();
-        } else if (message instanceof RecordMessage) {
-            var recordMessage = (RecordMessage) message;
+        } else if (message instanceof RecordMessage recordMessage) {
             verify(handler).handleRecordMessage(recordMessage.fields());
         } else {
             fail("Unsupported message type " + message.getClass().getSimpleName());

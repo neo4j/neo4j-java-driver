@@ -30,14 +30,13 @@ public abstract class Format {
     public static <V> String formatPairs(Map<String, V> entries) {
         var iterator = entries.entrySet().iterator();
         switch (entries.size()) {
-            case 0:
+            case 0 -> {
                 return "{}";
-
-            case 1: {
+            }
+            case 1 -> {
                 return String.format("{%s}", keyValueString(iterator.next()));
             }
-
-            default: {
+            default -> {
                 var builder = new StringBuilder();
                 builder.append("{");
                 builder.append(keyValueString(iterator.next()));

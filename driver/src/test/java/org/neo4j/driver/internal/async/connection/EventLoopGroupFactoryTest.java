@@ -58,7 +58,7 @@ class EventLoopGroupFactoryTest {
     }
 
     @Test
-    void shouldAssertNotInEventLoopThread() throws Exception {
+    void shouldAssertNotInEventLoopThread() {
         eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup(1);
 
         // current thread is not an event loop thread, assertion should not throw

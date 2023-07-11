@@ -33,12 +33,10 @@ import org.neo4j.driver.internal.messaging.Message;
  * <p>
  * This message is used to fetch this routing information.
  */
-public class RouteMessage implements Message {
+public record RouteMessage(
+        Map<String, Value> routingContext, Set<Bookmark> bookmarks, String databaseName, String impersonatedUser)
+        implements Message {
     public static final byte SIGNATURE = 0x66;
-    private final Map<String, Value> routingContext;
-    private final Set<Bookmark> bookmarks;
-    private final String databaseName;
-    private final String impersonatedUser;
 
     /**
      * Constructor
@@ -54,22 +52,6 @@ public class RouteMessage implements Message {
         this.bookmarks = bookmarks;
         this.databaseName = databaseName;
         this.impersonatedUser = impersonatedUser;
-    }
-
-    public Map<String, Value> getRoutingContext() {
-        return routingContext;
-    }
-
-    public Set<Bookmark> getBookmarks() {
-        return bookmarks;
-    }
-
-    public String getDatabaseName() {
-        return databaseName;
-    }
-
-    public String getImpersonatedUser() {
-        return impersonatedUser;
     }
 
     @Override

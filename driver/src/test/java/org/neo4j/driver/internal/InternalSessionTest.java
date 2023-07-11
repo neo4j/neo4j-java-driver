@@ -110,15 +110,5 @@ public class InternalSessionTest {
                 new ExecuteVariation(true, true, true));
     }
 
-    private static class ExecuteVariation {
-        private final boolean readOnly;
-        private final boolean explicitTxConfig;
-        private final boolean hasResult;
-
-        private ExecuteVariation(boolean readOnly, boolean explicitTxConfig, boolean hasResult) {
-            this.readOnly = readOnly;
-            this.explicitTxConfig = explicitTxConfig;
-            this.hasResult = hasResult;
-        }
-    }
+    private record ExecuteVariation(boolean readOnly, boolean explicitTxConfig, boolean hasResult) {}
 }

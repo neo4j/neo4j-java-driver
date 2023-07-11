@@ -22,8 +22,6 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableList;
 
 import java.time.Duration;
 import java.time.Period;
@@ -36,7 +34,7 @@ import org.neo4j.driver.types.IsoDuration;
 
 public class InternalIsoDuration implements IsoDuration {
     private static final long NANOS_PER_SECOND = 1_000_000_000;
-    private static final List<TemporalUnit> SUPPORTED_UNITS = unmodifiableList(asList(MONTHS, DAYS, SECONDS, NANOS));
+    private static final List<TemporalUnit> SUPPORTED_UNITS = List.of(MONTHS, DAYS, SECONDS, NANOS);
 
     private final long months;
     private final long days;

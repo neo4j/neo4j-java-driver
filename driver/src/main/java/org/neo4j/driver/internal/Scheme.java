@@ -31,15 +31,15 @@ public class Scheme {
             throw new IllegalArgumentException("Scheme must not be null");
         }
         switch (scheme) {
-            case BOLT_URI_SCHEME:
-            case BOLT_LOW_TRUST_URI_SCHEME:
-            case BOLT_HIGH_TRUST_URI_SCHEME:
-            case NEO4J_URI_SCHEME:
-            case NEO4J_LOW_TRUST_URI_SCHEME:
-            case NEO4J_HIGH_TRUST_URI_SCHEME:
+            case BOLT_URI_SCHEME,
+                    BOLT_LOW_TRUST_URI_SCHEME,
+                    BOLT_HIGH_TRUST_URI_SCHEME,
+                    NEO4J_URI_SCHEME,
+                    NEO4J_LOW_TRUST_URI_SCHEME,
+                    NEO4J_HIGH_TRUST_URI_SCHEME -> {
                 return;
-            default:
-                throw new IllegalArgumentException("Invalid address format " + scheme);
+            }
+            default -> throw new IllegalArgumentException("Invalid address format " + scheme);
         }
     }
 
