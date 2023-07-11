@@ -107,9 +107,8 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
         if (throwable instanceof CompletionException) {
             throwable = throwable.getCause();
         }
-        if (throwable instanceof Neo4jException) {
+        if (throwable instanceof Neo4jException e) {
             var id = testkitState.newId();
-            var e = (Neo4jException) throwable;
             testkitState.getErrors().put(id, e);
             return DriverError.builder()
                     .data(DriverError.DriverErrorBody.builder()
