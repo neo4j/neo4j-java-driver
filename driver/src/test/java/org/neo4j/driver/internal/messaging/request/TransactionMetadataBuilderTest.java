@@ -167,4 +167,32 @@ public class TransactionMetadataBuilderTest {
                 .info(
                         "The transaction timeout has been rounded up to next millisecond value since the config had a fractional millisecond value");
     }
+
+    @Test
+    void shouldNotLogWhenRoundingDoesNotHappen() {
+        // given
+        var logging = mock(Logging.class);
+        var logger = mock(Logger.class);
+        given(logging.getLog(TransactionMetadataBuilder.class)).willReturn(logger);
+        var timeout = 1000;
+
+        // when
+        var metadata = buildMetadata(
+                Duration.ofMillis(timeout),
+                null,
+                defaultDatabase(),
+                WRITE,
+                Collections.emptySet(),
+                null,
+                null,
+                null,
+                logging);
+
+        // then
+        var expectedMetadata = new HashMap<String, Value>();
+        expectedMetadata.put("tx_timeout", value(timeout));
+        assertEquals(expectedMetadata, metadata);
+        then(logging).shouldHaveNoInteractions();
+        then(logger).shouldHaveNoInteractions();
+    }
 }
