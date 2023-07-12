@@ -29,7 +29,7 @@
     <difference>
         <className>org/neo4j/driver/AuthTokenManager</className>
         <differenceType>7012</differenceType>
-        <method>void onSecurityException(org.neo4j.driver.AuthToken, org.neo4j.driver.exceptions.SecurityException)</method>
+        <method> boolean handleSecurityException(org.neo4j.driver.AuthToken, org.neo4j.driver.exceptions.SecurityException)</method>
     </difference>
 
     <difference>

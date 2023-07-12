@@ -45,9 +45,10 @@ public class StaticAuthTokenManager implements AuthTokenManager {
     }
 
     @Override
-    public void onSecurityException(AuthToken authToken, SecurityException exception) {
+    public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
         if (authToken.equals(this.authToken)) {
             expired.set(true);
         }
+        return false;
     }
 }

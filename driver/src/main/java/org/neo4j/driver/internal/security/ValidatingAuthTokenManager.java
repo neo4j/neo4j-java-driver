@@ -69,20 +69,21 @@ public class ValidatingAuthTokenManager implements AuthTokenManager {
     }
 
     @Override
-    public void onSecurityException(AuthToken authToken, SecurityException exception) {
+    public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
         requireNonNull(authToken, "authToken must not be null");
         requireNonNull(exception, "exception must not be null");
         try {
-            delegate.onSecurityException(authToken, exception);
+            return delegate.handleSecurityException(authToken, exception);
         } catch (Throwable throwable) {
             log.warn(String.format(
-                    "%s has been thrown by %s.onAuthenticationException method",
+                    "%s has been thrown by %s.handleSecurityException method",
                     throwable.getClass().getName(), delegate.getClass().getName()));
             log.debug(
                     String.format(
-                            "%s has been thrown by %s.onAuthenticationException method",
+                            "%s has been thrown by %s.handleSecurityException method",
                             throwable.getClass().getName(), delegate.getClass().getName()),
                     throwable);
         }
+        return false;
     }
 }

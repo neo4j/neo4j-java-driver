@@ -67,14 +67,16 @@ public class ExpirationBasedAuthTokenManager implements AuthTokenManager {
         return validTokenFuture;
     }
 
-    public void onSecurityException(AuthToken authToken, SecurityException exception) {
+    public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
         if (exception instanceof TokenExpiredException) {
             executeWithLock(lock.writeLock(), () -> {
                 if (token != null && token.authToken().equals(authToken)) {
                     unsetTokenState();
                 }
             });
+            return true;
         }
+        return false;
     }
 
     private void handleUpstreamResult(AuthTokenAndExpiration authTokenAndExpiration, Throwable throwable) {

@@ -43,7 +43,7 @@ public final class AuthTokenManagers {
      * following conditions:
      * <ol>
      *     <li>token's UTC timestamp is expired</li>
-     *     <li>server rejects the current token (see {@link AuthTokenManager#onSecurityException(AuthToken, org.neo4j.driver.exceptions.SecurityException)})</li>
+     *     <li>server rejects the current token (see {@link AuthTokenManager#handleSecurityException(AuthToken, org.neo4j.driver.exceptions.SecurityException)})</li>
      * </ol>
      * <p>
      * The supplier will be called by a task running in the {@link ForkJoinPool#commonPool()} as documented in the
@@ -63,7 +63,7 @@ public final class AuthTokenManagers {
      * following conditions:
      * <ol>
      *     <li>token's UTC timestamp is expired</li>
-     *     <li>server rejects the current token (see {@link AuthTokenManager#onSecurityException(AuthToken, org.neo4j.driver.exceptions.SecurityException)})</li>
+     *     <li>server rejects the current token (see {@link AuthTokenManager#handleSecurityException(AuthToken, org.neo4j.driver.exceptions.SecurityException)})</li>
      * </ol>
      * <p>
      * The provided supplier and its completion stages must be non-blocking as documented in the {@link AuthTokenManager}.

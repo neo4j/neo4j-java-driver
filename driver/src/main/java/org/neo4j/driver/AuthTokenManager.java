@@ -61,6 +61,7 @@ public interface AuthTokenManager {
      *
      * @param authToken the token
      * @param exception the security exception
+     * @return handled by the manager.
      */
-    void onSecurityException(AuthToken authToken, SecurityException exception);
+    boolean handleSecurityException(AuthToken authToken, SecurityException exception);
 }

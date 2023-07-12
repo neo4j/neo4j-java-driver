@@ -112,7 +112,7 @@ class ValidatingAuthTokenManagerTest {
         var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
 
         // when & then
-        assertThrows(NullPointerException.class, () -> manager.onSecurityException(null, TOKEN_EXPIRED_EXCEPTION));
+        assertThrows(NullPointerException.class, () -> manager.handleSecurityException(null, TOKEN_EXPIRED_EXCEPTION));
         then(delegateManager).shouldHaveNoInteractions();
     }
 
@@ -124,10 +124,10 @@ class ValidatingAuthTokenManagerTest {
         var token = AuthTokens.none();
 
         // when
-        manager.onSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
+        manager.handleSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
 
         // then
-        then(delegateManager).should().onSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
+        then(delegateManager).should().handleSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
     }
 
     @Test
@@ -136,17 +136,17 @@ class ValidatingAuthTokenManagerTest {
         var delegateManager = mock(AuthTokenManager.class);
         var token = AuthTokens.none();
         var exception = mock(RuntimeException.class);
-        willThrow(exception).given(delegateManager).onSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
+        willThrow(exception).given(delegateManager).handleSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
         var logging = mock(Logging.class);
         var log = mock(Logger.class);
         given(logging.getLog(ValidatingAuthTokenManager.class)).willReturn(log);
         var manager = new ValidatingAuthTokenManager(delegateManager, logging);
 
         // when
-        manager.onSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
+        manager.handleSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
 
         // then
-        then(delegateManager).should().onSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
+        then(delegateManager).should().handleSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
         then(log).should().warn(anyString());
         then(log).should().debug(anyString(), eq(exception));
     }

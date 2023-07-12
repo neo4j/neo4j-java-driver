@@ -481,7 +481,7 @@ class InboundMessageDispatcherTest {
         assertEquals(message, dispatcher.currentError().getMessage());
         then(authTokenManager)
                 .should()
-                .onSecurityException(Mockito.eq(authToken), Mockito.any(TokenExpiredException.class));
+                .handleSecurityException(Mockito.eq(authToken), Mockito.any(TokenExpiredException.class));
     }
 
     @Test
@@ -511,7 +511,7 @@ class InboundMessageDispatcherTest {
         assertEquals(message, dispatcher.currentError().getMessage());
         then(authTokenManager)
                 .should()
-                .onSecurityException(Mockito.eq(authToken), Mockito.any(TokenExpiredException.class));
+                .handleSecurityException(Mockito.eq(authToken), Mockito.any(TokenExpiredException.class));
     }
 
     private static void verifyFailure(ResponseHandler handler) {

@@ -76,9 +76,9 @@ public class NewAuthTokenManager extends AbstractBasicTestkitRequest {
         }
 
         @Override
-        public void onSecurityException(AuthToken authToken, SecurityException exception) {
+        public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
             if (!(exception instanceof TokenExpiredException)) {
-                return;
+                return false;
             }
             var callbackId = testkitState.newId();
 
@@ -93,6 +93,7 @@ public class NewAuthTokenManager extends AbstractBasicTestkitRequest {
             var callbackStage = dispatchTestkitCallback(testkitState, callback);
             try {
                 callbackStage.toCompletableFuture().get();
+                return true;
             } catch (Exception e) {
                 throw new RuntimeException("Unexpected failure during Testkit callback", e);
             }

@@ -43,7 +43,6 @@ import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.logging.ChannelErrorLogger;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
-import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
 
@@ -113,6 +112,17 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
 
         currentError = ErrorUtil.newNeo4jError(code, message);
 
+        if (currentError instanceof SecurityException securityException) {
+            var authContext = authContext(channel);
+            var authTokenProvider = authContext.getAuthTokenManager();
+            var authToken = authContext.getAuthToken();
+            if (authToken != null && authContext.isManaged()) {
+                if (authTokenProvider.handleSecurityException(authToken, securityException)) {
+                    currentError = toRetryableVersion(securityException);
+                }
+            }
+        }
+
         if (ErrorUtil.isFatal(currentError)) {
             // we should not continue using channel after a fatal error
             // fire error event back to the pipeline and avoid sending RESET
@@ -123,22 +133,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         var currentError = this.currentError;
         if (currentError instanceof AuthorizationExpiredException authorizationExpiredException) {
             authorizationStateListener(channel).onExpired(authorizationExpiredException, channel);
-            notifyAuthTokenManager(authorizationExpiredException);
-        } else if (currentError instanceof TokenExpiredException tokenExpiredException) {
-            var authContext = authContext(channel);
-            var authTokenProvider = authContext.getAuthTokenManager();
-            if (!(authTokenProvider instanceof StaticAuthTokenManager)) {
-                currentError = new TokenExpiredRetryableException(
-                        tokenExpiredException.code(), tokenExpiredException.getMessage());
-            }
-            var authToken = authContext.getAuthToken();
-            if (authToken != null && authContext.isManaged()) {
-                authTokenProvider.onSecurityException(authToken, tokenExpiredException);
-            }
-        } else {
-            if (currentError instanceof SecurityException securityException) {
-                notifyAuthTokenManager(securityException);
-            }
+        } else if (!(currentError instanceof TokenExpiredException tokenExpiredException)) {
             // write a RESET to "acknowledge" the failure
             enqueue(new ResetResponseHandler(this));
             channel.writeAndFlush(RESET, channel.voidPromise());
@@ -149,13 +144,8 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         handler.onFailure(currentError);
     }
 
-    private void notifyAuthTokenManager(SecurityException exception) {
-        var authContext = authContext(channel);
-        var authToken = authContext.getAuthToken();
-        var authTokenProvider = authContext.getAuthTokenManager();
-        if (authToken != null && authContext.isManaged()) {
-            authTokenProvider.onSecurityException(authToken, exception);
-        }
+    private static TokenExpiredRetryableException toRetryableVersion(SecurityException securityException) {
+        return new TokenExpiredRetryableException(securityException.code(), securityException.getMessage());
     }
 
     @Override

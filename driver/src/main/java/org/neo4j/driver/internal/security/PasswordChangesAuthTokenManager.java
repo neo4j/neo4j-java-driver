@@ -106,11 +106,12 @@ public class PasswordChangesAuthTokenManager implements AuthTokenManager {
     }
 
     @Override
-    public void onSecurityException(AuthToken authToken, SecurityException exception) {
+    public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
         executeWithLock(lock.writeLock(), () -> {
             if (token != null && token.equals(authToken)) {
                 unsetTokenState();
             }
         });
+        return true;
     }
 }
