@@ -24,6 +24,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
 import org.neo4j.driver.internal.security.ExpirationBasedAuthTokenManager;
+import org.neo4j.driver.internal.security.PasswordChangesAuthTokenManager;
 import org.neo4j.driver.util.Preview;
 
 /**
@@ -73,5 +74,23 @@ public final class AuthTokenManagers {
     public static AuthTokenManager expirationBasedAsync(
             Supplier<CompletionStage<AuthTokenAndExpiration>> newTokenStageSupplier) {
         return new ExpirationBasedAuthTokenManager(newTokenStageSupplier, Clock.systemUTC());
+    }
+
+    /**
+     * Dummy comment
+     * @param newTokenSupplier dummy comment
+     * @return dummy comment
+     */
+    public static AuthTokenManager passwordChanges(Supplier<AuthToken> newTokenSupplier) {
+        return passwordChangesAsync(() -> CompletableFuture.supplyAsync(newTokenSupplier));
+    }
+
+    /**
+     * dummy comment
+     * @param newTokenStageSupplier dummy comment
+     * @return dummy comment
+     */
+    public static AuthTokenManager passwordChangesAsync(Supplier<CompletionStage<AuthToken>> newTokenStageSupplier) {
+        return new PasswordChangesAuthTokenManager(newTokenStageSupplier);
     }
 }

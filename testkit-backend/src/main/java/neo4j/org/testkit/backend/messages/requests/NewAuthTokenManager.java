@@ -77,7 +77,7 @@ public class NewAuthTokenManager extends AbstractBasicTestkitRequest {
 
         @Override
         public void onSecurityException(AuthToken authToken, SecurityException exception) {
-            if (!(exception instanceof TokenExpiredException) ) {
+            if (!(exception instanceof TokenExpiredException)) {
                 return;
             }
             var callbackId = testkitState.newId();
