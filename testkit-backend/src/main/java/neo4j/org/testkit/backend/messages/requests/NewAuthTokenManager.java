@@ -32,6 +32,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.exceptions.SecurityException;
+import org.neo4j.driver.exceptions.TokenExpiredException;
 
 @Setter
 @Getter
@@ -76,6 +77,9 @@ public class NewAuthTokenManager extends AbstractBasicTestkitRequest {
 
         @Override
         public void onSecurityException(AuthToken authToken, SecurityException exception) {
+            if (!(exception instanceof TokenExpiredException) ) {
+                return;
+            }
             var callbackId = testkitState.newId();
 
             var callback = AuthTokenManagerOnAuthExpiredRequest.builder()
