@@ -18,9 +18,11 @@
  */
 package org.neo4j.driver.internal.retry;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 public record RetrySettings(long maxRetryTimeMs) implements Serializable {
+    @Serial
     private static final long serialVersionUID = -2895062473220745239L;
 
     public static final RetrySettings DEFAULT =

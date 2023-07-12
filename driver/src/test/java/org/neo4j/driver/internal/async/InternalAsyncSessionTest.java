@@ -121,7 +121,7 @@ class InternalAsyncSessionTest {
 
     private static Stream<Function<AsyncSession, CompletionStage<AsyncTransaction>>> allBeginTxMethods() {
         return Stream.of(
-                session -> session.beginTransactionAsync(),
+                AsyncSession::beginTransactionAsync,
                 session -> session.beginTransactionAsync(TransactionConfig.empty()));
     }
 
@@ -368,9 +368,8 @@ class InternalAsyncSessionTest {
 
         int invoked;
 
-        @SuppressWarnings("unchecked")
         TxWork(int result) {
-            this(result, (Supplier) null);
+            this(result, (Supplier<RuntimeException>) null);
         }
 
         TxWork(int timesToThrow, final RuntimeException error) {

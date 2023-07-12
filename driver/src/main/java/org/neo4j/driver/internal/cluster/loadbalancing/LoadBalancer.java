@@ -244,7 +244,6 @@ public class LoadBalancer implements ConnectionProvider {
         return switch (mode) {
             case READ -> routingTable.readers();
             case WRITE -> routingTable.writers();
-            default -> throw unknownMode(mode);
         };
     }
 
@@ -252,7 +251,6 @@ public class LoadBalancer implements ConnectionProvider {
         return switch (mode) {
             case READ -> loadBalancingStrategy.selectReader(addresses);
             case WRITE -> loadBalancingStrategy.selectWriter(addresses);
-            default -> throw unknownMode(mode);
         };
     }
 

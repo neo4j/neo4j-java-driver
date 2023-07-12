@@ -59,25 +59,26 @@ class InternalMapAccessorWithDefaultValueTest {
         assertThat(record.get("NullValue", NullValue.NULL), equalTo(NullValue.NULL));
         assertThat(record.get(wrongKey, NullValue.NULL), equalTo(NullValue.NULL));
 
-        assertThat(record.get("BooleanValue", BooleanValue.FALSE), equalTo((Value) BooleanValue.TRUE));
-        assertThat(record.get(wrongKey, BooleanValue.FALSE), equalTo((Value) BooleanValue.FALSE));
+        assertThat(record.get("BooleanValue", BooleanValue.FALSE), equalTo(BooleanValue.TRUE));
+        assertThat(record.get(wrongKey, BooleanValue.FALSE), equalTo(BooleanValue.FALSE));
 
-        assertThat(record.get("StringValue", new StringValue("")), equalTo((Value) new StringValue("hello world")));
-        assertThat(record.get(wrongKey, new StringValue("")), equalTo((Value) new StringValue("")));
+        assertThat(record.get("StringValue", new StringValue("")), equalTo(new StringValue("hello world")));
+        assertThat(record.get(wrongKey, new StringValue("")), equalTo(new StringValue("")));
 
-        assertThat(record.get("IntegerValue", new IntegerValue(-1)), equalTo((Value) new IntegerValue(11)));
-        assertThat(record.get(wrongKey, new IntegerValue(-1)), equalTo((Value) new IntegerValue(-1)));
+        assertThat(record.get("IntegerValue", new IntegerValue(-1)), equalTo(new IntegerValue(11)));
+        assertThat(record.get(wrongKey, new IntegerValue(-1)), equalTo(new IntegerValue(-1)));
 
-        assertThat(record.get("FloatValue", new FloatValue(1.1)), equalTo((Value) new FloatValue(2.2)));
-        assertThat(record.get(wrongKey, new FloatValue(1.1)), equalTo((Value) new FloatValue(1.1)));
+        assertThat(record.get("FloatValue", new FloatValue(1.1)), equalTo(new FloatValue(2.2)));
+        assertThat(record.get(wrongKey, new FloatValue(1.1)), equalTo(new FloatValue(1.1)));
 
         // List
-        assertThat(record.get("ListValue", new ListValue()), equalTo((Value)
-                new ListValue(new IntegerValue(1), new IntegerValue(2))));
-        assertThat(record.get(wrongKey, new ListValue()), equalTo((Value) new ListValue()));
+        assertThat(
+                record.get("ListValue", new ListValue()),
+                equalTo(new ListValue(new IntegerValue(1), new IntegerValue(2))));
+        assertThat(record.get(wrongKey, new ListValue()), equalTo(new ListValue()));
 
         // Map
-        Value defaultMapValue = new MapValue(new HashMap<String, Value>());
+        Value defaultMapValue = new MapValue(new HashMap<>());
         Value realMapValue = new MapValue(createMap());
         assertThat(record.get("MapValue", defaultMapValue), equalTo(realMapValue));
         assertThat(record.get(wrongKey, defaultMapValue), equalTo(defaultMapValue));

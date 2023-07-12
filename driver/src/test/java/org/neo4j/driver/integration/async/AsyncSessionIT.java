@@ -57,6 +57,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -199,15 +201,11 @@ class AsyncSessionIT {
     @Test
     void shouldAllowMultipleAsyncRunsWithoutConsumingResults() {
         var queryCount = 13;
-        List<CompletionStage<ResultCursor>> cursors = new ArrayList<>();
-        for (var i = 0; i < queryCount; i++) {
-            cursors.add(session.runAsync("CREATE (:Person)"));
-        }
+        var cursors = IntStream.range(0, queryCount)
+                .mapToObj(i -> session.runAsync("CREATE (:Person)"))
+                .collect(Collectors.toList());
 
-        List<CompletionStage<Record>> records = new ArrayList<>();
-        for (var cursor : awaitAll(cursors)) {
-            records.add(cursor.nextAsync());
-        }
+        var records = awaitAll(cursors).stream().map(ResultCursor::nextAsync).collect(Collectors.toList());
 
         awaitAll(records);
 
@@ -836,10 +834,8 @@ class AsyncSessionIT {
     private <T> void testList(String query, List<T> expectedList) {
         var cursor = await(session.runAsync(query));
         var records = await(cursor.listAsync());
-        List<Object> actualList = new ArrayList<>();
-        for (var record : records) {
-            actualList.add(record.get(0).asObject());
-        }
+        var actualList =
+                records.stream().map(record -> record.get(0).asObject()).collect(Collectors.toList());
         assertEquals(expectedList, actualList);
     }
 

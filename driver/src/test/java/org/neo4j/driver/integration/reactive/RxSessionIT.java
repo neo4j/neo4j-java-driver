@@ -89,9 +89,7 @@ class RxSessionIT {
 
         // Then
         StepVerifier.create(res2.records())
-                .assertNext(record -> {
-                    assertEquals(record.get("1").asLong(), 1L);
-                })
+                .assertNext(record -> assertEquals(record.get("1").asLong(), 1L))
                 .expectComplete()
                 .verify();
     }

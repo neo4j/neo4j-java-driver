@@ -178,9 +178,7 @@ class RxResultIT {
                 .expectComplete()
                 .verify();
         StepVerifier.create(res.records())
-                .assertNext(record -> {
-                    assertEquals("[n]", record.keys().toString());
-                })
+                .assertNext(record -> assertEquals("[n]", record.keys().toString()))
                 .expectComplete()
                 .verify();
     }
@@ -292,9 +290,7 @@ class RxResultIT {
                 .expectNext(1)
                 .expectNext(1)
                 .expectNext(1)
-                .expectErrorSatisfies(error -> {
-                    assertThat(error.getMessage(), containsString("/ by zero"));
-                })
+                .expectErrorSatisfies(error -> assertThat(error.getMessage(), containsString("/ by zero")))
                 .verify();
     }
 
@@ -306,9 +302,8 @@ class RxResultIT {
 
         // When
         StepVerifier.create(Flux.from(session.close()).thenMany(result.records()))
-                .expectErrorSatisfies(error -> {
-                    assertThat(error.getMessage(), containsString("session is already closed"));
-                })
+                .expectErrorSatisfies(
+                        error -> assertThat(error.getMessage(), containsString("session is already closed")))
                 .verify();
     }
 
@@ -320,9 +315,8 @@ class RxResultIT {
 
         // When
         StepVerifier.create(Flux.from(session.close()).thenMany(result.keys()))
-                .expectErrorSatisfies(error -> {
-                    assertThat(error.getMessage(), containsString("session is already closed"));
-                })
+                .expectErrorSatisfies(
+                        error -> assertThat(error.getMessage(), containsString("session is already closed")))
                 .verify();
     }
 
@@ -334,9 +328,8 @@ class RxResultIT {
 
         // When
         StepVerifier.create(Flux.from(session.close()).thenMany(result.consume()))
-                .expectErrorSatisfies(error -> {
-                    assertThat(error.getMessage(), containsString("session is already closed"));
-                })
+                .expectErrorSatisfies(
+                        error -> assertThat(error.getMessage(), containsString("session is already closed")))
                 .verify();
     }
 

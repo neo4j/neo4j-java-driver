@@ -72,26 +72,21 @@ public class ListValue extends ValueAdapter {
 
     @Override
     public <T> Iterable<T> values(final Function<Value, T> mapFunction) {
-        return new Iterable<T>() {
+        return () -> new Iterator<>() {
+            private int cursor = 0;
+
             @Override
-            public Iterator<T> iterator() {
-                return new Iterator<T>() {
-                    private int cursor = 0;
-
-                    @Override
-                    public boolean hasNext() {
-                        return cursor < values.length;
-                    }
-
-                    @Override
-                    public T next() {
-                        return mapFunction.apply(values[cursor++]);
-                    }
-
-                    @Override
-                    public void remove() {}
-                };
+            public boolean hasNext() {
+                return cursor < values.length;
             }
+
+            @Override
+            public T next() {
+                return mapFunction.apply(values[cursor++]);
+            }
+
+            @Override
+            public void remove() {}
         };
     }
 

@@ -43,9 +43,9 @@ class AuthTokensTest {
         var map = basic.toMap();
 
         assertThat(map.size(), equalTo(3));
-        assertThat(map.get("scheme"), equalTo((Value) new StringValue("basic")));
-        assertThat(map.get("principal"), equalTo((Value) new StringValue("foo")));
-        assertThat(map.get("credentials"), equalTo((Value) new StringValue("bar")));
+        assertThat(map.get("scheme"), equalTo(new StringValue("basic")));
+        assertThat(map.get("principal"), equalTo(new StringValue("foo")));
+        assertThat(map.get("credentials"), equalTo(new StringValue("bar")));
     }
 
     @Test
@@ -55,10 +55,10 @@ class AuthTokensTest {
         var map = basic.toMap();
 
         assertThat(map.size(), equalTo(4));
-        assertThat(map.get("scheme"), equalTo((Value) new StringValue("basic")));
-        assertThat(map.get("principal"), equalTo((Value) new StringValue("foo")));
-        assertThat(map.get("credentials"), equalTo((Value) new StringValue("bar")));
-        assertThat(map.get("realm"), equalTo((Value) new StringValue("baz")));
+        assertThat(map.get("scheme"), equalTo(new StringValue("basic")));
+        assertThat(map.get("principal"), equalTo(new StringValue("foo")));
+        assertThat(map.get("credentials"), equalTo(new StringValue("bar")));
+        assertThat(map.get("realm"), equalTo(new StringValue("baz")));
     }
 
     @Test
@@ -68,10 +68,10 @@ class AuthTokensTest {
         var map = basic.toMap();
 
         assertThat(map.size(), equalTo(4));
-        assertThat(map.get("scheme"), equalTo((Value) new StringValue("my_scheme")));
-        assertThat(map.get("principal"), equalTo((Value) new StringValue("foo")));
-        assertThat(map.get("credentials"), equalTo((Value) new StringValue("bar")));
-        assertThat(map.get("realm"), equalTo((Value) new StringValue("baz")));
+        assertThat(map.get("scheme"), equalTo(new StringValue("my_scheme")));
+        assertThat(map.get("principal"), equalTo(new StringValue("foo")));
+        assertThat(map.get("credentials"), equalTo(new StringValue("bar")));
+        assertThat(map.get("realm"), equalTo(new StringValue("baz")));
     }
 
     @Test
@@ -85,11 +85,11 @@ class AuthTokensTest {
         var map = basic.toMap();
 
         assertThat(map.size(), equalTo(5));
-        assertThat(map.get("scheme"), equalTo((Value) new StringValue("my_scheme")));
-        assertThat(map.get("principal"), equalTo((Value) new StringValue("foo")));
-        assertThat(map.get("credentials"), equalTo((Value) new StringValue("bar")));
-        assertThat(map.get("realm"), equalTo((Value) new StringValue("baz")));
-        assertThat(map.get("parameters"), equalTo((Value) new MapValue(expectedParameters)));
+        assertThat(map.get("scheme"), equalTo(new StringValue("my_scheme")));
+        assertThat(map.get("principal"), equalTo(new StringValue("foo")));
+        assertThat(map.get("credentials"), equalTo(new StringValue("bar")));
+        assertThat(map.get("realm"), equalTo(new StringValue("baz")));
+        assertThat(map.get("parameters"), equalTo(new MapValue(expectedParameters)));
     }
 
     @Test
@@ -113,9 +113,9 @@ class AuthTokensTest {
         var map = token.toMap();
 
         assertThat(map.size(), equalTo(3));
-        assertThat(map.get("scheme"), equalTo((Value) new StringValue("kerberos")));
-        assertThat(map.get("principal"), equalTo((Value) new StringValue("")));
-        assertThat(map.get("credentials"), equalTo((Value) new StringValue("base64")));
+        assertThat(map.get("scheme"), equalTo(new StringValue("kerberos")));
+        assertThat(map.get("principal"), equalTo(new StringValue("")));
+        assertThat(map.get("credentials"), equalTo(new StringValue("base64")));
     }
 
     @Test

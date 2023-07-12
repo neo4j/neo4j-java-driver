@@ -44,7 +44,7 @@ class SelfContainedNodeTest {
         var node = adamTheNode();
 
         // Then
-        assertThat(node.id(), equalTo(1l));
+        assertThat(node.id(), equalTo(1L));
     }
 
     @Test

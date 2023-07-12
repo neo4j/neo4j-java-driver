@@ -79,8 +79,7 @@ class InternalRxSessionTest {
 
     private static Stream<Function<RxSession, Publisher<RxTransaction>>> allBeginTxMethods() {
         return Stream.of(
-                rxSession -> rxSession.beginTransaction(),
-                rxSession -> rxSession.beginTransaction(TransactionConfig.empty()));
+                RxSession::beginTransaction, rxSession -> rxSession.beginTransaction(TransactionConfig.empty()));
     }
 
     private static Stream<Function<RxSession, Publisher<String>>> allRunTxMethods() {

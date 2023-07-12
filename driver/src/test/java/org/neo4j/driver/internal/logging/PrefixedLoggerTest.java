@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,7 +42,7 @@ class PrefixedLoggerTest {
 
     @Test
     void shouldAllowNullPrefix() {
-        assertNotNull(new PrefixedLogger(null, newLoggerMock()));
+        new PrefixedLogger(null, newLoggerMock());
     }
 
     @Test

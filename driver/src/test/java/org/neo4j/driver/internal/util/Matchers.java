@@ -37,7 +37,7 @@ public final class Matchers {
     private Matchers() {}
 
     public static Matcher<Driver> directDriver() {
-        return new TypeSafeMatcher<Driver>() {
+        return new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(Driver driver) {
                 return hasConnectionProvider(driver, DirectConnectionProvider.class);
@@ -51,7 +51,7 @@ public final class Matchers {
     }
 
     public static Matcher<Driver> directDriverWithAddress(final BoltServerAddress address) {
-        return new TypeSafeMatcher<Driver>() {
+        return new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(Driver driver) {
                 var provider = extractConnectionProvider(driver, DirectConnectionProvider.class);
@@ -66,7 +66,7 @@ public final class Matchers {
     }
 
     public static Matcher<Driver> clusterDriver() {
-        return new TypeSafeMatcher<Driver>() {
+        return new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(Driver driver) {
                 return hasConnectionProvider(driver, LoadBalancer.class);
@@ -80,7 +80,7 @@ public final class Matchers {
     }
 
     public static Matcher<ResultSummary> containsResultAvailableAfterAndResultConsumedAfter() {
-        return new TypeSafeMatcher<ResultSummary>() {
+        return new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(ResultSummary summary) {
                 return summary.resultAvailableAfter(TimeUnit.MILLISECONDS) >= 0L
@@ -95,7 +95,7 @@ public final class Matchers {
     }
 
     public static Matcher<Throwable> arithmeticError() {
-        return new TypeSafeMatcher<Throwable>() {
+        return new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(Throwable error) {
                 return error instanceof ClientException
@@ -114,7 +114,7 @@ public final class Matchers {
     }
 
     public static Matcher<Throwable> syntaxError(String messagePrefix) {
-        return new TypeSafeMatcher<Throwable>() {
+        return new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(Throwable error) {
                 if (error instanceof ClientException clientError) {
@@ -133,7 +133,7 @@ public final class Matchers {
     }
 
     public static Matcher<Throwable> connectionAcquisitionTimeoutError(int timeoutMillis) {
-        return new TypeSafeMatcher<Throwable>() {
+        return new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(Throwable error) {
                 if (error instanceof ClientException) {
@@ -152,7 +152,7 @@ public final class Matchers {
     }
 
     public static Matcher<Throwable> blockingOperationInEventLoopError() {
-        return new TypeSafeMatcher<Throwable>() {
+        return new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(Throwable error) {
                 return error instanceof IllegalStateException

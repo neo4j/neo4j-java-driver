@@ -36,11 +36,12 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.time.Clock;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
@@ -360,11 +361,7 @@ class RoutingProcedureClusterCompositionProviderTest {
     }
 
     private static Set<BoltServerAddress> serverSet(String... addresses) {
-        Set<BoltServerAddress> result = new HashSet<>();
-        for (var address : addresses) {
-            result.add(new BoltServerAddress(address));
-        }
-        return result;
+        return Arrays.stream(addresses).map(BoltServerAddress::new).collect(Collectors.toSet());
     }
 
     private static SingleDatabaseRoutingProcedureRunner newProcedureRunnerMock() {

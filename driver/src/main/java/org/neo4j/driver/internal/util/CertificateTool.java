@@ -159,7 +159,7 @@ public final class CertificateTool {
      */
     public static String X509CertToString(String cert) {
         var cert64CharPerLine = cert.replaceAll("(.{64})", "$1\n");
-        return BEGIN_CERT + "\n" + cert64CharPerLine + "\n" + END_CERT + "\n";
+        return String.join("\n", BEGIN_CERT, cert64CharPerLine, END_CERT) + "\n";
     }
 
     private CertificateTool() {}

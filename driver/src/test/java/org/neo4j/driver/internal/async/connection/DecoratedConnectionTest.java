@@ -47,7 +47,7 @@ class DecoratedConnectionTest {
 
         var connection = newConnection(mockConnection);
 
-        assertEquals(Boolean.valueOf(open).booleanValue(), connection.isOpen());
+        assertEquals(Boolean.valueOf(open), connection.isOpen());
         verify(mockConnection).isOpen();
     }
 

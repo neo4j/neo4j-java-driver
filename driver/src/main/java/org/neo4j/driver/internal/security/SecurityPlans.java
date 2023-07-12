@@ -95,8 +95,6 @@ public class SecurityPlans {
                         hostnameVerificationEnabled, revocationCheckingStrategy);
                 case TRUST_ALL_CERTIFICATES -> SecurityPlanImpl.forAllCertificates(
                         hostnameVerificationEnabled, revocationCheckingStrategy);
-                default -> throw new ClientException("Unknown TLS authentication strategy: "
-                        + trustStrategy.strategy().name());
             };
         } else {
             return insecure();

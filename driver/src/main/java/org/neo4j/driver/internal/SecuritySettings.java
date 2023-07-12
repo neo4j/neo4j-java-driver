@@ -18,10 +18,12 @@
  */
 package org.neo4j.driver.internal;
 
+import java.io.Serial;
 import java.io.Serializable;
 import org.neo4j.driver.Config;
 
 public record SecuritySettings(boolean encrypted, Config.TrustStrategy trustStrategy) implements Serializable {
+    @Serial
     private static final long serialVersionUID = 4494615367164106576L;
 
     private static final boolean DEFAULT_ENCRYPTED = false;

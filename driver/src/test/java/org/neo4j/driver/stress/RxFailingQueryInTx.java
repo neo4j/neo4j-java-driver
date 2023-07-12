@@ -49,9 +49,8 @@ public class RxFailingQueryInTx<C extends AbstractContext> extends AbstractRxQue
                         (tx, error) -> tx.rollback(),
                         null)
                 .subscribe(
-                        record -> {
-                            assertThat(record.get(0).asInt(), either(equalTo(1)).or(equalTo(2)));
-                        },
+                        record -> assertThat(
+                                record.get(0).asInt(), either(equalTo(1)).or(equalTo(2))),
                         error -> {
                             var cause = Futures.completionExceptionCause(error);
                             assertThat(cause, is(arithmeticError()));

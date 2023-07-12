@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.messaging.response;
 
 import static java.lang.String.format;
 
+import java.util.Objects;
 import org.neo4j.driver.internal.messaging.Message;
 
 /**
@@ -52,7 +53,6 @@ public record FailureMessage(String code, String message) implements Message {
 
         var that = (FailureMessage) o;
 
-        return !(code != null ? !code.equals(that.code) : that.code != null)
-                && !(message != null ? !message.equals(that.message) : that.message != null);
+        return Objects.equals(code, that.code) && Objects.equals(message, that.message);
     }
 }

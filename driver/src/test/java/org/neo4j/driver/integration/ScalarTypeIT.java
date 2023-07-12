@@ -25,10 +25,9 @@ import static org.neo4j.driver.Values.parameters;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -60,7 +59,7 @@ class ScalarTypeIT {
                 Arguments.of("RETURN ['hello'] as v", new ListValue(Values.value("hello"))),
                 Arguments.of("RETURN [] as v", new ListValue()),
                 Arguments.of("RETURN {k:'hello'} as v", parameters("k", Values.value("hello"))),
-                Arguments.of("RETURN {} as v", new MapValue(Collections.<String, Value>emptyMap())));
+                Arguments.of("RETURN {} as v", new MapValue(Collections.emptyMap())));
     }
 
     @ParameterizedTest
@@ -86,10 +85,9 @@ class ScalarTypeIT {
     @MethodSource("collectionItems")
     void shouldEchoVeryLongMap(Value collectionItem) {
         // Given
-        Map<String, Value> input = new HashMap<>();
-        for (var i = 0; i < 1000; i++) {
-            input.put(String.valueOf(i), collectionItem);
-        }
+        var input = IntStream.range(0, 1000)
+                .boxed()
+                .collect(Collectors.toMap(String::valueOf, i -> collectionItem, (a, b) -> b));
         var mapValue = new MapValue(input);
 
         // When & Then
@@ -100,10 +98,7 @@ class ScalarTypeIT {
     @MethodSource("collectionItems")
     void shouldEchoVeryLongList(Value collectionItem) {
         // Given
-        var input = new Value[1000];
-        for (var i = 0; i < 1000; i++) {
-            input[i] = collectionItem;
-        }
+        var input = IntStream.range(0, 1000).mapToObj(i -> collectionItem).toArray(Value[]::new);
         var listValue = new ListValue(input);
 
         // When & Then

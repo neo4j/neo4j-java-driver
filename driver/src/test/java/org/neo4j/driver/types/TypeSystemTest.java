@@ -54,7 +54,7 @@ class TypeSystemTest {
     private final Value nodeValue = new NodeValue(node);
     private final Value relationshipValue = new RelationshipValue(relationship);
     private final Value mapValue = value(Collections.singletonMap("type", "r"));
-    private final Value pathValue = new PathValue(new InternalPath(Arrays.<Entity>asList(node, relationship, node)));
+    private final Value pathValue = new PathValue(new InternalPath(Arrays.asList(node, relationship, node)));
     private final Value booleanValue = value(true);
     private final Value listValue = value(Arrays.asList(1, 2, 3));
     private final Value nullValue = value((Object) null);
@@ -229,7 +229,7 @@ class TypeSystemTest {
     }
 
     private Matcher<? super Value> hasType(final Type type) {
-        return new BaseMatcher<Value>() {
+        return new BaseMatcher<>() {
             @Override
             public boolean matches(Object o) {
                 return (o instanceof Value || o == null) && type.isTypeOf((Value) o);

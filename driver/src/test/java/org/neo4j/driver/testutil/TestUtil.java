@@ -63,6 +63,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -164,10 +166,8 @@ public final class TestUtil {
     public static void assertByteBufContains(ByteBuf buf, Number... values) {
         try {
             assertNotNull(buf);
-            var expectedReadableBytes = 0;
-            for (var value : values) {
-                expectedReadableBytes += bytesCount(value);
-            }
+            var expectedReadableBytes =
+                    Arrays.stream(values).mapToInt(TestUtil::bytesCount).sum();
             assertEquals(expectedReadableBytes, buf.readableBytes(), "Unexpected number of bytes");
             for (var expectedValue : values) {
                 var actualValue = read(buf, expectedValue.getClass());
@@ -451,16 +451,18 @@ public final class TestUtil {
         when(connection.mode()).thenReturn(mode);
         when(connection.databaseName()).thenReturn(database(databaseName));
         var version = protocol.version();
-        if (version.equals(BoltProtocolV3.VERSION)
-                || version.equals(BoltProtocolV4.VERSION)
-                || version.equals(BoltProtocolV41.VERSION)
-                || version.equals(BoltProtocolV42.VERSION)
-                || version.equals(BoltProtocolV43.VERSION)
-                || version.equals(BoltProtocolV44.VERSION)
-                || version.equals(BoltProtocolV5.VERSION)
-                || version.equals(BoltProtocolV51.VERSION)
-                || version.equals(BoltProtocolV52.VERSION)
-                || version.equals(BoltProtocolV53.VERSION)) {
+        if (List.of(
+                        BoltProtocolV3.VERSION,
+                        BoltProtocolV4.VERSION,
+                        BoltProtocolV41.VERSION,
+                        BoltProtocolV42.VERSION,
+                        BoltProtocolV43.VERSION,
+                        BoltProtocolV44.VERSION,
+                        BoltProtocolV5.VERSION,
+                        BoltProtocolV51.VERSION,
+                        BoltProtocolV52.VERSION,
+                        BoltProtocolV53.VERSION)
+                .contains(version)) {
             setupSuccessResponse(connection, CommitMessage.class);
             setupSuccessResponse(connection, RollbackMessage.class);
             setupSuccessResponse(connection, BeginMessage.class);
@@ -493,12 +495,10 @@ public final class TestUtil {
     }
 
     public static String randomString(int size) {
-        var sb = new StringBuilder(size);
         var random = ThreadLocalRandom.current();
-        for (var i = 0; i < size; i++) {
-            sb.append(ALPHANUMERICS.charAt(random.nextInt(ALPHANUMERICS.length())));
-        }
-        return sb.toString();
+        return IntStream.range(0, size)
+                .mapToObj(i -> String.valueOf(ALPHANUMERICS.charAt(random.nextInt(ALPHANUMERICS.length()))))
+                .collect(Collectors.joining());
     }
 
     public static ArgumentMatcher<Message> runWithMetaMessageWithQueryMatcher(String query) {

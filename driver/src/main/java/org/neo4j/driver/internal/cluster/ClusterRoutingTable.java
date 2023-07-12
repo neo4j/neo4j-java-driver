@@ -169,22 +169,16 @@ public class ClusterRoutingTable implements RoutingTable {
 
     private List<BoltServerAddress> newWithoutAddressIfPresent(
             List<BoltServerAddress> addresses, BoltServerAddress addressToSkip) {
-        List<BoltServerAddress> newList = new ArrayList<>(addresses.size());
-        for (var address : addresses) {
-            if (!address.equals(addressToSkip)) {
-                newList.add(address);
-            }
-        }
-        return Collections.unmodifiableList(newList);
+        return addresses.stream()
+                .filter(address -> !address.equals(addressToSkip))
+                .toList();
     }
 
     private List<BoltServerAddress> newWithAddressReplacedIfPresent(
             List<BoltServerAddress> addresses, BoltServerAddress oldAddress, BoltServerAddress newAddress) {
-        List<BoltServerAddress> newList = new ArrayList<>(addresses.size());
-        for (var address : addresses) {
-            newList.add(address.equals(oldAddress) ? newAddress : address);
-        }
-        return Collections.unmodifiableList(newList);
+        return addresses.stream()
+                .map(address -> address.equals(oldAddress) ? newAddress : address)
+                .toList();
     }
 
     private List<BoltServerAddress> newWithReusedAddresses(

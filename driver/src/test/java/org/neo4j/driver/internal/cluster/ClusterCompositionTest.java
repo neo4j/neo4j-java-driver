@@ -32,12 +32,12 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -207,10 +207,8 @@ class ClusterCompositionTest {
     private static Map<String, Object> serversEntry(String role, BoltServerAddress... addresses) {
         Map<String, Object> map = new HashMap<>();
         map.put("role", role);
-        List<String> addressStrings = new ArrayList<>();
-        for (var address : addresses) {
-            addressStrings.add(address.toString());
-        }
+        var addressStrings =
+                Arrays.stream(addresses).map(BoltServerAddress::toString).collect(Collectors.toList());
         map.put("addresses", addressStrings);
         return map;
     }

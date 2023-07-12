@@ -90,7 +90,6 @@ public final class GenUtils {
             case "CypherTime" -> CypherTime.class;
             case "CypherDate" -> LocalDate.class;
             case "CypherDuration" -> IsoDuration.class;
-            case "CypherNull" -> null;
             default -> null;
         };
     }

@@ -48,9 +48,8 @@ public class RxFailingQueryWithRetries<C extends AbstractContext> extends Abstra
                                 tx.run("UNWIND [10, 5, 0] AS x RETURN 10 / x").records()),
                         RxSession::close)
                 .subscribe(
-                        record -> {
-                            assertThat(record.get(0).asInt(), either(equalTo(1)).or(equalTo(2)));
-                        },
+                        record -> assertThat(
+                                record.get(0).asInt(), either(equalTo(1)).or(equalTo(2))),
                         error -> {
                             var cause = Futures.completionExceptionCause(error);
                             assertThat(cause, is(arithmeticError()));

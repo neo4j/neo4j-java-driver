@@ -18,11 +18,13 @@
  */
 package org.neo4j.driver.internal.logging;
 
+import java.io.Serial;
 import java.io.Serializable;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 
 public class DevNullLogging implements Logging, Serializable {
+    @Serial
     private static final long serialVersionUID = -2632752338512373821L;
 
     public static final Logging DEV_NULL_LOGGING = new DevNullLogging();
@@ -40,6 +42,7 @@ public class DevNullLogging implements Logging, Serializable {
     // An enum would be preferable, but would not be API compatible.
     // Reference: https://docs.oracle.com/en/java/javase/17/docs/specs/serialization/input.html#the-readresolve-method
     // andJoshua Bloch, Effective Java 3rd edition
+    @Serial
     private Object readResolve() {
         return DEV_NULL_LOGGING;
     }

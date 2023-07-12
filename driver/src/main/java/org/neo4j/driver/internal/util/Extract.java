@@ -28,6 +28,7 @@ import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -70,11 +71,7 @@ public final class Extract {
                 return singletonList(mapFunction.apply(data[0]));
             }
             default -> {
-                List<T> result = new ArrayList<>(size);
-                for (var value : data) {
-                    result.add(mapFunction.apply(value));
-                }
-                return unmodifiableList(result);
+                return Arrays.stream(data).map(mapFunction).toList();
             }
         }
     }

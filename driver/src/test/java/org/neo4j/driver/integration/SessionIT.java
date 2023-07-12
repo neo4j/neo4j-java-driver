@@ -64,6 +64,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -1181,9 +1182,9 @@ class SessionIT {
         var session = neo4j.driver().session(forDatabase("foo"));
 
         // When trying to run the query on a database that does not exist
-        var error = assertThrows(ClientException.class, () -> {
-            session.readTransaction(tx -> tx.run("RETURN 1").consume());
-        });
+        var error = assertThrows(
+                ClientException.class,
+                () -> session.readTransaction(tx -> tx.run("RETURN 1").consume()));
         assertThat(error.getMessage(), containsString("Database does not exist. Database name: 'foo'"));
         session.close();
     }
@@ -1226,10 +1227,9 @@ class SessionIT {
                 driver.session(builder().withDefaultAccessMode(sessionMode).build())) {
             var names = session.readTransaction(tx -> {
                 var records = tx.run("MATCH (p:Person) RETURN p.name AS name").list();
-                Set<String> names1 = new HashSet<>(records.size());
-                for (var record : records) {
-                    names1.add(record.get("name").asString());
-                }
+                Set<String> names1 = records.stream()
+                        .map(record -> record.get("name").asString())
+                        .collect(Collectors.toCollection(() -> new HashSet<>(records.size())));
                 return names1;
             });
 

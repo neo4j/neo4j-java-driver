@@ -34,6 +34,8 @@ import java.nio.channels.Channels;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.util.io.BufferedChannelInput;
@@ -697,10 +699,9 @@ public class PackStreamTest {
 
         // When
         var packer = machine.packer();
-        var map = new HashMap<String, Integer>();
-        for (var i = 0; i < size; i++) {
-            map.put(Integer.toString(i), i);
-        }
+        var map = IntStream.range(0, size)
+                .boxed()
+                .collect(Collectors.toMap(i -> Integer.toString(i), i -> i, (a, b) -> b, HashMap::new));
         packer.pack(map);
 
         // Then

@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.List;
+
 public class Scheme {
     public static final String BOLT_URI_SCHEME = "bolt";
     public static final String BOLT_HIGH_TRUST_URI_SCHEME = "bolt+s";
@@ -36,9 +38,7 @@ public class Scheme {
                     BOLT_HIGH_TRUST_URI_SCHEME,
                     NEO4J_URI_SCHEME,
                     NEO4J_LOW_TRUST_URI_SCHEME,
-                    NEO4J_HIGH_TRUST_URI_SCHEME -> {
-                return;
-            }
+                    NEO4J_HIGH_TRUST_URI_SCHEME -> {}
             default -> throw new IllegalArgumentException("Invalid address format " + scheme);
         }
     }
@@ -52,15 +52,16 @@ public class Scheme {
     }
 
     public static boolean isSecurityScheme(String scheme) {
-        return scheme.equals(BOLT_LOW_TRUST_URI_SCHEME)
-                || scheme.equals(NEO4J_LOW_TRUST_URI_SCHEME)
-                || scheme.equals(BOLT_HIGH_TRUST_URI_SCHEME)
-                || scheme.equals(NEO4J_HIGH_TRUST_URI_SCHEME);
+        return List.of(
+                        BOLT_LOW_TRUST_URI_SCHEME,
+                        NEO4J_LOW_TRUST_URI_SCHEME,
+                        BOLT_HIGH_TRUST_URI_SCHEME,
+                        NEO4J_HIGH_TRUST_URI_SCHEME)
+                .contains(scheme);
     }
 
     public static boolean isRoutingScheme(String scheme) {
-        return scheme.equals(NEO4J_LOW_TRUST_URI_SCHEME)
-                || scheme.equals(NEO4J_HIGH_TRUST_URI_SCHEME)
-                || scheme.equals(NEO4J_URI_SCHEME);
+        return List.of(NEO4J_LOW_TRUST_URI_SCHEME, NEO4J_HIGH_TRUST_URI_SCHEME, NEO4J_URI_SCHEME)
+                .contains(scheme);
     }
 }

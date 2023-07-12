@@ -132,7 +132,7 @@ public class InternalPath implements Path, AsValue {
     }
 
     private <T> List<T> newList(int size) {
-        return size == 0 ? Collections.<T>emptyList() : new ArrayList<T>(size);
+        return size == 0 ? Collections.emptyList() : new ArrayList<>(size);
     }
 
     @Override

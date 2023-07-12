@@ -40,7 +40,7 @@ public final class Futures {
 
     @SuppressWarnings("unchecked")
     public static <T> CompletableFuture<T> completedWithNull() {
-        return (CompletableFuture) COMPLETED_WITH_NULL;
+        return (CompletableFuture<T>) COMPLETED_WITH_NULL;
     }
 
     public static <T> CompletableFuture<T> completeWithNullIfNoError(CompletableFuture<T> future, Throwable error) {

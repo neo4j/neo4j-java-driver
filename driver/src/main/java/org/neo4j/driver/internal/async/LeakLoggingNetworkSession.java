@@ -20,7 +20,9 @@ package org.neo4j.driver.internal.async;
 
 import static java.lang.System.lineSeparator;
 
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
@@ -82,11 +84,9 @@ public class LeakLoggingNetworkSession extends NetworkSession {
     }
 
     private static String captureStackTrace() {
-        var result = new StringBuilder();
         var elements = Thread.currentThread().getStackTrace();
-        for (var element : elements) {
-            result.append("\t").append(element).append(lineSeparator());
-        }
-        return result.toString();
+        return Arrays.stream(elements)
+                .map(element -> "\t" + element + lineSeparator())
+                .collect(Collectors.joining());
     }
 }
