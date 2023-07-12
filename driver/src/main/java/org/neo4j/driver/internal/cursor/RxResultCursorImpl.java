@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -41,23 +42,30 @@ public class RxResultCursorImpl implements RxResultCursor {
     private final RunResponseHandler runHandler;
     private final PullResponseHandler pullHandler;
     private final Throwable runResponseError;
+    private final Supplier<CompletionStage<Void>> connectionReleaseSupplier;
     private boolean runErrorSurfaced;
     private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
     private boolean summaryFutureExposed;
     private boolean resultConsumed;
     private RecordConsumerStatus consumerStatus = NOT_INSTALLED;
 
+    // for testing only
     public RxResultCursorImpl(RunResponseHandler runHandler, PullResponseHandler pullHandler) {
-        this(null, runHandler, pullHandler);
+        this(null, runHandler, pullHandler, () -> CompletableFuture.completedFuture(null));
     }
 
-    public RxResultCursorImpl(Throwable runError, RunResponseHandler runHandler, PullResponseHandler pullHandler) {
+    public RxResultCursorImpl(
+            Throwable runError,
+            RunResponseHandler runHandler,
+            PullResponseHandler pullHandler,
+            Supplier<CompletionStage<Void>> connectionReleaseSupplier) {
         Objects.requireNonNull(runHandler);
         Objects.requireNonNull(pullHandler);
 
         this.runResponseError = runError;
         this.runHandler = runHandler;
         this.pullHandler = pullHandler;
+        this.connectionReleaseSupplier = connectionReleaseSupplier;
         installSummaryConsumer();
     }
 
@@ -128,6 +136,12 @@ public class RxResultCursorImpl implements RxResultCursor {
     public Throwable getRunError() {
         runErrorSurfaced = true;
         return runResponseError;
+    }
+
+    @Override
+    public CompletionStage<Void> rollback() {
+        summaryFuture.complete(null);
+        return connectionReleaseSupplier.get();
     }
 
     public CompletionStage<ResultSummary> summaryStage() {

@@ -60,7 +60,7 @@ class RxResultCursorImplTest {
         var pullHandler = mock(PullResponseHandler.class);
 
         // When
-        new RxResultCursorImpl(error, runHandler, pullHandler);
+        new RxResultCursorImpl(error, runHandler, pullHandler, () -> CompletableFuture.completedStage(null));
 
         // Then
         verify(pullHandler).installSummaryConsumer(any(BiConsumer.class));
@@ -160,7 +160,8 @@ class RxResultCursorImplTest {
         // When
         var runHandler = newRunResponseHandler(error);
         PullResponseHandler pullHandler = new ListBasedPullHandler();
-        RxResultCursor cursor = new RxResultCursorImpl(error, runHandler, pullHandler);
+        RxResultCursor cursor =
+                new RxResultCursorImpl(error, runHandler, pullHandler, () -> CompletableFuture.completedStage(null));
         cursor.installRecordConsumer(recordConsumer);
 
         // Then

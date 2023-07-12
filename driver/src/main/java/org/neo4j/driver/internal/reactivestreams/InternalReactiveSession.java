@@ -20,22 +20,18 @@ package org.neo4j.driver.internal.reactivestreams;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
-import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.reactive.AbstractReactiveSession;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
 import org.neo4j.driver.reactivestreams.ReactiveSession;
 import org.neo4j.driver.reactivestreams.ReactiveTransaction;
 import org.neo4j.driver.reactivestreams.ReactiveTransactionCallback;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Mono;
 
 public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTransaction>
         implements ReactiveSession, BaseReactiveQueryRunner {
@@ -83,30 +79,7 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
 
     @Override
     public Publisher<ReactiveResult> run(Query query, TransactionConfig config) {
-        CompletionStage<RxResultCursor> cursorStage;
-        try {
-            cursorStage = session.runRx(query, config);
-        } catch (Throwable t) {
-            cursorStage = Futures.failedFuture(t);
-        }
-
-        return Mono.fromCompletionStage(cursorStage)
-                .onErrorResume(error -> Mono.fromCompletionStage(session.releaseConnectionAsync())
-                        .onErrorMap(releaseError -> Futures.combineErrors(error, releaseError))
-                        .then(Mono.error(error)))
-                .flatMap(cursor -> {
-                    Mono<RxResultCursor> publisher;
-                    var runError = cursor.getRunError();
-                    if (runError != null) {
-                        publisher = Mono.fromCompletionStage(session.releaseConnectionAsync())
-                                .onErrorMap(releaseError -> Futures.combineErrors(runError, releaseError))
-                                .then(Mono.error(runError));
-                    } else {
-                        publisher = Mono.just(cursor);
-                    }
-                    return publisher;
-                })
-                .map(InternalReactiveResult::new);
+        return run(query, config, InternalReactiveResult::new);
     }
 
     @Override

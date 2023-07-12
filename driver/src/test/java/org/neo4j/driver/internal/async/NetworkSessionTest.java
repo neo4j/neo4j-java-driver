@@ -53,6 +53,7 @@ import static org.neo4j.driver.testutil.TestUtil.verifyRunRx;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -99,7 +100,7 @@ class NetworkSessionTest {
     @Test
     void shouldFlushOnRunRx() {
         setupSuccessfulRunRx(connection);
-        await(session.runRx(new Query("RETURN 1"), TransactionConfig.empty()));
+        await(session.runRx(new Query("RETURN 1"), TransactionConfig.empty(), CompletableFuture.completedStage(null)));
 
         verifyRunRx(connection, "RETURN 1");
     }

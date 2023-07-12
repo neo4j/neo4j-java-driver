@@ -98,7 +98,8 @@ class InternalRxSessionTest {
         RxResultCursor cursor = mock(RxResultCursorImpl.class);
 
         // Run succeeded with a cursor
-        when(session.runRx(any(Query.class), any(TransactionConfig.class))).thenReturn(completedFuture(cursor));
+        when(session.runRx(any(Query.class), any(TransactionConfig.class), any()))
+                .thenReturn(completedFuture(cursor));
         var rxSession = new InternalRxSession(session);
 
         // When
@@ -107,7 +108,7 @@ class InternalRxSessionTest {
         var cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
 
         // Then
-        verify(session).runRx(any(Query.class), any(TransactionConfig.class));
+        verify(session).runRx(any(Query.class), any(TransactionConfig.class), any());
         assertThat(Futures.getNow(cursorFuture), equalTo(cursor));
     }
 
@@ -119,7 +120,8 @@ class InternalRxSessionTest {
         var session = mock(NetworkSession.class);
 
         // Run failed with error
-        when(session.runRx(any(Query.class), any(TransactionConfig.class))).thenReturn(Futures.failedFuture(error));
+        when(session.runRx(any(Query.class), any(TransactionConfig.class), any()))
+                .thenReturn(Futures.failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
         var rxSession = new InternalRxSession(session);
@@ -130,7 +132,7 @@ class InternalRxSessionTest {
         var cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
 
         // Then
-        verify(session).runRx(any(Query.class), any(TransactionConfig.class));
+        verify(session).runRx(any(Query.class), any(TransactionConfig.class), any());
         RuntimeException t = assertThrows(CompletionException.class, () -> Futures.getNow(cursorFuture));
         assertThat(t.getCause(), equalTo(error));
         verify(session).releaseConnectionAsync();

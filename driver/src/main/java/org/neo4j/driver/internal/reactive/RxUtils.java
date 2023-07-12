@@ -56,7 +56,7 @@ public class RxUtils {
      * @param <T>                         the type of the item to publish.
      * @return A publisher that succeeds exactly one item or fails with an error.
      */
-    public static <T> Publisher<T> createSingleItemPublisher(
+    public static <T> Mono<T> createSingleItemPublisher(
             Supplier<CompletionStage<T>> supplier,
             Supplier<Throwable> nullResultThrowableSupplier,
             Consumer<T> cancellationHandler) {

@@ -96,7 +96,7 @@ public class InternalRxSession extends AbstractReactiveSession<RxTransaction> im
     public RxResult run(Query query, TransactionConfig config) {
         return new InternalRxResult(() -> {
             var resultCursorFuture = new CompletableFuture<RxResultCursor>();
-            session.runRx(query, config).whenComplete((cursor, completionError) -> {
+            session.runRx(query, config, resultCursorFuture).whenComplete((cursor, completionError) -> {
                 if (cursor != null) {
                     resultCursorFuture.complete(cursor);
                 } else {

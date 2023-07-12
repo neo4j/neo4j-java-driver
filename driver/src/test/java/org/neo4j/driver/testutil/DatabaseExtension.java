@@ -148,6 +148,10 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         return driver;
     }
 
+    public Driver customDriver(Config config) {
+        return GraphDatabase.driver(boltUri, authToken, config);
+    }
+
     public void deleteAndStartNeo4j(Map<String, String> config) {
         Map<String, String> updatedConfig = new HashMap<>(defaultConfig);
         updatedConfig.putAll(config);
