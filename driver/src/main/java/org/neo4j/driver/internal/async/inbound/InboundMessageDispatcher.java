@@ -36,6 +36,7 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.exceptions.TokenExpiredRetryableException;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
@@ -122,6 +123,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         var currentError = this.currentError;
         if (currentError instanceof AuthorizationExpiredException authorizationExpiredException) {
             authorizationStateListener(channel).onExpired(authorizationExpiredException, channel);
+            notifyAuthTokenManager(authorizationExpiredException);
         } else if (currentError instanceof TokenExpiredException tokenExpiredException) {
             var authContext = authContext(channel);
             var authTokenProvider = authContext.getAuthTokenManager();
@@ -131,9 +133,12 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
             }
             var authToken = authContext.getAuthToken();
             if (authToken != null && authContext.isManaged()) {
-                authTokenProvider.onExpired(authToken);
+                authTokenProvider.onSecurityException(authToken, tokenExpiredException);
             }
         } else {
+            if (currentError instanceof SecurityException securityException) {
+                notifyAuthTokenManager(securityException);
+            }
             // write a RESET to "acknowledge" the failure
             enqueue(new ResetResponseHandler(this));
             channel.writeAndFlush(RESET, channel.voidPromise());
@@ -142,6 +147,15 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         invokeBeforeLastHandlerHook(HandlerHook.MessageType.FAILURE);
         var handler = removeHandler();
         handler.onFailure(currentError);
+    }
+
+    private void notifyAuthTokenManager(SecurityException exception) {
+        var authContext = authContext(channel);
+        var authToken = authContext.getAuthToken();
+        var authTokenProvider = authContext.getAuthTokenManager();
+        if (authToken != null && authContext.isManaged()) {
+            authTokenProvider.onSecurityException(authToken, exception);
+        }
     }
 
     @Override

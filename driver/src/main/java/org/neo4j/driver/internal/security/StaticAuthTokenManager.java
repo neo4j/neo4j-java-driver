@@ -25,6 +25,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokenManager;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
 
 public class StaticAuthTokenManager implements AuthTokenManager {
@@ -44,7 +45,7 @@ public class StaticAuthTokenManager implements AuthTokenManager {
     }
 
     @Override
-    public void onExpired(AuthToken authToken) {
+    public void onSecurityException(AuthToken authToken, SecurityException exception) {
         if (authToken.equals(this.authToken)) {
             expired.set(true);
         }

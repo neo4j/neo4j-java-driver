@@ -19,6 +19,7 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.util.Preview;
 
 /**
@@ -56,9 +57,10 @@ public interface AuthTokenManager {
     /**
      * Handles an error notification emitted by the server if the token is expired.
      * <p>
-     * This will be called when driver emits the {@link org.neo4j.driver.exceptions.TokenExpiredRetryableException}.
+     * This will be called when driver emits the {@link org.neo4j.driver.exceptions.AuthenticationException}.
      *
-     * @param authToken the expired token
+     * @param authToken the token
+     * @param exception the security exception
      */
-    void onExpired(AuthToken authToken);
+    void onSecurityException(AuthToken authToken, SecurityException exception);
 }

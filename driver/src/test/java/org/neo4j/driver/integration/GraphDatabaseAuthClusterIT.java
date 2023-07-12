@@ -35,6 +35,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.testutil.cc.LocalOrRemoteClusterExtension;
 import reactor.core.publisher.Mono;
@@ -54,7 +55,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager);
                 var session = driver.session()) {
@@ -72,7 +73,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager);
                 var session = driver.session()) {
@@ -92,7 +93,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager);
                 var session = driver.session()) {
@@ -113,7 +114,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager);
                 var session = driver.session()) {
@@ -134,7 +135,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager);
                 var session = driver.session()) {
@@ -156,7 +157,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager);
                 var session = driver.session()) {
@@ -177,7 +178,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -198,7 +199,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -224,7 +225,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -254,7 +255,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -278,7 +279,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -307,7 +308,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -338,7 +339,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -358,7 +359,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -383,7 +384,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -412,7 +413,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -435,7 +436,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -463,7 +464,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -493,7 +494,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);
@@ -513,7 +514,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);
@@ -538,7 +539,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);
@@ -567,7 +568,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);
@@ -590,7 +591,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);
@@ -618,7 +619,7 @@ class GraphDatabaseAuthClusterIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public void onSecurityException(AuthToken authToken, SecurityException exception) {}
         };
         try (var driver = GraphDatabase.driver(clusterRule.getClusterUri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);

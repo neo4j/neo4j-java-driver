@@ -17,6 +17,19 @@
         <className>org/neo4j/driver/summary/ServerInfo</className>
         <differenceType>7012</differenceType>
         <method>java.lang.String agent()</method>
+        <className>org/neo4j/driver/AuthTokenManager</className>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/AuthTokenManager</className>
+        <differenceType>7002</differenceType>
+        <method>void onExpired(org.neo4j.driver.AuthToken)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/AuthTokenManager</className>
+        <differenceType>7012</differenceType>
+        <method>void onSecurityException(org.neo4j.driver.AuthToken, org.neo4j.driver.exceptions.SecurityException)</method>
     </difference>
 
     <difference>

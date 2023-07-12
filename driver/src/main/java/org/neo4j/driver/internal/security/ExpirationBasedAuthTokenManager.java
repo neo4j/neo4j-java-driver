@@ -32,6 +32,8 @@ import java.util.function.Supplier;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokenAndExpiration;
 import org.neo4j.driver.AuthTokenManager;
+import org.neo4j.driver.exceptions.SecurityException;
+import org.neo4j.driver.exceptions.TokenExpiredException;
 
 public class ExpirationBasedAuthTokenManager implements AuthTokenManager {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -65,12 +67,14 @@ public class ExpirationBasedAuthTokenManager implements AuthTokenManager {
         return validTokenFuture;
     }
 
-    public void onExpired(AuthToken authToken) {
-        executeWithLock(lock.writeLock(), () -> {
-            if (token != null && token.authToken().equals(authToken)) {
-                unsetTokenState();
-            }
-        });
+    public void onSecurityException(AuthToken authToken, SecurityException exception) {
+        if (exception instanceof TokenExpiredException) {
+            executeWithLock(lock.writeLock(), () -> {
+                if (token != null && token.authToken().equals(authToken)) {
+                    unsetTokenState();
+                }
+            });
+        }
     }
 
     private void handleUpstreamResult(AuthTokenAndExpiration authTokenAndExpiration, Throwable throwable) {

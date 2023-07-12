@@ -36,8 +36,11 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
+import org.neo4j.driver.exceptions.TokenExpiredException;
 
 class ValidatingAuthTokenManagerTest {
+    private static final TokenExpiredException TOKEN_EXPIRED_EXCEPTION = new TokenExpiredException("code", "message");
+
     @Test
     void shouldReturnFailedStageOnInvalidAuthTokenType() {
         // given
@@ -109,7 +112,7 @@ class ValidatingAuthTokenManagerTest {
         var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
 
         // when & then
-        assertThrows(NullPointerException.class, () -> manager.onExpired(null));
+        assertThrows(NullPointerException.class, () -> manager.onSecurityException(null, TOKEN_EXPIRED_EXCEPTION));
         then(delegateManager).shouldHaveNoInteractions();
     }
 
@@ -121,10 +124,10 @@ class ValidatingAuthTokenManagerTest {
         var token = AuthTokens.none();
 
         // when
-        manager.onExpired(token);
+        manager.onSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
 
         // then
-        then(delegateManager).should().onExpired(token);
+        then(delegateManager).should().onSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
     }
 
     @Test
@@ -133,17 +136,17 @@ class ValidatingAuthTokenManagerTest {
         var delegateManager = mock(AuthTokenManager.class);
         var token = AuthTokens.none();
         var exception = mock(RuntimeException.class);
-        willThrow(exception).given(delegateManager).onExpired(token);
+        willThrow(exception).given(delegateManager).onSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
         var logging = mock(Logging.class);
         var log = mock(Logger.class);
         given(logging.getLog(ValidatingAuthTokenManager.class)).willReturn(log);
         var manager = new ValidatingAuthTokenManager(delegateManager, logging);
 
         // when
-        manager.onExpired(token);
+        manager.onSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
 
         // then
-        then(delegateManager).should().onExpired(token);
+        then(delegateManager).should().onSecurityException(token, TOKEN_EXPIRED_EXCEPTION);
         then(log).should().warn(anyString());
         then(log).should().debug(anyString(), eq(exception));
     }
