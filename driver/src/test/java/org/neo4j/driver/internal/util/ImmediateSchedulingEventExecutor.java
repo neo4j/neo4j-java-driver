@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.util;
 
 import static java.util.Collections.unmodifiableList;
-import static org.mockito.Mockito.mock;
 
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -148,17 +147,24 @@ public class ImmediateSchedulingEventExecutor implements EventExecutor {
 
     @Override
     public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
-        scheduleDelays.add(unit.toMillis(delay));
-        delegate.execute(command);
-        return mock(ScheduledFuture.class);
+        var delayMillis = unit.toMillis(delay);
+        scheduleDelays.add(delayMillis);
+        if (delayMillis > 100) {
+            // Ensure there is some delay to prevent Mono.delayElement going silent (reactor-core 3.5.7)
+            delayMillis = 100;
+        }
+        return delegate.schedule(command, delayMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
-        scheduleDelays.add(unit.toMillis(delay));
-        delegate.submit(callable);
-        return mock(ScheduledFuture.class);
+        var delayMillis = unit.toMillis(delay);
+        scheduleDelays.add(delayMillis);
+        if (delayMillis > 100) {
+            // Ensure there is some delay to prevent Mono.delayElement going silent (reactor-core 3.5.7)
+            delayMillis = 100;
+        }
+        return delegate.schedule(callable, delayMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
