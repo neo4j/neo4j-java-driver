@@ -36,4 +36,13 @@ public interface RxResultCursor extends Subscription, FailableCursor {
     boolean isDone();
 
     Throwable getRunError();
+
+    /**
+     * Rolls back this instance by releasing connection with RESET.
+     * <p>
+     * This must never be called on a published instance.
+     * @return reset completion stage
+     * @since 5.11
+     */
+    CompletionStage<Void> rollback();
 }

@@ -23,14 +23,19 @@ import static org.neo4j.driver.internal.reactive.RxUtils.createSingleItemPublish
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
@@ -140,6 +145,73 @@ public abstract class AbstractReactiveSession<S> {
 
     public Set<Bookmark> lastBookmarks() {
         return session.lastBookmarks();
+    }
+
+    protected <T> Publisher<T> run(Query query, TransactionConfig config, Function<RxResultCursor, T> cursorToResult) {
+        var cursorPublishFuture = new CompletableFuture<RxResultCursor>();
+        var cursorReference = new AtomicReference<RxResultCursor>();
+
+        return createSingleItemPublisher(
+                        () -> runAsStage(query, config, cursorPublishFuture)
+                                .thenApply(cursor -> {
+                                    cursorReference.set(cursor);
+                                    return cursor;
+                                })
+                                .thenApply(cursorToResult),
+                        () -> new IllegalStateException(
+                                "Unexpected condition, run call has completed successfully with result being null"),
+                        value -> {
+                            if (value != null) {
+                                cursorReference.get().rollback().whenComplete((unused, throwable) -> {
+                                    if (throwable != null) {
+                                        cursorPublishFuture.completeExceptionally(throwable);
+                                    } else {
+                                        cursorPublishFuture.complete(null);
+                                    }
+                                });
+                            }
+                        })
+                .doOnNext(value -> cursorPublishFuture.complete(cursorReference.get()))
+                .doOnError(cursorPublishFuture::completeExceptionally);
+    }
+
+    private CompletionStage<RxResultCursor> runAsStage(
+            Query query, TransactionConfig config, CompletionStage<RxResultCursor> finalStage) {
+        CompletionStage<RxResultCursor> cursorStage;
+        try {
+            cursorStage = session.runRx(query, config, finalStage);
+        } catch (Throwable t) {
+            cursorStage = Futures.failedFuture(t);
+        }
+
+        return cursorStage
+                .handle((cursor, throwable) -> {
+                    if (throwable != null) {
+                        return this.<RxResultCursor>releaseConnectionAndRethrow(throwable);
+                    } else {
+                        var runError = cursor.getRunError();
+                        if (runError != null) {
+                            return this.<RxResultCursor>releaseConnectionAndRethrow(runError);
+                        } else {
+                            return CompletableFuture.completedFuture(cursor);
+                        }
+                    }
+                })
+                .thenCompose(stage -> stage);
+    }
+
+    private <T> CompletionStage<T> releaseConnectionAndRethrow(Throwable throwable) {
+        return session.releaseConnectionAsync().handle((ignored, releaseThrowable) -> {
+            if (releaseThrowable != null) {
+                throw Futures.combineErrors(throwable, releaseThrowable);
+            } else {
+                if (throwable instanceof RuntimeException e) {
+                    throw e;
+                } else {
+                    throw new CompletionException(throwable);
+                }
+            }
+        });
     }
 
     protected <T> Publisher<T> doClose() {

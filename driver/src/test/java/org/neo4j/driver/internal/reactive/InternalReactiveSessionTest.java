@@ -98,14 +98,16 @@ public class InternalReactiveSessionTest {
         RxResultCursor cursor = mock(RxResultCursorImpl.class);
 
         // Run succeeded with a cursor
-        when(session.runRx(any(Query.class), any(TransactionConfig.class))).thenReturn(completedFuture(cursor));
+        when(session.runRx(any(Query.class), any(TransactionConfig.class), any()))
+                .thenReturn(completedFuture(cursor));
         var rxSession = new InternalReactiveSession(session);
 
         // When
         var result = flowPublisherToFlux(runReturnOne.apply(rxSession));
+        result.subscribe();
 
         // Then
-        verify(session).runRx(any(Query.class), any(TransactionConfig.class));
+        verify(session).runRx(any(Query.class), any(TransactionConfig.class), any());
         StepVerifier.create(result).expectNextCount(1).verifyComplete();
     }
 
@@ -117,7 +119,8 @@ public class InternalReactiveSessionTest {
         var session = mock(NetworkSession.class);
 
         // Run failed with error
-        when(session.runRx(any(Query.class), any(TransactionConfig.class))).thenReturn(Futures.failedFuture(error));
+        when(session.runRx(any(Query.class), any(TransactionConfig.class), any()))
+                .thenReturn(Futures.failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
         var rxSession = new InternalReactiveSession(session);
@@ -127,7 +130,7 @@ public class InternalReactiveSessionTest {
 
         // Then
         StepVerifier.create(result).expectErrorMatches(t -> error == t).verify();
-        verify(session).runRx(any(Query.class), any(TransactionConfig.class));
+        verify(session).runRx(any(Query.class), any(TransactionConfig.class), any());
         verify(session).releaseConnectionAsync();
     }
 

@@ -122,10 +122,13 @@ public class NetworkSession {
                 .thenApply(cursor -> cursor); // convert the return type
     }
 
-    public CompletionStage<RxResultCursor> runRx(Query query, TransactionConfig config) {
+    public CompletionStage<RxResultCursor> runRx(
+            Query query, TransactionConfig config, CompletionStage<RxResultCursor> cursorPublishStage) {
         var newResultCursorStage = buildResultCursorFactory(query, config).thenCompose(ResultCursorFactory::rxResult);
 
-        resultCursorStage = newResultCursorStage.exceptionally(error -> null);
+        resultCursorStage = newResultCursorStage
+                .thenCompose(cursor -> cursor == null ? CompletableFuture.completedFuture(null) : cursorPublishStage)
+                .exceptionally(throwable -> null);
         return newResultCursorStage;
     }
 

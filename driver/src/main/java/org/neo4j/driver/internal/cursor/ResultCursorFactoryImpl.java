@@ -74,6 +74,7 @@ public class ResultCursorFactoryImpl implements ResultCursorFactory {
     @Override
     public CompletionStage<RxResultCursor> rxResult() {
         connection.writeAndFlush(runMessage, runHandler);
-        return runFuture.handle((ignored, error) -> new RxResultCursorImpl(error, runHandler, pullHandler));
+        return runFuture.handle(
+                (ignored, error) -> new RxResultCursorImpl(error, runHandler, pullHandler, connection::release));
     }
 }

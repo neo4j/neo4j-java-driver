@@ -20,13 +20,27 @@ package org.neo4j.driver.integration.reactive;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Flow;
 import java.util.function.Function;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.ReactiveResult;
@@ -34,7 +48,8 @@ import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.reactivestreams.Publisher;
-import reactor.adapter.JdkFlowAdapter;
+import org.reactivestreams.Subscription;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 
 @EnabledOnNeo4jWith(BOLT_V4)
@@ -55,13 +70,111 @@ class ReactiveSessionIT {
         assertEquals(
                 "org.neo4j.driver.reactive.ReactiveResult is not a valid return value, it should be consumed before producing a return value",
                 error.getMessage());
-        JdkFlowAdapter.flowPublisherToFlux(session.close()).blockFirst();
+        flowPublisherToFlux(session.close()).blockFirst();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @SuppressWarnings("BusyWait")
+    void shouldReleaseResultsOnSubscriptionCancellation(boolean request) throws InterruptedException {
+        var config = Config.builder().withDriverMetrics().build();
+        try (var driver = neo4j.customDriver(config)) {
+            // verify the database is available as runs may not report errors due to the subscription cancellation
+            driver.verifyConnectivity();
+            var threadsNumber = 100;
+            var executorService = Executors.newFixedThreadPool(threadsNumber);
+
+            var subscriptionFutures = IntStream.range(0, threadsNumber)
+                    .mapToObj(ignored -> CompletableFuture.supplyAsync(
+                            () -> {
+                                var subscriptionFuture = new CompletableFuture<Flow.Subscription>();
+                                driver.session(ReactiveSession.class)
+                                        .run("UNWIND range (0,10000) AS x RETURN x")
+                                        .subscribe(new Flow.Subscriber<>() {
+                                            @Override
+                                            public void onSubscribe(Flow.Subscription subscription) {
+                                                subscriptionFuture.complete(subscription);
+                                            }
+
+                                            @Override
+                                            public void onNext(ReactiveResult item) {
+                                                // ignored
+                                            }
+
+                                            @Override
+                                            public void onError(Throwable throwable) {
+                                                // ignored
+                                            }
+
+                                            @Override
+                                            public void onComplete() {
+                                                // ignored
+                                            }
+                                        });
+                                return subscriptionFuture.thenApplyAsync(
+                                        subscription -> {
+                                            if (request) {
+                                                subscription.request(1);
+                                            }
+                                            subscription.cancel();
+                                            return subscription;
+                                        },
+                                        executorService);
+                            },
+                            executorService))
+                    .map(future -> future.thenCompose(itself -> itself))
+                    .toArray(CompletableFuture[]::new);
+
+            CompletableFuture.allOf(subscriptionFutures).join();
+
+            // Subscription cancellation does not guarantee neither onComplete nor onError signal.
+            var timeout = Instant.now().plus(5, ChronoUnit.MINUTES);
+            var totalInUseConnections = -1;
+            while (Instant.now().isBefore(timeout)) {
+                totalInUseConnections = driver.metrics().connectionPoolMetrics().stream()
+                        .map(ConnectionPoolMetrics::inUse)
+                        .mapToInt(Integer::intValue)
+                        .sum();
+                if (totalInUseConnections == 0) {
+                    return;
+                }
+                Thread.sleep(100);
+            }
+            fail(String.format("not all connections have been released, %d are still in use", totalInUseConnections));
+        }
+    }
+
+    @Test
+    void shouldRollbackResultOnSubscriptionCancellation() {
+        var config = Config.builder().withMaxConnectionPoolSize(1).build();
+        try (var driver = neo4j.customDriver(config)) {
+            var session = driver.session(ReactiveSession.class);
+            var nodeId = UUID.randomUUID().toString();
+            var cancellationFuture = new CompletableFuture<Void>();
+
+            flowPublisherToFlux(session.run("CREATE ({id: $id})", Map.of("id", nodeId)))
+                    .subscribe(new BaseSubscriber<>() {
+                        @Override
+                        protected void hookOnSubscribe(Subscription subscription) {
+                            subscription.cancel();
+                            cancellationFuture.complete(null);
+                        }
+                    });
+
+            cancellationFuture.join();
+
+            var nodesNum = flowPublisherToFlux(session.run("MATCH (n {id: $id}) RETURN n", Map.of("id", nodeId)))
+                    .flatMap(result -> flowPublisherToFlux(result.records()))
+                    .count()
+                    .block();
+            assertEquals(0, nodesNum);
+        }
     }
 
     static List<Function<ReactiveSession, Publisher<ReactiveResult>>>
             managedTransactionsReturningReactiveResultPublisher() {
         return List.of(
-                session -> JdkFlowAdapter.flowPublisherToFlux(session.executeWrite(tx -> tx.run("RETURN 1"))),
-                session -> JdkFlowAdapter.flowPublisherToFlux(session.executeRead(tx -> tx.run("RETURN 1"))));
+                session -> flowPublisherToFlux(session.executeWrite(tx -> tx.run("RETURN 1"))),
+                session -> flowPublisherToFlux(session.executeRead(tx -> tx.run("RETURN 1"))));
     }
 }
