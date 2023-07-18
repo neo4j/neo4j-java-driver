@@ -51,6 +51,7 @@ class QueryRunnerCloseIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorToAccessRecordsAfterConsume() {
         // Given
         var result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
@@ -70,6 +71,7 @@ class QueryRunnerCloseIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorToAccessRecordsAfterClose() {
         // Given
         var session = neo4j.driver().session();
@@ -90,6 +92,7 @@ class QueryRunnerCloseIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowConsumeAndKeysAfterConsume() {
         // Given
         var result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
@@ -107,6 +110,7 @@ class QueryRunnerCloseIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowSummaryAndKeysAfterClose() {
         // Given
         var session = neo4j.driver().session();
@@ -126,6 +130,7 @@ class QueryRunnerCloseIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorToAccessRecordsAfterConsumeAsync() {
         // Given
         var session = neo4j.driver().session(AsyncSession.class);
@@ -144,6 +149,7 @@ class QueryRunnerCloseIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorToAccessRecordsAfterCloseAsync() {
         // Given
         var session = neo4j.driver().session(AsyncSession.class);
@@ -162,6 +168,7 @@ class QueryRunnerCloseIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowConsumeAndKeysAfterConsumeAsync() {
         // Given
         var session = neo4j.driver().session(AsyncSession.class);
@@ -181,6 +188,7 @@ class QueryRunnerCloseIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowConsumeAndKeysAfterCloseAsync() {
         // Given
         var session = neo4j.driver().session(AsyncSession.class);

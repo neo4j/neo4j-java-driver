@@ -44,6 +44,7 @@ public class DelegatingTransactionContextTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldDelegateRunWithValueParams() {
         // GIVEN
         var query = "something";
@@ -60,6 +61,7 @@ public class DelegatingTransactionContextTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldDelegateRunWithMapParams() {
         // GIVEN
         var query = "something";
@@ -76,6 +78,7 @@ public class DelegatingTransactionContextTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldDelegateRunWithRecordParams() {
         // GIVEN
         var query = "something";
@@ -92,6 +95,7 @@ public class DelegatingTransactionContextTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldDelegateRun() {
         // GIVEN
         var query = "something";
@@ -107,6 +111,7 @@ public class DelegatingTransactionContextTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldDelegateRunWithQueryType() {
         // GIVEN
         var query = mock(Query.class);

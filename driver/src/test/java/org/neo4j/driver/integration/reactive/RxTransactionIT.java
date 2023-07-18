@@ -78,6 +78,7 @@ class RxTransactionIT {
     private RxSession session;
 
     @BeforeEach
+    @SuppressWarnings("resource")
     void setUp() {
         session = neo4j.driver().rxSession();
     }
@@ -262,6 +263,7 @@ class RxTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldFailBoBeginTxWithInvalidBookmark() {
         var session = neo4j.driver()
                 .rxSession(builder().withBookmarks(parse("InvalidBookmark")).build());

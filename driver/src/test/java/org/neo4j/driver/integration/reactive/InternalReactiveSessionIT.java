@@ -47,6 +47,7 @@ class InternalReactiveSessionIT {
     private InternalReactiveSession session;
 
     @BeforeEach
+    @SuppressWarnings("resource")
     void setUp() {
         session = (InternalReactiveSession) neo4j.driver().session(ReactiveSession.class);
     }

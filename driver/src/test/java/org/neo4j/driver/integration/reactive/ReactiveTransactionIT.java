@@ -41,6 +41,7 @@ class ReactiveTransactionIT {
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
+    @SuppressWarnings("resource")
     void shouldPreventPullAfterTransactionTermination() {
         // Given
         var session = neo4j.driver().session(ReactiveSession.class);
@@ -66,6 +67,7 @@ class ReactiveTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldPreventDiscardAfterTransactionTermination() {
         // Given
         var session = neo4j.driver().session(ReactiveSession.class);
@@ -91,6 +93,7 @@ class ReactiveTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldPreventRunAfterTransactionTermination() {
         // Given
         var session = neo4j.driver().session(ReactiveSession.class);
@@ -109,6 +112,7 @@ class ReactiveTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldPreventPullAfterDriverTransactionTermination() {
         // Given
         var session = neo4j.driver().session(ReactiveSession.class);
@@ -132,6 +136,7 @@ class ReactiveTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldPreventDiscardAfterDriverTransactionTermination() {
         // Given
         var session = neo4j.driver().session(ReactiveSession.class);
@@ -155,6 +160,7 @@ class ReactiveTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldPreventRunAfterDriverTransactionTermination() {
         // Given
         var session = neo4j.driver().session(ReactiveSession.class);
@@ -175,6 +181,7 @@ class ReactiveTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldTerminateTransactionAndHandleFailureResponseOrPreventFurtherPulls() {
         // Given
         var session = neo4j.driver().session(ReactiveSession.class);

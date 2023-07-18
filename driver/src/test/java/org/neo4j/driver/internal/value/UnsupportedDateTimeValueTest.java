@@ -43,6 +43,7 @@ public class UnsupportedDateTimeValueTest {
     private DateTimeException exception;
 
     @BeforeEach
+    @SuppressWarnings("resource")
     void beforeEach() {
         openMocks(this);
     }

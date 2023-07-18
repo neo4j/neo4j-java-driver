@@ -55,6 +55,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
     }
 
     @Override
+    @SuppressWarnings("resource")
     public void beforeAll(ExtensionContext context) {
         if (remoteClusterExists()) {
             clusterUri = remoteClusterUriFromSystemProperty();

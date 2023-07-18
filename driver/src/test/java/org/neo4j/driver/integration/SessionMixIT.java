@@ -68,10 +68,12 @@ class SessionMixIT {
         session.close();
     }
 
+    @SuppressWarnings("resource")
     private AsyncSession newAsyncSession() {
         return neo4j.driver().session(AsyncSession.class);
     }
 
+    @SuppressWarnings("resource")
     private Session newSession() {
         return neo4j.driver().session();
     }

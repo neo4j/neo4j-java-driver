@@ -166,6 +166,7 @@ class ChannelConnectorImplIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldThrowServiceUnavailableExceptionOnFailureDuringConnect() throws Exception {
         var server = new ServerSocket(0);
         var address = new BoltServerAddress("localhost", server.getLocalPort());

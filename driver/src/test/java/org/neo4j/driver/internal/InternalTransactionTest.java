@@ -61,6 +61,7 @@ class InternalTransactionTest {
     private Transaction tx;
 
     @BeforeEach
+    @SuppressWarnings("resource")
     void setUp() {
         connection = connectionMock(BoltProtocolV4.INSTANCE);
         var connectionProvider = mock(ConnectionProvider.class);

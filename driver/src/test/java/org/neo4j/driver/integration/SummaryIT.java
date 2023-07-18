@@ -50,6 +50,7 @@ class SummaryIT {
     private Session session;
 
     @BeforeEach
+    @SuppressWarnings("resource")
     void setup() {
         session = neo4j.driver().session();
     }
@@ -172,6 +173,7 @@ class SummaryIT {
 
     @Test
     @EnabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
+    @SuppressWarnings("resource")
     void shouldGetSystemUpdates() {
         try (var session = neo4j.driver().session(forDatabase("system"))) {
             var result = session.run("CREATE USER foo SET PASSWORD 'Testing0'");

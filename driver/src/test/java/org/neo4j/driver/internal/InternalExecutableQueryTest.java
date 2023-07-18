@@ -120,7 +120,7 @@ class InternalExecutableQueryTest {
 
     @ParameterizedTest
     @MethodSource("routingControls")
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "resource"})
     void shouldExecuteAndReturnResult(RoutingControl routingControl) {
         // GIVEN
         var driver = mock(Driver.class);

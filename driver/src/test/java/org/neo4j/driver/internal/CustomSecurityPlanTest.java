@@ -38,6 +38,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 
 class CustomSecurityPlanTest {
     @Test
+    @SuppressWarnings("resource")
     void testCustomSecurityPlanUsed() {
         var driverFactory = new SecurityPlanCapturingDriverFactory();
 

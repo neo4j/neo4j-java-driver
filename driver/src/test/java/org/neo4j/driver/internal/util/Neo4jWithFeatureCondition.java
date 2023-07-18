@@ -56,6 +56,7 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition {
         return ENABLED_NOT_ANNOTATED;
     }
 
+    @SuppressWarnings("resource")
     private static ConditionEvaluationResult checkFeatureAvailability(Neo4jFeature feature, boolean negated) {
         var driver = DatabaseExtension.getInstance().driver();
         if (driver != null) {
@@ -77,6 +78,7 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition {
         return ENABLED_UNKNOWN_DB_VERSION;
     }
 
+    @SuppressWarnings("resource")
     private static ConditionEvaluationResult checkEditionAvailability(
             ConditionEvaluationResult previousResult, Neo4jEdition edition) {
         if (previousResult.isDisabled()) {

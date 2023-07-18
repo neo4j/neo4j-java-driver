@@ -45,6 +45,7 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     private Session realSession;
 
     @Override
+    @SuppressWarnings("resource")
     public void beforeEach(ExtensionContext context) throws Exception {
         super.beforeEach(context);
         realSession = driver().session();

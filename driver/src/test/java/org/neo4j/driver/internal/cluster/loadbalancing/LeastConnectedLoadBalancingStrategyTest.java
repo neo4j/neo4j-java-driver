@@ -47,6 +47,7 @@ class LeastConnectedLoadBalancingStrategyTest {
     private LeastConnectedLoadBalancingStrategy strategy;
 
     @BeforeEach
+    @SuppressWarnings("resource")
     void setUp() {
         openMocks(this);
         strategy = new LeastConnectedLoadBalancingStrategy(connectionPool, DEV_NULL_LOGGING);

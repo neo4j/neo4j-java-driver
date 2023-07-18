@@ -73,6 +73,7 @@ class SessionBoltV3IT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldSetTransactionMetadata() {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("a", "hello world");
@@ -104,6 +105,7 @@ class SessionBoltV3IT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldSetTransactionTimeout() {
         // create a dummy node
         var session = driver.session();
@@ -128,6 +130,7 @@ class SessionBoltV3IT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldSetTransactionTimeoutAsync() {
         // create a dummy node
         var asyncSession = driver.asyncSession();

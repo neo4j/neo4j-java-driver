@@ -85,6 +85,7 @@ class DriverFactoryTest {
 
     @ParameterizedTest
     @MethodSource("testUris")
+    @SuppressWarnings("resource")
     void connectionPoolClosedWhenDriverCreationFails(String uri) {
         var connectionPool = connectionPoolMock();
         DriverFactory factory = new ThrowingDriverFactory(connectionPool);
@@ -95,6 +96,7 @@ class DriverFactoryTest {
 
     @ParameterizedTest
     @MethodSource("testUris")
+    @SuppressWarnings("resource")
     void connectionPoolCloseExceptionIsSuppressedWhenDriverCreationFails(String uri) {
         var connectionPool = connectionPoolMock();
         var poolCloseError = new RuntimeException("Pool close error");
@@ -109,6 +111,7 @@ class DriverFactoryTest {
 
     @ParameterizedTest
     @MethodSource("testUris")
+    @SuppressWarnings("resource")
     void usesStandardSessionFactoryWhenNothingConfigured(String uri) {
         var config = defaultConfig();
         var factory = new SessionFactoryCapturingDriverFactory();
@@ -121,6 +124,7 @@ class DriverFactoryTest {
 
     @ParameterizedTest
     @MethodSource("testUris")
+    @SuppressWarnings("resource")
     void usesLeakLoggingSessionFactoryWhenConfigured(String uri) {
         var config = Config.builder().withLeakedSessionsLogging().build();
         var factory = new SessionFactoryCapturingDriverFactory();
@@ -198,6 +202,7 @@ class DriverFactoryTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldUseBuiltInRediscoveryByDefault() {
         // GIVEN
         var driverFactory = new DriverFactory();
@@ -219,6 +224,7 @@ class DriverFactoryTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldUseSuppliedRediscovery() {
         // GIVEN
         var driverFactory = new DriverFactory();

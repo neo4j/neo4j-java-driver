@@ -60,6 +60,7 @@ class TransactionBoltV3IT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldSetTransactionMetadata() {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("key1", "value1");
@@ -96,6 +97,7 @@ class TransactionBoltV3IT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldSetTransactionTimeout() {
         // create a dummy node
         var session = driver.session();
@@ -125,6 +127,7 @@ class TransactionBoltV3IT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldSetTransactionTimeoutAsync() {
         // create a dummy node
         var session = driver.session();
@@ -164,6 +167,7 @@ class TransactionBoltV3IT {
         }
     }
 
+    @SuppressWarnings("resource")
     private static void verifyTransactionMetadata(Map<String, Object> metadata) {
         try (var session = driver.driver().session()) {
             var result = session.run(showTxMetadata);

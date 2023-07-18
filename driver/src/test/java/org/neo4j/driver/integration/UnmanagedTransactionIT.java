@@ -61,6 +61,7 @@ class UnmanagedTransactionIT {
     private NetworkSession session;
 
     @BeforeEach
+    @SuppressWarnings("resource")
     void setUp() {
         session = ((InternalDriver) neo4j.driver()).newSession(SessionConfig.defaultConfig(), null);
     }

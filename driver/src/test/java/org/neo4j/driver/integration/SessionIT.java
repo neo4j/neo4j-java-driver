@@ -116,6 +116,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldKnowSessionIsClosed() {
         // Given
         var session = neo4j.driver().session();
@@ -532,6 +533,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void transactionRunShouldFailOnDeadlocks() throws Exception {
         final var nodeId1 = 42;
         final var nodeId2 = 4242;
@@ -589,7 +591,7 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "resource"})
     void writeTransactionFunctionShouldRetryDeadlocks() throws Exception {
         final var nodeId1 = 42;
         final var nodeId2 = 4242;
@@ -669,7 +671,7 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "resource"})
     void shouldExecuteTransactionWorkInCallerThread() {
         var maxFailures = 3;
         var callerThread = Thread.currentThread();
@@ -693,6 +695,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldThrowRunFailureImmediatelyAndCloseSuccessfully() {
         try (var session = neo4j.driver().session()) {
             var e = assertThrows(ClientException.class, () -> session.run("RETURN 1 * \"x\""));
@@ -703,6 +706,7 @@ class SessionIT {
 
     @EnabledOnNeo4jWith(BOLT_V4)
     @Test
+    @SuppressWarnings("resource")
     void shouldNotPropagateFailureWhenStreamingIsCancelled() {
         var session = neo4j.driver().session();
         session.run("UNWIND range(20000, 0, -1) AS x RETURN 10 / x");
@@ -710,6 +714,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldNotBePossibleToConsumeResultAfterSessionIsClosed() {
         Result result;
         try (var session = neo4j.driver().session()) {
@@ -722,6 +727,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldThrowRunFailureImmediatelyAfterMultipleSuccessfulRunsAndCloseSuccessfully() {
         try (var session = neo4j.driver().session()) {
             session.run("CREATE ()");
@@ -734,6 +740,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldThrowRunFailureImmediatelyAndAcceptSubsequentRun() {
         try (var session = neo4j.driver().session()) {
             session.run("CREATE ()");
@@ -745,6 +752,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldCloseCleanlyWhenRunErrorConsumed() {
         var session = neo4j.driver().session();
 
@@ -761,6 +769,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldConsumePreviousResultBeforeRunningNewQuery() {
         try (var session = neo4j.driver().session()) {
             session.run("UNWIND range(1000, 0, -1) AS x RETURN 42 / x");
@@ -797,6 +806,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldReportFailureInClose() {
         var session = neo4j.driver().session();
 
@@ -807,6 +817,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldNotAllowAccessingRecordsAfterSummary() {
         var recordCount = 10_000;
         var query = "UNWIND range(1, " + recordCount + ") AS x RETURN x";
@@ -823,6 +834,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldNotAllowAccessingRecordsAfterSessionClosed() {
         var recordCount = 11_333;
         var query = "UNWIND range(1, " + recordCount + ") AS x RETURN 'Result-' + x";
@@ -837,6 +849,7 @@ class SessionIT {
 
     @Test
     @DisabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("resource")
     void shouldAllowToConsumeRecordsSlowlyAndCloseSession() throws InterruptedException {
         var session = neo4j.driver().session();
 
@@ -854,6 +867,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowToConsumeRecordsSlowlyAndRetrieveSummary() throws InterruptedException {
         try (var session = neo4j.driver().session()) {
             var result = session.run("UNWIND range(8000, 1, -1) AS x RETURN 42 / x");
@@ -871,6 +885,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldBeResponsiveToThreadInterruptWhenWaitingForResult() {
         try (var session1 = neo4j.driver().session();
                 var session2 = neo4j.driver().session()) {
@@ -941,7 +956,7 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "resource"})
     void shouldAllowReturningNullFromTransactionFunction() {
         try (var session = neo4j.driver().session()) {
             assertNull(session.readTransaction(tx -> null));
@@ -950,6 +965,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowIteratingOverEmptyResult() {
         try (var session = neo4j.driver().session()) {
             var result = session.run("UNWIND [] AS x RETURN x");
@@ -960,6 +976,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowConsumingEmptyResult() {
         try (var session = neo4j.driver().session()) {
             var result = session.run("UNWIND [] AS x RETURN x");
@@ -970,6 +987,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowListEmptyResult() {
         try (var session = neo4j.driver().session()) {
             var result = session.run("UNWIND [] AS x RETURN x");
@@ -978,6 +996,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldReportFailureInSummary() {
         try (var session = neo4j.driver().session()) {
             var query = "UNWIND [1, 2, 3, 4, 0] AS x RETURN 10 / x";
@@ -992,6 +1011,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldNotAllowStartingMultipleTransactions() {
         try (var session = neo4j.driver().session()) {
             var tx = session.beginTransaction();
@@ -1011,6 +1031,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldCloseOpenTransactionWhenClosed() {
         try (var session = neo4j.driver().session()) {
             var tx = session.beginTransaction();
@@ -1025,6 +1046,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldRollbackOpenTransactionWhenClosed() {
         try (var session = neo4j.driver().session()) {
             var tx = session.beginTransaction();
@@ -1039,6 +1061,7 @@ class SessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldSupportNestedQueries() {
         try (var session = neo4j.driver().session()) {
             // populate db with test data
@@ -1068,7 +1091,7 @@ class SessionIT {
 
     @Test
     @DisabledOnNeo4jWith(BOLT_V4)
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "resource"})
     void shouldErrorWhenTryingToUseRxAPIWithoutBoltV4() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -1089,6 +1112,7 @@ class SessionIT {
 
     @Test
     @DisabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("resource")
     void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4() {
         // Given
         var session = neo4j.driver().session(forDatabase("foo"));
@@ -1102,6 +1126,7 @@ class SessionIT {
 
     @Test
     @DisabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("resource")
     void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4UsingTx() {
         // Given
         var session = neo4j.driver().session(forDatabase("foo"));
@@ -1115,6 +1140,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("resource")
     void shouldAllowDatabaseName() {
         // Given
         try (var session = neo4j.driver().session(forDatabase("neo4j"))) {
@@ -1125,6 +1151,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("resource")
     void shouldAllowDatabaseNameUsingTx() {
         try (var session = neo4j.driver().session(forDatabase("neo4j"));
                 var transaction = session.beginTransaction()) {
@@ -1135,7 +1162,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "resource"})
     void shouldAllowDatabaseNameUsingTxWithRetries() {
         try (var session = neo4j.driver().session(forDatabase("neo4j"))) {
             int num = session.readTransaction(
@@ -1146,6 +1173,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("resource")
     void shouldErrorDatabaseWhenDatabaseIsAbsent() {
         var session = neo4j.driver().session(forDatabase("foo"));
 
@@ -1160,6 +1188,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("resource")
     void shouldErrorDatabaseNameUsingTxWhenDatabaseIsAbsent() {
         // Given
         var session = neo4j.driver().session(forDatabase("foo"));
@@ -1176,7 +1205,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "resource"})
     void shouldErrorDatabaseNameUsingTxWithRetriesWhenDatabaseIsAbsent() {
         // Given
         var session = neo4j.driver().session(forDatabase("foo"));
@@ -1191,6 +1220,7 @@ class SessionIT {
 
     @ParameterizedTest
     @MethodSource("managedTransactionsReturningResult")
+    @SuppressWarnings("resource")
     void shouldErrorWhenResultIsReturned(Function<Session, Result> fn) {
         // GIVEN
         var session = neo4j.driver().session();
@@ -1212,7 +1242,7 @@ class SessionIT {
                 session -> session.executeRead(tx -> tx.run("RETURN 1")));
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "resource"})
     private void testExecuteReadTx(AccessMode sessionMode) {
         var driver = neo4j.driver();
 
@@ -1237,7 +1267,7 @@ class SessionIT {
         }
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "resource"})
     private void testExecuteWriteTx(AccessMode sessionMode) {
         var driver = neo4j.driver();
 
@@ -1261,7 +1291,7 @@ class SessionIT {
         }
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "resource"})
     private void testTxRollbackWhenFunctionThrows(AccessMode sessionMode) {
         var driver = neo4j.driver();
 
@@ -1312,6 +1342,7 @@ class SessionIT {
         return spy(new ThrowingWork(query, failures));
     }
 
+    @SuppressWarnings("resource")
     private int countNodesWithId(int id) {
         try (var session = neo4j.driver().session()) {
             var result = session.run("MATCH (n {id: $id}) RETURN count(n)", parameters("id", id));
@@ -1319,6 +1350,7 @@ class SessionIT {
         }
     }
 
+    @SuppressWarnings("resource")
     private void createNodeWithId(int id) {
         try (var session = neo4j.driver().session()) {
             session.run("CREATE (n {id: $id})", parameters("id", id));
