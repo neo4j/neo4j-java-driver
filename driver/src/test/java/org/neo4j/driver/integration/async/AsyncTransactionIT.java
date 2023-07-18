@@ -69,6 +69,7 @@ class AsyncTransactionIT {
     private AsyncSession session;
 
     @BeforeEach
+    @SuppressWarnings("resource")
     void setUp() {
         session = neo4j.driver().session(AsyncSession.class);
     }
@@ -265,6 +266,7 @@ class AsyncTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldFailBoBeginTxWithInvalidBookmark() {
         var session = neo4j.driver()
                 .session(

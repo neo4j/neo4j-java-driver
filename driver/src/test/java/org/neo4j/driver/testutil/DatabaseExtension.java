@@ -284,6 +284,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         }
     }
 
+    @SuppressWarnings("resource")
     private static Neo4jContainer<?> setupNeo4jContainer(File cert, File key, Map<String, String> config) {
         var neo4JVersion = Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
 
@@ -310,7 +311,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         return neo4jContainer;
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "resource"})
     private static GenericContainer<?> setupNginxContainer() {
         var extendedNginxImage = new ImageFromDockerfile()
                 .withDockerfileFromBuilder(builder -> builder.from("nginx:1.23.0-alpine")
@@ -346,6 +347,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         }
     }
 
+    @SuppressWarnings("resource")
     private static boolean isDockerAvailable() {
         try {
             DockerClientFactory.instance().client();

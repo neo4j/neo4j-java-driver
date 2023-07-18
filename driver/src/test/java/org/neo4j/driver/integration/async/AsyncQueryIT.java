@@ -41,6 +41,7 @@ public class AsyncQueryIT {
     private AsyncSession session;
 
     @BeforeEach
+    @SuppressWarnings("resource")
     void setUp() {
         session = neo4j.driver().session(AsyncSession.class);
     }

@@ -61,6 +61,7 @@ class TrustCustomCertificateIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldRejectServerWithUntrustedCertificate() throws Throwable {
         // Given a driver with a (random) cert
         var certificateAndKey = createNewCertificateAndKey();

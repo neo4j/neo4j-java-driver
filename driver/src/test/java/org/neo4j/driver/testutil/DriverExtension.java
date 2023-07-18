@@ -43,6 +43,7 @@ public class DriverExtension extends DatabaseExtension implements BeforeEachCall
     }
 
     @Override
+    @SuppressWarnings("resource")
     public void beforeEach(ExtensionContext context) throws Exception {
         super.beforeEach(context);
         asyncSession = driver().session(AsyncSession.class);

@@ -73,6 +73,7 @@ class ParametersTest {
 
     @ParameterizedTest
     @MethodSource("addressesToParse")
+    @SuppressWarnings("resource")
     void shouldNotBePossibleToUseInvalidParameterTypesViaParameters(Object obj, String expectedMsg) {
         var session = mockedSession();
         var e = assertThrows(ClientException.class, () -> session.run("RETURN {a}", parameters("a", obj)));
@@ -81,6 +82,7 @@ class ParametersTest {
 
     @ParameterizedTest
     @MethodSource("addressesToParse")
+    @SuppressWarnings("resource")
     void shouldNotBePossibleToUseInvalidParametersViaMap(Object obj, String expectedMsg) {
         var session = mockedSession();
         var e = assertThrows(ClientException.class, () -> session.run("RETURN {a}", singletonMap("a", obj)));
@@ -89,6 +91,7 @@ class ParametersTest {
 
     @ParameterizedTest
     @MethodSource("addressesToParse")
+    @SuppressWarnings("resource")
     void shouldNotBePossibleToUseInvalidParametersViaRecord(Object obj, String expectedMsg) {
         assumeTrue(obj instanceof Value);
         Record record = new InternalRecord(singletonList("a"), new Value[] {(Value) obj});

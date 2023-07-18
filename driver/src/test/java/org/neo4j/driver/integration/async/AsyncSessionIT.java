@@ -95,6 +95,7 @@ class AsyncSessionIT {
     private AsyncSession session;
 
     @BeforeEach
+    @SuppressWarnings("resource")
     void setUp() {
         session = neo4j.driver().session(AsyncSession.class);
     }
@@ -199,6 +200,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowMultipleAsyncRunsWithoutConsumingResults() {
         var queryCount = 13;
         var cursors = IntStream.range(0, queryCount)
@@ -520,6 +522,7 @@ class AsyncSessionIT {
 
     @Test
     @DisabledOnNeo4jWith(BOLT_V3)
+    @SuppressWarnings("resource")
     void shouldRunAfterBeginTxFailureOnBookmark() {
         var illegalBookmark = InternalBookmark.parse("Illegal Bookmark");
         session = neo4j.driver()
@@ -535,6 +538,7 @@ class AsyncSessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldNotBeginTxAfterBeginTxFailureOnBookmark() {
         var illegalBookmark = InternalBookmark.parse("Illegal Bookmark");
         session = neo4j.driver()
@@ -547,6 +551,7 @@ class AsyncSessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V3)
+    @SuppressWarnings("resource")
     void shouldNotRunAfterBeginTxFailureOnBookmark() {
         var illegalBookmark = InternalBookmark.parse("Illegal Bookmark");
         session = neo4j.driver()

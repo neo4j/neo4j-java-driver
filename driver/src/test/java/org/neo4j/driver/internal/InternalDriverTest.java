@@ -65,6 +65,7 @@ class InternalDriverTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldVerifyConnectivity() {
         var sessionFactory = sessionFactoryMock();
         CompletableFuture<Void> connectivityStage = completedWithNull();
@@ -76,6 +77,7 @@ class InternalDriverTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldThrowWhenUnableToVerifyConnectivity() {
         var sessionFactory = mock(SessionFactory.class);
         var error = new ServiceUnavailableException("Hello");
@@ -87,6 +89,7 @@ class InternalDriverTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldThrowClientExceptionIfMetricsNotEnabled() {
         // Given
         var driver = newDriver(false);
@@ -99,6 +102,7 @@ class InternalDriverTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldReturnMetricsIfMetricsEnabled() {
         // Given
         var driver = newDriver(true);

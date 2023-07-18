@@ -24,6 +24,7 @@ import org.testcontainers.containers.Neo4jContainer;
 import org.testng.SkipException;
 
 public class Neo4jManager {
+    @SuppressWarnings("resource")
     private final Neo4jContainer<?> NEO4J = new Neo4jContainer<>("neo4j:4.4").withAdminPassword(null);
 
     public void start() {

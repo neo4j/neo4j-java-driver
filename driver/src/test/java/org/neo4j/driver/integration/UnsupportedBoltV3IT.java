@@ -48,6 +48,7 @@ class UnsupportedBoltV3IT {
             .build();
 
     @Test
+    @SuppressWarnings("resource")
     void shouldNotSupportAutoCommitQueriesWithTransactionConfig() {
         assertTxConfigNotSupported(() -> driver.session().run("RETURN 42", txConfig));
     }

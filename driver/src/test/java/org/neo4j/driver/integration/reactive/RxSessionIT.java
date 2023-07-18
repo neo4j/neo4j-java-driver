@@ -61,6 +61,7 @@ class RxSessionIT {
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowSessionRun() {
         // When
         var session = neo4j.driver().rxSession();
@@ -77,6 +78,7 @@ class RxSessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldBeAbleToReuseSessionAfterFailure() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -95,6 +97,7 @@ class RxSessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldRunAsyncTransactionWithoutRetries() {
         var session = neo4j.driver().rxSession();
         var work = new InvocationTrackingWork("CREATE (:Apa) RETURN 42");
@@ -107,6 +110,7 @@ class RxSessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldRunAsyncTransactionWithRetriesOnAsyncFailures() {
         var session = neo4j.driver().rxSession();
         var work = new InvocationTrackingWork("CREATE (:Node) RETURN 24")
@@ -124,6 +128,7 @@ class RxSessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldRunAsyncTransactionWithRetriesOnSyncFailures() {
         var session = neo4j.driver().rxSession();
         var work = new InvocationTrackingWork("CREATE (:Test) RETURN 12")
@@ -140,6 +145,7 @@ class RxSessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldRunAsyncTransactionThatCanNotBeRetried() {
         var session = neo4j.driver().rxSession();
         var work = new InvocationTrackingWork("UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x");
@@ -157,6 +163,7 @@ class RxSessionIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldRunAsyncTransactionThatCanNotBeRetriedAfterATransientFailure() {
         var session = neo4j.driver().rxSession();
         // first throw TransientException directly from work, retry can happen afterwards
@@ -181,6 +188,7 @@ class RxSessionIT {
 
     @ParameterizedTest
     @MethodSource("managedTransactionsReturningReactiveResultPublisher")
+    @SuppressWarnings("resource")
     void shouldErrorWhenReactiveResultIsReturned(Function<RxSession, Publisher<RxResult>> fn) {
         // GIVEN
         var session = neo4j.driver().rxSession();
@@ -209,6 +217,7 @@ class RxSessionIT {
         }
     }
 
+    @SuppressWarnings("resource")
     private long countNodesByLabel(String label) {
         try (var session = neo4j.driver().session()) {
             var result = session.run("MATCH (n:" + label + ") RETURN count(n)");

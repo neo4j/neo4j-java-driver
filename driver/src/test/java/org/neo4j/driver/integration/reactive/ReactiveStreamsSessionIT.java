@@ -59,6 +59,7 @@ public class ReactiveStreamsSessionIT {
 
     @ParameterizedTest
     @MethodSource("managedTransactionsReturningReactiveResultPublisher")
+    @SuppressWarnings("resource")
     void shouldErrorWhenReactiveResultIsReturned(Function<ReactiveSession, Publisher<ReactiveResult>> fn) {
         // GIVEN
         var session = neo4j.driver().session(ReactiveSession.class);

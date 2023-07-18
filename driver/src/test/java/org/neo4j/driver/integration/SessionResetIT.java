@@ -119,6 +119,7 @@ class SessionResetIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowMoreQueriesAfterSessionReset() {
         // Given
         try (var session = (InternalSession) neo4j.driver().session()) {
@@ -134,6 +135,7 @@ class SessionResetIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowMoreTxAfterSessionReset() {
         // Given
         try (var session = (InternalSession) neo4j.driver().session()) {
@@ -154,6 +156,7 @@ class SessionResetIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldMarkTxAsFailedAndDisallowRunAfterSessionReset() {
         // Given
         try (var session = (InternalSession) neo4j.driver().session()) {
@@ -170,6 +173,7 @@ class SessionResetIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowMoreTxAfterSessionResetInTx() {
         // Given
         try (var session = (InternalSession) neo4j.driver().session()) {
@@ -208,6 +212,7 @@ class SessionResetIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void resetShouldStopTransactionWaitingForALock() throws Exception {
         testResetOfQueryWaitingForLock(new NodeIdUpdater() {
             @Override
@@ -260,6 +265,7 @@ class SessionResetIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldBeAbleToRunMoreQueriesAfterResetOnNoErrorState() {
         try (var session = (InternalSession) neo4j.driver().session()) {
             // Given
@@ -278,6 +284,7 @@ class SessionResetIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldHandleResetBeforeRun() {
         try (var session = (InternalSession) neo4j.driver().session();
                 var tx = session.beginTransaction()) {
@@ -288,6 +295,7 @@ class SessionResetIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldHandleResetFromMultipleThreads() throws Throwable {
         var session = (InternalSession) neo4j.driver().session();
 
@@ -331,6 +339,7 @@ class SessionResetIT {
         assertEquals(1, countNodes("SecondNode"));
     }
 
+    @SuppressWarnings("resource")
     private void testResetOfQueryWaitingForLock(NodeIdUpdater nodeIdUpdater) throws Exception {
         var nodeId = 42;
         var newNodeId1 = 4242;
@@ -364,6 +373,7 @@ class SessionResetIT {
         }
     }
 
+    @SuppressWarnings("resource")
     private void createNodeWithId(int id) {
         try (var session = neo4j.driver().session()) {
             session.run("CREATE (n {id: $id})", parameters("id", id));
@@ -408,6 +418,7 @@ class SessionResetIT {
         awaitNoActiveQueries();
     }
 
+    @SuppressWarnings("resource")
     private void runRandomQuery(
             boolean autoCommit, Random random, Set<InternalSession> runningSessions, AtomicBoolean stop) {
         try {
@@ -437,6 +448,7 @@ class SessionResetIT {
         awaitNoActiveQueries();
     }
 
+    @SuppressWarnings("resource")
     private Future<Void> runQueryInDifferentThreadAndResetSession(String query, boolean autoCommit) {
         var sessionRef = new AtomicReference<InternalSession>();
 
@@ -474,6 +486,7 @@ class SessionResetIT {
         awaitCondition(() -> activeQueryNames(neo4j.driver()).stream().anyMatch(query -> query.contains(value)));
     }
 
+    @SuppressWarnings("resource")
     private long countNodes(String label) {
         try (var session = neo4j.driver().session()) {
             var result = session.run("MATCH (n" + (label == null ? "" : ":" + label) + ") RETURN count(n) AS result");

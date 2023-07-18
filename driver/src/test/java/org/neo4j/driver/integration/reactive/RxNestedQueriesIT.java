@@ -41,6 +41,7 @@ class RxNestedQueriesIT {
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorForNestingQueriesAmongSessionRuns() {
         var size = 12555;
 
@@ -65,6 +66,7 @@ class RxNestedQueriesIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorForNestingQueriesAmongTransactionFunctions() {
         var size = 12555;
         var nodeIds = Flux.usingWhen(
@@ -88,6 +90,7 @@ class RxNestedQueriesIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorForNestingQueriesAmongSessionRunAndTransactionFunction() {
         var size = 12555;
         var nodeIds = Flux.usingWhen(
@@ -111,6 +114,7 @@ class RxNestedQueriesIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorForNestingQueriesAmongTransactionFunctionAndSessionRun() {
         var size = 12555;
         var nodeIds = Flux.usingWhen(
@@ -133,6 +137,7 @@ class RxNestedQueriesIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldHandleNestedQueriesInTheSameTransaction() {
         var size = 12555;
 

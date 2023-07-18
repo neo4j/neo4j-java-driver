@@ -61,6 +61,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAllowIteratingOverLargeResultStream() {
         // When
         var size = 100000;
@@ -135,6 +136,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -151,6 +153,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -167,6 +170,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldHaveFieldNamesInResult() {
         // When
         var session = neo4j.driver().rxSession();
@@ -184,6 +188,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldReturnEmptyKeyAndRecordOnEmptyResult() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -195,6 +200,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldOnlyErrorRecordAfterFailure() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -224,6 +230,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorOnSummaryIfNoRecord() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -253,6 +260,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldDiscardRecords() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -279,6 +287,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldStreamCorrectRecordsBackBeforeError() {
         var session = neo4j.driver().rxSession();
 
@@ -295,6 +304,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorToAccessRecordAfterSessionClose() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -308,6 +318,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorToAccessKeysAfterSessionClose() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -321,6 +332,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorToAccessSummaryAfterSessionClose() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -334,6 +346,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorToAccessRecordAfterTxClose() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -350,6 +363,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorToAccessKeysAfterTxClose() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -366,6 +380,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldErrorToAccessSummaryAfterTxClose() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -382,6 +397,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void throwErrorAfterKeys() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -398,6 +414,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void throwTheSameErrorWhenCallingConsumeMultipleTimes() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -414,6 +431,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void keysShouldNotReportRunError() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -429,6 +447,7 @@ class RxResultIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void throwResultConsumedErrorWhenCallingRecordsMultipleTimes() {
         // Given
         var session = neo4j.driver().rxSession();
@@ -474,6 +493,7 @@ class RxResultIT {
         StepVerifier.create(res.keys()).expectNext(singletonList("a")).verifyComplete();
     }
 
+    @SuppressWarnings("resource")
     private RxResult sessionRunUnwind() {
         var session = neo4j.driver().rxSession();
         return session.run("UNWIND [1,2,3,4] AS a RETURN a");
