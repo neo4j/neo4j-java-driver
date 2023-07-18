@@ -56,7 +56,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
@@ -162,8 +161,7 @@ class NettyChannelHealthCheckerTest {
 
         var authorizationExpiredChannelIndex = channels.size() / 2 - 1;
         given(clock.millis()).willReturn((long) authorizationExpiredChannelIndex);
-        healthChecker.onExpired(
-                new AuthorizationExpiredException("", ""), channels.get(authorizationExpiredChannelIndex));
+        healthChecker.onExpired();
 
         for (var i = 0; i < channels.size(); i++) {
             var channel = channels.get(i);
@@ -204,8 +202,7 @@ class NettyChannelHealthCheckerTest {
 
         var authorizationExpiredChannelIndex = channels.size() / 2 - 1;
         given(clock.millis()).willReturn((long) authorizationExpiredChannelIndex);
-        healthChecker.onExpired(
-                new AuthorizationExpiredException("", ""), channels.get(authorizationExpiredChannelIndex));
+        healthChecker.onExpired();
 
         for (var i = 0; i < channels.size(); i++) {
             var channel = channels.get(i);
@@ -227,19 +224,17 @@ class NettyChannelHealthCheckerTest {
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
                 NOT_CONFIGURED,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST);
-        var clock = Clock.systemUTC();
+        var clock = mock(Clock.class);
+        given(clock.millis()).willReturn(0L).willReturn(100L);
         var healthChecker = newHealthChecker(settings, clock);
 
-        var initialTimestamp = clock.millis();
         var channel1 = new EmbeddedChannel();
         var channel2 = new EmbeddedChannel();
-        setCreationTimestamp(channel1, initialTimestamp);
-        setCreationTimestamp(channel2, initialTimestamp + 100);
         setAuthContext(channel1, new AuthContext(new StaticAuthTokenManager(AuthTokens.none())));
         setAuthContext(channel2, new AuthContext(new StaticAuthTokenManager(AuthTokens.none())));
 
-        healthChecker.onExpired(new AuthorizationExpiredException("", ""), channel2);
-        healthChecker.onExpired(new AuthorizationExpiredException("", ""), channel1);
+        healthChecker.onExpired();
+        healthChecker.onExpired();
 
         var healthy = healthChecker.isHealthy(channel1);
         channel1.runPendingTasks();
@@ -247,6 +242,7 @@ class NettyChannelHealthCheckerTest {
         healthy = healthChecker.isHealthy(channel2);
         channel2.runPendingTasks();
         assertFalse(Objects.requireNonNull(await(healthy)));
+        then(clock).should(times(2)).millis();
     }
 
     @Test

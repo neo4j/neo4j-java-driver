@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.util;
 
 import java.io.Serial;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 import org.neo4j.driver.exceptions.AuthenticationException;
@@ -160,19 +159,6 @@ public final class ErrorUtil {
         if (mainError != error) {
             mainError.addSuppressed(error);
         }
-    }
-
-    public static Throwable getRootCause(Throwable error) {
-        Objects.requireNonNull(error);
-        var cause = error.getCause();
-        if (cause == null) {
-            // Nothing causes this error, returns the error itself
-            return error;
-        }
-        while (cause.getCause() != null) {
-            cause = cause.getCause();
-        }
-        return cause;
     }
 
     /**

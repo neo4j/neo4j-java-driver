@@ -56,10 +56,6 @@ public class StdIOCapture implements AutoCloseable {
         return stdout;
     }
 
-    public List<String> stderr() {
-        return stderr;
-    }
-
     @Override
     public void close() throws UnsupportedEncodingException {
         System.setOut(originalStdOut);

@@ -42,25 +42,6 @@ public final class CertificateTool {
     private static final String END_CERT = "-----END CERTIFICATE-----";
 
     /**
-     * Save a certificate to a file in base 64 binary format with BEGIN and END strings
-     * @param certStr
-     * @param certFile
-     * @throws IOException
-     */
-    public static void saveX509Cert(String certStr, File certFile) throws IOException {
-        try (var writer = new BufferedWriter(new FileWriter(certFile))) {
-            writer.write(BEGIN_CERT);
-            writer.newLine();
-
-            writer.write(certStr);
-            writer.newLine();
-
-            writer.write(END_CERT);
-            writer.newLine();
-        }
-    }
-
-    /**
      * Save a certificate to a file. Remove all the content in the file if there is any before.
      *
      * @param cert
@@ -150,16 +131,6 @@ public final class CertificateTool {
      */
     public static void loadX509Cert(Certificate cert, String certAlias, KeyStore keyStore) throws KeyStoreException {
         keyStore.setCertificateEntry(certAlias, cert);
-    }
-
-    /**
-     * Convert a certificate in base 64 binary format with BEGIN and END strings
-     * @param cert encoded cert string
-     * @return
-     */
-    public static String X509CertToString(String cert) {
-        var cert64CharPerLine = cert.replaceAll("(.{64})", "$1\n");
-        return String.join("\n", BEGIN_CERT, cert64CharPerLine, END_CERT) + "\n";
     }
 
     private CertificateTool() {}

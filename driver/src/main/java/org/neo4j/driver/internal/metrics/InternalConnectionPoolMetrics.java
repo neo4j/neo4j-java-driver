@@ -218,7 +218,8 @@ final class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Conn
                 totalInUseCount());
     }
 
-    // This method is for testing purposes only
+    // This is used by the Testkit backend
+    @SuppressWarnings("unused")
     public ServerAddress getAddress() {
         return address;
     }

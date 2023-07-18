@@ -213,10 +213,6 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return Collections.emptyList();
     }
 
-    List<AsyncCommand<C>> createTestSpecificAsyncCommands() {
-        return Collections.emptyList();
-    }
-
     List<RxCommand<C>> createTestSpecificRxCommands() {
         return Collections.emptyList();
     }

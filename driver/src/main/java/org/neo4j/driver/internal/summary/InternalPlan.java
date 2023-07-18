@@ -97,11 +97,6 @@ public class InternalPlan<T extends Plan> implements Plan {
         return result;
     }
 
-    public static Plan plan(
-            String operatorType, Map<String, Value> arguments, List<String> identifiers, List<Plan> children) {
-        return EXPLAIN_PLAN.create(operatorType, arguments, identifiers, children, null);
-    }
-
     public static final PlanCreator<Plan> EXPLAIN_PLAN =
             (operatorType, arguments, identifiers, children, originalPlanValue) ->
                     new InternalPlan<>(operatorType, arguments, identifiers, children);

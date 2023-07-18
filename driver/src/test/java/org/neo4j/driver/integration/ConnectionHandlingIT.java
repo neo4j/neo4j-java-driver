@@ -279,7 +279,7 @@ class ConnectionHandlingIT {
     @Test
     void connectionUsedForBeginTxReturnedToThePoolWhenSessionClose() {
         var session = driver.session();
-        var tx = session.beginTransaction();
+        session.beginTransaction();
 
         var connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify(connection1, never()).release();

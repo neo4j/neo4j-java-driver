@@ -21,7 +21,6 @@ package org.neo4j.driver.stress;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.summary.ResultSummary;
 
 public abstract class AbstractContext {
     private volatile boolean stopped;
@@ -54,7 +53,7 @@ public abstract class AbstractContext {
         return createdNodesCount.get();
     }
 
-    public final void readCompleted(ResultSummary summary) {
+    public final void readCompleted() {
         readNodesCount.incrementAndGet();
     }
 

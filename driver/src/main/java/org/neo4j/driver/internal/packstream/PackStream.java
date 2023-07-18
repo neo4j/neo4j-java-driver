@@ -91,10 +91,19 @@ public class PackStream {
     public static final byte FLOAT_64 = (byte) 0xC1;
     public static final byte FALSE = (byte) 0xC2;
     public static final byte TRUE = (byte) 0xC3;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_C4 = (byte) 0xC4;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_C5 = (byte) 0xC5;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_C6 = (byte) 0xC6;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_C7 = (byte) 0xC7;
+
     public static final byte INT_8 = (byte) 0xC8;
     public static final byte INT_16 = (byte) 0xC9;
     public static final byte INT_32 = (byte) 0xCA;
@@ -102,38 +111,86 @@ public class PackStream {
     public static final byte BYTES_8 = (byte) 0xCC;
     public static final byte BYTES_16 = (byte) 0xCD;
     public static final byte BYTES_32 = (byte) 0xCE;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_CF = (byte) 0xCF;
+
     public static final byte STRING_8 = (byte) 0xD0;
     public static final byte STRING_16 = (byte) 0xD1;
     public static final byte STRING_32 = (byte) 0xD2;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_D3 = (byte) 0xD3;
+
     public static final byte LIST_8 = (byte) 0xD4;
     public static final byte LIST_16 = (byte) 0xD5;
     public static final byte LIST_32 = (byte) 0xD6;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_D7 = (byte) 0xD7;
+
     public static final byte MAP_8 = (byte) 0xD8;
     public static final byte MAP_16 = (byte) 0xD9;
     public static final byte MAP_32 = (byte) 0xDA;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_DB = (byte) 0xDB;
+
     public static final byte STRUCT_8 = (byte) 0xDC;
     public static final byte STRUCT_16 = (byte) 0xDD;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_DE = (byte) 0xDE;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_DF = (byte) 0xDF;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_E0 = (byte) 0xE0;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_E1 = (byte) 0xE1;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_E2 = (byte) 0xE2;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_E3 = (byte) 0xE3;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_E4 = (byte) 0xE4;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_E5 = (byte) 0xE5;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_E6 = (byte) 0xE6;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_E7 = (byte) 0xE7;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_E8 = (byte) 0xE8;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_E9 = (byte) 0xE9;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_EA = (byte) 0xEA;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_EB = (byte) 0xEB;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_EC = (byte) 0xEC;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_ED = (byte) 0xED;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_EE = (byte) 0xEE;
+
+    @SuppressWarnings("unused")
     public static final byte RESERVED_EF = (byte) 0xEF;
 
     private static final long PLUS_2_TO_THE_31 = 2147483648L;

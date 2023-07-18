@@ -26,10 +26,6 @@ public class RoutingSettings {
     private final RoutingContext routingContext;
     private final long routingTablePurgeDelayMs;
 
-    public RoutingSettings(long routingTablePurgeDelayMs) {
-        this(routingTablePurgeDelayMs, RoutingContext.EMPTY);
-    }
-
     public RoutingSettings(long routingTablePurgeDelayMs, RoutingContext routingContext) {
         this.routingContext = routingContext;
         this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;

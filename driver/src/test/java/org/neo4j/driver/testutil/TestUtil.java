@@ -131,12 +131,6 @@ public final class TestUtil {
         return publisher.collectList().block(Duration.ofMillis(DEFAULT_WAIT_TIME_MS));
     }
 
-    @SafeVarargs
-    @SuppressWarnings("varargs")
-    public static <T> List<T> awaitAll(CompletionStage<T>... stages) {
-        return awaitAll(Arrays.asList(stages));
-    }
-
     public static <T> List<T> awaitAll(List<CompletionStage<T>> stages) {
         return stages.stream().map(TestUtil::await).collect(toList());
     }

@@ -128,7 +128,7 @@ public class BasicPullResponseHandler implements PullResponseHandler {
         ResultSummary summary;
         synchronized (this) {
             assertRecordAndSummaryConsumerInstalled();
-            state.onFailure(this, error);
+            state.onFailure(this);
             completionListener.afterFailure(error);
             summary = extractResultSummary(emptyMap());
             recordConsumer = this.recordConsumer;
@@ -149,7 +149,7 @@ public class BasicPullResponseHandler implements PullResponseHandler {
         Record record = null;
         synchronized (this) {
             assertRecordAndSummaryConsumerInstalled();
-            state.onRecord(this, fields);
+            state.onRecord(this);
             newState = state;
             if (newState == State.STREAMING_STATE) {
                 record = new InternalRecord(runResponseHandler.queryKeys(), fields);
@@ -294,12 +294,12 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             }
 
             @Override
-            void onFailure(BasicPullResponseHandler context, Throwable error) {
+            void onFailure(BasicPullResponseHandler context) {
                 context.state(FAILURE_STATE);
             }
 
             @Override
-            void onRecord(BasicPullResponseHandler context, Value[] fields) {
+            void onRecord(BasicPullResponseHandler context) {
                 context.state(READY_STATE);
             }
 
@@ -326,12 +326,12 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             }
 
             @Override
-            void onFailure(BasicPullResponseHandler context, Throwable error) {
+            void onFailure(BasicPullResponseHandler context) {
                 context.state(FAILURE_STATE);
             }
 
             @Override
-            void onRecord(BasicPullResponseHandler context, Value[] fields) {
+            void onRecord(BasicPullResponseHandler context) {
                 context.state(STREAMING_STATE);
             }
 
@@ -360,12 +360,12 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             }
 
             @Override
-            void onFailure(BasicPullResponseHandler context, Throwable error) {
+            void onFailure(BasicPullResponseHandler context) {
                 context.state(FAILURE_STATE);
             }
 
             @Override
-            void onRecord(BasicPullResponseHandler context, Value[] fields) {
+            void onRecord(BasicPullResponseHandler context) {
                 context.state(CANCELLED_STATE);
             }
 
@@ -388,12 +388,12 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             }
 
             @Override
-            void onFailure(BasicPullResponseHandler context, Throwable error) {
+            void onFailure(BasicPullResponseHandler context) {
                 context.state(FAILURE_STATE);
             }
 
             @Override
-            void onRecord(BasicPullResponseHandler context, Value[] fields) {
+            void onRecord(BasicPullResponseHandler context) {
                 context.state(SUCCEEDED_STATE);
             }
 
@@ -416,12 +416,12 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             }
 
             @Override
-            void onFailure(BasicPullResponseHandler context, Throwable error) {
+            void onFailure(BasicPullResponseHandler context) {
                 context.state(FAILURE_STATE);
             }
 
             @Override
-            void onRecord(BasicPullResponseHandler context, Value[] fields) {
+            void onRecord(BasicPullResponseHandler context) {
                 context.state(FAILURE_STATE);
             }
 
@@ -440,9 +440,9 @@ public class BasicPullResponseHandler implements PullResponseHandler {
 
         abstract void onSuccess(BasicPullResponseHandler context, Map<String, Value> metadata);
 
-        abstract void onFailure(BasicPullResponseHandler context, Throwable error);
+        abstract void onFailure(BasicPullResponseHandler context);
 
-        abstract void onRecord(BasicPullResponseHandler context, Value[] fields);
+        abstract void onRecord(BasicPullResponseHandler context);
 
         abstract Runnable request(BasicPullResponseHandler context, long n);
 

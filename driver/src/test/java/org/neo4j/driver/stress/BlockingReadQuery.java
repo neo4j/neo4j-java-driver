@@ -40,7 +40,8 @@ public class BlockingReadQuery<C extends AbstractContext> extends AbstractBlocki
                 assertNotNull(node);
             }
 
-            context.readCompleted(result.consume());
+            result.consume();
+            context.readCompleted();
         }
     }
 }

@@ -56,7 +56,7 @@ public class AsyncReadQueryWithRetries<C extends AbstractContext> extends Abstra
 
     private Void processResultSummary(ResultSummary resultSummary, C context) {
         if (resultSummary != null) {
-            context.readCompleted(resultSummary);
+            context.readCompleted();
         }
         return null;
     }

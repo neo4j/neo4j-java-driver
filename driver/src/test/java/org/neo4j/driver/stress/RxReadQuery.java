@@ -43,7 +43,7 @@ public class RxReadQuery<C extends AbstractContext> extends AbstractRxQuery<C> {
                         RxSession::close)
                 .subscribe(
                         summary -> {
-                            context.readCompleted(summary);
+                            context.readCompleted();
                             queryFinished.complete(null);
                         },
                         error -> {

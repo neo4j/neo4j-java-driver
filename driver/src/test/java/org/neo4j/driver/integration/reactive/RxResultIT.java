@@ -350,7 +350,7 @@ class RxResultIT {
     void shouldErrorToAccessRecordAfterTxClose() {
         // Given
         var session = neo4j.driver().rxSession();
-        var result = session.run("UNWIND [1,2] AS a RETURN a");
+        session.run("UNWIND [1,2] AS a RETURN a");
 
         // When
         StepVerifier.create(Flux.from(session.beginTransaction())
@@ -367,7 +367,7 @@ class RxResultIT {
     void shouldErrorToAccessKeysAfterTxClose() {
         // Given
         var session = neo4j.driver().rxSession();
-        var result = session.run("UNWIND [1,2] AS a RETURN a");
+        session.run("UNWIND [1,2] AS a RETURN a");
 
         // When
         StepVerifier.create(Flux.from(session.beginTransaction())
@@ -384,7 +384,7 @@ class RxResultIT {
     void shouldErrorToAccessSummaryAfterTxClose() {
         // Given
         var session = neo4j.driver().rxSession();
-        var result = session.run("UNWIND [1,2] AS a RETURN a");
+        session.run("UNWIND [1,2] AS a RETURN a");
 
         // When
         StepVerifier.create(Flux.from(session.beginTransaction())
@@ -401,7 +401,7 @@ class RxResultIT {
     void throwErrorAfterKeys() {
         // Given
         var session = neo4j.driver().rxSession();
-        var result = session.run("UNWIND [1,2] AS a RETURN a");
+        session.run("UNWIND [1,2] AS a RETURN a");
 
         // When
         StepVerifier.create(Flux.from(session.beginTransaction())
