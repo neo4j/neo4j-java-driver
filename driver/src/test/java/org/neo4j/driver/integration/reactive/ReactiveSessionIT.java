@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -32,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveSession;
@@ -170,6 +173,30 @@ class ReactiveSessionIT {
                     .block();
             assertEquals(0, nodesNum);
         }
+    }
+
+    @Test
+    void shouldEmitAllSuccessfullyEmittedValues() {
+        @SuppressWarnings("resource")
+        var session = neo4j.driver().session(ReactiveSession.class);
+        var succeed = new AtomicBoolean();
+        var numbers = flowPublisherToFlux(session.executeRead(tx -> {
+                    var numbersFlux = flowPublisherToFlux(tx.run("UNWIND range(0, 5) AS x RETURN x"))
+                            .flatMap(result -> flowPublisherToFlux(result.records()))
+                            .map(record -> record.get("x").asInt());
+                    return succeed.getAndSet(true)
+                            ? publisherToFlowPublisher(numbersFlux)
+                            : publisherToFlowPublisher(numbersFlux.handle((value, sink) -> {
+                                if (value == 2) {
+                                    sink.error(new ServiceUnavailableException("simulated"));
+                                } else {
+                                    sink.next(value);
+                                }
+                            }));
+                }))
+                .collectList()
+                .block();
+        assertEquals(List.of(0, 1, 0, 1, 2, 3, 4, 5), numbers);
     }
 
     static List<Function<ReactiveSession, Publisher<ReactiveResult>>>

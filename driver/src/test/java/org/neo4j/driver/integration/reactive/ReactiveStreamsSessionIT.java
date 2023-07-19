@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
 import org.neo4j.driver.reactivestreams.ReactiveSession;
@@ -155,6 +157,30 @@ public class ReactiveStreamsSessionIT {
                     .block();
             assertEquals(0, nodesNum);
         }
+    }
+
+    @Test
+    void shouldEmitAllSuccessfullyEmittedValues() {
+        @SuppressWarnings("resource")
+        var session = neo4j.driver().session(ReactiveSession.class);
+        var succeed = new AtomicBoolean();
+        var numbers = Flux.from(session.executeRead(tx -> {
+                    var numbersFlux = Mono.from(tx.run("UNWIND range(0, 5) AS x RETURN x"))
+                            .flatMapMany(ReactiveResult::records)
+                            .map(record -> record.get("x").asInt());
+                    return succeed.getAndSet(true)
+                            ? numbersFlux
+                            : numbersFlux.handle((value, sink) -> {
+                                if (value == 2) {
+                                    sink.error(new ServiceUnavailableException("simulated"));
+                                } else {
+                                    sink.next(value);
+                                }
+                            });
+                }))
+                .collectList()
+                .block();
+        assertEquals(List.of(0, 1, 0, 1, 2, 3, 4, 5), numbers);
     }
 
     static List<Function<ReactiveSession, Publisher<ReactiveResult>>>
