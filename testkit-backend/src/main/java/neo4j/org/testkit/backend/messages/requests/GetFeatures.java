@@ -56,6 +56,7 @@ public class GetFeatures implements TestkitRequest {
             "Optimization:EagerTransactionBegin",
             "Feature:API:ConnectionAcquisitionTimeout",
             "Feature:API:Driver.IsEncrypted",
+            "Feature:API:Driver.VerifyConnectivity",
             "Feature:API:SSLConfig",
             "Detail:DefaultSecurityConfigValueEquality",
             "Optimization:ImplicitDefaultArguments",
