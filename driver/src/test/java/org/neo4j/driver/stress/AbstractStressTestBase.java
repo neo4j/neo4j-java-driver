@@ -334,6 +334,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
         commands.add(new AsyncFailingQueryWithRetries<>(driver));
 
+        commands.addAll(createTestSpecificAsyncCommands());
+
         return commands;
     }
 

@@ -33,7 +33,6 @@ import java.time.Clock;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.internal.async.connection.AuthorizationStateListener;
 import org.neo4j.driver.internal.handlers.PingResponseHandler;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
@@ -124,7 +123,7 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker, Authoriz
     }
 
     @Override
-    public void onExpired(AuthorizationExpiredException e, Channel channel) {
+    public void onExpired() {
         var now = clock.millis();
         minAuthTimestamp.getAndUpdate(prev -> Math.max(prev, now));
     }

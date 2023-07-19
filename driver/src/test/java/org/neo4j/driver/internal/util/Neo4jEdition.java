@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.util;
 
 public enum Neo4jEdition {
     UNDEFINED("n/a"),
-    COMMUNITY("community"),
     ENTERPRISE("enterprise");
 
     private final String value;

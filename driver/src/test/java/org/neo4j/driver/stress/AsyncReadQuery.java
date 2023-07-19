@@ -41,7 +41,7 @@ public class AsyncReadQuery<C extends AbstractContext> extends AbstractAsyncQuer
 
         queryFinished.whenComplete((summary, error) -> {
             if (summary != null) {
-                context.readCompleted(summary);
+                context.readCompleted();
             }
             session.closeAsync();
         });

@@ -46,8 +46,4 @@ public class NoOpBookmarkManager implements BookmarkManager {
     public Set<Bookmark> getBookmarks() {
         return EMPTY;
     }
-
-    private Set<Bookmark> getAllBookmarks() {
-        return EMPTY;
-    }
 }

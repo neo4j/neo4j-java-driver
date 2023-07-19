@@ -32,14 +32,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 
 class MicrometerConnectionPoolMetricsTest {
     static final String ID = "id";
 
     MicrometerConnectionPoolMetrics metrics;
     BoltServerAddress address;
-    ConnectionPool pool;
     MeterRegistry registry;
     final AtomicInteger inUse = new AtomicInteger(0);
     final IntSupplier inUseSupplier = inUse::get;
@@ -49,7 +47,6 @@ class MicrometerConnectionPoolMetricsTest {
     @BeforeEach
     void beforeEach() {
         address = new BoltServerAddress("host", "127.0.0.1", 7687);
-        pool = mock(ConnectionPool.class);
         registry = new SimpleMeterRegistry();
         metrics = new MicrometerConnectionPoolMetrics(ID, address, inUseSupplier, idleSupplier, registry);
     }

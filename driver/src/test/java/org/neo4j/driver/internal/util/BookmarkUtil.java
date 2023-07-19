@@ -75,18 +75,6 @@ public class BookmarkUtil {
     }
 
     /**
-     * Bookmark contains values matching the requirement set by matcher.
-     */
-    @SuppressWarnings("deprecation")
-    public static void assertBookmarkContainsValues(Bookmark bookmark, Matcher<Iterable<String>> matcher) {
-        assertNotNull(bookmark);
-        assertThat(bookmark, instanceOf(InternalBookmark.class));
-
-        var values = asList(((InternalBookmark) bookmark).values());
-        assertThat(values, matcher);
-    }
-
-    /**
      * Each bookmark contains one single value and the values are all different from each other.
      */
     @SuppressWarnings("deprecation")

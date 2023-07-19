@@ -47,7 +47,6 @@ public class TestConnectionPool extends ConnectionPoolImpl {
     public TestConnectionPool(
             Bootstrap bootstrap,
             NettyChannelTracker nettyChannelTracker,
-            NettyChannelHealthChecker nettyChannelHealthChecker,
             PoolSettings settings,
             MetricsListener metricsListener,
             Logging logging,

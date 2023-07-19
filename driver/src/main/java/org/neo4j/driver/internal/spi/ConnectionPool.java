@@ -33,8 +33,6 @@ public interface ConnectionPool {
 
     int inUseConnections(ServerAddress address);
 
-    int idleConnections(ServerAddress address);
-
     CompletionStage<Void> close();
 
     boolean isOpen(BoltServerAddress address);

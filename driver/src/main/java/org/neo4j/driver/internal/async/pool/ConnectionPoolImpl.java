@@ -174,8 +174,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
         return nettyChannelTracker.inUseChannelCount(address);
     }
 
-    @Override
-    public int idleConnections(ServerAddress address) {
+    private int idleConnections(ServerAddress address) {
         return nettyChannelTracker.idleChannelCount(address);
     }
 

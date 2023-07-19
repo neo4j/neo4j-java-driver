@@ -19,13 +19,11 @@
 package org.neo4j.driver.internal.async;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -58,11 +56,6 @@ import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
 
 public class NetworkSession {
-    /**
-     * Fallback database name used by the driver when session has no database name configured and database discovery is unavailable.
-     */
-    String FALLBACK_DATABASE_NAME = "";
-
     private final ConnectionProvider connectionProvider;
     private final NetworkSessionConnectionContext connectionContext;
     private final AccessMode mode;
@@ -391,12 +384,6 @@ public class NetworkSession {
         if (!connectionContext.databaseNameFuture().isDone()) {
             throw new IllegalStateException("Illegal internal state encountered, database name future is not done.");
         }
-    }
-
-    private Optional<String> getDatabaseNameNow() {
-        return Futures.joinNowOrElseThrow(
-                        connectionContext.databaseNameFuture(), PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER)
-                .databaseName();
     }
 
     /**

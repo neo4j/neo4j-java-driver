@@ -44,7 +44,7 @@ public class RxReadQueryWithRetries<C extends AbstractContext> extends AbstractR
                 .subscribe(
                         summary -> {
                             queryFinished.complete(null);
-                            context.readCompleted(summary);
+                            context.readCompleted();
                         },
                         error -> {
                             // ignores the error

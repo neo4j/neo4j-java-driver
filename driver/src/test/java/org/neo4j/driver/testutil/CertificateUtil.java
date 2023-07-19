@@ -29,7 +29,6 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.PublicKey;
 import java.security.SecureRandom;
@@ -162,10 +161,6 @@ public class CertificateUtil {
             csr = builder.build(signGen);
         }
 
-        public PrivateKey privateKey() {
-            return keyPair.getPrivate();
-        }
-
         public PublicKey publicKey() {
             return keyPair.getPublic();
         }
@@ -244,10 +239,6 @@ public class CertificateUtil {
 
         public C cert() {
             return pair.key();
-        }
-
-        public CertificateUtil.SelfSignedCertificateGenerator certGenerator() {
-            return this.certGenerator;
         }
 
         @Override

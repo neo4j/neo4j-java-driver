@@ -810,7 +810,7 @@ class SessionIT {
     void shouldReportFailureInClose() {
         var session = neo4j.driver().session();
 
-        var result = session.run("CYPHER runtime=interpreted UNWIND [2, 4, 8, 0] AS x RETURN 32 / x");
+        session.run("CYPHER runtime=interpreted UNWIND [2, 4, 8, 0] AS x RETURN 32 / x");
 
         var e = assertThrows(ClientException.class, session::close);
         assertThat(e, is(arithmeticError()));

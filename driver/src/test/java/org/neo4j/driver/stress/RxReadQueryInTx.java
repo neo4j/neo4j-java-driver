@@ -46,7 +46,7 @@ public class RxReadQueryInTx<C extends AbstractContext> extends AbstractRxQuery<
                         null)
                 .subscribe(
                         summary -> {
-                            context.readCompleted(summary);
+                            context.readCompleted();
                             queryFinished.complete(null);
                         },
                         error -> {

@@ -33,7 +33,7 @@ public class BlockingReadQueryWithRetries<C extends AbstractContext> extends Abs
     @SuppressWarnings("deprecation")
     public void execute(C context) {
         try (var session = newSession(AccessMode.READ, context)) {
-            var resultSummary = session.readTransaction(tx -> {
+            session.readTransaction(tx -> {
                 var result = tx.run("MATCH (n) RETURN n LIMIT 1");
                 var records = result.list();
                 if (!records.isEmpty()) {
@@ -44,7 +44,7 @@ public class BlockingReadQueryWithRetries<C extends AbstractContext> extends Abs
 
                 return result.consume();
             });
-            context.readCompleted(resultSummary);
+            context.readCompleted();
         }
     }
 }

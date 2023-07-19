@@ -142,7 +142,7 @@ class NettyChannelPoolIT {
         pool = newPool(new StaticAuthTokenManager(authToken), maxConnections);
 
         for (var i = 0; i < maxConnections; i++) {
-            var e = assertThrows(AuthenticationException.class, () -> acquire(pool));
+            assertThrows(AuthenticationException.class, () -> acquire(pool));
         }
 
         authTokenMap.put("credentials", value(neo4j.adminPassword()));

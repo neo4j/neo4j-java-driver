@@ -264,10 +264,6 @@ public class LoadBalancer implements ConnectionProvider {
                 connectionPool, rediscovery, clock, logging, settings.routingTablePurgeDelayMs());
     }
 
-    private static RuntimeException unknownMode(AccessMode mode) {
-        return new IllegalArgumentException("Mode '" + mode + "' is not supported");
-    }
-
     /**
      * <b>This method is only for testing</b>
      */

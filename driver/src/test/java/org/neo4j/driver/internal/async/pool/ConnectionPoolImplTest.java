@@ -116,7 +116,7 @@ class ConnectionPoolImplTest {
         var nettyChannelTracker = mock(NettyChannelTracker.class);
         var nettyChannelHealthChecker = mock(NettyChannelHealthChecker.class);
         var channelArgumentCaptor = ArgumentCaptor.forClass(Channel.class);
-        var pool = newConnectionPool(nettyChannelTracker, nettyChannelHealthChecker);
+        var pool = newConnectionPool(nettyChannelTracker);
 
         pool.acquire(ADDRESS_1, null).toCompletableFuture().get();
         verify(nettyChannelTracker).channelAcquired(channelArgumentCaptor.capture());
@@ -130,15 +130,9 @@ class ConnectionPoolImplTest {
     }
 
     private static TestConnectionPool newConnectionPool(NettyChannelTracker nettyChannelTracker) {
-        return newConnectionPool(nettyChannelTracker, mock(NettyChannelHealthChecker.class));
-    }
-
-    private static TestConnectionPool newConnectionPool(
-            NettyChannelTracker nettyChannelTracker, NettyChannelHealthChecker nettyChannelHealthChecker) {
         return new TestConnectionPool(
                 mock(Bootstrap.class),
                 nettyChannelTracker,
-                nettyChannelHealthChecker,
                 newSettings(),
                 DevNullMetricsListener.INSTANCE,
                 DEV_NULL_LOGGING,

@@ -28,15 +28,12 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
@@ -44,7 +41,6 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
@@ -165,46 +161,6 @@ class SessionMixIT {
 
         assertEquals(42, node.get("value").asInt());
         assertEquals(1, countNodes());
-    }
-
-    private void runNestedQueries(
-            ResultCursor inputCursor,
-            List<CompletionStage<Record>> stages,
-            CompletableFuture<List<CompletionStage<Record>>> resultFuture) {
-        final var recordResponse = inputCursor.nextAsync();
-        stages.add(recordResponse);
-
-        recordResponse.whenComplete((record, error) -> {
-            if (error != null) {
-                resultFuture.completeExceptionally(error);
-            } else if (record != null) {
-                runNestedQuery(inputCursor, record, stages, resultFuture);
-            } else {
-                resultFuture.complete(stages);
-            }
-        });
-    }
-
-    private void runNestedQuery(
-            ResultCursor inputCursor,
-            Record record,
-            List<CompletionStage<Record>> stages,
-            CompletableFuture<List<CompletionStage<Record>>> resultFuture) {
-        var node = record.get(0).asNode();
-        var id = node.get("id").asLong();
-        var age = id * 10;
-
-        var response = asyncSession.runAsync(
-                "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p", parameters("id", id, "age", age));
-
-        response.whenComplete((cursor, error) -> {
-            if (error != null) {
-                resultFuture.completeExceptionally(Futures.completionExceptionCause(error));
-            } else {
-                stages.add(cursor.nextAsync());
-                runNestedQueries(inputCursor, stages, resultFuture);
-            }
-        });
     }
 
     private long countNodes() {

@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.function.Function;
 
@@ -68,14 +67,6 @@ public class Iterables {
             throw new IllegalArgumentException("Given iterable contains more than one element: " + it);
         }
         return result;
-    }
-
-    public static Map<String, String> map(String... alternatingKeyValue) {
-        Map<String, String> out = newHashMapWithSize(alternatingKeyValue.length / 2);
-        for (var i = 0; i < alternatingKeyValue.length; i += 2) {
-            out.put(alternatingKeyValue[i], alternatingKeyValue[i + 1]);
-        }
-        return out;
     }
 
     public static <A, B> Iterable<B> map(final Iterable<A> it, final Function<A, B> f) {

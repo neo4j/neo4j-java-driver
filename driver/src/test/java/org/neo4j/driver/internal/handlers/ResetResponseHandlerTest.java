@@ -67,9 +67,4 @@ class ResetResponseHandlerTest {
     private static ResetResponseHandler newHandler(CompletableFuture<Void> future) {
         return new ResetResponseHandler(mock(InboundMessageDispatcher.class), future);
     }
-
-    private static ResetResponseHandler newHandler(
-            InboundMessageDispatcher messageDispatcher, CompletableFuture<Void> future) {
-        return new ResetResponseHandler(messageDispatcher, future);
-    }
 }

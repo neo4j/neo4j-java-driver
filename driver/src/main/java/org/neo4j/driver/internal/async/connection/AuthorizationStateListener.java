@@ -18,18 +18,12 @@
  */
 package org.neo4j.driver.internal.async.connection;
 
-import io.netty.channel.Channel;
-import org.neo4j.driver.exceptions.AuthorizationExpiredException;
-
 /**
  * Listener for authorization info state maintained on the server side.
  */
 public interface AuthorizationStateListener {
     /**
      * Notifies the listener that the credentials stored on the server side have expired.
-     *
-     * @param e       the {@link AuthorizationExpiredException} exception.
-     * @param channel the channel that received the error.
      */
-    void onExpired(AuthorizationExpiredException e, Channel channel);
+    void onExpired();
 }

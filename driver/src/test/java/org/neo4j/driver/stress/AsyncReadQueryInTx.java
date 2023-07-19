@@ -40,7 +40,7 @@ public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsync
         var txCommitted = session.beginTransactionAsync()
                 .thenCompose(tx -> tx.runAsync("MATCH (n) RETURN n LIMIT 1").thenCompose(cursor -> cursor.nextAsync()
                         .thenCompose(record -> processRecordAndGetSummary(record, cursor)
-                                .thenCompose(summary -> processSummaryAndCommit(summary, tx, ctx)))));
+                                .thenCompose(summary -> processSummaryAndCommit(tx, ctx)))));
 
         txCommitted.whenComplete((ignore, error) -> session.closeAsync());
 
@@ -55,8 +55,8 @@ public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsync
         return cursor.consumeAsync();
     }
 
-    private CompletionStage<Void> processSummaryAndCommit(ResultSummary summary, AsyncTransaction tx, C context) {
-        context.readCompleted(summary);
+    private CompletionStage<Void> processSummaryAndCommit(AsyncTransaction tx, C context) {
+        context.readCompleted();
         return tx.commitAsync();
     }
 }

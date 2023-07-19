@@ -120,8 +120,8 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         }
 
         var currentError = this.currentError;
-        if (currentError instanceof AuthorizationExpiredException authorizationExpiredException) {
-            authorizationStateListener(channel).onExpired(authorizationExpiredException, channel);
+        if (currentError instanceof AuthorizationExpiredException) {
+            authorizationStateListener(channel).onExpired();
         } else if (currentError instanceof TokenExpiredException tokenExpiredException) {
             var authContext = authContext(channel);
             var authTokenProvider = authContext.getAuthTokenManager();
