@@ -27,11 +27,12 @@ import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -49,6 +50,7 @@ import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.LoggingUtil;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -81,51 +83,49 @@ class ReactiveSessionIT {
     @ValueSource(booleans = {true, false})
     @SuppressWarnings("BusyWait")
     void shouldReleaseResultsOnSubscriptionCancellation(boolean request) throws InterruptedException {
-        var config = Config.builder().withDriverMetrics().build();
+        var messages = Collections.synchronizedList(new ArrayList<String>());
+        var config = Config.builder()
+                .withDriverMetrics()
+                .withLogging(LoggingUtil.boltLogging(messages))
+                .build();
         try (var driver = neo4j.customDriver(config)) {
             // verify the database is available as runs may not report errors due to the subscription cancellation
             driver.verifyConnectivity();
-            var threadsNumber = 100;
-            var executorService = Executors.newFixedThreadPool(threadsNumber);
+            var tasksNumber = 100;
+            var subscriptionFutures = IntStream.range(0, tasksNumber)
+                    .mapToObj(ignored -> CompletableFuture.supplyAsync(() -> {
+                        var subscriptionFuture = new CompletableFuture<Flow.Subscription>();
+                        driver.session(ReactiveSession.class)
+                                .run("UNWIND range (0,10000) AS x RETURN x")
+                                .subscribe(new Flow.Subscriber<>() {
+                                    @Override
+                                    public void onSubscribe(Flow.Subscription subscription) {
+                                        subscriptionFuture.complete(subscription);
+                                    }
 
-            var subscriptionFutures = IntStream.range(0, threadsNumber)
-                    .mapToObj(ignored -> CompletableFuture.supplyAsync(
-                            () -> {
-                                var subscriptionFuture = new CompletableFuture<Flow.Subscription>();
-                                driver.session(ReactiveSession.class)
-                                        .run("UNWIND range (0,10000) AS x RETURN x")
-                                        .subscribe(new Flow.Subscriber<>() {
-                                            @Override
-                                            public void onSubscribe(Flow.Subscription subscription) {
-                                                subscriptionFuture.complete(subscription);
-                                            }
+                                    @Override
+                                    public void onNext(ReactiveResult result) {
+                                        flowPublisherToFlux(result.consume()).subscribe();
+                                    }
 
-                                            @Override
-                                            public void onNext(ReactiveResult item) {
-                                                // ignored
-                                            }
+                                    @Override
+                                    public void onError(Throwable throwable) {
+                                        // ignored
+                                    }
 
-                                            @Override
-                                            public void onError(Throwable throwable) {
-                                                // ignored
-                                            }
-
-                                            @Override
-                                            public void onComplete() {
-                                                // ignored
-                                            }
-                                        });
-                                return subscriptionFuture.thenApplyAsync(
-                                        subscription -> {
-                                            if (request) {
-                                                subscription.request(1);
-                                            }
-                                            subscription.cancel();
-                                            return subscription;
-                                        },
-                                        executorService);
-                            },
-                            executorService))
+                                    @Override
+                                    public void onComplete() {
+                                        // ignored
+                                    }
+                                });
+                        return subscriptionFuture.thenApplyAsync(subscription -> {
+                            if (request) {
+                                subscription.request(1);
+                            }
+                            subscription.cancel();
+                            return subscription;
+                        });
+                    }))
                     .map(future -> future.thenCompose(itself -> itself))
                     .toArray(CompletableFuture[]::new);
 
@@ -144,7 +144,9 @@ class ReactiveSessionIT {
                 }
                 Thread.sleep(100);
             }
-            fail(String.format("not all connections have been released, %d are still in use", totalInUseConnections));
+            fail(String.format(
+                    "not all connections have been released\n%d are still in use\nlatest metrics: %s\nmessage log: \n%s",
+                    totalInUseConnections, driver.metrics().connectionPoolMetrics(), String.join("\n", messages)));
         }
     }
 
