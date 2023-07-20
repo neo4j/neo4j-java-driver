@@ -25,11 +25,12 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -46,6 +47,7 @@ import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
 import org.neo4j.driver.reactivestreams.ReactiveSession;
 import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.LoggingUtil;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -79,38 +81,41 @@ public class ReactiveStreamsSessionIT {
     @ValueSource(booleans = {true, false})
     @SuppressWarnings("BusyWait")
     void shouldReleaseResultsOnSubscriptionCancellation(boolean request) throws InterruptedException {
-        var config = Config.builder().withDriverMetrics().build();
+        var messages = Collections.synchronizedList(new ArrayList<String>());
+        var config = Config.builder()
+                .withDriverMetrics()
+                .withLogging(LoggingUtil.boltLogging(messages))
+                .build();
         try (var driver = neo4j.customDriver(config)) {
             // verify the database is available as runs may not report errors due to the subscription cancellation
             driver.verifyConnectivity();
-            var threadsNumber = 100;
-            var executorService = Executors.newFixedThreadPool(threadsNumber);
+            var tasksNumber = 100;
+            var subscriptionFutures = IntStream.range(0, tasksNumber)
+                    .mapToObj(ignored -> CompletableFuture.supplyAsync(() -> {
+                        var subscriptionFuture = new CompletableFuture<Subscription>();
+                        driver.session(ReactiveSession.class)
+                                .run("UNWIND range (0,10000) AS x RETURN x")
+                                .subscribe(new BaseSubscriber<>() {
+                                    @Override
+                                    protected void hookOnSubscribe(Subscription subscription) {
+                                        // use subscription from another thread to avoid immediate cancellation
+                                        // within the subscribe method
+                                        subscriptionFuture.complete(subscription);
+                                    }
 
-            var subscriptionFutures = IntStream.range(0, threadsNumber)
-                    .mapToObj(ignored -> CompletableFuture.supplyAsync(
-                            () -> {
-                                var subscriptionFuture = new CompletableFuture<Subscription>();
-                                driver.session(ReactiveSession.class)
-                                        .run("UNWIND range (0,10000) AS x RETURN x")
-                                        .subscribe(new BaseSubscriber<>() {
-                                            @Override
-                                            protected void hookOnSubscribe(Subscription subscription) {
-                                                // use subscription from another thread to avoid immediate cancellation
-                                                // within the subscribe method
-                                                subscriptionFuture.complete(subscription);
-                                            }
-                                        });
-                                return subscriptionFuture.thenApplyAsync(
-                                        subscription -> {
-                                            if (request) {
-                                                subscription.request(1);
-                                            }
-                                            subscription.cancel();
-                                            return subscription;
-                                        },
-                                        executorService);
-                            },
-                            executorService))
+                                    @Override
+                                    protected void hookOnNext(ReactiveResult result) {
+                                        Mono.fromDirect(result.consume()).subscribe();
+                                    }
+                                });
+                        return subscriptionFuture.thenApplyAsync(subscription -> {
+                            if (request) {
+                                subscription.request(1);
+                            }
+                            subscription.cancel();
+                            return subscription;
+                        });
+                    }))
                     .map(future -> future.thenCompose(itself -> itself))
                     .toArray(CompletableFuture[]::new);
 
@@ -129,7 +134,9 @@ public class ReactiveStreamsSessionIT {
                 }
                 Thread.sleep(100);
             }
-            fail(String.format("not all connections have been released, %d are still in use", totalInUseConnections));
+            fail(String.format(
+                    "not all connections have been released\n%d are still in use\nlatest metrics: %s\nmessage log: \n%s",
+                    totalInUseConnections, driver.metrics().connectionPoolMetrics(), String.join("\n", messages)));
         }
     }
 
