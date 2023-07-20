@@ -26,7 +26,6 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
@@ -71,10 +70,18 @@ public interface ReactiveSession extends BaseSession, ReactiveQueryRunner {
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work will
      * result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
      * <p>
-     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
+     * The provided unit of work should not return {@link ReactiveResult} object as it won't be valid outside the scope of the transaction.
      * <p>
      * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
      * different thread.
+     * <p>
+     * The driver uses the provided {@link ReactiveTransactionCallback} to get a publisher and emits its
+     * signals via the resulting publisher. If the supplied publisher emits a
+     * {@link org.neo4j.driver.exceptions.RetryableException} and the driver is in a position to retry, it calls the
+     * provided callback again to get a new publisher and attempts to stream its signals. In case of retries, the
+     * resulting publisher contains the successfully emitted values from all retry attempts. For instance, if a
+     * retryable exception occurs after streaming values [v1, v2, v3] and a successful retry emits values [v1, v2, v3,
+     * v4] then the resulting publisher emits the following values: [v1, v2, v3, v1, v2, v3, v4].
      *
      * @param callback the callback representing the unit of work.
      * @param <T>      the return type of the given unit of work.
@@ -91,10 +98,18 @@ public interface ReactiveSession extends BaseSession, ReactiveQueryRunner {
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work will
      * result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
      * <p>
-     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
+     * The provided unit of work should not return {@link ReactiveResult} object as it won't be valid outside the scope of the transaction.
      * <p>
      * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
      * different thread.
+     * <p>
+     * The driver uses the provided {@link ReactiveTransactionCallback} to get a publisher and emits its
+     * signals via the resulting publisher. If the supplied publisher emits a
+     * {@link org.neo4j.driver.exceptions.RetryableException} and the driver is in a position to retry, it calls the
+     * provided callback again to get a new publisher and attempts to stream its signals. In case of retries, the
+     * resulting publisher contains the successfully emitted values from all retry attempts. For instance, if a
+     * retryable exception occurs after streaming values [v1, v2, v3] and a successful retry emits values [v1, v2, v3,
+     * v4] then the resulting publisher emits the following values: [v1, v2, v3, v1, v2, v3, v4].
      *
      * @param callback the callback representing the unit of work.
      * @param config   configuration for all transactions started to execute the unit of work.
@@ -111,10 +126,18 @@ public interface ReactiveSession extends BaseSession, ReactiveQueryRunner {
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work will
      * result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
      * <p>
-     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
+     * The provided unit of work should not return {@link ReactiveResult} object as it won't be valid outside the scope of the transaction.
      * <p>
      * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
      * different thread.
+     * <p>
+     * The driver uses the provided {@link ReactiveTransactionCallback} to get a publisher and emits its
+     * signals via the resulting publisher. If the supplied publisher emits a
+     * {@link org.neo4j.driver.exceptions.RetryableException} and the driver is in a position to retry, it calls the
+     * provided callback again to get a new publisher and attempts to stream its signals. In case of retries, the
+     * resulting publisher contains the successfully emitted values from all retry attempts. For instance, if a
+     * retryable exception occurs after streaming values [v1, v2, v3] and a successful retry emits values [v1, v2, v3,
+     * v4] then the resulting publisher emits the following values: [v1, v2, v3, v1, v2, v3, v4].
      *
      * @param callback the callback representing the unit of work.
      * @param <T>      the return type of the given unit of work.
@@ -131,10 +154,18 @@ public interface ReactiveSession extends BaseSession, ReactiveQueryRunner {
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work will
      * result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
      * <p>
-     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
+     * The provided unit of work should not return {@link ReactiveResult} object as it won't be valid outside the scope of the transaction.
      * <p>
      * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
      * different thread.
+     * <p>
+     * The driver uses the provided {@link ReactiveTransactionCallback} to get a publisher and emits its
+     * signals via the resulting publisher. If the supplied publisher emits a
+     * {@link org.neo4j.driver.exceptions.RetryableException} and the driver is in a position to retry, it calls the
+     * provided callback again to get a new publisher and attempts to stream its signals. In case of retries, the
+     * resulting publisher contains the successfully emitted values from all retry attempts. For instance, if a
+     * retryable exception occurs after streaming values [v1, v2, v3] and a successful retry emits values [v1, v2, v3,
+     * v4] then the resulting publisher emits the following values: [v1, v2, v3, v1, v2, v3, v4].
      *
      * @param callback the callback representing the unit of work.
      * @param config   configuration for all transactions started to execute the unit of work.
