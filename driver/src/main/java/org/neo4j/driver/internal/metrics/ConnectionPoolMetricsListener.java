@@ -42,7 +42,7 @@ interface ConnectionPoolMetricsListener {
     /**
      * Invoked before acquiring or creating a connection.
      *
-     * @param acquireEvent
+     * @param acquireEvent the event
      */
     void beforeAcquiringOrCreating(ListenerEvent<?> acquireEvent);
 
@@ -54,7 +54,7 @@ interface ConnectionPoolMetricsListener {
     /**
      * Invoked after a connection is acquired or created successfully.
      *
-     * @param acquireEvent
+     * @param acquireEvent the event
      */
     void afterAcquiredOrCreated(ListenerEvent<?> acquireEvent);
 
@@ -66,14 +66,14 @@ interface ConnectionPoolMetricsListener {
     /**
      * After a connection is acquired from the pool.
      *
-     * @param inUseEvent
+     * @param inUseEvent the event
      */
     void acquired(ListenerEvent<?> inUseEvent);
 
     /**
      * After a connection is released back to pool.
      *
-     * @param inUseEvent
+     * @param inUseEvent the event
      */
     void released(ListenerEvent<?> inUseEvent);
 }

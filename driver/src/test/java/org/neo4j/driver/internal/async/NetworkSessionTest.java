@@ -60,7 +60,6 @@ import org.mockito.ArgumentCaptor;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseNameUtil;
@@ -472,8 +471,8 @@ class NetworkSessionTest {
         verify(connection).reset(any());
     }
 
-    private static ResultCursor run(NetworkSession session, String query) {
-        return await(session.runAsync(new Query(query), TransactionConfig.empty()));
+    private static void run(NetworkSession session, String query) {
+        await(session.runAsync(new Query(query), TransactionConfig.empty()));
     }
 
     private static UnmanagedTransaction beginTransaction(NetworkSession session) {

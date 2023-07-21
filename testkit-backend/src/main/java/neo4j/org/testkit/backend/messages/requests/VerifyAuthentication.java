@@ -35,6 +35,7 @@ public class VerifyAuthentication implements TestkitRequest {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         var driverHolder = testkitState.getDriverHolder(data.getDriverId());
+        @SuppressWarnings("resource")
         var driver = driverHolder.driver();
         var authToken = AuthTokenUtil.parseAuthToken(data.getAuthorizationToken());
         var authenticated = driver.verifyAuthentication(authToken);

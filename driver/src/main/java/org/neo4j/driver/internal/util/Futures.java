@@ -43,13 +43,12 @@ public final class Futures {
         return (CompletableFuture<T>) COMPLETED_WITH_NULL;
     }
 
-    public static <T> CompletableFuture<T> completeWithNullIfNoError(CompletableFuture<T> future, Throwable error) {
+    public static <T> void completeWithNullIfNoError(CompletableFuture<T> future, Throwable error) {
         if (error != null) {
             future.completeExceptionally(error);
         } else {
             future.complete(null);
         }
-        return future;
     }
 
     public static <T> CompletionStage<T> asCompletionStage(io.netty.util.concurrent.Future<T> future) {

@@ -83,8 +83,8 @@ class UnmanagedTransactionIT {
         return await(session.runAsync(query, TransactionConfig.empty()));
     }
 
-    private ResultCursor txRun(UnmanagedTransaction tx, String query) {
-        return await(tx.runAsync(new Query(query)));
+    private void txRun(UnmanagedTransaction tx, String query) {
+        await(tx.runAsync(new Query(query)));
     }
 
     @Test

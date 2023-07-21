@@ -23,7 +23,7 @@ import java.util.NoSuchElementException;
 
 /**
  * Thrown whenever a client expected to read a record that was not available (i.e. because it wasn't returned by the server).
- *
+ * <p>
  * This usually indicates an expectation mismatch between client code and database application logic.
  *
  * @since 1.0

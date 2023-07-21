@@ -38,6 +38,7 @@ public class DriverClose implements TestkitRequest {
     }
 
     @Override
+    @SuppressWarnings("resource")
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
         return testkitState
                 .getDriverHolder(data.getDriverId())

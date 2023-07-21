@@ -46,7 +46,7 @@ import org.neo4j.driver.util.Immutable;
 
 /**
  * A unit of data that adheres to the Neo4j type system.
- *
+ * <p>
  * This interface describes a number of <code>isType</code> methods along with
  * <code>typeValue</code> methods. The first set of these correlate with types from
  * the Neo4j Type System and are used to determine which Neo4j type is represented.
@@ -59,7 +59,7 @@ import org.neo4j.driver.util.Immutable;
  * Because Neo4j often handles dynamic structures, this interface is designed to help
  * you handle such structures in Java. Specifically, {@link Value} lets you navigate arbitrary tree
  * structures without having to resort to type casting.
- *
+ * <p>
  * Given a tree structure like:
  *
  * <pre>
@@ -74,7 +74,6 @@ import org.neo4j.driver.util.Immutable;
  * </pre>
  *
  * You can retrieve the name of the second user, John, like so:
- *
  * <pre class="docTest:ValueDocIT#classDocTreeExample">
  * {@code
  * String username = value.get("users").get(1).get("name").asString();
@@ -82,7 +81,6 @@ import org.neo4j.driver.util.Immutable;
  * </pre>
  *
  * You can also easily iterate over the users:
- *
  * <pre class="docTest:ValueDocIT#classDocIterationExample">
  * {@code
  * List<String> names = new LinkedList<>();
@@ -497,7 +495,7 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     /**
      * Return as a map of string keys and values converted using
      * {@link Value#asObject()}.
-     *
+     * <p>
      * This is equivalent to calling {@link #asMap(Function, Map)} with {@link Values#ofObject()}.
      *
      * @param defaultValue default to this value if the value is a {@link NullValue}

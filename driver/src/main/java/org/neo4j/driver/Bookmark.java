@@ -24,13 +24,13 @@ import org.neo4j.driver.internal.InternalBookmark;
 
 /**
  * Causal chaining is carried out by passing bookmarks between transactions.
- *
+ * <p>
  * When starting a session with initial bookmarks, the first transaction will be ensured to run at least after
  * the database is as up-to-date as the latest transaction referenced by the supplied bookmarks.
- *
+ * <p>
  * Within a session, bookmark propagation is carried out automatically.
  * Thus all transactions in a session (both managed and unmanaged) are guaranteed to be carried out one after another.
- *
+ * <p>
  * To opt out of this mechanism for unrelated units of work, applications can use multiple sessions.
  */
 public interface Bookmark {

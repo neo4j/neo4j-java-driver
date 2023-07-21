@@ -208,7 +208,8 @@ class RunResponseHandlerTest {
         return newHandler(runFuture, BoltProtocolV3.METADATA_EXTRACTOR);
     }
 
-    private static RunResponseHandler newHandler(MetadataExtractor metadataExtractor) {
+    private static RunResponseHandler newHandler(
+            @SuppressWarnings("SameParameterValue") MetadataExtractor metadataExtractor) {
         return newHandler(new CompletableFuture<>(), metadataExtractor);
     }
 

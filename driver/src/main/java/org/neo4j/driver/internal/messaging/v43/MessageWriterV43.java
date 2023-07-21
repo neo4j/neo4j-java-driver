@@ -47,7 +47,7 @@ import org.neo4j.driver.internal.util.Iterables;
 
 /**
  * Bolt message writer v4.3
- *
+ * <p>
  * This version is able to encode all the versions existing on v4.2, but it encodes
  * new messages such as ROUTE
  */

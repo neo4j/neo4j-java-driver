@@ -337,7 +337,7 @@ class RoutingTableAndConnectionPoolTest {
     }
 
     private CompletableFuture<ClusterCompositionLookupResult> expiredClusterComposition(
-            BoltServerAddress... addresses) {
+            @SuppressWarnings("SameParameterValue") BoltServerAddress... addresses) {
         return clusterComposition(-STALE_ROUTING_TABLE_PURGE_DELAY_MS - 1, addresses);
     }
 

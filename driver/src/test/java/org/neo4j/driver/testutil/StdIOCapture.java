@@ -22,7 +22,6 @@ import static java.util.Arrays.asList;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -56,7 +55,7 @@ public class StdIOCapture implements AutoCloseable {
     }
 
     @Override
-    public void close() throws UnsupportedEncodingException {
+    public void close() {
         System.setOut(originalStdOut);
         System.setErr(originalStdErr);
         stdout.addAll(asList(capturedStdOut.toString(StandardCharsets.UTF_8).split(System.lineSeparator())));

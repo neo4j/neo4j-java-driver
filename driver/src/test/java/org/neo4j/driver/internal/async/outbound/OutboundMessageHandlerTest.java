@@ -99,7 +99,8 @@ class OutboundMessageHandlerTest {
         assertTrue(channel.finish());
     }
 
-    private static MessageFormat mockMessageFormatWithWriter(final int... bytesToWrite) {
+    private static MessageFormat mockMessageFormatWithWriter(
+            @SuppressWarnings("SameParameterValue") final int... bytesToWrite) {
         var messageFormat = mock(MessageFormat.class);
 
         when(messageFormat.newWriter(any(PackOutput.class))).then(invocation -> {

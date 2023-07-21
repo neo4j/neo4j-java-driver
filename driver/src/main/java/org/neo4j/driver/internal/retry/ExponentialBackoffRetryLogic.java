@@ -158,11 +158,10 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
     /**
      * Extracts the possible cause of a transaction that has been marked terminated.
      *
-     * @param error
-     * @return
+     * @param error the error
+     * @return the possible cause or the original error
      */
     private static Throwable extractPossibleTerminationCause(Throwable error) {
-
         // Having a dedicated "TerminatedException" inheriting from ClientException might be a good idea.
         if (error instanceof ClientException && error.getCause() != null) {
             return error.getCause();

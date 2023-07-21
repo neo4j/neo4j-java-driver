@@ -23,7 +23,7 @@ package org.neo4j.driver;
  * When running a transaction, a write transaction requires a server that supports writes.
  * A read transaction, on the other hand, requires a server that supports read operations.
  * This classification is key for routing driver to route transactions to a cluster correctly.
- *
+ * <p>
  * While any {@link AccessMode} will be ignored while running transactions via a driver towards a single server.
  * As the single server serves both read and write operations at the same time.
  */

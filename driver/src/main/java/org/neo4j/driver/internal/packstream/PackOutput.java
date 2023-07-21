@@ -28,17 +28,21 @@ public interface PackOutput {
     PackOutput writeByte(byte value) throws IOException;
 
     /** Produce binary data */
+    @SuppressWarnings("UnusedReturnValue")
     PackOutput writeBytes(byte[] data) throws IOException;
 
     /** Produce a 4-byte signed integer */
     PackOutput writeShort(short value) throws IOException;
 
     /** Produce a 4-byte signed integer */
+    @SuppressWarnings("UnusedReturnValue")
     PackOutput writeInt(int value) throws IOException;
 
     /** Produce an 8-byte signed integer */
+    @SuppressWarnings("UnusedReturnValue")
     PackOutput writeLong(long value) throws IOException;
 
     /** Produce an 8-byte IEEE 754 "double format" floating-point number */
+    @SuppressWarnings("UnusedReturnValue")
     PackOutput writeDouble(double value) throws IOException;
 }

@@ -62,6 +62,7 @@ public class GetConnectionPoolMetrics implements TestkitRequest {
 
     private ConnectionPoolMetrics getConnectionPoolMetrics(TestkitState testkitState) {
         var driverHolder = testkitState.getDriverHolder(data.getDriverId());
+        @SuppressWarnings("resource")
         var metrics = driverHolder.driver().metrics();
         var poolMetrics = metrics.connectionPoolMetrics().stream()
                 .filter(pm -> {

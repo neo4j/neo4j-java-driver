@@ -29,10 +29,10 @@ import org.neo4j.driver.util.Resource;
 
 /**
  * The result of running a Cypher query, conceptually a stream of {@link Record records}.
- *
+ * <p>
  * The standard way of navigating through the result returned by the database is to
  * {@link #next() iterate} over it.
- *
+ * <p>
  * Results are valid until the next query is run or until the end of the current transaction,
  * whichever comes first. To keep a result around while further queries are run, or to use a result outside the scope
  * of the current transaction, see {@link #list()}.
@@ -42,11 +42,11 @@ import org.neo4j.driver.util.Resource;
  * In order to handle very large results, and to minimize memory overhead and maximize
  * performance, results are retrieved lazily. Please see {@link QueryRunner} for
  * important details on the effects of this.
- *
+ * <p>
  * The short version is that, if you want a hard guarantee that the underlying query
  * has completed, you need to either call {@link Resource#close()} on the {@link Transaction}
  * or {@link Session} that created this result, or you need to use the result.
- *
+ * <p>
  * Calling any method on this interface will guarantee that any write operation has completed on
  * the remote database.
  *
@@ -79,7 +79,7 @@ public interface Result extends Iterator<Record> {
     /**
      * Return the first record in the result, failing if there is not exactly
      * one record left in the stream
-     *
+     * <p>
      * Calling this method always exhausts the result, even when {@link NoSuchRecordException} is thrown.
      *
      * @return the first and only record in the stream
@@ -108,12 +108,12 @@ public interface Result extends Iterator<Record> {
      * Retrieve and store the entire result stream.
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
-     *
+     * <p>
      * Note that this method can only be used if you know that the query that
      * yielded this result returns a finite stream. Some queries can yield
      * infinite results, in which case calling this method will lead to running
      * out of memory.
-     *
+     * <p>
      * Calling this method exhausts the result.
      *
      * @return list of all remaining immutable records
@@ -124,12 +124,12 @@ public interface Result extends Iterator<Record> {
      * Retrieve and store a projection of the entire result.
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
-     *
+     * <p>
      * Note that this method can only be used if you know that the query that
      * yielded this result returns a finite stream. Some queries can yield
      * infinite results, in which case calling this method will lead to running
      * out of memory.
-     *
+     * <p>
      * Calling this method exhausts the result.
      *
      * @param mapFunction a function to map from Record to T. See {@link Records} for some predefined functions.

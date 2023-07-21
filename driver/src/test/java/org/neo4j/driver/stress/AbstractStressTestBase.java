@@ -570,7 +570,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     @SuppressWarnings("deprecation")
-    private Publisher<Void> createNodesInTxRx(RxTransaction tx, int batchIndex, int batchSize) {
+    private Publisher<Void> createNodesInTxRx(
+            RxTransaction tx, int batchIndex, @SuppressWarnings("SameParameterValue") int batchSize) {
         return Flux.concat(Flux.range(0, batchSize)
                 .map(index -> batchIndex * batchSize + index)
                 .map(nodeIndex -> {
@@ -609,7 +610,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         System.out.println("Reading nodes with async API took: " + NANOSECONDS.toMillis(end - start) + "ms");
     }
 
-    private static Void createNodesInTx(Transaction tx, int batchIndex, int batchSize) {
+    private static Void createNodesInTx(
+            Transaction tx, int batchIndex, @SuppressWarnings("SameParameterValue") int batchSize) {
         for (var index = 0; index < batchSize; index++) {
             var nodeIndex = batchIndex * batchSize + index;
             createNodeInTx(tx, nodeIndex);
@@ -622,7 +624,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         tx.run(query).consume();
     }
 
-    private static CompletionStage<Throwable> createNodesInTxAsync(AsyncTransaction tx, int batchIndex, int batchSize) {
+    private static CompletionStage<Throwable> createNodesInTxAsync(
+            AsyncTransaction tx, int batchIndex, @SuppressWarnings("SameParameterValue") int batchSize) {
         @SuppressWarnings("unchecked")
         CompletableFuture<Void>[] queryFutures = IntStream.range(0, batchSize)
                 .map(index -> batchIndex * batchSize + index)

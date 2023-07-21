@@ -449,7 +449,8 @@ class SessionResetIT {
     }
 
     @SuppressWarnings("resource")
-    private Future<Void> runQueryInDifferentThreadAndResetSession(String query, boolean autoCommit) {
+    private Future<Void> runQueryInDifferentThreadAndResetSession(
+            @SuppressWarnings("SameParameterValue") String query, boolean autoCommit) {
         var sessionRef = new AtomicReference<InternalSession>();
 
         Future<Void> queryResult = runAsync(() -> {

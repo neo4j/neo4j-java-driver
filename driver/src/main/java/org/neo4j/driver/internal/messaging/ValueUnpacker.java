@@ -23,6 +23,7 @@ import java.util.Map;
 import org.neo4j.driver.Value;
 
 public interface ValueUnpacker {
+    @SuppressWarnings("UnusedReturnValue")
     long unpackStructHeader() throws IOException;
 
     int unpackStructSignature() throws IOException;
