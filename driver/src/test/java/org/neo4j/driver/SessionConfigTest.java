@@ -148,6 +148,32 @@ class SessionConfigTest {
         assertEquals(Arrays.asList(one, two, null), config2.bookmarks());
     }
 
+    @Test
+    void shouldSaveBookmarksCopyFromArray() {
+        var bookmark1 = parse("one");
+        var bookmark2 = parse("two");
+        var bookmarks = new Bookmark[] {bookmark1, bookmark2};
+        var config = builder().withBookmarks(bookmarks).build();
+        assertEquals(List.of(bookmark1, bookmark2), config.bookmarks());
+
+        bookmarks[0] = parse("three");
+
+        assertEquals(List.of(bookmark1, bookmark2), config.bookmarks());
+    }
+
+    @Test
+    void shouldSaveBookmarksCopyFromIterable() {
+        var bookmark1 = parse("one");
+        var bookmark2 = parse("two");
+        var bookmarks = new ArrayList<>(List.of(bookmark1, bookmark2));
+        var config = builder().withBookmarks(bookmarks).build();
+        assertEquals(List.of(bookmark1, bookmark2), config.bookmarks());
+
+        bookmarks.add(parse("three"));
+
+        assertEquals(List.of(bookmark1, bookmark2), config.bookmarks());
+    }
+
     @ParameterizedTest
     @ValueSource(longs = {100, 1, 1000, Long.MAX_VALUE, -1})
     void shouldChangeFetchSize(long value) {
