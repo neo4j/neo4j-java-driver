@@ -150,6 +150,32 @@ class SessionConfigTest {
         assertEquals(Arrays.asList(one, two, null), config2.bookmarks());
     }
 
+    @Test
+    void shouldSaveBookmarksCopyFromArray() {
+        Bookmark bookmark1 = parse("one");
+        Bookmark bookmark2 = parse("two");
+        Bookmark[] bookmarks = new Bookmark[] {bookmark1, bookmark2};
+        SessionConfig config = builder().withBookmarks(bookmarks).build();
+        assertEquals(Arrays.asList(bookmark1, bookmark2), config.bookmarks());
+
+        bookmarks[0] = parse("three");
+
+        assertEquals(Arrays.asList(bookmark1, bookmark2), config.bookmarks());
+    }
+
+    @Test
+    void shouldSaveBookmarksCopyFromIterable() {
+        Bookmark bookmark1 = parse("one");
+        Bookmark bookmark2 = parse("two");
+        List<Bookmark> bookmarks = new ArrayList<>(Arrays.asList(bookmark1, bookmark2));
+        SessionConfig config = builder().withBookmarks(bookmarks).build();
+        assertEquals(Arrays.asList(bookmark1, bookmark2), config.bookmarks());
+
+        bookmarks.add(parse("three"));
+
+        assertEquals(Arrays.asList(bookmark1, bookmark2), config.bookmarks());
+    }
+
     @ParameterizedTest
     @ValueSource(longs = {100, 1, 1000, Long.MAX_VALUE, -1})
     void shouldChangeFetchSize(long value) {

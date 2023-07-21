@@ -25,6 +25,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.RxSession;
 import org.reactivestreams.Subscription;
@@ -184,7 +186,7 @@ public class SessionConfig implements Serializable {
             if (bookmarks == null) {
                 this.bookmarks = null;
             } else {
-                this.bookmarks = Arrays.asList(bookmarks);
+                this.bookmarks = Arrays.stream(bookmarks).collect(Collectors.toList());
             }
             return this;
         }
@@ -201,7 +203,10 @@ public class SessionConfig implements Serializable {
          * @return this builder
          */
         public Builder withBookmarks(Iterable<Bookmark> bookmarks) {
-            this.bookmarks = bookmarks;
+            if (bookmarks != null) {
+                this.bookmarks =
+                        StreamSupport.stream(bookmarks.spliterator(), false).collect(Collectors.toList());
+            }
             return this;
         }
 
