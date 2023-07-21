@@ -46,7 +46,7 @@ public class InternalPair<K, V> implements Pair<K, V> {
 
     @Override
     public String toString() {
-        return String.format("%s: %s", Objects.toString(key), Objects.toString(value));
+        return String.format("%s: %s", key, value);
     }
 
     @Override

@@ -93,54 +93,49 @@ class GraphDatabaseTest {
 
     @Test
     void shouldAcceptNullTokenOnFactoryWithString() {
-        AuthToken token = null;
-        GraphDatabase.driver("neo4j://host", token);
+        GraphDatabase.driver("neo4j://host", (AuthToken) null);
     }
 
     @Test
     void shouldAcceptNullTokenOnFactoryWithUri() {
-        AuthToken token = null;
-        GraphDatabase.driver(URI.create("neo4j://host"), token);
+        GraphDatabase.driver(URI.create("neo4j://host"), (AuthToken) null);
     }
 
     @Test
     void shouldAcceptNullTokenOnFactoryWithStringAndConfig() {
-        AuthToken token = null;
-        GraphDatabase.driver("neo4j://host", token, Config.defaultConfig());
+        GraphDatabase.driver("neo4j://host", (AuthToken) null, Config.defaultConfig());
     }
 
     @Test
     void shouldAcceptNullTokenOnFactoryWithUriAndConfig() {
-        AuthToken token = null;
-        GraphDatabase.driver(URI.create("neo4j://host"), token, Config.defaultConfig());
+        GraphDatabase.driver(URI.create("neo4j://host"), (AuthToken) null, Config.defaultConfig());
     }
 
     @Test
     void shouldRejectNullAuthTokenManagerOnFactoryWithString() {
-        AuthTokenManager manager = null;
-        assertThrows(NullPointerException.class, () -> GraphDatabase.driver("neo4j://host", manager));
+        assertThrows(NullPointerException.class, () -> GraphDatabase.driver("neo4j://host", (AuthTokenManager) null));
     }
 
     @Test
     void shouldRejectNullAuthTokenManagerOnFactoryWithUri() {
-        AuthTokenManager manager = null;
-        assertThrows(NullPointerException.class, () -> GraphDatabase.driver(URI.create("neo4j://host"), manager));
+        assertThrows(
+                NullPointerException.class,
+                () -> GraphDatabase.driver(URI.create("neo4j://host"), (AuthTokenManager) null));
     }
 
     @Test
     void shouldRejectNullAuthTokenManagerOnFactoryWithStringAndConfig() {
-        AuthTokenManager manager = null;
         assertThrows(
                 NullPointerException.class,
-                () -> GraphDatabase.driver("neo4j://host", manager, Config.defaultConfig()));
+                () -> GraphDatabase.driver("neo4j://host", (AuthTokenManager) null, Config.defaultConfig()));
     }
 
     @Test
     void shouldRejectNullAuthTokenManagerOnFactoryWithUriAndConfig() {
-        AuthTokenManager manager = null;
         assertThrows(
                 NullPointerException.class,
-                () -> GraphDatabase.driver(URI.create("neo4j://host"), manager, Config.defaultConfig()));
+                () -> GraphDatabase.driver(
+                        URI.create("neo4j://host"), (AuthTokenManager) null, Config.defaultConfig()));
     }
 
     private static void testFailureWhenServerDoesNotRespond(boolean encrypted) throws IOException {

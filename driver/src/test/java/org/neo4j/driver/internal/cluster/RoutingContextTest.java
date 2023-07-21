@@ -139,9 +139,6 @@ class RoutingContextTest {
     private static void testEmptyRoutingContext(URI uri) {
         var context = new RoutingContext(uri);
 
-        Map<String, String> expectedMap = new HashMap<>();
-        expectedMap.put("address", "localhost:7687");
-
         assertFalse(context.isDefined());
         assertEquals(singletonMap("address", "localhost:7687"), context.toMap());
     }

@@ -25,6 +25,7 @@ import static java.util.Collections.singletonList;
 import java.io.IOException;
 import java.io.Serial;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -204,7 +205,7 @@ public class PackStream {
 
     private static final String EMPTY_STRING = "";
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
+    private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
     private PackStream() {}
 
