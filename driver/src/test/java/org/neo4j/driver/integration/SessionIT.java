@@ -54,7 +54,6 @@ import static org.neo4j.driver.testutil.DaemonThreadFactory.daemon;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -1257,10 +1256,9 @@ class SessionIT {
                 driver.session(builder().withDefaultAccessMode(sessionMode).build())) {
             var names = session.readTransaction(tx -> {
                 var records = tx.run("MATCH (p:Person) RETURN p.name AS name").list();
-                Set<String> names1 = records.stream()
+                return records.stream()
                         .map(record -> record.get("name").asString())
                         .collect(Collectors.toCollection(() -> new HashSet<>(records.size())));
-                return names1;
             });
 
             assertThat(names, containsInAnyOrder("Tony Stark", "Steve Rogers"));

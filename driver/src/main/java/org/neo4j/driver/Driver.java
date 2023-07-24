@@ -139,6 +139,7 @@ public interface Driver extends AutoCloseable {
      * @throws IllegalArgumentException for unsupported session types
      * @since 5.2
      */
+    @SuppressWarnings("deprecation")
     default <T extends BaseSession> T session(Class<T> sessionClass) {
         return session(sessionClass, SessionConfig.defaultConfig());
     }
@@ -176,6 +177,7 @@ public interface Driver extends AutoCloseable {
      * @since 5.8
      */
     @Preview(name = "AuthToken rotation and session auth support")
+    @SuppressWarnings("deprecation")
     default <T extends BaseSession> T session(Class<T> sessionClass, AuthToken sessionAuthToken) {
         return session(sessionClass, SessionConfig.defaultConfig(), sessionAuthToken);
     }
@@ -208,6 +210,7 @@ public interface Driver extends AutoCloseable {
      * @throws IllegalArgumentException for unsupported session types
      * @since 5.2
      */
+    @SuppressWarnings("deprecation")
     default <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig) {
         return session(sessionClass, sessionConfig, null);
     }
@@ -247,6 +250,7 @@ public interface Driver extends AutoCloseable {
      * @since 5.8
      */
     @Preview(name = "AuthToken rotation and session auth support")
+    @SuppressWarnings("deprecation")
     <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig, AuthToken sessionAuthToken);
 
     /**

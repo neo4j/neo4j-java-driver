@@ -69,7 +69,6 @@ public class SessionRun extends AbstractTestkitRequestWithTransactionConfig<Sess
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState.getRxSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
             var session = sessionHolder.getSession();

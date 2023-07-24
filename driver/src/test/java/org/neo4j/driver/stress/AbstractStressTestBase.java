@@ -227,11 +227,9 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     private List<Future<?>> launchBlockingWorkerThreads(C context) {
         var commands = createBlockingCommands();
-        List<Future<?>> futures = IntStream.range(0, THREAD_COUNT)
+        return IntStream.range(0, THREAD_COUNT)
                 .mapToObj(i -> launchBlockingWorkerThread(executor, commands, context))
                 .collect(Collectors.toList());
-
-        return futures;
     }
 
     private List<BlockingCommand<C>> createBlockingCommands() {
@@ -257,7 +255,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     private Future<Void> launchBlockingWorkerThread(
             ExecutorService executor, List<BlockingCommand<C>> commands, C context) {
         return executor.submit(() -> {
-            while (!context.isStopped()) {
+            while (context.isNotStopped()) {
                 var command = randomOf(commands);
                 command.execute(context);
             }
@@ -267,11 +265,9 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     private List<Future<?>> launchRxWorkerThreads(C context) {
         var commands = createRxCommands();
-        List<Future<?>> futures = IntStream.range(0, THREAD_COUNT)
+        return IntStream.range(0, THREAD_COUNT)
                 .mapToObj(i -> launchRxWorkerThread(executor, commands, context))
                 .collect(Collectors.toList());
-
-        return futures;
     }
 
     private List<RxCommand<C>> createRxCommands() {
@@ -292,7 +288,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     private Future<Void> launchRxWorkerThread(ExecutorService executor, List<RxCommand<C>> commands, C context) {
         return executor.submit(() -> {
-            while (!context.isStopped()) {
+            while (context.isNotStopped()) {
                 var allCommands = executeRxCommands(context, commands);
                 assertNull(allCommands.get());
             }
@@ -314,11 +310,9 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     private List<Future<?>> launchAsyncWorkerThreads(C context) {
         var commands = createAsyncCommands();
-        List<Future<?>> futures = IntStream.range(0, THREAD_COUNT)
+        return IntStream.range(0, THREAD_COUNT)
                 .mapToObj(i -> launchAsyncWorkerThread(executor, commands, context))
                 .collect(Collectors.toList());
-
-        return futures;
     }
 
     private List<AsyncCommand<C>> createAsyncCommands() {
@@ -341,7 +335,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     private Future<Void> launchAsyncWorkerThread(ExecutorService executor, List<AsyncCommand<C>> commands, C context) {
         return executor.submit(() -> {
-            while (!context.isStopped()) {
+            while (context.isNotStopped()) {
                 var allCommands = executeAsyncCommands(context, commands);
                 assertNull(allCommands.get());
             }

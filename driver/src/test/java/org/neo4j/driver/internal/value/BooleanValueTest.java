@@ -58,30 +58,17 @@ class BooleanValueTest {
 
     @Test
     void testIsBoolean() {
-        // Given
-        var value = TRUE;
-
-        // Then
-        assertThat(typeSystem.BOOLEAN().isTypeOf(value), equalTo(true));
+        assertThat(typeSystem.BOOLEAN().isTypeOf(TRUE), equalTo(true));
     }
 
     @Test
     void testEquals() {
-        // Given
-        var firstValue = TRUE;
-        var secondValue = TRUE;
-
-        // Then
-        assertThat(firstValue, equalTo(secondValue));
+        assertThat(TRUE, equalTo(TRUE));
     }
 
     @Test
     void testHashCode() {
-        // Given
-        var value = TRUE;
-
-        // Then
-        assertThat(value.hashCode(), notNullValue());
+        assertThat(TRUE.hashCode(), notNullValue());
     }
 
     @Test

@@ -66,7 +66,6 @@ public class TransactionRun implements TestkitRequest {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState.getRxTransactionHolder(data.getTxId()).flatMap(transactionHolder -> {
             var result = transactionHolder

@@ -23,10 +23,10 @@ import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -60,7 +60,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.hamcrest.junit.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -318,7 +317,7 @@ class InternalAsyncSessionTest {
 
         var e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, mode, work));
 
-        MatcherAssert.assertThat(e, instanceOf(SessionExpiredException.class));
+        assertThat(e, instanceOf(SessionExpiredException.class));
         assertEquals("Oh!", e.getMessage());
         verifyInvocationCount(work, failures);
         verifyCommitTx(connection, never());
@@ -338,7 +337,7 @@ class InternalAsyncSessionTest {
 
         var e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, mode, work));
 
-        MatcherAssert.assertThat(e, instanceOf(ServiceUnavailableException.class));
+        assertThat(e, instanceOf(ServiceUnavailableException.class));
         verifyInvocationCount(work, failures);
         verifyCommitTx(connection, times(failures));
     }

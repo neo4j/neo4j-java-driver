@@ -29,8 +29,8 @@ public abstract class AbstractContext {
     private final AtomicLong createdNodesCount = new AtomicLong();
     private final AtomicInteger bookmarkFailures = new AtomicInteger();
 
-    public final boolean isStopped() {
-        return stopped;
+    public final boolean isNotStopped() {
+        return !stopped;
     }
 
     public final void stop() {

@@ -74,8 +74,7 @@ public class CertificateUtil {
     private static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
         var keyPairGenerator = KeyPairGenerator.getInstance(DEFAULT_ENCRYPTION);
         keyPairGenerator.initialize(2048, new SecureRandom());
-        var keyPair = keyPairGenerator.generateKeyPair();
-        return keyPair;
+        return keyPairGenerator.generateKeyPair();
     }
 
     private static X509Certificate generateCert(

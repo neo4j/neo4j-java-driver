@@ -15,10 +15,10 @@ As a policy, patch versions will not be released except on rare occasions. Bug f
 
 ## Supported Driver Series
 
-| Driver Series | Supported Java Runtime versions | Status | Changelog |
-| --- | --- | --- | --- |
-| 5.x | 17 | Primary development branch. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/5.x-changelog) |
-| 4.4 | 8, 11 | Maintenance. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.4-changelog) |
+| Driver Series | Supported Java Runtime versions | Status                      | Changelog                                                             |
+|---------------|---------------------------------|-----------------------------|-----------------------------------------------------------------------|
+| 5.x           | 17                              | Primary development branch. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/5.x-changelog) |
+| 4.4           | 8, 11                           | Maintenance.                | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.4-changelog) |
 
 ## Server Compatibility
 

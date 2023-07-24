@@ -224,8 +224,7 @@ public final class Values {
      * @return the array of values
      */
     public static Value[] values(final Object... input) {
-        var values = Arrays.stream(input).map(Values::value).toArray(Value[]::new);
-        return values;
+        return Arrays.stream(input).map(Values::value).toArray(Value[]::new);
     }
 
     /**

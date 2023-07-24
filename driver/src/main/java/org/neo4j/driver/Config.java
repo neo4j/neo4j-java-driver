@@ -574,9 +574,8 @@ public final class Config implements Serializable {
          * By default, the value is set to {@code 1000}.
          * Use {@code -1} to disables back pressure and config client to pull all records at once after each run.
          * <p>
-         * This config only applies to run result obtained via {@link Session} and {@link org.neo4j.driver.async.AsyncSession}.
-         * As with {@link org.neo4j.driver.reactive.RxSession}, the batch size is provided via
-         * {@link org.reactivestreams.Subscription#request(long)} instead.
+         * This config only applies to run results obtained via {@link Session} and {@link org.neo4j.driver.async.AsyncSession}.
+         * As with the reactive sessions the batch size is managed by the subscription requests instead.
          *
          * @param size the default record fetch size when pulling records in batches using Bolt V4.
          * @return this builder
