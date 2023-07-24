@@ -34,11 +34,13 @@ public class CheckMultiDBSupport implements TestkitRequest {
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         var driverId = data.getDriverId();
+        @SuppressWarnings("resource")
         var available = testkitState.getDriverHolder(driverId).driver().supportsMultiDb();
         return createResponse(available);
     }
 
     @Override
+    @SuppressWarnings("resource")
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
         return testkitState
                 .getDriverHolder(data.getDriverId())

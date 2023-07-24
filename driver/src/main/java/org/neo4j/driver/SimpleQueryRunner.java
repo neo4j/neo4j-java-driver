@@ -95,7 +95,7 @@ public interface SimpleQueryRunner {
      *
      * Map<String, Object> parameters = new HashMap<String, Object>();
      * parameters.put("myNameParam", "Bob");
-     *
+     * <p>
      * Result result = session.run( "MATCH (n) WHERE n.name = $myNameParam RETURN (n)",
      *                                       parameters );
      * }

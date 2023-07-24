@@ -121,10 +121,7 @@ class SessionPoolingStressIT {
                 }
             } catch (Throwable failure) {
                 if (!failureReference.compareAndSet(null, failure)) {
-                    var firstFailure = failureReference.get();
-                    synchronized (firstFailure) {
-                        firstFailure.addSuppressed(failure);
-                    }
+                    failureReference.get().addSuppressed(failure);
                 }
             }
         }

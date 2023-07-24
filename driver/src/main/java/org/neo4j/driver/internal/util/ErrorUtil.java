@@ -102,9 +102,7 @@ public final class ErrorUtil {
                 return true;
             }
 
-            if (isClientOrTransientError(((Neo4jException) error))) {
-                return false;
-            }
+            return !isClientOrTransientError(((Neo4jException) error));
         }
         return true;
     }

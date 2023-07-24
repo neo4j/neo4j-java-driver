@@ -39,16 +39,16 @@ public interface RxQueryRunner {
      * Register running of a query and return a reactive result stream.
      * The query is not executed when the reactive result is returned.
      * Instead, the publishers in the result will actually start the execution of the query.
-     *
+     * <p>
      * This method takes a set of parameters that will be injected into the
      * query by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
-     *
+     * <p>
      * This particular method takes a {@link Value} as its input. This is useful
      * if you want to take a map-like value that you've gotten from a prior result
      * and send it back as parameters.
-     *
+     * <p>
      * If you are creating parameters programmatically, {@link #run(String, Map)}
      * might be more helpful, it converts your map to a {@link Value} for you.
      *
@@ -64,12 +64,12 @@ public interface RxQueryRunner {
      * Register running of a query and return a reactive result stream.
      * The query is not executed when the reactive result is returned.
      * Instead, the publishers in the result will actually start the execution of the query.
-     *
+     * <p>
      * This method takes a set of parameters that will be injected into the
      * query by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
-     *
+     * <p>
      * This version of run takes a {@link Map} of parameters. The values in the map
      * must be values that can be converted to Neo4j types. See {@link Values#parameters(Object...)} for
      * a list of allowed types.
@@ -86,12 +86,12 @@ public interface RxQueryRunner {
      * Register running of a query and return a reactive result stream.
      * The query is not executed when the reactive result is returned.
      * Instead, the publishers in the result will actually start the execution of the query.
-     *
+     * <p>
      * This method takes a set of parameters that will be injected into the
      * query by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
-     *
+     * <p>
      * This version of run takes a {@link Record} of parameters, which can be useful
      * if you want to use the output of one query as input for another.
      *

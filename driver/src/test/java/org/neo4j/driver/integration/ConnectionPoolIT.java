@@ -170,6 +170,7 @@ class ConnectionPoolIT {
         }
     }
 
+    @SuppressWarnings("BusyWait")
     private void awaitNoActiveChannels(ChannelTrackingDriverFactory driverFactory) throws InterruptedException {
         var deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(20);
         var activeChannels = -1;
@@ -187,7 +188,7 @@ class ConnectionPoolIT {
     /**
      * This is a background runner that will grab lots of sessions in one go, and then close them all, while tracking
      * it's current state - is it currently able to acquire complete groups of sessions, or are there errors occurring?
-     *
+     * <p>
      * This can thus be used to judge the state of the driver - is it currently healthy or not?
      */
     private static class SessionGrabber implements Runnable {
@@ -207,6 +208,7 @@ class ConnectionPoolIT {
         }
 
         @Override
+        @SuppressWarnings("BusyWait")
         public void run() {
             try {
                 while (run) {
@@ -231,6 +233,7 @@ class ConnectionPoolIT {
             }
         }
 
+        @SuppressWarnings("BusyWait")
         void assertSessionsAvailableWithin() throws InterruptedException {
             var deadline = System.currentTimeMillis() + 1000 * 120;
             while (System.currentTimeMillis() < deadline) {

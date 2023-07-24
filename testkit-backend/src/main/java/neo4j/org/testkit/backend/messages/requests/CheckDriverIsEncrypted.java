@@ -57,6 +57,7 @@ public class CheckDriverIsEncrypted implements TestkitRequest {
         return processReactive(testkitState);
     }
 
+    @SuppressWarnings("resource")
     private DriverIsEncrypted createResponse(TestkitState testkitState) {
         var driverHolder = testkitState.getDriverHolder(data.getDriverId());
         return DriverIsEncrypted.builder()

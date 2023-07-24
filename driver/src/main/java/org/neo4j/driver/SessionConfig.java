@@ -332,12 +332,12 @@ public final class SessionConfig implements Serializable {
          * Specify how many records to fetch in each batch for this session.
          * This config will overrides the default value set on {@link Config#fetchSize()}.
          * This config is only valid when the driver is used with servers that support Bolt V4 (Server version 4.0 and later).
-         *
+         * <p>
          * Bolt V4 enables pulling records in batches to allow client to take control of data population and apply back pressure to server.
          * This config specifies the default fetch size for all query runs using {@link Session} and {@link AsyncSession}.
          * By default, the value is set to {@code 1000}.
          * Use {@code -1} to disables back pressure and config client to pull all records at once after each run.
-         *
+         * <p>
          * This config only applies to run result obtained via {@link Session} and {@link AsyncSession}.
          * As with {@link RxSession}, the batch size is provided via {@link Subscription#request(long)} instead.
          * @param size the default record fetch size when pulling records in batches using Bolt V4.

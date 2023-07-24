@@ -51,7 +51,7 @@ public final class BookmarkManagerConfig {
     /**
      * Returns the map of bookmarks used to initialise the bookmark manager.
      *
-     * @return the map of bookmarks
+     * @return the set of bookmarks
      */
     public Set<Bookmark> initialBookmarks() {
         return initialBookmarks;

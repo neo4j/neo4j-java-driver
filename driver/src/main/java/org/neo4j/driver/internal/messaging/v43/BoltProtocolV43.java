@@ -25,7 +25,7 @@ import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
 
 /**
  * Definition of the Bolt Protocol 4.3
- *
+ * <p>
  * The version 4.3 use most of the 4.2 behaviours, but it extends it with new messages such as ROUTE
  */
 public class BoltProtocolV43 extends BoltProtocolV42 {

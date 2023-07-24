@@ -231,7 +231,7 @@ class ExamplesIT {
     }
 
     @Test
-    void testShouldRunHelloWorld() throws Exception {
+    void testShouldRunHelloWorld() {
         // Given
         try (var greeter = new HelloWorldExample(uri, USER, neo4j.adminPassword())) {
             // When
@@ -328,7 +328,7 @@ class ExamplesIT {
     }
 
     @Test
-    void testShouldRunAsyncTransactionFunctionExample() throws Exception {
+    void testShouldRunAsyncTransactionFunctionExample() {
         try (var example =
                 new AsyncTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
             // create some 'Product' nodes
@@ -395,7 +395,7 @@ class ExamplesIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
-    void testShouldRunRxTransactionFunctionExampleReactor() throws Exception {
+    void testShouldRunRxTransactionFunctionExampleReactor() {
         try (var example =
                 new RxTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
             // create some 'Product' nodes

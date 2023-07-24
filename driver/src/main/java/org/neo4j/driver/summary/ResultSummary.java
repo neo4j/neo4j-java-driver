@@ -27,9 +27,9 @@ import org.neo4j.driver.util.Immutable;
  * The result summary of running a query. The result summary interface can be used to investigate
  * details about the result, like the type of query run, how many and which kinds of updates have been executed,
  * and query plan and profiling information if available.
- *
+ * <p>
  * The result summary is only available after all result records have been consumed.
- *
+ * <p>
  * Keeping the result summary around does not influence the lifecycle of any associated session and/or transaction.
  * @since 1.0
  */
@@ -69,7 +69,7 @@ public interface ResultSummary {
 
     /**
      * This describes how the database did execute your query.
-     *
+     * <p>
      * If the query you executed {@link #hasProfile() was profiled}, the query plan will contain detailed
      * information about what each step of the plan did. That more in-depth version of the query plan becomes
      * available here.
@@ -82,7 +82,7 @@ public interface ResultSummary {
      * A list of notifications that might arise when executing the query.
      * Notifications can be warnings about problematic queries or other valuable information that can be presented
      * in a client.
-     *
+     * <p>
      * Unlike failures or errors, notifications do not affect the execution of a query.
      *
      * @return a list of notifications produced while executing the query. The list will be empty if no

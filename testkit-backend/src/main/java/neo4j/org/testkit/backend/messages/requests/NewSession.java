@@ -124,6 +124,7 @@ public class NewSession implements TestkitRequest {
                 .build();
     }
 
+    @SuppressWarnings("resource")
     private SessionHolder createSessionState(
             DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new SessionHolder(
@@ -132,6 +133,7 @@ public class NewSession implements TestkitRequest {
                 sessionConfig);
     }
 
+    @SuppressWarnings("resource")
     private AsyncSessionHolder createAsyncSessionState(
             DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new AsyncSessionHolder(
@@ -140,7 +142,7 @@ public class NewSession implements TestkitRequest {
                 sessionConfig);
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "resource"})
     private RxSessionHolder createRxSessionState(
             DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new RxSessionHolder(
@@ -149,6 +151,7 @@ public class NewSession implements TestkitRequest {
                 sessionConfig);
     }
 
+    @SuppressWarnings("resource")
     private ReactiveSessionHolder createReactiveSessionState(
             DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new ReactiveSessionHolder(
@@ -157,6 +160,7 @@ public class NewSession implements TestkitRequest {
                 sessionConfig);
     }
 
+    @SuppressWarnings("resource")
     private ReactiveSessionStreamsHolder createReactiveSessionStreamsState(
             DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
         return new ReactiveSessionStreamsHolder(

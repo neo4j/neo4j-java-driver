@@ -44,10 +44,8 @@ public final class CertificateTool {
     /**
      * Save a certificate to a file. Remove all the content in the file if there is any before.
      *
-     * @param cert
-     * @param certFile
-     * @throws GeneralSecurityException
-     * @throws IOException
+     * @param cert the certificate
+     * @param certFile the certificate file
      */
     public static void saveX509Cert(Certificate cert, File certFile) throws GeneralSecurityException, IOException {
         saveX509Cert(new Certificate[] {cert}, certFile);
@@ -56,10 +54,8 @@ public final class CertificateTool {
     /**
      * Save a list of certificates into a file
      *
-     * @param certs
-     * @param certFile
-     * @throws GeneralSecurityException
-     * @throws IOException
+     * @param certs the certificates
+     * @param certFile the certificate file
      */
     public static void saveX509Cert(Certificate[] certs, File certFile) throws GeneralSecurityException, IOException {
         try (var writer = new BufferedWriter(new FileWriter(certFile))) {
@@ -82,10 +78,8 @@ public final class CertificateTool {
     /**
      * Load the certificates written in X.509 format in a file to a key store.
      *
-     * @param certFiles
-     * @param keyStore
-     * @throws GeneralSecurityException
-     * @throws IOException
+     * @param certFiles the certificate files
+     * @param keyStore the key store
      */
     public static void loadX509Cert(List<File> certFiles, KeyStore keyStore)
             throws GeneralSecurityException, IOException {
@@ -126,8 +120,8 @@ public final class CertificateTool {
      * Load a certificate to a key store with a name
      *
      * @param certAlias a name to identify different certificates
-     * @param cert
-     * @param keyStore
+     * @param cert the certificate
+     * @param keyStore the key store
      */
     public static void loadX509Cert(Certificate cert, String certAlias, KeyStore keyStore) throws KeyStoreException {
         keyStore.setCertificateEntry(certAlias, cert);

@@ -33,10 +33,10 @@ import java.util.Map;
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
  * The key differences are in the type system itself which (among other things) replaces extensions with structures.
  * The Packer and Unpacker implementations are also faster than their MessagePack counterparts.
- *
+ * <p>
  * Note that several marker byte values are RESERVED for future use.
  * Extra markers should <em>not</em> be added casually and such additions must be follow a strict process involving both client and server software.
- *
+ * <p>
  * The table below shows all allocated marker byte values.
  * <br>
  * <table>

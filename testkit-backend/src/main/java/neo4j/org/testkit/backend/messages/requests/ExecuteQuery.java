@@ -40,6 +40,7 @@ public class ExecuteQuery implements TestkitRequest {
 
     @Override
     public TestkitResponse process(TestkitState testkitState) {
+        @SuppressWarnings("resource")
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var configBuilder = QueryConfig.builder();
         var routing = data.getConfig().getRouting();

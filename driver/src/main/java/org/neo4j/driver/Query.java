@@ -120,7 +120,7 @@ public class Query {
     /**
      * Create a new query with new parameters derived by updating this'
      * query's parameters using the given updates.
-     *
+     * <p>
      * Every update key that points to a null value will be removed from
      * the new query's parameters. All other entries will just replace
      * any existing parameter in the new query.

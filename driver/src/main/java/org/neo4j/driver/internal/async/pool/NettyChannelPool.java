@@ -190,11 +190,9 @@ public class NettyChannelPool implements ExtendedChannelPool {
                                         .enqueue(new LogonResponseHandler(logonFuture, channel, clock));
                                 authContext.initiateAuth(latestAuthToken);
                                 channel.write(new LogonMessage(((InternalAuthToken) latestAuthToken).toMap()));
-                                // do not await for re-login
-                                result = CompletableFuture.completedStage(channel);
-                            } else {
-                                result = CompletableFuture.completedStage(channel);
                             }
+                            // do not await for re-login
+                            result = CompletableFuture.completedStage(channel);
                         } else {
                             var logonFuture = new CompletableFuture<Void>();
                             messageDispatcher(channel).enqueue(new LogonResponseHandler(logonFuture, channel, clock));
