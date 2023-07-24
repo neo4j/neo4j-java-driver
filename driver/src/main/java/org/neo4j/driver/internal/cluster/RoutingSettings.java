@@ -20,22 +20,6 @@ package org.neo4j.driver.internal.cluster;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class RoutingSettings {
+public record RoutingSettings(long routingTablePurgeDelayMs, RoutingContext routingContext) {
     public static final long STALE_ROUTING_TABLE_PURGE_DELAY_MS = SECONDS.toMillis(30);
-
-    private final RoutingContext routingContext;
-    private final long routingTablePurgeDelayMs;
-
-    public RoutingSettings(long routingTablePurgeDelayMs, RoutingContext routingContext) {
-        this.routingContext = routingContext;
-        this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;
-    }
-
-    public RoutingContext routingContext() {
-        return routingContext;
-    }
-
-    public long routingTablePurgeDelayMs() {
-        return routingTablePurgeDelayMs;
-    }
 }

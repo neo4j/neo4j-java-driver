@@ -23,6 +23,7 @@ import static java.util.Arrays.asList;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -31,11 +32,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class StdIOCapture implements AutoCloseable {
     private final List<String> stdout = new CopyOnWriteArrayList<>();
-    private final List<String> stderr = new CopyOnWriteArrayList<>();
     private final PrintStream originalStdOut;
     private final PrintStream originalStdErr;
     private final ByteArrayOutputStream capturedStdOut;
-    private final ByteArrayOutputStream capturedStdErr;
 
     /** Put this in a try-with-resources block to capture all standard io that happens within the try block */
     public static StdIOCapture capture() {
@@ -46,7 +45,7 @@ public class StdIOCapture implements AutoCloseable {
         originalStdOut = System.out;
         originalStdErr = System.err;
         capturedStdOut = new ByteArrayOutputStream();
-        capturedStdErr = new ByteArrayOutputStream();
+        var capturedStdErr = new ByteArrayOutputStream();
 
         System.setOut(new PrintStream(capturedStdOut));
         System.setErr(new PrintStream(capturedStdErr));
@@ -60,7 +59,6 @@ public class StdIOCapture implements AutoCloseable {
     public void close() throws UnsupportedEncodingException {
         System.setOut(originalStdOut);
         System.setErr(originalStdErr);
-        stdout.addAll(asList(capturedStdOut.toString("UTF-8").split(System.lineSeparator())));
-        stderr.addAll(asList(capturedStdErr.toString("UTF-8").split(System.lineSeparator())));
+        stdout.addAll(asList(capturedStdOut.toString(StandardCharsets.UTF_8).split(System.lineSeparator())));
     }
 }

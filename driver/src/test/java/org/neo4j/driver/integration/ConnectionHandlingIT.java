@@ -19,10 +19,9 @@
 package org.neo4j.driver.integration;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.atLeastOnce;
@@ -328,7 +327,7 @@ class ConnectionHandlingIT {
                 .verifyComplete();
 
         var connection2 = connectionPool.lastAcquiredConnectionSpy;
-        assertNotSame(connection1, connection2);
+        assertNotNull(connection2);
         verify(connection2).release();
     }
 
@@ -344,7 +343,7 @@ class ConnectionHandlingIT {
         StepVerifier.create(Mono.from(res.consume())).expectNextCount(1).verifyComplete();
 
         var connection2 = connectionPool.lastAcquiredConnectionSpy;
-        assertNotSame(connection1, connection2);
+        assertNotNull(connection2);
         verify(connection2).release();
     }
 

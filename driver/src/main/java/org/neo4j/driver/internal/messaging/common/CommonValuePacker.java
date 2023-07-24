@@ -232,8 +232,7 @@ public class CommonValuePacker implements ValuePacker {
         } else if (point instanceof InternalPoint3D) {
             packPoint3D(point);
         } else {
-            throw new IOException(
-                    String.format("Unknown type: type: %s, value: %s", point.getClass(), point.toString()));
+            throw new IOException(String.format("Unknown type: type: %s, value: %s", point.getClass(), point));
         }
     }
 

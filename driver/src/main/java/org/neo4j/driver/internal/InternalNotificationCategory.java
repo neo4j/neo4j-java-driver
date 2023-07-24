@@ -35,7 +35,7 @@ public record InternalNotificationCategory(Type type) implements NotificationCat
         UNSUPPORTED,
         PERFORMANCE,
         DEPRECATION,
-        GENERIC;
+        GENERIC
     }
 
     public static Optional<NotificationCategory> valueOf(String value) {

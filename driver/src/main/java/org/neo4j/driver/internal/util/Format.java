@@ -52,7 +52,7 @@ public abstract class Format {
     }
 
     private static <V> String keyValueString(Entry<String, V> entry) {
-        return String.format("%s: %s", entry.getKey(), String.valueOf(entry.getValue()));
+        return String.format("%s: %s", entry.getKey(), entry.getValue());
     }
 
     /**
