@@ -226,28 +226,6 @@
   </dependencyManagement>
 
   <profiles>
-    <!-- If a revision has not been explicitly set, sort it out by looking at git metadata -->
-    <profile>
-      <id>determine-revision</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>!build.revision</name>
-        </property>
-      </activation>
-      <properties>
-        <build.revision>${git.commit.id.abbrev}</build.revision>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>pl.project13.maven</groupId>
-            <artifactId>git-commit-id-plugin</artifactId>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
     <!-- Disable parallel execution of integration tests with "-DsequentialITs" -->
     <profile>
       <id>sequentialIntegrationTests</id>
@@ -361,18 +339,6 @@
               <phase>compile</phase>
               <goals>
                 <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>pl.project13.maven</groupId>
-          <artifactId>git-commit-id-plugin</artifactId>
-          <version>2.2.4</version>
-          <executions>
-            <execution>
-              <goals>
-                <goal>revision</goal>
               </goals>
             </execution>
           </executions>
