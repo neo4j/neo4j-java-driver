@@ -194,7 +194,6 @@ class NetworkSessionTest {
         inOrder.verify(connection, atLeastOnce()).release();
     }
 
-    @SuppressWarnings("deprecation")
     @Test
     void resetDoesNothingWhenNoTransactionAndNoConnection() {
         await(session.resetAsync());

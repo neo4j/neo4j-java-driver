@@ -141,7 +141,7 @@ class QueryIT {
         assertThat(result.size(), equalTo(3));
     }
 
-    @SuppressWarnings({"QueryWithEmptyBody", "ConstantConditions"})
+    @SuppressWarnings({"QueryWithEmptyBody"})
     @Test
     void shouldRunSimpleQuery() {
         // When I run a simple write query
@@ -166,7 +166,6 @@ class QueryIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldBeAbleToLogSemanticWrongExceptions() {
         try {
             // When I run a query with the old syntax

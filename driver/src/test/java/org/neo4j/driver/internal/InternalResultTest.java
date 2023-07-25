@@ -372,10 +372,9 @@ class InternalResultTest {
     }
 
     private List<Value> values(Record record) {
-        List<Value> result = record.fields().stream()
+        return record.fields().stream()
                 .map(Pair::value)
                 .collect(Collectors.toCollection(
                         () -> new ArrayList<>(record.keys().size())));
-        return result;
     }
 }

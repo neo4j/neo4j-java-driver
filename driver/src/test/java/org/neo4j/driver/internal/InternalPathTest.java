@@ -23,7 +23,6 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.types.Node;
@@ -70,7 +69,7 @@ class InternalPathTest {
         var segments = Iterables.asList(path);
 
         // Then
-        MatcherAssert.assertThat(
+        assertThat(
                 segments,
                 equalTo(Arrays.asList(
                         (Path.Segment) new InternalPath.SelfContainedSegment(

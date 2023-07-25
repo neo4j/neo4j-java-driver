@@ -21,7 +21,7 @@ package org.neo4j.driver.internal;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;

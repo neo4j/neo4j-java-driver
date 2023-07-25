@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.hamcrest.junit.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.NotificationCategory;
 import org.neo4j.driver.NotificationSeverity;
@@ -59,10 +58,10 @@ class InternalNotificationTest {
         assertThat(notification.code(), equalTo("Neo.DummyNotification"));
         assertThat(notification.title(), equalTo("A title"));
         assertThat(notification.severity(), equalTo("WARNING"));
-        MatcherAssert.assertThat(notification.severityLevel().get(), equalTo(NotificationSeverity.WARNING));
-        MatcherAssert.assertThat(notification.rawSeverityLevel().get(), equalTo("WARNING"));
-        MatcherAssert.assertThat(notification.category().get(), equalTo(NotificationCategory.DEPRECATION));
-        MatcherAssert.assertThat(notification.rawCategory().get(), equalTo("DEPRECATION"));
+        assertThat(notification.severityLevel().get(), equalTo(NotificationSeverity.WARNING));
+        assertThat(notification.rawSeverityLevel().get(), equalTo("WARNING"));
+        assertThat(notification.category().get(), equalTo(NotificationCategory.DEPRECATION));
+        assertThat(notification.rawCategory().get(), equalTo("DEPRECATION"));
         var pos = notification.position();
         assertThat(pos.offset(), equalTo(0));
         assertThat(pos.column(), equalTo(1));

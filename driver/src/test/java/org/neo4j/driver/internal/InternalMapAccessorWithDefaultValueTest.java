@@ -319,7 +319,6 @@ class InternalMapAccessorWithDefaultValueTest {
             new RelationshipValue(rel),
             Values.value(0.1F)
         };
-        Record record = new InternalRecord(keys, values);
-        return record;
+        return new InternalRecord(keys, values);
     }
 }

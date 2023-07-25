@@ -31,7 +31,6 @@ import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
-import org.neo4j.driver.TransactionConfig;
 import reactor.core.publisher.Mono;
 
 public class SessionBeginTransaction
@@ -49,7 +48,6 @@ public class SessionBeginTransaction
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
         return testkitState.getAsyncSessionHolder(data.getSessionId()).thenCompose(sessionHolder -> {
             var session = sessionHolder.getSession();
-            var builder = TransactionConfig.builder();
 
             return session.beginTransactionAsync(buildTxConfig())
                     .thenApply(tx -> transaction(
@@ -62,7 +60,6 @@ public class SessionBeginTransaction
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState.getRxSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
             var session = sessionHolder.getSession();
-            var builder = TransactionConfig.builder();
 
             return Mono.fromDirect(session.beginTransaction(buildTxConfig()))
                     .map(tx -> transaction(
@@ -74,7 +71,6 @@ public class SessionBeginTransaction
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState.getReactiveSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
             var session = sessionHolder.getSession();
-            var builder = TransactionConfig.builder();
 
             return Mono.fromDirect(flowPublisherToFlux(session.beginTransaction(buildTxConfig())))
                     .map(tx -> transaction(testkitState.addReactiveTransactionHolder(
@@ -86,7 +82,6 @@ public class SessionBeginTransaction
     public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
         return testkitState.getReactiveSessionStreamsHolder(data.getSessionId()).flatMap(sessionHolder -> {
             var session = sessionHolder.getSession();
-            var builder = TransactionConfig.builder();
 
             return Mono.fromDirect(session.beginTransaction(buildTxConfig()))
                     .map(tx -> transaction(testkitState.addReactiveTransactionStreamsHolder(

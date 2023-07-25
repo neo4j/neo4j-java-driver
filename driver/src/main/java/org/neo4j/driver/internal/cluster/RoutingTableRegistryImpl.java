@@ -165,10 +165,9 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
     public Set<BoltServerAddress> allServers() {
         // obviously we just had a snapshot of all servers in all routing tables
         // after we read it, the set could already be changed.
-        var servers = routingTableHandlers.values().stream()
+        return routingTableHandlers.values().stream()
                 .flatMap(tableHandler -> tableHandler.servers().stream())
                 .collect(Collectors.toSet());
-        return servers;
     }
 
     @Override

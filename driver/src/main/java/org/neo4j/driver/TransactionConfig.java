@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.internal.util.Extract;
 
 /**
@@ -41,9 +40,8 @@ import org.neo4j.driver.internal.util.Extract;
  * <ul>
  * <li>queries executed in auto-commit transactions - using various overloads of {@link Session#run(String, TransactionConfig)} and
  * {@link AsyncSession#runAsync(String, TransactionConfig)}</li>
- * <li>transactions started by transaction functions - using {@link Session#readTransaction(TransactionWork, TransactionConfig)},
- * {@link Session#writeTransaction(TransactionWork, TransactionConfig)}, {@link AsyncSession#readTransactionAsync(AsyncTransactionWork, TransactionConfig)} and
- * {@link AsyncSession#writeTransactionAsync(AsyncTransactionWork, TransactionConfig)}</li>
+ * <li>transactions started by transaction functions - using {@link Session#executeWrite(TransactionCallback, TransactionConfig)},
+ * {@link Session#executeRead(TransactionCallback, TransactionConfig)} and the other similar variants</li>
  * <li>unmanaged transactions - using {@link Session#beginTransaction(TransactionConfig)} and {@link AsyncSession#beginTransactionAsync(TransactionConfig)}</li>
  * </ul>
  * <p>
