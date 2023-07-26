@@ -128,8 +128,7 @@ class InternalPathTest {
 
     @Test
     void shouldNotBeAbleToCreatePathWithNullEntities() {
-        InternalNode nullNode = null;
-        assertThrows(IllegalArgumentException.class, () -> new InternalPath(nullNode));
+        assertThrows(IllegalArgumentException.class, () -> new InternalPath((InternalNode) null));
     }
 
     @Test

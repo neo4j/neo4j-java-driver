@@ -1360,6 +1360,7 @@ class SessionIT {
                 "MATCH (n {id: $currentId}) SET n.id = $newId", parameters("currentId", currentId, "newId", newId));
     }
 
+    @SuppressWarnings("ConstantValue")
     private static boolean assertOneOfTwoFuturesFailWithDeadlock(Future<Void> future1, Future<Void> future2)
             throws Exception {
         var firstFailed = false;

@@ -116,7 +116,7 @@ public final class AuthTokens {
      * A custom authentication token used for doing custom authentication on the server side.
      * @param principal this used to identify who this token represents
      * @param credentials this is credentials authenticating the principal
-     * @param realm this is the "realm:, specifying the authentication provider.
+     * @param realm this is the "realm:", specifying the authentication provider.
      * @param scheme this it the authentication scheme, specifying what kind of authentication that should be used
      * @return an authentication token that can be used to connect to Neo4j
      * @see GraphDatabase#driver(String, AuthToken)
@@ -130,7 +130,7 @@ public final class AuthTokens {
      * A custom authentication token used for doing custom authentication on the server side.
      * @param principal this used to identify who this token represents
      * @param credentials this is credentials authenticating the principal
-     * @param realm this is the "realm:, specifying the authentication provider.
+     * @param realm this is the "realm:", specifying the authentication provider.
      * @param scheme this it the authentication scheme, specifying what kind of authentication that should be used
      * @param parameters extra parameters to be sent along the authentication provider.
      * @return an authentication token that can be used to connect to Neo4j

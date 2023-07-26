@@ -73,7 +73,7 @@ class SecuritySettingsTest {
             var verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
             assertTrue(isCustomized(verify));
-            assertTrue(securitySettings.encrypted());
+            assertTrue(verify.encrypted());
         }
 
         @Test
@@ -94,10 +94,10 @@ class SecuritySettingsTest {
             var verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
             assertTrue(isCustomized(verify));
-            assertFalse(securitySettings.encrypted());
+            assertFalse(verify.encrypted());
             assertEquals(
                     Config.TrustStrategy.trustAllCertificates().strategy(),
-                    securitySettings.trustStrategy().strategy());
+                    verify.trustStrategy().strategy());
         }
 
         @Test
@@ -119,11 +119,11 @@ class SecuritySettingsTest {
             var verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
             assertTrue(isCustomized(verify));
-            assertFalse(securitySettings.encrypted());
+            assertFalse(verify.encrypted());
             assertEquals(
                     Config.TrustStrategy.trustCustomCertificateSignedBy(new File("some.cert"))
                             .strategy(),
-                    securitySettings.trustStrategy().strategy());
+                    verify.trustStrategy().strategy());
         }
     }
 }

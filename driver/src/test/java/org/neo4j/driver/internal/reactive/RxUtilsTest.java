@@ -35,6 +35,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.test.StepVerifier;
+import reactor.util.annotation.NonNull;
 
 class RxUtilsTest {
     @Test
@@ -94,7 +95,7 @@ class RxUtilsTest {
         // WHEN
         publisher.subscribe(new BaseSubscriber<>() {
             @Override
-            protected void hookOnSubscribe(Subscription subscription) {
+            protected void hookOnSubscribe(@NonNull Subscription subscription) {
                 subscription.request(1);
                 supplierInvokedFuture.thenAccept(ignored -> {
                     subscription.cancel();

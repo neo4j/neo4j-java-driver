@@ -35,7 +35,7 @@ import org.neo4j.driver.util.Preview;
  * and authentication settings are held immutably by the Driver. Should
  * different settings be required, a new Driver instance should be created.
  * <p>
- * A driver maintains a connection pool for each remote Neo4j server. Therefore
+ * A driver maintains a connection pool for each remote Neo4j server. Therefore,
  * the most efficient way to make use of a Driver is to use the same instance
  * across the application.
  * <p>
@@ -83,7 +83,7 @@ public interface Driver extends AutoCloseable {
     BookmarkManager executableQueryBookmarkManager();
 
     /**
-     * Return a flag to indicate whether or not encryption is used for this driver.
+     * Return a flag to indicate whether encryption is used for this driver.
      *
      * @return true if the driver requires encryption, false otherwise
      */
