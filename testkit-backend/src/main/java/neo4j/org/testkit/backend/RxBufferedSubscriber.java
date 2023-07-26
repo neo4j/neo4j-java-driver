@@ -29,6 +29,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
+import reactor.util.annotation.NonNull;
 
 /**
  * Buffered subscriber for testing purposes.
@@ -87,12 +88,12 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T> {
     }
 
     @Override
-    protected void hookOnSubscribe(Subscription subscription) {
+    protected void hookOnSubscribe(@NonNull Subscription subscription) {
         subscriptionFuture.complete(subscription);
     }
 
     @Override
-    protected void hookOnNext(T value) {
+    protected void hookOnNext(@NonNull T value) {
         executeWithLock(lock, () -> pendingItems--);
         itemsSink.next(value);
     }
@@ -103,7 +104,7 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T> {
     }
 
     @Override
-    protected void hookOnError(Throwable throwable) {
+    protected void hookOnError(@NonNull Throwable throwable) {
         itemsSink.error(throwable);
     }
 
@@ -163,12 +164,12 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T> {
         }
 
         @Override
-        protected void hookOnSubscribe(Subscription subscription) {
+        protected void hookOnSubscribe(@NonNull Subscription subscription) {
             // left empty to prevent requesting signals immediately
         }
 
         @Override
-        protected void hookOnNext(T value) {
+        protected void hookOnNext(@NonNull T value) {
             var sink = executeWithLock(lock, () -> {
                 emitted = true;
                 return this.sink;
@@ -188,7 +189,7 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T> {
         }
 
         @Override
-        protected void hookOnError(Throwable throwable) {
+        protected void hookOnError(@NonNull Throwable throwable) {
             var sink = executeWithLock(lock, () -> {
                 completionFuture.completeExceptionally(throwable);
                 return !emitted ? this.sink : null;

@@ -49,6 +49,7 @@ class IterablesTest {
     }
 
     @Test
+    @SuppressWarnings("ConstantValue")
     void shouldReturnEmptyQueue() {
         var queue = Iterables.emptyQueue();
         assertEquals(0, queue.size());

@@ -31,7 +31,6 @@ import java.net.URI;
 import java.time.Clock;
 import java.util.function.Supplier;
 import org.neo4j.driver.AuthTokenManager;
-import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logging;
@@ -57,7 +56,6 @@ import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlans;
-import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.DriverInfoUtil;
@@ -95,8 +93,6 @@ public class DriverFactory {
             var settings = new SecuritySettings(config.encrypted(), config.trustStrategy());
             securityPlan = SecurityPlans.createSecurityPlan(settings, uri.getScheme());
         }
-
-        authTokenManager = authTokenManager == null ? new StaticAuthTokenManager(AuthTokens.none()) : authTokenManager;
 
         var address = new BoltServerAddress(uri);
         var routingSettings = new RoutingSettings(config.routingTablePurgeDelayMillis(), new RoutingContext(uri));

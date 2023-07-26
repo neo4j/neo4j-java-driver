@@ -54,6 +54,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.annotation.NonNull;
 
 @EnabledOnNeo4jWith(BOLT_V4)
 @ParallelizableIT
@@ -97,14 +98,14 @@ public class ReactiveStreamsSessionIT {
                                 .run("UNWIND range (0,10000) AS x RETURN x")
                                 .subscribe(new BaseSubscriber<>() {
                                     @Override
-                                    protected void hookOnSubscribe(Subscription subscription) {
+                                    protected void hookOnSubscribe(@NonNull Subscription subscription) {
                                         // use subscription from another thread to avoid immediate cancellation
                                         // within the subscribe method
                                         subscriptionFuture.complete(subscription);
                                     }
 
                                     @Override
-                                    protected void hookOnNext(ReactiveResult result) {
+                                    protected void hookOnNext(@NonNull ReactiveResult result) {
                                         Mono.fromDirect(result.consume()).subscribe();
                                     }
                                 });
@@ -150,7 +151,7 @@ public class ReactiveStreamsSessionIT {
 
             session.run("CREATE ({id: $id})", Map.of("id", nodeId)).subscribe(new BaseSubscriber<>() {
                 @Override
-                protected void hookOnSubscribe(Subscription subscription) {
+                protected void hookOnSubscribe(@NonNull Subscription subscription) {
                     subscription.cancel();
                     cancellationFuture.complete(null);
                 }

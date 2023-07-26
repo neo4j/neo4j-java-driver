@@ -56,6 +56,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
+import reactor.util.annotation.NonNull;
 
 @EnabledOnNeo4jWith(BOLT_V4)
 @ParallelizableIT
@@ -161,7 +162,7 @@ class ReactiveSessionIT {
             flowPublisherToFlux(session.run("CREATE ({id: $id})", Map.of("id", nodeId)))
                     .subscribe(new BaseSubscriber<>() {
                         @Override
-                        protected void hookOnSubscribe(Subscription subscription) {
+                        protected void hookOnSubscribe(@NonNull Subscription subscription) {
                             subscription.cancel();
                             cancellationFuture.complete(null);
                         }

@@ -29,7 +29,7 @@ import org.neo4j.driver.internal.InternalBookmark;
  * the database is as up-to-date as the latest transaction referenced by the supplied bookmarks.
  * <p>
  * Within a session, bookmark propagation is carried out automatically.
- * Thus all transactions in a session (both managed and unmanaged) are guaranteed to be carried out one after another.
+ * Thus, all transactions in a session (both managed and unmanaged) are guaranteed to be carried out one after another.
  * <p>
  * To opt out of this mechanism for unrelated units of work, applications can use multiple sessions.
  */
