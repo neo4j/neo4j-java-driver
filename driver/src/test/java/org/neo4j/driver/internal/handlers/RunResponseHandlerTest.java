@@ -124,6 +124,7 @@ class RunResponseHandlerTest {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldMarkTxAndKeepConnectionAndFailOnFailure() {
         var runFuture = new CompletableFuture<Void>();
         var connection = mock(Connection.class);

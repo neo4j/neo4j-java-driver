@@ -62,6 +62,7 @@ public abstract class AbstractReactiveSession<S> {
         return doBeginTransaction(config, null);
     }
 
+    @SuppressWarnings("DuplicatedCode")
     protected Publisher<S> doBeginTransaction(TransactionConfig config, String txType) {
         return createSingleItemPublisher(
                 () -> {
@@ -80,6 +81,7 @@ public abstract class AbstractReactiveSession<S> {
                 tx -> Mono.fromDirect(closeTransaction(tx, false)).subscribe());
     }
 
+    @SuppressWarnings("DuplicatedCode")
     private Publisher<S> beginTransaction(AccessMode mode, TransactionConfig config) {
         return createSingleItemPublisher(
                 () -> {
@@ -101,21 +103,24 @@ public abstract class AbstractReactiveSession<S> {
     @SuppressWarnings("deprecation")
     protected <T> Publisher<T> runTransaction(
             AccessMode mode, Function<S, ? extends Publisher<T>> work, TransactionConfig config) {
-        work = work.andThen(publisher -> Flux.from(publisher).map(value -> {
+        work = work.andThen(publisher -> Flux.from(publisher).handle((value, sink) -> {
             if (value instanceof ReactiveResult) {
-                throw new ClientException(String.format(
+                sink.error(new ClientException(String.format(
                         "%s is not a valid return value, it should be consumed before producing a return value",
-                        ReactiveResult.class.getName()));
+                        ReactiveResult.class.getName())));
+                return;
             } else if (value instanceof org.neo4j.driver.reactive.ReactiveResult) {
-                throw new ClientException(String.format(
+                sink.error(new ClientException(String.format(
                         "%s is not a valid return value, it should be consumed before producing a return value",
-                        org.neo4j.driver.reactive.ReactiveResult.class.getName()));
+                        org.neo4j.driver.reactive.ReactiveResult.class.getName())));
+                return;
             } else if (value instanceof RxResult) {
-                throw new ClientException(String.format(
+                sink.error(new ClientException(String.format(
                         "%s is not a valid return value, it should be consumed before producing a return value",
-                        RxResult.class.getName()));
+                        RxResult.class.getName())));
+                return;
             }
-            return value;
+            sink.next(value);
         }));
         var repeatableWork = Flux.usingWhen(
                 beginTransaction(mode, config),

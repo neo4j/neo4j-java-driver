@@ -120,7 +120,7 @@ class InternalExecutableQueryTest {
 
     @ParameterizedTest
     @MethodSource("routingControls")
-    @SuppressWarnings({"unchecked", "resource"})
+    @SuppressWarnings({"unchecked", "resource", "ResultOfMethodCallIgnored"})
     void shouldExecuteAndReturnResult(RoutingControl routingControl) {
         // GIVEN
         var driver = mock(Driver.class);
@@ -173,6 +173,7 @@ class InternalExecutableQueryTest {
         var sessionConfigCapture = ArgumentCaptor.forClass(SessionConfig.class);
         then(driver).should().session(sessionConfigCapture.capture());
         var sessionConfig = sessionConfigCapture.getValue();
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
         var expectedSessionConfig = SessionConfig.builder()
                 .withDatabase(config.database().get())
                 .withImpersonatedUser(config.impersonatedUser().get())

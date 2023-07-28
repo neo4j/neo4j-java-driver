@@ -35,6 +35,7 @@ public class TransactionPullResponseCompletionListener implements PullResponseCo
     public void afterSuccess(Map<String, Value> metadata) {}
 
     @Override
+    @SuppressWarnings("ThrowableNotThrown")
     public void afterFailure(Throwable error) {
         // always mark transaction as terminated because every error is "acknowledged" with a RESET message
         // so database forgets about the transaction after the first error

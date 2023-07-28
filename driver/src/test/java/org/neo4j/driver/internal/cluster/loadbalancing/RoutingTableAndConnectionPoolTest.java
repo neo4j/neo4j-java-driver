@@ -274,6 +274,7 @@ class RoutingTableAndConnectionPoolTest {
         assertFalse(connectionPool.isOpen(openServer));
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private void acquireAndReleaseConnections(LoadBalancer loadBalancer) throws InterruptedException {
         var executorService = Executors.newFixedThreadPool(4);
         var count = 100;

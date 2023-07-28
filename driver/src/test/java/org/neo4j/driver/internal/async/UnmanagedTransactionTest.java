@@ -157,6 +157,7 @@ class UnmanagedTransactionTest {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldBeClosedWhenMarkedAsTerminated() {
         var tx = beginTx(connectionMock());
 
@@ -166,6 +167,7 @@ class UnmanagedTransactionTest {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldBeClosedWhenMarkedTerminatedAndClosed() {
         var tx = beginTx(connectionMock());
 
@@ -204,6 +206,7 @@ class UnmanagedTransactionTest {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldReleaseConnectionWhenTerminatedAndCommitted() {
         var connection = connectionMock();
         var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
@@ -217,6 +220,7 @@ class UnmanagedTransactionTest {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldNotCreateCircularExceptionWhenTerminationCauseEqualsToCursorFailure() {
         var connection = connectionMock();
         var terminationCause = new ClientException("Custom exception");
@@ -232,6 +236,7 @@ class UnmanagedTransactionTest {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldNotCreateCircularExceptionWhenTerminationCauseDifferentFromCursorFailure() {
         var connection = connectionMock();
         var terminationCause = new ClientException("Custom exception");
@@ -250,6 +255,7 @@ class UnmanagedTransactionTest {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldNotCreateCircularExceptionWhenTerminatedWithoutFailure() {
         var connection = connectionMock();
         var terminationCause = new ClientException("Custom exception");
@@ -264,6 +270,7 @@ class UnmanagedTransactionTest {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldReleaseConnectionWhenTerminatedAndRolledBack() {
         var connection = connectionMock();
         var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
@@ -578,6 +585,7 @@ class UnmanagedTransactionTest {
         return resultCursorsHolder;
     }
 
+    @SuppressWarnings("ThrowableNotThrown")
     private Supplier<CompletionStage<Void>> mapTransactionAction(String actionName, UnmanagedTransaction tx) {
         Supplier<CompletionStage<Void>> action;
         if ("commit".equals(actionName)) {

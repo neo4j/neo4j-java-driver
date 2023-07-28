@@ -22,6 +22,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -31,6 +32,7 @@ import java.net.ServerSocket;
 import java.net.URI;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.testutil.TestUtil;
 
 class GraphDatabaseTest {
@@ -38,17 +40,20 @@ class GraphDatabaseTest {
             Config.builder().withoutEncryption().withLogging(none()).build();
 
     @Test
+    @SuppressWarnings("resource")
     void throwsWhenBoltSchemeUsedWithRoutingParams() {
         assertThrows(
                 IllegalArgumentException.class, () -> GraphDatabase.driver("bolt://localhost:7687/?policy=my_policy"));
     }
 
     @Test
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     void shouldRespondToInterruptsWhenConnectingToUnresponsiveServer() throws Exception {
         try (var serverSocket = new ServerSocket(0)) {
             // setup other thread to interrupt current thread when it blocks
             TestUtil.interruptWhenInWaitingState(Thread.currentThread());
 
+            @SuppressWarnings("resource")
             final var driver = GraphDatabase.driver("bolt://localhost:" + serverSocket.getLocalPort());
             try {
                 assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
@@ -65,6 +70,7 @@ class GraphDatabaseTest {
         try (var serverSocket = new ServerSocket(0)) {
             localPort = serverSocket.getLocalPort();
         }
+        @SuppressWarnings("resource")
         final var driver = GraphDatabase.driver("bolt://localhost:" + localPort, INSECURE_CONFIG);
         final var error = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
         assertThat(error.getMessage(), containsString("Unable to connect to"));
@@ -76,6 +82,7 @@ class GraphDatabaseTest {
         try (var serverSocket = new ServerSocket(0)) {
             localPort = serverSocket.getLocalPort();
         }
+        @SuppressWarnings("resource")
         final var driver = GraphDatabase.driver("neo4j://localhost:" + localPort, INSECURE_CONFIG);
         final var error = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
         assertThat(error.getMessage(), containsString("Unable to connect to"));
@@ -92,31 +99,37 @@ class GraphDatabaseTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAcceptNullTokenOnFactoryWithString() {
         GraphDatabase.driver("neo4j://host", (AuthToken) null);
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAcceptNullTokenOnFactoryWithUri() {
         GraphDatabase.driver(URI.create("neo4j://host"), (AuthToken) null);
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAcceptNullTokenOnFactoryWithStringAndConfig() {
         GraphDatabase.driver("neo4j://host", (AuthToken) null, Config.defaultConfig());
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldAcceptNullTokenOnFactoryWithUriAndConfig() {
         GraphDatabase.driver(URI.create("neo4j://host"), (AuthToken) null, Config.defaultConfig());
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldRejectNullAuthTokenManagerOnFactoryWithString() {
         assertThrows(NullPointerException.class, () -> GraphDatabase.driver("neo4j://host", (AuthTokenManager) null));
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldRejectNullAuthTokenManagerOnFactoryWithUri() {
         assertThrows(
                 NullPointerException.class,
@@ -124,6 +137,7 @@ class GraphDatabaseTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldRejectNullAuthTokenManagerOnFactoryWithStringAndConfig() {
         assertThrows(
                 NullPointerException.class,
@@ -131,6 +145,7 @@ class GraphDatabaseTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldRejectNullAuthTokenManagerOnFactoryWithUriAndConfig() {
         assertThrows(
                 NullPointerException.class,
@@ -138,11 +153,23 @@ class GraphDatabaseTest {
                         URI.create("neo4j://host"), (AuthTokenManager) null, Config.defaultConfig()));
     }
 
+    @Test
+    void shouldCreateDriverWithManager() {
+        assertNotNull(GraphDatabase.driver("neo4j://host", new StaticAuthTokenManager(AuthTokens.bearer("token"))));
+    }
+
+    @Test
+    void shouldCreateDriverWithManagerAndConfig() {
+        assertNotNull(GraphDatabase.driver(
+                "neo4j://host", new StaticAuthTokenManager(AuthTokens.bearer("token")), Config.defaultConfig()));
+    }
+
     private static void testFailureWhenServerDoesNotRespond(boolean encrypted) throws IOException {
         try (var server = new ServerSocket(0)) // server that accepts connections but does not reply
         {
             var connectionTimeoutMillis = 1_000;
             var config = createConfig(encrypted, connectionTimeoutMillis);
+            @SuppressWarnings("resource")
             final var driver = GraphDatabase.driver(URI.create("bolt://localhost:" + server.getLocalPort()), config);
 
             var e = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);

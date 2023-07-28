@@ -173,6 +173,7 @@ public class CommonValuePacker implements ValuePacker {
         packer.pack(nano);
     }
 
+    @SuppressWarnings("DuplicatedCode")
     private void packZonedDateTimeUsingUtcBaseline(ZonedDateTime zonedDateTime) throws IOException {
         var instant = zonedDateTime.toInstant();
         var epochSecondLocal = instant.getEpochSecond();
@@ -196,6 +197,7 @@ public class CommonValuePacker implements ValuePacker {
         }
     }
 
+    @SuppressWarnings("DuplicatedCode")
     private void packZonedDateTime(ZonedDateTime zonedDateTime) throws IOException {
         var epochSecondLocal = zonedDateTime.toLocalDateTime().toEpochSecond(UTC);
         var nano = zonedDateTime.getNano();

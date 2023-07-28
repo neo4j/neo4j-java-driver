@@ -27,6 +27,7 @@ package org.neo4j.driver.async;
  * @deprecated superseded by {@link AsyncTransactionCallback}.
  */
 @Deprecated
+@SuppressWarnings("DeprecatedIsStillUsed")
 public interface AsyncTransactionWork<T> {
     /**
      * Executes all given operations against the same transaction.

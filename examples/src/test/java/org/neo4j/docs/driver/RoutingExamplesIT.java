@@ -36,6 +36,7 @@ class RoutingExamplesIT {
             Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
 
     @Container
+    @SuppressWarnings("resource")
     private static final Neo4jContainer<?> NEO4J_CONTAINER = new Neo4jContainer<>(
                     String.format("neo4j:%s-enterprise", NEO4J_VERSION))
             .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")

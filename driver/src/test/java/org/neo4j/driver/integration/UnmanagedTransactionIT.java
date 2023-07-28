@@ -109,6 +109,7 @@ class UnmanagedTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldFailToCommitAfterTermination() {
         var tx = beginTransaction();
 
@@ -140,6 +141,7 @@ class UnmanagedTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldRollbackAfterTermination() {
         var tx = beginTransaction();
 
@@ -150,6 +152,7 @@ class UnmanagedTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldFailToRunQueryWhenTerminated() {
         var tx = beginTransaction();
         txRun(tx, "CREATE (:MyLabel)");
@@ -162,6 +165,7 @@ class UnmanagedTransactionIT {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldBePossibleToRunMoreTransactionsAfterOneIsTerminated() {
         var tx1 = beginTransaction();
         tx1.markTerminated(null);

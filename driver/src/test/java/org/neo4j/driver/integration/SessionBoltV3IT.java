@@ -81,6 +81,7 @@ class SessionBoltV3IT {
 
         var config = TransactionConfig.builder().withMetadata(metadata).build();
 
+        @SuppressWarnings("resource")
         var result = driver.session().run(showTxMetadata, config);
         var receivedMetadata = result.single().get("metaData").asMap();
 
@@ -179,6 +180,7 @@ class SessionBoltV3IT {
     @Test
     @SuppressWarnings("deprecation")
     void shouldUseBookmarksForAutoCommitTransactions() {
+        @SuppressWarnings("resource")
         var session = driver.session();
         var initialBookmark = session.lastBookmark();
 
@@ -204,6 +206,7 @@ class SessionBoltV3IT {
     @Test
     @SuppressWarnings("deprecation")
     void shouldUseBookmarksForAutoCommitAndUnmanagedTransactions() {
+        @SuppressWarnings("resource")
         var session = driver.session();
         var initialBookmark = session.lastBookmark();
 
@@ -235,6 +238,7 @@ class SessionBoltV3IT {
     @Test
     @SuppressWarnings("deprecation")
     void shouldUseBookmarksForAutoCommitTransactionsAndTransactionFunctions() {
+        @SuppressWarnings("resource")
         var session = driver.session();
         var initialBookmark = session.lastBookmark();
 
@@ -317,6 +321,7 @@ class SessionBoltV3IT {
 
     @SuppressWarnings("deprecation")
     private static void testTransactionMetadataWithTransactionFunctions(boolean read) {
+        @SuppressWarnings("resource")
         var session = driver.session();
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("foo", "bar");

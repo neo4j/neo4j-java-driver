@@ -60,6 +60,7 @@ class LeakLoggingNetworkSessionTest {
     }
 
     @Test
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     void logsMessageWithStacktraceDuringFinalizationIfLeaked(TestInfo testInfo) throws Exception {
         var logging = mock(Logging.class);
         var log = mock(Logger.class);

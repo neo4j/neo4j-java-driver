@@ -257,7 +257,7 @@ class MetadataExtractorTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "OptionalGetWithoutIsPresent"})
     void shouldBuildResultSummaryWithNotifications() {
         var notification1 = parameters(
                 "description", "Almost bad thing",

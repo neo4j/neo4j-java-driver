@@ -295,7 +295,7 @@ class SessionResetIT {
     }
 
     @Test
-    @SuppressWarnings("resource")
+    @SuppressWarnings({"resource", "ResultOfMethodCallIgnored"})
     void shouldHandleResetFromMultipleThreads() throws Throwable {
         var session = (InternalSession) neo4j.driver().session();
 

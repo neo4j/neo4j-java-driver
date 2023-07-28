@@ -60,6 +60,7 @@ class ExamplesIT {
 
     private String uri;
 
+    @SuppressWarnings("resource")
     private int readInt(String database, final String query, final Value parameters) {
         SessionConfig sessionConfig;
         if (database == null) {
@@ -81,6 +82,7 @@ class ExamplesIT {
         return readInt(query, parameters());
     }
 
+    @SuppressWarnings("resource")
     private void write(final String query, final Value parameters) {
         try (var session = neo4j.driver().session()) {
             session.executeWriteWithoutResult(tx -> tx.run(query, parameters).consume());
@@ -119,6 +121,7 @@ class ExamplesIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void testShouldRunAsyncAutocommitTransactionExample() {
         try (var example =
                 new AsyncAutocommitTransactionExample(uri, USER, neo4j.adminPassword())) {
@@ -328,6 +331,7 @@ class ExamplesIT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void testShouldRunAsyncTransactionFunctionExample() {
         try (var example =
                 new AsyncTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {
@@ -378,6 +382,7 @@ class ExamplesIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("resource")
     void testShouldRunRxAutocommitTransactionExample() {
         try (var example =
                 new RxAutocommitTransactionExample(uri, USER, neo4j.adminPassword())) {
@@ -395,6 +400,7 @@ class ExamplesIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
+    @SuppressWarnings("resource")
     void testShouldRunRxTransactionFunctionExampleReactor() {
         try (var example =
                 new RxTransactionFunctionExample(uri, USER, neo4j.adminPassword())) {

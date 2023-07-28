@@ -62,7 +62,7 @@ public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String, 
         }
 
         for (; key != null; key = p.nextFieldName()) {
-            String paramType = null;
+            String paramType;
 
             if (p.nextToken() == JsonToken.START_OBJECT) {
                 var fieldName = p.nextFieldName();

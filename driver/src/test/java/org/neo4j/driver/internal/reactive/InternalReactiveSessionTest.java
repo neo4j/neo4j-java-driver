@@ -41,6 +41,7 @@ import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
@@ -310,6 +312,22 @@ public class InternalReactiveSessionTest {
         assertEquals(expected, Mono.from(flowPublisherToFlux(actual)).block());
         then(networkSession).should().retryLogic();
         then(logic).should().retryRx(any());
+    }
+
+    @Test
+    void shouldDelegateLastBookmarks() {
+        // Given
+        var session = mock(NetworkSession.class);
+        var expectedBookmarks = Set.of(mock(Bookmark.class));
+        given(session.lastBookmarks()).willReturn(expectedBookmarks);
+        var reactiveSession = new InternalReactiveSession(session);
+
+        // When
+        var bookmarks = reactiveSession.lastBookmarks();
+
+        // Then
+        assertEquals(expectedBookmarks, bookmarks);
+        then(session).should().lastBookmarks();
     }
 
     static List<ExecuteVariation> executeVariations() {

@@ -293,6 +293,7 @@ class TransactionIT {
     }
 
     @Test
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     void shouldBeResponsiveToThreadInterruptWhenWaitingForResult() {
         try (var otherSession = session.driver().session()) {
             session.run("CREATE (:Person {name: 'Beta Ray Bill'})").consume();
@@ -321,6 +322,7 @@ class TransactionIT {
     }
 
     @Test
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     void shouldBeResponsiveToThreadInterruptWhenWaitingForCommit() {
         try (var otherSession = session.driver().session()) {
             session.run("CREATE (:Person {name: 'Beta Ray Bill'})").consume();

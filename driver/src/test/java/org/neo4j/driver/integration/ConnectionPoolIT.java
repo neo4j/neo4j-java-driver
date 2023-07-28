@@ -250,6 +250,7 @@ class ConnectionPoolIT {
                     + "timeout. Last failure was: " + lastExceptionFromDriver.getMessage());
         }
 
+        @SuppressWarnings("ResultOfMethodCallIgnored")
         public void stop() throws InterruptedException {
             run = false;
             stopped.await(10, SECONDS);

@@ -48,6 +48,7 @@ class UnsupportedBoltV3IT {
             .build();
 
     @Test
+    @SuppressWarnings("resource")
     void shouldNotSupportAutoCommitQueriesWithTransactionConfig() {
         assertTxConfigNotSupported(() -> driver.session().run("RETURN 42", txConfig));
     }
@@ -58,7 +59,7 @@ class UnsupportedBoltV3IT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "resource"})
     void shouldNotSupportTransactionFunctionsWithTransactionConfig() {
         assertTxConfigNotSupported(() -> driver.session().readTransaction(tx -> tx.run("RETURN 42"), txConfig));
     }
@@ -71,6 +72,7 @@ class UnsupportedBoltV3IT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldNotSupportUnmanagedTransactionsWithTransactionConfig() {
         assertTxConfigNotSupported(() -> driver.session().beginTransaction(txConfig));
     }

@@ -524,9 +524,7 @@ class RxTransactionIT {
 
         var records = Flux.usingWhen(
                 session.beginTransaction(),
-                tx -> Flux.from(tx.run("RETURN 'Hi!'").records()).map(record -> {
-                    throw e;
-                }),
+                tx -> Flux.from(tx.run("RETURN 'Hi!'").records()).handle((record, sink) -> sink.error(e)),
                 RxTransaction::commit,
                 (tx, error) -> tx.rollback(),
                 null);

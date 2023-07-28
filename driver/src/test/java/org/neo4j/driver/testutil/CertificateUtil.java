@@ -184,6 +184,7 @@ public class CertificateUtil {
         return new SelfSignedCertificateGenerator().certificate;
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private static void writePem(String type, byte[] encodedContent, File path) throws IOException {
         if (path.getParentFile() != null && path.getParentFile().exists()) {
             path.getParentFile().mkdirs();

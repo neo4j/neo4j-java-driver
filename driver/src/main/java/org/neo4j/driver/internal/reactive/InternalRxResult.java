@@ -36,6 +36,7 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
 @Deprecated
+@SuppressWarnings("DeprecatedIsStillUsed")
 public class InternalRxResult implements RxResult {
     private Supplier<CompletionStage<RxResultCursor>> cursorFutureSupplier;
     private volatile CompletionStage<RxResultCursor> cursorFuture;

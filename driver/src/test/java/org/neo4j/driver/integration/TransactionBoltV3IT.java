@@ -60,6 +60,7 @@ class TransactionBoltV3IT {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void shouldSetTransactionMetadata() {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("key1", "value1");

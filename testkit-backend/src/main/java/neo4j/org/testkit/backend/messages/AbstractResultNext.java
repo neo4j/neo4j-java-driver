@@ -54,6 +54,7 @@ public abstract class AbstractResultNext implements TestkitRequest {
     }
 
     @Override
+    @SuppressWarnings("DuplicatedCode")
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState.getRxResultHolder(getResultId()).flatMap(resultHolder -> {
             var subscriber = resultHolder.getSubscriber().orElseGet(() -> {
@@ -86,6 +87,7 @@ public abstract class AbstractResultNext implements TestkitRequest {
     }
 
     @Override
+    @SuppressWarnings("DuplicatedCode")
     public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
         return testkitState.getReactiveResultStreamsHolder(getResultId()).flatMap(resultHolder -> {
             var subscriber = resultHolder.getSubscriber().orElseGet(() -> {

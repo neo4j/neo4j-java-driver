@@ -37,6 +37,7 @@ import org.neo4j.driver.reactive.RxTransactionWork;
 import org.reactivestreams.Publisher;
 
 @Deprecated
+@SuppressWarnings("DeprecatedIsStillUsed")
 public class InternalRxSession extends AbstractReactiveSession<RxTransaction> implements RxSession {
     public InternalRxSession(NetworkSession session) {
         super(session);

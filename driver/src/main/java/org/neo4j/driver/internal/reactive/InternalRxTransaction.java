@@ -28,12 +28,14 @@ import org.neo4j.driver.reactive.RxTransaction;
 import org.reactivestreams.Publisher;
 
 @Deprecated
+@SuppressWarnings("DeprecatedIsStillUsed")
 public class InternalRxTransaction extends AbstractReactiveTransaction implements RxTransaction {
     public InternalRxTransaction(UnmanagedTransaction tx) {
         super(tx);
     }
 
     @Override
+    @SuppressWarnings("ThrowableNotThrown")
     public RxResult run(Query query) {
         return new InternalRxResult(() -> {
             var cursorFuture = new CompletableFuture<RxResultCursor>();

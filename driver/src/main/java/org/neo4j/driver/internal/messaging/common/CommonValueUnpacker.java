@@ -277,6 +277,7 @@ public class CommonValueUnpacker implements ValueUnpacker {
         return new RelationshipValue(adapted);
     }
 
+    @SuppressWarnings("DuplicatedCode")
     protected InternalNode unpackNode() throws IOException {
         var urn = unpacker.unpackLong();
 
@@ -295,7 +296,7 @@ public class CommonValueUnpacker implements ValueUnpacker {
         return new InternalNode(urn, String.valueOf(urn), labels, props);
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "DuplicatedCode"})
     protected Value unpackPath() throws IOException {
         // List of unique nodes
         var uniqNodes = new Node[(int) unpacker.unpackListHeader()];

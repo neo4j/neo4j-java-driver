@@ -53,8 +53,9 @@ public class SessionLastBookmarks implements TestkitRequest {
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState
                 .getRxSessionHolder(data.getSessionId())
-                .map(sessionHolder -> sessionHolder.getSession().lastBookmark())
-                .map(bookmark -> bookmark.values().stream().map(Bookmark::from).collect(Collectors.toSet()))
+                .map(sessionHolder -> sessionHolder.getSession().lastBookmark().values().stream()
+                        .map(Bookmark::from)
+                        .collect(Collectors.toSet()))
                 .map(this::createResponse);
     }
 
