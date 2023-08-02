@@ -60,8 +60,6 @@ import org.neo4j.driver.util.Preview;
  *         </tr>
  *     </tbody>
  * </table>
- *
- * @since 1.0 (Modified and Added {@link AsyncSession} and {@link RxSession} since 2.0)
  */
 public interface Driver extends AutoCloseable {
     /**
