@@ -58,6 +58,7 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
     }
 
     @Override
+    @SuppressWarnings("ThrowableNotThrown")
     protected void shouldHandleFailure(BasicPullResponseHandler.State state) {
         // Given
         var conn = mockConnection();

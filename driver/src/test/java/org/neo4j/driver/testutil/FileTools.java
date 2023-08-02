@@ -136,6 +136,7 @@ public class FileTools {
     /*
      * See http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4715154.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private static void waitAndThenTriggerGC() {
         try {
             Thread.sleep(500);

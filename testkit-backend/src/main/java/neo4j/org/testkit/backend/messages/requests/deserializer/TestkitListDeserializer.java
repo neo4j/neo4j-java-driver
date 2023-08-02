@@ -66,7 +66,7 @@ public class TestkitListDeserializer extends StdDeserializer<List<?>> {
 
         // cypher parameter list
         while (nextToken != JsonToken.END_ARRAY) {
-            String paramType = null;
+            String paramType;
 
             if (nextToken == JsonToken.START_OBJECT) {
                 var fieldName = p.nextFieldName();

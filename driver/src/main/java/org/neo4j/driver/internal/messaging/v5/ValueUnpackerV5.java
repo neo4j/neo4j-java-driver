@@ -55,6 +55,7 @@ public class ValueUnpackerV5 extends CommonValueUnpacker {
         return RELATIONSHIP_FIELDS;
     }
 
+    @SuppressWarnings("DuplicatedCode")
     @Override
     protected InternalNode unpackNode() throws IOException {
         var urn = unpacker.unpackLong();
@@ -76,6 +77,7 @@ public class ValueUnpackerV5 extends CommonValueUnpacker {
         return new InternalNode(urn, elementId, labels, props);
     }
 
+    @SuppressWarnings("DuplicatedCode")
     @Override
     protected Value unpackPath() throws IOException {
         // List of unique nodes

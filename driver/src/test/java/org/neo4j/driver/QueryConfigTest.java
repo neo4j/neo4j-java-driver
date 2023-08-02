@@ -33,6 +33,7 @@ import org.neo4j.driver.testutil.TestUtil;
 
 class QueryConfigTest {
     @Test
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     void shouldReturnDefaultValues() {
         var config = QueryConfig.defaultConfig();
         var manager = Mockito.mock(BookmarkManager.class);

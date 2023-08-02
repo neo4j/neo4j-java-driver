@@ -551,6 +551,7 @@ class ExponentialBackoffRetryLogicTest {
     }
 
     @Test
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     void throwsWhenSleepInterrupted() throws Exception {
         var clock = mock(Clock.class);
         var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);

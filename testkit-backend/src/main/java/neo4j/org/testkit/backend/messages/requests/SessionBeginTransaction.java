@@ -56,7 +56,7 @@ public class SessionBeginTransaction
     }
 
     @Override
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "RedundantSuppression"})
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState.getRxSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
             var session = sessionHolder.getSession();

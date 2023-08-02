@@ -61,6 +61,7 @@ public class RunResponseHandler implements ResponseHandler {
     }
 
     @Override
+    @SuppressWarnings("ThrowableNotThrown")
     public void onFailure(Throwable error) {
         if (tx != null) {
             tx.markTerminated(error);

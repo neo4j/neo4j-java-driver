@@ -43,6 +43,7 @@ class ResolverIT {
                 .withLogging(none())
                 .withResolver(resolver)
                 .build();
+        @SuppressWarnings("resource")
         final var driver = GraphDatabase.driver("neo4j://my.server.com:9001", config);
 
         var error = assertThrows(RuntimeException.class, driver::verifyConnectivity);

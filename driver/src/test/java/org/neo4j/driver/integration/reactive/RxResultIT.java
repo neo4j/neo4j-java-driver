@@ -69,11 +69,11 @@ class RxResultIT {
         var res = session.run("UNWIND range(1, $size) AS x RETURN x", parameters("size", size));
 
         // Then I should be able to iterate over the result
-        var step = StepVerifier.create(
+        var step = (StepVerifier.Step<Integer>) StepVerifier.create(
                 Flux.from(res.records()).limitRate(100).map(r -> r.get("x").asInt()));
 
         for (var i = 1; i <= size; i++) {
-            step.expectNext(i);
+            step = step.expectNext(i);
         }
         step.expectComplete().verify();
     }

@@ -92,6 +92,7 @@ class DriverCloseIT {
     void shouldInterruptStreamConsumptionAndEndRetriesOnDriverClosure() {
         var fetchSize = 5;
         var config = Config.builder().withFetchSize(fetchSize).build();
+        @SuppressWarnings("resource")
         var driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config);
         var session = driver.session();
 

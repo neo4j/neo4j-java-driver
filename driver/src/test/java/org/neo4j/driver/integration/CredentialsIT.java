@@ -111,6 +111,7 @@ class CredentialsIT {
         var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
         var authToken = AuthTokens.basic("neo4j", "wrongSecret");
 
+        @SuppressWarnings("resource")
         final var driver = GraphDatabase.driver(uri, authToken, config);
         assertThrows(AuthenticationException.class, driver::verifyConnectivity);
     }

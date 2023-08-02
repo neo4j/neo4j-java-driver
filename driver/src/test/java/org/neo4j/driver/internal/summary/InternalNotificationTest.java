@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.value.StringValue;
 
 class InternalNotificationTest {
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "OptionalGetWithoutIsPresent"})
     void shouldHandleNotificationWithPosition() {
         // GIVEN
         Map<String, Value> map = new HashMap<>();

@@ -36,6 +36,7 @@ public class InternalReactiveTransaction extends AbstractReactiveTransaction
     }
 
     @Override
+    @SuppressWarnings({"ThrowableNotThrown", "DuplicatedCode"})
     public Publisher<ReactiveResult> run(Query query) {
         CompletionStage<RxResultCursor> cursorStage;
         try {

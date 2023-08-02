@@ -186,6 +186,7 @@ class FuturesTest {
     }
 
     @Test
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     void shouldWaitForFutureInBlockingGetEvenWhenInterrupted() {
         var executor = Executors.newSingleThreadExecutor(daemon("InterruptThread"));
         try {
@@ -206,6 +207,7 @@ class FuturesTest {
     }
 
     @Test
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     void shouldHandleInterruptsInBlockingGet() {
         try {
             var future = new CompletableFuture<String>();

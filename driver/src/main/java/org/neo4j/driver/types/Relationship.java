@@ -32,6 +32,7 @@ public interface Relationship extends Entity {
      * @deprecated superseded by {@link #startNodeElementId()}
      */
     @Deprecated
+    @SuppressWarnings("DeprecatedIsStillUsed")
     long startNodeId();
 
     /**
@@ -50,6 +51,7 @@ public interface Relationship extends Entity {
      * @deprecated superseded by {@link #endNodeElementId()}
      */
     @Deprecated
+    @SuppressWarnings("DeprecatedIsStillUsed")
     long endNodeId();
 
     /**

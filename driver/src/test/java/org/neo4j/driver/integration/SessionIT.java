@@ -140,14 +140,12 @@ class SessionIT {
         assertFalse(session.isOpen());
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
+    @SuppressWarnings({"resource"})
     void shouldHandleNullAuthToken() {
-        AuthToken token = null;
-
         // null auth token should be interpreted as AuthTokens.none() and fail driver creation
         // because server expects basic auth
-        assertThrows(AuthenticationException.class, () -> GraphDatabase.driver(neo4j.uri(), token)
+        assertThrows(AuthenticationException.class, () -> GraphDatabase.driver(neo4j.uri(), (AuthToken) null)
                 .verifyConnectivity());
     }
 
@@ -884,7 +882,7 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings("resource")
+    @SuppressWarnings({"resource", "ResultOfMethodCallIgnored"})
     void shouldBeResponsiveToThreadInterruptWhenWaitingForResult() {
         try (var session1 = neo4j.driver().session();
                 var session2 = neo4j.driver().session()) {

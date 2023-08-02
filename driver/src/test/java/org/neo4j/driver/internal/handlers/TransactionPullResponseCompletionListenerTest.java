@@ -54,6 +54,7 @@ class TransactionPullResponseCompletionListenerTest {
         testErrorHandling(new ClientException("Neo.ClientError.Request.Invalid"));
     }
 
+    @SuppressWarnings("ThrowableNotThrown")
     private static void testErrorHandling(Throwable error) {
         var connection = mock(Connection.class);
         when(connection.serverAddress()).thenReturn(BoltServerAddress.LOCAL_DEFAULT);

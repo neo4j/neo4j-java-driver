@@ -27,6 +27,7 @@ package org.neo4j.driver.reactive;
  * @deprecated superseded by {@link org.neo4j.driver.reactive.ReactiveTransactionCallback} and {@link org.neo4j.driver.reactivestreams.ReactiveTransactionCallback}
  */
 @Deprecated
+@SuppressWarnings("DeprecatedIsStillUsed")
 public interface RxTransactionWork<T> {
     /**
      * Executes all given operations against the same transaction.

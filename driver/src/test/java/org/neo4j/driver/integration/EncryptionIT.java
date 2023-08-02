@@ -112,6 +112,7 @@ class EncryptionIT {
         neo4j.deleteAndStartNeo4j(tlsConfig);
         var config = newConfig(driverEncrypted);
 
+        @SuppressWarnings("resource")
         var e = assertThrows(ServiceUnavailableException.class, () -> GraphDatabase.driver(
                         neo4j.uri(), neo4j.authTokenManager(), config)
                 .verifyConnectivity());

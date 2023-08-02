@@ -57,7 +57,7 @@ public class SessionWriteTransaction
     }
 
     @Override
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "DuplicatedCode"})
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
         return testkitState
                 .getAsyncSessionHolder(data.getSessionId())
@@ -79,7 +79,7 @@ public class SessionWriteTransaction
     }
 
     @Override
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "DuplicatedCode"})
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState
                 .getRxSessionHolder(data.getSessionId())
@@ -98,6 +98,7 @@ public class SessionWriteTransaction
     }
 
     @Override
+    @SuppressWarnings("DuplicatedCode")
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState
                 .getReactiveSessionHolder(data.getSessionId())
@@ -118,6 +119,7 @@ public class SessionWriteTransaction
     }
 
     @Override
+    @SuppressWarnings("DuplicatedCode")
     public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
         return testkitState
                 .getReactiveSessionStreamsHolder(data.getSessionId())
@@ -137,7 +139,7 @@ public class SessionWriteTransaction
                 .then(Mono.just(retryableDone()));
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "DuplicatedCode"})
     private TransactionWork<Void> handle(TestkitState testkitState, SessionHolder sessionHolder) {
         return tx -> {
             var txId = testkitState.addTransactionHolder(new TransactionHolder(sessionHolder, tx));

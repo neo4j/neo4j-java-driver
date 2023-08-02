@@ -67,6 +67,7 @@ class DirectDriverIT {
         var uri = URI.create("*");
 
         // When & Then
+        @SuppressWarnings("resource")
         var e = assertThrows(IllegalArgumentException.class, () -> GraphDatabase.driver(uri, neo4j.authTokenManager()));
         assertThat(e.getMessage(), equalTo("Scheme must not be null"));
     }

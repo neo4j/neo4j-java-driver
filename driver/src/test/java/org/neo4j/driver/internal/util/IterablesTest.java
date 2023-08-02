@@ -62,6 +62,7 @@ class IterablesTest {
     }
 
     @Test
+    @SuppressWarnings("EqualsWithItself")
     void shouldReturnSameEmptyQueue() {
         assertSame(Iterables.emptyQueue(), Iterables.emptyQueue());
     }

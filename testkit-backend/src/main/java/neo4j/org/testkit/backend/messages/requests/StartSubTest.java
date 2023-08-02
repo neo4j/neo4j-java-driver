@@ -58,12 +58,9 @@ public class StartSubTest implements TestkitRequest {
 
     private static SkipDecision checkTzIdSupported(Map<String, Object> params) {
         var tzId = (String) params.get("tz_id");
-        try {
-            ZoneId.of(tzId);
-            return SkipDecision.ofNonSkipped();
-        } catch (DateTimeException e) {
-            return SkipDecision.ofSkipped("Timezone not supported: " + tzId);
-        }
+        return ZoneId.getAvailableZoneIds().contains(tzId)
+                ? SkipDecision.ofNonSkipped()
+                : SkipDecision.ofSkipped("Timezone not supported: " + tzId);
     }
 
     private static SkipDecision checkDateTimeSupported(Map<String, Object> params) {

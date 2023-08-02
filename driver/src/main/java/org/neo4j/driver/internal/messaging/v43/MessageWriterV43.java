@@ -56,6 +56,7 @@ public class MessageWriterV43 extends AbstractMessageWriter {
         super(new CommonValuePacker(output, dateTimeUtcEnabled), buildEncoders());
     }
 
+    @SuppressWarnings("DuplicatedCode")
     private static Map<Byte, MessageEncoder> buildEncoders() {
         Map<Byte, MessageEncoder> result = Iterables.newHashMapWithSize(9);
         result.put(HelloMessage.SIGNATURE, new HelloMessageEncoder());

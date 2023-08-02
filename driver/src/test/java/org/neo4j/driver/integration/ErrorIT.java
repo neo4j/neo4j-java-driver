@@ -133,6 +133,7 @@ class ErrorIT {
 
     @Test
     void shouldExplainConnectionError() {
+        @SuppressWarnings("resource")
         final var driver = GraphDatabase.driver("bolt://localhost:7777");
         var e = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
 
@@ -174,6 +175,7 @@ class ErrorIT {
 
         var boltUri = session.uri();
         var uri = URI.create(String.format("%s://%s:%d", boltUri.getScheme(), boltUri.getHost(), session.httpPort()));
+        @SuppressWarnings("resource")
         final var driver = GraphDatabase.driver(uri, config);
         var e = assertThrows(ClientException.class, driver::verifyConnectivity);
         assertEquals(

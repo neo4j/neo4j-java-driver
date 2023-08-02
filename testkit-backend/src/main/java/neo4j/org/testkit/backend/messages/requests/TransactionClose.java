@@ -51,7 +51,7 @@ public class TransactionClose implements TestkitRequest {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "RedundantSuppression"})
     public Mono<TestkitResponse> processRx(TestkitState testkitState) {
         return testkitState
                 .getRxTransactionHolder(data.getTxId())

@@ -110,6 +110,7 @@ class InternalRxTransactionTest {
 
     @ParameterizedTest
     @MethodSource("allTxRunMethods")
+    @SuppressWarnings("ThrowableNotThrown")
     void shouldMarkTxIfFailedToRun(Function<RxTransaction, RxResult> runReturnOne) {
         // Given
         Throwable error = new RuntimeException("Hi there");

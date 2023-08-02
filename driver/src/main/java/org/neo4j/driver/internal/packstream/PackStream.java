@@ -346,6 +346,7 @@ public class PackStream {
             }
         }
 
+        @SuppressWarnings("DuplicatedCode")
         private void packStringHeader(int size) throws IOException {
             if (size < 0x10) {
                 out.writeByte((byte) (TINY_STRING | size));
@@ -358,6 +359,7 @@ public class PackStream {
             }
         }
 
+        @SuppressWarnings("DuplicatedCode")
         public void packListHeader(int size) throws IOException {
             if (size < 0x10) {
                 out.writeByte((byte) (TINY_LIST | size));
@@ -370,6 +372,7 @@ public class PackStream {
             }
         }
 
+        @SuppressWarnings("DuplicatedCode")
         public void packMapHeader(int size) throws IOException {
             if (size < 0x10) {
                 out.writeByte((byte) (TINY_MAP | size));
