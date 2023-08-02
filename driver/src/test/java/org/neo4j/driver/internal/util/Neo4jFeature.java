@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 public enum Neo4jFeature {
     SPATIAL_TYPES(new Version(3, 4, 0)),
     TEMPORAL_TYPES(new Version(3, 4, 0)),
+    SERVER_SIDE_ROUTING_ENABLED_BY_DEFAULT(new Version(5, 0, 0)),
     BOLT_V3(new Version(3, 5, 0)),
     BOLT_V4(new Version(4, 0, 0)),
     BOLT_V51(new Version(5, 5, 0));
