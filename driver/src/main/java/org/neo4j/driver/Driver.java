@@ -377,6 +377,7 @@ public interface Driver extends AutoCloseable {
      */
     @Experimental
     @Deprecated
+    @SuppressWarnings("SameReturnValue")
     TypeSystem defaultTypeSystem();
 
     /**

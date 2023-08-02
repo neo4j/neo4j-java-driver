@@ -22,7 +22,6 @@ package org.neo4j.docs.driver;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.TransactionContext;
 
 import java.util.ArrayList;
@@ -40,37 +39,36 @@ public class PassBookmarkExample extends BaseApplication {
 
     // tag::pass-bookmarks[]
     // Create a company node
-    private Result addCompany(TransactionContext tx, String name) {
-        return tx.run("CREATE (:Company {name: $name})", parameters("name", name));
+    private void addCompany(TransactionContext tx, String name) {
+        tx.run("CREATE (:Company {name: $name})", parameters("name", name));
     }
 
     // Create a person node
-    private Result addPerson(TransactionContext tx, String name) {
-        return tx.run("CREATE (:Person {name: $name})", parameters("name", name));
+    private void addPerson(TransactionContext tx, String name) {
+        tx.run("CREATE (:Person {name: $name})", parameters("name", name));
     }
 
     // Create an employment relationship to a pre-existing company node.
     // This relies on the person first having been created.
-    private Result employ(TransactionContext tx, String person, String company) {
-        return tx.run("MATCH (person:Person {name: $person_name}) MATCH (company:Company {name: $company_name}) CREATE (person)-[:WORKS_FOR]->(company)",
+    private void employ(TransactionContext tx, String person, String company) {
+        tx.run("MATCH (person:Person {name: $person_name}) MATCH (company:Company {name: $company_name}) CREATE (person)-[:WORKS_FOR]->(company)",
                 parameters("person_name", person, "company_name", company));
     }
 
     // Create a friendship between two people.
     @SuppressWarnings("SameParameterValue")
-    private Result makeFriends(TransactionContext tx, String person1, String person2) {
-        return tx.run("MATCH (a:Person {name: $person_1}) MATCH (b:Person {name: $person_2}) MERGE (a)-[:KNOWS]->(b)",
+    private void makeFriends(TransactionContext tx, String person1, String person2) {
+        tx.run("MATCH (a:Person {name: $person_1}) MATCH (b:Person {name: $person_2}) MERGE (a)-[:KNOWS]->(b)",
                 parameters("person_1", person1, "person_2", person2));
     }
 
     // Match and display all friendships.
-    private Result printFriends(TransactionContext tx) {
+    private void printFriends(TransactionContext tx) {
         var result = tx.run("MATCH (a)-[:KNOWS]->(b) RETURN a.name, b.name");
         while (result.hasNext()) {
             var record = result.next();
             System.out.printf("%s knows %s%n", record.get("a.name").asString(), record.get("b.name").toString());
         }
-        return result;
     }
 
     public void addEmployAndMakeFriends() {
@@ -80,10 +78,9 @@ public class PassBookmarkExample extends BaseApplication {
         // Create the first person and employment relationship.
         try (var session1 =
                 driver.session(builder().withDefaultAccessMode(AccessMode.WRITE).build())) {
-            session1.executeWrite(tx -> addCompany(tx, "Wayne Enterprises").consume());
-            session1.executeWrite(tx -> addPerson(tx, "Alice").consume());
-            session1.executeWrite(
-                    tx -> employ(tx, "Alice", "Wayne Enterprises").consume());
+            session1.executeWriteWithoutResult(tx -> addCompany(tx, "Wayne Enterprises"));
+            session1.executeWriteWithoutResult(tx -> addPerson(tx, "Alice"));
+            session1.executeWriteWithoutResult(tx -> employ(tx, "Alice", "Wayne Enterprises"));
 
             savedBookmarks = new ArrayList<>(session1.lastBookmarks());
         }
@@ -91,9 +88,9 @@ public class PassBookmarkExample extends BaseApplication {
         // Create the second person and employment relationship.
         try (var session2 =
                 driver.session(builder().withDefaultAccessMode(AccessMode.WRITE).build())) {
-            session2.executeWrite(tx -> addCompany(tx, "LexCorp").consume());
-            session2.executeWrite(tx -> addPerson(tx, "Bob").consume());
-            session2.executeWrite(tx -> employ(tx, "Bob", "LexCorp").consume());
+            session2.executeWriteWithoutResult(tx -> addCompany(tx, "LexCorp"));
+            session2.executeWriteWithoutResult(tx -> addPerson(tx, "Bob"));
+            session2.executeWriteWithoutResult(tx -> employ(tx, "Bob", "LexCorp"));
 
             savedBookmarks.addAll(session2.lastBookmarks());
         }
@@ -103,9 +100,9 @@ public class PassBookmarkExample extends BaseApplication {
                 .withDefaultAccessMode(AccessMode.WRITE)
                 .withBookmarks(savedBookmarks)
                 .build())) {
-            session3.executeWrite(tx -> makeFriends(tx, "Alice", "Bob").consume());
+            session3.executeWriteWithoutResult(tx -> makeFriends(tx, "Alice", "Bob"));
 
-            session3.executeWrite(this::printFriends);
+            session3.executeWriteWithoutResult(this::printFriends);
         }
     }
     // end::pass-bookmarks[]

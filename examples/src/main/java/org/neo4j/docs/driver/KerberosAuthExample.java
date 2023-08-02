@@ -24,6 +24,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 // end::kerberos-auth-import[]
 
+@SuppressWarnings("unused")
 public class KerberosAuthExample implements AutoCloseable {
     private final Driver driver;
 

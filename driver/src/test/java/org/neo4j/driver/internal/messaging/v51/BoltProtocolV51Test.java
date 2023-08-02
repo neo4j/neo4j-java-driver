@@ -21,9 +21,9 @@ package org.neo4j.driver.internal.messaging.v51;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -108,6 +108,7 @@ public class BoltProtocolV51Test {
             .withMetadata(singletonMap("key", value(42)))
             .build();
 
+    @SuppressWarnings("SameReturnValue")
     protected BoltProtocol createProtocol() {
         return BoltProtocolV51.INSTANCE;
     }

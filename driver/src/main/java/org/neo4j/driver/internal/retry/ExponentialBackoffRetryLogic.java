@@ -186,7 +186,9 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
             if (canRetryOn(error)) {
                 var currentTime = clock.millis();
 
+                @SuppressWarnings("DataFlowIssue")
                 long startTime = contextView.getOrDefault("startTime", currentTime);
+                @SuppressWarnings("DataFlowIssue")
                 long nextDelayMs = contextView.getOrDefault("nextDelayMs", initialRetryDelayMs);
 
                 var elapsedTime = currentTime - startTime;
@@ -213,6 +215,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
             }
             addSuppressed(throwable, errors);
 
+            //noinspection DataFlowIssue
             return Mono.error(throwable);
         })));
     }

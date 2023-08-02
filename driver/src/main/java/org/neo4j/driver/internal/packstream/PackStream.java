@@ -516,6 +516,7 @@ public class PackStream {
          * @return null
          * @throws IOException if the unpacked value was not null
          */
+        @SuppressWarnings("SameReturnValue")
         public Object unpackNull() throws IOException {
             final var markerByte = in.readByte();
             if (markerByte != NULL) {

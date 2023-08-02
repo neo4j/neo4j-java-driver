@@ -19,9 +19,9 @@
 package org.neo4j.driver.integration;
 
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.AuthTokens.basic;
 import static org.neo4j.driver.AuthTokens.custom;

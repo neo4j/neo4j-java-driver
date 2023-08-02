@@ -18,7 +18,6 @@
  */
 package neo4j.org.testkit.backend.holder;
 
-import java.util.Optional;
 import lombok.Getter;
 
 public abstract class AbstractResultHolder<T1, T2 extends AbstractTransactionHolder<?, ?>, T3> {
@@ -42,10 +41,6 @@ public abstract class AbstractResultHolder<T1, T2 extends AbstractTransactionHol
 
     public T1 getSessionHolder() {
         return transactionHolder != null ? getSessionHolder(transactionHolder) : sessionHolder;
-    }
-
-    public Optional<T2> getTransactionHolder() {
-        return Optional.ofNullable(transactionHolder);
     }
 
     protected abstract T1 getSessionHolder(T2 transactionHolder);

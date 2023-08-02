@@ -390,6 +390,7 @@ public final class Config implements Serializable {
          *
          * @return this builder
          */
+        @SuppressWarnings("deprecation")
         public ConfigBuilder withLeakedSessionsLogging() {
             this.logLeakedSessions = true;
             return this;

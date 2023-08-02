@@ -143,6 +143,7 @@ public interface Logging {
      *
      * @return new logging implementation.
      */
+    @SuppressWarnings("SameReturnValue")
     static Logging none() {
         return DEV_NULL_LOGGING;
     }

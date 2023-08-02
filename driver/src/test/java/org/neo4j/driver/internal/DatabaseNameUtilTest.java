@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 class DatabaseNameUtilTest {
     @Test
+    @SuppressWarnings("EqualsWithItself")
     void shouldDatabaseNameBeEqual() {
         assertEquals(defaultDatabase(), defaultDatabase());
         assertEquals(defaultDatabase(), database(null));

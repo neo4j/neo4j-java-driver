@@ -19,6 +19,7 @@
 package org.neo4j.driver.integration.reactive;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
@@ -46,6 +47,7 @@ class ReactiveTransactionIT {
         // Given
         var session = neo4j.driver().session(ReactiveSession.class);
         var tx = Mono.fromDirect(session.beginTransaction()).block();
+        assertNotNull(tx);
         var streamSize = Config.defaultConfig().fetchSize() + 1;
         var result0 = Mono.fromDirect(tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize)))
                 .block();
@@ -58,6 +60,8 @@ class ReactiveTransactionIT {
         assertEquals(terminationException.code(), "Neo.ClientError.Statement.SyntaxError");
 
         // Then
+        assertNotNull(result0);
+        assertNotNull(result1);
         for (var result : List.of(result0, result1)) {
             var exception = assertThrows(
                     ClientException.class, () -> Flux.from(result.records()).blockFirst());
@@ -72,6 +76,7 @@ class ReactiveTransactionIT {
         // Given
         var session = neo4j.driver().session(ReactiveSession.class);
         var tx = Mono.fromDirect(session.beginTransaction()).block();
+        assertNotNull(tx);
         var streamSize = Config.defaultConfig().fetchSize() + 1;
         var result0 = Mono.fromDirect(tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize)))
                 .block();
@@ -84,6 +89,8 @@ class ReactiveTransactionIT {
         assertEquals(terminationException.code(), "Neo.ClientError.Statement.SyntaxError");
 
         // Then
+        assertNotNull(result0);
+        assertNotNull(result1);
         for (var result : List.of(result0, result1)) {
             var exception = assertThrows(ClientException.class, () -> Mono.fromDirect(result.consume())
                     .block());
@@ -98,6 +105,7 @@ class ReactiveTransactionIT {
         // Given
         var session = neo4j.driver().session(ReactiveSession.class);
         var tx = Mono.fromDirect(session.beginTransaction()).block();
+        assertNotNull(tx);
         var terminationException = assertThrows(
                 ClientException.class, () -> Mono.fromDirect(tx.run("invalid")).block());
         assertEquals(terminationException.code(), "Neo.ClientError.Statement.SyntaxError");
@@ -118,6 +126,7 @@ class ReactiveTransactionIT {
         var session = neo4j.driver().session(ReactiveSession.class);
         var tx = (InternalReactiveTransaction)
                 Mono.fromDirect(session.beginTransaction()).block();
+        assertNotNull(tx);
         var streamSize = Config.defaultConfig().fetchSize() + 1;
         var result0 = Mono.fromDirect(tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize)))
                 .block();
@@ -128,6 +137,8 @@ class ReactiveTransactionIT {
         Mono.fromDirect(tx.terminate()).block();
 
         // Then
+        assertNotNull(result0);
+        assertNotNull(result1);
         for (var result : List.of(result0, result1)) {
             assertThrows(TransactionTerminatedException.class, () -> Flux.from(result.records())
                     .blockFirst());
@@ -142,6 +153,7 @@ class ReactiveTransactionIT {
         var session = neo4j.driver().session(ReactiveSession.class);
         var tx = (InternalReactiveTransaction)
                 Mono.fromDirect(session.beginTransaction()).block();
+        assertNotNull(tx);
         var streamSize = Config.defaultConfig().fetchSize() + 1;
         var result0 = Mono.fromDirect(tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize)))
                 .block();
@@ -152,6 +164,8 @@ class ReactiveTransactionIT {
         Mono.fromDirect(tx.terminate()).block();
 
         // Then
+        assertNotNull(result0);
+        assertNotNull(result1);
         for (var result : List.of(result0, result1)) {
             assertThrows(TransactionTerminatedException.class, () -> Mono.fromDirect(result.consume())
                     .block());
@@ -166,6 +180,7 @@ class ReactiveTransactionIT {
         var session = neo4j.driver().session(ReactiveSession.class);
         var tx = (InternalReactiveTransaction)
                 Mono.fromDirect(session.beginTransaction()).block();
+        assertNotNull(tx);
         var streamSize = Config.defaultConfig().fetchSize() + 1;
         Mono.fromDirect(tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize)))
                 .block();
@@ -187,6 +202,7 @@ class ReactiveTransactionIT {
         var session = neo4j.driver().session(ReactiveSession.class);
         var tx = (InternalReactiveTransaction)
                 Mono.fromDirect(session.beginTransaction()).block();
+        assertNotNull(tx);
         var streamSize = Config.defaultConfig().fetchSize() + 1;
         var result = Mono.fromDirect(tx.run("UNWIND range(1, $limit) AS x RETURN x", Map.of("limit", streamSize)))
                 .block();
@@ -195,6 +211,7 @@ class ReactiveTransactionIT {
         Mono.fromDirect(tx.terminate()).block();
 
         // Then
+        assertNotNull(result);
         assertThrows(TransactionTerminatedException.class, () -> Flux.from(result.records())
                 .blockLast());
         Mono.fromDirect(tx.close()).block();

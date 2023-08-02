@@ -29,7 +29,7 @@ import org.neo4j.driver.util.Preview;
  * <ul>
  *     <li>{@link AuthTokenManager#getToken()} returned {@code null}</li>
  *     <li>{@link AuthTokenManager#getToken()} returned a {@link java.util.concurrent.CompletionStage} that completed with {@code null}</li>
- *     <li>{@link AuthTokenManager#getToken()} returned a {@link java.util.concurrent.CompletionStage} that completed with a token that was not creeated using {@link org.neo4j.driver.AuthTokens}</li>
+ *     <li>{@link AuthTokenManager#getToken()} returned a {@link java.util.concurrent.CompletionStage} that completed with a token that was not created using {@link org.neo4j.driver.AuthTokens}</li>
  *     <li>{@link AuthTokenManager#getToken()} has thrown an exception</li>
  *     <li>{@link AuthTokenManager#getToken()} returned a {@link java.util.concurrent.CompletionStage} that completed exceptionally</li>
  * </ul>

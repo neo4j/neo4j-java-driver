@@ -20,9 +20,9 @@ package org.neo4j.driver.internal;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -121,6 +121,7 @@ class ValuesTest {
     }
 
     @Test
+    @SuppressWarnings("EqualsWithItself")
     void equalityRules() {
         assertEquals(value(1), value(1));
         assertEquals(value(Long.MAX_VALUE), value(Long.MAX_VALUE));
@@ -247,7 +248,6 @@ class ValuesTest {
         assertThat(val.asList(ofObject()), contains("hello", "world"));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void shouldMapMapOfString() {
         // Given

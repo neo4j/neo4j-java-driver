@@ -142,7 +142,7 @@ There are 2 ways of running Testkit tests:
 
 ##### Using the testkit-tests module
 
-The `testkit-tests` module will automatically checkout Testkit and run it during Maven build.
+The `testkit-tests` module will automatically check out Testkit and run it during Maven build.
 
 Prerequisites:
 - Docker
@@ -189,7 +189,7 @@ TEST_DOCKER_RMI=true \
 python3 main.py --tests TESTKIT_TESTS UNIT_TESTS --configs 4.3-enterprise
 ````
 
-On Windows or in the abscence of a Bash-compatible environment, the required steps are probably different.
+On Windows or in the absence of a Bash-compatible environment, the required steps are probably different.
 A simple `mvn clean install` will require admin rights on Windows, because our integration tests require admin privileges to install and start a service.
 
 If all of this fails and you only want to try out a local development version of the driver, you could skip all tests like this:

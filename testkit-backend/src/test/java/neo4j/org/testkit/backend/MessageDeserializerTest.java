@@ -18,9 +18,8 @@
  */
 package neo4j.org.testkit.backend;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,12 +41,14 @@ class MessageDeserializerTest {
                         + "\"credentials\": \"pass\", \"realm\": \"\", \"ticket\": \"\"}}, \"userAgent\": null}}",
                 TestkitRequest.class);
 
-        assertThat(message, instanceOf(NewDriver.class));
+        assertTrue(message instanceof NewDriver);
 
         var newDriver = (NewDriver) message;
-        assertThat(newDriver.getData().getUri(), equalTo("bolt://localhost:7687"));
-        assertThat(newDriver.getData().getAuthorizationToken().getTokens().getScheme(), equalTo("basic"));
-        assertThat(newDriver.getData().getAuthorizationToken().getTokens().getPrincipal(), equalTo("neo4j"));
+        assertEquals("bolt://localhost:7687", newDriver.getData().getUri());
+        assertEquals(
+                "basic", newDriver.getData().getAuthorizationToken().getTokens().getScheme());
+        assertEquals(
+                "neo4j", newDriver.getData().getAuthorizationToken().getTokens().getPrincipal());
     }
 
     @Test
@@ -57,11 +58,11 @@ class MessageDeserializerTest {
                         + "\"data\": {\"driverId\": \"0\", \"accessMode\": \"w\", \"bookmarks\": null, \"database\": null, \"fetchSize\": null}}",
                 TestkitRequest.class);
 
-        assertThat(message, instanceOf(NewSession.class));
+        assertTrue(message instanceof NewSession);
 
         var sessionRequest = (NewSession) message;
-        assertThat(sessionRequest.getData().getDriverId(), equalTo("0"));
-        assertThat(sessionRequest.getData().getAccessMode(), equalTo("w"));
+        assertEquals("0", sessionRequest.getData().getDriverId());
+        assertEquals("w", sessionRequest.getData().getAccessMode());
     }
 
     @Test
@@ -71,10 +72,10 @@ class MessageDeserializerTest {
                         + "\"params\": {\"x\": {\"name\": \"CypherBool\", \"data\": {\"value\": true}}}, \"txMeta\": null, \"timeout\": null}}",
                 TestkitRequest.class);
 
-        assertThat(message, instanceOf(SessionRun.class));
+        assertTrue(message instanceof SessionRun);
 
         var sessionRun = (SessionRun) message;
-        assertThat(sessionRun.getData().getSessionId(), equalTo("1"));
-        assertThat(sessionRun.getData().getCypher(), equalTo("RETURN $x as y"));
+        assertEquals("1", sessionRun.getData().getSessionId());
+        assertEquals("RETURN $x as y", sessionRun.getData().getCypher());
     }
 }

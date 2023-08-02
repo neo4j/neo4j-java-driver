@@ -44,7 +44,7 @@ public interface ReactiveSession extends BaseSession, ReactiveQueryRunner {
      * Begin a new <em>unmanaged {@linkplain ReactiveTransaction transaction}</em>. At most one transaction may exist in a session at any point in time. To
      * maintain multiple concurrent transactions, use multiple concurrent sessions.
      * <p>
-     * It by default is executed in a Network IO thread, as a result no blocking operation is allowed in this thread.
+     * It is by default is executed in a Network IO thread, as a result no blocking operation is allowed in this thread.
      *
      * @return a new {@link ReactiveTransaction}
      */
@@ -56,7 +56,7 @@ public interface ReactiveSession extends BaseSession, ReactiveQueryRunner {
      * Begin a new <em>unmanaged {@linkplain ReactiveTransaction transaction}</em> with the specified {@link TransactionConfig configuration}. At most one
      * transaction may exist in a session at any point in time. To maintain multiple concurrent transactions, use multiple concurrent sessions.
      * <p>
-     * It by default is executed in a Network IO thread, as a result no blocking operation is allowed in this thread.
+     * It is by default is executed in a Network IO thread, as a result no blocking operation is allowed in this thread.
      *
      * @param config configuration for the new transaction.
      * @return a new {@link ReactiveTransaction}

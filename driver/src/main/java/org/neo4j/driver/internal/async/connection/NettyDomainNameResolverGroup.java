@@ -32,6 +32,7 @@ public class NettyDomainNameResolverGroup extends AddressResolverGroup<InetSocke
     }
 
     @Override
+    @SuppressWarnings("resource")
     protected AddressResolver<InetSocketAddress> newResolver(EventExecutor executor) {
         return new NettyDomainNameResolver(executor, domainNameResolver).asAddressResolver();
     }

@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.driver.Values.value;
 
 import org.junit.jupiter.api.Test;

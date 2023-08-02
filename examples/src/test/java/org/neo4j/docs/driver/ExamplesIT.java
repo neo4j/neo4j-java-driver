@@ -32,17 +32,13 @@ import org.neo4j.driver.testutil.StdIOCapture;
 import org.neo4j.driver.testutil.TestUtil;
 
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Neo4jEdition.ENTERPRISE;
@@ -116,7 +112,7 @@ class ExamplesIT {
             example.addPerson("Alice");
 
             // Then
-            assertThat(personCount("Alice"), greaterThan(0));
+            assertTrue(personCount("Alice") > 0);
         }
     }
 
@@ -147,7 +143,7 @@ class ExamplesIT {
             var names = await(example.getPeople());
 
             // Then
-            assertThat(names, equalTo(asList("Alice", "Bob")));
+            assertEquals(asList("Alice", "Bob"), names);
         }
     }
 
@@ -164,8 +160,8 @@ class ExamplesIT {
             // Then
             var employeeCount =
                     readInt("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
-            assertThat(employeeCount, equalTo(2));
-            assertThat(nodesCreated, equalTo(1));
+            assertEquals(2, employeeCount);
+            assertEquals(1, nodesCreated);
         }
     }
 
@@ -188,12 +184,21 @@ class ExamplesIT {
     }
 
     @Test
+    void testShouldRunCustomAuthExample() {
+        // Given
+        try (var example = new CustomAuthExample(uri, USER, neo4j.adminPassword(), null, "basic", Map.of())) {
+            // Then
+            assertTrue(example.canConnect());
+        }
+    }
+
+    @Test
     void testShouldRunConfigConnectionTimeoutExample() {
         // Given
         try (var example =
                 new ConfigConnectionTimeoutExample(uri, USER, neo4j.adminPassword())) {
             // Then
-            assertThat(example, instanceOf(ConfigConnectionTimeoutExample.class));
+            assertNotNull(example);
         }
     }
 
@@ -202,7 +207,7 @@ class ExamplesIT {
         // Given
         try (var example = new ConfigMaxRetryTimeExample(uri, USER, neo4j.adminPassword())) {
             // Then
-            assertThat(example, instanceOf(ConfigMaxRetryTimeExample.class));
+            assertNotNull(example);
         }
     }
 
@@ -211,7 +216,7 @@ class ExamplesIT {
         // Given
         try (var example = new ConfigTrustExample(uri, USER, neo4j.adminPassword())) {
             // Then
-            assertThat(example, instanceOf(ConfigTrustExample.class));
+            assertNotNull(example);
         }
     }
 
@@ -220,7 +225,7 @@ class ExamplesIT {
         // Given
         try (var example = new ConfigUnencryptedExample(uri, USER, neo4j.adminPassword())) {
             // Then
-            assertThat(example, instanceOf(ConfigUnencryptedExample.class));
+            assertNotNull(example);
         }
     }
 
@@ -229,7 +234,7 @@ class ExamplesIT {
         // Given
         try (var example = new DriverLifecycleExample(uri, USER, neo4j.adminPassword())) {
             // Then
-            assertThat(example, instanceOf(DriverLifecycleExample.class));
+            assertNotNull(example);
         }
     }
 
@@ -245,8 +250,8 @@ class ExamplesIT {
             }
 
             // Then
-            assertThat(stdIO.stdout().size(), equalTo(1));
-            assertThat(stdIO.stdout().get(0), containsString("hello, world"));
+            assertEquals(1, stdIO.stdout().size());
+            assertTrue(stdIO.stdout().get(0).contains("hello, world"));
         }
     }
 
@@ -258,7 +263,7 @@ class ExamplesIT {
             var nodeID = example.addPerson("Alice");
 
             // Then
-            assertThat(nodeID, greaterThanOrEqualTo(0L));
+            assertTrue(nodeID >= 0L);
         }
     }
 
@@ -272,7 +277,7 @@ class ExamplesIT {
             var names = example.getPeople();
 
             // Then
-            assertThat(names, equalTo(asList("Alice", "Bob")));
+            assertEquals(List.of("Alice", "Bob"), names);
         }
     }
 
@@ -288,7 +293,7 @@ class ExamplesIT {
             // Then
             var employeeCount =
                     readInt("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
-            assertThat(employeeCount, equalTo(2));
+            assertEquals(2, employeeCount);
         }
     }
 
@@ -300,7 +305,7 @@ class ExamplesIT {
             example.addPerson("Alice");
 
             // Then
-            assertThat(personCount("Alice"), greaterThan(0));
+            assertTrue(personCount("Alice") > 0);
         }
     }
 
@@ -313,7 +318,7 @@ class ExamplesIT {
             example.addPerson("Alice");
 
             // Then
-            assertThat(personCount("Alice"), greaterThan(0));
+            assertTrue(personCount("Alice") > 0);
         }
     }
 
@@ -326,7 +331,7 @@ class ExamplesIT {
             example.addPerson("Alice");
 
             // Then
-            assertThat(personCount("Alice"), greaterThan(0));
+            assertTrue(personCount("Alice") > 0);
         }
     }
 
@@ -361,22 +366,22 @@ class ExamplesIT {
             example.addEmployAndMakeFriends();
 
             // Then
-            assertThat(companyCount("Wayne Enterprises"), is(1));
-            assertThat(companyCount("LexCorp"), is(1));
-            assertThat(personCount("Alice"), is(1));
-            assertThat(personCount("Bob"), is(1));
+            assertEquals(1, companyCount("Wayne Enterprises"));
+            assertEquals(1, companyCount("LexCorp"));
+            assertEquals(1, personCount("Alice"));
+            assertEquals(1, personCount("Bob"));
 
             var employeeCountOfWayne = readInt(
                     "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Wayne Enterprises' RETURN count(emp)");
-            assertThat(employeeCountOfWayne, is(1));
+            assertEquals(1, employeeCountOfWayne);
 
             var employeeCountOfLexCorp = readInt(
                     "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'LexCorp' RETURN count(emp)");
-            assertThat(employeeCountOfLexCorp, is(1));
+            assertEquals(1, employeeCountOfLexCorp);
 
             var friendCount =
                     readInt("MATCH (a:Person {name: 'Alice'})-[:KNOWS]->(b:Person {name: 'Bob'}) RETURN count(a)");
-            assertThat(friendCount, is(1));
+            assertEquals(1, friendCount);
         }
     }
 
@@ -415,7 +420,7 @@ class ExamplesIT {
             // print all 'Product' nodes to fake stdout
             try (stdIOCapture) {
                 final var summaryList = await(example.printAllProducts());
-                assertThat(summaryList.size(), equalTo(1));
+                assertEquals(1, summaryList.size());
                 var summary = summaryList.get(0);
                 assertEquals(QueryType.READ_ONLY, summary.queryType());
             }
@@ -436,7 +441,7 @@ class ExamplesIT {
             var names = await(example.getPeople());
 
             // Then
-            assertThat(names, equalTo(asList("Alice", "Bob")));
+            assertEquals(List.of("Alice", "Bob"), names);
         }
     }
 
@@ -453,7 +458,7 @@ class ExamplesIT {
 
             // Then
             var greetingCount = readInt("examples", "MATCH (a:Greeting) RETURN count(a)", Values.parameters());
-            assertThat(greetingCount, is(1));
+            assertEquals(1, greetingCount);
         }
     }
 }

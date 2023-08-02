@@ -56,6 +56,7 @@ class QueryConfigTest {
     }
 
     @Test
+    @SuppressWarnings("WriteOnlyObject")
     void shouldNotAllowNullRouting() {
         assertThrows(NullPointerException.class, () -> QueryConfig.builder().withRouting(null));
     }

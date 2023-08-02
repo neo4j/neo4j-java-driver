@@ -20,7 +20,7 @@ package org.neo4j.driver.internal;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.driver.Values.ofInteger;
 import static org.neo4j.driver.Values.value;
 

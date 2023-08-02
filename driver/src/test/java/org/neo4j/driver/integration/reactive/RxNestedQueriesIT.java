@@ -158,7 +158,7 @@ class RxNestedQueriesIT {
                 },
                 RxTransaction::commit,
                 (tx, error) -> tx.rollback(),
-                null);
+                RxTransaction::close);
 
         StepVerifier.create(nodeIds).expectNextCount(size).verifyComplete();
     }
