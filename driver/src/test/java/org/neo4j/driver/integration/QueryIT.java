@@ -21,6 +21,7 @@ package org.neo4j.driver.integration;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
@@ -156,6 +157,7 @@ class QueryIT {
             name = result2.next().get("a.name");
         }
 
+        assertNotNull(name);
         assertThat(name.asString(), equalTo("Adam"));
     }
 

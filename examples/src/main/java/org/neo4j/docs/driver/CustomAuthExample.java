@@ -41,6 +41,11 @@ public class CustomAuthExample implements AutoCloseable {
     }
     // end::custom-auth[]
 
+    public boolean canConnect() {
+        var result = driver.session().run("RETURN 1");
+        return result.single().get(0).asInt() == 1;
+    }
+
     @Override
     public void close() throws RuntimeException {
         driver.close();

@@ -33,6 +33,7 @@ public interface TypeSystem {
      *
      * @return instance of type system
      */
+    @SuppressWarnings("SameReturnValue")
     static TypeSystem getDefault() {
         return TYPE_SYSTEM;
     }

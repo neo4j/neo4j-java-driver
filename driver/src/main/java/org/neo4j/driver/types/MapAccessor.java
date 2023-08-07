@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.value.NullValue;
 /**
  * Access the keys, properties and values of an underlying unordered map by key
  * <p>
- * This provides only read methods. Subclasses may chose to provide additional methods
+ * This provides only read methods. Subclasses may choose to provide additional methods
  * for changing the underlying map.
  * @since 1.0
  */
@@ -96,7 +96,7 @@ public interface MapAccessor {
      * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
      * @param <T> the type of map values
      * @see Values for a long list of built-in conversion functions
-     * @return the value as a map from string keys to values of type T obtained from mapping he original map values, if possible
+     * @return the value as a map from string keys to values of type T obtained from mapping the original map values, if possible
      */
     <T> Map<String, T> asMap(Function<Value, T> mapFunction);
 }

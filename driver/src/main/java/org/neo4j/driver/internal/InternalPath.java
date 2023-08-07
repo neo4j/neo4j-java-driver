@@ -89,7 +89,7 @@ public class InternalPath implements Path, AsValue {
                 // even index - this should be a node
                 try {
                     lastNode = (Node) entity;
-                    if (nodes.isEmpty() || isEndpoint(lastNode, lastRelationship)) {
+                    if (nodes.isEmpty() || (lastRelationship != null && isEndpoint(lastNode, lastRelationship))) {
                         nodes.add(lastNode);
                     } else {
                         throw new IllegalArgumentException("Node argument " + index

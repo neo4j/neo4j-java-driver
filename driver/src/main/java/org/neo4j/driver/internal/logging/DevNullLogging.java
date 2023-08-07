@@ -43,6 +43,7 @@ public class DevNullLogging implements Logging, Serializable {
     // Reference: https://docs.oracle.com/en/java/javase/17/docs/specs/serialization/input.html#the-readresolve-method
     // andJoshua Bloch, Effective Java 3rd edition
     @Serial
+    @SuppressWarnings("SameReturnValue")
     private Object readResolve() {
         return DEV_NULL_LOGGING;
     }

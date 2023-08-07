@@ -22,7 +22,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.util.Immutable;
 
 /**
- * The type of a {@link Value} as defined by the Cypher language
+ * The type of {@link Value} as defined by the Cypher language
  * @since 1.0
  */
 @Immutable

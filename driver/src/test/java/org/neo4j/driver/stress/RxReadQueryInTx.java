@@ -43,7 +43,7 @@ public class RxReadQueryInTx<C extends AbstractContext> extends AbstractRxQuery<
                         this::processAndGetSummary,
                         RxTransaction::commit,
                         (tx, error) -> tx.rollback(),
-                        null)
+                        RxTransaction::close)
                 .subscribe(
                         summary -> {
                             context.readCompleted();

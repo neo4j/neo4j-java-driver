@@ -78,6 +78,7 @@ public class UnsupportedDateTimeValueTest {
     }
 
     @Test
+    @SuppressWarnings("EqualsWithItself")
     void shouldEqualToItself() {
         // GIVEN
         var value = new UnsupportedDateTimeValue(exception);

@@ -310,7 +310,7 @@ public class RediscoveryImpl implements Rediscovery {
                 });
     }
 
-    @SuppressWarnings("ThrowableNotThrown")
+    @SuppressWarnings({"ThrowableNotThrown", "SameReturnValue"})
     private ClusterComposition handleRoutingProcedureError(
             Throwable error, RoutingTable routingTable, BoltServerAddress routerAddress, Throwable baseError) {
         if (mustAbortDiscovery(error)) {

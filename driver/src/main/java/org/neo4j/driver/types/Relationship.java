@@ -24,7 +24,7 @@ package org.neo4j.driver.types;
  */
 public interface Relationship extends Entity {
     /**
-     * Id of the node where this relationship starts.
+     * The id of the node where this relationship starts.
      * <p>
      * Please note that depending on server configuration numeric id might not be available and accessing it will result in {@link IllegalStateException}.
      *
@@ -36,14 +36,14 @@ public interface Relationship extends Entity {
     long startNodeId();
 
     /**
-     * Id of the node where this relationship starts.
+     * The id of the node where this relationship starts.
      *
      * @return the node id
      */
     String startNodeElementId();
 
     /**
-     * Id of the node where this relationship ends.
+     * The id of the node where this relationship ends.
      * <p>
      * Please note that depending on server configuration numeric id might not be available and accessing it will result in {@link IllegalStateException}.
      *
@@ -55,7 +55,7 @@ public interface Relationship extends Entity {
     long endNodeId();
 
     /**
-     * Id of the node where this relationship ends.
+     * The id of the node where this relationship ends.
      *
      * @return the node id
      */

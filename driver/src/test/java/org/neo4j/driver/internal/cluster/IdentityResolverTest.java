@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
 

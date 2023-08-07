@@ -18,8 +18,7 @@
  */
 package neo4j.org.testkit.backend;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,7 +37,6 @@ public class MessageSerializerTest {
         var expectedOutput = "{\"name\":\"Driver\",\"data\":{\"id\":\"1\"}}";
 
         var serializedResponse = mapper.writeValueAsString(response);
-
-        assertThat(serializedResponse, equalTo(expectedOutput));
+        assertEquals(expectedOutput, serializedResponse);
     }
 }

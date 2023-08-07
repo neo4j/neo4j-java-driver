@@ -19,8 +19,8 @@
 package org.neo4j.driver.types;
 
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;

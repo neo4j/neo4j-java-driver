@@ -20,12 +20,12 @@ package org.neo4j.driver.integration.reactive;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -115,7 +115,7 @@ class RxTransactionIT {
                         .map(record -> record.get(0).asNode().get("id").asInt()),
                 RxTransaction::commit,
                 (tx, error) -> tx.rollback(),
-                null);
+                RxTransaction::close);
 
         StepVerifier.create(ids).expectNext(42).verifyComplete();
         assertEquals(1, countNodes(42));
@@ -334,7 +334,7 @@ class RxTransactionIT {
                 tx -> Flux.from(tx.run("WRONG").records()),
                 RxTransaction::commit,
                 (tx, error) -> tx.rollback(),
-                null);
+                RxTransaction::close);
 
         StepVerifier.create(records)
                 .verifyErrorSatisfies(error -> assertThat(error.getMessage(), containsString("Invalid input")));
@@ -481,7 +481,7 @@ class RxTransactionIT {
                 }),
                 RxTransaction::commit,
                 (tx, error) -> tx.rollback(),
-                null);
+                RxTransaction::close);
 
         StepVerifier.create(records)
                 .expectErrorSatisfies(error -> assertEquals(e, error))
@@ -527,7 +527,7 @@ class RxTransactionIT {
                 tx -> Flux.from(tx.run("RETURN 'Hi!'").records()).handle((record, sink) -> sink.error(e)),
                 RxTransaction::commit,
                 (tx, error) -> tx.rollback(),
-                null);
+                RxTransaction::close);
 
         StepVerifier.create(records)
                 .expectErrorSatisfies(error -> assertEquals(e, error))
@@ -659,7 +659,7 @@ class RxTransactionIT {
                 tx -> tx.run("CREATE (:MyNode)").records(),
                 RxTransaction::commit,
                 (tx, error) -> tx.rollback(),
-                null));
+                RxTransaction::close));
 
         var bookmarkAfter = session.lastBookmark();
 
@@ -787,7 +787,7 @@ class RxTransactionIT {
                 },
                 RxTransaction::commit,
                 (tx, error) -> tx.rollback(),
-                null);
+                RxTransaction::close);
 
         StepVerifier.create(summary).expectNextCount(1).verifyComplete(); // we indeed get a summary.
     }
@@ -800,7 +800,7 @@ class RxTransactionIT {
                 tx -> Flux.from(tx.run(query).records()).collectList(),
                 RxTransaction::commit,
                 (tx, error) -> tx.rollback(),
-                null);
+                RxTransaction::close);
 
         StepVerifier.create(records.single())
                 .consumeNextWith(allRecords -> {
@@ -819,7 +819,7 @@ class RxTransactionIT {
                 tx -> tx.run(query).consume(),
                 RxTransaction::commit,
                 (tx, error) -> tx.rollback(),
-                null);
+                RxTransaction::close);
 
         StepVerifier.create(summary.single())
                 .consumeNextWith(Assertions::assertNotNull)

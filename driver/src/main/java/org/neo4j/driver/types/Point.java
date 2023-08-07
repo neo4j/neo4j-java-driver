@@ -55,5 +55,6 @@ public interface Point {
      *
      * @return the {@code z} coordinate value or {@link Double#NaN} if not applicable.
      */
+    @SuppressWarnings("SameReturnValue")
     double z();
 }

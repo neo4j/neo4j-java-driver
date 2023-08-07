@@ -51,21 +51,21 @@ public interface ReactiveResult {
      * Returns a cold unicast publisher of records.
      * <p>
      * When the record publisher is {@linkplain Publisher#subscribe(Subscriber) subscribed}, the query is executed and the result is streamed back as a record
-     * stream followed by a result summary. This record publisher publishes all records in the result and signals the completion. However before completion or
+     * stream followed by a result summary. This record publisher publishes all records in the result and signals the completion. However, before completion or
      * error reporting if any, a cleanup of result resources such as network connection will be carried out automatically.
      * <p>
-     * Therefore the {@link Subscriber} of this record publisher shall wait for the termination signal (complete or error) to ensure that the resources used by
+     * Therefore, the {@link Subscriber} of this record publisher shall wait for the termination signal (complete or error) to ensure that the resources used by
      * this result are released correctly. Then the session is ready to be used to run more queries.
      * <p>
      * Cancelling of the record streaming will immediately terminate the propagation of new records. But it will not cancel query execution on the server. When
      * the execution is finished, the {@link Subscriber} will be notified with a termination signal (complete or error).
      * <p>
-     * The record publishing event by default runs in an Network IO thread, as a result no blocking operation is allowed in this thread. Otherwise network IO
+     * The record publishing event by default runs in a Network IO thread, as a result no blocking operation is allowed in this thread. Otherwise, network IO
      * might be blocked by application logic.
      * <p>
      * This publisher can only be subscribed by one {@link Subscriber} once.
      * <p>
-     * If this publisher is subscribed after {@link #keys()}, then the publish of records is carried out after the arrival of keys. If this publisher is
+     * If this publisher is subscribed after {@link #keys()}, then the publishing of records is carried out after the arrival of keys. If this publisher is
      * subscribed after {@link #consume()}, then a {@link ResultConsumedException} will be thrown.
      *
      * @return a cold unicast publisher of records.

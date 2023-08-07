@@ -42,7 +42,7 @@
     <!-- corresponding server dependency also needs updating.-->
     <reactor-bom.version>2022.0.9</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
-    <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
+    <hamcrest.version>2.2</hamcrest.version>
     <mockito-core.version>5.4.0</mockito-core.version>
     <junit.version>5.10.0</junit.version>
     <testng-engine.version>1.0.4</testng-engine.version>
@@ -136,8 +136,8 @@
       <!-- Test dependencies -->
       <dependency>
         <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-junit</artifactId>
-        <version>${hamcrest-junit.version}</version>
+        <artifactId>hamcrest</artifactId>
+        <version>${hamcrest.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>

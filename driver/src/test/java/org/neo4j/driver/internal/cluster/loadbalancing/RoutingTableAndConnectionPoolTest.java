@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;

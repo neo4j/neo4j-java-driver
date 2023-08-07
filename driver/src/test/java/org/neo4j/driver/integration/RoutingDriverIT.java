@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.integration;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
 
