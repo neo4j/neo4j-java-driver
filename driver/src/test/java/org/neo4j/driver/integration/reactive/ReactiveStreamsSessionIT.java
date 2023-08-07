@@ -117,7 +117,7 @@ public class ReactiveStreamsSessionIT {
                             return subscription;
                         });
                     }))
-                    .map(future -> future.thenCompose(itself -> itself))
+                    .map(future -> future.thenCompose(Function.identity()))
                     .toArray(CompletableFuture[]::new);
 
             CompletableFuture.allOf(subscriptionFutures).join();

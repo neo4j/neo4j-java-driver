@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.util.Futures;
@@ -84,7 +85,7 @@ class DisposableAsyncResultCursorTest {
         await(cursor.singleAsync());
         await(cursor.forEachAsync(record -> {}));
         await(cursor.listAsync());
-        await(cursor.listAsync(record -> record));
+        await(cursor.listAsync(Function.identity()));
         await(cursor.pullAllFailureAsync());
 
         // Then

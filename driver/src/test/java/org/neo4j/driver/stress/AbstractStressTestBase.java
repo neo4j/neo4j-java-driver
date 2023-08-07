@@ -497,8 +497,9 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
             writeTransactions = writeTransactions.thenCompose(ignore -> session.writeTransactionAsync(
                     tx -> createNodesInTxAsync(tx, batchIndex, AbstractStressTestBase.BIG_DATA_TEST_BATCH_SIZE)));
         }
-        writeTransactions =
-                writeTransactions.exceptionally(error -> error).thenCompose(error -> safeCloseSession(session, error));
+        writeTransactions = writeTransactions
+                .exceptionally(Function.identity())
+                .thenCompose(error -> safeCloseSession(session, error));
 
         var error = Futures.blockingGet(writeTransactions);
         if (error != null) {
@@ -532,7 +533,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
                             verifyNodeProperties(node);
                         })))
                 .thenApply(summary -> (Throwable) null)
-                .exceptionally(error -> error)
+                .exceptionally(Function.identity())
                 .thenCompose(error -> safeCloseSession(session, error));
 
         var error = Futures.blockingGet(readQuery);
@@ -628,7 +629,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
         return CompletableFuture.allOf(queryFutures)
                 .thenApply(ignored -> (Throwable) null)
-                .exceptionally(error -> error);
+                .exceptionally(Function.identity());
     }
 
     private static CompletableFuture<Void> createNodeInTxAsync(AsyncTransaction tx, int nodeIndex) {

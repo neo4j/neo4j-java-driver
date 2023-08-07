@@ -34,6 +34,7 @@ import java.nio.channels.Channels;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -701,7 +702,7 @@ public class PackStreamTest {
         var packer = machine.packer();
         var map = IntStream.range(0, size)
                 .boxed()
-                .collect(Collectors.toMap(i -> Integer.toString(i), i -> i, (a, b) -> b, HashMap::new));
+                .collect(Collectors.toMap(i -> Integer.toString(i), Function.identity(), (a, b) -> b, HashMap::new));
         packer.pack(map);
 
         // Then

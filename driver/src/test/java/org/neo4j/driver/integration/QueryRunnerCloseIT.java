@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -67,7 +68,7 @@ class QueryRunnerCloseIT {
         assertThrows(ResultConsumedException.class, result::peek);
         assertThrows(ResultConsumedException.class, () -> result.stream().toArray());
         assertThrows(ResultConsumedException.class, () -> result.forEachRemaining(record -> {}));
-        assertThrows(ResultConsumedException.class, () -> result.list(record -> record));
+        assertThrows(ResultConsumedException.class, () -> result.list(Function.identity()));
     }
 
     @Test
@@ -88,7 +89,7 @@ class QueryRunnerCloseIT {
         assertThrows(ResultConsumedException.class, result::peek);
         assertThrows(ResultConsumedException.class, () -> result.stream().toArray());
         assertThrows(ResultConsumedException.class, () -> result.forEachRemaining(record -> {}));
-        assertThrows(ResultConsumedException.class, () -> result.list(record -> record));
+        assertThrows(ResultConsumedException.class, () -> result.list(Function.identity()));
     }
 
     @Test
@@ -145,7 +146,7 @@ class QueryRunnerCloseIT {
         assertThrows(ResultConsumedException.class, () -> await(result.singleAsync()));
         assertThrows(ResultConsumedException.class, () -> await(result.forEachAsync(record -> {})));
         assertThrows(ResultConsumedException.class, () -> await(result.listAsync()));
-        assertThrows(ResultConsumedException.class, () -> await(result.listAsync(record -> record)));
+        assertThrows(ResultConsumedException.class, () -> await(result.listAsync(Function.identity())));
     }
 
     @Test
@@ -164,7 +165,7 @@ class QueryRunnerCloseIT {
         assertThrows(ResultConsumedException.class, () -> await(result.singleAsync()));
         assertThrows(ResultConsumedException.class, () -> await(result.forEachAsync(record -> {})));
         assertThrows(ResultConsumedException.class, () -> await(result.listAsync()));
-        assertThrows(ResultConsumedException.class, () -> await(result.listAsync(record -> record)));
+        assertThrows(ResultConsumedException.class, () -> await(result.listAsync(Function.identity())));
     }
 
     @Test
