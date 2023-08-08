@@ -30,6 +30,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
@@ -112,7 +113,7 @@ public class NetworkSession {
         resultCursorStage = newResultCursorStage.exceptionally(error -> null);
         return newResultCursorStage
                 .thenCompose(AsyncResultCursor::mapSuccessfulRunCompletionAsync)
-                .thenApply(cursor -> cursor); // convert the return type
+                .thenApply(Function.identity()); // convert the return type
     }
 
     public CompletionStage<RxResultCursor> runRx(
@@ -320,7 +321,7 @@ public class NetworkSession {
                         // there exists an open transaction, let's close it and propagate the error, if any
                         return tx.closeAsync()
                                 .thenApply(ignore -> (Throwable) null)
-                                .exceptionally(error -> error);
+                                .exceptionally(Function.identity());
                     }
                     // no open transaction so nothing to close
                     return completedWithNull();

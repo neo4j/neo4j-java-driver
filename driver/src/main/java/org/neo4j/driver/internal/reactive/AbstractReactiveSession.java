@@ -202,7 +202,7 @@ public abstract class AbstractReactiveSession<S> {
                         }
                     }
                 })
-                .thenCompose(stage -> stage);
+                .thenCompose(Function.identity());
     }
 
     private <T> CompletionStage<T> releaseConnectionAndRethrow(Throwable throwable) {

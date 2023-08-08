@@ -80,10 +80,6 @@
       <artifactId>junit-jupiter</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.junit.support</groupId>
-      <artifactId>testng-engine</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.rauschig</groupId>
       <artifactId>jarchivelib</artifactId>
     </dependency>
@@ -263,6 +259,18 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.surefire</groupId>
+            <artifactId>surefire-junit-platform</artifactId>
+            <version>${surefire.and.failsafe.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.maven.surefire</groupId>
+            <artifactId>surefire-testng</artifactId>
+            <version>${surefire.and.failsafe.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>

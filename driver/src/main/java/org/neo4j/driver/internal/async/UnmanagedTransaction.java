@@ -169,7 +169,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         resultCursors.add(cursorStage);
         return cursorStage
                 .thenCompose(AsyncResultCursor::mapSuccessfulRunCompletionAsync)
-                .thenApply(cursor -> cursor);
+                .thenApply(Function.identity());
     }
 
     public CompletionStage<RxResultCursor> runRx(Query query) {

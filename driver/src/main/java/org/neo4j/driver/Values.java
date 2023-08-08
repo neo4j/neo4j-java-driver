@@ -610,7 +610,7 @@ public final class Values {
      * @return a function that returns the value passed into it - the identity function
      */
     public static Function<Value, Value> ofValue() {
-        return val -> val;
+        return Function.identity();
     }
 
     /**
