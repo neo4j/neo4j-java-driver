@@ -30,7 +30,7 @@ public class NettyLogger extends AbstractInternalLogger {
     private static final long serialVersionUID = -1466889786216191159L;
 
     private final Logger log;
-    private static final Pattern PLACE_HOLDER_PATTERN = Pattern.compile("\\{\\}");
+    private static final Pattern PLACE_HOLDER_PATTERN = Pattern.compile("\\{}");
 
     public NettyLogger(String name, Logger log) {
         super(name);

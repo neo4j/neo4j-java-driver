@@ -1,0 +1,48 @@
+<profile version="1.0">
+  <option name="myName" value="driver" />
+
+  <!-- Additional Java migration inspections. -->
+  <inspection_tool class="CollectionsFieldAccessReplaceableByMethodCall" enabled="true" level="WARNING" enabled_by_default="true" />
+  <inspection_tool class="Convert2streamapi" enabled="true" level="WEAK WARNING" enabled_by_default="true" editorAttributes="INFO_ATTRIBUTES" />
+  <inspection_tool class="EnumerationCanBeIteration" enabled="true" level="WARNING" enabled_by_default="true" />
+  <inspection_tool class="FoldExpressionIntoStream" enabled="true" level="WEAK WARNING" enabled_by_default="true" editorAttributes="INFO_ATTRIBUTES" />
+  <inspection_tool class="LambdaCanBeMethodCall" enabled="true" level="WEAK WARNING" enabled_by_default="true" editorAttributes="INFO_ATTRIBUTES" />
+  <inspection_tool class="RedundantExplicitVariableType" enabled="true" level="WEAK WARNING" enabled_by_default="true" editorAttributes="INFO_ATTRIBUTES" />
+  <inspection_tool class="SimplifyForEach" enabled="true" level="WEAK WARNING" enabled_by_default="true" editorAttributes="INFO_ATTRIBUTES" />
+
+  <!-- The inspections below were turned off in the initial code inspection introduction. They should be assessed in due course. -->
+  <inspection_tool class="Annotator" enabled="false" level="ERROR" enabled_by_default="false" />
+  <inspection_tool class="GrazieInspection" enabled="false" level="GRAMMAR_ERROR" enabled_by_default="false" />
+  <inspection_tool class="HttpUrlsUsage" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+  <inspection_tool class="MavenModelInspection" enabled="false" level="ERROR" enabled_by_default="false" />
+  <inspection_tool class="NullableProblems" enabled="false" level="WARNING" enabled_by_default="false">
+    <option name="REPORT_NULLABLE_METHOD_OVERRIDES_NOTNULL" value="true" />
+    <option name="REPORT_NOT_ANNOTATED_METHOD_OVERRIDES_NOTNULL" value="true" />
+    <option name="REPORT_NOTNULL_PARAMETER_OVERRIDES_NULLABLE" value="true" />
+    <option name="REPORT_NOT_ANNOTATED_PARAMETER_OVERRIDES_NOTNULL" value="true" />
+    <option name="REPORT_NOT_ANNOTATED_GETTER" value="true" />
+    <option name="REPORT_NOT_ANNOTATED_SETTER_PARAMETER" value="true" />
+    <option name="REPORT_ANNOTATION_NOT_PROPAGATED_TO_OVERRIDERS" value="true" />
+    <option name="REPORT_NULLS_PASSED_TO_NON_ANNOTATED_METHOD" value="true" />
+  </inspection_tool>
+  <inspection_tool class="SpellCheckingInspection" enabled="false" level="TYPO" enabled_by_default="false">
+    <option name="processCode" value="true" />
+    <option name="processLiterals" value="true" />
+    <option name="processComments" value="true" />
+  </inspection_tool>
+  <inspection_tool class="UnnecessaryModuleDependencyInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+  <inspection_tool class="UnusedProperty" enabled="false" level="WARNING" enabled_by_default="false" />
+  <inspection_tool class="unused" enabled="false" level="WARNING" enabled_by_default="false" checkParameterExcludingHierarchy="false">
+    <option name="LOCAL_VARIABLE" value="true" />
+    <option name="FIELD" value="true" />
+    <option name="METHOD" value="true" />
+    <option name="CLASS" value="true" />
+    <option name="PARAMETER" value="true" />
+    <option name="REPORT_PARAMETER_FOR_PUBLIC_METHODS" value="true" />
+    <option name="ADD_MAINS_TO_ENTRIES" value="true" />
+    <option name="ADD_APPLET_TO_ENTRIES" value="true" />
+    <option name="ADD_SERVLET_TO_ENTRIES" value="true" />
+    <option name="ADD_NONJAVA_TO_ENTRIES" value="true" />
+    <option name="selected" value="true" />
+  </inspection_tool>
+</profile>
