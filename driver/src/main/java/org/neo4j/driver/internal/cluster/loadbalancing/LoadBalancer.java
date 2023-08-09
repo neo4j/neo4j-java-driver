@@ -168,7 +168,7 @@ public class LoadBalancer implements ConnectionProvider {
         for (var address : addresses) {
             result = onErrorContinue(result, baseError, completionError -> {
                 // We fail fast on security errors
-                var error = completionExceptionCause(completionError);
+                Throwable error = completionExceptionCause(completionError);
                 if (error instanceof SecurityException) {
                     return failedFuture(error);
                 }
