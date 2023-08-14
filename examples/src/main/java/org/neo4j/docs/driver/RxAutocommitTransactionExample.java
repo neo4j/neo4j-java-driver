@@ -40,7 +40,7 @@ public class RxAutocommitTransactionExample extends BaseApplication {
                 session -> flowPublisherToFlux(session.run(query))
                         .flatMap(result -> flowPublisherToFlux(result.records()))
                         .map(record -> record.get(0).asString()),
-                session -> flowPublisherToFlux(session.close()));
+                null);
     }
     // end::rx-autocommit-transaction[]
 }
