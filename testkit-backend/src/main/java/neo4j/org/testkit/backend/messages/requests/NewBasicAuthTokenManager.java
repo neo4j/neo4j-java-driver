@@ -16,8 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend.messages.responses;
+package neo4j.org.testkit.backend.messages.requests;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -26,17 +27,20 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.AuthTokenUtil;
 import neo4j.org.testkit.backend.TestkitClock;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.messages.requests.AbstractBasicTestkitRequest;
-import neo4j.org.testkit.backend.messages.requests.ExpirationBasedAuthTokenProviderCompleted;
-import neo4j.org.testkit.backend.messages.requests.ExpirationBasedAuthTokenProviderRequest;
-import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
+import neo4j.org.testkit.backend.messages.responses.BasicAuthTokenManager;
+import neo4j.org.testkit.backend.messages.responses.BasicAuthTokenManager.BasicAuthTokenManagerBody;
+import neo4j.org.testkit.backend.messages.responses.BasicAuthTokenProviderRequest;
+import neo4j.org.testkit.backend.messages.responses.BasicAuthTokenProviderRequest.BasicAuthTokenProviderRequestBody;
+import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
+import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AuthTokenAndExpiration;
+import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.internal.security.ExpirationBasedAuthTokenManager;
 
 @Setter
 @Getter
-public class NewExpirationBasedAuthTokenManager extends AbstractBasicTestkitRequest {
-    private NewTemporalAuthTokenManagerBody data;
+public class NewBasicAuthTokenManager extends AbstractBasicTestkitRequest {
+    private NewBasicAuthTokenManagerBody data;
 
     @Override
     protected TestkitResponse processAndCreateResponse(TestkitState testkitState) {
@@ -44,43 +48,39 @@ public class NewExpirationBasedAuthTokenManager extends AbstractBasicTestkitRequ
         testkitState.addAuthProvider(
                 id,
                 new ExpirationBasedAuthTokenManager(
-                        new TestkitAuthTokenProvider(id, testkitState), TestkitClock.INSTANCE));
-        return neo4j.org.testkit.backend.messages.responses.ExpirationBasedAuthTokenManager.builder()
-                .data(neo4j.org.testkit.backend.messages.responses.ExpirationBasedAuthTokenManager
-                        .ExpirationBasedTokenManagerBody.builder()
-                        .id(id)
-                        .build())
+                        new TestkitAuthTokenProvider(id, testkitState),
+                        Set.of(AuthenticationException.class),
+                        TestkitClock.INSTANCE));
+        return BasicAuthTokenManager.builder()
+                .data(BasicAuthTokenManagerBody.builder().id(id).build())
                 .build();
     }
 
     private record TestkitAuthTokenProvider(String authProviderId, TestkitState testkitState)
-            implements Supplier<CompletionStage<AuthTokenAndExpiration>> {
+            implements Supplier<CompletionStage<org.neo4j.driver.AuthTokenAndExpiration>> {
         @Override
         public CompletionStage<AuthTokenAndExpiration> get() {
             var callbackId = testkitState.newId();
 
-            var callback = ExpirationBasedAuthTokenProviderRequest.builder()
-                    .data(ExpirationBasedAuthTokenProviderRequest.ExpirationBasedAuthTokenProviderRequestBody.builder()
+            var callback = BasicAuthTokenProviderRequest.builder()
+                    .data(BasicAuthTokenProviderRequestBody.builder()
                             .id(callbackId)
-                            .expirationBasedAuthTokenManagerId(authProviderId)
+                            .basicAuthTokenManagerId(authProviderId)
                             .build())
                     .build();
 
             var callbackStage = dispatchTestkitCallback(testkitState, callback);
-            ExpirationBasedAuthTokenProviderCompleted resolutionCompleted;
+            BasicAuthTokenProviderCompleted resolutionCompleted;
             try {
-                resolutionCompleted = (ExpirationBasedAuthTokenProviderCompleted)
+                resolutionCompleted = (BasicAuthTokenProviderCompleted)
                         callbackStage.toCompletableFuture().get();
             } catch (Exception e) {
                 throw new RuntimeException("Unexpected failure during Testkit callback", e);
             }
 
-            var authToken = AuthTokenUtil.parseAuthToken(
-                    resolutionCompleted.getData().getAuth().getData().getToken());
-            var expiresInMs = resolutionCompleted.getData().getAuth().getData().getExpiresInMs();
-            var expirationTimestamp =
-                    expiresInMs != null ? TestkitClock.INSTANCE.millis() + expiresInMs : Long.MAX_VALUE;
-            return CompletableFuture.completedFuture(authToken.expiringAt(expirationTimestamp));
+            var authToken =
+                    AuthTokenUtil.parseAuthToken(resolutionCompleted.getData().getAuth());
+            return CompletableFuture.completedFuture(authToken.expiringAt(Long.MAX_VALUE));
         }
 
         private CompletionStage<TestkitCallbackResult> dispatchTestkitCallback(
@@ -94,5 +94,5 @@ public class NewExpirationBasedAuthTokenManager extends AbstractBasicTestkitRequ
 
     @Setter
     @Getter
-    public static class NewTemporalAuthTokenManagerBody {}
+    public static class NewBasicAuthTokenManagerBody {}
 }

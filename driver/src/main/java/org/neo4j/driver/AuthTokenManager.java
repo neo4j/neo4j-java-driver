@@ -19,6 +19,9 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
+import org.neo4j.driver.exceptions.SecurityException;
+import org.neo4j.driver.exceptions.SecurityRetryableException;
 import org.neo4j.driver.util.Preview;
 
 /**
@@ -49,16 +52,27 @@ public interface AuthTokenManager {
      * <p>
      * Failures will surface via the driver API, like {@link Session#beginTransaction()} method and others.
      * @return a stage for a valid token, must not be {@code null} or complete with {@code null}
-     * @see org.neo4j.driver.exceptions.AuthTokenManagerExecutionException
+     * @see AuthTokenManagerExecutionException
      */
     CompletionStage<AuthToken> getToken();
 
     /**
-     * Handles an error notification emitted by the server if the token is expired.
+     * Handles {@link SecurityException} that is created based on the server's security error response by determining if
+     * the given error may be resolved upon next {@link AuthTokenManager#getToken()} invokation.
      * <p>
-     * This will be called when driver emits the {@link org.neo4j.driver.exceptions.TokenExpiredRetryableException}.
+     * If this method returns {@code true}, the driver wraps the original {@link SecurityException} in
+     * {@link SecurityRetryableException}. The managed transaction API (like
+     * {@link Session#executeRead(TransactionCallback)}, etc.) automatically retries its unit of work if no other
+     * condition is violated, while the other query execution APIs surface this error for external handling.
+     * <p>
+     * If this method returns {@code false}, the original error remains unchanged.
+     * <p>
+     * This method must not throw exceptions.
      *
-     * @param authToken the expired token
+     * @param authToken the token
+     * @param exception the security exception
+     * @return {@code true} if the exception should be marked as retryable or {@code false} if it should remain unchanged
+     * @since 5.12
      */
-    void onExpired(AuthToken authToken);
+    boolean handleSecurityException(AuthToken authToken, SecurityException exception);
 }

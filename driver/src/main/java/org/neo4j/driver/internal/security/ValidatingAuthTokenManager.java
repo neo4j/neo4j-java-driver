@@ -29,6 +29,7 @@ import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
+import org.neo4j.driver.exceptions.SecurityException;
 
 public class ValidatingAuthTokenManager implements AuthTokenManager {
     private final Logger log;
@@ -68,10 +69,12 @@ public class ValidatingAuthTokenManager implements AuthTokenManager {
     }
 
     @Override
-    public void onExpired(AuthToken authToken) {
+    public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
         requireNonNull(authToken, "authToken must not be null");
+        requireNonNull(exception, "exception must not be null");
+        var retryable = false;
         try {
-            delegate.onExpired(authToken);
+            retryable = delegate.handleSecurityException(authToken, exception);
         } catch (Throwable throwable) {
             log.warn(String.format(
                     "%s has been thrown by %s.onExpired method",
@@ -82,5 +85,6 @@ public class ValidatingAuthTokenManager implements AuthTokenManager {
                             throwable.getClass().getName(), delegate.getClass().getName()),
                     throwable);
         }
+        return retryable;
     }
 }

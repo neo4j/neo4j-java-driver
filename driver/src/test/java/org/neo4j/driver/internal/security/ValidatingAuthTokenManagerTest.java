@@ -36,6 +36,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
+import org.neo4j.driver.exceptions.SecurityException;
 
 class ValidatingAuthTokenManagerTest {
     @Test
@@ -103,47 +104,61 @@ class ValidatingAuthTokenManagerTest {
     }
 
     @Test
-    void shouldRejectNullAuthTokenOnExpiration() {
+    void shouldRejectNullAuthTokenOnHandleSecurityException() {
         // given
         var delegateManager = mock(AuthTokenManager.class);
         var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
 
         // when & then
-        assertThrows(NullPointerException.class, () -> manager.onExpired(null));
+        assertThrows(
+                NullPointerException.class, () -> manager.handleSecurityException(null, mock(SecurityException.class)));
         then(delegateManager).shouldHaveNoInteractions();
     }
 
     @Test
-    void shouldPassOriginalTokenOnExpiration() {
+    void shouldRejectNullExceptionOnHandleSecurityException() {
+        // given
+        var delegateManager = mock(AuthTokenManager.class);
+        var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
+
+        // when & then
+        assertThrows(NullPointerException.class, () -> manager.handleSecurityException(AuthTokens.none(), null));
+        then(delegateManager).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void shouldPassOriginalTokenAndExceptionOnHandleSecurityException() {
         // given
         var delegateManager = mock(AuthTokenManager.class);
         var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
         var token = AuthTokens.none();
+        var exception = mock(SecurityException.class);
 
         // when
-        manager.onExpired(token);
+        manager.handleSecurityException(token, exception);
 
         // then
-        then(delegateManager).should().onExpired(token);
+        then(delegateManager).should().handleSecurityException(token, exception);
     }
 
     @Test
-    void shouldLogWhenDelegateOnExpiredFails() {
+    void shouldLogWhenDelegateHandleSecurityExceptionFails() {
         // given
         var delegateManager = mock(AuthTokenManager.class);
         var token = AuthTokens.none();
+        var securityException = mock(SecurityException.class);
         var exception = mock(RuntimeException.class);
-        willThrow(exception).given(delegateManager).onExpired(token);
+        willThrow(exception).given(delegateManager).handleSecurityException(token, securityException);
         var logging = mock(Logging.class);
         var log = mock(Logger.class);
         given(logging.getLog(ValidatingAuthTokenManager.class)).willReturn(log);
         var manager = new ValidatingAuthTokenManager(delegateManager, logging);
 
         // when
-        manager.onExpired(token);
+        manager.handleSecurityException(token, securityException);
 
         // then
-        then(delegateManager).should().onExpired(token);
+        then(delegateManager).should().handleSecurityException(token, securityException);
         then(log).should().warn(anyString());
         then(log).should().debug(anyString(), eq(exception));
     }

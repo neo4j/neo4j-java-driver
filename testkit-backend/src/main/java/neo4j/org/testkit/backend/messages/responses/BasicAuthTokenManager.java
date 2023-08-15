@@ -23,25 +23,17 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class DriverError implements TestkitResponse {
-    private DriverErrorBody data;
+public class BasicAuthTokenManager implements TestkitResponse {
+    private BasicAuthTokenManagerBody data;
 
     @Override
     public String testkitName() {
-        return "DriverError";
+        return "BasicAuthTokenManager";
     }
 
     @Getter
     @Builder
-    public static class DriverErrorBody {
+    public static class BasicAuthTokenManagerBody {
         private String id;
-
-        private String errorType;
-
-        private String code;
-
-        private String msg;
-
-        private boolean retryable;
     }
 }

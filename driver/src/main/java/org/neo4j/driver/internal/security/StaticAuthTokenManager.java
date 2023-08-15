@@ -22,13 +22,11 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokenManager;
-import org.neo4j.driver.exceptions.TokenExpiredException;
+import org.neo4j.driver.exceptions.SecurityException;
 
 public class StaticAuthTokenManager implements AuthTokenManager {
-    private final AtomicBoolean expired = new AtomicBoolean();
     private final AuthToken authToken;
 
     public StaticAuthTokenManager(AuthToken authToken) {
@@ -38,15 +36,11 @@ public class StaticAuthTokenManager implements AuthTokenManager {
 
     @Override
     public CompletionStage<AuthToken> getToken() {
-        return expired.get()
-                ? CompletableFuture.failedFuture(new TokenExpiredException(null, "authToken is expired"))
-                : CompletableFuture.completedFuture(authToken);
+        return CompletableFuture.completedFuture(authToken);
     }
 
     @Override
-    public void onExpired(AuthToken authToken) {
-        if (authToken.equals(this.authToken)) {
-            expired.set(true);
-        }
+    public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+        return false;
     }
 }

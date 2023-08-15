@@ -23,6 +23,7 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
 
 import java.time.Clock;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,20 +33,26 @@ import java.util.function.Supplier;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokenAndExpiration;
 import org.neo4j.driver.AuthTokenManager;
+import org.neo4j.driver.exceptions.SecurityException;
 
 public class ExpirationBasedAuthTokenManager implements AuthTokenManager {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Supplier<CompletionStage<AuthTokenAndExpiration>> freshTokenSupplier;
+    private final Set<Class<? extends SecurityException>> retryableExceptionClasses;
     private final Clock clock;
     private CompletableFuture<AuthToken> tokenFuture;
     private AuthTokenAndExpiration token;
 
     public ExpirationBasedAuthTokenManager(
-            Supplier<CompletionStage<AuthTokenAndExpiration>> freshTokenSupplier, Clock clock) {
+            Supplier<CompletionStage<AuthTokenAndExpiration>> freshTokenSupplier,
+            Set<Class<? extends SecurityException>> retryableExceptionClasses,
+            Clock clock) {
         this.freshTokenSupplier = freshTokenSupplier;
+        this.retryableExceptionClasses = retryableExceptionClasses;
         this.clock = clock;
     }
 
+    @Override
     public CompletionStage<AuthToken> getToken() {
         var validTokenFuture = executeWithLock(lock.readLock(), this::getValidTokenFuture);
         if (validTokenFuture == null) {
@@ -65,12 +72,18 @@ public class ExpirationBasedAuthTokenManager implements AuthTokenManager {
         return validTokenFuture;
     }
 
-    public void onExpired(AuthToken authToken) {
-        executeWithLock(lock.writeLock(), () -> {
-            if (token != null && token.authToken().equals(authToken)) {
-                unsetTokenState();
-            }
-        });
+    @Override
+    public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+        var retryable = retryableExceptionClasses.stream()
+                .anyMatch(retryableExceptionClass -> retryableExceptionClass.isAssignableFrom(exception.getClass()));
+        if (retryable) {
+            executeWithLock(lock.writeLock(), () -> {
+                if (token != null && token.authToken().equals(authToken)) {
+                    unsetTokenState();
+                }
+            });
+        }
+        return retryable;
     }
 
     private void handleUpstreamResult(AuthTokenAndExpiration authTokenAndExpiration, Throwable throwable) {
