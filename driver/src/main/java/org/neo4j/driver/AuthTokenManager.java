@@ -69,7 +69,7 @@ public interface AuthTokenManager {
      * <p>
      * This method must not throw exceptions.
      *
-     * @param authToken the token
+     * @param authToken the current token
      * @param exception the security exception
      * @return {@code true} if the exception should be marked as retryable or {@code false} if it should remain unchanged
      * @since 5.12
