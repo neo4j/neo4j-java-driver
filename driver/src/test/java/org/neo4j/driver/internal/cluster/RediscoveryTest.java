@@ -49,6 +49,7 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -83,7 +84,7 @@ import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 class RediscoveryTest {
-    private final ConnectionPool pool = asyncConnectionPoolMock();
+    private final ConnectionPool<InetSocketAddress> pool = asyncConnectionPoolMock();
 
     @Test
     void shouldUseFirstRouterInTable() {
@@ -589,11 +590,11 @@ class RediscoveryTest {
         return resolver;
     }
 
-    private static ConnectionPool asyncConnectionPoolMock() {
+    private static ConnectionPool<InetSocketAddress> asyncConnectionPoolMock() {
         var pool = mock(ConnectionPool.class);
-        when(pool.acquire(any(), any())).then(invocation -> {
-            BoltServerAddress address = invocation.getArgument(0);
-            return completedFuture(asyncConnectionMock(address));
+        when(pool.acquire(any(InetSocketAddress.class), any())).then(invocation -> {
+            InetSocketAddress address = invocation.getArgument(0);
+            return completedFuture(asyncConnectionMock(BoltServerAddress.from(address)));
         });
         return pool;
     }

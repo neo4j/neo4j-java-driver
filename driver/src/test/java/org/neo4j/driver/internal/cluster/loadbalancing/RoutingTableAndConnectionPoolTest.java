@@ -35,6 +35,7 @@ import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TA
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import io.netty.util.concurrent.GlobalEventExecutor;
+import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -85,9 +86,9 @@ class RoutingTableAndConnectionPoolTest {
     private static final BoltServerAddress D = new BoltServerAddress("localhost:30003");
     private static final BoltServerAddress E = new BoltServerAddress("localhost:30004");
     private static final BoltServerAddress F = new BoltServerAddress("localhost:30005");
-    private static final List<BoltServerAddress> SERVERS =
-            Collections.synchronizedList(new LinkedList<>(Arrays.asList(null, A, B, C, D, E, F)));
 
+    private static final List<BoltServerAddress> BOLT_ADDRESS_SERVERS =
+            Collections.synchronizedList(new LinkedList<>(Arrays.asList(null, A, B, C, D, E, F)));
     private static final String[] DATABASES = new String[] {"", SYSTEM_DATABASE_NAME, "my database"};
 
     private final Random random = new Random();
@@ -111,7 +112,7 @@ class RoutingTableAndConnectionPoolTest {
         assertThat(routingTables.allServers().size(), equalTo(1));
         assertTrue(routingTables.allServers().contains(A));
         assertTrue(routingTables.contains(database("neo4j")));
-        assertTrue(connectionPool.isOpen(A));
+        assertTrue(connectionPool.isOpen(A.toInetSocketAddress()));
     }
 
     @Test
@@ -132,7 +133,7 @@ class RoutingTableAndConnectionPoolTest {
         // Then
         assertTrue(routingTables.allServers().isEmpty());
         assertFalse(routingTables.contains(database("neo4j")));
-        assertFalse(connectionPool.isOpen(A));
+        assertFalse(connectionPool.isOpen(A.toInetSocketAddress()));
     }
 
     @Test
@@ -152,7 +153,7 @@ class RoutingTableAndConnectionPoolTest {
         // Then
         assertTrue(routingTables.allServers().isEmpty());
         assertFalse(routingTables.contains(database("neo4j")));
-        assertFalse(connectionPool.isOpen(A));
+        assertFalse(connectionPool.isOpen(A.toInetSocketAddress()));
     }
 
     @Test
@@ -172,7 +173,7 @@ class RoutingTableAndConnectionPoolTest {
         // Then
         assertTrue(routingTables.allServers().isEmpty());
         assertFalse(routingTables.contains(database("neo4j")));
-        assertFalse(connectionPool.isOpen(A));
+        assertFalse(connectionPool.isOpen(A.toInetSocketAddress()));
     }
 
     @Test
@@ -195,7 +196,7 @@ class RoutingTableAndConnectionPoolTest {
         assertThat(routingTables.allServers().size(), equalTo(1));
         assertTrue(routingTables.allServers().contains(A));
 
-        assertTrue(connectionPool.isOpen(A));
+        assertTrue(connectionPool.isOpen(A.toInetSocketAddress()));
     }
 
     @Test
@@ -221,7 +222,7 @@ class RoutingTableAndConnectionPoolTest {
         assertThat(routingTables.allServers().size(), equalTo(1));
         assertTrue(routingTables.allServers().contains(B));
 
-        assertTrue(connectionPool.isOpen(B));
+        assertTrue(connectionPool.isOpen(B.toInetSocketAddress()));
     }
 
     @Test
@@ -242,12 +243,12 @@ class RoutingTableAndConnectionPoolTest {
         // Then
         assertThat(routingTables.allServers().size(), equalTo(1));
         assertTrue(routingTables.allServers().contains(B));
-        assertTrue(connectionPool.isOpen(B));
+        assertTrue(connectionPool.isOpen(B.toInetSocketAddress()));
         assertFalse(routingTables.contains(database("neo4j")));
         assertTrue(routingTables.contains(database("foo")));
 
         // I still have A as A's connection is in use
-        assertTrue(connectionPool.isOpen(A));
+        assertTrue(connectionPool.isOpen(A.toInetSocketAddress()));
     }
 
     @Test
@@ -261,17 +262,24 @@ class RoutingTableAndConnectionPoolTest {
         // When
         acquireAndReleaseConnections(loadBalancer);
         var servers = routingTables.allServers();
-        var openServer =
-                servers.stream().filter(connectionPool::isOpen).findFirst().orElse(null);
+        BoltServerAddress openServer = null;
+
+        for (BoltServerAddress server : servers) {
+            if (connectionPool.isOpen(server.toInetSocketAddress())) {
+                openServer = server;
+                return;
+            }
+        }
+
         assertNotNull(servers);
 
         // if we remove the open server from servers, then the connection pool should remove the server from the pool.
-        SERVERS.remove(openServer);
+        BOLT_ADDRESS_SERVERS.remove(openServer);
         // ensure rediscovery is necessary on subsequent interaction
         Arrays.stream(DATABASES).map(DatabaseNameUtil::database).forEach(routingTables::remove);
         acquireAndReleaseConnections(loadBalancer);
 
-        assertFalse(connectionPool.isOpen(openServer));
+        assertFalse(connectionPool.isOpen(openServer.toInetSocketAddress()));
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -353,18 +361,18 @@ class RoutingTableAndConnectionPoolTest {
         @Override
         public CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition(
                 RoutingTable routingTable,
-                ConnectionPool connectionPool,
+                ConnectionPool<InetSocketAddress> connectionPool,
                 Set<Bookmark> bookmarks,
                 String impersonatedUser,
                 AuthToken overrideAuthToken) {
             // when looking up a new routing table, we return a valid random routing table back
             var servers = IntStream.range(0, 3)
-                    .map(i -> random.nextInt(SERVERS.size()))
-                    .mapToObj(SERVERS::get)
+                    .map(i -> random.nextInt(BOLT_ADDRESS_SERVERS.size()))
+                    .mapToObj(BOLT_ADDRESS_SERVERS::get)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
             if (servers.size() == 0) {
-                var address = SERVERS.stream()
+                var address = BOLT_ADDRESS_SERVERS.stream()
                         .filter(Objects::nonNull)
                         .findFirst()
                         .orElseThrow(() -> new RuntimeException("No non null server addresses are available"));

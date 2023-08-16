@@ -69,7 +69,7 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
         // iterate over the array to find the least connected address
         do {
             var address = addresses.get(index);
-            var activeConnections = connectionPool.inUseConnections(address);
+            var activeConnections = connectionPool.inUseConnections(address.toInetSocketAddress());
 
             if (activeConnections < leastActiveConnections) {
                 leastConnectedAddress = address;

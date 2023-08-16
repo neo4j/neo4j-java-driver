@@ -20,8 +20,8 @@ package org.neo4j.driver.internal.async.connection;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
-import org.neo4j.driver.internal.BoltServerAddress;
+import java.net.SocketAddress;
 
-public interface ChannelConnector {
-    ChannelFuture connect(BoltServerAddress address, Bootstrap bootstrap);
+public interface ChannelConnector<T extends SocketAddress> {
+    ChannelFuture connect(T address, Bootstrap bootstrap);
 }

@@ -30,6 +30,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.pool.FixedChannelPool;
+import java.net.SocketAddress;
 import java.time.Clock;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -37,7 +38,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.handlers.LogoffResponseHandler;
 import org.neo4j.driver.internal.handlers.LogonResponseHandler;
@@ -47,7 +47,7 @@ import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.SessionAuthUtil;
 
-public class NettyChannelPool implements ExtendedChannelPool {
+public class NettyChannelPool<T extends SocketAddress> implements ExtendedChannelPool {
     /**
      * Unlimited amount of parties are allowed to request channels from the pool.
      */
@@ -65,8 +65,8 @@ public class NettyChannelPool implements ExtendedChannelPool {
     private final Clock clock;
 
     NettyChannelPool(
-            BoltServerAddress address,
-            ChannelConnector connector,
+            T address,
+            ChannelConnector<T> connector,
             Bootstrap bootstrap,
             NettyChannelTracker handler,
             NettyChannelHealthChecker healthCheck,
@@ -236,7 +236,7 @@ public class NettyChannelPool implements ExtendedChannelPool {
         return this.id;
     }
 
-    private String poolId(BoltServerAddress serverAddress) {
-        return String.format("%s:%d-%d", serverAddress.host(), serverAddress.port(), this.hashCode());
+    private String poolId(SocketAddress serverAddress) {
+        return String.format("pool-%d-%d", serverAddress.hashCode(), this.hashCode());
     }
 }

@@ -28,6 +28,7 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.onErrorContinue;
 
 import io.netty.util.concurrent.EventExecutorGroup;
+import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +64,7 @@ public class LoadBalancer implements ConnectionProvider {
             "Failed to obtain connection towards %s server. Known routing table is: %s";
     private static final String CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE =
             "Failed to obtain a connection towards address %s, will try other addresses if available. Complete failure is reported separately from this entry.";
-    private final ConnectionPool connectionPool;
+    private final ConnectionPool<InetSocketAddress> connectionPool;
     private final RoutingTableRegistry routingTables;
     private final LoadBalancingStrategy loadBalancingStrategy;
     private final EventExecutorGroup eventExecutorGroup;
@@ -71,7 +72,7 @@ public class LoadBalancer implements ConnectionProvider {
     private final Rediscovery rediscovery;
 
     public LoadBalancer(
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Rediscovery rediscovery,
             RoutingSettings settings,
             LoadBalancingStrategy loadBalancingStrategy,
@@ -88,7 +89,7 @@ public class LoadBalancer implements ConnectionProvider {
     }
 
     LoadBalancer(
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             RoutingTableRegistry routingTables,
             Rediscovery rediscovery,
             LoadBalancingStrategy loadBalancingStrategy,
@@ -172,10 +173,12 @@ public class LoadBalancer implements ConnectionProvider {
                 if (error instanceof SecurityException) {
                     return failedFuture(error);
                 }
-                return connectionPool.acquire(address, null).thenCompose(conn -> {
-                    boolean featureDetected = featureDetectionFunction.apply(conn);
-                    return conn.release().thenApply(ignored -> featureDetected);
-                });
+                return connectionPool
+                        .acquire(address.toInetSocketAddress(), null)
+                        .thenCompose(conn -> {
+                            boolean featureDetected = featureDetectionFunction.apply(conn);
+                            return conn.release().thenApply(ignored -> featureDetected);
+                        });
             });
         }
         return onErrorContinue(result, baseError, completionError -> {
@@ -219,25 +222,28 @@ public class LoadBalancer implements ConnectionProvider {
             return;
         }
 
-        connectionPool.acquire(address, overrideAuthToken).whenComplete((connection, completionError) -> {
-            var error = completionExceptionCause(completionError);
-            if (error != null) {
-                if (error instanceof ServiceUnavailableException) {
-                    var attemptMessage = format(CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE, address);
-                    log.warn(attemptMessage);
-                    log.debug(attemptMessage, error);
-                    attemptErrors.add(error);
-                    routingTable.forget(address);
-                    eventExecutorGroup
-                            .next()
-                            .execute(() -> acquire(mode, routingTable, result, overrideAuthToken, attemptErrors));
-                } else {
-                    result.completeExceptionally(error);
-                }
-            } else {
-                result.complete(connection);
-            }
-        });
+        connectionPool
+                .acquire(address.toInetSocketAddress(), overrideAuthToken)
+                .whenComplete((connection, completionError) -> {
+                    var error = completionExceptionCause(completionError);
+                    if (error != null) {
+                        if (error instanceof ServiceUnavailableException) {
+                            var attemptMessage = format(CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE, address);
+                            log.warn(attemptMessage);
+                            log.debug(attemptMessage, error);
+                            attemptErrors.add(error);
+                            routingTable.forget(address);
+                            eventExecutorGroup
+                                    .next()
+                                    .execute(() ->
+                                            acquire(mode, routingTable, result, overrideAuthToken, attemptErrors));
+                        } else {
+                            result.completeExceptionally(error);
+                        }
+                    } else {
+                        result.complete(connection);
+                    }
+                });
     }
 
     private static List<BoltServerAddress> getAddressesByMode(AccessMode mode, RoutingTable routingTable) {
@@ -255,7 +261,7 @@ public class LoadBalancer implements ConnectionProvider {
     }
 
     private static RoutingTableRegistry createRoutingTables(
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Rediscovery rediscovery,
             RoutingSettings settings,
             Clock clock,

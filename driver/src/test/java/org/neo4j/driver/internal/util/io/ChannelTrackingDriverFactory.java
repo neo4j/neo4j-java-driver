@@ -58,7 +58,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
     }
 
     @Override
-    protected final ChannelConnector createConnector(
+    protected final ChannelConnector createNetworkConnector(
             ConnectionSettings settings,
             SecurityPlan securityPlan,
             Config config,
@@ -89,7 +89,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
             Config config,
             Clock clock,
             RoutingContext routingContext) {
-        return super.createConnector(settings, securityPlan, config, clock, routingContext, BoltAgentUtil.VALUE);
+        return super.createNetworkConnector(settings, securityPlan, config, clock, routingContext, BoltAgentUtil.VALUE);
     }
 
     private ChannelTrackingConnector createChannelTrackingConnector(ChannelConnector connector) {
@@ -101,6 +101,6 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
     }
 
     public int activeChannels(BoltServerAddress address) {
-        return pool == null ? 0 : pool.inUseConnections(address);
+        return pool == null ? 0 : pool.inUseConnections(address.toInetSocketAddress());
     }
 }

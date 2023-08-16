@@ -28,6 +28,8 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +43,7 @@ import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 
 public class TestConnectionPool extends ConnectionPoolImpl {
-    final Map<BoltServerAddress, ExtendedChannelPool> channelPoolsByAddress = new HashMap<>();
+    final Map<SocketAddress, ExtendedChannelPool> channelPoolsByAddress = new HashMap<>();
     private final NettyChannelTracker nettyChannelTracker;
 
     public TestConnectionPool(
@@ -65,19 +67,20 @@ public class TestConnectionPool extends ConnectionPoolImpl {
         this.nettyChannelTracker = nettyChannelTracker;
     }
 
-    ExtendedChannelPool getPool(BoltServerAddress address) {
+    ExtendedChannelPool getPool(SocketAddress address) {
         return channelPoolsByAddress.get(address);
     }
 
     @Override
-    ExtendedChannelPool newPool(BoltServerAddress address) {
+    ExtendedChannelPool newPool(SocketAddress address) {
         var channelPool = new ExtendedChannelPool() {
             private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
             @Override
             public CompletionStage<Channel> acquire(AuthToken overrideAuthToken) {
-                var channel = new EmbeddedChannel();
-                setServerAddress(channel, address);
+
+                var channel = new EmbeddedChannelWithSocketAddress(address);
+                setServerAddress(channel, BoltServerAddress.from((InetSocketAddress) address));
                 setPoolId(channel, id());
 
                 var event = nettyChannelTracker.channelCreating(id());
@@ -117,6 +120,43 @@ public class TestConnectionPool extends ConnectionPoolImpl {
         };
         channelPoolsByAddress.put(address, channelPool);
         return channelPool;
+    }
+
+    private static class EmbeddedChannelWithSocketAddress extends EmbeddedChannel {
+
+        private final SocketAddress remoteAddress;
+
+        public EmbeddedChannelWithSocketAddress(SocketAddress remoteAddress) {
+            this.remoteAddress = remoteAddress;
+        }
+
+        @Override
+        protected SocketAddress remoteAddress0() {
+            return remoteAddress;
+        }
+    }
+
+    private static class EmbeddedSocketWithId extends SocketAddress {
+
+        private final String id;
+
+        public EmbeddedSocketWithId(String id) {
+            this.id = id;
+        }
+
+        @Override
+        public int hashCode() {
+            return id.hashCode();
+        }
+
+        public String id() {
+            return id;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return id.equals(((EmbeddedSocketWithId) obj).id());
+        }
     }
 
     private static ConnectionFactory newConnectionFactory() {

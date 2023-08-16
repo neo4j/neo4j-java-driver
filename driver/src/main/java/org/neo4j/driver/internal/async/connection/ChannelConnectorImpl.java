@@ -26,20 +26,22 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.resolver.AddressResolverGroup;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
+import java.net.UnknownHostException;
 import java.time.Clock;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.BoltAgent;
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
-public class ChannelConnectorImpl implements ChannelConnector {
+/**
+ * A {@link ChannelConnector} that establishes TCP connections.
+ */
+public class ChannelConnectorImpl implements ChannelConnector<InetSocketAddress> {
     private final String userAgent;
     private final BoltAgent boltAgent;
     private final AuthTokenManager authTokenManager;
@@ -99,34 +101,35 @@ public class ChannelConnectorImpl implements ChannelConnector {
     }
 
     @Override
-    public ChannelFuture connect(BoltServerAddress address, Bootstrap bootstrap) {
+    public ChannelFuture connect(InetSocketAddress address, Bootstrap bootstrap) {
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis);
         bootstrap.handler(new NettyChannelInitializer(
                 address, securityPlan, connectTimeoutMillis, authTokenManager, clock, logging));
         bootstrap.resolver(addressResolverGroup);
 
-        SocketAddress socketAddress;
+        InetSocketAddress resolvedAddress;
+
         try {
-            socketAddress =
-                    new InetSocketAddress(domainNameResolver.resolve(address.connectionHost())[0], address.port());
-        } catch (Throwable t) {
-            socketAddress = InetSocketAddress.createUnresolved(address.connectionHost(), address.port());
+            resolvedAddress =
+                    new InetSocketAddress(domainNameResolver.resolve(address.getHostString())[0], address.getPort());
+        } catch (UnknownHostException e) {
+            // do nothing. Just use the initially configured address.
+            resolvedAddress = address;
         }
 
-        var channelConnected = bootstrap.connect(socketAddress);
+        var channelConnected = bootstrap.connect(resolvedAddress);
 
         var channel = channelConnected.channel();
         var handshakeCompleted = channel.newPromise();
         var connectionInitialized = channel.newPromise();
 
-        installChannelConnectedListeners(address, channelConnected, handshakeCompleted);
+        installChannelConnectedListeners(channelConnected, handshakeCompleted);
         installHandshakeCompletedListeners(handshakeCompleted, connectionInitialized);
 
         return connectionInitialized;
     }
 
-    private void installChannelConnectedListeners(
-            BoltServerAddress address, ChannelFuture channelConnected, ChannelPromise handshakeCompleted) {
+    private void installChannelConnectedListeners(ChannelFuture channelConnected, ChannelPromise handshakeCompleted) {
         var pipeline = channelConnected.channel().pipeline();
 
         // add timeout handler to the pipeline when channel is connected. it's needed to limit amount of time code
@@ -134,8 +137,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
         channelConnected.addListener(future -> pipeline.addFirst(new ConnectTimeoutHandler(connectTimeoutMillis)));
 
         // add listener that sends Bolt handshake bytes when channel is connected
-        channelConnected.addListener(
-                new ChannelConnectedListener(address, pipelineBuilder, handshakeCompleted, logging));
+        channelConnected.addListener(new ChannelConnectedListener(pipelineBuilder, handshakeCompleted, logging));
     }
 
     private void installHandshakeCompletedListeners(

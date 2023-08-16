@@ -20,11 +20,13 @@ package org.neo4j.driver.internal.cluster;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
+import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -38,7 +40,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler {
     private final DatabaseName databaseName;
     private final RoutingTableRegistry routingTableRegistry;
     private volatile CompletableFuture<RoutingTable> refreshRoutingTableFuture;
-    private final ConnectionPool connectionPool;
+    private final ConnectionPool<InetSocketAddress> connectionPool;
     private final Rediscovery rediscovery;
     private final Logger log;
     private final long routingTablePurgeDelayMs;
@@ -141,7 +143,9 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler {
                 resolvedInitialRouters.addAll(addresses);
             });
             addressesToRetain.addAll(resolvedInitialRouters);
-            connectionPool.retainAll(addressesToRetain);
+            connectionPool.retainAll(addressesToRetain.stream()
+                    .map(BoltServerAddress::toInetSocketAddress)
+                    .collect(Collectors.toSet()));
 
             log.debug("Updated routing table for database '%s'. %s", databaseName.description(), routingTable);
 

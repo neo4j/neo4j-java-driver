@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Set;
@@ -45,7 +46,7 @@ public interface Rediscovery {
      */
     CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition(
             RoutingTable routingTable,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             AuthToken overrideAuthToken);

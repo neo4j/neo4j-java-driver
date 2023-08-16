@@ -18,14 +18,13 @@
  */
 package org.neo4j.driver.internal.util;
 
-import java.util.Objects;
+import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DirectConnectionProvider;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.SessionFactoryImpl;
@@ -50,12 +49,12 @@ public final class Matchers {
         };
     }
 
-    public static Matcher<Driver> directDriverWithAddress(final BoltServerAddress address) {
+    public static Matcher<Driver> directDriverWithAddress(final SocketAddress address) {
         return new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(Driver driver) {
                 var provider = extractConnectionProvider(driver, DirectConnectionProvider.class);
-                return provider != null && Objects.equals(provider.getAddress(), address);
+                return provider != null && provider.getAddress().equals(address);
             }
 
             @Override

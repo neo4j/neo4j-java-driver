@@ -34,6 +34,8 @@ import static org.neo4j.driver.testutil.TestUtil.await;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelHealthChecker;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
@@ -72,7 +74,7 @@ class NettyChannelPoolIT {
 
     private Bootstrap bootstrap;
     private NettyChannelTracker poolHandler;
-    private NettyChannelPool pool;
+    private NettyChannelPool<SocketAddress> pool;
 
     private static Object answer(InvocationOnMock a) {
         return ChannelHealthChecker.ACTIVE.isHealthy(a.getArgument(0));
@@ -174,16 +176,16 @@ class NettyChannelPoolIT {
         var channel1 = acquire(pool);
         var channel2 = acquire(pool);
         var channel3 = acquire(pool);
-        assertEquals(3, tracker.inUseChannelCount(neo4j.address()));
+        assertEquals(3, tracker.inUseChannelCount(neo4j.address().toInetSocketAddress()));
 
         release(channel1);
         release(channel2);
         release(channel3);
-        assertEquals(0, tracker.inUseChannelCount(neo4j.address()));
+        assertEquals(0, tracker.inUseChannelCount(neo4j.address().toInetSocketAddress()));
 
         assertNotNull(acquire(pool));
         assertNotNull(acquire(pool));
-        assertEquals(2, tracker.inUseChannelCount(neo4j.address()));
+        assertEquals(2, tracker.inUseChannelCount(neo4j.address().toInetSocketAddress()));
     }
 
     private NettyChannelPool newPool(AuthTokenManager authTokenManager) {
@@ -204,7 +206,7 @@ class NettyChannelPoolIT {
         var nettyChannelHealthChecker = mock(NettyChannelHealthChecker.class);
         when(nettyChannelHealthChecker.isHealthy(any())).thenAnswer(NettyChannelPoolIT::answer);
         return new NettyChannelPool(
-                neo4j.address(),
+                new InetSocketAddress(neo4j.address().host(), neo4j.boltPort()),
                 connector,
                 bootstrap,
                 poolHandler,
@@ -214,7 +216,7 @@ class NettyChannelPoolIT {
                 Clock.systemUTC());
     }
 
-    private static Channel acquire(NettyChannelPool pool) {
+    private static Channel acquire(NettyChannelPool<SocketAddress> pool) {
         return await(pool.acquire(null));
     }
 

@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +56,7 @@ class ConnectionPoolImplIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
-    private ConnectionPoolImpl pool;
+    private ConnectionPoolImpl<InetSocketAddress> pool;
 
     @BeforeEach
     void setUp() {
@@ -69,24 +70,24 @@ class ConnectionPoolImplIT {
 
     @Test
     void shouldAcquireConnectionWhenPoolIsEmpty() {
-        var connection = await(pool.acquire(neo4j.address(), null));
+        var connection = await(pool.acquire(neo4j.address().toInetSocketAddress(), null));
 
         assertNotNull(connection);
     }
 
     @Test
     void shouldAcquireIdleConnection() {
-        var connection1 = await(pool.acquire(neo4j.address(), null));
+        Connection connection1 = await(pool.acquire(neo4j.address().toInetSocketAddress(), null));
         await(connection1.release());
 
-        var connection2 = await(pool.acquire(neo4j.address(), null));
+        var connection2 = await(pool.acquire(neo4j.address().toInetSocketAddress(), null));
         assertNotNull(connection2);
     }
 
     @Test
     void shouldBeAbleToClosePoolInIOWorkerThread() {
         // In the IO worker thread of a channel obtained from a pool, we shall be able to close the pool.
-        var future = pool.acquire(neo4j.address(), null)
+        var future = pool.acquire(neo4j.address().toInetSocketAddress(), null)
                 .thenCompose(Connection::release)
                 // This shall close all pools
                 .whenComplete((ignored, error) -> pool.retainAll(Collections.emptySet()));
@@ -99,18 +100,19 @@ class ConnectionPoolImplIT {
     void shouldFailToAcquireConnectionToWrongAddress() {
         var e = assertThrows(
                 ServiceUnavailableException.class,
-                () -> await(pool.acquire(new BoltServerAddress("wrong-localhost"), null)));
+                () -> await(pool.acquire(new BoltServerAddress("wrong-localhost").toInetSocketAddress(), null)));
 
         assertThat(e.getMessage(), startsWith("Unable to connect"));
     }
 
     @Test
     void shouldFailToAcquireWhenPoolClosed() {
-        var connection = await(pool.acquire(neo4j.address(), null));
+        var connection = await(pool.acquire(neo4j.address().toInetSocketAddress(), null));
         await(connection.release());
         await(pool.close());
 
-        var e = assertThrows(IllegalStateException.class, () -> pool.acquire(neo4j.address(), null));
+        var e = assertThrows(
+                IllegalStateException.class, () -> pool.acquire(neo4j.address().toInetSocketAddress(), null));
         assertThat(e.getMessage(), startsWith("Pool closed"));
     }
 
@@ -122,19 +124,21 @@ class ConnectionPoolImplIT {
 
     @Test
     void shouldFailToAcquireConnectionWhenPoolIsClosed() {
-        await(pool.acquire(neo4j.address(), null));
-        var channelPool = this.pool.getPool(neo4j.address());
+        await(pool.acquire(neo4j.address().toInetSocketAddress(), null));
+        var channelPool = this.pool.getPool(neo4j.address().toInetSocketAddress());
         await(channelPool.close());
-        var error = assertThrows(ServiceUnavailableException.class, () -> await(pool.acquire(neo4j.address(), null)));
+        var error = assertThrows(
+                ServiceUnavailableException.class,
+                () -> await(pool.acquire(neo4j.address().toInetSocketAddress(), null)));
         assertThat(error.getMessage(), containsString("closed while acquiring a connection"));
         assertThat(error.getCause(), instanceOf(IllegalStateException.class));
         assertThat(error.getCause().getMessage(), containsString("FixedChannelPool was closed"));
     }
 
-    private ConnectionPoolImpl newPool() {
+    private ConnectionPoolImpl<InetSocketAddress> newPool() {
         var clock = new FakeClock();
         var connectionSettings = new ConnectionSettings(neo4j.authTokenManager(), "test", 5000);
-        ChannelConnector connector = new ChannelConnectorImpl(
+        ChannelConnector<InetSocketAddress> connector = new ChannelConnectorImpl(
                 connectionSettings,
                 SecurityPlanImpl.insecure(),
                 DEV_NULL_LOGGING,
@@ -145,7 +149,7 @@ class ConnectionPoolImplIT {
                 BoltAgentUtil.VALUE);
         var poolSettings = newSettings();
         var bootstrap = BootstrapFactory.newBootstrap(1);
-        return new ConnectionPoolImpl(
+        return new ConnectionPoolImpl<>(
                 connector, bootstrap, poolSettings, DevNullMetricsListener.INSTANCE, DEV_NULL_LOGGING, clock, true);
     }
 

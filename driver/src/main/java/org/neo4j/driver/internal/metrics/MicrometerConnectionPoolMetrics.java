@@ -26,13 +26,13 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntSupplier;
 import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.net.ServerAddress;
 
 final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsListener, ConnectionPoolMetrics {
     public static final String PREFIX = "neo4j.driver.connections";
@@ -63,7 +63,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
 
     MicrometerConnectionPoolMetrics(
             String poolId,
-            ServerAddress address,
+            SocketAddress address,
             IntSupplier inUseSupplier,
             IntSupplier idleSupplier,
             MeterRegistry registry) {
@@ -72,7 +72,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
 
     MicrometerConnectionPoolMetrics(
             String poolId,
-            ServerAddress address,
+            SocketAddress address,
             IntSupplier inUseSupplier,
             IntSupplier idleSupplier,
             MeterRegistry registry,
@@ -86,9 +86,15 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
         this.id = poolId;
         this.inUseSupplier = inUseSupplier;
         this.idleSupplier = idleSupplier;
-        var host =
-                address instanceof BoltServerAddress ? ((BoltServerAddress) address).connectionHost() : address.host();
-        Iterable<Tag> tags = Tags.concat(initialTags, "address", String.format("%s:%d", host, address.port()));
+        Iterable<Tag> tags;
+        if (address instanceof InetSocketAddress socketAddress) {
+            tags = Tags.concat(
+                    initialTags,
+                    "address",
+                    String.format("%s:%d", socketAddress.getHostString(), socketAddress.getPort()));
+        } else {
+            tags = Tags.concat(initialTags, "address", String.format("%s", "local")); // todo maybe local file name
+        }
 
         Gauge.builder(IN_USE, this::inUse).tags(tags).register(registry);
         Gauge.builder(IDLE, this::idle).tags(tags).register(registry);

@@ -49,6 +49,7 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
 import static org.neo4j.driver.testutil.TestUtil.asOrderedSet;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
+import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -184,7 +185,9 @@ class RoutingTableHandlerTest {
         var actual = await(handler.ensureRoutingTable(simple(false)));
         assertEquals(routingTable, actual);
 
-        verify(connectionPool).retainAll(new HashSet<>(asList(A, B, C)));
+        verify(connectionPool)
+                .retainAll(new HashSet<>(
+                        asList(A.toInetSocketAddress(), B.toInetSocketAddress(), C.toInetSocketAddress())));
     }
 
     @Test
@@ -209,7 +212,8 @@ class RoutingTableHandlerTest {
 
     private void testRediscoveryWhenStale(AccessMode mode) {
         var connectionPool = mock(ConnectionPool.class);
-        when(connectionPool.acquire(LOCAL_DEFAULT, null)).thenReturn(completedFuture(mock(Connection.class)));
+        when(connectionPool.acquire(LOCAL_DEFAULT.toInetSocketAddress(), null))
+                .thenReturn(completedFuture(mock(Connection.class)));
 
         var routingTable = newStaleRoutingTableMock(mode);
         var rediscovery = newRediscoveryMock();
@@ -224,7 +228,8 @@ class RoutingTableHandlerTest {
 
     private void testNoRediscoveryWhenNotStale(AccessMode staleMode, AccessMode notStaleMode) {
         var connectionPool = mock(ConnectionPool.class);
-        when(connectionPool.acquire(LOCAL_DEFAULT, null)).thenReturn(completedFuture(mock(Connection.class)));
+        when(connectionPool.acquire(LOCAL_DEFAULT.toInetSocketAddress(), null))
+                .thenReturn(completedFuture(mock(Connection.class)));
 
         var routingTable = newStaleRoutingTableMock(staleMode);
         var rediscovery = newRediscoveryMock();
@@ -269,7 +274,7 @@ class RoutingTableHandlerTest {
 
     private static ConnectionPool newConnectionPoolMockWithFailures(Set<BoltServerAddress> unavailableAddresses) {
         var pool = mock(ConnectionPool.class);
-        when(pool.acquire(any(BoltServerAddress.class), any())).then(invocation -> {
+        when(pool.acquire(any(SocketAddress.class), any())).then(invocation -> {
             BoltServerAddress requestedAddress = invocation.getArgument(0);
             if (unavailableAddresses.contains(requestedAddress)) {
                 return Futures.failedFuture(new ServiceUnavailableException(requestedAddress + " is unavailable!"));

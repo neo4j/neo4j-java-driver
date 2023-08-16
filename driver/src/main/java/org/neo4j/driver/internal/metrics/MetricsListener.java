@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.internal.metrics;
 
+import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.net.ServerAddress;
 
 public interface MetricsListener {
     /**
@@ -99,7 +99,7 @@ public interface MetricsListener {
     ListenerEvent<?> createListenerEvent();
 
     void registerPoolMetrics(
-            String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier);
+            String poolId, SocketAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier);
 
     void removePoolMetrics(String poolId);
 }

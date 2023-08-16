@@ -27,6 +27,8 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.time.Clock;
 import java.util.function.Supplier;
@@ -94,7 +96,7 @@ public class DriverFactory {
             securityPlan = SecurityPlans.createSecurityPlan(settings, uri.getScheme());
         }
 
-        var address = new BoltServerAddress(uri);
+        var address = new InetSocketAddress(uri.getHost(), uri.getPort());
         var routingSettings = new RoutingSettings(config.routingTablePurgeDelayMillis(), new RoutingContext(uri));
 
         InternalLoggerFactory.setDefaultFactory(new NettyLogging(config.logging()));
@@ -124,7 +126,7 @@ public class DriverFactory {
                 config);
     }
 
-    protected ConnectionPool createConnectionPool(
+    protected ConnectionPool<InetSocketAddress> createConnectionPool(
             AuthTokenManager authTokenManager,
             SecurityPlan securityPlan,
             Bootstrap bootstrap,
@@ -135,7 +137,7 @@ public class DriverFactory {
         var clock = createClock();
         var settings = new ConnectionSettings(authTokenManager, config.userAgent(), config.connectionTimeoutMillis());
         var boltAgent = DriverInfoUtil.boltAgent();
-        var connector = createConnector(settings, securityPlan, config, clock, routingContext, boltAgent);
+        var connector = createNetworkConnector(settings, securityPlan, config, clock, routingContext, boltAgent);
         var poolSettings = new PoolSettings(
                 config.maxConnectionPoolSize(),
                 config.connectionAcquisitionTimeoutMillis(),
@@ -164,7 +166,7 @@ public class DriverFactory {
         };
     }
 
-    protected ChannelConnector createConnector(
+    protected ChannelConnector<InetSocketAddress> createNetworkConnector(
             ConnectionSettings settings,
             SecurityPlan securityPlan,
             Config config,
@@ -185,8 +187,8 @@ public class DriverFactory {
     private InternalDriver createDriver(
             URI uri,
             SecurityPlan securityPlan,
-            BoltServerAddress address,
-            ConnectionPool connectionPool,
+            InetSocketAddress address,
+            ConnectionPool<InetSocketAddress> connectionPool,
             EventExecutorGroup eventExecutorGroup,
             RoutingSettings routingSettings,
             RetryLogic retryLogic,
@@ -199,7 +201,7 @@ public class DriverFactory {
             if (isRoutingScheme(scheme)) {
                 return createRoutingDriver(
                         securityPlan,
-                        address,
+                        BoltServerAddress.from(address),
                         connectionPool,
                         eventExecutorGroup,
                         routingSettings,
@@ -225,7 +227,7 @@ public class DriverFactory {
      */
     protected InternalDriver createDirectDriver(
             SecurityPlan securityPlan,
-            BoltServerAddress address,
+            SocketAddress address,
             ConnectionPool connectionPool,
             RetryLogic retryLogic,
             MetricsProvider metricsProvider,

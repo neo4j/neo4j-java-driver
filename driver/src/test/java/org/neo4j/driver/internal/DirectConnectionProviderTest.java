@@ -34,6 +34,7 @@ import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithDatab
 import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithMode;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
+import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 class DirectConnectionProviderTest {
     @Test
     void acquiresConnectionsFromThePool() {
-        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var address = BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress();
         var connection1 = mock(Connection.class);
         var connection2 = mock(Connection.class);
 
@@ -68,7 +69,7 @@ class DirectConnectionProviderTest {
     @ParameterizedTest
     @EnumSource(AccessMode.class)
     void returnsCorrectAccessMode(AccessMode mode) {
-        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var address = BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress();
         var pool = poolMock(address, mock(Connection.class));
         var provider = new DirectConnectionProvider(address, pool);
 
@@ -79,7 +80,7 @@ class DirectConnectionProviderTest {
 
     @Test
     void closesPool() {
-        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var address = BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress();
         var pool = poolMock(address, mock(Connection.class));
         var provider = new DirectConnectionProvider(address, pool);
 
@@ -90,7 +91,7 @@ class DirectConnectionProviderTest {
 
     @Test
     void returnsCorrectAddress() {
-        var address = new BoltServerAddress("server-1", 25000);
+        var address = new BoltServerAddress("server-1", 25000).toInetSocketAddress();
 
         var provider = new DirectConnectionProvider(address, mock(ConnectionPool.class));
 
@@ -99,7 +100,7 @@ class DirectConnectionProviderTest {
 
     @Test
     void shouldIgnoreDatabaseNameAndAccessModeWhenObtainConnectionFromPool() {
-        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var address = BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress();
         var connection = mock(Connection.class);
 
         var pool = poolMock(address, connection);
@@ -115,7 +116,7 @@ class DirectConnectionProviderTest {
     @ParameterizedTest
     @ValueSource(strings = {"", "foo", "data"})
     void shouldObtainDatabaseNameOnConnection(String databaseName) {
-        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var address = BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress();
         var pool = poolMock(address, mock(Connection.class));
         var provider = new DirectConnectionProvider(address, pool);
 
@@ -127,7 +128,7 @@ class DirectConnectionProviderTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void ensuresCompletedDatabaseNameBeforeAccessingValue(boolean completed) {
-        var address = BoltServerAddress.LOCAL_DEFAULT;
+        var address = BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress();
         var pool = poolMock(address, mock(Connection.class));
         var provider = new DirectConnectionProvider(address, pool);
         var context = mock(ConnectionContext.class);
@@ -149,7 +150,7 @@ class DirectConnectionProviderTest {
 
     @SuppressWarnings("unchecked")
     private static ConnectionPool poolMock(
-            BoltServerAddress address, Connection connection, Connection... otherConnections) {
+            SocketAddress address, Connection connection, Connection... otherConnections) {
         var pool = mock(ConnectionPool.class);
         CompletableFuture<Connection>[] otherConnectionFutures = Stream.of(otherConnections)
                 .map(CompletableFuture::completedFuture)

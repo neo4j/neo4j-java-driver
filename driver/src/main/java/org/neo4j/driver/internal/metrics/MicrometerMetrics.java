@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -26,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntSupplier;
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.net.ServerAddress;
 
 final class MicrometerMetrics implements Metrics, MetricsListener {
     private final MeterRegistry meterRegistry;
@@ -99,7 +99,7 @@ final class MicrometerMetrics implements Metrics, MetricsListener {
 
     @Override
     public void registerPoolMetrics(
-            String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
+            String poolId, SocketAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
         this.connectionPoolMetrics.put(
                 poolId,
                 new MicrometerConnectionPoolMetrics(poolId, address, inUseSupplier, idleSupplier, this.meterRegistry));

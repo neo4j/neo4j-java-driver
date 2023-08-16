@@ -26,6 +26,7 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setSe
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.ssl.SslHandler;
+import java.net.InetSocketAddress;
 import java.time.Clock;
 import javax.net.ssl.SSLEngine;
 import org.neo4j.driver.AuthTokenManager;
@@ -36,7 +37,7 @@ import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
 public class NettyChannelInitializer extends ChannelInitializer<Channel> {
-    private final BoltServerAddress address;
+    private final InetSocketAddress address;
     private final SecurityPlan securityPlan;
     private final int connectTimeoutMillis;
     private final AuthTokenManager authTokenManager;
@@ -44,7 +45,7 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel> {
     private final Logging logging;
 
     public NettyChannelInitializer(
-            BoltServerAddress address,
+            InetSocketAddress address,
             SecurityPlan securityPlan,
             int connectTimeoutMillis,
             AuthTokenManager authTokenManager,
@@ -77,7 +78,7 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel> {
 
     private SSLEngine createSslEngine() {
         var sslContext = securityPlan.sslContext();
-        var sslEngine = sslContext.createSSLEngine(address.host(), address.port());
+        var sslEngine = sslContext.createSSLEngine(address.getHostString(), address.getPort());
         sslEngine.setUseClientMode(true);
         if (securityPlan.requiresHostnameVerification()) {
             var sslParameters = sslEngine.getSSLParameters();
@@ -88,7 +89,7 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel> {
     }
 
     private void updateChannelAttributes(Channel channel) {
-        setServerAddress(channel, address);
+        setServerAddress(channel, BoltServerAddress.from(address));
         setCreationTimestamp(channel, clock.millis());
         setMessageDispatcher(channel, new InboundMessageDispatcher(channel, logging));
         setAuthContext(channel, new AuthContext(authTokenManager));

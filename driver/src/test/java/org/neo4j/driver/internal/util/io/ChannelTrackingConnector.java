@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.util.io;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import java.net.SocketAddress;
 import java.util.List;
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 
 public class ChannelTrackingConnector implements ChannelConnector {
@@ -35,7 +35,7 @@ public class ChannelTrackingConnector implements ChannelConnector {
     }
 
     @Override
-    public ChannelFuture connect(BoltServerAddress address, Bootstrap bootstrap) {
+    public ChannelFuture connect(SocketAddress address, Bootstrap bootstrap) {
         var channelFuture = realConnector.connect(address, bootstrap);
         channels.add(channelFuture.channel());
         return channelFuture;

@@ -54,6 +54,8 @@ import static org.neo4j.driver.testutil.TestUtil.asOrderedSet;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import io.netty.util.concurrent.GlobalEventExecutor;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -123,7 +125,7 @@ class LoadBalancerTest {
 
         assertThat(acquired, instanceOf(RoutingConnection.class));
         assertThat(acquired.databaseName().description(), equalTo(databaseName));
-        verify(connectionPool).acquire(A, null);
+        verify(connectionPool).acquire(A.toInetSocketAddress(), null);
     }
 
     @Test
@@ -148,9 +150,9 @@ class LoadBalancerTest {
     void shouldSelectLeastConnectedAddress() {
         var connectionPool = newConnectionPoolMock();
 
-        when(connectionPool.inUseConnections(A)).thenReturn(0);
-        when(connectionPool.inUseConnections(B)).thenReturn(20);
-        when(connectionPool.inUseConnections(C)).thenReturn(0);
+        when(connectionPool.inUseConnections(A.toInetSocketAddress())).thenReturn(0);
+        when(connectionPool.inUseConnections(B.toInetSocketAddress())).thenReturn(20);
+        when(connectionPool.inUseConnections(C.toInetSocketAddress())).thenReturn(0);
 
         var routingTable = mock(RoutingTable.class);
         var readerAddresses = Arrays.asList(A, B, C);
@@ -189,7 +191,7 @@ class LoadBalancerTest {
 
     @Test
     void shouldTryMultipleServersAfterRediscovery() {
-        var unavailableAddresses = asOrderedSet(A);
+        var unavailableAddresses = asOrderedSet(A.toInetSocketAddress());
         var connectionPool = newConnectionPoolMockWithFailures(unavailableAddresses);
 
         RoutingTable routingTable = new ClusterRoutingTable(defaultDatabase(), new FakeClock());
@@ -220,7 +222,7 @@ class LoadBalancerTest {
 
     @Test
     void shouldFailAfterTryingAllServers() throws Throwable {
-        var unavailableAddresses = asOrderedSet(A, B);
+        var unavailableAddresses = asOrderedSet(A.toInetSocketAddress(), B.toInetSocketAddress());
         var connectionPool = newConnectionPoolMockWithFailures(unavailableAddresses);
 
         var rediscovery = mock(Rediscovery.class);
@@ -238,7 +240,7 @@ class LoadBalancerTest {
 
     @Test
     void shouldFailEarlyOnSecurityError() throws Throwable {
-        var unavailableAddresses = asOrderedSet(A, B);
+        var unavailableAddresses = asOrderedSet(A.toInetSocketAddress(), B.toInetSocketAddress());
         var connectionPool = newConnectionPoolMockWithFailures(
                 unavailableAddresses, address -> new SecurityException("code", "hi there"));
 
@@ -254,7 +256,7 @@ class LoadBalancerTest {
 
     @Test
     void shouldSuccessOnFirstSuccessfulServer() throws Throwable {
-        var unavailableAddresses = asOrderedSet(A, B);
+        var unavailableAddresses = asOrderedSet(A.toInetSocketAddress(), B.toInetSocketAddress());
         var connectionPool = newConnectionPoolMockWithFailures(unavailableAddresses);
 
         var rediscovery = mock(Rediscovery.class);
@@ -268,7 +270,7 @@ class LoadBalancerTest {
 
     @Test
     void shouldThrowModifiedErrorWhenSupportMultiDbTestFails() throws Throwable {
-        var unavailableAddresses = asOrderedSet(A, B);
+        var unavailableAddresses = asOrderedSet(A.toInetSocketAddress(), B.toInetSocketAddress());
         var connectionPool = newConnectionPoolMockWithFailures(unavailableAddresses);
 
         var rediscovery = mock(Rediscovery.class);
@@ -282,7 +284,7 @@ class LoadBalancerTest {
 
     @Test
     void shouldFailEarlyOnSecurityErrorWhenSupportMultiDbTestFails() throws Throwable {
-        var unavailableAddresses = asOrderedSet(A, B);
+        var unavailableAddresses = asOrderedSet(A.toInetSocketAddress(), B.toInetSocketAddress());
         var connectionPool = newConnectionPoolMockWithFailures(
                 unavailableAddresses, address -> new AuthenticationException("code", "error"));
 
@@ -415,25 +417,26 @@ class LoadBalancerTest {
                         DEV_NULL_LOGGING));
     }
 
-    private static ConnectionPool newConnectionPoolMock() {
+    private static ConnectionPool<InetSocketAddress> newConnectionPoolMock() {
         return newConnectionPoolMockWithFailures(emptySet());
     }
 
-    private static ConnectionPool newConnectionPoolMockWithFailures(Set<BoltServerAddress> unavailableAddresses) {
+    private static ConnectionPool<InetSocketAddress> newConnectionPoolMockWithFailures(
+            Set<InetSocketAddress> unavailableAddresses) {
         return newConnectionPoolMockWithFailures(
                 unavailableAddresses, address -> new ServiceUnavailableException(address + " is unavailable!"));
     }
 
-    private static ConnectionPool newConnectionPoolMockWithFailures(
-            Set<BoltServerAddress> unavailableAddresses, Function<BoltServerAddress, Throwable> errorAction) {
+    private static ConnectionPool<InetSocketAddress> newConnectionPoolMockWithFailures(
+            Set<InetSocketAddress> unavailableAddresses, Function<SocketAddress, Throwable> errorAction) {
         var pool = mock(ConnectionPool.class);
-        when(pool.acquire(any(BoltServerAddress.class), any())).then(invocation -> {
-            BoltServerAddress requestedAddress = invocation.getArgument(0);
+        when(pool.acquire(any(InetSocketAddress.class), any())).then(invocation -> {
+            InetSocketAddress requestedAddress = invocation.getArgument(0);
             if (unavailableAddresses.contains(requestedAddress)) {
                 return Futures.failedFuture(errorAction.apply(requestedAddress));
             }
 
-            return completedFuture(newBoltV4Connection(requestedAddress));
+            return completedFuture(newBoltV4Connection(BoltServerAddress.from(requestedAddress)));
         });
         return pool;
     }

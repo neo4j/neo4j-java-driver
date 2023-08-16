@@ -36,6 +36,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.ssl.SslHandler;
+import java.net.InetSocketAddress;
 import java.security.GeneralSecurityException;
 import java.time.Clock;
 import javax.net.ssl.SNIHostName;
@@ -107,7 +108,7 @@ class NettyChannelInitializerTest {
 
     @Test
     void shouldIncludeSniHostName() throws Exception {
-        var address = new BoltServerAddress("database.neo4j.com", 8989);
+        var address = (InetSocketAddress) new BoltServerAddress("database.neo4j.com", 8989).toInetSocketAddress();
         var initializer = new NettyChannelInitializer(
                 address,
                 trustAllCertificates(),
@@ -124,7 +125,7 @@ class NettyChannelInitializerTest {
         var sniServerNames = sslParameters.getServerNames();
         assertThat(sniServerNames, hasSize(1));
         assertThat(sniServerNames.get(0), instanceOf(SNIHostName.class));
-        assertThat(((SNIHostName) sniServerNames.get(0)).getAsciiName(), equalTo(address.host()));
+        assertThat(((SNIHostName) sniServerNames.get(0)).getAsciiName(), equalTo(address.getHostString()));
     }
 
     @Test
@@ -160,7 +161,7 @@ class NettyChannelInitializerTest {
     private static NettyChannelInitializer newInitializer(
             SecurityPlan securityPlan, int connectTimeoutMillis, Clock clock) {
         return new NettyChannelInitializer(
-                LOCAL_DEFAULT,
+                (InetSocketAddress) LOCAL_DEFAULT.toInetSocketAddress(),
                 securityPlan,
                 connectTimeoutMillis,
                 new StaticAuthTokenManager(AuthTokens.none()),

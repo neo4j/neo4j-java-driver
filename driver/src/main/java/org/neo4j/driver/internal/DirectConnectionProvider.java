@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
 
+import java.net.SocketAddress;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import org.neo4j.driver.AuthToken;
@@ -36,10 +37,10 @@ import org.neo4j.driver.internal.util.SessionAuthUtil;
  * Simple {@link ConnectionProvider connection provider} that obtains connections form the given pool only for the given address.
  */
 public class DirectConnectionProvider implements ConnectionProvider {
-    private final BoltServerAddress address;
+    private final SocketAddress address;
     private final ConnectionPool connectionPool;
 
-    DirectConnectionProvider(BoltServerAddress address, ConnectionPool connectionPool) {
+    DirectConnectionProvider(SocketAddress address, ConnectionPool connectionPool) {
         this.address = address;
         this.connectionPool = connectionPool;
     }
@@ -83,7 +84,7 @@ public class DirectConnectionProvider implements ConnectionProvider {
         });
     }
 
-    public BoltServerAddress getAddress() {
+    public SocketAddress getAddress() {
         return address;
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.metrics;
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
 
+import java.net.SocketAddress;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.Map;
@@ -31,7 +32,6 @@ import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.net.ServerAddress;
 
 final class InternalMetrics implements Metrics, MetricsListener {
     private final Map<String, ConnectionPoolMetrics> connectionPoolMetrics;
@@ -47,7 +47,7 @@ final class InternalMetrics implements Metrics, MetricsListener {
 
     @Override
     public void registerPoolMetrics(
-            String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
+            String poolId, SocketAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
         this.connectionPoolMetrics.put(
                 poolId, new InternalConnectionPoolMetrics(poolId, serverAddress, inUseSupplier, idleSupplier));
     }

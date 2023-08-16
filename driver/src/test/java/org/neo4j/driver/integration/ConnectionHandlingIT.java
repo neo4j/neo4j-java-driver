@@ -34,6 +34,7 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import io.netty.bootstrap.Bootstrap;
+import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -54,7 +55,6 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BoltAgentUtil;
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
@@ -462,7 +462,7 @@ class ConnectionHandlingIT {
                     config.maxConnectionLifetimeMillis(),
                     config.idleTimeBeforeConnectionTest());
             var clock = createClock();
-            var connector = super.createConnector(
+            var connector = super.createNetworkConnector(
                     connectionSettings, securityPlan, config, clock, routingContext, BoltAgentUtil.VALUE);
             connectionPool = new MemorizingConnectionPool(
                     connector, bootstrap, poolSettings, config.logging(), clock, ownsEventLoopGroup);
@@ -470,12 +470,12 @@ class ConnectionHandlingIT {
         }
     }
 
-    private static class MemorizingConnectionPool extends ConnectionPoolImpl {
+    private static class MemorizingConnectionPool extends ConnectionPoolImpl<InetSocketAddress> {
         Connection lastAcquiredConnectionSpy;
         boolean memorize;
 
         MemorizingConnectionPool(
-                ChannelConnector connector,
+                ChannelConnector<InetSocketAddress> connector,
                 Bootstrap bootstrap,
                 PoolSettings settings,
                 Logging logging,
@@ -489,7 +489,7 @@ class ConnectionHandlingIT {
         }
 
         @Override
-        public CompletionStage<Connection> acquire(final BoltServerAddress address, AuthToken overrideAuthToken) {
+        public CompletionStage<Connection> acquire(final InetSocketAddress address, AuthToken overrideAuthToken) {
             var connection = await(super.acquire(address, overrideAuthToken));
 
             if (memorize) {

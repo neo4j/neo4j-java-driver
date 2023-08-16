@@ -44,6 +44,7 @@ import static org.neo4j.driver.internal.util.Matchers.directDriver;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutorGroup;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.time.Clock;
 import java.util.function.Supplier;
@@ -262,7 +263,7 @@ class DriverFactoryTest {
     private static ConnectionPool connectionPoolMock() {
         var pool = mock(ConnectionPool.class);
         var connection = mock(Connection.class);
-        when(pool.acquire(any(BoltServerAddress.class), any(AuthToken.class))).thenReturn(completedFuture(connection));
+        when(pool.acquire(any(SocketAddress.class), any(AuthToken.class))).thenReturn(completedFuture(connection));
         when(pool.close()).thenReturn(completedWithNull());
         return pool;
     }

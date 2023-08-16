@@ -209,7 +209,7 @@ class MicrometerMetricsTest {
         var size = metrics.connectionPoolMetrics().size();
 
         // WHEN
-        metrics.registerPoolMetrics(ID, BoltServerAddress.LOCAL_DEFAULT, () -> 23, () -> 42);
+        metrics.registerPoolMetrics(ID, BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress(), () -> 23, () -> 42);
 
         // THEN
         assertEquals(size + 1, metrics.connectionPoolMetrics().size());

@@ -34,6 +34,8 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.group.ChannelGroup;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -43,49 +45,49 @@ import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 
 class NettyChannelTrackerTest {
-    private final BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
+    private final SocketAddress address = BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress();
     private final NettyChannelTracker tracker =
             new NettyChannelTracker(DevNullMetricsListener.INSTANCE, mock(ChannelGroup.class), DEV_NULL_LOGGING);
 
     @Test
     void shouldIncrementIdleCountWhenChannelCreated() {
         var channel = newChannel();
-        assertEquals(0, tracker.inUseChannelCount(address));
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(0, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(0, tracker.idleChannelCount(channel.remoteAddress()));
 
         tracker.channelCreated(channel, null);
-        assertEquals(0, tracker.inUseChannelCount(address));
-        assertEquals(1, tracker.idleChannelCount(address));
+        assertEquals(0, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(1, tracker.idleChannelCount(channel.remoteAddress()));
     }
 
     @Test
     void shouldIncrementInUseCountWhenChannelAcquired() {
         var channel = newChannel();
-        assertEquals(0, tracker.inUseChannelCount(address));
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(0, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(0, tracker.idleChannelCount(channel.remoteAddress()));
 
         tracker.channelCreated(channel, null);
-        assertEquals(0, tracker.inUseChannelCount(address));
-        assertEquals(1, tracker.idleChannelCount(address));
+        assertEquals(0, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(1, tracker.idleChannelCount(channel.remoteAddress()));
 
         tracker.channelAcquired(channel);
-        assertEquals(1, tracker.inUseChannelCount(address));
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(1, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(0, tracker.idleChannelCount(channel.remoteAddress()));
     }
 
     @Test
     void shouldIncrementIdleCountWhenChannelReleased() {
         var channel = newChannel();
-        assertEquals(0, tracker.inUseChannelCount(address));
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(0, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(0, tracker.idleChannelCount(channel.remoteAddress()));
 
         channelCreatedAndAcquired(channel);
-        assertEquals(1, tracker.inUseChannelCount(address));
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(1, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(0, tracker.idleChannelCount(channel.remoteAddress()));
 
         tracker.channelReleased(channel);
-        assertEquals(0, tracker.inUseChannelCount(address));
-        assertEquals(1, tracker.idleChannelCount(address));
+        assertEquals(0, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(1, tracker.idleChannelCount(channel.remoteAddress()));
     }
 
     @Test
@@ -94,14 +96,14 @@ class NettyChannelTrackerTest {
         var channel2 = newChannel();
         var channel3 = newChannel();
 
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(0, tracker.idleChannelCount(channel1.remoteAddress()));
         tracker.channelCreated(channel1, null);
-        assertEquals(1, tracker.idleChannelCount(address));
+        assertEquals(1, tracker.idleChannelCount(channel1.remoteAddress()));
         tracker.channelCreated(channel2, null);
-        assertEquals(2, tracker.idleChannelCount(address));
+        assertEquals(2, tracker.idleChannelCount(channel1.remoteAddress()));
         tracker.channelCreated(channel3, null);
-        assertEquals(3, tracker.idleChannelCount(address));
-        assertEquals(0, tracker.inUseChannelCount(address));
+        assertEquals(3, tracker.idleChannelCount(channel1.remoteAddress()));
+        assertEquals(0, tracker.inUseChannelCount(channel1.remoteAddress()));
     }
 
     @Test
@@ -113,18 +115,18 @@ class NettyChannelTrackerTest {
         channelCreatedAndAcquired(channel1);
         channelCreatedAndAcquired(channel2);
         channelCreatedAndAcquired(channel3);
-        assertEquals(3, tracker.inUseChannelCount(address));
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(3, tracker.inUseChannelCount(channel1.remoteAddress()));
+        assertEquals(0, tracker.idleChannelCount(channel1.remoteAddress()));
 
         tracker.channelReleased(channel1);
-        assertEquals(2, tracker.inUseChannelCount(address));
-        assertEquals(1, tracker.idleChannelCount(address));
+        assertEquals(2, tracker.inUseChannelCount(channel1.remoteAddress()));
+        assertEquals(1, tracker.idleChannelCount(channel1.remoteAddress()));
         tracker.channelReleased(channel2);
-        assertEquals(1, tracker.inUseChannelCount(address));
-        assertEquals(2, tracker.idleChannelCount(address));
+        assertEquals(1, tracker.inUseChannelCount(channel1.remoteAddress()));
+        assertEquals(2, tracker.idleChannelCount(channel1.remoteAddress()));
         tracker.channelReleased(channel3);
-        assertEquals(0, tracker.inUseChannelCount(address));
-        assertEquals(3, tracker.idleChannelCount(address));
+        assertEquals(0, tracker.inUseChannelCount(channel1.remoteAddress()));
+        assertEquals(3, tracker.idleChannelCount(channel1.remoteAddress()));
     }
 
     @Test
@@ -132,19 +134,19 @@ class NettyChannelTrackerTest {
         // Given
         var channel = newChannel();
         channelCreatedAndAcquired(channel);
-        assertEquals(1, tracker.inUseChannelCount(address));
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(1, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(0, tracker.idleChannelCount(channel.remoteAddress()));
 
         // When closed before session.close
         channel.close().sync();
 
         // Then
-        assertEquals(1, tracker.inUseChannelCount(address));
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(1, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(0, tracker.idleChannelCount(channel.remoteAddress()));
 
         tracker.channelReleased(channel);
-        assertEquals(0, tracker.inUseChannelCount(address));
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(0, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(0, tracker.idleChannelCount(channel.remoteAddress()));
     }
 
     @Test
@@ -152,18 +154,18 @@ class NettyChannelTrackerTest {
         // Given
         var channel = newChannel();
         channelCreatedAndAcquired(channel);
-        assertEquals(1, tracker.inUseChannelCount(address));
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(1, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(0, tracker.idleChannelCount(channel.remoteAddress()));
 
         tracker.channelReleased(channel);
-        assertEquals(0, tracker.inUseChannelCount(address));
-        assertEquals(1, tracker.idleChannelCount(address));
+        assertEquals(0, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(1, tracker.idleChannelCount(channel.remoteAddress()));
 
         // When closed before acquire
         channel.close().sync();
         // Then
-        assertEquals(0, tracker.inUseChannelCount(address));
-        assertEquals(0, tracker.idleChannelCount(address));
+        assertEquals(0, tracker.inUseChannelCount(channel.remoteAddress()));
+        assertEquals(0, tracker.idleChannelCount(channel.remoteAddress()));
     }
 
     @Test
@@ -212,13 +214,13 @@ class NettyChannelTrackerTest {
 
     private Channel newChannel() {
         var channel = new EmbeddedChannel();
-        setServerAddress(channel, address);
+        setServerAddress(channel, BoltServerAddress.from((InetSocketAddress) address));
         return channel;
     }
 
     private EmbeddedChannel newChannelWithProtocolV3() {
         var channel = new EmbeddedChannel();
-        setServerAddress(channel, address);
+        setServerAddress(channel, BoltServerAddress.from((InetSocketAddress) address));
         setProtocolVersion(channel, BoltProtocolV3.VERSION);
         setMessageDispatcher(channel, mock(InboundMessageDispatcher.class));
         return channel;

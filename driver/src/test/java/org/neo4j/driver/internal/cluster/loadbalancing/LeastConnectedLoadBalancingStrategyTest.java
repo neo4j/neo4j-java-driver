@@ -30,6 +30,7 @@ import static org.mockito.MockitoAnnotations.openMocks;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 
+import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +81,7 @@ class LeastConnectedLoadBalancingStrategyTest {
     @Test
     void shouldHandleSingleReaderWithActiveConnections() {
         var address = new BoltServerAddress("reader", 9999);
-        when(connectionPool.inUseConnections(address)).thenReturn(42);
+        when(connectionPool.inUseConnections(address.toInetSocketAddress())).thenReturn(42);
 
         assertEquals(address, strategy.selectReader(Collections.singletonList(address)));
     }
@@ -88,7 +89,7 @@ class LeastConnectedLoadBalancingStrategyTest {
     @Test
     void shouldHandleSingleWriterWithActiveConnections() {
         var address = new BoltServerAddress("writer", 9999);
-        when(connectionPool.inUseConnections(address)).thenReturn(24);
+        when(connectionPool.inUseConnections(address.toInetSocketAddress())).thenReturn(24);
 
         assertEquals(address, strategy.selectWriter(Collections.singletonList(address)));
     }
@@ -99,9 +100,9 @@ class LeastConnectedLoadBalancingStrategyTest {
         var address2 = new BoltServerAddress("reader", 2);
         var address3 = new BoltServerAddress("reader", 3);
 
-        when(connectionPool.inUseConnections(address1)).thenReturn(3);
-        when(connectionPool.inUseConnections(address2)).thenReturn(4);
-        when(connectionPool.inUseConnections(address3)).thenReturn(1);
+        when(connectionPool.inUseConnections(address1.toInetSocketAddress())).thenReturn(3);
+        when(connectionPool.inUseConnections(address2.toInetSocketAddress())).thenReturn(4);
+        when(connectionPool.inUseConnections(address3.toInetSocketAddress())).thenReturn(1);
 
         assertEquals(address3, strategy.selectReader(Arrays.asList(address1, address2, address3)));
     }
@@ -113,10 +114,10 @@ class LeastConnectedLoadBalancingStrategyTest {
         var address3 = new BoltServerAddress("writer", 3);
         var address4 = new BoltServerAddress("writer", 4);
 
-        when(connectionPool.inUseConnections(address1)).thenReturn(5);
-        when(connectionPool.inUseConnections(address2)).thenReturn(6);
-        when(connectionPool.inUseConnections(address3)).thenReturn(0);
-        when(connectionPool.inUseConnections(address4)).thenReturn(1);
+        when(connectionPool.inUseConnections(address1.toInetSocketAddress())).thenReturn(5);
+        when(connectionPool.inUseConnections(address2.toInetSocketAddress())).thenReturn(6);
+        when(connectionPool.inUseConnections(address3.toInetSocketAddress())).thenReturn(0);
+        when(connectionPool.inUseConnections(address4.toInetSocketAddress())).thenReturn(1);
 
         assertEquals(address3, strategy.selectWriter(Arrays.asList(address1, address2, address3, address4)));
     }
@@ -169,7 +170,7 @@ class LeastConnectedLoadBalancingStrategyTest {
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
-        when(connectionPool.inUseConnections(any(BoltServerAddress.class))).thenReturn(42);
+        when(connectionPool.inUseConnections(any(SocketAddress.class))).thenReturn(42);
 
         LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy(connectionPool, logging);
 

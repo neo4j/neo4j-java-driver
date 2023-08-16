@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.cluster;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
 
+import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,11 +49,11 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
     private final RoutingTableHandlerFactory factory;
     private final Logger log;
     private final Clock clock;
-    private final ConnectionPool connectionPool;
+    private final ConnectionPool<InetSocketAddress> connectionPool;
     private final Rediscovery rediscovery;
 
     public RoutingTableRegistryImpl(
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Rediscovery rediscovery,
             Clock clock,
             Logging logging,
@@ -70,7 +71,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
             ConcurrentMap<DatabaseName, RoutingTableHandler> routingTableHandlers,
             RoutingTableHandlerFactory factory,
             Clock clock,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Rediscovery rediscovery,
             Logging logging) {
         requireNonNull(rediscovery, "rediscovery must not be null");

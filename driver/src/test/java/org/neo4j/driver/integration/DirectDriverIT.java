@@ -52,7 +52,7 @@ class DirectDriverIT {
     void shouldAllowIPv6Address() {
         // Given
         var uri = URI.create("bolt://[::1]:" + neo4j.boltPort());
-        var address = new BoltServerAddress(uri);
+        var address = new BoltServerAddress(uri).toInetSocketAddress();
 
         // When
         driver = GraphDatabase.driver(uri, neo4j.authTokenManager());
@@ -76,7 +76,7 @@ class DirectDriverIT {
     void shouldRegisterSingleServer() {
         // Given
         var uri = neo4j.uri();
-        var address = new BoltServerAddress(uri);
+        var address = new BoltServerAddress(uri).toInetSocketAddress();
 
         // When
         driver = GraphDatabase.driver(uri, neo4j.authTokenManager());

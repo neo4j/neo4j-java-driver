@@ -33,6 +33,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Disabled;
@@ -43,16 +44,16 @@ import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.util.FakeClock;
 
 class ConnectionPoolImplTest {
-    private static final BoltServerAddress ADDRESS_1 = new BoltServerAddress("server:1");
-    private static final BoltServerAddress ADDRESS_2 = new BoltServerAddress("server:2");
-    private static final BoltServerAddress ADDRESS_3 = new BoltServerAddress("server:3");
+    private static final SocketAddress ADDRESS_1 = new BoltServerAddress("server:1").toInetSocketAddress();
+    private static final SocketAddress ADDRESS_2 = new BoltServerAddress("server:2").toInetSocketAddress();
+    private static final SocketAddress ADDRESS_3 = new BoltServerAddress("server:3").toInetSocketAddress();
 
     @Test
     void shouldDoNothingWhenRetainOnEmptyPool() {
         var nettyChannelTracker = mock(NettyChannelTracker.class);
         var pool = newConnectionPool(nettyChannelTracker);
 
-        pool.retainAll(singleton(LOCAL_DEFAULT));
+        pool.retainAll(singleton(LOCAL_DEFAULT.toInetSocketAddress()));
 
         verifyNoInteractions(nettyChannelTracker);
     }

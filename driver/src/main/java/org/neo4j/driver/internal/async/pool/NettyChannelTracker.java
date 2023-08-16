@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.async.pool;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAddress;
 import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
 
 import io.netty.channel.Channel;
@@ -28,6 +27,7 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.pool.ChannelPoolHandler;
 import io.netty.util.concurrent.EventExecutor;
+import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
@@ -37,14 +37,13 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
-import org.neo4j.driver.net.ServerAddress;
 
 public class NettyChannelTracker implements ChannelPoolHandler {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock read = lock.readLock();
     private final Lock write = lock.writeLock();
-    private final Map<ServerAddress, Integer> addressToInUseChannelCount = new HashMap<>();
-    private final Map<ServerAddress, Integer> addressToIdleChannelCount = new HashMap<>();
+    private final Map<SocketAddress, Integer> addressToInUseChannelCount = new HashMap<>();
+    private final Map<SocketAddress, Integer> addressToIdleChannelCount = new HashMap<>();
     private final Logger log;
     private final MetricsListener metricsListener;
     private final ChannelFutureListener closeListener = future -> channelClosed(future.channel());
@@ -115,11 +114,11 @@ public class NettyChannelTracker implements ChannelPoolHandler {
         metricsListener.afterClosed(poolId(channel));
     }
 
-    public int inUseChannelCount(ServerAddress address) {
+    public int inUseChannelCount(SocketAddress address) {
         return executeWithLock(read, () -> addressToInUseChannelCount.getOrDefault(address, 0));
     }
 
-    public int idleChannelCount(ServerAddress address) {
+    public int idleChannelCount(SocketAddress address) {
         return executeWithLock(read, () -> addressToIdleChannelCount.getOrDefault(address, 0));
     }
 
@@ -143,7 +142,7 @@ public class NettyChannelTracker implements ChannelPoolHandler {
     }
 
     private void decrementInUse(Channel channel) {
-        var address = serverAddress(channel);
+        var address = channel.remoteAddress();
         if (!addressToInUseChannelCount.containsKey(address)) {
             throw new IllegalStateException("No count exists for address '" + address + "' in the 'in use' count");
         }
@@ -156,17 +155,16 @@ public class NettyChannelTracker implements ChannelPoolHandler {
     }
 
     private void decrementIdle(Channel channel) {
-        var address = serverAddress(channel);
-        if (!addressToIdleChannelCount.containsKey(address)) {
-            throw new IllegalStateException("No count exists for address '" + address + "' in the 'idle' count");
+        if (!addressToIdleChannelCount.containsKey(channel.remoteAddress())) {
+            throw new IllegalStateException(
+                    "No count exists for address '" + channel.remoteAddress() + "' in the 'idle' count");
         }
-        var count = addressToIdleChannelCount.get(address);
-        addressToIdleChannelCount.put(address, count - 1);
+        var count = addressToIdleChannelCount.get(channel.remoteAddress());
+        addressToIdleChannelCount.put(channel.remoteAddress(), count - 1);
     }
 
-    private void increment(Channel channel, Map<ServerAddress, Integer> countMap) {
-        ServerAddress address = serverAddress(channel);
-        var count = countMap.computeIfAbsent(address, k -> 0);
-        countMap.put(address, count + 1);
+    private void increment(Channel channel, Map<SocketAddress, Integer> countMap) {
+        var count = countMap.computeIfAbsent(channel.remoteAddress(), k -> 0);
+        countMap.put(channel.remoteAddress(), count + 1);
     }
 }

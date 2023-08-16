@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async.connection;
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.handshakeBuf;
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.handshakeString;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAddress;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -32,17 +33,12 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 
 public class ChannelConnectedListener implements ChannelFutureListener {
-    private final BoltServerAddress address;
     private final ChannelPipelineBuilder pipelineBuilder;
     private final ChannelPromise handshakeCompletedPromise;
     private final Logging logging;
 
     public ChannelConnectedListener(
-            BoltServerAddress address,
-            ChannelPipelineBuilder pipelineBuilder,
-            ChannelPromise handshakeCompletedPromise,
-            Logging logging) {
-        this.address = address;
+            ChannelPipelineBuilder pipelineBuilder, ChannelPromise handshakeCompletedPromise, Logging logging) {
         this.pipelineBuilder = pipelineBuilder;
         this.handshakeCompletedPromise = handshakeCompletedPromise;
         this.logging = logging;
@@ -61,7 +57,7 @@ public class ChannelConnectedListener implements ChannelFutureListener {
             log.debug("C: [Bolt Handshake] %s", handshakeString());
             channel.writeAndFlush(handshakeBuf(), channel.voidPromise());
         } else {
-            handshakeCompletedPromise.setFailure(databaseUnavailableError(address, future.cause()));
+            handshakeCompletedPromise.setFailure(databaseUnavailableError(serverAddress(channel), future.cause()));
         }
     }
 

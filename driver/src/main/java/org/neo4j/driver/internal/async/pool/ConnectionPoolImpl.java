@@ -29,6 +29,7 @@ import static org.neo4j.driver.internal.util.LockUtil.executeWithLockAsync;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
+import java.net.SocketAddress;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,16 +48,14 @@ import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.net.ServerAddress;
 
-public class ConnectionPoolImpl implements ConnectionPool {
-    private final ChannelConnector connector;
+public class ConnectionPoolImpl<T extends SocketAddress> implements ConnectionPool<T> {
+    private final ChannelConnector<T> connector;
     private final Bootstrap bootstrap;
     private final NettyChannelTracker nettyChannelTracker;
     private final Supplier<NettyChannelHealthChecker> channelHealthCheckerSupplier;
@@ -66,14 +65,14 @@ public class ConnectionPoolImpl implements ConnectionPool {
     private final boolean ownsEventLoopGroup;
 
     private final ReadWriteLock addressToPoolLock = new ReentrantReadWriteLock();
-    private final Map<BoltServerAddress, ExtendedChannelPool> addressToPool = new HashMap<>();
+    private final Map<SocketAddress, ExtendedChannelPool> addressToPool = new HashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
     private final ConnectionFactory connectionFactory;
     private final Clock clock;
 
     public ConnectionPoolImpl(
-            ChannelConnector connector,
+            ChannelConnector<T> connector,
             Bootstrap bootstrap,
             PoolSettings settings,
             MetricsListener metricsListener,
@@ -94,7 +93,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
     }
 
     protected ConnectionPoolImpl(
-            ChannelConnector connector,
+            ChannelConnector<T> connector,
             Bootstrap bootstrap,
             NettyChannelTracker nettyChannelTracker,
             PoolSettings settings,
@@ -117,7 +116,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
     }
 
     @Override
-    public CompletionStage<Connection> acquire(BoltServerAddress address, AuthToken overrideAuthToken) {
+    public CompletionStage<Connection> acquire(T address, AuthToken overrideAuthToken) {
         log.trace("Acquiring a connection from pool towards %s", address);
 
         assertNotClosed();
@@ -143,7 +142,8 @@ public class ConnectionPoolImpl implements ConnectionPool {
     }
 
     @Override
-    public void retainAll(Set<BoltServerAddress> addressesToRetain) {
+    @SuppressWarnings("rawtypes")
+    public void retainAll(Set addressesToRetain) {
         executeWithLock(addressToPoolLock.writeLock(), () -> {
             var entryIterator = addressToPool.entrySet().iterator();
             while (entryIterator.hasNext()) {
@@ -170,11 +170,11 @@ public class ConnectionPoolImpl implements ConnectionPool {
     }
 
     @Override
-    public int inUseConnections(ServerAddress address) {
+    public int inUseConnections(SocketAddress address) {
         return nettyChannelTracker.inUseChannelCount(address);
     }
 
-    private int idleConnections(ServerAddress address) {
+    private int idleConnections(SocketAddress address) {
         return nettyChannelTracker.idleChannelCount(address);
     }
 
@@ -200,7 +200,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
     }
 
     @Override
-    public boolean isOpen(BoltServerAddress address) {
+    public boolean isOpen(SocketAddress address) {
         return executeWithLock(addressToPoolLock.readLock(), () -> addressToPool.containsKey(address));
     }
 
@@ -210,7 +210,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
                 addressToPoolLock.readLock(), () -> "ConnectionPoolImpl{" + "pools=" + addressToPool + '}');
     }
 
-    private void processAcquisitionError(ExtendedChannelPool pool, BoltServerAddress serverAddress, Throwable error) {
+    private void processAcquisitionError(ExtendedChannelPool pool, SocketAddress serverAddress, Throwable error) {
         var cause = Futures.completionExceptionCause(error);
         if (cause != null) {
             if (cause instanceof TimeoutException) {
@@ -241,7 +241,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
         }
     }
 
-    private void assertNotClosed(BoltServerAddress address, Channel channel, ExtendedChannelPool pool) {
+    private void assertNotClosed(SocketAddress address, Channel channel, ExtendedChannelPool pool) {
         if (closed.get()) {
             pool.release(channel);
             closePoolInBackground(address, pool);
@@ -251,12 +251,12 @@ public class ConnectionPoolImpl implements ConnectionPool {
     }
 
     // for testing only
-    ExtendedChannelPool getPool(BoltServerAddress address) {
+    ExtendedChannelPool getPool(SocketAddress address) {
         return executeWithLock(addressToPoolLock.readLock(), () -> addressToPool.get(address));
     }
 
-    ExtendedChannelPool newPool(BoltServerAddress address) {
-        return new NettyChannelPool(
+    ExtendedChannelPool newPool(T address) {
+        return new NettyChannelPool<>(
                 address,
                 connector,
                 bootstrap,
@@ -267,7 +267,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
                 clock);
     }
 
-    private ExtendedChannelPool getOrCreatePool(BoltServerAddress address) {
+    private ExtendedChannelPool getOrCreatePool(T address) {
         var existingPool = executeWithLock(addressToPoolLock.readLock(), () -> addressToPool.get(address));
         return existingPool != null
                 ? existingPool
@@ -294,7 +294,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
                         metricsListener.removePoolMetrics(pool.id()));
     }
 
-    private void closePoolInBackground(BoltServerAddress address, ExtendedChannelPool pool) {
+    private void closePoolInBackground(SocketAddress address, ExtendedChannelPool pool) {
         // Close in the background
         closePool(pool).whenComplete((ignored, error) -> {
             if (error != null) {

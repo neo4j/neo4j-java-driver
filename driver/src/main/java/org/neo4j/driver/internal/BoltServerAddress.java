@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -64,6 +65,14 @@ public class BoltServerAddress implements ServerAddress {
         return address instanceof BoltServerAddress
                 ? (BoltServerAddress) address
                 : new BoltServerAddress(address.host(), address.port());
+    }
+
+    public static BoltServerAddress from(InetSocketAddress address) {
+        return new BoltServerAddress(address.getHostString(), address.getPort());
+    }
+
+    public InetSocketAddress toInetSocketAddress() {
+        return new InetSocketAddress(this.host(), this.port());
     }
 
     @Override

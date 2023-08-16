@@ -52,7 +52,7 @@ public class MessageRecordingDriverFactory extends DriverFactory {
     }
 
     @Override
-    protected ChannelConnector createConnector(
+    protected ChannelConnector createNetworkConnector(
             ConnectionSettings settings,
             SecurityPlan securityPlan,
             Config config,

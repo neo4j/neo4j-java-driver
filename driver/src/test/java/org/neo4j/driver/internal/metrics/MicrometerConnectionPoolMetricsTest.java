@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntSupplier;
@@ -37,7 +38,7 @@ class MicrometerConnectionPoolMetricsTest {
     static final String ID = "id";
 
     MicrometerConnectionPoolMetrics metrics;
-    BoltServerAddress address;
+    SocketAddress address;
     MeterRegistry registry;
     final AtomicInteger inUse = new AtomicInteger(0);
     final IntSupplier inUseSupplier = inUse::get;
@@ -46,7 +47,7 @@ class MicrometerConnectionPoolMetricsTest {
 
     @BeforeEach
     void beforeEach() {
-        address = new BoltServerAddress("host", "127.0.0.1", 7687);
+        address = new BoltServerAddress("host", "127.0.0.1", 7687).toInetSocketAddress();
         registry = new SimpleMeterRegistry();
         metrics = new MicrometerConnectionPoolMetrics(ID, address, inUseSupplier, idleSupplier, registry);
     }

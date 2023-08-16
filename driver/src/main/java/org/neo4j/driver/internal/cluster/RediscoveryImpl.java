@@ -25,6 +25,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -100,7 +101,7 @@ public class RediscoveryImpl implements Rediscovery {
     @Override
     public CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition(
             RoutingTable routingTable,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             AuthToken overrideAuthToken) {
@@ -115,7 +116,7 @@ public class RediscoveryImpl implements Rediscovery {
 
     private void lookupClusterComposition(
             RoutingTable routingTable,
-            ConnectionPool pool,
+            ConnectionPool<InetSocketAddress> pool,
             CompletableFuture<ClusterCompositionLookupResult> result,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
@@ -136,7 +137,7 @@ public class RediscoveryImpl implements Rediscovery {
 
     private CompletionStage<ClusterCompositionLookupResult> lookup(
             RoutingTable routingTable,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             AuthToken overrideAuthToken,
@@ -156,7 +157,7 @@ public class RediscoveryImpl implements Rediscovery {
 
     private CompletionStage<ClusterCompositionLookupResult> lookupOnKnownRoutersThenOnInitialRouter(
             RoutingTable routingTable,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             AuthToken authToken,
@@ -181,7 +182,7 @@ public class RediscoveryImpl implements Rediscovery {
 
     private CompletionStage<ClusterCompositionLookupResult> lookupOnInitialRouterThenOnKnownRouters(
             RoutingTable routingTable,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             AuthToken overrideAuthToken,
@@ -212,7 +213,7 @@ public class RediscoveryImpl implements Rediscovery {
 
     private CompletionStage<ClusterCompositionLookupResult> lookupOnKnownRouters(
             RoutingTable routingTable,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Set<BoltServerAddress> seenServers,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
@@ -243,7 +244,7 @@ public class RediscoveryImpl implements Rediscovery {
 
     private CompletionStage<ClusterCompositionLookupResult> lookupOnInitialRouter(
             RoutingTable routingTable,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Set<BoltServerAddress> seenServers,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
@@ -284,7 +285,7 @@ public class RediscoveryImpl implements Rediscovery {
             BoltServerAddress routerAddress,
             boolean resolveAddress,
             RoutingTable routingTable,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             Set<BoltServerAddress> seenServers,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
@@ -296,7 +297,7 @@ public class RediscoveryImpl implements Rediscovery {
                 .thenApply(address ->
                         resolveAddress ? resolveByDomainNameOrThrowCompletionException(address, routingTable) : address)
                 .thenApply(address -> addAndReturn(seenServers, address))
-                .thenCompose(address -> connectionPool.acquire(address, overrideAuthToken))
+                .thenCompose(address -> connectionPool.acquire(address.toInetSocketAddress(), overrideAuthToken))
                 .thenApply(connection -> ImpersonationUtil.ensureImpersonationSupport(connection, impersonatedUser))
                 .thenCompose(connection -> provider.getClusterComposition(
                         connection, routingTable.database(), bookmarks, impersonatedUser))

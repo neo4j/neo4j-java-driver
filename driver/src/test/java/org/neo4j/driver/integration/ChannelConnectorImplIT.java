@@ -89,7 +89,7 @@ class ChannelConnectorImplIT {
     void shouldConnect() throws Exception {
         ChannelConnector connector = newConnector(neo4j.authTokenManager());
 
-        var channelFuture = connector.connect(neo4j.address(), bootstrap);
+        var channelFuture = connector.connect(neo4j.address().toInetSocketAddress(), bootstrap);
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
         var channel = channelFuture.channel();
 
@@ -101,7 +101,7 @@ class ChannelConnectorImplIT {
     void shouldSetupHandlers() throws Exception {
         ChannelConnector connector = newConnector(neo4j.authTokenManager(), trustAllCertificates(), 10_000);
 
-        var channelFuture = connector.connect(neo4j.address(), bootstrap);
+        var channelFuture = connector.connect(neo4j.address().toInetSocketAddress(), bootstrap);
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
 
         var channel = channelFuture.channel();
@@ -116,7 +116,8 @@ class ChannelConnectorImplIT {
     void shouldFailToConnectToWrongAddress() throws Exception {
         ChannelConnector connector = newConnector(neo4j.authTokenManager());
 
-        var channelFuture = connector.connect(new BoltServerAddress("wrong-localhost"), bootstrap);
+        var channelFuture =
+                connector.connect(new BoltServerAddress("wrong-localhost").toInetSocketAddress(), bootstrap);
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
         var channel = channelFuture.channel();
 
@@ -134,7 +135,7 @@ class ChannelConnectorImplIT {
         var authToken = AuthTokens.basic("neo4j", "wrong-password");
         ChannelConnector connector = newConnector(new StaticAuthTokenManager(authToken));
 
-        var channelFuture = connector.connect(neo4j.address(), bootstrap);
+        var channelFuture = connector.connect(neo4j.address().toInetSocketAddress(), bootstrap);
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
         var channel = channelFuture.channel();
 
@@ -148,7 +149,7 @@ class ChannelConnectorImplIT {
         ChannelConnector connector = newConnector(neo4j.authTokenManager(), 1000);
 
         // try connect to a non-routable ip address 10.0.0.0, it will never respond
-        var channelFuture = connector.connect(new BoltServerAddress("10.0.0.0"), bootstrap);
+        var channelFuture = connector.connect(new BoltServerAddress("10.0.0.0").toInetSocketAddress(), bootstrap);
 
         assertThrows(ServiceUnavailableException.class, () -> await(channelFuture));
     }
@@ -184,7 +185,7 @@ class ChannelConnectorImplIT {
         });
 
         ChannelConnector connector = newConnector(neo4j.authTokenManager());
-        var channelFuture = connector.connect(address, bootstrap);
+        var channelFuture = connector.connect(address.toInetSocketAddress(), bootstrap);
 
         // connect operation should fail with ServiceUnavailableException
         assertThrows(ServiceUnavailableException.class, () -> await(channelFuture));
@@ -197,7 +198,7 @@ class ChannelConnectorImplIT {
             var address = new BoltServerAddress("localhost", server.getLocalPort());
             ChannelConnector connector = newConnector(neo4j.authTokenManager(), securityPlan, timeoutMillis);
 
-            var channelFuture = connector.connect(address, bootstrap);
+            var channelFuture = connector.connect(address.toInetSocketAddress(), bootstrap);
 
             var e = assertThrows(ServiceUnavailableException.class, () -> await(channelFuture));
             assertEquals(e.getMessage(), "Unable to establish connection in " + timeoutMillis + "ms");
