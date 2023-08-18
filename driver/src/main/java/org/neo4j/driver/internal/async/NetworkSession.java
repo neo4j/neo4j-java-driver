@@ -127,19 +127,19 @@ public class NetworkSession {
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(TransactionConfig config) {
-        return beginTransactionAsync(mode, config, null);
+        return beginTransactionAsync(mode, config, null, true);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(TransactionConfig config, String txType) {
-        return this.beginTransactionAsync(mode, config, txType);
+        return this.beginTransactionAsync(mode, config, txType, true);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(AccessMode mode, TransactionConfig config) {
-        return beginTransactionAsync(mode, config, null);
+        return beginTransactionAsync(mode, config, null, true);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
-            AccessMode mode, TransactionConfig config, String txType) {
+            AccessMode mode, TransactionConfig config, String txType, boolean flush) {
         ensureSessionIsOpen();
 
         // create a chain that acquires connection and starts a transaction
@@ -150,7 +150,7 @@ public class NetworkSession {
                 .thenCompose(connection -> {
                     var tx = new UnmanagedTransaction(
                             connection, this::handleNewBookmark, fetchSize, notificationConfig, logging);
-                    return tx.beginAsync(determineBookmarks(true), config, txType);
+                    return tx.beginAsync(determineBookmarks(true), config, txType, flush);
                 });
 
         // update the reference to the only known transaction

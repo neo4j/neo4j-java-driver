@@ -95,6 +95,7 @@ public interface BoltProtocol {
      * @param txType             the Kernel transaction type
      * @param notificationConfig the notification configuration
      * @param logging            the driver logging
+     * @param flush              defines whether to flush the message to the connection
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
      */
     CompletionStage<Void> beginTransaction(
@@ -103,7 +104,8 @@ public interface BoltProtocol {
             TransactionConfig config,
             String txType,
             NotificationConfig notificationConfig,
-            Logging logging);
+            Logging logging,
+            boolean flush);
 
     /**
      * Commit the unmanaged transaction.

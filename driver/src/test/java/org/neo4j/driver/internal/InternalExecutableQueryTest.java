@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
@@ -29,13 +30,13 @@ import static org.mockito.Mockito.times;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.ExecutableQuery;
@@ -44,9 +45,9 @@ import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.RoutingControl;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
+import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionContext;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -126,15 +127,15 @@ class InternalExecutableQueryTest {
         var driver = mock(Driver.class);
         var bookmarkManager = mock(BookmarkManager.class);
         given(driver.executableQueryBookmarkManager()).willReturn(bookmarkManager);
-        var session = mock(Session.class);
+        var session = mock(InternalSession.class);
         given(driver.session(any(SessionConfig.class))).willReturn(session);
         var txContext = mock(TransactionContext.class);
-        BiFunction<Session, TransactionCallback<Object>, Object> executeMethod =
-                routingControl.equals(RoutingControl.READ) ? Session::executeRead : Session::executeWrite;
-        given(executeMethod.apply(session, any())).willAnswer(answer -> {
-            TransactionCallback<?> txCallback = answer.getArgument(0);
-            return txCallback.execute(txContext);
-        });
+        var accessMode = routingControl.equals(RoutingControl.WRITE) ? AccessMode.WRITE : AccessMode.READ;
+        given(session.execute(eq(accessMode), any(), eq(TransactionConfig.empty()), eq(false)))
+                .willAnswer(answer -> {
+                    TransactionCallback<?> txCallback = answer.getArgument(1);
+                    return txCallback.execute(txContext);
+                });
         var result = mock(Result.class);
         given(txContext.run(any(Query.class))).willReturn(result);
         var keys = List.of("key");
@@ -180,7 +181,7 @@ class InternalExecutableQueryTest {
                 .withBookmarkManager(bookmarkManager)
                 .build();
         assertEquals(expectedSessionConfig, sessionConfig);
-        executeMethod.apply(then(session).should(), any(TransactionCallback.class));
+        then(session).should().execute(eq(accessMode), any(), eq(TransactionConfig.empty()), eq(false));
         then(txContext).should().run(query.withParameters(params));
         then(result).should(times(2)).hasNext();
         then(result).should().next();

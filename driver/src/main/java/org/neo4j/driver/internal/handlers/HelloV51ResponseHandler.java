@@ -19,17 +19,22 @@
 package org.neo4j.driver.internal.handlers;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionReadTimeout;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAgent;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractServer;
 
 import io.netty.channel.Channel;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 public class HelloV51ResponseHandler implements ResponseHandler {
     private static final String CONNECTION_ID_METADATA_KEY = "connection_id";
+    public static final String CONFIGURATION_HINTS_KEY = "hints";
+    public static final String CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY = "connection.recv_timeout_seconds";
 
     private final Channel channel;
     private final CompletableFuture<Void> helloFuture;
@@ -48,6 +53,8 @@ public class HelloV51ResponseHandler implements ResponseHandler {
             var connectionId = extractConnectionId(metadata);
             setConnectionId(channel, connectionId);
 
+            processConfigurationHints(metadata);
+
             helloFuture.complete(null);
         } catch (Throwable error) {
             onFailure(error);
@@ -65,6 +72,16 @@ public class HelloV51ResponseHandler implements ResponseHandler {
         throw new UnsupportedOperationException();
     }
 
+    private void processConfigurationHints(Map<String, Value> metadata) {
+        var configurationHints = metadata.get(CONFIGURATION_HINTS_KEY);
+        if (configurationHints != null) {
+            getFromSupplierOrEmptyOnException(() -> configurationHints
+                            .get(CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY)
+                            .asLong())
+                    .ifPresent(timeout -> setConnectionReadTimeout(channel, timeout));
+        }
+    }
+
     private static String extractConnectionId(Map<String, Value> metadata) {
         var value = metadata.get(CONNECTION_ID_METADATA_KEY);
         if (value == null || value.isNull()) {
@@ -72,5 +89,13 @@ public class HelloV51ResponseHandler implements ResponseHandler {
                     + " from a response to HELLO message. " + "Received metadata: " + metadata);
         }
         return value.asString();
+    }
+
+    private static <T> Optional<T> getFromSupplierOrEmptyOnException(Supplier<T> supplier) {
+        try {
+            return Optional.of(supplier.get());
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 }

@@ -99,6 +99,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     private Throwable causeOfTermination;
     private CompletionStage<Void> terminationStage;
     private final NotificationConfig notificationConfig;
+    private final CompletableFuture<UnmanagedTransaction> beginFuture = new CompletableFuture<>();
     private final Logging logging;
 
     public UnmanagedTransaction(
@@ -128,9 +129,10 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         connection.bindTerminationAwareStateLockingExecutor(this);
     }
 
+    // flush = false is only supported for async mode with a single subsequent run
     public CompletionStage<UnmanagedTransaction> beginAsync(
-            Set<Bookmark> initialBookmarks, TransactionConfig config, String txType) {
-        return protocol.beginTransaction(connection, initialBookmarks, config, txType, notificationConfig, logging)
+            Set<Bookmark> initialBookmarks, TransactionConfig config, String txType, boolean flush) {
+        protocol.beginTransaction(connection, initialBookmarks, config, txType, notificationConfig, logging, flush)
                 .handle((ignore, beginError) -> {
                     if (beginError != null) {
                         if (beginError instanceof AuthorizationExpiredException) {
@@ -143,7 +145,9 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                         throw asCompletionException(beginError);
                     }
                     return this;
-                });
+                })
+                .whenComplete(futureCompletingConsumer(beginFuture));
+        return flush ? beginFuture : CompletableFuture.completedFuture(this);
     }
 
     public CompletionStage<Void> closeAsync() {
@@ -167,9 +171,9 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         var cursorStage = protocol.runInUnmanagedTransaction(connection, query, this, fetchSize)
                 .asyncResult();
         resultCursors.add(cursorStage);
-        return cursorStage
+        return beginFuture.thenCompose(ignored -> cursorStage
                 .thenCompose(AsyncResultCursor::mapSuccessfulRunCompletionAsync)
-                .thenApply(Function.identity());
+                .thenApply(Function.identity()));
     }
 
     public CompletionStage<RxResultCursor> runRx(Query query) {

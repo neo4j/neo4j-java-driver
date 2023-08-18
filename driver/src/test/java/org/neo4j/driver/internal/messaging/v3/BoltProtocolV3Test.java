@@ -195,7 +195,7 @@ public class BoltProtocolV3Test {
         var connection = connectionMock(protocol);
 
         var stage = protocol.beginTransaction(
-                connection, Collections.emptySet(), TransactionConfig.empty(), null, null, Logging.none());
+                connection, Collections.emptySet(), TransactionConfig.empty(), null, null, Logging.none(), true);
 
         verify(connection)
                 .writeAndFlush(
@@ -217,8 +217,8 @@ public class BoltProtocolV3Test {
         var connection = connectionMock(protocol);
         var bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx100"));
 
-        var stage =
-                protocol.beginTransaction(connection, bookmarks, TransactionConfig.empty(), null, null, Logging.none());
+        var stage = protocol.beginTransaction(
+                connection, bookmarks, TransactionConfig.empty(), null, null, Logging.none(), true);
 
         verify(connection)
                 .writeAndFlush(
@@ -239,7 +239,8 @@ public class BoltProtocolV3Test {
     void shouldBeginTransactionWithConfig() {
         var connection = connectionMock(protocol);
 
-        var stage = protocol.beginTransaction(connection, Collections.emptySet(), txConfig, null, null, Logging.none());
+        var stage = protocol.beginTransaction(
+                connection, Collections.emptySet(), txConfig, null, null, Logging.none(), true);
 
         verify(connection)
                 .writeAndFlush(
@@ -261,7 +262,7 @@ public class BoltProtocolV3Test {
         var connection = connectionMock(protocol);
         var bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx4242"));
 
-        var stage = protocol.beginTransaction(connection, bookmarks, txConfig, null, null, Logging.none());
+        var stage = protocol.beginTransaction(connection, bookmarks, txConfig, null, null, Logging.none(), true);
 
         verify(connection)
                 .writeAndFlush(
@@ -376,7 +377,8 @@ public class BoltProtocolV3Test {
                 TransactionConfig.empty(),
                 null,
                 null,
-                Logging.none());
+                Logging.none(),
+                true);
 
         var e = assertThrows(ClientException.class, () -> await(txStage));
         assertThat(e.getMessage(), startsWith("Database name parameter for selecting database is not supported"));
@@ -419,7 +421,8 @@ public class BoltProtocolV3Test {
                     TransactionConfig.empty(),
                     null,
                     null,
-                    Logging.none());
+                    Logging.none(),
+                    true);
             e = assertThrows(ClientException.class, () -> await(txStage));
         }
 

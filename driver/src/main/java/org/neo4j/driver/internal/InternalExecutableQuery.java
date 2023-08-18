@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Map;
 import java.util.stream.Collector;
+import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.ExecutableQuery;
 import org.neo4j.driver.Query;
@@ -30,6 +31,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.RoutingControl;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
+import org.neo4j.driver.TransactionConfig;
 
 public class InternalExecutableQuery implements ExecutableQuery {
     private final Driver driver;
@@ -67,7 +69,7 @@ public class InternalExecutableQuery implements ExecutableQuery {
         var supplier = recordCollector.supplier();
         var accumulator = recordCollector.accumulator();
         var finisher = recordCollector.finisher();
-        try (var session = driver.session(sessionConfigBuilder.build())) {
+        try (var session = (InternalSession) driver.session(sessionConfigBuilder.build())) {
             TransactionCallback<T> txCallback = tx -> {
                 var result = tx.run(query);
                 var container = supplier.get();
@@ -78,9 +80,8 @@ public class InternalExecutableQuery implements ExecutableQuery {
                 var summary = result.consume();
                 return resultFinisher.finish(result.keys(), finishedValue, summary);
             };
-            return config.routing().equals(RoutingControl.READ)
-                    ? session.executeRead(txCallback)
-                    : session.executeWrite(txCallback);
+            var accessMode = config.routing().equals(RoutingControl.WRITE) ? AccessMode.WRITE : AccessMode.READ;
+            return session.execute(accessMode, txCallback, TransactionConfig.empty(), false);
         }
     }
 
