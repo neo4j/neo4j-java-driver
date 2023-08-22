@@ -568,4 +568,33 @@
         <method>org.neo4j.driver.AuthTokenAndExpiration expiringAt(long)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/AuthTokenManager</className>
+        <differenceType>7012</differenceType>
+        <method>boolean handleSecurityException(org.neo4j.driver.AuthToken, org.neo4j.driver.exceptions.SecurityException)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/AuthTokenManager</className>
+        <differenceType>7002</differenceType>
+        <method>void onExpired(org.neo4j.driver.AuthToken)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/AuthTokenManagers</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.AuthTokenManager expirationBased(java.util.function.Supplier)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/AuthTokenManagers</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.AuthTokenManager expirationBasedAsync(java.util.function.Supplier)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/exceptions/TokenExpiredRetryableException</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
 </differences>

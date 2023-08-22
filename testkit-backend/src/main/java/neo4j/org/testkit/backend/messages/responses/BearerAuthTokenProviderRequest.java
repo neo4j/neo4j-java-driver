@@ -23,17 +23,23 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class ExpirationBasedAuthTokenManager implements TestkitResponse {
-    private ExpirationBasedTokenManagerBody data;
+public class BearerAuthTokenProviderRequest implements TestkitCallback {
+    private BearerAuthTokenProviderRequestBody data;
+
+    @Override
+    public String getCallbackId() {
+        return data.getId();
+    }
 
     @Override
     public String testkitName() {
-        return "ExpirationBasedAuthTokenManager";
+        return "BearerAuthTokenProviderRequest";
     }
 
     @Getter
     @Builder
-    public static class ExpirationBasedTokenManagerBody {
+    public static class BearerAuthTokenProviderRequestBody {
         private String id;
+        private String bearerAuthTokenManagerId;
     }
 }

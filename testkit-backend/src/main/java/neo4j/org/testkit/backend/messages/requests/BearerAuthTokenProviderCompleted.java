@@ -16,32 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend.messages.responses;
+package neo4j.org.testkit.backend.messages.requests;
 
-import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
+@Setter
 @Getter
-@Builder
-public class DriverError implements TestkitResponse {
-    private DriverErrorBody data;
+public class BearerAuthTokenProviderCompleted implements TestkitCallbackResult {
+    private BearerAuthTokenProviderCompletedBody data;
 
     @Override
-    public String testkitName() {
-        return "DriverError";
+    public String getCallbackId() {
+        return data.getRequestId();
     }
 
+    @Setter
     @Getter
-    @Builder
-    public static class DriverErrorBody {
-        private String id;
-
-        private String errorType;
-
-        private String code;
-
-        private String msg;
-
-        private boolean retryable;
+    public static class BearerAuthTokenProviderCompletedBody {
+        private String requestId;
+        private AuthTokenAndExpiration auth;
     }
 }

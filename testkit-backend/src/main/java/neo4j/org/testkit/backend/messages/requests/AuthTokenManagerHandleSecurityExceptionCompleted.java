@@ -18,29 +18,23 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
-import lombok.Builder;
 import lombok.Getter;
-import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
+import lombok.Setter;
 
+@Setter
 @Getter
-@Builder
-public class ExpirationBasedAuthTokenProviderRequest implements TestkitCallback {
-    private ExpirationBasedAuthTokenProviderRequestBody data;
+public class AuthTokenManagerHandleSecurityExceptionCompleted implements TestkitCallbackResult {
+    private AuthTokenManagerHandleSecurityExceptionCompletedBody data;
 
     @Override
     public String getCallbackId() {
-        return data.getId();
+        return data.getRequestId();
     }
 
-    @Override
-    public String testkitName() {
-        return "ExpirationBasedAuthTokenProviderRequest";
-    }
-
+    @Setter
     @Getter
-    @Builder
-    public static class ExpirationBasedAuthTokenProviderRequestBody {
-        private String id;
-        private String expirationBasedAuthTokenManagerId;
+    public static class AuthTokenManagerHandleSecurityExceptionCompletedBody {
+        private String requestId;
+        private boolean handled;
     }
 }

@@ -36,13 +36,13 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.SecurityException;
+import org.neo4j.driver.exceptions.SecurityRetryableException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
-import org.neo4j.driver.exceptions.TokenExpiredRetryableException;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.logging.ChannelErrorLogger;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
-import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
 
@@ -120,20 +120,26 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         }
 
         var currentError = this.currentError;
-        if (currentError instanceof AuthorizationExpiredException) {
-            authorizationStateListener(channel).onExpired();
-        } else if (currentError instanceof TokenExpiredException tokenExpiredException) {
-            var authContext = authContext(channel);
-            var authTokenProvider = authContext.getAuthTokenManager();
-            if (!(authTokenProvider instanceof StaticAuthTokenManager)) {
-                currentError = new TokenExpiredRetryableException(
-                        tokenExpiredException.code(), tokenExpiredException.getMessage());
+        var sendReset = true;
+
+        if (currentError instanceof SecurityException securityException) {
+            if (securityException instanceof AuthorizationExpiredException) {
+                authorizationStateListener(channel).onExpired();
+                sendReset = false;
+            } else if (securityException instanceof TokenExpiredException) {
+                sendReset = false;
             }
+            var authContext = authContext(channel);
+            var authTokenManager = authContext.getAuthTokenManager();
             var authToken = authContext.getAuthToken();
             if (authToken != null && authContext.isManaged()) {
-                authTokenProvider.onExpired(authToken);
+                if (authTokenManager.handleSecurityException(authToken, securityException)) {
+                    currentError = new SecurityRetryableException(securityException);
+                }
             }
-        } else {
+        }
+
+        if (sendReset) {
             // write a RESET to "acknowledge" the failure
             enqueue(new ResetResponseHandler(this));
             channel.writeAndFlush(RESET, channel.voidPromise());

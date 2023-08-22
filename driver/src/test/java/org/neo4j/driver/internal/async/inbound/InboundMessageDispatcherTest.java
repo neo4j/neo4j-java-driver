@@ -64,8 +64,8 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
-import org.neo4j.driver.exceptions.TokenExpiredRetryableException;
 import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.logging.ChannelErrorLogger;
@@ -111,7 +111,15 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldDequeHandlerOnFailure() {
-        var dispatcher = newDispatcher();
+        var channel = new EmbeddedChannel();
+        var authToken = AuthTokens.basic("username", "password");
+        var authTokenManager = spy(new StaticAuthTokenManager(authToken));
+        var authContext = mock(AuthContext.class);
+        given(authContext.isManaged()).willReturn(true);
+        given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
+        given(authContext.getAuthToken()).willReturn(authToken);
+        setAuthContext(channel, authContext);
+        var dispatcher = newDispatcher(channel);
 
         var handler = mock(ResponseHandler.class);
         dispatcher.enqueue(handler);
@@ -128,7 +136,14 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldSendResetOnFailure() {
-        var channel = newChannelMock();
+        var channel = spy(new EmbeddedChannel());
+        var authToken = AuthTokens.basic("username", "password");
+        var authTokenManager = spy(new StaticAuthTokenManager(authToken));
+        var authContext = mock(AuthContext.class);
+        given(authContext.isManaged()).willReturn(true);
+        given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
+        given(authContext.getAuthToken()).willReturn(authToken);
+        setAuthContext(channel, authContext);
         var dispatcher = newDispatcher(channel);
 
         dispatcher.enqueue(mock(ResponseHandler.class));
@@ -141,7 +156,15 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldClearFailureOnSuccessOfResetAfterFailure() {
-        var dispatcher = newDispatcher();
+        var channel = new EmbeddedChannel();
+        var authToken = AuthTokens.basic("username", "password");
+        var authTokenManager = spy(new StaticAuthTokenManager(authToken));
+        var authContext = mock(AuthContext.class);
+        given(authContext.isManaged()).willReturn(true);
+        given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
+        given(authContext.getAuthToken()).willReturn(authToken);
+        setAuthContext(channel, authContext);
+        var dispatcher = newDispatcher(channel);
 
         dispatcher.enqueue(mock(ResponseHandler.class));
         assertEquals(1, dispatcher.queuedHandlersCount());
@@ -239,7 +262,15 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldFailHandlerOnIgnoredMessageWithExistingError() {
-        var dispatcher = newDispatcher();
+        var channel = new EmbeddedChannel();
+        var authToken = AuthTokens.basic("username", "password");
+        var authTokenManager = spy(new StaticAuthTokenManager(authToken));
+        var authContext = mock(AuthContext.class);
+        given(authContext.isManaged()).willReturn(true);
+        given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
+        given(authContext.getAuthToken()).willReturn(authToken);
+        setAuthContext(channel, authContext);
+        var dispatcher = newDispatcher(channel);
         var handler1 = mock(ResponseHandler.class);
         var handler2 = mock(ResponseHandler.class);
 
@@ -267,7 +298,15 @@ class InboundMessageDispatcherTest {
 
     @Test
     void shouldDequeAndFailHandlerOnIgnoredWhenErrorHappened() {
-        var dispatcher = newDispatcher();
+        var channel = new EmbeddedChannel();
+        var authToken = AuthTokens.basic("username", "password");
+        var authTokenManager = spy(new StaticAuthTokenManager(authToken));
+        var authContext = mock(AuthContext.class);
+        given(authContext.isManaged()).willReturn(true);
+        given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
+        given(authContext.getAuthToken()).willReturn(authToken);
+        setAuthContext(channel, authContext);
+        var dispatcher = newDispatcher(channel);
         var handler1 = mock(ResponseHandler.class);
         var handler2 = mock(ResponseHandler.class);
 
@@ -366,7 +405,14 @@ class InboundMessageDispatcherTest {
     @ValueSource(classes = {SuccessMessage.class, FailureMessage.class, RecordMessage.class, IgnoredMessage.class})
     void shouldCreateChannelActivityLoggerAndLogDebugMessageOnMessageHandling(Class<? extends Message> message) {
         // GIVEN
-        var channel = newChannelMock();
+        var channel = new EmbeddedChannel();
+        var authToken = AuthTokens.basic("username", "password");
+        var authTokenManager = spy(new StaticAuthTokenManager(authToken));
+        var authContext = mock(AuthContext.class);
+        given(authContext.isManaged()).willReturn(true);
+        given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
+        given(authContext.getAuthToken()).willReturn(authToken);
+        setAuthContext(channel, authContext);
         var logging = mock(Logging.class);
         var logger = mock(Logger.class);
         when(logger.isDebugEnabled()).thenReturn(true);
@@ -460,10 +506,11 @@ class InboundMessageDispatcherTest {
 
         // then
         assertEquals(0, dispatcher.queuedHandlersCount());
-        verifyFailure(handler, code, message, TokenExpiredRetryableException.class);
+        verifyFailure(handler, code, message, TokenExpiredException.class);
         assertEquals(code, ((Neo4jException) dispatcher.currentError()).code());
         assertEquals(message, dispatcher.currentError().getMessage());
-        then(authTokenManager).should().onExpired(authToken);
+        then(authTokenManager).should().handleSecurityException(authToken, (SecurityException)
+                dispatcher.currentError());
     }
 
     @Test
@@ -491,7 +538,8 @@ class InboundMessageDispatcherTest {
         verifyFailure(handler, code, message, TokenExpiredException.class);
         assertEquals(code, ((Neo4jException) dispatcher.currentError()).code());
         assertEquals(message, dispatcher.currentError().getMessage());
-        then(authTokenManager).should().onExpired(authToken);
+        then(authTokenManager).should().handleSecurityException(authToken, (SecurityException)
+                dispatcher.currentError());
     }
 
     private static void verifyFailure(ResponseHandler handler) {

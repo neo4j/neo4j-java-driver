@@ -22,5 +22,6 @@ package org.neo4j.driver.exceptions;
  * A marker interface for retryable exceptions.
  * <p>
  * This indicates whether an operation that resulted in retryable exception is worth retrying.
+ * @since 5.0
  */
 public interface RetryableException {}

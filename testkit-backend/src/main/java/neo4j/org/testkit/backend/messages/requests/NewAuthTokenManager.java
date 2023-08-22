@@ -26,11 +26,12 @@ import neo4j.org.testkit.backend.AuthTokenUtil;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.AuthTokenManager;
 import neo4j.org.testkit.backend.messages.responses.AuthTokenManagerGetAuthRequest;
-import neo4j.org.testkit.backend.messages.responses.AuthTokenManagerOnAuthExpiredRequest;
-import neo4j.org.testkit.backend.messages.responses.AuthTokenManagerOnAuthExpiredRequest.AuthTokenManagerOnAuthExpiredRequestBody;
+import neo4j.org.testkit.backend.messages.responses.AuthTokenManagerHandleSecurityExceptionRequest;
+import neo4j.org.testkit.backend.messages.responses.AuthTokenManagerHandleSecurityExceptionRequest.AuthTokenManagerHandleSecurityExceptionRequestBody;
 import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.exceptions.SecurityException;
 
 @Setter
 @Getter
@@ -74,23 +75,28 @@ public class NewAuthTokenManager extends AbstractBasicTestkitRequest {
         }
 
         @Override
-        public void onExpired(AuthToken authToken) {
+        public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
             var callbackId = testkitState.newId();
 
-            var callback = AuthTokenManagerOnAuthExpiredRequest.builder()
-                    .data(AuthTokenManagerOnAuthExpiredRequestBody.builder()
+            var callback = AuthTokenManagerHandleSecurityExceptionRequest.builder()
+                    .data(AuthTokenManagerHandleSecurityExceptionRequestBody.builder()
                             .id(callbackId)
                             .authTokenManagerId(authProviderId)
                             .auth(AuthTokenUtil.parseAuthToken(authToken))
+                            .errorCode(exception.code())
                             .build())
                     .build();
 
             var callbackStage = dispatchTestkitCallback(testkitState, callback);
             try {
-                callbackStage.toCompletableFuture().get();
+                var response = callbackStage.toCompletableFuture().get();
+                if (response instanceof AuthTokenManagerHandleSecurityExceptionCompleted authComplete) {
+                    return authComplete.getData().isHandled();
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Unexpected failure during Testkit callback", e);
             }
+            return false;
         }
 
         private CompletionStage<TestkitCallbackResult> dispatchTestkitCallback(

@@ -38,6 +38,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.exceptions.RetryableException;
 import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
@@ -116,6 +117,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                             .errorType(e.getClass().getName())
                             .code(e.code())
                             .msg(e.getMessage())
+                            .retryable(e instanceof RetryableException)
                             .build())
                     .build();
         } else if (isConnectionPoolClosedException(throwable)

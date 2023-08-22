@@ -68,7 +68,8 @@ public class GetFeatures implements TestkitRequest {
             "Backend:MockTime",
             "Feature:API:Session:AuthConfig",
             "Feature:Auth:Managed",
-            "Feature:API:Driver.SupportsSessionAuth"));
+            "Feature:API:Driver.SupportsSessionAuth",
+            "Feature:API:RetryableExceptions"));
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:3.0",

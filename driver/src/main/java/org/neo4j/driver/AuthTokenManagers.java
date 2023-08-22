@@ -18,11 +18,17 @@
  */
 package org.neo4j.driver;
 
+import static java.util.Objects.requireNonNull;
+
 import java.time.Clock;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
+import org.neo4j.driver.exceptions.AuthenticationException;
+import org.neo4j.driver.exceptions.SecurityException;
+import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.internal.security.ExpirationBasedAuthTokenManager;
 import org.neo4j.driver.util.Preview;
 
@@ -36,13 +42,55 @@ public final class AuthTokenManagers {
     private AuthTokenManagers() {}
 
     /**
-     * Returns an {@link AuthTokenManager} that manages {@link AuthToken} instances with UTC expiration timestamp.
+     * Returns an {@link AuthTokenManager} that manages basic {@link AuthToken} instances.
+     * <p>
+     * The implementation will only use the token supplier when it needs a new token instance, which would happen if
+     * the server rejects the current token with {@link AuthenticationException} (see
+     * {@link AuthTokenManager#handleSecurityException(AuthToken, SecurityException)}).
+     * The provided supplier and its completion stages must be non-blocking as documented in the
+     * {@link AuthTokenManager}.
+     *
+     * @param newTokenSupplier a new token stage supplier
+     * @return a new token manager
+     * @since 5.12
+     */
+    public static AuthTokenManager basic(Supplier<AuthToken> newTokenSupplier) {
+        requireNonNull(newTokenSupplier, "newTokenSupplier must not be null");
+        return basicAsync(() -> CompletableFuture.supplyAsync(newTokenSupplier));
+    }
+
+    /**
+     * Returns an {@link AuthTokenManager} that manages basic {@link AuthToken} instances.
+     * <p>
+     * The implementation will only use the token supplier when it needs a new token instance, which would happen if
+     * the server rejects the current token with {@link AuthenticationException} (see
+     * {@link AuthTokenManager#handleSecurityException(AuthToken, SecurityException)}).
+     * The provided supplier and its completion stages must be non-blocking as documented in the
+     * {@link AuthTokenManager}.
+     *
+     * @param newTokenStageSupplier a new token stage supplier
+     * @return a new token manager
+     * @since 5.12
+     */
+    public static AuthTokenManager basicAsync(Supplier<CompletionStage<AuthToken>> newTokenStageSupplier) {
+        requireNonNull(newTokenStageSupplier, "newTokenStageSupplier must not be null");
+        return new ExpirationBasedAuthTokenManager(
+                () -> newTokenStageSupplier.get().thenApply(authToken -> authToken.expiringAt(Long.MAX_VALUE)),
+                Set.of(AuthenticationException.class),
+                Clock.systemUTC());
+    }
+
+    /**
+     * Returns an {@link AuthTokenManager} that manages bearer {@link AuthToken} instances with UTC expiration
+     * timestamp.
      * <p>
      * The implementation will only use the token supplier when it needs a new token instance. This includes the
      * following conditions:
      * <ol>
      *     <li>token's UTC timestamp is expired</li>
-     *     <li>server rejects the current token (see {@link AuthTokenManager#onExpired(AuthToken)})</li>
+     *     <li>server rejects the current token with either {@link TokenExpiredException} or
+     *     {@link AuthenticationException} (see
+     *     {@link AuthTokenManager#handleSecurityException(AuthToken, SecurityException)})</li>
      * </ol>
      * <p>
      * The supplier will be called by a task running in the {@link ForkJoinPool#commonPool()} as documented in the
@@ -50,28 +98,38 @@ public final class AuthTokenManagers {
      *
      * @param newTokenSupplier a new token supplier
      * @return a new token manager
+     * @since 5.12
      */
-    public static AuthTokenManager expirationBased(Supplier<AuthTokenAndExpiration> newTokenSupplier) {
-        return expirationBasedAsync(() -> CompletableFuture.supplyAsync(newTokenSupplier));
+    public static AuthTokenManager bearer(Supplier<AuthTokenAndExpiration> newTokenSupplier) {
+        requireNonNull(newTokenSupplier, "newTokenSupplier must not be null");
+        return bearerAsync(() -> CompletableFuture.supplyAsync(newTokenSupplier));
     }
 
     /**
-     * Returns an {@link AuthTokenManager} that manages {@link AuthToken} instances with UTC expiration timestamp.
+     * Returns an {@link AuthTokenManager} that manages bearer {@link AuthToken} instances with UTC expiration
+     * timestamp.
      * <p>
      * The implementation will only use the token supplier when it needs a new token instance. This includes the
      * following conditions:
      * <ol>
      *     <li>token's UTC timestamp is expired</li>
-     *     <li>server rejects the current token (see {@link AuthTokenManager#onExpired(AuthToken)})</li>
+     *     <li>server rejects the current token with either {@link TokenExpiredException} or
+     *     {@link AuthenticationException} (see
+     *     {@link AuthTokenManager#handleSecurityException(AuthToken, SecurityException)})</li>
      * </ol>
      * <p>
      * The provided supplier and its completion stages must be non-blocking as documented in the {@link AuthTokenManager}.
      *
      * @param newTokenStageSupplier a new token stage supplier
      * @return a new token manager
+     * @since 5.12
      */
-    public static AuthTokenManager expirationBasedAsync(
+    public static AuthTokenManager bearerAsync(
             Supplier<CompletionStage<AuthTokenAndExpiration>> newTokenStageSupplier) {
-        return new ExpirationBasedAuthTokenManager(newTokenStageSupplier, Clock.systemUTC());
+        requireNonNull(newTokenStageSupplier, "newTokenStageSupplier must not be null");
+        return new ExpirationBasedAuthTokenManager(
+                newTokenStageSupplier,
+                Set.of(TokenExpiredException.class, AuthenticationException.class),
+                Clock.systemUTC());
     }
 }

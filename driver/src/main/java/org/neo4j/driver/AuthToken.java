@@ -36,14 +36,14 @@ public sealed interface AuthToken permits InternalAuthToken {
     /**
      * Returns a new instance of a type holding both the token and its UTC expiration timestamp.
      * <p>
-     * This is used by the expiration-based implementation of the {@link AuthTokenManager} supplied by the
+     * This is used by the bearer token implementation of the {@link AuthTokenManager} supplied by the
      * {@link AuthTokenManagers}.
      *
      * @param utcExpirationTimestamp the UTC expiration timestamp
      * @return a new instance of a type holding both the token and its UTC expiration timestamp
      * @since 5.8
-     * @see AuthTokenManagers#expirationBased(Supplier)
-     * @see AuthTokenManagers#expirationBasedAsync(Supplier)
+     * @see AuthTokenManagers#bearer(Supplier)
+     * @see AuthTokenManagers#bearerAsync(Supplier)
      */
     @Preview(name = "AuthToken rotation and session auth support")
     default AuthTokenAndExpiration expiringAt(long utcExpirationTimestamp) {

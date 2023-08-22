@@ -26,12 +26,12 @@ import org.neo4j.driver.util.Preview;
  * A container used by the expiration based {@link AuthTokenManager} implementation provided by the driver, it contains an
  * {@link AuthToken} and its UTC expiration timestamp.
  * <p>
- * This is used by the expiration-based implementation of the {@link AuthTokenManager} supplied by the
+ * This is used by the bearer token implementation of the {@link AuthTokenManager} supplied by the
  * {@link AuthTokenManagers}.
  *
  * @since 5.8
- * @see AuthTokenManagers#expirationBased(Supplier)
- * @see AuthTokenManagers#expirationBasedAsync(Supplier)
+ * @see AuthTokenManagers#bearer(Supplier)
+ * @see AuthTokenManagers#bearerAsync(Supplier)
  */
 @Preview(name = "AuthToken rotation and session auth support")
 public sealed interface AuthTokenAndExpiration permits InternalAuthTokenAndExpiration {

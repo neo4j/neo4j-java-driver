@@ -16,24 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend.messages.requests;
+package neo4j.org.testkit.backend.messages.responses;
 
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
-@Setter
 @Getter
-public class AuthTokenManagerOnAuthExpiredCompleted implements TestkitCallbackResult {
-    private AuthTokenManagerOnAuthExpiredCompletedBody data;
+@Builder
+public class BearerAuthTokenManager implements TestkitResponse {
+    private BearerAuthTokenManagerBody data;
 
     @Override
-    public String getCallbackId() {
-        return data.getRequestId();
+    public String testkitName() {
+        return "BearerAuthTokenManager";
     }
 
-    @Setter
     @Getter
-    public static class AuthTokenManagerOnAuthExpiredCompletedBody {
-        private String requestId;
+    @Builder
+    public static class BearerAuthTokenManagerBody {
+        private String id;
     }
 }

@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.concurrent.CompletionStage;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.messages.responses.NewExpirationBasedAuthTokenManager;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
@@ -65,10 +64,12 @@ import reactor.core.publisher.Mono;
     @JsonSubTypes.Type(BookmarkManagerClose.class),
     @JsonSubTypes.Type(ExecuteQuery.class),
     @JsonSubTypes.Type(NewAuthTokenManager.class),
-    @JsonSubTypes.Type(NewExpirationBasedAuthTokenManager.class),
+    @JsonSubTypes.Type(NewBearerAuthTokenManager.class),
+    @JsonSubTypes.Type(NewBasicAuthTokenManager.class),
     @JsonSubTypes.Type(AuthTokenManagerGetAuthCompleted.class),
-    @JsonSubTypes.Type(ExpirationBasedAuthTokenProviderCompleted.class),
-    @JsonSubTypes.Type(AuthTokenManagerOnAuthExpiredCompleted.class),
+    @JsonSubTypes.Type(BearerAuthTokenProviderCompleted.class),
+    @JsonSubTypes.Type(BasicAuthTokenProviderCompleted.class),
+    @JsonSubTypes.Type(AuthTokenManagerHandleSecurityExceptionCompleted.class),
     @JsonSubTypes.Type(AuthTokenManagerClose.class),
     @JsonSubTypes.Type(FakeTimeInstall.class),
     @JsonSubTypes.Type(FakeTimeTick.class),

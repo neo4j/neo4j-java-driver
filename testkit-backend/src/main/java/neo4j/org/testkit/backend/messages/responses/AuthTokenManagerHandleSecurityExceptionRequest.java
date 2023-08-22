@@ -20,28 +20,29 @@ package neo4j.org.testkit.backend.messages.responses;
 
 import lombok.Builder;
 import lombok.Getter;
+import neo4j.org.testkit.backend.messages.requests.AuthorizationToken;
 
 @Getter
 @Builder
-public class DriverError implements TestkitResponse {
-    private DriverErrorBody data;
+public class AuthTokenManagerHandleSecurityExceptionRequest implements TestkitCallback {
+    private AuthTokenManagerHandleSecurityExceptionRequestBody data;
 
     @Override
     public String testkitName() {
-        return "DriverError";
+        return "AuthTokenManagerOnAuthExpiredRequest";
+    }
+
+    @Override
+    public String getCallbackId() {
+        return data.getId();
     }
 
     @Getter
     @Builder
-    public static class DriverErrorBody {
+    public static class AuthTokenManagerHandleSecurityExceptionRequestBody {
         private String id;
-
-        private String errorType;
-
-        private String code;
-
-        private String msg;
-
-        private boolean retryable;
+        private String authTokenManagerId;
+        private AuthorizationToken auth;
+        private String errorCode;
     }
 }

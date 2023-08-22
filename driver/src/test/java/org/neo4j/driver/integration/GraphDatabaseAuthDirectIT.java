@@ -35,6 +35,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import reactor.core.publisher.Mono;
@@ -53,7 +54,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager);
                 var session = driver.session()) {
@@ -71,7 +74,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager);
                 var session = driver.session()) {
@@ -91,7 +96,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager);
                 var session = driver.session()) {
@@ -112,7 +119,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager);
                 var session = driver.session()) {
@@ -133,7 +142,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager);
                 var session = driver.session()) {
@@ -155,7 +166,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager);
                 var session = driver.session()) {
@@ -176,7 +189,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -197,7 +212,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -223,7 +240,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -253,7 +272,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -277,7 +298,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -306,7 +329,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(AsyncSession.class);
@@ -337,7 +362,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -357,7 +384,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -382,7 +411,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -411,7 +442,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -434,7 +467,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -462,7 +497,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(ReactiveSession.class);
@@ -492,7 +529,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);
@@ -512,7 +551,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);
@@ -537,7 +578,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);
@@ -566,7 +609,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);
@@ -589,7 +634,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);
@@ -617,7 +664,9 @@ class GraphDatabaseAuthDirectIT {
             }
 
             @Override
-            public void onExpired(AuthToken authToken) {}
+            public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
+                return false;
+            }
         };
         try (var driver = GraphDatabase.driver(neo4j.uri(), manager)) {
             var session = driver.session(org.neo4j.driver.reactivestreams.ReactiveSession.class);
