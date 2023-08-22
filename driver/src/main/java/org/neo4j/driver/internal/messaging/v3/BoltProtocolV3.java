@@ -137,7 +137,8 @@ public class BoltProtocolV3 implements BoltProtocol {
             TransactionConfig config,
             String txType,
             NotificationConfig notificationConfig,
-            Logging logging) {
+            Logging logging,
+            boolean flush) {
         var exception = verifyNotificationConfigSupported(notificationConfig);
         if (exception != null) {
             return CompletableFuture.failedStage(exception);
@@ -158,7 +159,12 @@ public class BoltProtocolV3 implements BoltProtocol {
                 txType,
                 notificationConfig,
                 logging);
-        connection.writeAndFlush(beginMessage, new BeginTxResponseHandler(beginTxFuture));
+        var handler = new BeginTxResponseHandler(beginTxFuture);
+        if (flush) {
+            connection.writeAndFlush(beginMessage, handler);
+        } else {
+            connection.write(beginMessage, handler);
+        }
         return beginTxFuture;
     }
 

@@ -193,7 +193,7 @@ public final class BoltProtocolV42Test {
         var connection = connectionMock(protocol);
 
         var stage = protocol.beginTransaction(
-                connection, Collections.emptySet(), TransactionConfig.empty(), null, null, Logging.none());
+                connection, Collections.emptySet(), TransactionConfig.empty(), null, null, Logging.none(), true);
 
         verify(connection)
                 .writeAndFlush(
@@ -215,8 +215,8 @@ public final class BoltProtocolV42Test {
         var connection = connectionMock(protocol);
         var bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx100"));
 
-        var stage =
-                protocol.beginTransaction(connection, bookmarks, TransactionConfig.empty(), null, null, Logging.none());
+        var stage = protocol.beginTransaction(
+                connection, bookmarks, TransactionConfig.empty(), null, null, Logging.none(), true);
 
         verify(connection)
                 .writeAndFlush(
@@ -237,7 +237,8 @@ public final class BoltProtocolV42Test {
     void shouldBeginTransactionWithConfig() {
         var connection = connectionMock(protocol);
 
-        var stage = protocol.beginTransaction(connection, Collections.emptySet(), txConfig, null, null, Logging.none());
+        var stage = protocol.beginTransaction(
+                connection, Collections.emptySet(), txConfig, null, null, Logging.none(), true);
 
         verify(connection)
                 .writeAndFlush(
@@ -259,7 +260,7 @@ public final class BoltProtocolV42Test {
         var connection = connectionMock(protocol);
         var bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx4242"));
 
-        var stage = protocol.beginTransaction(connection, bookmarks, txConfig, null, null, Logging.none());
+        var stage = protocol.beginTransaction(connection, bookmarks, txConfig, null, null, Logging.none(), true);
 
         verify(connection)
                 .writeAndFlush(
@@ -374,7 +375,8 @@ public final class BoltProtocolV42Test {
                 TransactionConfig.empty(),
                 null,
                 null,
-                Logging.none());
+                Logging.none(),
+                true);
 
         assertDoesNotThrow(() -> await(txStage));
     }
@@ -549,7 +551,7 @@ public final class BoltProtocolV42Test {
                     connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));
         } else {
             var txStage = protocol.beginTransaction(
-                    connection, Collections.emptySet(), TransactionConfig.empty(), null, null, Logging.none());
+                    connection, Collections.emptySet(), TransactionConfig.empty(), null, null, Logging.none(), true);
             await(txStage);
             verifyBeginInvoked(connection, Collections.emptySet(), TransactionConfig.empty(), database("foo"));
         }

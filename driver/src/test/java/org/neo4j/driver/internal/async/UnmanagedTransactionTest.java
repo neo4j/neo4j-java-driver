@@ -186,7 +186,7 @@ class UnmanagedTransactionTest {
         var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
-        var e = assertThrows(RuntimeException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null)));
+        var e = assertThrows(RuntimeException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null, true)));
 
         assertEquals(error, e);
         verify(connection).release();
@@ -200,7 +200,7 @@ class UnmanagedTransactionTest {
         var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
-        await(tx.beginAsync(bookmarks, txConfig, null));
+        await(tx.beginAsync(bookmarks, txConfig, null, true));
 
         verify(connection, never()).release();
     }
@@ -300,7 +300,7 @@ class UnmanagedTransactionTest {
         var txConfig = TransactionConfig.empty();
 
         var actualException = assertThrows(
-                AuthorizationExpiredException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null)));
+                AuthorizationExpiredException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null, true)));
 
         assertSame(exception, actualException);
         verify(connection).terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
@@ -315,7 +315,7 @@ class UnmanagedTransactionTest {
         var txConfig = TransactionConfig.empty();
 
         var actualException = assertThrows(
-                ConnectionReadTimeoutException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null)));
+                ConnectionReadTimeoutException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null, true)));
 
         assertSame(ConnectionReadTimeoutException.INSTANCE, actualException);
         verify(connection).terminateAndRelease(ConnectionReadTimeoutException.INSTANCE.getMessage());
@@ -492,7 +492,7 @@ class UnmanagedTransactionTest {
         given(boltProtocol.version()).willReturn(BoltProtocolV53.VERSION);
         var closureStage = new CompletableFuture<DatabaseBookmark>();
         var connection = connectionMock(boltProtocol);
-        given(boltProtocol.beginTransaction(eq(connection), any(), any(), any(), any(), any()))
+        given(boltProtocol.beginTransaction(eq(connection), any(), any(), any(), any(), any(), eq(true)))
                 .willReturn(completedFuture(null));
         given(boltProtocol.commitTransaction(connection)).willReturn(closureStage);
         given(boltProtocol.rollbackTransaction(connection)).willReturn(closureStage.thenApply(ignored -> null));
@@ -560,7 +560,7 @@ class UnmanagedTransactionTest {
 
     private static UnmanagedTransaction beginTx(Connection connection, Set<Bookmark> initialBookmarks) {
         var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
-        return await(tx.beginAsync(initialBookmarks, TransactionConfig.empty(), null));
+        return await(tx.beginAsync(initialBookmarks, TransactionConfig.empty(), null, true));
     }
 
     private static Connection connectionWithBegin(Consumer<ResponseHandler> beginBehaviour) {
