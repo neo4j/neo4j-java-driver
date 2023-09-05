@@ -42,10 +42,11 @@ import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 
-public class TestConnectionPool extends ConnectionPoolImpl {
+public class TestConnectionPool extends ConnectionPoolImpl<InetSocketAddress> {
     final Map<SocketAddress, ExtendedChannelPool> channelPoolsByAddress = new HashMap<>();
     private final NettyChannelTracker nettyChannelTracker;
 
+    @SuppressWarnings("unchecked")
     public TestConnectionPool(
             Bootstrap bootstrap,
             NettyChannelTracker nettyChannelTracker,
@@ -72,7 +73,7 @@ public class TestConnectionPool extends ConnectionPoolImpl {
     }
 
     @Override
-    ExtendedChannelPool newPool(SocketAddress address) {
+    ExtendedChannelPool newPool(InetSocketAddress address) {
         var channelPool = new ExtendedChannelPool() {
             private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
@@ -80,7 +81,7 @@ public class TestConnectionPool extends ConnectionPoolImpl {
             public CompletionStage<Channel> acquire(AuthToken overrideAuthToken) {
 
                 var channel = new EmbeddedChannelWithSocketAddress(address);
-                setServerAddress(channel, BoltServerAddress.from((InetSocketAddress) address));
+                setServerAddress(channel, BoltServerAddress.from(address));
                 setPoolId(channel, id());
 
                 var event = nettyChannelTracker.channelCreating(id());
@@ -133,29 +134,6 @@ public class TestConnectionPool extends ConnectionPoolImpl {
         @Override
         protected SocketAddress remoteAddress0() {
             return remoteAddress;
-        }
-    }
-
-    private static class EmbeddedSocketWithId extends SocketAddress {
-
-        private final String id;
-
-        public EmbeddedSocketWithId(String id) {
-            this.id = id;
-        }
-
-        @Override
-        public int hashCode() {
-            return id.hashCode();
-        }
-
-        public String id() {
-            return id;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            return id.equals(((EmbeddedSocketWithId) obj).id());
         }
     }
 

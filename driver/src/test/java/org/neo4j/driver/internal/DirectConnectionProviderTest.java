@@ -33,7 +33,9 @@ import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithDatabase;
 import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithMode;
 import static org.neo4j.driver.testutil.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.connectionPoolMock;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -55,7 +57,7 @@ class DirectConnectionProviderTest {
         var connection2 = mock(Connection.class);
 
         var pool = poolMock(address, connection1, connection2);
-        var provider = new DirectConnectionProvider(address, pool);
+        var provider = new DirectConnectionProvider<>(address, pool);
 
         var acquired1 = await(provider.acquireConnection(contextWithMode(READ)));
         assertThat(acquired1, instanceOf(DirectConnection.class));
@@ -71,7 +73,7 @@ class DirectConnectionProviderTest {
     void returnsCorrectAccessMode(AccessMode mode) {
         var address = BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress();
         var pool = poolMock(address, mock(Connection.class));
-        var provider = new DirectConnectionProvider(address, pool);
+        var provider = new DirectConnectionProvider<>(address, pool);
 
         var acquired = await(provider.acquireConnection(contextWithMode(mode)));
 
@@ -82,7 +84,7 @@ class DirectConnectionProviderTest {
     void closesPool() {
         var address = BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress();
         var pool = poolMock(address, mock(Connection.class));
-        var provider = new DirectConnectionProvider(address, pool);
+        var provider = new DirectConnectionProvider<>(address, pool);
 
         provider.close();
 
@@ -92,8 +94,9 @@ class DirectConnectionProviderTest {
     @Test
     void returnsCorrectAddress() {
         var address = new BoltServerAddress("server-1", 25000).toInetSocketAddress();
+        var connectionPool = connectionPoolMock();
 
-        var provider = new DirectConnectionProvider(address, mock(ConnectionPool.class));
+        var provider = new DirectConnectionProvider<>(address, connectionPool);
 
         assertEquals(address, provider.getAddress());
     }
@@ -104,7 +107,7 @@ class DirectConnectionProviderTest {
         var connection = mock(Connection.class);
 
         var pool = poolMock(address, connection);
-        var provider = new DirectConnectionProvider(address, pool);
+        var provider = new DirectConnectionProvider<>(address, pool);
 
         var acquired1 = await(provider.acquireConnection(contextWithMode(READ)));
         assertThat(acquired1, instanceOf(DirectConnection.class));
@@ -118,7 +121,7 @@ class DirectConnectionProviderTest {
     void shouldObtainDatabaseNameOnConnection(String databaseName) {
         var address = BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress();
         var pool = poolMock(address, mock(Connection.class));
-        var provider = new DirectConnectionProvider(address, pool);
+        var provider = new DirectConnectionProvider<>(address, pool);
 
         var acquired = await(provider.acquireConnection(contextWithDatabase(databaseName)));
 
@@ -130,7 +133,7 @@ class DirectConnectionProviderTest {
     void ensuresCompletedDatabaseNameBeforeAccessingValue(boolean completed) {
         var address = BoltServerAddress.LOCAL_DEFAULT.toInetSocketAddress();
         var pool = poolMock(address, mock(Connection.class));
-        var provider = new DirectConnectionProvider(address, pool);
+        var provider = new DirectConnectionProvider<>(address, pool);
         var context = mock(ConnectionContext.class);
         CompletableFuture<DatabaseName> databaseNameFuture = spy(
                 completed
@@ -149,7 +152,7 @@ class DirectConnectionProviderTest {
     }
 
     @SuppressWarnings("unchecked")
-    private static ConnectionPool poolMock(
+    private static ConnectionPool<InetSocketAddress> poolMock(
             SocketAddress address, Connection connection, Connection... otherConnections) {
         var pool = mock(ConnectionPool.class);
         CompletableFuture<Connection>[] otherConnectionFutures = Stream.of(otherConnections)

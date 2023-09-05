@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.MessageToMessageEncoder;
+import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +53,7 @@ public class MessageRecordingDriverFactory extends DriverFactory {
     }
 
     @Override
-    protected ChannelConnector createNetworkConnector(
+    protected ChannelConnector<InetSocketAddress> createNetworkConnector(
             ConnectionSettings settings,
             SecurityPlan securityPlan,
             Config config,

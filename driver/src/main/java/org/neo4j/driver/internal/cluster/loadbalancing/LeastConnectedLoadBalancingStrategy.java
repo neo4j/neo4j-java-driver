@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -33,10 +34,10 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
     private final RoundRobinArrayIndex readersIndex = new RoundRobinArrayIndex();
     private final RoundRobinArrayIndex writersIndex = new RoundRobinArrayIndex();
 
-    private final ConnectionPool connectionPool;
+    private final ConnectionPool<InetSocketAddress> connectionPool;
     private final Logger log;
 
-    public LeastConnectedLoadBalancingStrategy(ConnectionPool connectionPool, Logging logging) {
+    public LeastConnectedLoadBalancingStrategy(ConnectionPool<InetSocketAddress> connectionPool, Logging logging) {
         this.connectionPool = connectionPool;
         this.log = logging.getLog(getClass());
     }

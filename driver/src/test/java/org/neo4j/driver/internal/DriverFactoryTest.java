@@ -44,6 +44,7 @@ import static org.neo4j.driver.internal.util.Matchers.directDriver;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutorGroup;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.time.Clock;
@@ -260,7 +261,8 @@ class DriverFactoryTest {
         return driverFactory.newInstance(URI.create(uri), new StaticAuthTokenManager(auth), config);
     }
 
-    private static ConnectionPool connectionPoolMock() {
+    @SuppressWarnings("unchecked")
+    private static ConnectionPool<InetSocketAddress> connectionPoolMock() {
         var pool = mock(ConnectionPool.class);
         var connection = mock(Connection.class);
         when(pool.acquire(any(SocketAddress.class), any(AuthToken.class))).thenReturn(completedFuture(connection));
@@ -269,9 +271,9 @@ class DriverFactoryTest {
     }
 
     private static class ThrowingDriverFactory extends DriverFactory {
-        final ConnectionPool connectionPool;
+        final ConnectionPool<InetSocketAddress> connectionPool;
 
-        ThrowingDriverFactory(ConnectionPool connectionPool) {
+        ThrowingDriverFactory(ConnectionPool<InetSocketAddress> connectionPool) {
             this.connectionPool = connectionPool;
         }
 
@@ -288,7 +290,7 @@ class DriverFactoryTest {
         protected InternalDriver createRoutingDriver(
                 SecurityPlan securityPlan,
                 BoltServerAddress address,
-                ConnectionPool connectionPool,
+                ConnectionPool<InetSocketAddress> connectionPool,
                 EventExecutorGroup eventExecutorGroup,
                 RoutingSettings routingSettings,
                 RetryLogic retryLogic,
@@ -299,7 +301,7 @@ class DriverFactoryTest {
         }
 
         @Override
-        protected ConnectionPool createConnectionPool(
+        protected ConnectionPool<InetSocketAddress> createConnectionPool(
                 AuthTokenManager authTokenManager,
                 SecurityPlan securityPlan,
                 Bootstrap bootstrap,
@@ -328,7 +330,7 @@ class DriverFactoryTest {
         @Override
         protected LoadBalancer createLoadBalancer(
                 BoltServerAddress address,
-                ConnectionPool connectionPool,
+                ConnectionPool<InetSocketAddress> connectionPool,
                 EventExecutorGroup eventExecutorGroup,
                 Config config,
                 RoutingSettings routingSettings,
@@ -345,7 +347,7 @@ class DriverFactoryTest {
         }
 
         @Override
-        protected ConnectionPool createConnectionPool(
+        protected ConnectionPool<InetSocketAddress> createConnectionPool(
                 AuthTokenManager authTokenManager,
                 SecurityPlan securityPlan,
                 Bootstrap bootstrap,
@@ -370,7 +372,7 @@ class DriverFactoryTest {
         }
 
         @Override
-        protected ConnectionPool createConnectionPool(
+        protected ConnectionPool<InetSocketAddress> createConnectionPool(
                 AuthTokenManager authTokenManager,
                 SecurityPlan securityPlan,
                 Bootstrap bootstrap,

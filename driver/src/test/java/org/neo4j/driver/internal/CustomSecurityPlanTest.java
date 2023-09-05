@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import io.netty.bootstrap.Bootstrap;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,7 +71,7 @@ class CustomSecurityPlanTest {
         }
 
         @Override
-        protected ConnectionPool createConnectionPool(
+        protected ConnectionPool<InetSocketAddress> createConnectionPool(
                 AuthTokenManager authTokenManager,
                 SecurityPlan securityPlan,
                 Bootstrap bootstrap,

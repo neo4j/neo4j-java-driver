@@ -262,24 +262,20 @@ class RoutingTableAndConnectionPoolTest {
         // When
         acquireAndReleaseConnections(loadBalancer);
         var servers = routingTables.allServers();
-        BoltServerAddress openServer = null;
+        var openServer = servers.stream()
+                .filter(server -> connectionPool.isOpen(server.toInetSocketAddress()))
+                .findFirst();
 
-        for (BoltServerAddress server : servers) {
-            if (connectionPool.isOpen(server.toInetSocketAddress())) {
-                openServer = server;
-                return;
-            }
-        }
-
+        assertTrue(openServer.isPresent());
         assertNotNull(servers);
 
         // if we remove the open server from servers, then the connection pool should remove the server from the pool.
-        BOLT_ADDRESS_SERVERS.remove(openServer);
+        BOLT_ADDRESS_SERVERS.remove(openServer.get());
         // ensure rediscovery is necessary on subsequent interaction
         Arrays.stream(DATABASES).map(DatabaseNameUtil::database).forEach(routingTables::remove);
         acquireAndReleaseConnections(loadBalancer);
 
-        assertFalse(connectionPool.isOpen(openServer.toInetSocketAddress()));
+        assertFalse(connectionPool.isOpen(openServer.get().toInetSocketAddress()));
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -315,7 +311,7 @@ class RoutingTableAndConnectionPoolTest {
         assertThat(errors.size(), equalTo(0));
     }
 
-    private ConnectionPool newConnectionPool() {
+    private ConnectionPool<InetSocketAddress> newConnectionPool() {
         MetricsListener metrics = DevNullMetricsListener.INSTANCE;
         var poolSettings = new PoolSettings(10, 5000, -1, -1);
         var bootstrap = BootstrapFactory.newBootstrap(1);
@@ -325,12 +321,14 @@ class RoutingTableAndConnectionPoolTest {
         return new TestConnectionPool(bootstrap, channelTracker, poolSettings, metrics, logging, clock, true);
     }
 
-    private RoutingTableRegistryImpl newRoutingTables(ConnectionPool connectionPool, Rediscovery rediscovery) {
+    private RoutingTableRegistryImpl newRoutingTables(
+            ConnectionPool<InetSocketAddress> connectionPool, Rediscovery rediscovery) {
         return new RoutingTableRegistryImpl(
                 connectionPool, rediscovery, clock, logging, STALE_ROUTING_TABLE_PURGE_DELAY_MS);
     }
 
-    private LoadBalancer newLoadBalancer(ConnectionPool connectionPool, RoutingTableRegistry routingTables) {
+    private LoadBalancer newLoadBalancer(
+            ConnectionPool<InetSocketAddress> connectionPool, RoutingTableRegistry routingTables) {
         var rediscovery = mock(Rediscovery.class);
         return new LoadBalancer(
                 connectionPool,

@@ -44,6 +44,7 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
 import static org.neo4j.driver.testutil.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.connectionPoolMock;
 
 import java.time.Clock;
 import java.util.Arrays;
@@ -60,14 +61,13 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.ImmutableConnectionContext;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl.RoutingTableHandlerFactory;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 
 class RoutingTableRegistryImplTest {
     @Test
     void factoryShouldCreateARoutingTableWithSameDatabaseName() {
         var clock = Clock.systemUTC();
         var factory = new RoutingTableHandlerFactory(
-                mock(ConnectionPool.class),
+                connectionPoolMock(),
                 mock(RediscoveryImpl.class),
                 clock,
                 DEV_NULL_LOGGING,
@@ -201,7 +201,7 @@ class RoutingTableRegistryImplTest {
         // GIVEN
         var factory = mockedHandlerFactory();
         var clock = mock(Clock.class);
-        var connectionPool = mock(ConnectionPool.class);
+        var connectionPool = connectionPoolMock();
 
         // WHEN & THEN
         assertThrows(

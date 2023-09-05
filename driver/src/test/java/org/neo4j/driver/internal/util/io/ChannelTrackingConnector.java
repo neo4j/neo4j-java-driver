@@ -25,17 +25,17 @@ import java.net.SocketAddress;
 import java.util.List;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 
-public class ChannelTrackingConnector implements ChannelConnector {
-    private final ChannelConnector realConnector;
+public class ChannelTrackingConnector<T extends SocketAddress> implements ChannelConnector<T> {
+    private final ChannelConnector<T> realConnector;
     private final List<Channel> channels;
 
-    public ChannelTrackingConnector(ChannelConnector realConnector, List<Channel> channels) {
+    public ChannelTrackingConnector(ChannelConnector<T> realConnector, List<Channel> channels) {
         this.realConnector = realConnector;
         this.channels = channels;
     }
 
     @Override
-    public ChannelFuture connect(SocketAddress address, Bootstrap bootstrap) {
+    public ChannelFuture connect(T address, Bootstrap bootstrap) {
         var channelFuture = realConnector.connect(address, bootstrap);
         channels.add(channelFuture.channel());
         return channelFuture;

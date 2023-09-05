@@ -91,6 +91,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.testutil.TestUtil;
 
 class LoadBalancerTest {
     @ParameterizedTest
@@ -210,7 +211,7 @@ class LoadBalancerTest {
 
     @Test
     void shouldFailWithResolverError() throws Throwable {
-        var pool = mock(ConnectionPool.class);
+        ConnectionPool<InetSocketAddress> pool = newConnectionPoolMock();
         var rediscovery = mock(Rediscovery.class);
         when(rediscovery.resolve()).thenThrow(new RuntimeException("hi there"));
 
@@ -402,7 +403,7 @@ class LoadBalancerTest {
     @Test
     void shouldNotAcceptNullRediscovery() {
         // GIVEN
-        var connectionPool = mock(ConnectionPool.class);
+        ConnectionPool<InetSocketAddress> connectionPool = newConnectionPoolMock();
         var routingTables = mock(RoutingTableRegistry.class);
 
         // WHEN & THEN
@@ -429,7 +430,7 @@ class LoadBalancerTest {
 
     private static ConnectionPool<InetSocketAddress> newConnectionPoolMockWithFailures(
             Set<InetSocketAddress> unavailableAddresses, Function<SocketAddress, Throwable> errorAction) {
-        var pool = mock(ConnectionPool.class);
+        ConnectionPool<InetSocketAddress> pool = TestUtil.connectionPoolMock();
         when(pool.acquire(any(InetSocketAddress.class), any())).then(invocation -> {
             InetSocketAddress requestedAddress = invocation.getArgument(0);
             if (unavailableAddresses.contains(requestedAddress)) {
@@ -453,7 +454,8 @@ class LoadBalancerTest {
         return simple(true);
     }
 
-    private static LoadBalancer newLoadBalancer(ConnectionPool connectionPool, RoutingTable routingTable) {
+    private static LoadBalancer newLoadBalancer(
+            ConnectionPool<InetSocketAddress> connectionPool, RoutingTable routingTable) {
         // Used only in testing
         var routingTables = mock(RoutingTableRegistry.class);
         var handler = mock(RoutingTableHandler.class);
@@ -470,14 +472,17 @@ class LoadBalancerTest {
                 DEV_NULL_LOGGING);
     }
 
-    private static LoadBalancer newLoadBalancer(ConnectionPool connectionPool, Rediscovery rediscovery) {
+    private static LoadBalancer newLoadBalancer(
+            ConnectionPool<InetSocketAddress> connectionPool, Rediscovery rediscovery) {
         // Used only in testing
         var routingTables = mock(RoutingTableRegistry.class);
         return newLoadBalancer(connectionPool, routingTables, rediscovery);
     }
 
     private static LoadBalancer newLoadBalancer(
-            ConnectionPool connectionPool, RoutingTableRegistry routingTables, Rediscovery rediscovery) {
+            ConnectionPool<InetSocketAddress> connectionPool,
+            RoutingTableRegistry routingTables,
+            Rediscovery rediscovery) {
         // Used only in testing
         return new LoadBalancer(
                 connectionPool,

@@ -143,7 +143,7 @@ public class DriverFactory {
                 config.connectionAcquisitionTimeoutMillis(),
                 config.maxConnectionLifetimeMillis(),
                 config.idleTimeBeforeConnectionTest());
-        return new ConnectionPoolImpl(
+        return new ConnectionPoolImpl<>(
                 connector,
                 bootstrap,
                 poolSettings,
@@ -225,14 +225,14 @@ public class DriverFactory {
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected InternalDriver createDirectDriver(
+    protected <T extends SocketAddress> InternalDriver createDirectDriver(
             SecurityPlan securityPlan,
-            SocketAddress address,
-            ConnectionPool connectionPool,
+            T address,
+            ConnectionPool<T> connectionPool,
             RetryLogic retryLogic,
             MetricsProvider metricsProvider,
             Config config) {
-        ConnectionProvider connectionProvider = new DirectConnectionProvider(address, connectionPool);
+        ConnectionProvider connectionProvider = new DirectConnectionProvider<>(address, connectionPool);
         var sessionFactory = createSessionFactory(connectionProvider, retryLogic, config);
         var driver = createDriver(securityPlan, sessionFactory, metricsProvider, config);
         var log = config.logging().getLog(getClass());
@@ -248,7 +248,7 @@ public class DriverFactory {
     protected InternalDriver createRoutingDriver(
             SecurityPlan securityPlan,
             BoltServerAddress address,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             EventExecutorGroup eventExecutorGroup,
             RoutingSettings routingSettings,
             RetryLogic retryLogic,
@@ -281,7 +281,7 @@ public class DriverFactory {
      */
     protected LoadBalancer createLoadBalancer(
             BoltServerAddress address,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             EventExecutorGroup eventExecutorGroup,
             Config config,
             RoutingSettings routingSettings,
@@ -396,7 +396,7 @@ public class DriverFactory {
         }
     }
 
-    private static void closeConnectionPoolAndSuppressError(ConnectionPool connectionPool, Throwable mainError) {
+    private static void closeConnectionPoolAndSuppressError(ConnectionPool<?> connectionPool, Throwable mainError) {
         try {
             Futures.blockingGet(connectionPool.close());
         } catch (Throwable closeError) {

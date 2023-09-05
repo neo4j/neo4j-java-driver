@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.util.io;
 
+import java.net.InetSocketAddress;
 import java.time.Clock;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.BoltAgentUtil;
@@ -38,7 +39,7 @@ public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends Channe
     }
 
     @Override
-    protected ChannelConnector createRealConnector(
+    protected ChannelConnector<InetSocketAddress> createRealConnector(
             ConnectionSettings settings,
             SecurityPlan securityPlan,
             Config config,

@@ -49,7 +49,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler {
     public RoutingTableHandlerImpl(
             RoutingTable routingTable,
             Rediscovery rediscovery,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             RoutingTableRegistry routingTableRegistry,
             Logging logging,
             long routingTablePurgeDelayMs) {

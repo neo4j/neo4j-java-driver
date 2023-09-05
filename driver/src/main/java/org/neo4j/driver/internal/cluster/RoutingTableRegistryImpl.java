@@ -208,14 +208,14 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry {
     }
 
     static class RoutingTableHandlerFactory {
-        private final ConnectionPool connectionPool;
+        private final ConnectionPool<InetSocketAddress> connectionPool;
         private final Rediscovery rediscovery;
         private final Logging logging;
         private final Clock clock;
         private final long routingTablePurgeDelayMs;
 
         RoutingTableHandlerFactory(
-                ConnectionPool connectionPool,
+                ConnectionPool<InetSocketAddress> connectionPool,
                 Rediscovery rediscovery,
                 Clock clock,
                 Logging logging,

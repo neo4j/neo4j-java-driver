@@ -35,7 +35,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelHealthChecker;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
@@ -74,7 +73,7 @@ class NettyChannelPoolIT {
 
     private Bootstrap bootstrap;
     private NettyChannelTracker poolHandler;
-    private NettyChannelPool<SocketAddress> pool;
+    private NettyChannelPool<InetSocketAddress> pool;
 
     private static Object answer(InvocationOnMock a) {
         return ChannelHealthChecker.ACTIVE.isHealthy(a.getArgument(0));
@@ -188,11 +187,11 @@ class NettyChannelPoolIT {
         assertEquals(2, tracker.inUseChannelCount(neo4j.address().toInetSocketAddress()));
     }
 
-    private NettyChannelPool newPool(AuthTokenManager authTokenManager) {
+    private NettyChannelPool<InetSocketAddress> newPool(AuthTokenManager authTokenManager) {
         return newPool(authTokenManager, 100);
     }
 
-    private NettyChannelPool newPool(AuthTokenManager authTokenManager, int maxConnections) {
+    private NettyChannelPool<InetSocketAddress> newPool(AuthTokenManager authTokenManager, int maxConnections) {
         var settings = new ConnectionSettings(authTokenManager, "test", 5_000);
         var connector = new ChannelConnectorImpl(
                 settings,
@@ -205,7 +204,7 @@ class NettyChannelPoolIT {
                 BoltAgentUtil.VALUE);
         var nettyChannelHealthChecker = mock(NettyChannelHealthChecker.class);
         when(nettyChannelHealthChecker.isHealthy(any())).thenAnswer(NettyChannelPoolIT::answer);
-        return new NettyChannelPool(
+        return new NettyChannelPool<>(
                 new InetSocketAddress(neo4j.address().host(), neo4j.boltPort()),
                 connector,
                 bootstrap,
@@ -216,7 +215,7 @@ class NettyChannelPoolIT {
                 Clock.systemUTC());
     }
 
-    private static Channel acquire(NettyChannelPool<SocketAddress> pool) {
+    private static Channel acquire(NettyChannelPool<InetSocketAddress> pool) {
         return await(pool.acquire(null));
     }
 

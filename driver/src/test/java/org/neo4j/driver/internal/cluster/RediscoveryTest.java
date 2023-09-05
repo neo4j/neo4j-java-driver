@@ -46,6 +46,7 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.testutil.TestUtil.asOrderedSet;
 import static org.neo4j.driver.testutil.TestUtil.await;
+import static org.neo4j.driver.testutil.TestUtil.connectionPoolMock;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -531,7 +532,7 @@ class RediscoveryTest {
         given(address.getHostAddress()).willReturn("fe80:0:0:0:ce66:1564:db8q:94b6%6");
         given(domainNameResolver.resolve(initialRouter.host())).willReturn(new InetAddress[] {address});
         var table = routingTableMock(true);
-        var pool = mock(ConnectionPool.class);
+        var pool = connectionPoolMock();
         given(pool.acquire(any(), any()))
                 .willReturn(CompletableFuture.failedFuture(new ServiceUnavailableException("not available")));
         var logging = mock(Logging.class);
@@ -591,7 +592,7 @@ class RediscoveryTest {
     }
 
     private static ConnectionPool<InetSocketAddress> asyncConnectionPoolMock() {
-        var pool = mock(ConnectionPool.class);
+        var pool = connectionPoolMock();
         when(pool.acquire(any(InetSocketAddress.class), any())).then(invocation -> {
             InetSocketAddress address = invocation.getArgument(0);
             return completedFuture(asyncConnectionMock(BoltServerAddress.from(address)));

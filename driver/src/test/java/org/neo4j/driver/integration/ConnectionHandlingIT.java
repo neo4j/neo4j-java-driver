@@ -447,7 +447,7 @@ class ConnectionHandlingIT {
         MemorizingConnectionPool connectionPool;
 
         @Override
-        protected ConnectionPool createConnectionPool(
+        protected ConnectionPool<InetSocketAddress> createConnectionPool(
                 AuthTokenManager authTokenManager,
                 SecurityPlan securityPlan,
                 Bootstrap bootstrap,

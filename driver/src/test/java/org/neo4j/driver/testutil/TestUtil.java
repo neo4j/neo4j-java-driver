@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,6 +101,7 @@ import org.neo4j.driver.internal.messaging.v52.BoltProtocolV52;
 import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
@@ -606,5 +608,10 @@ public final class TestUtil {
         try (var oos = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()))) {
             return targetClass.cast(oos.readObject());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static ConnectionPool<InetSocketAddress> connectionPoolMock() {
+        return (ConnectionPool<InetSocketAddress>) mock(ConnectionPool.class);
     }
 }

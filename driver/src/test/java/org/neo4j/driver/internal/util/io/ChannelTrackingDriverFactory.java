@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.util.io;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +42,7 @@ import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
     private final List<Channel> channels = new CopyOnWriteArrayList<>();
     private final int eventLoopThreads;
-    private ConnectionPool pool;
+    private ConnectionPool<InetSocketAddress> pool;
 
     public ChannelTrackingDriverFactory(Clock clock) {
         this(0, clock);
@@ -58,7 +59,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
     }
 
     @Override
-    protected final ChannelConnector createNetworkConnector(
+    protected final ChannelConnector<InetSocketAddress> createNetworkConnector(
             ConnectionSettings settings,
             SecurityPlan securityPlan,
             Config config,
@@ -70,7 +71,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
     }
 
     @Override
-    protected final ConnectionPool createConnectionPool(
+    protected final ConnectionPool<InetSocketAddress> createConnectionPool(
             AuthTokenManager authTokenManager,
             SecurityPlan securityPlan,
             Bootstrap bootstrap,
@@ -83,7 +84,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
         return pool;
     }
 
-    protected ChannelConnector createRealConnector(
+    protected ChannelConnector<InetSocketAddress> createRealConnector(
             ConnectionSettings settings,
             SecurityPlan securityPlan,
             Config config,
@@ -92,8 +93,9 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock {
         return super.createNetworkConnector(settings, securityPlan, config, clock, routingContext, BoltAgentUtil.VALUE);
     }
 
-    private ChannelTrackingConnector createChannelTrackingConnector(ChannelConnector connector) {
-        return new ChannelTrackingConnector(connector, channels);
+    private ChannelTrackingConnector<InetSocketAddress> createChannelTrackingConnector(
+            ChannelConnector<InetSocketAddress> connector) {
+        return new ChannelTrackingConnector<>(connector, channels);
     }
 
     public List<Channel> channels() {

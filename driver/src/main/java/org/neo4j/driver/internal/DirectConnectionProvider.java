@@ -36,11 +36,11 @@ import org.neo4j.driver.internal.util.SessionAuthUtil;
 /**
  * Simple {@link ConnectionProvider connection provider} that obtains connections form the given pool only for the given address.
  */
-public class DirectConnectionProvider implements ConnectionProvider {
-    private final SocketAddress address;
-    private final ConnectionPool connectionPool;
+public class DirectConnectionProvider<T extends SocketAddress> implements ConnectionProvider {
+    private final T address;
+    private final ConnectionPool<T> connectionPool;
 
-    DirectConnectionProvider(SocketAddress address, ConnectionPool connectionPool) {
+    DirectConnectionProvider(T address, ConnectionPool<T> connectionPool) {
         this.address = address;
         this.connectionPool = connectionPool;
     }

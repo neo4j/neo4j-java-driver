@@ -49,7 +49,7 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
 import static org.neo4j.driver.testutil.TestUtil.asOrderedSet;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -66,6 +66,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.testutil.TestUtil;
 
 class RoutingTableHandlerTest {
     @Test
@@ -211,7 +212,7 @@ class RoutingTableHandlerTest {
     }
 
     private void testRediscoveryWhenStale(AccessMode mode) {
-        var connectionPool = mock(ConnectionPool.class);
+        var connectionPool = newConnectionPoolMock();
         when(connectionPool.acquire(LOCAL_DEFAULT.toInetSocketAddress(), null))
                 .thenReturn(completedFuture(mock(Connection.class)));
 
@@ -227,7 +228,7 @@ class RoutingTableHandlerTest {
     }
 
     private void testNoRediscoveryWhenNotStale(AccessMode staleMode, AccessMode notStaleMode) {
-        var connectionPool = mock(ConnectionPool.class);
+        var connectionPool = newConnectionPoolMock();
         when(connectionPool.acquire(LOCAL_DEFAULT.toInetSocketAddress(), null))
                 .thenReturn(completedFuture(mock(Connection.class)));
 
@@ -258,6 +259,7 @@ class RoutingTableHandlerTest {
         return mock(RoutingTableRegistry.class);
     }
 
+    @SuppressWarnings("unchecked")
     private static Rediscovery newRediscoveryMock() {
         Rediscovery rediscovery = mock(RediscoveryImpl.class);
         Set<BoltServerAddress> noServers = Collections.emptySet();
@@ -268,26 +270,27 @@ class RoutingTableHandlerTest {
         return rediscovery;
     }
 
-    private static ConnectionPool newConnectionPoolMock() {
+    private static ConnectionPool<InetSocketAddress> newConnectionPoolMock() {
         return newConnectionPoolMockWithFailures(emptySet());
     }
 
-    private static ConnectionPool newConnectionPoolMockWithFailures(Set<BoltServerAddress> unavailableAddresses) {
-        var pool = mock(ConnectionPool.class);
-        when(pool.acquire(any(SocketAddress.class), any())).then(invocation -> {
-            BoltServerAddress requestedAddress = invocation.getArgument(0);
+    private static ConnectionPool<InetSocketAddress> newConnectionPoolMockWithFailures(
+            Set<InetSocketAddress> unavailableAddresses) {
+        var pool = TestUtil.connectionPoolMock();
+        when(pool.acquire(any(InetSocketAddress.class), any())).then(invocation -> {
+            InetSocketAddress requestedAddress = invocation.getArgument(0);
             if (unavailableAddresses.contains(requestedAddress)) {
                 return Futures.failedFuture(new ServiceUnavailableException(requestedAddress + " is unavailable!"));
             }
             var connection = mock(Connection.class);
-            when(connection.serverAddress()).thenReturn(requestedAddress);
+            when(connection.serverAddress()).thenReturn(BoltServerAddress.from(requestedAddress));
             return completedFuture(connection);
         });
         return pool;
     }
 
     private static RoutingTableHandler newRoutingTableHandler(
-            RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool) {
+            RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool<InetSocketAddress> connectionPool) {
         return new RoutingTableHandlerImpl(
                 routingTable,
                 rediscovery,
@@ -300,7 +303,7 @@ class RoutingTableHandlerTest {
     private static RoutingTableHandler newRoutingTableHandler(
             RoutingTable routingTable,
             Rediscovery rediscovery,
-            ConnectionPool connectionPool,
+            ConnectionPool<InetSocketAddress> connectionPool,
             RoutingTableRegistry routingTableRegistry) {
         return new RoutingTableHandlerImpl(
                 routingTable,

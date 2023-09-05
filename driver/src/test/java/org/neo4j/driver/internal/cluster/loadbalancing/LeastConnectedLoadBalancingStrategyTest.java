@@ -30,7 +30,7 @@ import static org.mockito.MockitoAnnotations.openMocks;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +43,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 
 class LeastConnectedLoadBalancingStrategyTest {
     @Mock
-    private ConnectionPool connectionPool;
+    private ConnectionPool<InetSocketAddress> connectionPool;
 
     private LeastConnectedLoadBalancingStrategy strategy;
 
@@ -170,7 +170,7 @@ class LeastConnectedLoadBalancingStrategyTest {
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
-        when(connectionPool.inUseConnections(any(SocketAddress.class))).thenReturn(42);
+        when(connectionPool.inUseConnections(any(InetSocketAddress.class))).thenReturn(42);
 
         LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy(connectionPool, logging);
 

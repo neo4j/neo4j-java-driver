@@ -33,20 +33,19 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.util.FakeClock;
 
 class ConnectionPoolImplTest {
-    private static final SocketAddress ADDRESS_1 = new BoltServerAddress("server:1").toInetSocketAddress();
-    private static final SocketAddress ADDRESS_2 = new BoltServerAddress("server:2").toInetSocketAddress();
-    private static final SocketAddress ADDRESS_3 = new BoltServerAddress("server:3").toInetSocketAddress();
+    private static final InetSocketAddress ADDRESS_1 = new InetSocketAddress("server", 1);
+    private static final InetSocketAddress ADDRESS_2 = new InetSocketAddress("server", 2);
+    private static final InetSocketAddress ADDRESS_3 = new InetSocketAddress("server", 3);
 
     @Test
     void shouldDoNothingWhenRetainOnEmptyPool() {
