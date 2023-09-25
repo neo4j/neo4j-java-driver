@@ -174,10 +174,12 @@ public final class TransactionConfig implements Serializable {
          * Set the transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the database.
          * See also {@link #withDefaultTimeout}.
          * <p>
-         * This functionality allows to limit query/transaction execution time. Specified timeout overrides the default timeout configured in the database
-         * using {@code dbms.transaction.timeout} setting.
+         * This functionality allows to limit query/transaction execution time.
+         * The Specified timeout overrides the default timeout configured in the database using the {@code db.transaction.timeout} setting ({@code dbms.transaction.timeout} before Neo4j 5.0).
+         * Values higher than {@code db.transaction.timeout} will be ignored and will fall back to the default for server versions 4.2 to including 5.2.
          * <p>
-         * Provided value should not represent a negative duration.
+         * The provided value should not represent a negative duration.
+         * {@link Duration#ZERO} will make the transaction execute indefinitely.
          *
          * @param timeout the timeout.
          * @return this builder.
