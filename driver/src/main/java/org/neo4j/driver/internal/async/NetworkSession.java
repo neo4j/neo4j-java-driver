@@ -55,6 +55,7 @@ import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
+import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 
 public class NetworkSession {
@@ -76,6 +77,9 @@ public class NetworkSession {
     private volatile Set<Bookmark> lastReceivedBookmarks;
     private final NotificationConfig notificationConfig;
 
+    private final ApiTelemetryConfig autoCommitTelemetryConfig;
+    private final boolean telemetryDisabled;
+
     public NetworkSession(
             ConnectionProvider connectionProvider,
             RetryLogic retryLogic,
@@ -87,7 +91,8 @@ public class NetworkSession {
             Logging logging,
             BookmarkManager bookmarkManager,
             NotificationConfig notificationConfig,
-            AuthToken overrideAuthToken) {
+            AuthToken overrideAuthToken,
+            boolean telemetryDisabled) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         this.connectionProvider = connectionProvider;
@@ -105,6 +110,9 @@ public class NetworkSession {
                 databaseNameFuture, determineBookmarks(false), impersonatedUser, overrideAuthToken);
         this.fetchSize = fetchSize;
         this.notificationConfig = notificationConfig;
+        this.telemetryDisabled = telemetryDisabled;
+        this.autoCommitTelemetryConfig =
+                new ApiTelemetryConfig(TelemetryApi.AUTO_COMMIT_TRANSACTION, !telemetryDisabled);
     }
 
     public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config) {
@@ -142,7 +150,7 @@ public class NetworkSession {
         return beginTransactionAsync(mode, config, null, apiTelemetryConfig, true);
     }
 
-    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
+    public CompletionStage<UnmanagedTransaction> gbeginTransactionAsync(
             AccessMode mode,
             TransactionConfig config,
             String txType,
@@ -161,7 +169,7 @@ public class NetworkSession {
                             this::handleNewBookmark,
                             fetchSize,
                             notificationConfig,
-                            apiTelemetryConfig,
+                            apiTelemetryConfig.disabled(telemetryDisabled),
                             logging);
                     return tx.beginAsync(determineBookmarks(true), config, txType, flush);
                 });
@@ -271,6 +279,16 @@ public class NetworkSession {
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
                     try {
+                        if (connection.isTelemetryEnabled() && autoCommitTelemetryConfig.enabled()) {
+                            connection
+                                    .protocol()
+                                    .telemetry(
+                                            connection,
+                                            autoCommitTelemetryConfig
+                                                    .telemetryApi()
+                                                    .getValue())
+                                    .whenComplete((unused, throwable) -> {});
+                        }
                         var factory = connection
                                 .protocol()
                                 .runInAutoCommitTransaction(

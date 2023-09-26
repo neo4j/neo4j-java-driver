@@ -148,6 +148,13 @@ public final class Config implements Serializable {
      */
     private final MetricsAdapter metricsAdapter;
 
+    /**
+     * Specify if telemetry collection is disabled.
+     *
+     * By default, the driver will send anonymous usage statistics to the server it connects to if the server requests those.
+     */
+    private final boolean telemetryDisabled;
+
     private Config(ConfigBuilder builder) {
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
@@ -169,6 +176,7 @@ public final class Config implements Serializable {
 
         this.eventLoopThreads = builder.eventLoopThreads;
         this.metricsAdapter = builder.metricsAdapter;
+        this.telemetryDisabled = builder.telemetryDisabled;
     }
 
     /**
@@ -336,6 +344,16 @@ public final class Config implements Serializable {
     }
 
     /**
+     * Specify if telemetry collection is disabled.
+     * Metrics are only collected when enabled both in server and driver instances.
+     *
+     * @return  if the telemetry is disabled.
+     */
+    public boolean isTelemetryDisabled() {
+        return telemetryDisabled;
+    }
+
+    /**
      * Used to build new config instances
      */
     public static final class ConfigBuilder {
@@ -356,6 +374,8 @@ public final class Config implements Serializable {
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
+
+        private boolean telemetryDisabled = false;
 
         private ConfigBuilder() {}
 
@@ -745,6 +765,37 @@ public final class Config implements Serializable {
          */
         public ConfigBuilder withNotificationConfig(NotificationConfig notificationConfig) {
             this.notificationConfig = Objects.requireNonNull(notificationConfig, "notificationConfig must not be null");
+            return this;
+        }
+
+        /**
+         * Specify if telemetry collection is disabled.
+         *
+         * By default, the driver will send anonymous usage statistics to the server it connects to if the server requests those.
+         * By setting telemetryDisabled to true, the driver will not send any telemetry data.
+         *
+         * The driver transmits the following information:
+         *
+         * Every time one of the following APIs is used to execute a query (for the first time), the server is informed of this
+         * (without any further information like arguments, client identifiers, etc.):
+         *
+         * * {@link Driver#executableQuery(String)}
+         * * {@link Session#run(Query)}
+         * * {@link Session#beginTransaction()}
+         * * {@link Session#executeRead(TransactionCallback)}
+         * * {@link Session#executeWrite(TransactionCallback)}
+         * * {@link Session#writeTransaction(TransactionWork)}
+         * * {@link Session#readTransaction(TransactionWork)}
+         * * The reactive counterparts of methods above.
+         *
+         * Metrics are only collected when enabled both in server and driver instances.
+         *
+         * @param telemetryDisabled if telemetry is disabled
+         * @return this builder
+         * @since 5.13
+         */
+        public ConfigBuilder withTelemetryDisabled(boolean telemetryDisabled) {
+            this.telemetryDisabled = telemetryDisabled;
             return this;
         }
 

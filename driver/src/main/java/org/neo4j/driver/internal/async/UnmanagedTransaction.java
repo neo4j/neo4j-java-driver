@@ -146,8 +146,9 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     public CompletionStage<UnmanagedTransaction> beginAsync(
             Set<Bookmark> initialBookmarks, TransactionConfig config, String txType, boolean flush) {
 
-        if (apiTelemetryConfig.isEnabled()) {
-            protocol.telemetry(connection, apiTelemetryConfig.getTelemetryApi().getValue());
+        if (connection.isTelemetryEnabled() && apiTelemetryConfig.enabled()) {
+            protocol.telemetry(connection, apiTelemetryConfig.telemetryApi().getValue())
+                    .whenComplete((unused, throwable) -> {});
         }
         protocol.beginTransaction(connection, initialBookmarks, config, txType, notificationConfig, logging, flush)
                 .handle((ignore, beginError) -> {

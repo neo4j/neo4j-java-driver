@@ -266,7 +266,8 @@ public final class TestUtil {
                 DEV_NULL_LOGGING,
                 NoOpBookmarkManager.INSTANCE,
                 null,
-                null);
+                null,
+                true);
     }
 
     public static void verifyRunRx(Connection connection, String query) {

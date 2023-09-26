@@ -39,6 +39,8 @@ public interface Connection {
 
     void writeAndFlush(Message message, ResponseHandler handler);
 
+    boolean isTelemetryEnabled();
+
     CompletionStage<Void> reset(Throwable throwable);
 
     CompletionStage<Void> release();

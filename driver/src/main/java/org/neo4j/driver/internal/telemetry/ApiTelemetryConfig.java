@@ -18,50 +18,18 @@
  */
 package org.neo4j.driver.internal.telemetry;
 
-import java.util.Objects;
-
 /**
  * Holds the configuration of the Api Telemetry.
  */
-public class ApiTelemetryConfig {
-    private final TelemetryApi telemetryApi;
-    private final boolean enabled;
-
-    private ApiTelemetryConfig(TelemetryApi telemetryApi, boolean enabled) {
-        this.telemetryApi = telemetryApi;
-        this.enabled = enabled;
-    }
-
-    public TelemetryApi getTelemetryApi() {
-        return telemetryApi;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public static ApiTelemetryConfig disabled() {
-        return new ApiTelemetryConfig(TelemetryApi.MANAGED_TRANSACTION, false);
-    }
-
+public record ApiTelemetryConfig(TelemetryApi telemetryApi, boolean enabled) {
     public static ApiTelemetryConfig ofApi(TelemetryApi api) {
         return new ApiTelemetryConfig(api, true);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
+    public ApiTelemetryConfig disabled(boolean disabled) {
+        if (!disabled == this.enabled) {
+            return this;
         }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        ApiTelemetryConfig that = (ApiTelemetryConfig) o;
-        return enabled == that.enabled && telemetryApi == that.telemetryApi;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(telemetryApi, enabled);
+        return new ApiTelemetryConfig(telemetryApi, !disabled);
     }
 }

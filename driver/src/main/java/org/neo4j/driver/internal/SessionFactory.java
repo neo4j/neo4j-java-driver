@@ -24,7 +24,7 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.NetworkSession;
 
 public interface SessionFactory {
-    NetworkSession newInstance(SessionConfig sessionConfig, AuthToken overrideAuthToken);
+    NetworkSession newInstance(SessionConfig sessionConfig, AuthToken overrideAuthToken, boolean telemetryDisabled);
 
     CompletionStage<Void> verifyConnectivity();
 

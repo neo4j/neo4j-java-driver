@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.async;
 
 import static java.util.Collections.emptyMap;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.getTelemetryEnabled;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTerminationReason;
 import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
@@ -134,6 +135,11 @@ public class NetworkConnection implements Connection {
         if (verifyOpen(handler)) {
             writeMessageInEventLoop(message, handler, true);
         }
+    }
+
+    @Override
+    public boolean isTelemetryEnabled() {
+        return getTelemetryEnabled(channel);
     }
 
     @Override

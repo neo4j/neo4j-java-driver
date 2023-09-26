@@ -106,7 +106,8 @@ class LeakLoggingNetworkSessionTest {
                 logging,
                 mock(BookmarkManager.class),
                 null,
-                null);
+                null,
+                true);
     }
 
     private static ConnectionProvider connectionProviderMock(boolean openConnection) {

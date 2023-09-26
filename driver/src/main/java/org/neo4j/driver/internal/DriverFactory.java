@@ -269,7 +269,8 @@ public class DriverFactory {
      */
     protected InternalDriver createDriver(
             SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config) {
-        return new InternalDriver(securityPlan, sessionFactory, metricsProvider, config.logging());
+        return new InternalDriver(
+                securityPlan, sessionFactory, metricsProvider, config.isTelemetryDisabled(), config.logging());
     }
 
     /**

@@ -65,6 +65,8 @@ public class InternalDriver implements Driver {
     private final SessionFactory sessionFactory;
     private final Logger log;
 
+    private final boolean telemetryDisabled;
+
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final MetricsProvider metricsProvider;
 
@@ -72,11 +74,13 @@ public class InternalDriver implements Driver {
             SecurityPlan securityPlan,
             SessionFactory sessionFactory,
             MetricsProvider metricsProvider,
+            boolean telemetryDisabled,
             Logging logging) {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
         this.metricsProvider = metricsProvider;
         this.log = logging.getLog(getClass());
+        this.telemetryDisabled = telemetryDisabled;
     }
 
     @Override
@@ -215,7 +219,7 @@ public class InternalDriver implements Driver {
 
     public NetworkSession newSession(SessionConfig config, AuthToken overrideAuthToken) {
         assertOpen();
-        var session = sessionFactory.newInstance(config, overrideAuthToken);
+        var session = sessionFactory.newInstance(config, overrideAuthToken, telemetryDisabled);
         if (closed.get()) {
             // session does not immediately acquire connection, it is fine to just throw
             throw driverCloseException();

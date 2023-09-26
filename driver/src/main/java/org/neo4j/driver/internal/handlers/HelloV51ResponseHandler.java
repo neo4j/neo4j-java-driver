@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.handlers;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionReadTimeout;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAgent;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTelemetryEnabled;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractServer;
 
 import io.netty.channel.Channel;
@@ -35,6 +36,7 @@ public class HelloV51ResponseHandler implements ResponseHandler {
     private static final String CONNECTION_ID_METADATA_KEY = "connection_id";
     public static final String CONFIGURATION_HINTS_KEY = "hints";
     public static final String CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY = "connection.recv_timeout_seconds";
+    public static final String TELEMETRY_ENABLED_KEY = "telemetry.enabled";
 
     private final Channel channel;
     private final CompletableFuture<Void> helloFuture;
@@ -79,6 +81,10 @@ public class HelloV51ResponseHandler implements ResponseHandler {
                             .get(CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY)
                             .asLong())
                     .ifPresent(timeout -> setConnectionReadTimeout(channel, timeout));
+
+            getFromSupplierOrEmptyOnException(
+                            () -> configurationHints.get(TELEMETRY_ENABLED_KEY).asBoolean(false))
+                    .ifPresent(telemetryEnabled -> setTelemetryEnabled(channel, telemetryEnabled));
         }
     }
 
