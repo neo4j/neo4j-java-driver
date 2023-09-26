@@ -49,6 +49,7 @@ import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -76,7 +77,7 @@ class UnmanagedTransactionIT {
     }
 
     private UnmanagedTransaction beginTransaction(NetworkSession session) {
-        return await(session.beginTransactionAsync(TransactionConfig.empty()));
+        return await(session.beginTransactionAsync(TransactionConfig.empty(), ApiTelemetryConfig.disabled()));
     }
 
     private ResultCursor sessionRun(NetworkSession session, Query query) {
@@ -174,7 +175,7 @@ class UnmanagedTransactionIT {
         var e = assertThrows(TransactionTerminatedException.class, () -> await(tx1.commitAsync()));
         assertThat(e.getMessage(), startsWith("Transaction can't be committed"));
 
-        await(session.beginTransactionAsync(TransactionConfig.empty())
+        await(session.beginTransactionAsync(TransactionConfig.empty(), ApiTelemetryConfig.disabled())
                 .thenCompose(tx -> tx.runAsync(new Query("CREATE (:Node {id: 42})"))
                         .thenCompose(ResultCursor::consumeAsync)
                         .thenApply(ignore -> tx))

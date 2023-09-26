@@ -54,6 +54,7 @@ import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
 import org.neo4j.driver.internal.util.Futures;
 
 public class NetworkSession {
@@ -126,20 +127,27 @@ public class NetworkSession {
         return newResultCursorStage;
     }
 
-    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(TransactionConfig config) {
-        return beginTransactionAsync(mode, config, null, true);
-    }
-
-    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(TransactionConfig config, String txType) {
-        return this.beginTransactionAsync(mode, config, txType, true);
-    }
-
-    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(AccessMode mode, TransactionConfig config) {
-        return beginTransactionAsync(mode, config, null, true);
+    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
+            TransactionConfig config, ApiTelemetryConfig apiTelemetryConfig) {
+        return beginTransactionAsync(mode, config, null, apiTelemetryConfig, true);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
-            AccessMode mode, TransactionConfig config, String txType, boolean flush) {
+            TransactionConfig config, String txType, ApiTelemetryConfig apiTelemetryConfig) {
+        return this.beginTransactionAsync(mode, config, txType, apiTelemetryConfig, true);
+    }
+
+    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
+            AccessMode mode, TransactionConfig config, ApiTelemetryConfig apiTelemetryConfig) {
+        return beginTransactionAsync(mode, config, null, apiTelemetryConfig, true);
+    }
+
+    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
+            AccessMode mode,
+            TransactionConfig config,
+            String txType,
+            ApiTelemetryConfig apiTelemetryConfig,
+            boolean flush) {
         ensureSessionIsOpen();
 
         // create a chain that acquires connection and starts a transaction
@@ -149,7 +157,12 @@ public class NetworkSession {
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
                     var tx = new UnmanagedTransaction(
-                            connection, this::handleNewBookmark, fetchSize, notificationConfig, logging);
+                            connection,
+                            this::handleNewBookmark,
+                            fetchSize,
+                            notificationConfig,
+                            apiTelemetryConfig,
+                            logging);
                     return tx.beginAsync(determineBookmarks(true), config, txType, flush);
                 });
 

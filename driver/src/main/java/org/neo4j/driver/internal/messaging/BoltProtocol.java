@@ -50,6 +50,7 @@ import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
 import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
 import org.neo4j.driver.internal.messaging.v52.BoltProtocolV52;
 import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
+import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
 import org.neo4j.driver.internal.spi.Connection;
 
 public interface BoltProtocol {
@@ -122,6 +123,14 @@ public interface BoltProtocol {
      * @return a completion stage completed when transaction is rolled back or completed exceptionally when there was a failure.
      */
     CompletionStage<Void> rollbackTransaction(Connection connection);
+
+    /**
+     * Sends telemetry message to the server.
+     *
+     * @param api The api number.
+     * @return Promise of message be delivered
+     */
+    CompletionStage<Void> telemetry(Connection connection, Integer api);
 
     /**
      * Execute the given query in an auto-commit transaction, i.e. {@link Session#run(Query)}.
@@ -202,6 +211,8 @@ public interface BoltProtocol {
             return BoltProtocolV52.INSTANCE;
         } else if (BoltProtocolV53.VERSION.equals(version)) {
             return BoltProtocolV53.INSTANCE;
+        } else if (BoltProtocolV54.VERSION.equals(version)) {
+            return BoltProtocolV54.INSTANCE;
         }
         throw new ClientException("Unknown protocol version: " + version);
     }

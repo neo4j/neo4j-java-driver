@@ -49,6 +49,8 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionContext;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
+import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.summary.ResultSummary;
 
 class InternalExecutableQueryTest {
@@ -131,7 +133,12 @@ class InternalExecutableQueryTest {
         given(driver.session(any(SessionConfig.class))).willReturn(session);
         var txContext = mock(TransactionContext.class);
         var accessMode = routingControl.equals(RoutingControl.WRITE) ? AccessMode.WRITE : AccessMode.READ;
-        given(session.execute(eq(accessMode), any(), eq(TransactionConfig.empty()), eq(false)))
+        given(session.execute(
+                        eq(accessMode),
+                        any(),
+                        eq(TransactionConfig.empty()),
+                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.EXECUTABLE_QUERY)),
+                        eq(false)))
                 .willAnswer(answer -> {
                     TransactionCallback<?> txCallback = answer.getArgument(1);
                     return txCallback.execute(txContext);
@@ -181,7 +188,14 @@ class InternalExecutableQueryTest {
                 .withBookmarkManager(bookmarkManager)
                 .build();
         assertEquals(expectedSessionConfig, sessionConfig);
-        then(session).should().execute(eq(accessMode), any(), eq(TransactionConfig.empty()), eq(false));
+        then(session)
+                .should()
+                .execute(
+                        eq(accessMode),
+                        any(),
+                        eq(TransactionConfig.empty()),
+                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.EXECUTABLE_QUERY)),
+                        eq(false));
         then(txContext).should().run(query.withParameters(params));
         then(result).should(times(2)).hasNext();
         then(result).should().next();

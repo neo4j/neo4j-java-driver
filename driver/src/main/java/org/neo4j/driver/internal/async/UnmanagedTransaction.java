@@ -51,6 +51,7 @@ import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
 
 public class UnmanagedTransaction implements TerminationAwareStateLockingExecutor {
     private enum State {
@@ -102,13 +103,23 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     private final CompletableFuture<UnmanagedTransaction> beginFuture = new CompletableFuture<>();
     private final Logging logging;
 
+    private final ApiTelemetryConfig apiTelemetryConfig;
+
     public UnmanagedTransaction(
             Connection connection,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             long fetchSize,
             NotificationConfig notificationConfig,
+            ApiTelemetryConfig apiTelemetryConfig,
             Logging logging) {
-        this(connection, bookmarkConsumer, fetchSize, new ResultCursorsHolder(), notificationConfig, logging);
+        this(
+                connection,
+                bookmarkConsumer,
+                fetchSize,
+                new ResultCursorsHolder(),
+                notificationConfig,
+                apiTelemetryConfig,
+                logging);
     }
 
     protected UnmanagedTransaction(
@@ -117,6 +128,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             long fetchSize,
             ResultCursorsHolder resultCursors,
             NotificationConfig notificationConfig,
+            ApiTelemetryConfig apiTelemetryConfig,
             Logging logging) {
         this.connection = connection;
         this.protocol = connection.protocol();
@@ -125,6 +137,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         this.fetchSize = fetchSize;
         this.notificationConfig = notificationConfig;
         this.logging = logging;
+        this.apiTelemetryConfig = apiTelemetryConfig;
 
         connection.bindTerminationAwareStateLockingExecutor(this);
     }
@@ -132,6 +145,10 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     // flush = false is only supported for async mode with a single subsequent run
     public CompletionStage<UnmanagedTransaction> beginAsync(
             Set<Bookmark> initialBookmarks, TransactionConfig config, String txType, boolean flush) {
+
+        if (apiTelemetryConfig.isEnabled()) {
+            protocol.telemetry(connection, apiTelemetryConfig.getTelemetryApi().getValue());
+        }
         protocol.beginTransaction(connection, initialBookmarks, config, txType, notificationConfig, logging, flush)
                 .handle((ignore, beginError) -> {
                     if (beginError != null) {

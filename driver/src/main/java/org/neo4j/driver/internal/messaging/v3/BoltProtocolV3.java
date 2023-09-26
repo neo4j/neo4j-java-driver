@@ -216,6 +216,11 @@ public class BoltProtocolV3 implements BoltProtocol {
         return buildResultCursorFactory(connection, query, (ignored) -> {}, tx, runMessage, fetchSize);
     }
 
+    @Override
+    public CompletionStage<Void> telemetry(Connection connection, Integer api) {
+        return CompletableFuture.completedStage(null);
+    }
+
     protected ResultCursorFactory buildResultCursorFactory(
             Connection connection,
             Query query,

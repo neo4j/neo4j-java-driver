@@ -69,6 +69,8 @@ import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
+import org.neo4j.driver.internal.telemetry.TelemetryApi;
 
 class NetworkSessionTest {
     private static final String DATABASE = "neo4j";
@@ -475,7 +477,8 @@ class NetworkSessionTest {
     }
 
     private static UnmanagedTransaction beginTransaction(NetworkSession session) {
-        return await(session.beginTransactionAsync(TransactionConfig.empty()));
+        var apiTelemetryConfig = ApiTelemetryConfig.ofApi(TelemetryApi.UNMANAGED_TRANSACTION);
+        return await(session.beginTransactionAsync(TransactionConfig.empty(), apiTelemetryConfig));
     }
 
     private static void close(NetworkSession session) {
