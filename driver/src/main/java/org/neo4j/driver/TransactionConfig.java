@@ -175,7 +175,7 @@ public final class TransactionConfig implements Serializable {
          * See also {@link #withDefaultTimeout}.
          * <p>
          * This functionality allows user code to limit query/transaction execution time.
-         * The Specified timeout overrides the default timeout configured in the database using the {@code db.transaction.timeout} setting ({@code dbms.transaction.timeout} before Neo4j 5.0).
+         * The specified timeout overrides the default timeout configured in the database using the {@code db.transaction.timeout} setting ({@code dbms.transaction.timeout} before Neo4j 5.0).
          * Values higher than {@code db.transaction.timeout} will be ignored and will fall back to the default for server versions between 4.2 and 5.2 (inclusive).
          * <p>
          * The provided value should not represent a negative duration.
