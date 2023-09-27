@@ -150,7 +150,7 @@ public class NetworkSession {
         return beginTransactionAsync(mode, config, null, apiTelemetryConfig, true);
     }
 
-    public CompletionStage<UnmanagedTransaction> gbeginTransactionAsync(
+    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
             AccessMode mode,
             TransactionConfig config,
             String txType,
