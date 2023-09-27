@@ -21,11 +21,14 @@ package org.neo4j.driver.internal.async.connection;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.internal.spi.Connection;
 
 public class DirectConnectionTest {
@@ -43,5 +46,16 @@ public class DirectConnectionTest {
         // then
         assertEquals(agent, actualAgent);
         then(connection).should().serverAgent();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldReturnTelemetryEnabledReturnNetworkValue(Boolean telemetryEnabled) {
+        var connection = mock(Connection.class);
+        doReturn(telemetryEnabled).when(connection).isTelemetryEnabled();
+
+        var directConnection = new DirectConnection(connection, defaultDatabase(), READ, null);
+
+        assertEquals(telemetryEnabled, directConnection.isTelemetryEnabled());
     }
 }

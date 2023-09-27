@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -31,6 +32,8 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
@@ -63,6 +66,18 @@ class RoutingConnectionTest {
         // then
         assertEquals(agent, actualAgent);
         then(connection).should().serverAgent();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldReturnTelemetryEnabledReturnNetworkValue(Boolean telemetryEnabled) {
+        var connection = mock(Connection.class);
+        var errorHandler = mock(RoutingErrorHandler.class);
+        doReturn(telemetryEnabled).when(connection).isTelemetryEnabled();
+
+        var routingConnection = new RoutingConnection(connection, defaultDatabase(), READ, null, errorHandler);
+
+        assertEquals(telemetryEnabled, routingConnection.isTelemetryEnabled());
     }
 
     private static void testHandlersWrappingWithSingleMessage(boolean flush) {
