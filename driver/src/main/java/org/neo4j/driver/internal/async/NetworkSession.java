@@ -54,7 +54,7 @@ import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -76,8 +76,6 @@ public class NetworkSession {
     private volatile Set<Bookmark> lastUsedBookmarks = Collections.emptySet();
     private volatile Set<Bookmark> lastReceivedBookmarks;
     private final NotificationConfig notificationConfig;
-
-    private final ApiTelemetryConfig autoCommitTelemetryConfig;
     private final boolean telemetryDisabled;
 
     public NetworkSession(
@@ -111,8 +109,6 @@ public class NetworkSession {
         this.fetchSize = fetchSize;
         this.notificationConfig = notificationConfig;
         this.telemetryDisabled = telemetryDisabled;
-        this.autoCommitTelemetryConfig =
-                new ApiTelemetryConfig(TelemetryApi.AUTO_COMMIT_TRANSACTION, !telemetryDisabled);
     }
 
     public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config) {
@@ -136,27 +132,29 @@ public class NetworkSession {
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
-            TransactionConfig config, ApiTelemetryConfig apiTelemetryConfig) {
-        return beginTransactionAsync(mode, config, null, apiTelemetryConfig, true);
+            TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
+        return beginTransactionAsync(mode, config, null, apiTelemetryWork, true);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
-            TransactionConfig config, String txType, ApiTelemetryConfig apiTelemetryConfig) {
-        return this.beginTransactionAsync(mode, config, txType, apiTelemetryConfig, true);
+            TransactionConfig config, String txType, ApiTelemetryWork apiTelemetryWork) {
+        return this.beginTransactionAsync(mode, config, txType, apiTelemetryWork, true);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
-            AccessMode mode, TransactionConfig config, ApiTelemetryConfig apiTelemetryConfig) {
-        return beginTransactionAsync(mode, config, null, apiTelemetryConfig, true);
+            AccessMode mode, TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
+        return beginTransactionAsync(mode, config, null, apiTelemetryWork, true);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
             AccessMode mode,
             TransactionConfig config,
             String txType,
-            ApiTelemetryConfig apiTelemetryConfig,
+            ApiTelemetryWork apiTelemetryWork,
             boolean flush) {
         ensureSessionIsOpen();
+
+        apiTelemetryWork.setEnabled(!telemetryDisabled);
 
         // create a chain that acquires connection and starts a transaction
         var newTransactionStage = ensureNoOpenTxBeforeStartingTx()
@@ -169,7 +167,7 @@ public class NetworkSession {
                             this::handleNewBookmark,
                             fetchSize,
                             notificationConfig,
-                            apiTelemetryConfig.disabled(telemetryDisabled),
+                            apiTelemetryWork,
                             logging);
                     return tx.beginAsync(determineBookmarks(true), config, txType, flush);
                 });
@@ -279,16 +277,9 @@ public class NetworkSession {
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
                     try {
-                        if (connection.isTelemetryEnabled() && autoCommitTelemetryConfig.enabled()) {
-                            connection
-                                    .protocol()
-                                    .telemetry(
-                                            connection,
-                                            autoCommitTelemetryConfig
-                                                    .telemetryApi()
-                                                    .getValue())
-                                    .whenComplete((unused, throwable) -> {});
-                        }
+                        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.AUTO_COMMIT_TRANSACTION);
+                        apiTelemetryWork.setEnabled(!telemetryDisabled);
+                        var telemetryStage = apiTelemetryWork.execute(connection, connection.protocol());
                         var factory = connection
                                 .protocol()
                                 .runInAutoCommitTransaction(
@@ -300,7 +291,13 @@ public class NetworkSession {
                                         fetchSize,
                                         notificationConfig,
                                         logging);
-                        return completedFuture(factory);
+                        var future = completedFuture(factory);
+                        telemetryStage.whenComplete((unused, throwable) -> {
+                            if (throwable != null) {
+                                future.completeExceptionally(throwable);
+                            }
+                        });
+                        return future;
                     } catch (Throwable e) {
                         return Futures.failedFuture(e);
                     }

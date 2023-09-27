@@ -34,7 +34,7 @@ import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -95,8 +95,7 @@ public class InternalSession extends AbstractQueryRunner implements Session {
 
     public Transaction beginTransaction(TransactionConfig config, String txType) {
         var tx = Futures.blockingGet(
-                session.beginTransactionAsync(
-                        config, txType, ApiTelemetryConfig.ofApi(TelemetryApi.UNMANAGED_TRANSACTION)),
+                session.beginTransactionAsync(config, txType, new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION)),
                 () -> terminateConnectionOnThreadInterrupt("Thread interrupted while starting a transaction"));
         return new InternalTransaction(tx);
     }
@@ -110,14 +109,12 @@ public class InternalSession extends AbstractQueryRunner implements Session {
     @Override
     @Deprecated
     public <T> T readTransaction(TransactionWork<T> work, TransactionConfig config) {
-        return transaction(
-                AccessMode.READ, work, config, ApiTelemetryConfig.ofApi(TelemetryApi.MANAGED_TRANSACTION), true);
+        return transaction(AccessMode.READ, work, config, TelemetryApi.MANAGED_TRANSACTION, true);
     }
 
     @Override
     public <T> T executeRead(TransactionCallback<T> callback, TransactionConfig config) {
-        return execute(
-                AccessMode.READ, callback, config, ApiTelemetryConfig.ofApi(TelemetryApi.MANAGED_TRANSACTION), true);
+        return execute(AccessMode.READ, callback, config, TelemetryApi.MANAGED_TRANSACTION, true);
     }
 
     @Override
@@ -129,14 +126,12 @@ public class InternalSession extends AbstractQueryRunner implements Session {
     @Override
     @Deprecated
     public <T> T writeTransaction(TransactionWork<T> work, TransactionConfig config) {
-        return transaction(
-                AccessMode.WRITE, work, config, ApiTelemetryConfig.ofApi(TelemetryApi.MANAGED_TRANSACTION), true);
+        return transaction(AccessMode.WRITE, work, config, TelemetryApi.MANAGED_TRANSACTION, true);
     }
 
     @Override
     public <T> T executeWrite(TransactionCallback<T> callback, TransactionConfig config) {
-        return execute(
-                AccessMode.WRITE, callback, config, ApiTelemetryConfig.ofApi(TelemetryApi.MANAGED_TRANSACTION), true);
+        return execute(AccessMode.WRITE, callback, config, TelemetryApi.MANAGED_TRANSACTION, true);
     }
 
     @Override
@@ -162,28 +157,25 @@ public class InternalSession extends AbstractQueryRunner implements Session {
             AccessMode accessMode,
             TransactionCallback<T> callback,
             TransactionConfig config,
-            ApiTelemetryConfig apiTelemetryConfig,
+            TelemetryApi telemetryApi,
             boolean flush) {
         return transaction(
-                accessMode,
-                tx -> callback.execute(new DelegatingTransactionContext(tx)),
-                config,
-                apiTelemetryConfig,
-                flush);
+                accessMode, tx -> callback.execute(new DelegatingTransactionContext(tx)), config, telemetryApi, flush);
     }
 
     private <T> T transaction(
             AccessMode mode,
             @SuppressWarnings("deprecation") TransactionWork<T> work,
             TransactionConfig config,
-            ApiTelemetryConfig apiTelemetryConfig,
+            TelemetryApi telemetryApi,
             boolean flush) {
         // use different code path compared to async so that work is executed in the caller thread
         // caller thread will also be the one who sleeps between retries;
         // it is unsafe to execute retries in the event loop threads because this can cause a deadlock
         // event loop thread will bock and wait for itself to read some data
+        var apiTelemetryWork = new ApiTelemetryWork(telemetryApi);
         return session.retryLogic().retry(() -> {
-            try (var tx = beginTransaction(mode, config, apiTelemetryConfig, flush)) {
+            try (var tx = beginTransaction(mode, config, apiTelemetryWork, flush)) {
 
                 var result = work.execute(tx);
                 if (result instanceof Result) {
@@ -201,9 +193,9 @@ public class InternalSession extends AbstractQueryRunner implements Session {
     }
 
     private Transaction beginTransaction(
-            AccessMode mode, TransactionConfig config, ApiTelemetryConfig apiTelemetryConfig, boolean flush) {
+            AccessMode mode, TransactionConfig config, ApiTelemetryWork apiTelemetryWork, boolean flush) {
         var tx = Futures.blockingGet(
-                session.beginTransactionAsync(mode, config, null, apiTelemetryConfig, flush),
+                session.beginTransactionAsync(mode, config, null, apiTelemetryWork, flush),
                 () -> terminateConnectionOnThreadInterrupt("Thread interrupted while starting a transaction"));
         return new InternalTransaction(tx);
     }

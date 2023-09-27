@@ -29,7 +29,7 @@ import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.reactive.InternalReactiveSession;
-import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.ReactiveSession;
@@ -60,9 +60,8 @@ class InternalReactiveSessionIT {
     void shouldAcceptTxTypeWhenAvailable(String txType) {
         // GIVEN
         var txConfig = TransactionConfig.empty();
-        var apiTelemetryConfig = ApiTelemetryConfig.ofApi(TelemetryApi.UNMANAGED_TRANSACTION);
-        var txMono =
-                Mono.fromDirect(flowPublisherToFlux(session.beginTransaction(txConfig, txType, apiTelemetryConfig)));
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var txMono = Mono.fromDirect(flowPublisherToFlux(session.beginTransaction(txConfig, txType, apiTelemetryWork)));
         Function<ReactiveTransaction, Mono<ResultSummary>> txUnit =
                 tx -> Mono.fromDirect(flowPublisherToFlux(tx.run("RETURN 1")))
                         .flatMap(result -> Mono.fromDirect(flowPublisherToFlux(result.consume())));

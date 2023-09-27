@@ -32,7 +32,6 @@ import org.neo4j.driver.RoutingControl;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
 import org.neo4j.driver.internal.telemetry.TelemetryApi;
 
 public class InternalExecutableQuery implements ExecutableQuery {
@@ -84,11 +83,7 @@ public class InternalExecutableQuery implements ExecutableQuery {
             };
             var accessMode = config.routing().equals(RoutingControl.WRITE) ? AccessMode.WRITE : AccessMode.READ;
             return session.execute(
-                    accessMode,
-                    txCallback,
-                    TransactionConfig.empty(),
-                    ApiTelemetryConfig.ofApi(TelemetryApi.EXECUTABLE_QUERY),
-                    false);
+                    accessMode, txCallback, TransactionConfig.empty(), TelemetryApi.EXECUTABLE_QUERY, false);
         }
     }
 

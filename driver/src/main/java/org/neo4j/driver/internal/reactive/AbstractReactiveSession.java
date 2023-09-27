@@ -36,7 +36,7 @@ import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
-import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
@@ -60,17 +60,17 @@ public abstract class AbstractReactiveSession<S> {
 
     protected abstract Publisher<Void> closeTransaction(S transaction, boolean commit);
 
-    Publisher<S> doBeginTransaction(TransactionConfig config, ApiTelemetryConfig apiTelemetryConfig) {
-        return doBeginTransaction(config, null, apiTelemetryConfig);
+    Publisher<S> doBeginTransaction(TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
+        return doBeginTransaction(config, null, apiTelemetryWork);
     }
 
     @SuppressWarnings("DuplicatedCode")
     protected Publisher<S> doBeginTransaction(
-            TransactionConfig config, String txType, ApiTelemetryConfig apiTelemetryConfig) {
+            TransactionConfig config, String txType, ApiTelemetryWork apiTelemetryWork) {
         return createSingleItemPublisher(
                 () -> {
                     var txFuture = new CompletableFuture<S>();
-                    session.beginTransactionAsync(config, txType, apiTelemetryConfig)
+                    session.beginTransactionAsync(config, txType, apiTelemetryWork)
                             .whenComplete((tx, completionError) -> {
                                 if (tx != null) {
                                     txFuture.complete(createTransaction(tx));
@@ -87,11 +87,11 @@ public abstract class AbstractReactiveSession<S> {
 
     @SuppressWarnings("DuplicatedCode")
     private Publisher<S> beginTransaction(
-            AccessMode mode, TransactionConfig config, ApiTelemetryConfig apiTelemetryConfig) {
+            AccessMode mode, TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
         return createSingleItemPublisher(
                 () -> {
                     var txFuture = new CompletableFuture<S>();
-                    session.beginTransactionAsync(mode, config, apiTelemetryConfig)
+                    session.beginTransactionAsync(mode, config, apiTelemetryWork)
                             .whenComplete((tx, completionError) -> {
                                 if (tx != null) {
                                     txFuture.complete(createTransaction(tx));
@@ -128,8 +128,10 @@ public abstract class AbstractReactiveSession<S> {
             }
             sink.next(value);
         }));
+
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.MANAGED_TRANSACTION);
         var repeatableWork = Flux.usingWhen(
-                beginTransaction(mode, config, ApiTelemetryConfig.ofApi(TelemetryApi.MANAGED_TRANSACTION)),
+                beginTransaction(mode, config, apiTelemetryWork),
                 work,
                 tx -> closeTransaction(tx, true),
                 (tx, error) -> closeTransaction(tx, false),

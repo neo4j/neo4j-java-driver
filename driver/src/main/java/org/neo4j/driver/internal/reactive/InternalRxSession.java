@@ -29,7 +29,7 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
-import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
@@ -57,7 +57,7 @@ public class InternalRxSession extends AbstractReactiveSession<RxTransaction> im
 
     @Override
     public Publisher<RxTransaction> beginTransaction(TransactionConfig config) {
-        return doBeginTransaction(config, ApiTelemetryConfig.ofApi(TelemetryApi.UNMANAGED_TRANSACTION));
+        return doBeginTransaction(config, new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION));
     }
 
     @Override

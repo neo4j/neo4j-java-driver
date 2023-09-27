@@ -52,7 +52,7 @@ import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
-import org.neo4j.driver.internal.telemetry.ApiTelemetryConfig;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.util.Futures;
@@ -147,11 +147,9 @@ class InternalRxSessionTest {
         // Given
         var session = mock(NetworkSession.class);
         var tx = mock(UnmanagedTransaction.class);
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
 
-        when(session.beginTransactionAsync(
-                        any(TransactionConfig.class),
-                        isNull(),
-                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.UNMANAGED_TRANSACTION))))
+        when(session.beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork)))
                 .thenReturn(completedFuture(tx));
         var rxSession = new InternalRxSession(session);
 
@@ -160,11 +158,7 @@ class InternalRxSessionTest {
         StepVerifier.create(Mono.from(rxTx)).expectNextCount(1).verifyComplete();
 
         // Then
-        verify(session)
-                .beginTransactionAsync(
-                        any(TransactionConfig.class),
-                        isNull(),
-                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.UNMANAGED_TRANSACTION)));
+        verify(session).beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork));
     }
 
     @ParameterizedTest
@@ -173,12 +167,10 @@ class InternalRxSessionTest {
         // Given
         Throwable error = new RuntimeException("Hi there");
         var session = mock(NetworkSession.class);
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
 
         // Run failed with error
-        when(session.beginTransactionAsync(
-                        any(TransactionConfig.class),
-                        isNull(),
-                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.UNMANAGED_TRANSACTION))))
+        when(session.beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork)))
                 .thenReturn(Futures.failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
@@ -189,11 +181,7 @@ class InternalRxSessionTest {
         var txFuture = Mono.from(rxTx).toFuture();
 
         // Then
-        verify(session)
-                .beginTransactionAsync(
-                        any(TransactionConfig.class),
-                        isNull(),
-                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.UNMANAGED_TRANSACTION)));
+        verify(session).beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork));
         RuntimeException t = assertThrows(CompletionException.class, () -> Futures.getNow(txFuture));
         assertThat(t.getCause(), equalTo(error));
         verify(session).releaseConnectionAsync();
@@ -205,12 +193,10 @@ class InternalRxSessionTest {
         // Given
         var session = mock(NetworkSession.class);
         var tx = mock(UnmanagedTransaction.class);
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.MANAGED_TRANSACTION);
         when(tx.closeAsync(true)).thenReturn(completedWithNull());
 
-        when(session.beginTransactionAsync(
-                        any(AccessMode.class),
-                        any(TransactionConfig.class),
-                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.MANAGED_TRANSACTION))))
+        when(session.beginTransactionAsync(any(AccessMode.class), any(TransactionConfig.class), eq(apiTelemetryWork)))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(1));
         var rxSession = new InternalRxSession(session);
@@ -221,10 +207,7 @@ class InternalRxSessionTest {
 
         // Then
         verify(session)
-                .beginTransactionAsync(
-                        any(AccessMode.class),
-                        any(TransactionConfig.class),
-                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.MANAGED_TRANSACTION)));
+                .beginTransactionAsync(any(AccessMode.class), any(TransactionConfig.class), eq(apiTelemetryWork));
         verify(tx).closeAsync(true);
     }
 
@@ -235,11 +218,9 @@ class InternalRxSessionTest {
         var session = mock(NetworkSession.class);
         var tx = mock(UnmanagedTransaction.class);
         when(tx.closeAsync(false)).thenReturn(completedWithNull());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.MANAGED_TRANSACTION);
 
-        when(session.beginTransactionAsync(
-                        any(AccessMode.class),
-                        any(TransactionConfig.class),
-                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.MANAGED_TRANSACTION))))
+        when(session.beginTransactionAsync(any(AccessMode.class), any(TransactionConfig.class), eq(apiTelemetryWork)))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(retryCount));
         var rxSession = new InternalRxSession(session);
@@ -254,10 +235,7 @@ class InternalRxSessionTest {
 
         // Then
         verify(session, times(retryCount + 1))
-                .beginTransactionAsync(
-                        any(AccessMode.class),
-                        any(TransactionConfig.class),
-                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.MANAGED_TRANSACTION)));
+                .beginTransactionAsync(any(AccessMode.class), any(TransactionConfig.class), eq(apiTelemetryWork));
         verify(tx, times(retryCount + 1)).closeAsync(false);
     }
 
@@ -267,13 +245,11 @@ class InternalRxSessionTest {
         var retryCount = 2;
         var session = mock(NetworkSession.class);
         var tx = mock(UnmanagedTransaction.class);
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.MANAGED_TRANSACTION);
         when(tx.closeAsync(false)).thenReturn(completedWithNull());
         when(tx.closeAsync(true)).thenReturn(completedWithNull());
 
-        when(session.beginTransactionAsync(
-                        any(AccessMode.class),
-                        any(TransactionConfig.class),
-                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.MANAGED_TRANSACTION))))
+        when(session.beginTransactionAsync(any(AccessMode.class), any(TransactionConfig.class), eq(apiTelemetryWork)))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(retryCount));
         var rxSession = new InternalRxSession(session);
@@ -292,10 +268,7 @@ class InternalRxSessionTest {
 
         // Then
         verify(session, times(retryCount + 1))
-                .beginTransactionAsync(
-                        any(AccessMode.class),
-                        any(TransactionConfig.class),
-                        eq(ApiTelemetryConfig.ofApi(TelemetryApi.MANAGED_TRANSACTION)));
+                .beginTransactionAsync(any(AccessMode.class), any(TransactionConfig.class), eq(apiTelemetryWork));
         verify(tx, times(retryCount)).closeAsync(false);
         verify(tx).closeAsync(true);
     }
