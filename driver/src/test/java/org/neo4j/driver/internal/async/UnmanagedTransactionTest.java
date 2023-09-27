@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -28,6 +29,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -82,6 +86,7 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
+import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
@@ -544,6 +549,106 @@ class UnmanagedTransactionTest {
 
         // Then
         assertEquals(testParams.expectedMessage(), exception.getMessage());
+    }
+
+    @Test
+    void shouldBeginAsyncTelemetryNotCompleteReturnedFuture() {
+        var protocol = mock(BoltProtocol.class);
+        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
+        var connection = connectionMock(protocol);
+        var apiTelemetryWork = mock(ApiTelemetryWork.class);
+        var beginFuture = new CompletableFuture<>();
+        doReturn(CompletableFuture.completedFuture(null)).when(apiTelemetryWork).execute(connection, protocol);
+        doReturn(beginFuture)
+                .when(protocol)
+                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
+        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+
+        assertFalse(unmanagedTransaction
+                .beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)
+                .toCompletableFuture()
+                .isDone());
+
+        beginFuture.complete(null);
+
+        assertTrue(unmanagedTransaction
+                .beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)
+                .toCompletableFuture()
+                .isDone());
+    }
+
+    @Test
+    void shouldBeginAsyncThrowErrorOnTelemetryIfFlushIsTrueAndBeginDontFinish() {
+        var protocol = mock(BoltProtocol.class);
+        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
+        var connection = connectionMock(protocol);
+        var apiTelemetryWork = mock(ApiTelemetryWork.class);
+        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
+                .when(apiTelemetryWork)
+                .execute(connection, protocol);
+        doReturn(new CompletableFuture<>())
+                .when(protocol)
+                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
+        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+
+        assertThrows(
+                SecurityException.class,
+                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)));
+    }
+
+    @Test
+    void shouldBeginAsyncThrowErrorOnTelemetryIfFlushIsTrueAndBeginFailed() {
+        var protocol = mock(BoltProtocol.class);
+        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
+        var connection = connectionMock(protocol);
+        var apiTelemetryWork = mock(ApiTelemetryWork.class);
+        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
+                .when(apiTelemetryWork)
+                .execute(connection, protocol);
+        doReturn(CompletableFuture.failedFuture(new ClientException("other error")))
+                .when(protocol)
+                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
+        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+
+        assertThrows(
+                SecurityException.class,
+                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)));
+    }
+
+    @Test
+    void shouldBeginAsyncNotThrowErrorOnTelemetryIfNotFlushIsTrueAndBeginDontFinish() {
+        var protocol = mock(BoltProtocol.class);
+        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
+        var connection = connectionMock(protocol);
+        var apiTelemetryWork = mock(ApiTelemetryWork.class);
+        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
+                .when(apiTelemetryWork)
+                .execute(connection, protocol);
+        doReturn(new CompletableFuture<>())
+                .when(protocol)
+                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
+        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+
+        assertDoesNotThrow(
+                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", false)));
+    }
+
+    @Test
+    void shouldBeginAsyncNotThrowErrorOnTelemetryIfNotFlushIsTrueAndBeginFailed() {
+        var protocol = mock(BoltProtocol.class);
+        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
+        var connection = connectionMock(protocol);
+        var apiTelemetryWork = mock(ApiTelemetryWork.class);
+        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
+                .when(apiTelemetryWork)
+                .execute(connection, protocol);
+        doReturn(CompletableFuture.failedFuture(new ClientException("other error")))
+                .when(protocol)
+                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
+        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+
+        assertDoesNotThrow(
+                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", false)));
     }
 
     static List<Arguments> transactionClosingTestParams() {
