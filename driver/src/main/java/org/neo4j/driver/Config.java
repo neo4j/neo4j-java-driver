@@ -150,7 +150,7 @@ public final class Config implements Serializable {
 
     /**
      * Specify if telemetry collection is disabled.
-     *
+     * <p>
      * By default, the driver will send anonymous usage statistics to the server it connects to if the server requests those.
      */
     private final boolean telemetryDisabled;
@@ -344,10 +344,12 @@ public final class Config implements Serializable {
     }
 
     /**
-     * Specify if telemetry collection is disabled.
-     * Metrics are only collected when enabled both in server and driver instances.
+     * Returns if the telemetry is disabled on the driver side.
+     * <p>
+     * The telemetry is collected only when it is enabled both the server and the driver.
      *
-     * @return  if the telemetry is disabled.
+     * @return {@code true} if telemetry is disabled or {@code false} otherwise
+     * @since 5.13
      */
     public boolean isTelemetryDisabled() {
         return telemetryDisabled;
@@ -769,16 +771,17 @@ public final class Config implements Serializable {
         }
 
         /**
-         * Specify if telemetry collection is disabled.
-         *
-         * By default, the driver will send anonymous usage statistics to the server it connects to if the server requests those.
-         * By setting telemetryDisabled to true, the driver will not send any telemetry data.
-         *
+         * Sets if telemetry is disabled on the driver side.
+         * <p>
+         * By default, the driver sends anonymous telemetry data to the server it connects to if the server has
+         * telemetry enabled. This can be explicitly disabled on the driver side by setting this setting to
+         * {@code true}.
+         * <p>
          * The driver transmits the following information:
-         *
+         * <p>
          * Every time one of the following APIs is used to execute a query (for the first time), the server is informed of this
          * (without any further information like arguments, client identifiers, etc.):
-         *
+         * <p>
          * * {@link Driver#executableQuery(String)}
          * * {@link Session#run(Query)}
          * * {@link Session#beginTransaction()}
@@ -787,10 +790,9 @@ public final class Config implements Serializable {
          * * {@link Session#writeTransaction(TransactionWork)}
          * * {@link Session#readTransaction(TransactionWork)}
          * * The reactive counterparts of methods above.
+         * <p>
          *
-         * Metrics are only collected when enabled both in server and driver instances.
-         *
-         * @param telemetryDisabled if telemetry is disabled
+         * @param telemetryDisabled {@code true} if telemetry is disabled or {@code false} otherwise
          * @return this builder
          * @since 5.13
          */
