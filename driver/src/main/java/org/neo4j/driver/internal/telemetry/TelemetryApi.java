@@ -19,8 +19,7 @@
 package org.neo4j.driver.internal.telemetry;
 
 /**
- * Defines list of valid telemetry metrics.
- *
+ * An enum of valid telemetry metrics.
  */
 public enum TelemetryApi {
     MANAGED_TRANSACTION(0),

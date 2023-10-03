@@ -18,15 +18,13 @@
  */
 package org.neo4j.driver.internal.messaging.request;
 
-import java.util.Objects;
 import org.neo4j.driver.internal.messaging.Message;
 
 /**
- * TELEMETRY request message
+ * TELEMETRY message
+ * Sent by the client to inform which API is used.
  *
- * Send by client to inform which api is being used.
- *
- * @param api The API identification on the protocol level.
+ * @param api the API identification on the protocol level
  */
 public record TelemetryMessage(Integer api) implements Message {
     public static final byte SIGNATURE = 0x54;
@@ -34,23 +32,6 @@ public record TelemetryMessage(Integer api) implements Message {
     @Override
     public byte signature() {
         return SIGNATURE;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        var that = (TelemetryMessage) o;
-        return that.api.equals(api);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(api);
     }
 
     @Override

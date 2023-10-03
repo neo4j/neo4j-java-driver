@@ -63,7 +63,7 @@ public class ApiTelemetryWork {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ApiTelemetryWork that = (ApiTelemetryWork) o;
+        var that = (ApiTelemetryWork) o;
         return telemetryApi == that.telemetryApi
                 && Objects.equals(completedWithSuccess.get(), that.completedWithSuccess.get())
                 && Objects.equals(enabled.get(), that.enabled.get());

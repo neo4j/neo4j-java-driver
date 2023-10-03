@@ -55,7 +55,6 @@ public class TelemetryResponseHandler implements ResponseHandler {
 
     @Override
     public void onRecord(Value[] fields) {
-
         throw new UnsupportedOperationException(
                 "Telemetry is not expected to receive records: " + Arrays.toString(fields));
     }
