@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.async;
 
 import static java.util.Collections.emptyMap;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.getTelemetryEnabled;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTerminationReason;
 import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
@@ -68,6 +67,7 @@ public class NetworkConnection implements Connection {
     private final InboundMessageDispatcher messageDispatcher;
     private final String serverAgent;
     private final BoltServerAddress serverAddress;
+    private final boolean telemetryEnabled;
     private final BoltProtocol protocol;
     private final ExtendedChannelPool channelPool;
     private final CompletableFuture<Void> releaseFuture;
@@ -93,6 +93,7 @@ public class NetworkConnection implements Connection {
         this.messageDispatcher = ChannelAttributes.messageDispatcher(channel);
         this.serverAgent = ChannelAttributes.serverAgent(channel);
         this.serverAddress = ChannelAttributes.serverAddress(channel);
+        this.telemetryEnabled = ChannelAttributes.telemetryEnabled(channel);
         this.protocol = BoltProtocol.forChannel(channel);
         this.channelPool = channelPool;
         this.releaseFuture = new CompletableFuture<>();
@@ -139,7 +140,7 @@ public class NetworkConnection implements Connection {
 
     @Override
     public boolean isTelemetryEnabled() {
-        return getTelemetryEnabled(channel);
+        return telemetryEnabled;
     }
 
     @Override

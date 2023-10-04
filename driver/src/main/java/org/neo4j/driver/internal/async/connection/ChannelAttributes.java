@@ -180,7 +180,7 @@ public final class ChannelAttributes {
         setOnce(channel, TELEMETRY_ENABLED, telemetryEnabled);
     }
 
-    public static Boolean getTelemetryEnabled(Channel channel) {
+    public static Boolean telemetryEnabled(Channel channel) {
         return Optional.ofNullable(get(channel, TELEMETRY_ENABLED)).orElse(false);
     }
 
