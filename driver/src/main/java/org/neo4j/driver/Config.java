@@ -785,7 +785,6 @@ public final class Config implements Serializable {
          *     <li>Autocommit transaction ({@link Session#run(Query)} and similar options)</li>
          *     <li>Executable query ({@link Driver#executableQuery(String)} and similar options)</li>
          * </ul>
-         * </p>
          *
          * @param telemetryDisabled {@code true} if telemetry is disabled or {@code false} otherwise
          * @return this builder
