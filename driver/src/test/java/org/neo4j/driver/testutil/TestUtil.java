@@ -255,6 +255,15 @@ public final class TestUtil {
 
     public static NetworkSession newSession(
             ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic, Set<Bookmark> bookmarks) {
+        return newSession(connectionProvider, mode, retryLogic, bookmarks, true);
+    }
+
+    public static NetworkSession newSession(
+            ConnectionProvider connectionProvider,
+            AccessMode mode,
+            RetryLogic retryLogic,
+            Set<Bookmark> bookmarks,
+            boolean telemetryDisabled) {
         return new NetworkSession(
                 connectionProvider,
                 retryLogic,
@@ -267,7 +276,7 @@ public final class TestUtil {
                 NoOpBookmarkManager.INSTANCE,
                 null,
                 null,
-                true);
+                telemetryDisabled);
     }
 
     public static void verifyRunRx(Connection connection, String query) {
