@@ -776,11 +776,12 @@ public final class Config implements Serializable {
          * By default, the driver sends anonymous telemetry data to the server it connects to if the server has
          * telemetry enabled. This can be explicitly disabled on the driver side by setting this setting to
          * {@code true}.
-         * <p>
+         * </p>
          * The driver transmits the following information:
          * <p>
          * Every time one of the following APIs is used to execute a query (for the first time), the server is informed of this
          * (without any further information like arguments, client identifiers, etc.):
+         * </p>
          * <p>
          * * {@link Driver#executableQuery(String)}
          * * {@link Session#run(Query)}
@@ -790,7 +791,7 @@ public final class Config implements Serializable {
          * * {@link Session#writeTransaction(TransactionWork)}
          * * {@link Session#readTransaction(TransactionWork)}
          * * The reactive counterparts of methods above.
-         * <p>
+         * </p>
          *
          * @param telemetryDisabled {@code true} if telemetry is disabled or {@code false} otherwise
          * @return this builder
