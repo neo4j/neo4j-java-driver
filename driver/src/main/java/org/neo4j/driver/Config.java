@@ -776,21 +776,15 @@ public final class Config implements Serializable {
          * By default, the driver sends anonymous telemetry data to the server it connects to if the server has
          * telemetry enabled. This can be explicitly disabled on the driver side by setting this setting to
          * {@code true}.
-         * </p>
-         * The driver transmits the following information:
          * <p>
-         * Every time one of the following APIs is used to execute a query (for the first time), the server is informed of this
-         * (without any further information like arguments, client identifiers, etc.):
-         * </p>
-         * <p>
-         * * {@link Driver#executableQuery(String)}
-         * * {@link Session#run(Query)}
-         * * {@link Session#beginTransaction()}
-         * * {@link Session#executeRead(TransactionCallback)}
-         * * {@link Session#executeWrite(TransactionCallback)}
-         * * {@link Session#writeTransaction(TransactionWork)}
-         * * {@link Session#readTransaction(TransactionWork)}
-         * * The reactive counterparts of methods above.
+         * At present, the driver sends which API type is used, like:
+         * <ul>
+         *     <li>Managed transaction ({@link Session#executeWrite(TransactionCallback)},
+         *     {@link Session#executeRead(TransactionCallback)} and similar options)</li>
+         *     <li>Unmanaged transaction ({@link Session#beginTransaction()} and similar options)</li>
+         *     <li>Autocommit transaction ({@link Session#run(Query)} and similar options)</li>
+         *     <li>Executable query ({@link Driver#executableQuery(String)} and similar options)</li>
+         * </ul>
          * </p>
          *
          * @param telemetryDisabled {@code true} if telemetry is disabled or {@code false} otherwise
