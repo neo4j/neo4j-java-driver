@@ -36,11 +36,11 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.97.Final</netty-bom.version>
+    <netty-bom.version>4.1.99.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2022.0.10</reactor-bom.version>
+    <reactor-bom.version>2022.0.11</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest.version>2.2</hamcrest.version>
     <mockito-core.version>5.5.0</mockito-core.version>
@@ -51,11 +51,11 @@
     <bouncycastle-jdk15on.version>1.70</bouncycastle-jdk15on.version>
     <logback-classic.version>1.2.12</logback-classic.version>
     <jackson.version>2.15.2</jackson.version>
-    <lombok.version>1.18.28</lombok.version>
-    <svm.version>23.0.1</svm.version>
-    <micrometer.version>1.11.3</micrometer.version>
+    <lombok.version>1.18.30</lombok.version>
+    <svm.version>23.1.0</svm.version>
+    <micrometer.version>1.11.4</micrometer.version>
     <blockhound.version>1.0.8.RELEASE</blockhound.version>
-    <testcontainers.version>1.19.0</testcontainers.version>
+    <testcontainers.version>1.19.1</testcontainers.version>
     <build-resources.version>5.11.0</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
