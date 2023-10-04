@@ -65,6 +65,22 @@ public sealed interface NotificationCategory extends Serializable permits Intern
     NotificationCategory DEPRECATION = new InternalNotificationCategory(Type.DEPRECATION);
 
     /**
+     * A security category.
+     * <p>
+     * For instance, the security warnings.
+     * @since 5.14
+     */
+    NotificationCategory SECURITY = new InternalNotificationCategory(Type.SECURITY);
+
+    /**
+     * A topology category.
+     * <p>
+     * For instance, the topology notifications.
+     * @since 5.14
+     */
+    NotificationCategory TOPOLOGY = new InternalNotificationCategory(Type.TOPOLOGY);
+
+    /**
      * A generic category.
      * <p>
      * For instance, notifications that are not part of a more specific class.
