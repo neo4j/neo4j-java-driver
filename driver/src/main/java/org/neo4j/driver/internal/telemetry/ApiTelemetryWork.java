@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.telemetry;
 
 import static org.neo4j.driver.internal.util.Futures.futureCompletingConsumer;
 
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -53,32 +52,5 @@ public class ApiTelemetryWork {
             future.complete(null);
         }
         return future;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        var that = (ApiTelemetryWork) o;
-        return telemetryApi == that.telemetryApi
-                && Objects.equals(completedWithSuccess.get(), that.completedWithSuccess.get())
-                && Objects.equals(enabled.get(), that.enabled.get());
-    }
-
-    @Override
-    public String toString() {
-        return "ApiTelemetryWork{" + "telemetryApi="
-                + telemetryApi + ", completedWithSuccess="
-                + completedWithSuccess.get() + ", enabled="
-                + enabled.get() + '}';
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(telemetryApi, completedWithSuccess, enabled);
     }
 }
