@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v53;
+package org.neo4j.driver.internal.messaging.v54;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyMap;
@@ -85,6 +85,7 @@ import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.TelemetryResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
@@ -93,12 +94,12 @@ import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.internal.messaging.v51.MessageFormatV51;
+import org.neo4j.driver.internal.messaging.request.TelemetryMessage;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
-public class BoltProtocolV53Test {
+public class BoltProtocolV54Test {
     protected static final String QUERY_TEXT = "RETURN $x";
     protected static final Map<String, Value> PARAMS = singletonMap("x", value(42));
     protected static final Query QUERY = new Query(QUERY_TEXT, value(PARAMS));
@@ -114,7 +115,7 @@ public class BoltProtocolV53Test {
 
     @SuppressWarnings("SameReturnValue")
     protected BoltProtocol createProtocol() {
-        return BoltProtocolV53.INSTANCE;
+        return BoltProtocolV54.INSTANCE;
     }
 
     @BeforeEach
@@ -376,17 +377,25 @@ public class BoltProtocolV53Test {
     }
 
     @Test
-    void shouldTelemetryReturnCompletedStageWithoutSendAnyMessage() {
+    void shouldTelemetrySendTelemetryMessage() {
         var connection = connectionMock();
+        doAnswer((invocationOnMock) -> {
+                    var handler = (TelemetryResponseHandler) invocationOnMock.getArgument(1);
+                    handler.onSuccess(Map.of());
+                    return null;
+                })
+                .when(connection)
+                .write(Mockito.any(), Mockito.any());
+        var expectedApi = 1;
 
-        await(protocol.telemetry(connection, 1));
+        await(protocol.telemetry(connection, expectedApi));
 
-        verify(connection, never()).write(Mockito.any(), Mockito.any());
+        verify(connection).write(Mockito.eq(new TelemetryMessage(expectedApi)), Mockito.any());
         verify(connection, never()).writeAndFlush(Mockito.any(), Mockito.any());
     }
 
     private Class<? extends MessageFormat> expectedMessageFormatType() {
-        return MessageFormatV51.class;
+        return MessageFormatV54.class;
     }
 
     private void testFailedRunInAutoCommitTxWithWaitingForResponse(

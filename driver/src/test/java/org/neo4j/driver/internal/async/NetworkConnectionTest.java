@@ -57,6 +57,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -546,6 +547,26 @@ class NetworkConnectionTest {
 
         // Then
         assertEquals(1, channel.outboundMessages().size());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldReturnTelemetryEnabledWhenSet(Boolean telemetryEnabled) {
+        var channel = newChannel();
+        ChannelAttributes.setTelemetryEnabled(channel, telemetryEnabled);
+
+        var connection = newConnection(channel);
+
+        assertEquals(telemetryEnabled, connection.isTelemetryEnabled());
+    }
+
+    @Test
+    void shouldReturnTelemetryEnabledEqualsFalseWhenNotSet() {
+        var channel = newChannel();
+
+        var connection = newConnection(channel);
+
+        assertFalse(connection.isTelemetryEnabled());
     }
 
     static List<QueryMessage> queryMessages() {

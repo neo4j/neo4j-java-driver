@@ -54,6 +54,8 @@ import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
+import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 
 public class NetworkSession {
@@ -74,6 +76,7 @@ public class NetworkSession {
     private volatile Set<Bookmark> lastUsedBookmarks = Collections.emptySet();
     private volatile Set<Bookmark> lastReceivedBookmarks;
     private final NotificationConfig notificationConfig;
+    private final boolean telemetryDisabled;
 
     public NetworkSession(
             ConnectionProvider connectionProvider,
@@ -86,7 +89,8 @@ public class NetworkSession {
             Logging logging,
             BookmarkManager bookmarkManager,
             NotificationConfig notificationConfig,
-            AuthToken overrideAuthToken) {
+            AuthToken overrideAuthToken,
+            boolean telemetryDisabled) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         this.connectionProvider = connectionProvider;
@@ -104,6 +108,7 @@ public class NetworkSession {
                 databaseNameFuture, determineBookmarks(false), impersonatedUser, overrideAuthToken);
         this.fetchSize = fetchSize;
         this.notificationConfig = notificationConfig;
+        this.telemetryDisabled = telemetryDisabled;
     }
 
     public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config) {
@@ -126,21 +131,30 @@ public class NetworkSession {
         return newResultCursorStage;
     }
 
-    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(TransactionConfig config) {
-        return beginTransactionAsync(mode, config, null, true);
-    }
-
-    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(TransactionConfig config, String txType) {
-        return this.beginTransactionAsync(mode, config, txType, true);
-    }
-
-    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(AccessMode mode, TransactionConfig config) {
-        return beginTransactionAsync(mode, config, null, true);
+    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
+            TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
+        return beginTransactionAsync(mode, config, null, apiTelemetryWork, true);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
-            AccessMode mode, TransactionConfig config, String txType, boolean flush) {
+            TransactionConfig config, String txType, ApiTelemetryWork apiTelemetryWork) {
+        return this.beginTransactionAsync(mode, config, txType, apiTelemetryWork, true);
+    }
+
+    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
+            AccessMode mode, TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
+        return beginTransactionAsync(mode, config, null, apiTelemetryWork, true);
+    }
+
+    public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
+            AccessMode mode,
+            TransactionConfig config,
+            String txType,
+            ApiTelemetryWork apiTelemetryWork,
+            boolean flush) {
         ensureSessionIsOpen();
+
+        apiTelemetryWork.setEnabled(!telemetryDisabled);
 
         // create a chain that acquires connection and starts a transaction
         var newTransactionStage = ensureNoOpenTxBeforeStartingTx()
@@ -149,7 +163,12 @@ public class NetworkSession {
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
                     var tx = new UnmanagedTransaction(
-                            connection, this::handleNewBookmark, fetchSize, notificationConfig, logging);
+                            connection,
+                            this::handleNewBookmark,
+                            fetchSize,
+                            notificationConfig,
+                            apiTelemetryWork,
+                            logging);
                     return tx.beginAsync(determineBookmarks(true), config, txType, flush);
                 });
 
@@ -258,6 +277,9 @@ public class NetworkSession {
                         ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
                 .thenCompose(connection -> {
                     try {
+                        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.AUTO_COMMIT_TRANSACTION);
+                        apiTelemetryWork.setEnabled(!telemetryDisabled);
+                        var telemetryStage = apiTelemetryWork.execute(connection, connection.protocol());
                         var factory = connection
                                 .protocol()
                                 .runInAutoCommitTransaction(
@@ -269,7 +291,13 @@ public class NetworkSession {
                                         fetchSize,
                                         notificationConfig,
                                         logging);
-                        return completedFuture(factory);
+                        var future = completedFuture(factory);
+                        telemetryStage.whenComplete((unused, throwable) -> {
+                            if (throwable != null) {
+                                future.completeExceptionally(throwable);
+                            }
+                        });
+                        return future;
                     } catch (Throwable e) {
                         return Futures.failedFuture(e);
                     }

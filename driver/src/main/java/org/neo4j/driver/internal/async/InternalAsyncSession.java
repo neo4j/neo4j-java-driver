@@ -38,6 +38,8 @@ import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
+import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 
 public class InternalAsyncSession extends AsyncAbstractQueryRunner implements AsyncSession {
@@ -80,7 +82,8 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
 
     @Override
     public CompletionStage<AsyncTransaction> beginTransactionAsync(TransactionConfig config) {
-        return session.beginTransactionAsync(config).thenApply(InternalAsyncTransaction::new);
+        return session.beginTransactionAsync(config, new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION))
+                .thenApply(InternalAsyncTransaction::new);
     }
 
     @Override
@@ -136,9 +139,10 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
             AccessMode mode,
             @SuppressWarnings("deprecation") AsyncTransactionWork<CompletionStage<T>> work,
             TransactionConfig config) {
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.MANAGED_TRANSACTION);
         return session.retryLogic().retryAsync(() -> {
             var resultFuture = new CompletableFuture<T>();
-            var txFuture = session.beginTransactionAsync(mode, config);
+            var txFuture = session.beginTransactionAsync(mode, config, apiTelemetryWork);
 
             txFuture.whenComplete((tx, completionError) -> {
                 var error = Futures.completionExceptionCause(completionError);

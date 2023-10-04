@@ -36,6 +36,8 @@ import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
+import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
@@ -58,22 +60,24 @@ public abstract class AbstractReactiveSession<S> {
 
     protected abstract Publisher<Void> closeTransaction(S transaction, boolean commit);
 
-    Publisher<S> doBeginTransaction(TransactionConfig config) {
-        return doBeginTransaction(config, null);
+    Publisher<S> doBeginTransaction(TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
+        return doBeginTransaction(config, null, apiTelemetryWork);
     }
 
     @SuppressWarnings("DuplicatedCode")
-    protected Publisher<S> doBeginTransaction(TransactionConfig config, String txType) {
+    protected Publisher<S> doBeginTransaction(
+            TransactionConfig config, String txType, ApiTelemetryWork apiTelemetryWork) {
         return createSingleItemPublisher(
                 () -> {
                     var txFuture = new CompletableFuture<S>();
-                    session.beginTransactionAsync(config, txType).whenComplete((tx, completionError) -> {
-                        if (tx != null) {
-                            txFuture.complete(createTransaction(tx));
-                        } else {
-                            releaseConnectionBeforeReturning(txFuture, completionError);
-                        }
-                    });
+                    session.beginTransactionAsync(config, txType, apiTelemetryWork)
+                            .whenComplete((tx, completionError) -> {
+                                if (tx != null) {
+                                    txFuture.complete(createTransaction(tx));
+                                } else {
+                                    releaseConnectionBeforeReturning(txFuture, completionError);
+                                }
+                            });
                     return txFuture;
                 },
                 () -> new IllegalStateException(
@@ -82,17 +86,19 @@ public abstract class AbstractReactiveSession<S> {
     }
 
     @SuppressWarnings("DuplicatedCode")
-    private Publisher<S> beginTransaction(AccessMode mode, TransactionConfig config) {
+    private Publisher<S> beginTransaction(
+            AccessMode mode, TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
         return createSingleItemPublisher(
                 () -> {
                     var txFuture = new CompletableFuture<S>();
-                    session.beginTransactionAsync(mode, config).whenComplete((tx, completionError) -> {
-                        if (tx != null) {
-                            txFuture.complete(createTransaction(tx));
-                        } else {
-                            releaseConnectionBeforeReturning(txFuture, completionError);
-                        }
-                    });
+                    session.beginTransactionAsync(mode, config, apiTelemetryWork)
+                            .whenComplete((tx, completionError) -> {
+                                if (tx != null) {
+                                    txFuture.complete(createTransaction(tx));
+                                } else {
+                                    releaseConnectionBeforeReturning(txFuture, completionError);
+                                }
+                            });
                     return txFuture;
                 },
                 () -> new IllegalStateException(
@@ -122,8 +128,10 @@ public abstract class AbstractReactiveSession<S> {
             }
             sink.next(value);
         }));
+
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.MANAGED_TRANSACTION);
         var repeatableWork = Flux.usingWhen(
-                beginTransaction(mode, config),
+                beginTransaction(mode, config, apiTelemetryWork),
                 work,
                 tx -> closeTransaction(tx, true),
                 (tx, error) -> closeTransaction(tx, false),

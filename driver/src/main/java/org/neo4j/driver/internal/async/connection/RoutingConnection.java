@@ -128,6 +128,11 @@ public class RoutingConnection implements Connection {
         return impersonatedUser;
     }
 
+    @Override
+    public boolean isTelemetryEnabled() {
+        return delegate.isTelemetryEnabled();
+    }
+
     private RoutingResponseHandler newRoutingResponseHandler(ResponseHandler handler) {
         return new RoutingResponseHandler(handler, serverAddress(), accessMode, errorHandler);
     }

@@ -16,21 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.messaging.v54;
 
-import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.v5.MessageReaderV5;
+import org.neo4j.driver.internal.packstream.PackInput;
+import org.neo4j.driver.internal.packstream.PackOutput;
 
-public interface SessionFactory {
-    NetworkSession newInstance(SessionConfig sessionConfig, AuthToken overrideAuthToken, boolean telemetryDisabled);
+public class MessageFormatV54 implements MessageFormat {
+    @Override
+    public Writer newWriter(PackOutput output) {
+        return new MessageWriterV54(output);
+    }
 
-    CompletionStage<Void> verifyConnectivity();
-
-    CompletionStage<Void> close();
-
-    CompletionStage<Boolean> supportsMultiDb();
-
-    CompletionStage<Boolean> supportsSessionAuth();
+    @Override
+    public Reader newReader(PackInput input) {
+        return new MessageReaderV5(input);
+    }
 }

@@ -16,21 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.messaging.request;
 
-import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.messaging.Message;
 
-public interface SessionFactory {
-    NetworkSession newInstance(SessionConfig sessionConfig, AuthToken overrideAuthToken, boolean telemetryDisabled);
+/**
+ * TELEMETRY message
+ * Sent by the client to inform which API is used.
+ *
+ * @param api the API identification on the protocol level
+ */
+public record TelemetryMessage(Integer api) implements Message {
+    public static final byte SIGNATURE = 0x54;
 
-    CompletionStage<Void> verifyConnectivity();
+    @Override
+    public byte signature() {
+        return SIGNATURE;
+    }
 
-    CompletionStage<Void> close();
-
-    CompletionStage<Boolean> supportsMultiDb();
-
-    CompletionStage<Boolean> supportsSessionAuth();
+    @Override
+    public String toString() {
+        return String.format("TELEMETRY %S", api);
+    }
 }

@@ -39,6 +39,8 @@ import org.neo4j.driver.TransactionContext;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
+import org.neo4j.driver.internal.telemetry.TelemetryApi;
 
 public class InternalSessionTest {
     NetworkSession networkSession;
@@ -92,12 +94,13 @@ public class InternalSessionTest {
         var internalSession = (InternalSession) session;
         var config = TransactionConfig.empty();
         var type = "TYPE";
-        given(networkSession.beginTransactionAsync(config, type))
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        given(networkSession.beginTransactionAsync(config, type, apiTelemetryWork))
                 .willReturn(completedFuture(mock(UnmanagedTransaction.class)));
 
         internalSession.beginTransaction(config, type);
 
-        then(networkSession).should().beginTransactionAsync(config, type);
+        then(networkSession).should().beginTransactionAsync(config, type, apiTelemetryWork);
     }
 
     static List<ExecuteVariation> executeVariations() {

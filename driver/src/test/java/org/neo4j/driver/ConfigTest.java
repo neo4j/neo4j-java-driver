@@ -467,6 +467,7 @@ class ConfigTest {
                             .disableCategories(
                                     Set.of(NotificationCategory.UNSUPPORTED, NotificationCategory.UNRECOGNIZED)),
                     config.notificationConfig());
+            assertEquals(config.isTelemetryDisabled(), verify.isTelemetryDisabled());
         }
 
         @Test
@@ -504,5 +505,30 @@ class ConfigTest {
         var config = Config.defaultConfig();
 
         assertTrue(config.userAgent().matches("^neo4j-java/.+$"));
+    }
+
+    @Test
+    void shouldDefaultToTelemetryEnabled() {
+        // Given
+        var config = Config.defaultConfig();
+
+        // When
+        var telemetryDisabled = config.isTelemetryDisabled();
+
+        // Then
+        assertFalse(telemetryDisabled);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldChangeTelemetryDisabled(boolean disabled) {
+        // Given
+        var config = Config.builder().withTelemetryDisabled(disabled).build();
+
+        // When
+        var telemetryDisabled = config.isTelemetryDisabled();
+
+        // Then
+        assertEquals(disabled, telemetryDisabled);
     }
 }

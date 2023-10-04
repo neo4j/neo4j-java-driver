@@ -28,6 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
@@ -56,6 +59,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Query;
@@ -67,8 +72,12 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
+import org.neo4j.driver.internal.telemetry.TelemetryApi;
+import org.neo4j.driver.internal.util.FixedRetryLogic;
 
 class NetworkSessionTest {
     private static final String DATABASE = "neo4j";
@@ -470,12 +479,60 @@ class NetworkSessionTest {
         verify(connection).reset(any());
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldSendTelemetryIfEnabledOnBegin(boolean telemetryDisabled) {
+        // given
+        var session = newSession(connectionProvider, WRITE, new FixedRetryLogic(0), Set.of(), telemetryDisabled);
+        given(connection.isTelemetryEnabled()).willReturn(true);
+        var protocol = spy(BoltProtocolV54.INSTANCE);
+        when(connection.protocol()).thenReturn(protocol);
+
+        // when
+        beginTransaction(session);
+
+        // then
+        if (telemetryDisabled) {
+            then(protocol).should(never()).telemetry(any(), any());
+        } else {
+            then(protocol)
+                    .should(times(1))
+                    .telemetry(eq(connection), eq(TelemetryApi.UNMANAGED_TRANSACTION.getValue()));
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldSendTelemetryIfEnabledOnRun(boolean telemetryDisabled) {
+        // given
+        var query = "RETURN 1";
+        setupSuccessfulRunAndPull(connection, query);
+        var apiTxWork = mock(ApiTelemetryWork.class);
+        var session = newSession(connectionProvider, WRITE, new FixedRetryLogic(0), Set.of(), telemetryDisabled);
+        given(connection.isTelemetryEnabled()).willReturn(true);
+        var protocol = spy(BoltProtocolV54.INSTANCE);
+        when(connection.protocol()).thenReturn(protocol);
+
+        // when
+        run(session, query);
+
+        // then
+        if (telemetryDisabled) {
+            then(protocol).should(never()).telemetry(any(), any());
+        } else {
+            then(protocol)
+                    .should(times(1))
+                    .telemetry(eq(connection), eq(TelemetryApi.AUTO_COMMIT_TRANSACTION.getValue()));
+        }
+    }
+
     private static void run(NetworkSession session, String query) {
         await(session.runAsync(new Query(query), TransactionConfig.empty()));
     }
 
     private static UnmanagedTransaction beginTransaction(NetworkSession session) {
-        return await(session.beginTransactionAsync(TransactionConfig.empty()));
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        return await(session.beginTransactionAsync(TransactionConfig.empty(), apiTelemetryWork));
     }
 
     private static void close(NetworkSession session) {

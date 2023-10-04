@@ -65,6 +65,11 @@ public class DirectConnection implements Connection {
     }
 
     @Override
+    public boolean isTelemetryEnabled() {
+        return delegate.isTelemetryEnabled();
+    }
+
+    @Override
     public void write(Message message, ResponseHandler handler) {
         delegate.write(message, handler);
     }

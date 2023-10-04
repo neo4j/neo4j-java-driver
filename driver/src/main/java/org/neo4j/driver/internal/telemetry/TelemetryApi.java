@@ -16,21 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.telemetry;
 
-import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.async.NetworkSession;
+/**
+ * An enum of valid telemetry metrics.
+ */
+public enum TelemetryApi {
+    MANAGED_TRANSACTION(0),
+    UNMANAGED_TRANSACTION(1),
+    AUTO_COMMIT_TRANSACTION(2),
+    EXECUTABLE_QUERY(3);
 
-public interface SessionFactory {
-    NetworkSession newInstance(SessionConfig sessionConfig, AuthToken overrideAuthToken, boolean telemetryDisabled);
+    private final Integer value;
 
-    CompletionStage<Void> verifyConnectivity();
+    TelemetryApi(Integer value) {
+        this.value = value;
+    }
 
-    CompletionStage<Void> close();
-
-    CompletionStage<Boolean> supportsMultiDb();
-
-    CompletionStage<Boolean> supportsSessionAuth();
+    public Integer getValue() {
+        return value;
+    }
 }

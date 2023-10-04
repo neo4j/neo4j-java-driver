@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -28,6 +29,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -82,8 +86,11 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
+import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
+import org.neo4j.driver.internal.telemetry.TelemetryApi;
 
 class UnmanagedTransactionTest {
     @Test
@@ -181,7 +188,9 @@ class UnmanagedTransactionTest {
     void shouldReleaseConnectionWhenBeginFails() {
         var error = new RuntimeException("Wrong bookmark!");
         var connection = connectionWithBegin(handler -> handler.onFailure(error));
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
 
         var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
@@ -195,7 +204,9 @@ class UnmanagedTransactionTest {
     @Test
     void shouldNotReleaseConnectionWhenBeginSucceeds() {
         var connection = connectionWithBegin(handler -> handler.onSuccess(emptyMap()));
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
 
         var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
@@ -209,7 +220,9 @@ class UnmanagedTransactionTest {
     @SuppressWarnings("ThrowableNotThrown")
     void shouldReleaseConnectionWhenTerminatedAndCommitted() {
         var connection = connectionMock();
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
 
         tx.markTerminated(null);
 
@@ -224,9 +237,17 @@ class UnmanagedTransactionTest {
     void shouldNotCreateCircularExceptionWhenTerminationCauseEqualsToCursorFailure() {
         var connection = connectionMock();
         var terminationCause = new ClientException("Custom exception");
+
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var resultCursorsHolder = mockResultCursorWith(terminationCause);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, resultCursorsHolder, null, Logging.none());
+                connection,
+                (ignored) -> {},
+                UNLIMITED_FETCH_SIZE,
+                resultCursorsHolder,
+                null,
+                apiTelemetryWork,
+                Logging.none());
 
         tx.markTerminated(terminationCause);
 
@@ -241,8 +262,15 @@ class UnmanagedTransactionTest {
         var connection = connectionMock();
         var terminationCause = new ClientException("Custom exception");
         var resultCursorsHolder = mockResultCursorWith(new ClientException("Cursor error"));
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, resultCursorsHolder, null, Logging.none());
+                connection,
+                (ignored) -> {},
+                UNLIMITED_FETCH_SIZE,
+                resultCursorsHolder,
+                null,
+                apiTelemetryWork,
+                Logging.none());
 
         tx.markTerminated(terminationCause);
 
@@ -259,7 +287,9 @@ class UnmanagedTransactionTest {
     void shouldNotCreateCircularExceptionWhenTerminatedWithoutFailure() {
         var connection = connectionMock();
         var terminationCause = new ClientException("Custom exception");
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
 
         tx.markTerminated(terminationCause);
 
@@ -273,7 +303,9 @@ class UnmanagedTransactionTest {
     @SuppressWarnings("ThrowableNotThrown")
     void shouldReleaseConnectionWhenTerminatedAndRolledBack() {
         var connection = connectionMock();
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
 
         tx.markTerminated(null);
         await(tx.rollbackAsync());
@@ -284,7 +316,9 @@ class UnmanagedTransactionTest {
     @Test
     void shouldReleaseConnectionWhenClose() {
         var connection = connectionMock();
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
 
         await(tx.closeAsync());
 
@@ -295,7 +329,9 @@ class UnmanagedTransactionTest {
     void shouldReleaseConnectionOnConnectionAuthorizationExpiredExceptionFailure() {
         var exception = new AuthorizationExpiredException("code", "message");
         var connection = connectionWithBegin(handler -> handler.onFailure(exception));
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
         var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
@@ -310,7 +346,9 @@ class UnmanagedTransactionTest {
     @Test
     void shouldReleaseConnectionOnConnectionReadTimeoutExceptionFailure() {
         var connection = connectionWithBegin(handler -> handler.onFailure(ConnectionReadTimeoutException.INSTANCE));
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
         var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
@@ -340,7 +378,9 @@ class UnmanagedTransactionTest {
         given(connection.protocol()).willReturn(protocol);
         given(protocolCommit ? protocol.commitTransaction(connection) : protocol.rollbackTransaction(connection))
                 .willReturn(new CompletableFuture<>());
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
 
         var initialStage = mapTransactionAction(initialAction, tx).get();
         var similarStage = mapTransactionAction(similarAction, tx).get();
@@ -380,7 +420,9 @@ class UnmanagedTransactionTest {
         given(connection.protocol()).willReturn(protocol);
         given(protocolCommit ? protocol.commitTransaction(connection) : protocol.rollbackTransaction(connection))
                 .willReturn(protocolActionCompleted ? completedFuture(null) : new CompletableFuture<>());
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
 
         var originalActionStage = mapTransactionAction(initialAction, tx).get();
         var conflictingActionStage = mapTransactionAction(conflictingAction, tx).get();
@@ -421,7 +463,9 @@ class UnmanagedTransactionTest {
         given(connection.protocol()).willReturn(protocol);
         given(protocolCommit ? protocol.commitTransaction(connection) : protocol.rollbackTransaction(connection))
                 .willReturn(completedFuture(null));
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
 
         var originalActionStage = mapTransactionAction(originalAction, tx).get();
         var closeStage = commitOnClose != null ? tx.closeAsync(commitOnClose) : tx.closeAsync();
@@ -507,6 +551,106 @@ class UnmanagedTransactionTest {
         assertEquals(testParams.expectedMessage(), exception.getMessage());
     }
 
+    @Test
+    void shouldBeginAsyncTelemetryNotCompleteReturnedFuture() {
+        var protocol = mock(BoltProtocol.class);
+        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
+        var connection = connectionMock(protocol);
+        var apiTelemetryWork = mock(ApiTelemetryWork.class);
+        var beginFuture = new CompletableFuture<>();
+        doReturn(CompletableFuture.completedFuture(null)).when(apiTelemetryWork).execute(connection, protocol);
+        doReturn(beginFuture)
+                .when(protocol)
+                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
+        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+
+        assertFalse(unmanagedTransaction
+                .beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)
+                .toCompletableFuture()
+                .isDone());
+
+        beginFuture.complete(null);
+
+        assertTrue(unmanagedTransaction
+                .beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)
+                .toCompletableFuture()
+                .isDone());
+    }
+
+    @Test
+    void shouldBeginAsyncThrowErrorOnTelemetryIfFlushIsTrueAndBeginDontFinish() {
+        var protocol = mock(BoltProtocol.class);
+        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
+        var connection = connectionMock(protocol);
+        var apiTelemetryWork = mock(ApiTelemetryWork.class);
+        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
+                .when(apiTelemetryWork)
+                .execute(connection, protocol);
+        doReturn(new CompletableFuture<>())
+                .when(protocol)
+                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
+        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+
+        assertThrows(
+                SecurityException.class,
+                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)));
+    }
+
+    @Test
+    void shouldBeginAsyncThrowErrorOnTelemetryIfFlushIsTrueAndBeginFailed() {
+        var protocol = mock(BoltProtocol.class);
+        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
+        var connection = connectionMock(protocol);
+        var apiTelemetryWork = mock(ApiTelemetryWork.class);
+        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
+                .when(apiTelemetryWork)
+                .execute(connection, protocol);
+        doReturn(CompletableFuture.failedFuture(new ClientException("other error")))
+                .when(protocol)
+                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
+        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+
+        assertThrows(
+                SecurityException.class,
+                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)));
+    }
+
+    @Test
+    void shouldBeginAsyncNotThrowErrorOnTelemetryIfNotFlushIsTrueAndBeginDontFinish() {
+        var protocol = mock(BoltProtocol.class);
+        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
+        var connection = connectionMock(protocol);
+        var apiTelemetryWork = mock(ApiTelemetryWork.class);
+        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
+                .when(apiTelemetryWork)
+                .execute(connection, protocol);
+        doReturn(new CompletableFuture<>())
+                .when(protocol)
+                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
+        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+
+        assertDoesNotThrow(
+                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", false)));
+    }
+
+    @Test
+    void shouldBeginAsyncNotThrowErrorOnTelemetryIfNotFlushIsTrueAndBeginFailed() {
+        var protocol = mock(BoltProtocol.class);
+        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
+        var connection = connectionMock(protocol);
+        var apiTelemetryWork = mock(ApiTelemetryWork.class);
+        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
+                .when(apiTelemetryWork)
+                .execute(connection, protocol);
+        doReturn(CompletableFuture.failedFuture(new ClientException("other error")))
+                .when(protocol)
+                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
+        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+
+        assertDoesNotThrow(
+                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", false)));
+    }
+
     static List<Arguments> transactionClosingTestParams() {
         Function<UnmanagedTransaction, CompletionStage<?>> asyncRun = tx -> tx.runAsync(new Query("query"));
         Function<UnmanagedTransaction, CompletionStage<?>> reactiveRun = tx -> tx.runRx(new Query("query"));
@@ -559,7 +703,9 @@ class UnmanagedTransactionTest {
     }
 
     private static UnmanagedTransaction beginTx(Connection connection, Set<Bookmark> initialBookmarks) {
-        var tx = new UnmanagedTransaction(connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, Logging.none());
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        var tx = new UnmanagedTransaction(
+                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
         return await(tx.beginAsync(initialBookmarks, TransactionConfig.empty(), null, true));
     }
 
