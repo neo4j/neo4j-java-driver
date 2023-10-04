@@ -120,6 +120,7 @@ class ApiTelemetryWorkTest {
         apiTelemetryWork.setEnabled(false);
     }
 
+    @SuppressWarnings("EmptyMethod")
     private static void noop(ApiTelemetryWork apiTelemetryWork) {}
 
     private static void callApiTelemetryWorkExecuteWithSuccess(ApiTelemetryWork apiTelemetryWork) {
