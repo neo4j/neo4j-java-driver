@@ -53,7 +53,7 @@
     <jackson.version>2.15.2</jackson.version>
     <lombok.version>1.18.28</lombok.version>
     <svm.version>23.0.1</svm.version>
-    <micrometer.version>1.11.3</micrometer.version>
+    <micrometer.version>1.11.4</micrometer.version>
     <blockhound.version>1.0.8.RELEASE</blockhound.version>
     <testcontainers.version>1.19.0</testcontainers.version>
     <build-resources.version>5.11.0</build-resources.version>
