@@ -42,7 +42,7 @@ module org.neo4j.driver {
     requires transitive java.logging;
     requires transitive org.reactivestreams;
     requires static micrometer.core;
-    requires static org.graalvm.sdk;
+    requires static org.graalvm.nativeimage;
     requires static org.slf4j;
     requires static java.management;
     requires static reactor.blockhound;

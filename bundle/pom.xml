@@ -73,11 +73,6 @@
               <goals>
                 <goal>jar</goal>
               </goals>
-              <configuration>
-                <additionalOptions combine.children="append">
-                  <option>--add-exports org.graalvm.sdk/com.oracle.svm.core.annotate=org.neo4j.driver</option>
-                </additionalOptions>
-              </configuration>
             </execution>
           </executions>
         </plugin>
