@@ -68,6 +68,9 @@ public sealed interface NotificationCategory extends Serializable permits Intern
      * A security category.
      * <p>
      * For instance, the security warnings.
+     * <p>
+     * Please note that this category was added to a later server version.
+     *
      * @since 5.14
      */
     NotificationCategory SECURITY = new InternalNotificationCategory(Type.SECURITY);
@@ -76,6 +79,9 @@ public sealed interface NotificationCategory extends Serializable permits Intern
      * A topology category.
      * <p>
      * For instance, the topology notifications.
+     * <p>
+     * Please note that this category was added to a later server version.
+     *
      * @since 5.14
      */
     NotificationCategory TOPOLOGY = new InternalNotificationCategory(Type.TOPOLOGY);
