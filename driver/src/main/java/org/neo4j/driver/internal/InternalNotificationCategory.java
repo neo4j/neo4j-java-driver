@@ -35,6 +35,8 @@ public record InternalNotificationCategory(Type type) implements NotificationCat
         UNSUPPORTED,
         PERFORMANCE,
         DEPRECATION,
+        SECURITY,
+        TOPOLOGY,
         GENERIC
     }
 
@@ -48,6 +50,8 @@ public record InternalNotificationCategory(Type type) implements NotificationCat
                     case UNSUPPORTED -> NotificationCategory.UNSUPPORTED;
                     case PERFORMANCE -> NotificationCategory.PERFORMANCE;
                     case DEPRECATION -> NotificationCategory.DEPRECATION;
+                    case SECURITY -> NotificationCategory.SECURITY;
+                    case TOPOLOGY -> NotificationCategory.TOPOLOGY;
                     case GENERIC -> NotificationCategory.GENERIC;
                 });
     }
