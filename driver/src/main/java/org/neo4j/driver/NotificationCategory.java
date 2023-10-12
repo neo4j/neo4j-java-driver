@@ -69,7 +69,8 @@ public sealed interface NotificationCategory extends Serializable permits Intern
      * <p>
      * For instance, the security warnings.
      * <p>
-     * Please note that this category was added to a later server version.
+     * Please note that this category was added to a later server version. Therefore, a compatible server version is
+     * required to use it.
      *
      * @since 5.14
      */
@@ -80,7 +81,8 @@ public sealed interface NotificationCategory extends Serializable permits Intern
      * <p>
      * For instance, the topology notifications.
      * <p>
-     * Please note that this category was added to a later server version.
+     * Please note that this category was added to a later server version. Therefore, a compatible server version is
+     * required to use it.
      *
      * @since 5.14
      */
