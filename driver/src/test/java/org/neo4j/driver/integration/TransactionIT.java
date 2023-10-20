@@ -213,7 +213,7 @@ class TransactionIT {
                 ClientException.class, () -> session.run("CREAT (n) RETURN n").consume());
     }
 
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings("ConstantValue")
     @Test
     void shouldHandleNullRecordParameters() {
         // When
@@ -226,7 +226,7 @@ class TransactionIT {
         // Then it wasn't the end of the world as we know it
     }
 
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings("ConstantValue")
     @Test
     void shouldHandleNullValueParameters() {
         // When
@@ -239,7 +239,7 @@ class TransactionIT {
         // Then it wasn't the end of the world as we know it
     }
 
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings("ConstantValue")
     @Test
     void shouldHandleNullMapParameters() {
         // When

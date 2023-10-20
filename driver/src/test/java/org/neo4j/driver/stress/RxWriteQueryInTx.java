@@ -36,7 +36,7 @@ import reactor.core.publisher.Mono;
 public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery<C> {
     private final AbstractStressTestBase<C> stressTest;
 
-    public RxWriteQueryInTx(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
+    RxWriteQueryInTx(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
         super(driver, useBookmark);
         this.stressTest = stressTest;
     }

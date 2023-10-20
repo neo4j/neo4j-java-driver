@@ -30,7 +30,6 @@ import org.neo4j.driver.Values;
 
 /**
  * Asynchronous interface for components that can execute Neo4j queries.
- *
  * <h2>Important notes on semantics</h2>
  * <p>
  * Queries run in the same {@link AsyncQueryRunner} are guaranteed
@@ -62,7 +61,6 @@ import org.neo4j.driver.Values;
  * While these semantics introduce some complexity, it gives the driver the ability
  * to handle infinite result streams (like subscribing to events), significantly lowers
  * the memory overhead for your application and improves performance.
- *
  * <h2>Asynchronous API</h2>
  * <p>
  * All overloads of {@link #runAsync(Query)} execute queries in async fashion and return {@link CompletionStage} of

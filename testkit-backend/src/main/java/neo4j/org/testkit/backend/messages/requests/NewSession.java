@@ -82,7 +82,7 @@ public class NewSession implements TestkitRequest {
                 testkitState, this::createReactiveSessionStreamsState, testkitState::addReactiveSessionStreamsHolder));
     }
 
-    protected <T> TestkitResponse createSessionStateAndResponse(
+    private <T> TestkitResponse createSessionStateAndResponse(
             TestkitState testkitState,
             SessionStateProducer<T> sessionStateProducer,
             Function<T, String> addSessionHolder) {

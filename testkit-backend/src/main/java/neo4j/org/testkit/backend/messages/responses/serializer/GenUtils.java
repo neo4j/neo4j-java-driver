@@ -31,7 +31,7 @@ import org.neo4j.driver.types.IsoDuration;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class GenUtils {
-    public static void object(JsonGenerator gen, RunnableWithIOException runnable) throws IOException {
+    static void object(JsonGenerator gen, RunnableWithIOException runnable) throws IOException {
         gen.writeStartObject();
         runnable.run();
         gen.writeEndObject();
@@ -49,8 +49,7 @@ public final class GenUtils {
         cypherObject(gen, name, () -> gen.writeObjectField("value", value));
     }
 
-    public static <T> void cypherObject(JsonGenerator gen, String name, RunnableWithIOException runnable)
-            throws IOException {
+    static <T> void cypherObject(JsonGenerator gen, String name, RunnableWithIOException runnable) throws IOException {
         object(gen, () -> {
             gen.writeStringField("name", name);
             gen.writeFieldName("data");

@@ -71,7 +71,7 @@ class QueryIT {
         // Then nothing should've failed
     }
 
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings("ConstantValue")
     @Test
     void shouldRunWithNullValuesAsParameters() {
         // Given
@@ -83,7 +83,7 @@ class QueryIT {
         // Then nothing should've failed
     }
 
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings("ConstantValue")
     @Test
     void shouldRunWithNullRecordAsParameters() {
         // Given
@@ -95,7 +95,7 @@ class QueryIT {
         // Then nothing should've failed
     }
 
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings("ConstantValue")
     @Test
     void shouldRunWithNullMapAsParameters() {
         // Given

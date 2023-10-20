@@ -30,7 +30,7 @@ import org.neo4j.driver.summary.ResultSummary;
 public class AsyncWriteQueryWithRetries<C extends AbstractContext> extends AbstractAsyncQuery<C> {
     private final AbstractStressTestBase<C> stressTest;
 
-    public AsyncWriteQueryWithRetries(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
+    AsyncWriteQueryWithRetries(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
         super(driver, useBookmark);
         this.stressTest = stressTest;
     }

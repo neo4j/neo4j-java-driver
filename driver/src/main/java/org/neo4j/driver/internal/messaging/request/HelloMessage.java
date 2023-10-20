@@ -94,17 +94,7 @@ public class HelloMessage extends MessageWithMetadata {
             result.put(USER_AGENT_METADATA_KEY, value(userAgent));
         }
         if (boltAgent != null) {
-            var boltAgentMap = new HashMap<String, String>();
-            boltAgentMap.put(BOLT_AGENT_PRODUCT_KEY, boltAgent.product());
-            if (boltAgent.platform() != null) {
-                boltAgentMap.put(BOLT_AGENT_PLATFORM_KEY, boltAgent.platform());
-            }
-            if (boltAgent.language() != null) {
-                boltAgentMap.put(BOLT_AGENT_LANGUAGE_KEY, boltAgent.language());
-            }
-            if (boltAgent.languageDetails() != null) {
-                boltAgentMap.put(BOLT_AGENT_LANGUAGE_DETAIL_KEY, boltAgent.languageDetails());
-            }
+            var boltAgentMap = toMap(boltAgent);
             result.put(BOLT_AGENT_METADATA_KEY, value(boltAgentMap));
         }
         if (routingContext != null) {
@@ -115,5 +105,20 @@ public class HelloMessage extends MessageWithMetadata {
         }
         MessageWithMetadata.appendNotificationConfig(result, notificationConfig);
         return result;
+    }
+
+    private static HashMap<String, String> toMap(BoltAgent boltAgent) {
+        var boltAgentMap = new HashMap<String, String>();
+        boltAgentMap.put(BOLT_AGENT_PRODUCT_KEY, boltAgent.product());
+        if (boltAgent.platform() != null) {
+            boltAgentMap.put(BOLT_AGENT_PLATFORM_KEY, boltAgent.platform());
+        }
+        if (boltAgent.language() != null) {
+            boltAgentMap.put(BOLT_AGENT_LANGUAGE_KEY, boltAgent.language());
+        }
+        if (boltAgent.languageDetails() != null) {
+            boltAgentMap.put(BOLT_AGENT_LANGUAGE_DETAIL_KEY, boltAgent.languageDetails());
+        }
+        return boltAgentMap;
     }
 }

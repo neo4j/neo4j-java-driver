@@ -30,6 +30,7 @@ public class AsyncAutocommitTransactionExample extends BaseApplication {
         super(uri, user, password);
     }
 
+    @SuppressWarnings("CallToPrintStackTrace")
     // tag::async-autocommit-transaction[]
     public CompletionStage<List<String>> readProductTitles() {
         var query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";

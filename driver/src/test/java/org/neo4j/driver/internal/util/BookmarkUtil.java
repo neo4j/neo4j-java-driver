@@ -69,7 +69,7 @@ public class BookmarkUtil {
         assertNotNull(bookmark);
         assertThat(bookmark, instanceOf(InternalBookmark.class));
 
-        var values = asList(((InternalBookmark) bookmark).values());
+        var values = asList((bookmark).values());
         assertThat(values.size(), equalTo(1));
         assertThat(values.get(0), matcher);
     }
@@ -84,7 +84,7 @@ public class BookmarkUtil {
 
         for (var bookmark : bookmarks) {
             assertBookmarkContainsSingleValue(bookmark);
-            var values = asList(((InternalBookmark) bookmark).values());
+            var values = asList((bookmark).values());
             bookmarkStrings.addAll(values);
         }
         assertEquals(count, bookmarkStrings.size());

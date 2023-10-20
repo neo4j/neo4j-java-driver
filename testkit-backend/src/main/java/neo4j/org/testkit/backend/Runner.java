@@ -33,19 +33,7 @@ import org.neo4j.driver.Logging;
 
 public class Runner {
     public static void main(String[] args) throws InterruptedException {
-        TestkitRequestProcessorHandler.BackendMode backendMode;
-        var modeArg = args.length > 0 ? args[0] : null;
-        if ("async".equals(modeArg)) {
-            backendMode = TestkitRequestProcessorHandler.BackendMode.ASYNC;
-        } else if ("reactive-legacy".equals(modeArg)) {
-            backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE_LEGACY;
-        } else if ("reactive".equals(modeArg)) {
-            backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE;
-        } else if ("reactive-streams".equals(modeArg)) {
-            backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE;
-        } else {
-            backendMode = TestkitRequestProcessorHandler.BackendMode.SYNC;
-        }
+        var backendMode = getBackendMode(args);
         var levelString = System.getenv("TESTKIT_BACKEND_LOGGING_LEVEL");
         var logging = levelString == null || levelString.isEmpty()
                 ? Logging.none()
@@ -72,5 +60,22 @@ public class Runner {
         } finally {
             group.shutdownGracefully().sync();
         }
+    }
+
+    private static TestkitRequestProcessorHandler.BackendMode getBackendMode(String[] args) {
+        TestkitRequestProcessorHandler.BackendMode backendMode;
+        var modeArg = args.length > 0 ? args[0] : null;
+        if ("async".equals(modeArg)) {
+            backendMode = TestkitRequestProcessorHandler.BackendMode.ASYNC;
+        } else if ("reactive-legacy".equals(modeArg)) {
+            backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE_LEGACY;
+        } else if ("reactive".equals(modeArg)) {
+            backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE;
+        } else if ("reactive-streams".equals(modeArg)) {
+            backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE;
+        } else {
+            backendMode = TestkitRequestProcessorHandler.BackendMode.SYNC;
+        }
+        return backendMode;
     }
 }

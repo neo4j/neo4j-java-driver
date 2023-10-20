@@ -1267,7 +1267,7 @@ class ExponentialBackoffRetryLogicTest {
         var delay = initialDelay;
         do {
             values.add(delay);
-            delay *= multiplier;
+            delay *= (long) multiplier;
         } while (--count > 0);
         return values;
     }

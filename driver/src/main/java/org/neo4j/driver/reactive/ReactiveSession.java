@@ -199,7 +199,6 @@ public interface ReactiveSession extends BaseSession, ReactiveQueryRunner {
      * <p>
      * This version of run takes a {@link Map} of parameters. The values in the map must be values that can be converted to Neo4j types. See {@link
      * Values#parameters(Object...)} for a list of allowed types.
-     *
      * <h4>Example</h4>
      * <pre>
      * {@code
@@ -232,7 +231,6 @@ public interface ReactiveSession extends BaseSession, ReactiveQueryRunner {
      * <p>
      * Invoking this method will result in a Bolt RUN message exchange with server and the returned publisher will either emit an instance of {@link
      * ReactiveResult} on success or an error otherwise.
-     *
      * <h4>Example</h4>
      * <pre>
      * {@code
