@@ -24,7 +24,6 @@ import java.net.URI;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.internal.security.ValidatingAuthTokenManager;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
@@ -135,7 +134,6 @@ public final class GraphDatabase {
      * @since 5.8
      * @see AuthTokenManager
      */
-    @Preview(name = "AuthToken rotation and session auth support")
     public static Driver driver(URI uri, AuthTokenManager authTokenManager) {
         return driver(uri, authTokenManager, Config.defaultConfig());
     }
@@ -150,7 +148,6 @@ public final class GraphDatabase {
      * @since 5.8
      * @see AuthTokenManager
      */
-    @Preview(name = "AuthToken rotation and session auth support")
     public static Driver driver(String uri, AuthTokenManager authTokenManager) {
         return driver(URI.create(uri), authTokenManager);
     }
@@ -165,7 +162,6 @@ public final class GraphDatabase {
      * @since 5.8
      * @see AuthTokenManager
      */
-    @Preview(name = "AuthToken rotation and session auth support")
     public static Driver driver(URI uri, AuthTokenManager authTokenManager, Config config) {
         return driver(uri, authTokenManager, config, new DriverFactory());
     }
@@ -180,7 +176,6 @@ public final class GraphDatabase {
      * @since 5.8
      * @see AuthTokenManager
      */
-    @Preview(name = "AuthToken rotation and session auth support")
     public static Driver driver(String uri, AuthTokenManager authTokenManager, Config config) {
         return driver(URI.create(uri), authTokenManager, config);
     }

@@ -20,7 +20,6 @@ package org.neo4j.driver;
 
 import java.util.function.Supplier;
 import org.neo4j.driver.internal.security.InternalAuthTokenAndExpiration;
-import org.neo4j.driver.util.Preview;
 
 /**
  * A container used by the expiration based {@link AuthTokenManager} implementation provided by the driver, it contains an
@@ -33,7 +32,6 @@ import org.neo4j.driver.util.Preview;
  * @see AuthTokenManagers#bearer(Supplier)
  * @see AuthTokenManagers#bearerAsync(Supplier)
  */
-@Preview(name = "AuthToken rotation and session auth support")
 public sealed interface AuthTokenAndExpiration permits InternalAuthTokenAndExpiration {
     /**
      * Returns the {@link AuthToken}.
