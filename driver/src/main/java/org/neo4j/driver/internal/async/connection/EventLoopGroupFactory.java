@@ -114,6 +114,7 @@ public final class EventLoopGroupFactory {
             super(THREAD_NAME_PREFIX, THREAD_IS_DAEMON, THREAD_PRIORITY);
         }
 
+        @SuppressWarnings("InstantiatingAThreadWithDefaultRunMethod")
         @Override
         protected Thread newThread(Runnable r, String name) {
             return new DriverThread(threadGroup, r, name);

@@ -97,7 +97,7 @@ public class InternalPlan<T extends Plan> implements Plan {
         return result;
     }
 
-    public static final PlanCreator<Plan> EXPLAIN_PLAN =
+    private static final PlanCreator<Plan> EXPLAIN_PLAN =
             (operatorType, arguments, identifiers, children, originalPlanValue) ->
                     new InternalPlan<>(operatorType, arguments, identifiers, children);
 

@@ -286,7 +286,7 @@ public class BasicPullResponseHandler implements PullResponseHandler {
         this.state = state;
     }
 
-    enum State {
+    protected enum State {
         READY_STATE {
             @Override
             void onSuccess(BasicPullResponseHandler context, Map<String, Value> metadata) {

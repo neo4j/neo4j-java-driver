@@ -363,7 +363,7 @@ class RoutingTableAndConnectionPoolTest {
                     .mapToObj(SERVERS::get)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
-            if (servers.size() == 0) {
+            if (servers.isEmpty()) {
                 var address = SERVERS.stream()
                         .filter(Objects::nonNull)
                         .findFirst()

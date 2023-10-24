@@ -36,7 +36,6 @@ import org.neo4j.driver.util.Resource;
  * Results are valid until the next query is run or until the end of the current transaction,
  * whichever comes first. To keep a result around while further queries are run, or to use a result outside the scope
  * of the current transaction, see {@link #list()}.
- *
  * <h2>Important note on semantics</h2>
  *
  * In order to handle very large results, and to minimize memory overhead and maximize

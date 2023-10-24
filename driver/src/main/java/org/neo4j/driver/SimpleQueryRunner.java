@@ -22,7 +22,6 @@ import java.util.Map;
 
 /**
  * Common interface for components that can execute Neo4j queries.
- *
  * <h2>Important notes on semantics</h2>
  * <p>
  * queries run in the same {@link QueryRunner} are guaranteed to execute in order, meaning changes made by one query will be seen by all subsequent queries in
@@ -64,7 +63,6 @@ public interface SimpleQueryRunner {
      * send it back as parameters.
      * <p>
      * If you are creating parameters programmatically, {@link #run(String, Map)} might be more helpful, it converts your map to a {@link Value} for you.
-     *
      * <h4>Example</h4>
      * <pre class="doctest:QueryRunnerDocIT#parameterTest">
      * {@code
@@ -88,7 +86,6 @@ public interface SimpleQueryRunner {
      * <p>
      * This version of run takes a {@link Map} of parameters. The values in the map must be values that can be converted to Neo4j types. See {@link
      * Values#parameters(Object...)} for a list of allowed types.
-     *
      * <h4>Example</h4>
      * <pre class="doctest:QueryRunnerDocIT#parameterTest">
      * {@code

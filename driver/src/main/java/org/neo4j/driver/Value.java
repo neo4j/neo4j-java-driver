@@ -53,7 +53,6 @@ import org.neo4j.driver.util.Immutable;
  * The second set of methods perform coercions to Java types (wherever possible).
  * For example, a common String value should be tested for using <code>isString</code>
  * and extracted using <code>stringValue</code>.
- *
  * <h2>Navigating a tree structure</h2>
  *
  * Because Neo4j often handles dynamic structures, this interface is designed to help

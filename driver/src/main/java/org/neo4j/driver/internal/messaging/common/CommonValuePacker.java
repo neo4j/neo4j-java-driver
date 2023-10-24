@@ -96,7 +96,7 @@ public class CommonValuePacker implements ValuePacker {
 
     @Override
     public final void pack(Map<String, Value> map) throws IOException {
-        if (map == null || map.size() == 0) {
+        if (map == null || map.isEmpty()) {
             packer.packMapHeader(0);
             return;
         }

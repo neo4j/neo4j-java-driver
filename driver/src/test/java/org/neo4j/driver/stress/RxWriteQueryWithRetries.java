@@ -32,7 +32,7 @@ import reactor.core.publisher.Mono;
 public class RxWriteQueryWithRetries<C extends AbstractContext> extends AbstractRxQuery<C> {
     private final AbstractStressTestBase<C> stressTest;
 
-    public RxWriteQueryWithRetries(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
+    RxWriteQueryWithRetries(AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark) {
         super(driver, useBookmark);
         this.stressTest = stressTest;
     }

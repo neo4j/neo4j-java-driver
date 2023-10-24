@@ -233,7 +233,7 @@ class ConnectionPoolIT {
             }
         }
 
-        @SuppressWarnings("BusyWait")
+        @SuppressWarnings({"BusyWait", "CallToPrintStackTrace"})
         void assertSessionsAvailableWithin() throws InterruptedException {
             var deadline = System.currentTimeMillis() + 1000 * 120;
             while (System.currentTimeMillis() < deadline) {

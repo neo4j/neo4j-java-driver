@@ -171,7 +171,6 @@ public interface RxSession extends BaseSession, RxQueryRunner {
      * This version of run takes a {@link Map} of parameters.
      * The values in the map must be values that can be converted to Neo4j types.
      * See {@link Values#parameters(Object...)} for a list of allowed types.
-     *
      * <h4>Example</h4>
      * <pre>
      * {@code

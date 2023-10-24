@@ -37,8 +37,6 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 
 public class ClusterRoutingTable implements RoutingTable {
-    private static final int MIN_ROUTERS = 1;
-
     private final ReadWriteLock tableLock = new ReentrantReadWriteLock();
     private final DatabaseName databaseName;
     private final Clock clock;
@@ -66,9 +64,9 @@ public class ClusterRoutingTable implements RoutingTable {
         return executeWithLock(
                 tableLock.readLock(),
                 () -> expirationTimestamp < clock.millis()
-                        || routers.size() < MIN_ROUTERS
-                        || mode == AccessMode.READ && readers.size() == 0
-                        || mode == AccessMode.WRITE && writers.size() == 0);
+                        || routers.isEmpty()
+                        || mode == AccessMode.READ && readers.isEmpty()
+                        || mode == AccessMode.WRITE && writers.isEmpty());
     }
 
     @Override

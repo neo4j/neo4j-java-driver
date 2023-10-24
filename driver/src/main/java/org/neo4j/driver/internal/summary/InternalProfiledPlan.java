@@ -87,7 +87,7 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
         return time;
     }
 
-    public static final PlanCreator<ProfiledPlan> PROFILED_PLAN =
+    private static final PlanCreator<ProfiledPlan> PROFILED_PLAN =
             (operatorType, arguments, identifiers, children, originalPlanValue) -> new InternalProfiledPlan(
                     operatorType,
                     arguments,

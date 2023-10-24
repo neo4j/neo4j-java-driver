@@ -147,7 +147,6 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
             return neo4j.org.testkit.backend.messages.responses.FrontendError.builder()
                     .build();
         } else {
-            throwable.printStackTrace();
             return BackendError.builder()
                     .data(BackendError.BackendErrorBody.builder()
                             .msg(throwable.toString())
