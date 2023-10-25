@@ -56,7 +56,7 @@
     <micrometer.version>1.11.5</micrometer.version>
     <blockhound.version>1.0.8.RELEASE</blockhound.version>
     <testcontainers.version>1.19.1</testcontainers.version>
-    <build-resources.version>5.13.0</build-resources.version>
+    <build-resources.version>5.11.0</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
@@ -504,7 +504,7 @@
             <failIfDisliked>true</failIfDisliked>
             <failIfMissing>true</failIfMissing>
             <plainTextReport>true</plainTextReport>
-            <prependText>licensing/notice-apache2-prefix.txt</prependText>
+            <prependText>licensing/notice-asl-prefix.txt</prependText>
             <excludedGroups>
               ^((org.neo4j.driver){1})$
             </excludedGroups>
