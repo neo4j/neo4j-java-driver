@@ -22,7 +22,6 @@ import java.io.Serial;
 import java.util.Objects;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.util.Experimental;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Indicates that the contained {@link SecurityException} is a {@link RetryableException}, which is determined by the
@@ -34,7 +33,6 @@ import org.neo4j.driver.util.Preview;
  *
  * @since 5.12
  */
-@Preview(name = "AuthToken rotation and session auth support")
 public class SecurityRetryableException extends SecurityException implements RetryableException {
     @Serial
     private static final long serialVersionUID = 3914900631374208080L;

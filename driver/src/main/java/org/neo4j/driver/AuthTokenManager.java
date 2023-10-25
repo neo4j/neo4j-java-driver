@@ -22,7 +22,6 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.SecurityRetryableException;
-import org.neo4j.driver.util.Preview;
 
 /**
  * A manager of {@link AuthToken} instances used by the driver.
@@ -43,7 +42,6 @@ import org.neo4j.driver.util.Preview;
  * be done on the calling thread.
  * @since 5.8
  */
-@Preview(name = "AuthToken rotation and session auth support")
 public interface AuthTokenManager {
     /**
      * Returns a {@link CompletionStage} for a valid {@link AuthToken}.

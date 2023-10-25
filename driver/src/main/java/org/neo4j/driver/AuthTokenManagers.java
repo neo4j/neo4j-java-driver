@@ -30,14 +30,12 @@ import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.internal.security.ExpirationBasedAuthTokenManager;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Implementations of {@link AuthTokenManager}.
  *
  * @since 5.8
  */
-@Preview(name = "AuthToken rotation and session auth support")
 public final class AuthTokenManagers {
     private AuthTokenManagers() {}
 

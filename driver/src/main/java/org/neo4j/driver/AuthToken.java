@@ -21,7 +21,6 @@ package org.neo4j.driver;
 import java.util.function.Supplier;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.InternalAuthTokenAndExpiration;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Token for holding authentication details, such as <em>user name</em> and <em>password</em>.
@@ -45,7 +44,6 @@ public sealed interface AuthToken permits InternalAuthToken {
      * @see AuthTokenManagers#bearer(Supplier)
      * @see AuthTokenManagers#bearerAsync(Supplier)
      */
-    @Preview(name = "AuthToken rotation and session auth support")
     default AuthTokenAndExpiration expiringAt(long utcExpirationTimestamp) {
         return new InternalAuthTokenAndExpiration(this, utcExpirationTimestamp);
     }
