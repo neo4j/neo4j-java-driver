@@ -36,24 +36,24 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.99.Final</netty-bom.version>
+    <netty-bom.version>4.1.100.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2022.0.11</reactor-bom.version>
+    <reactor-bom.version>2022.0.12</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <mockito-core.version>5.5.0</mockito-core.version>
+    <mockito-core.version>5.6.0</mockito-core.version>
     <junit.version>5.10.0</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.8.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
-    <bouncycastle-jdk15on.version>1.70</bouncycastle-jdk15on.version>
+    <bouncycastle-jdk18on.version>1.76</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.12</logback-classic.version>
-    <jackson.version>2.15.2</jackson.version>
+    <jackson.version>2.15.3</jackson.version>
     <lombok.version>1.18.30</lombok.version>
-    <svm.version>23.1.0</svm.version>
-    <micrometer.version>1.11.4</micrometer.version>
+    <svm.version>23.1.1</svm.version>
+    <micrometer.version>1.11.5</micrometer.version>
     <blockhound.version>1.0.8.RELEASE</blockhound.version>
     <testcontainers.version>1.19.1</testcontainers.version>
     <build-resources.version>5.11.0</build-resources.version>
@@ -173,14 +173,14 @@
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk15on</artifactId>
-        <version>${bouncycastle-jdk15on.version}</version>
+        <artifactId>bcprov-jdk18on</artifactId>
+        <version>${bouncycastle-jdk18on.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcpkix-jdk15on</artifactId>
-        <version>${bouncycastle-jdk15on.version}</version>
+        <artifactId>bcpkix-jdk18on</artifactId>
+        <version>${bouncycastle-jdk18on.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
