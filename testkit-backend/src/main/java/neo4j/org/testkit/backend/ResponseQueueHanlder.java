@@ -26,28 +26,28 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 public class ResponseQueueHanlder {
     private final Consumer<TestkitResponse> responseWriter;
     private final Queue<TestkitResponse> responseQueue = new ArrayDeque<>();
-    private boolean responseReady;
+    private int requestCount;
 
     ResponseQueueHanlder(Consumer<TestkitResponse> responseWriter) {
         this.responseWriter = responseWriter;
     }
 
-    public synchronized void setResponseReadyAndDispatchFirst() {
-        responseReady = true;
-        dispatchFirst();
+    public synchronized void increaseRequestCountAndDispatchFirstResponse() {
+        requestCount++;
+        dispatchFirstResponse();
     }
 
-    public synchronized void offerAndDispatchFirst(TestkitResponse response) {
+    public synchronized void offerAndDispatchFirstResponse(TestkitResponse response) {
         responseQueue.offer(response);
-        if (responseReady) {
-            dispatchFirst();
+        if (requestCount > 0) {
+            dispatchFirstResponse();
         }
     }
 
-    private synchronized void dispatchFirst() {
+    private synchronized void dispatchFirstResponse() {
         var response = responseQueue.poll();
         if (response != null) {
-            responseReady = false;
+            requestCount--;
             responseWriter.accept(response);
         }
     }
