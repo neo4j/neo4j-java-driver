@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import neo4j.org.testkit.backend.ResponseQueueHanlder;
 import neo4j.org.testkit.backend.messages.TestkitModule;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -32,17 +33,19 @@ import org.neo4j.driver.Logging;
 public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
     private final Logger log;
     private final ObjectMapper objectMapper = newObjectMapper();
+    private final ResponseQueueHanlder responseQueueHanlder;
 
-    public TestkitRequestResponseMapperHandler(Logging logging) {
+    public TestkitRequestResponseMapperHandler(Logging logging, ResponseQueueHanlder responseQueueHanlder) {
         log = logging.getLog(getClass());
+        this.responseQueueHanlder = responseQueueHanlder;
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         var testkitMessage = (String) msg;
         log.debug("Inbound Testkit message '%s'", testkitMessage.trim());
-        TestkitRequest testkitRequest;
-        testkitRequest = objectMapper.readValue(testkitMessage, TestkitRequest.class);
+        responseQueueHanlder.setResponseReadyAndDispatchFirst();
+        var testkitRequest = objectMapper.readValue(testkitMessage, TestkitRequest.class);
         ctx.fireChannelRead(testkitRequest);
     }
 

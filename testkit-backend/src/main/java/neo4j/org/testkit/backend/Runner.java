@@ -49,10 +49,14 @@ public class Runner {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel channel) {
+                            var responseQueueHanlder = new ResponseQueueHanlder(channel::writeAndFlush);
                             channel.pipeline().addLast(new TestkitMessageInboundHandler());
                             channel.pipeline().addLast(new TestkitMessageOutboundHandler());
-                            channel.pipeline().addLast(new TestkitRequestResponseMapperHandler(logging));
-                            channel.pipeline().addLast(new TestkitRequestProcessorHandler(backendMode, logging));
+                            channel.pipeline()
+                                    .addLast(new TestkitRequestResponseMapperHandler(logging, responseQueueHanlder));
+                            channel.pipeline()
+                                    .addLast(new TestkitRequestProcessorHandler(
+                                            backendMode, logging, responseQueueHanlder));
                         }
                     });
             var server = bootstrap.bind().sync();

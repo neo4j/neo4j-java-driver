@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
 import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.FrontendError;
+import neo4j.org.testkit.backend.ResponseQueueHanlder;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.BackendError;
@@ -47,9 +48,11 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     private final BiFunction<TestkitRequest, TestkitState, CompletionStage<TestkitResponse>> processorImpl;
     // Some requests require multiple threads
     private final Executor requestExecutorService = Executors.newFixedThreadPool(10);
+    private final ResponseQueueHanlder responseQueueHanlder;
     private Channel channel;
 
-    public TestkitRequestProcessorHandler(BackendMode backendMode, Logging logging) {
+    public TestkitRequestProcessorHandler(
+            BackendMode backendMode, Logging logging, ResponseQueueHanlder responseQueueHanlder) {
         switch (backendMode) {
             case ASYNC -> processorImpl = TestkitRequest::processAsync;
             case REACTIVE_LEGACY -> processorImpl =
@@ -59,6 +62,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
             default -> processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
         }
         testkitState = new TestkitState(this::writeAndFlush, logging);
+        this.responseQueueHanlder = responseQueueHanlder;
     }
 
     @Override
@@ -74,14 +78,14 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
         requestExecutorService.execute(() -> {
             try {
                 var request = (TestkitRequest) msg;
-                var responseStage = processorImpl.apply(request, testkitState);
-                responseStage.whenComplete((response, throwable) -> {
-                    if (throwable != null) {
-                        ctx.writeAndFlush(createErrorResponse(throwable));
-                    } else if (response != null) {
-                        ctx.writeAndFlush(response);
-                    }
-                });
+                processorImpl
+                        .apply(request, testkitState)
+                        .exceptionally(this::createErrorResponse)
+                        .whenComplete((response, ignored) -> {
+                            if (response != null) {
+                                responseQueueHanlder.offerAndDispatchFirst(response);
+                            }
+                        });
             } catch (Throwable throwable) {
                 exceptionCaught(ctx, throwable);
             }
@@ -101,7 +105,8 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        ctx.writeAndFlush(createErrorResponse(cause));
+        var response = createErrorResponse(cause);
+        responseQueueHanlder.offerAndDispatchFirst(response);
     }
 
     private TestkitResponse createErrorResponse(Throwable throwable) {
@@ -165,7 +170,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
         if (channel == null) {
             throw new IllegalStateException("Called before channel is initialized");
         }
-        channel.writeAndFlush(response);
+        responseQueueHanlder.offerAndDispatchFirst(response);
     }
 
     public enum BackendMode {
