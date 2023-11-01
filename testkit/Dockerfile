@@ -1,7 +1,8 @@
 FROM debian:bullseye-slim
 
 ENV JAVA_HOME=/usr/lib/jvm/openjdk-17 \
-    PYTHON=python3
+    PYTHON=python3 \
+    TESTKIT_BACKEND_LOGGING_LEVEL=FINE
 
 RUN apt-get update && apt-get install -y \
       ca-certificates \
