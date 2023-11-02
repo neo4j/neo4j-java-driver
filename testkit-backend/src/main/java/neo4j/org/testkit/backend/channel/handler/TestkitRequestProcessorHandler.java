@@ -83,7 +83,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                         .exceptionally(this::createErrorResponse)
                         .whenComplete((response, ignored) -> {
                             if (response != null) {
-                                responseQueueHanlder.offerAndDispatchFirst(response);
+                                responseQueueHanlder.offerAndDispatchFirstResponse(response);
                             }
                         });
             } catch (Throwable throwable) {
@@ -106,7 +106,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         var response = createErrorResponse(cause);
-        responseQueueHanlder.offerAndDispatchFirst(response);
+        responseQueueHanlder.offerAndDispatchFirstResponse(response);
     }
 
     private TestkitResponse createErrorResponse(Throwable throwable) {
@@ -170,7 +170,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
         if (channel == null) {
             throw new IllegalStateException("Called before channel is initialized");
         }
-        responseQueueHanlder.offerAndDispatchFirst(response);
+        responseQueueHanlder.offerAndDispatchFirstResponse(response);
     }
 
     public enum BackendMode {

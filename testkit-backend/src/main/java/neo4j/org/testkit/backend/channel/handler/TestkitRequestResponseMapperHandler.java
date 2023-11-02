@@ -44,7 +44,7 @@ public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         var testkitMessage = (String) msg;
         log.debug("Inbound Testkit message '%s'", testkitMessage.trim());
-        responseQueueHanlder.setResponseReadyAndDispatchFirst();
+        responseQueueHanlder.increaseRequestCountAndDispatchFirstResponse();
         var testkitRequest = objectMapper.readValue(testkitMessage, TestkitRequest.class);
         ctx.fireChannelRead(testkitRequest);
     }
