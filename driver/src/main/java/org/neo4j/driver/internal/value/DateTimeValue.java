@@ -18,6 +18,7 @@ package org.neo4j.driver.internal.value;
 
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
@@ -44,5 +45,15 @@ public class DateTimeValue extends ObjectValueAdapter<ZonedDateTime> {
     @Override
     public BoltValue asBoltValue() {
         return new BoltValue(this, org.neo4j.bolt.connection.values.Type.DATE_TIME);
+    }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(ZonedDateTime.class)) {
+            return targetClass.cast(asZonedDateTime());
+        } else if (targetClass.isAssignableFrom(OffsetDateTime.class)) {
+            return targetClass.cast(asOffsetDateTime());
+        }
+        throw new Uncoercible(type().name(), targetClass.getCanonicalName());
     }
 }

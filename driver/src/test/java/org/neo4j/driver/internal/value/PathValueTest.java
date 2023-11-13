@@ -24,7 +24,12 @@ import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.InternalNode;
+import org.neo4j.driver.internal.InternalPath;
+import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.types.Path;
 
 class PathValueTest {
     @Test
@@ -41,5 +46,15 @@ class PathValueTest {
     @Test
     void shouldHaveCorrectType() {
         assertThat(filledPathValue().type(), equalTo(InternalTypeSystem.TYPE_SYSTEM.PATH()));
+    }
+
+    @Test
+    void shouldMapToType() {
+        var path = new InternalPath(
+                new InternalNode(42L), new InternalRelationship(43L, 42L, 44L, "T"), new InternalNode(44L));
+        var values = Values.value(path);
+        assertEquals(path, values.as(Path.class));
+        assertEquals(path, values.as(Iterable.class));
+        assertEquals(path, values.as(Object.class));
     }
 }

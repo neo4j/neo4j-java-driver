@@ -18,10 +18,14 @@ package org.neo4j.driver.internal.value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.Values.value;
 
+import java.util.Collection;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 
 class ListValueTest {
@@ -37,6 +41,16 @@ class ListValueTest {
         var listValue = listValue();
 
         assertThat(listValue.type(), equalTo(InternalTypeSystem.TYPE_SYSTEM.LIST()));
+    }
+
+    @Test
+    void shouldMapToType() {
+        var list = List.of(0L);
+        var values = Values.value(list);
+        assertEquals(list, values.as(List.class));
+        assertEquals(list, values.as(Collection.class));
+        assertEquals(list, values.as(Iterable.class));
+        assertEquals(list, values.as(Object.class));
     }
 
     private ListValue listValue(Value... values) {

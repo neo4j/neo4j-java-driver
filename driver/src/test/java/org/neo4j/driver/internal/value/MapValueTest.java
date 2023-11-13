@@ -18,12 +18,15 @@ package org.neo4j.driver.internal.value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.Values.value;
 
 import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 
 class MapValueTest {
@@ -52,6 +55,14 @@ class MapValueTest {
         var map = mapValue();
 
         assertFalse(map.isNull());
+    }
+
+    @Test
+    void shouldMapToType() {
+        var map = Map.of("key", "value");
+        var values = Values.value(map);
+        assertEquals(map, values.as(Map.class));
+        assertEquals(map, values.as(Object.class));
     }
 
     private MapValue mapValue() {

@@ -18,12 +18,14 @@ package org.neo4j.driver.internal.value;
 
 import static org.neo4j.driver.Values.ofObject;
 
+import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.types.Type;
@@ -56,6 +58,29 @@ public class ListValue extends ValueAdapter {
     @Override
     public <T> List<T> asList(Function<Value, T> mapFunction) {
         return Extract.list(values, mapFunction);
+    }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(List.class)) {
+            return targetClass.cast(asList());
+        }
+        throw new Uncoercible(type().name(), targetClass.getCanonicalName());
+    }
+
+    @Override
+    public Object as(ParameterizedType type) {
+        var rawType = type.getRawType();
+        if (rawType instanceof Class<?> cls) {
+            if (cls.isAssignableFrom(List.class)) {
+                return asList(v -> {
+                    var value = (InternalValue) v;
+                    var typeArgument = type.getActualTypeArguments()[0];
+                    return value.as(typeArgument);
+                });
+            }
+        }
+        throw new Uncoercible(type().name(), type.toString());
     }
 
     @Override

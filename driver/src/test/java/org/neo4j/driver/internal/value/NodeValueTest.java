@@ -24,8 +24,13 @@ import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledNodeValue;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
+import org.neo4j.driver.types.Entity;
+import org.neo4j.driver.types.MapAccessor;
+import org.neo4j.driver.types.Node;
 
 class NodeValueTest {
     @Test
@@ -54,5 +59,15 @@ class NodeValueTest {
     void shouldTypeAsNode() {
         InternalValue value = emptyNodeValue();
         assertThat(value.typeConstructor(), equalTo(TypeConstructor.NODE));
+    }
+
+    @Test
+    void shouldMapToType() {
+        var node = new InternalNode(0);
+        var values = Values.value(node);
+        assertEquals(node, values.as(Node.class));
+        assertEquals(node, values.as(Entity.class));
+        assertEquals(node, values.as(MapAccessor.class));
+        assertEquals(node, values.as(Object.class));
     }
 }

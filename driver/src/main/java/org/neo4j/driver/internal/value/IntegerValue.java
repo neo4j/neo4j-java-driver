@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.exceptions.value.LossyCoercion;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
@@ -63,6 +64,29 @@ public class IntegerValue extends NumberValueAdapter<Long> {
     @Override
     public float asFloat() {
         return (float) val;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.equals(long.class)) {
+            return (T) Long.valueOf(asLong());
+        } else if (targetClass.isAssignableFrom(Long.class)) {
+            return targetClass.cast(asLong());
+        } else if (targetClass.equals(int.class)) {
+            return (T) Integer.valueOf(asInt());
+        } else if (targetClass.equals(Integer.class)) {
+            return targetClass.cast(asInt());
+        } else if (targetClass.equals(double.class)) {
+            return (T) Double.valueOf(asDouble());
+        } else if (targetClass.equals(Double.class)) {
+            return targetClass.cast(asDouble());
+        } else if (targetClass.equals(float.class)) {
+            return (T) Float.valueOf(asFloat());
+        } else if (targetClass.equals(Float.class)) {
+            return targetClass.cast(asFloat());
+        }
+        throw new Uncoercible(type().name(), targetClass.getCanonicalName());
     }
 
     @Override

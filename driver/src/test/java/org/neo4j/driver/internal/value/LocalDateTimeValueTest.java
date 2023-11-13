@@ -22,8 +22,13 @@ import static java.time.Month.JANUARY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.chrono.ChronoLocalDateTime;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAdjuster;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 
@@ -55,5 +60,18 @@ class LocalDateTimeValueTest {
         var dateTimeValue = new LocalDateTimeValue(dateTime);
 
         assertThrows(Uncoercible.class, dateTimeValue::asLong);
+    }
+
+    @Test
+    void shouldMapToType() {
+        var date = LocalDateTime.now();
+        var values = Values.value(date);
+        assertEquals(date, values.as(LocalDateTime.class));
+        assertEquals(date, values.as(Temporal.class));
+        assertEquals(date, values.as(TemporalAdjuster.class));
+        assertEquals(date, values.as(ChronoLocalDateTime.class));
+        assertEquals(date, values.as(Comparable.class));
+        assertEquals(date, values.as(Serializable.class));
+        assertEquals(date, values.as(Object.class));
     }
 }

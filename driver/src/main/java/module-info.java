@@ -29,6 +29,7 @@ module org.neo4j.driver {
     exports org.neo4j.driver.util;
     exports org.neo4j.driver.exceptions;
     exports org.neo4j.driver.exceptions.value;
+    exports org.neo4j.driver.mapping;
 
     requires org.neo4j.bolt.connection;
     requires org.neo4j.bolt.connection.netty;

@@ -16,7 +16,10 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.internal.types.TypeConstructor;
 
@@ -24,4 +27,18 @@ public interface InternalValue extends Value, AsValue {
     TypeConstructor typeConstructor();
 
     BoltValue asBoltValue();
+
+    default Object as(Type type) {
+        if (type instanceof ParameterizedType parameterizedType) {
+            return as(parameterizedType);
+        } else if (type instanceof Class<?> classType) {
+            return as(classType);
+        } else {
+            throw new Uncoercible(type().name(), type.toString());
+        }
+    }
+
+    default Object as(ParameterizedType type) {
+        throw new Uncoercible(type().name(), type.toString());
+    }
 }

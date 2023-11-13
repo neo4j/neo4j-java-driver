@@ -16,6 +16,7 @@
  */
 package org.neo4j.driver.internal.value;
 
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Type;
@@ -38,5 +39,13 @@ public class PointValue extends ObjectValueAdapter<Point> {
     @Override
     public BoltValue asBoltValue() {
         return new BoltValue(this, org.neo4j.bolt.connection.values.Type.POINT);
+    }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(Point.class)) {
+            return targetClass.cast(asPoint());
+        }
+        throw new Uncoercible(type().name(), targetClass.getCanonicalName());
     }
 }

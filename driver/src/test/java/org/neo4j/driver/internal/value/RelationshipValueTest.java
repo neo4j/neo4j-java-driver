@@ -25,7 +25,12 @@ import static org.neo4j.driver.internal.util.ValueFactory.filledRelationshipValu
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.types.TypeConstructor;
+import org.neo4j.driver.types.Entity;
+import org.neo4j.driver.types.MapAccessor;
+import org.neo4j.driver.types.Relationship;
 
 class RelationshipValueTest {
     @Test
@@ -50,5 +55,15 @@ class RelationshipValueTest {
     void shouldTypeAsRelationship() {
         InternalValue value = emptyRelationshipValue();
         assertThat(value.typeConstructor(), equalTo(TypeConstructor.RELATIONSHIP));
+    }
+
+    @Test
+    void shouldMapToType() {
+        var relationship = new InternalRelationship(0, 0, 0, "value");
+        var values = Values.value(relationship);
+        assertEquals(relationship, values.as(Relationship.class));
+        assertEquals(relationship, values.as(Entity.class));
+        assertEquals(relationship, values.as(MapAccessor.class));
+        assertEquals(relationship, values.as(Object.class));
     }
 }

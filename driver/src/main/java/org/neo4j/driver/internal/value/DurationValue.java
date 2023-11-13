@@ -39,4 +39,12 @@ public class DurationValue extends ObjectValueAdapter<IsoDuration> {
     public BoltValue asBoltValue() {
         return new BoltValue(this, org.neo4j.bolt.connection.values.Type.DURATION);
     }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(IsoDuration.class)) {
+            return targetClass.cast(asIsoDuration());
+        }
+        return asMapped(targetClass);
+    }
 }

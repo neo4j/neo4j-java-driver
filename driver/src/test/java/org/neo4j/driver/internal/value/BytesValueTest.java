@@ -19,10 +19,13 @@ package org.neo4j.driver.internal.value;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.types.TypeSystem;
@@ -85,5 +88,13 @@ class BytesValueTest {
     void shouldHaveBytesType() {
         InternalValue value = new BytesValue(TEST_BYTES);
         assertThat(value.type(), equalTo(InternalTypeSystem.TYPE_SYSTEM.BYTES()));
+    }
+
+    @Test
+    void shouldMapToType() {
+        var bytes = new byte[] {0};
+        var values = Values.value(bytes);
+        assertEquals(bytes, values.as(byte[].class));
+        assertNotNull(values.as(Object.class));
     }
 }

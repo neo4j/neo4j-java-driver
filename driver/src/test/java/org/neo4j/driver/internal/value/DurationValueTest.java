@@ -18,8 +18,11 @@ package org.neo4j.driver.internal.value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
+import java.time.temporal.TemporalAmount;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
@@ -53,6 +56,15 @@ class DurationValueTest {
         var durationValue = new DurationValue(duration);
 
         assertThrows(Uncoercible.class, durationValue::asLong);
+    }
+
+    @Test
+    void shouldMapToType() {
+        var date = mock(IsoDuration.class);
+        var values = Values.value(date);
+        assertEquals(date, values.as(IsoDuration.class));
+        assertEquals(date, values.as(TemporalAmount.class));
+        assertEquals(date, values.as(Object.class));
     }
 
     private static IsoDuration newDuration(long months, long days, long seconds, int nanoseconds) {

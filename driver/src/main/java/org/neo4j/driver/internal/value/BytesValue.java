@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.value;
 
 import java.util.Arrays;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
@@ -48,6 +49,14 @@ public class BytesValue extends ValueAdapter {
     @Override
     public byte[] asByteArray() {
         return val;
+    }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(byte[].class)) {
+            return targetClass.cast(asByteArray());
+        }
+        throw new Uncoercible(type().name(), targetClass.getCanonicalName());
     }
 
     @Override

@@ -20,10 +20,12 @@ import static org.neo4j.driver.Values.ofObject;
 import static org.neo4j.driver.Values.ofValue;
 import static org.neo4j.driver.internal.util.Format.formatPairs;
 
+import java.lang.reflect.ParameterizedType;
 import java.util.Map;
 import java.util.function.Function;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.types.Type;
@@ -46,6 +48,34 @@ public class MapValue extends ValueAdapter {
     @Override
     public Map<String, Object> asObject() {
         return asMap(ofObject());
+    }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(Map.class)) {
+            return targetClass.cast(asMap());
+        }
+        return asMapped(targetClass);
+    }
+
+    @Override
+    public Object as(ParameterizedType type) {
+        var rawType = type.getRawType();
+        if (rawType instanceof Class<?> cls) {
+            if (cls.isAssignableFrom(Map.class)) {
+                var keyType = type.getActualTypeArguments()[0];
+                if (keyType instanceof Class<?> keyCls) {
+                    if (keyCls.isAssignableFrom(String.class)) {
+                        var valueType = type.getActualTypeArguments()[1];
+                        return asMap(v -> {
+                            var value = (InternalValue) v;
+                            return value.as(valueType);
+                        });
+                    }
+                }
+            }
+        }
+        throw new Uncoercible(type().name(), type.toString());
     }
 
     @Override
