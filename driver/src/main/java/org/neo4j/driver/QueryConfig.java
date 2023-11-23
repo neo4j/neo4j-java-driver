@@ -19,11 +19,16 @@
 package org.neo4j.driver;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.neo4j.driver.internal.util.Extract;
 
 /**
  * Query configuration used by {@link Driver#executableQuery(String)} and its variants.
@@ -55,6 +60,16 @@ public final class QueryConfig implements Serializable {
      * The flag indicating if default bookmark manager should be used.
      */
     private final boolean useDefaultBookmarkManager;
+    /**
+     * The transaction timeout.
+     * @since 5.16
+     */
+    private final Duration timeout;
+    /**
+     * The transaction metadata.
+     * @since 5.16
+     */
+    private final Map<String, Serializable> metadata;
 
     /**
      * Returns default config value.
@@ -71,6 +86,8 @@ public final class QueryConfig implements Serializable {
         this.impersonatedUser = builder.impersonatedUser;
         this.bookmarkManager = builder.bookmarkManager;
         this.useDefaultBookmarkManager = builder.useDefaultBookmarkManager;
+        this.timeout = builder.timeout;
+        this.metadata = builder.metadata;
     }
 
     /**
@@ -121,6 +138,26 @@ public final class QueryConfig implements Serializable {
         return useDefaultBookmarkManager ? Optional.of(defaultBookmarkManager) : Optional.ofNullable(bookmarkManager);
     }
 
+    /**
+     * Get the configured transaction timeout.
+     *
+     * @return an {@link Optional} containing the configured timeout or {@link Optional#empty()} otherwise
+     * @since 5.16
+     */
+    public Optional<Duration> timeout() {
+        return Optional.ofNullable(timeout);
+    }
+
+    /**
+     * Get the configured transaction metadata.
+     *
+     * @return metadata or empty map when it is not configured
+     * @since 5.16
+     */
+    public Map<String, Serializable> metadata() {
+        return metadata;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -130,12 +167,15 @@ public final class QueryConfig implements Serializable {
                 && routing == that.routing
                 && Objects.equals(database, that.database)
                 && Objects.equals(impersonatedUser, that.impersonatedUser)
-                && Objects.equals(bookmarkManager, that.bookmarkManager);
+                && Objects.equals(bookmarkManager, that.bookmarkManager)
+                && Objects.equals(timeout, that.timeout)
+                && Objects.equals(metadata, that.metadata);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(routing, database, impersonatedUser, bookmarkManager, useDefaultBookmarkManager);
+        return Objects.hash(
+                routing, database, impersonatedUser, bookmarkManager, useDefaultBookmarkManager, timeout, metadata);
     }
 
     @Override
@@ -145,7 +185,9 @@ public final class QueryConfig implements Serializable {
                 + database + '\'' + ", impersonatedUser='"
                 + impersonatedUser + '\'' + ", bookmarkManager="
                 + bookmarkManager + ", useDefaultBookmarkManager="
-                + useDefaultBookmarkManager + '}';
+                + useDefaultBookmarkManager + '\'' + ", timeout='"
+                + timeout + '\'' + ", metadata="
+                + metadata + '}';
     }
 
     /**
@@ -157,6 +199,8 @@ public final class QueryConfig implements Serializable {
         private String impersonatedUser;
         private BookmarkManager bookmarkManager;
         private boolean useDefaultBookmarkManager = true;
+        private Duration timeout;
+        private Map<String, Serializable> metadata = Collections.emptyMap();
 
         private Builder() {}
 
@@ -213,6 +257,44 @@ public final class QueryConfig implements Serializable {
         public Builder withBookmarkManager(BookmarkManager bookmarkManager) {
             useDefaultBookmarkManager = false;
             this.bookmarkManager = bookmarkManager;
+            return this;
+        }
+
+        /**
+         * Set the transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the database.
+         * <p>
+         * This functionality allows user code to limit query/transaction execution time.
+         * The specified timeout overrides the default timeout configured in the database using the {@code db.transaction.timeout} setting ({@code dbms.transaction.timeout} before Neo4j 5.0).
+         * Values higher than {@code db.transaction.timeout} will be ignored and will fall back to the default for server versions between 4.2 and 5.2 (inclusive).
+         * <p>
+         * The provided value should not represent a negative duration.
+         * {@link Duration#ZERO} will make the transaction execute indefinitely.
+         *
+         * @param timeout the timeout.
+         * @return this builder.
+         * @since 5.16
+         */
+        public Builder withTimeout(Duration timeout) {
+            if (timeout != null) {
+                checkArgument(!timeout.isNegative(), "Transaction timeout should not be negative");
+            }
+
+            this.timeout = timeout;
+            return this;
+        }
+
+        /**
+         * Set the transaction metadata.
+         *
+         * @param metadata the metadata, must not be {@code null}.
+         * @return this builder.
+         * @since 5.16
+         */
+        public Builder withMetadata(Map<String, Serializable> metadata) {
+            requireNonNull(metadata, "Metadata should not be null");
+            metadata.values()
+                    .forEach(Extract::assertParameter); // Just assert valid parameters but don't create a value map yet
+            this.metadata = Map.copyOf(metadata); // Create a defensive copy
             return this;
         }
 

@@ -215,7 +215,7 @@ public final class TransactionConfig implements Serializable {
          * @param metadata the metadata.
          * @return this builder.
          */
-        public Builder withMetadata(Map<String, Object> metadata) {
+        public Builder withMetadata(Map<String, ?> metadata) {
             requireNonNull(metadata, "Transaction metadata should not be null");
             metadata.values()
                     .forEach(Extract::assertParameter); // Just assert valid parameters but don't create a value map yet

@@ -19,8 +19,11 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.io.Serializable;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
@@ -65,6 +68,13 @@ public class ExecuteQuery implements TestkitRequest {
                     bookmarkManagerId.equals("-1") ? null : testkitState.getBookmarkManager(bookmarkManagerId);
             configBuilder.withBookmarkManager(bookmarkManager);
         }
+
+        Optional.ofNullable(data.getConfig().getTimeout())
+                .map(Duration::ofMillis)
+                .ifPresent(configBuilder::withTimeout);
+
+        Optional.ofNullable(data.getConfig().getTxMeta()).ifPresent(configBuilder::withMetadata);
+
         var params = data.getParams() != null ? data.getParams() : Collections.<String, Object>emptyMap();
         var eagerResult = driver.executableQuery(data.getCypher())
                 .withParameters(params)
@@ -123,5 +133,9 @@ public class ExecuteQuery implements TestkitRequest {
         private String routing;
         private String impersonatedUser;
         private String bookmarkManagerId;
+        private Long timeout;
+
+        @JsonDeserialize(using = TestkitCypherParamDeserializer.class)
+        private Map<String, Serializable> txMeta;
     }
 }

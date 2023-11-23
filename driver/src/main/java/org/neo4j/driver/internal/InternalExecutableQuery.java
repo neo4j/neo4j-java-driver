@@ -82,8 +82,11 @@ public class InternalExecutableQuery implements ExecutableQuery {
                 return resultFinisher.finish(result.keys(), finishedValue, summary);
             };
             var accessMode = config.routing().equals(RoutingControl.WRITE) ? AccessMode.WRITE : AccessMode.READ;
+            var transactionConfigBuilder = TransactionConfig.builder();
+            config.timeout().ifPresent(transactionConfigBuilder::withTimeout);
+            transactionConfigBuilder.withMetadata(config.metadata());
             return session.execute(
-                    accessMode, txCallback, TransactionConfig.empty(), TelemetryApi.EXECUTABLE_QUERY, false);
+                    accessMode, txCallback, transactionConfigBuilder.build(), TelemetryApi.EXECUTABLE_QUERY, false);
         }
     }
 

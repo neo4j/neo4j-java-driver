@@ -23,7 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import java.io.Serializable;
+import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -56,7 +61,6 @@ class QueryConfigTest {
     }
 
     @Test
-    @SuppressWarnings("WriteOnlyObject")
     void shouldNotAllowNullRouting() {
         assertThrows(NullPointerException.class, () -> QueryConfig.builder().withRouting(null));
     }
@@ -103,8 +107,40 @@ class QueryConfigTest {
     }
 
     @Test
+    void shouldHaveEmptyMetadataByDefault() {
+        assertEquals(Collections.emptyMap(), QueryConfig.defaultConfig().metadata());
+    }
+
+    @Test
+    void shouldUpdateMetadata() {
+        var metadata = Map.<String, Serializable>of("k1", "v1", "k2", 0);
+        var config = QueryConfig.builder().withMetadata(metadata).build();
+
+        assertEquals(metadata, config.metadata());
+    }
+
+    @Test
+    void shouldHaveNullTimeoutByDefault() {
+        assertTrue(QueryConfig.defaultConfig().timeout().isEmpty());
+    }
+
+    @ParameterizedTest
+    @MethodSource("timeoutDurations")
+    void shouldUpdateTimeout(Duration timeout) {
+        var config = QueryConfig.builder().withTimeout(timeout).build();
+        assertEquals(timeout, config.timeout().orElse(null));
+    }
+
+    static Stream<Duration> timeoutDurations() {
+        return Stream.of(null, Duration.ZERO, Duration.ofMillis(5));
+    }
+
+    @Test
     void shouldSerialize() throws Exception {
-        var originalConfig = QueryConfig.defaultConfig();
+        var originalConfig = QueryConfig.builder()
+                .withTimeout(Duration.ofSeconds(1))
+                .withMetadata(Map.of("k1", "v1", "k2", 1))
+                .build();
         var deserializedConfig = TestUtil.serializeAndReadBack(originalConfig, QueryConfig.class);
         var defaultManager = mock(BookmarkManager.class);
 
@@ -113,6 +149,8 @@ class QueryConfigTest {
         assertEquals(originalConfig.impersonatedUser(), deserializedConfig.impersonatedUser());
         assertEquals(
                 originalConfig.bookmarkManager(defaultManager), deserializedConfig.bookmarkManager(defaultManager));
+        assertEquals(originalConfig.timeout(), deserializedConfig.timeout());
+        assertEquals(originalConfig.metadata(), deserializedConfig.metadata());
     }
 
     record ResultWithSummary<T>(T value, ResultSummary summary) {}
