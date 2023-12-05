@@ -49,7 +49,7 @@
     <testng.version>7.8.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk18on.version>1.77</bouncycastle-jdk18on.version>
-    <logback-classic.version>1.2.12</logback-classic.version>
+    <logback-classic.version>1.2.13</logback-classic.version>
     <jackson.version>2.16.0</jackson.version>
     <lombok.version>1.18.30</lombok.version>
     <svm.version>23.1.1</svm.version>
