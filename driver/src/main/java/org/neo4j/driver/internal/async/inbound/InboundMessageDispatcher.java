@@ -165,7 +165,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
     }
 
     public HandlerHook getBeforeLastHandlerHook() {
-        return  this.beforeLastHandlerHook;
+        return this.beforeLastHandlerHook;
     }
 
     private Optional<ResetResponseHandler> getPendingResetHandler() {
