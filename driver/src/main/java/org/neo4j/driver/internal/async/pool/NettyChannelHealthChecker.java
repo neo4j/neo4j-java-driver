@@ -28,10 +28,14 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseNotifier;
 import java.time.Clock;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.async.connection.AuthorizationStateListener;
+import org.neo4j.driver.internal.async.connection.ChannelAttributes;
+import org.neo4j.driver.internal.async.inbound.ConnectionReadTimeoutHandler;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.PingResponseHandler;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
@@ -164,8 +168,24 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker, Authoriz
 
     private Future<Boolean> ping(Channel channel) {
         Promise<Boolean> result = channel.eventLoop().newPromise();
-        messageDispatcher(channel).enqueue(new PingResponseHandler(result, channel, logging));
+        var messageDispatcher = messageDispatcher(channel);
+        messageDispatcher.enqueue(new PingResponseHandler(result, channel, logging));
         channel.writeAndFlush(ResetMessage.RESET, channel.voidPromise());
+        attachConnectionReadTimeoutHandler(channel, messageDispatcher);
         return result;
+    }
+
+    private void attachConnectionReadTimeoutHandler(Channel channel, InboundMessageDispatcher messageDispatcher) {
+        ChannelAttributes.connectionReadTimeout(channel).ifPresent(connectionReadTimeout -> {
+            var connectionReadTimeoutHandler =
+                    new ConnectionReadTimeoutHandler(connectionReadTimeout, TimeUnit.SECONDS);
+            channel.pipeline().addFirst(connectionReadTimeoutHandler);
+            log.debug("Added ConnectionReadTimeoutHandler");
+            messageDispatcher.setBeforeLastHandlerHook((messageType) -> {
+                channel.pipeline().remove(connectionReadTimeoutHandler);
+                messageDispatcher.setBeforeLastHandlerHook(null);
+                log.debug("Removed ConnectionReadTimeoutHandler");
+            });
+        });
     }
 }
