@@ -22,6 +22,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionReadTimeout;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setLastUsedTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
@@ -34,6 +38,7 @@ import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.util.TestUtil.await;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.Future;
 import java.util.Collections;
@@ -46,6 +51,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.internal.async.inbound.ConnectionReadTimeoutHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.util.Clock;
@@ -153,6 +159,65 @@ class NettyChannelHealthCheckerTest {
     @Test
     void shouldKeepIdleConnectionWhenPingSucceeds() {
         testPing(true);
+    }
+
+    @Test
+    void shouldHandlePingWithConnectionReceiveTimeout() {
+        int idleTimeBeforeConnectionTest = 1000;
+        long connectionReadTimeout = 60L;
+        PoolSettings settings = new PoolSettings(
+                DEFAULT_MAX_CONNECTION_POOL_SIZE,
+                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
+                NOT_CONFIGURED,
+                idleTimeBeforeConnectionTest);
+        Clock clock = Clock.SYSTEM;
+        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
+
+        setCreationTimestamp(channel, clock.millis());
+        setConnectionReadTimeout(channel, connectionReadTimeout);
+        setLastUsedTimestamp(channel, clock.millis() - idleTimeBeforeConnectionTest * 2);
+
+        Future<Boolean> healthy = healthChecker.isHealthy(channel);
+        channel.runPendingTasks();
+
+        ChannelHandler firstElementOnPipeline = channel.pipeline().first();
+        assertInstanceOf(ConnectionReadTimeoutHandler.class, firstElementOnPipeline);
+        assertNotNull(dispatcher.getBeforeLastHandlerHook());
+        ConnectionReadTimeoutHandler readTimeoutHandler = (ConnectionReadTimeoutHandler) firstElementOnPipeline;
+        assertEquals(connectionReadTimeout * 1000L, readTimeoutHandler.getReaderIdleTimeInMillis());
+        assertEquals(ResetMessage.RESET, single(channel.outboundMessages()));
+        assertFalse(healthy.isDone());
+
+        dispatcher.handleSuccessMessage(Collections.emptyMap());
+        assertThat(await(healthy), is(true));
+        assertNull(channel.pipeline().first());
+        assertNull(dispatcher.getBeforeLastHandlerHook());
+    }
+
+    @Test
+    void shouldHandlePingWithoutConnectionReceiveTimeout() {
+        int idleTimeBeforeConnectionTest = 1000;
+        PoolSettings settings = new PoolSettings(
+                DEFAULT_MAX_CONNECTION_POOL_SIZE,
+                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT,
+                NOT_CONFIGURED,
+                idleTimeBeforeConnectionTest);
+        Clock clock = Clock.SYSTEM;
+        NettyChannelHealthChecker healthChecker = newHealthChecker(settings, clock);
+
+        setCreationTimestamp(channel, clock.millis());
+        setLastUsedTimestamp(channel, clock.millis() - idleTimeBeforeConnectionTest * 2);
+
+        Future<Boolean> healthy = healthChecker.isHealthy(channel);
+        channel.runPendingTasks();
+
+        assertNull(channel.pipeline().first());
+        assertEquals(ResetMessage.RESET, single(channel.outboundMessages()));
+        assertFalse(healthy.isDone());
+
+        dispatcher.handleSuccessMessage(Collections.emptyMap());
+        assertThat(await(healthy), is(true));
+        assertNull(channel.pipeline().first());
     }
 
     @Test
