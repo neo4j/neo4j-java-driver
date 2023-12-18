@@ -170,8 +170,8 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker, Authoriz
         Promise<Boolean> result = channel.eventLoop().newPromise();
         var messageDispatcher = messageDispatcher(channel);
         messageDispatcher.enqueue(new PingResponseHandler(result, channel, logging));
-        channel.writeAndFlush(ResetMessage.RESET, channel.voidPromise());
         attachConnectionReadTimeoutHandler(channel, messageDispatcher);
+        channel.writeAndFlush(ResetMessage.RESET, channel.voidPromise());
         return result;
     }
 
