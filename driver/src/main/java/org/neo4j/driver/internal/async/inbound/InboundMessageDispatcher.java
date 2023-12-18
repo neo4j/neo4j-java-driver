@@ -164,6 +164,10 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         handler.onFailure(error);
     }
 
+    public HandlerHook getBeforeLastHandlerHook() {
+        return this.beforeLastHandlerHook;
+    }
+
     private Optional<ResetResponseHandler> getPendingResetHandler() {
         return handlers.stream()
                 .filter(h -> h instanceof ResetResponseHandler)
