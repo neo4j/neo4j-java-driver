@@ -147,6 +147,10 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
         handler.onFailure(error);
     }
 
+    public HandlerHook getBeforeLastHandlerHook() {
+        return this.beforeLastHandlerHook;
+    }
+
     public void handleChannelInactive(Throwable cause) {
         // report issue if the connection has not been terminated as a result of a graceful shutdown request from its
         // parent pool
