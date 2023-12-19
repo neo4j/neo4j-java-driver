@@ -26,13 +26,21 @@ import io.netty.channel.ChannelPromise;
 import neo4j.org.testkit.backend.messages.TestkitModule;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 
 public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
+    private final Logger log;
     private final ObjectMapper objectMapper = newObjectMapper();
+
+    public TestkitRequestResponseMapperHandler(Logging logging) {
+        log = logging.getLog(getClass());
+    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         String testkitMessage = (String) msg;
+        log.debug("Inbound Testkit message '%s'", testkitMessage.trim());
         TestkitRequest testkitRequest;
         testkitRequest = objectMapper.readValue(testkitMessage, TestkitRequest.class);
         ctx.fireChannelRead(testkitRequest);
@@ -42,6 +50,7 @@ public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         TestkitResponse testkitResponse = (TestkitResponse) msg;
         String responseStr = objectMapper.writeValueAsString(testkitResponse);
+        log.debug("Outbound Testkit message '%s'", responseStr.trim());
         ctx.writeAndFlush(responseStr, promise);
     }
 

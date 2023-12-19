@@ -25,10 +25,12 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import java.util.logging.Level;
 import neo4j.org.testkit.backend.channel.handler.TestkitMessageInboundHandler;
 import neo4j.org.testkit.backend.channel.handler.TestkitMessageOutboundHandler;
 import neo4j.org.testkit.backend.channel.handler.TestkitRequestProcessorHandler;
 import neo4j.org.testkit.backend.channel.handler.TestkitRequestResponseMapperHandler;
+import org.neo4j.driver.Logging;
 
 public class Runner {
     public static void main(String[] args) throws InterruptedException {
@@ -41,6 +43,10 @@ public class Runner {
         } else {
             backendMode = TestkitRequestProcessorHandler.BackendMode.SYNC;
         }
+        String levelString = System.getenv("TESTKIT_BACKEND_LOGGING_LEVEL");
+        Logging logging = levelString == null || levelString.isEmpty()
+                ? Logging.none()
+                : Logging.console(Level.parse(levelString));
 
         EventLoopGroup group = new NioEventLoopGroup();
         try {
@@ -54,8 +60,8 @@ public class Runner {
                         protected void initChannel(SocketChannel channel) {
                             channel.pipeline().addLast(new TestkitMessageInboundHandler());
                             channel.pipeline().addLast(new TestkitMessageOutboundHandler());
-                            channel.pipeline().addLast(new TestkitRequestResponseMapperHandler());
-                            channel.pipeline().addLast(new TestkitRequestProcessorHandler(backendMode));
+                            channel.pipeline().addLast(new TestkitRequestResponseMapperHandler(logging));
+                            channel.pipeline().addLast(new TestkitRequestProcessorHandler(backendMode, logging));
                         }
                     });
             ChannelFuture server = bootstrap.bind().sync();

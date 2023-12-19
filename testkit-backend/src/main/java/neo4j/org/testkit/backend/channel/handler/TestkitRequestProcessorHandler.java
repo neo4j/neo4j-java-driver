@@ -33,18 +33,19 @@ import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
 public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter {
-    private final TestkitState testkitState = new TestkitState(this::writeAndFlush);
+    private final TestkitState testkitState;
     private final BiFunction<TestkitRequest, TestkitState, CompletionStage<TestkitResponse>> processorImpl;
     // Some requests require multiple threads
     private final Executor requestExecutorService = Executors.newFixedThreadPool(10);
     private Channel channel;
 
-    public TestkitRequestProcessorHandler(BackendMode backendMode) {
+    public TestkitRequestProcessorHandler(BackendMode backendMode, Logging logging) {
         switch (backendMode) {
             case ASYNC:
                 processorImpl = TestkitRequest::processAsync;
@@ -56,6 +57,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                 processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
                 break;
         }
+        testkitState = new TestkitState(this::writeAndFlush, logging);
     }
 
     @Override
