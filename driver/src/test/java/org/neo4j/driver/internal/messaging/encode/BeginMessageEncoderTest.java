@@ -38,6 +38,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InOrder;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.ValuePacker;
@@ -59,7 +60,9 @@ class BeginMessageEncoderTest {
         Duration txTimeout = Duration.ofSeconds(1);
 
         encoder.encode(
-                new BeginMessage(bookmark, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser), packer);
+                new BeginMessage(
+                        bookmark, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser, Logging.none()),
+                packer);
 
         InOrder order = inOrder(packer);
         order.verify(packer).packStructHeader(1, BeginMessage.SIGNATURE);

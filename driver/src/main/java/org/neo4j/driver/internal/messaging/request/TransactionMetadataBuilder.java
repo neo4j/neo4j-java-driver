@@ -26,6 +26,8 @@ import java.time.Duration;
 import java.util.Map;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.util.Iterables;
@@ -44,8 +46,9 @@ public class TransactionMetadataBuilder {
             Map<String, Value> txMetadata,
             AccessMode mode,
             Bookmark bookmark,
-            String impersonatedUser) {
-        return buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmark, impersonatedUser);
+            String impersonatedUser,
+            Logging logging) {
+        return buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmark, impersonatedUser, logging);
     }
 
     public static Map<String, Value> buildMetadata(
@@ -54,7 +57,8 @@ public class TransactionMetadataBuilder {
             DatabaseName databaseName,
             AccessMode mode,
             Bookmark bookmark,
-            String impersonatedUser) {
+            String impersonatedUser,
+            Logging logging) {
         boolean bookmarksPresent = bookmark != null && !bookmark.isEmpty();
         boolean txTimeoutPresent = txTimeout != null;
         boolean txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
@@ -77,7 +81,14 @@ public class TransactionMetadataBuilder {
             result.put(BOOKMARKS_METADATA_KEY, value(bookmark.values()));
         }
         if (txTimeoutPresent) {
-            result.put(TX_TIMEOUT_METADATA_KEY, value(txTimeout.toMillis()));
+            long millis = txTimeout.toMillis();
+            if (txTimeout.getNano() % 1_000_000 > 0) {
+                Logger log = logging.getLog(TransactionMetadataBuilder.class);
+                millis++;
+                log.info(
+                        "The transaction timeout has been rounded up to next millisecond value since the config had a fractional millisecond value");
+            }
+            result.put(TX_TIMEOUT_METADATA_KEY, value(millis));
         }
         if (txMetadataPresent) {
             result.put(TX_METADATA_METADATA_KEY, value(txMetadata));

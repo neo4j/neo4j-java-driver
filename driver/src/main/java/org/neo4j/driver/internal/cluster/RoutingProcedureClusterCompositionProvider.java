@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ProtocolException;
@@ -42,11 +43,11 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     private final RoutingProcedureRunner multiDatabaseRoutingProcedureRunner;
     private final RoutingProcedureRunner routeMessageRoutingProcedureRunner;
 
-    public RoutingProcedureClusterCompositionProvider(Clock clock, RoutingContext routingContext) {
+    public RoutingProcedureClusterCompositionProvider(Clock clock, RoutingContext routingContext, Logging logging) {
         this(
                 clock,
-                new SingleDatabaseRoutingProcedureRunner(routingContext),
-                new MultiDatabasesRoutingProcedureRunner(routingContext),
+                new SingleDatabaseRoutingProcedureRunner(routingContext, logging),
+                new MultiDatabasesRoutingProcedureRunner(routingContext, logging),
                 new RouteMessageRoutingProcedureRunner(routingContext));
     }
 

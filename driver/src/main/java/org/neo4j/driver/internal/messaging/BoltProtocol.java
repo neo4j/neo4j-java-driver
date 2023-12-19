@@ -25,6 +25,7 @@ import io.netty.channel.ChannelPromise;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
@@ -77,9 +78,11 @@ public interface BoltProtocol {
      * @param connection the connection to use.
      * @param bookmark the bookmarks. Never null, should be {@link InternalBookmark#empty()} when absent.
      * @param config the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
+     * @param logging            the driver logging
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
      */
-    CompletionStage<Void> beginTransaction(Connection connection, Bookmark bookmark, TransactionConfig config);
+    CompletionStage<Void> beginTransaction(
+            Connection connection, Bookmark bookmark, TransactionConfig config, Logging logging);
 
     /**
      * Commit the unmanaged transaction.
@@ -105,6 +108,7 @@ public interface BoltProtocol {
      * @param bookmarkHolder the bookmarksHolder that keeps track of the current bookmark and can be updated with a new bookmark.
      * @param config         the transaction config for the implicitly started auto-commit transaction.
      * @param fetchSize      the record fetch size for PULL message.
+     * @param logging            the driver logging
      * @return stage with cursor.
      */
     ResultCursorFactory runInAutoCommitTransaction(
@@ -112,7 +116,8 @@ public interface BoltProtocol {
             Query query,
             BookmarkHolder bookmarkHolder,
             TransactionConfig config,
-            long fetchSize);
+            long fetchSize,
+            Logging logging);
 
     /**
      * Execute the given query in a running unmanaged transaction, i.e. {@link Transaction#run(Query)}.

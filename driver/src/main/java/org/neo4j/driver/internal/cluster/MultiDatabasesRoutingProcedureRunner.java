@@ -24,6 +24,7 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
 import java.util.HashMap;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
@@ -42,8 +43,8 @@ public class MultiDatabasesRoutingProcedureRunner extends SingleDatabaseRoutingP
     static final String MULTI_DB_GET_ROUTING_TABLE =
             String.format("CALL dbms.routing.getRoutingTable($%s, $%s)", ROUTING_CONTEXT, DATABASE_NAME);
 
-    public MultiDatabasesRoutingProcedureRunner(RoutingContext context) {
-        super(context);
+    public MultiDatabasesRoutingProcedureRunner(RoutingContext context, Logging logging) {
+        super(context, logging);
     }
 
     @Override

@@ -21,6 +21,9 @@ package org.neo4j.driver.internal.messaging.request;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.Values.value;
@@ -39,6 +42,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
 
@@ -56,7 +61,8 @@ public class TransactionMetadataBuilderTest {
 
         Duration txTimeout = Duration.ofSeconds(7);
 
-        Map<String, Value> metadata = buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmark, null);
+        Map<String, Value> metadata =
+                buildMetadata(txTimeout, txMetadata, defaultDatabase(), mode, bookmark, null, Logging.none());
 
         Map<String, Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put("bookmarks", value(bookmark.values()));
@@ -83,7 +89,7 @@ public class TransactionMetadataBuilderTest {
         Duration txTimeout = Duration.ofSeconds(7);
 
         Map<String, Value> metadata =
-                buildMetadata(txTimeout, txMetadata, database(databaseName), WRITE, bookmark, null);
+                buildMetadata(txTimeout, txMetadata, database(databaseName), WRITE, bookmark, null, Logging.none());
 
         Map<String, Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put("bookmarks", value(bookmark.values()));
@@ -96,7 +102,51 @@ public class TransactionMetadataBuilderTest {
 
     @Test
     void shouldNotHaveMetadataForDatabaseNameWhenIsNull() {
-        Map<String, Value> metadata = buildMetadata(null, null, defaultDatabase(), WRITE, null, null);
+        Map<String, Value> metadata = buildMetadata(null, null, defaultDatabase(), WRITE, null, null, Logging.none());
         assertTrue(metadata.isEmpty());
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {1, 1_000_001, 100_500_000, 100_700_000, 1_000_000_001})
+    void shouldRoundUpFractionalTimeoutAndLog(long nanosValue) {
+        // given
+        Logging logging = mock(Logging.class);
+        Logger logger = mock(Logger.class);
+        given(logging.getLog(TransactionMetadataBuilder.class)).willReturn(logger);
+
+        // when
+        Map<String, Value> metadata =
+                buildMetadata(Duration.ofNanos(nanosValue), null, defaultDatabase(), WRITE, null, null, logging);
+
+        // then
+        Map<String, Value> expectedMetadata = new HashMap<>();
+        long expectedMillis = nanosValue / 1_000_000 + 1;
+        expectedMetadata.put("tx_timeout", value(expectedMillis));
+        assertEquals(expectedMetadata, metadata);
+        then(logging).should().getLog(TransactionMetadataBuilder.class);
+        then(logger)
+                .should()
+                .info(
+                        "The transaction timeout has been rounded up to next millisecond value since the config had a fractional millisecond value");
+    }
+
+    @Test
+    void shouldNotLogWhenRoundingDoesNotHappen() {
+        // given
+        Logging logging = mock(Logging.class);
+        Logger logger = mock(Logger.class);
+        given(logging.getLog(TransactionMetadataBuilder.class)).willReturn(logger);
+        int timeout = 1000;
+
+        // when
+        Map<String, Value> metadata =
+                buildMetadata(Duration.ofMillis(timeout), null, defaultDatabase(), WRITE, null, null, logging);
+
+        // then
+        Map<String, Value> expectedMetadata = new HashMap<>();
+        expectedMetadata.put("tx_timeout", value(timeout));
+        assertEquals(expectedMetadata, metadata);
+        then(logging).shouldHaveNoInteractions();
+        then(logger).shouldHaveNoInteractions();
     }
 }

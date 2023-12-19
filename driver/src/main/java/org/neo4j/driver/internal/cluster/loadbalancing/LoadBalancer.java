@@ -297,7 +297,7 @@ public class LoadBalancer implements ConnectionProvider {
             Logging logging,
             DomainNameResolver domainNameResolver) {
         ClusterCompositionProvider clusterCompositionProvider =
-                new RoutingProcedureClusterCompositionProvider(clock, settings.routingContext());
+                new RoutingProcedureClusterCompositionProvider(clock, settings.routingContext(), logging);
         return new RediscoveryImpl(
                 initialRouter,
                 settings,

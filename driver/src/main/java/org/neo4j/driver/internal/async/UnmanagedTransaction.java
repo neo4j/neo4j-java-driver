@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
@@ -91,34 +92,41 @@ public class UnmanagedTransaction {
     private CompletableFuture<Void> commitFuture;
     private CompletableFuture<Void> rollbackFuture;
     private Throwable causeOfTermination;
+    private final Logging logging;
 
-    public UnmanagedTransaction(Connection connection, BookmarkHolder bookmarkHolder, long fetchSize) {
-        this(connection, bookmarkHolder, fetchSize, new ResultCursorsHolder());
+    public UnmanagedTransaction(Connection connection, BookmarkHolder bookmarkHolder, long fetchSize, Logging logging) {
+        this(connection, bookmarkHolder, fetchSize, new ResultCursorsHolder(), logging);
     }
 
     protected UnmanagedTransaction(
-            Connection connection, BookmarkHolder bookmarkHolder, long fetchSize, ResultCursorsHolder resultCursors) {
+            Connection connection,
+            BookmarkHolder bookmarkHolder,
+            long fetchSize,
+            ResultCursorsHolder resultCursors,
+            Logging logging) {
         this.connection = connection;
         this.protocol = connection.protocol();
         this.bookmarkHolder = bookmarkHolder;
         this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
+        this.logging = logging;
     }
 
     public CompletionStage<UnmanagedTransaction> beginAsync(Bookmark initialBookmark, TransactionConfig config) {
-        return protocol.beginTransaction(connection, initialBookmark, config).handle((ignore, beginError) -> {
-            if (beginError != null) {
-                if (beginError instanceof AuthorizationExpiredException) {
-                    connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
-                } else if (beginError instanceof ConnectionReadTimeoutException) {
-                    connection.terminateAndRelease(beginError.getMessage());
-                } else {
-                    connection.release();
-                }
-                throw asCompletionException(beginError);
-            }
-            return this;
-        });
+        return protocol.beginTransaction(connection, initialBookmark, config, logging)
+                .handle((ignore, beginError) -> {
+                    if (beginError != null) {
+                        if (beginError instanceof AuthorizationExpiredException) {
+                            connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
+                        } else if (beginError instanceof ConnectionReadTimeoutException) {
+                            connection.terminateAndRelease(beginError.getMessage());
+                        } else {
+                            connection.release();
+                        }
+                        throw asCompletionException(beginError);
+                    }
+                    return this;
+                });
     }
 
     public CompletionStage<Void> closeAsync() {

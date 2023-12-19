@@ -49,6 +49,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
@@ -120,14 +121,16 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         singletonMap("key", value(42)),
                         READ,
                         defaultDatabase(),
-                        null),
+                        null,
+                        Logging.none()),
                 new BeginMessage(
                         InternalBookmark.parse("neo4j:bookmark:v1:tx123"),
                         ofSeconds(5),
                         singletonMap("key", value(42)),
                         WRITE,
                         database("foo"),
-                        null),
+                        null,
+                        Logging.none()),
                 COMMIT,
                 ROLLBACK,
                 RESET,
@@ -138,7 +141,8 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         defaultDatabase(),
                         READ,
                         InternalBookmark.parse("neo4j:bookmark:v1:tx1"),
-                        null),
+                        null,
+                        Logging.none()),
                 autoCommitTxRunMessage(
                         new Query("RETURN 1"),
                         ofSeconds(5),
@@ -146,7 +150,8 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         database("foo"),
                         WRITE,
                         InternalBookmark.parse("neo4j:bookmark:v1:tx1"),
-                        null),
+                        null,
+                        Logging.none()),
                 unmanagedTxRunMessage(new Query("RETURN 1")),
 
                 // Bolt V3 messages with struct values
@@ -157,7 +162,8 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         defaultDatabase(),
                         READ,
                         InternalBookmark.empty(),
-                        null),
+                        null,
+                        Logging.none()),
                 autoCommitTxRunMessage(
                         new Query("RETURN $x", singletonMap("x", value(ZonedDateTime.now()))),
                         ofSeconds(1),
@@ -165,7 +171,8 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase {
                         database("foo"),
                         WRITE,
                         InternalBookmark.empty(),
-                        null),
+                        null,
+                        Logging.none()),
                 unmanagedTxRunMessage(new Query("RETURN $x", singletonMap("x", point(42, 1, 2, 3)))),
 
                 // New 4.3 Messages
