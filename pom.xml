@@ -34,11 +34,11 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.101.Final</netty-bom.version>
+    <netty-bom.version>4.1.104.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2023.0.0</reactor-bom.version>
+    <reactor-bom.version>2023.0.1</reactor-bom.version>
     <rxjava.version>2.2.21</rxjava.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
@@ -51,7 +51,7 @@
     <jackson.version>2.16.0</jackson.version>
     <lombok.version>1.18.30</lombok.version>
     <svm.version>21.3.8</svm.version>
-    <micrometer.version>1.12.0</micrometer.version>
+    <micrometer.version>1.12.1</micrometer.version>
     <testcontainers.version>1.19.3</testcontainers.version>
     <build-resources.version>4.4.28</build-resources.version>
     <!-- To be overwritten by child projects -->
