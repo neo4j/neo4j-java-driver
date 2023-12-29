@@ -44,7 +44,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
+import org.neo4j.driver.internal.bolt.routedimpl.cluster.RoutingTableRegistry;
 import reactor.core.publisher.Mono;
 
 public class TestkitState {

@@ -17,7 +17,6 @@
 package org.neo4j.driver.internal.async;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Futures.asCompletionException;
 import static org.neo4j.driver.internal.util.Futures.combineErrors;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
@@ -34,24 +33,37 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.DatabaseBookmark;
-import org.neo4j.driver.internal.cursor.AsyncResultCursor;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.NotificationConfig;
+import org.neo4j.driver.internal.bolt.api.ResponseHandler;
+import org.neo4j.driver.internal.bolt.api.TransactionType;
+import org.neo4j.driver.internal.bolt.api.summary.BeginSummary;
+import org.neo4j.driver.internal.bolt.api.summary.CommitSummary;
+import org.neo4j.driver.internal.bolt.api.summary.DiscardSummary;
+import org.neo4j.driver.internal.bolt.api.summary.PullSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RollbackSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
+import org.neo4j.driver.internal.bolt.api.summary.TelemetrySummary;
+import org.neo4j.driver.internal.cursor.DisposableResultCursorImpl;
+import org.neo4j.driver.internal.cursor.ResultCursorImpl;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
+import org.neo4j.driver.internal.util.ErrorUtil;
+import org.neo4j.driver.internal.util.Futures;
 
-public class UnmanagedTransaction implements TerminationAwareStateLockingExecutor {
+public class UnmanagedTransaction {
     private enum State {
         /**
          * The transaction is running with no explicit success or failure marked
@@ -86,8 +98,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             "Can't rollback, transaction has been requested to be committed";
     private static final EnumSet<State> OPEN_STATES = EnumSet.of(State.ACTIVE, State.TERMINATED);
 
-    private final Connection connection;
-    private final BoltProtocol protocol;
+    private final BoltConnection connection;
     private final Consumer<DatabaseBookmark> bookmarkConsumer;
     private final ResultCursorsHolder resultCursors;
     private final long fetchSize;
@@ -104,7 +115,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     private final ApiTelemetryWork apiTelemetryWork;
 
     public UnmanagedTransaction(
-            Connection connection,
+            BoltConnection connection,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             long fetchSize,
             NotificationConfig notificationConfig,
@@ -121,7 +132,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     }
 
     protected UnmanagedTransaction(
-            Connection connection,
+            BoltConnection connection,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             long fetchSize,
             ResultCursorsHolder resultCursors,
@@ -129,43 +140,63 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             ApiTelemetryWork apiTelemetryWork,
             Logging logging) {
         this.connection = connection;
-        this.protocol = connection.protocol();
         this.bookmarkConsumer = bookmarkConsumer;
         this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
         this.notificationConfig = notificationConfig;
         this.logging = logging;
         this.apiTelemetryWork = apiTelemetryWork;
-
-        connection.bindTerminationAwareStateLockingExecutor(this);
     }
 
     // flush = false is only supported for async mode with a single subsequent run
     public CompletionStage<UnmanagedTransaction> beginAsync(
             Set<Bookmark> initialBookmarks, TransactionConfig config, String txType, boolean flush) {
 
-        apiTelemetryWork.execute(connection, protocol).whenComplete((unused, throwable) -> {
-            if (throwable != null) {
-                beginFuture.completeExceptionally(throwable);
-            }
-        });
+        var bookmarks = initialBookmarks.stream().map(Bookmark::value).collect(Collectors.toSet());
 
-        protocol.beginTransaction(connection, initialBookmarks, config, txType, notificationConfig, logging, flush)
-                .handle((ignore, beginError) -> {
-                    if (beginError != null) {
-                        if (beginError instanceof AuthorizationExpiredException) {
-                            connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
-                        } else if (beginError instanceof ConnectionReadTimeoutException) {
-                            connection.terminateAndRelease(beginError.getMessage());
-                        } else {
-                            connection.release();
-                        }
-                        throw asCompletionException(beginError);
+        return apiTelemetryWork
+                .pipelineTelemetryIfEnabled(connection)
+                .thenCompose(connection -> connection.beginTransaction(
+                        bookmarks, TransactionType.DEFAULT, config.timeout(), config.metadata(), notificationConfig))
+                .thenCompose(connection -> {
+                    if (flush) {
+                        connection
+                                .flush(new ResponseHandler() {
+                                    @Override
+                                    public void onError(Throwable throwable) {
+                                        connection.close().whenComplete((ignored, closeThrowable) -> {
+                                            if (closeThrowable != null) {
+                                                throwable.addSuppressed(closeThrowable);
+                                            }
+                                            beginFuture.completeExceptionally(throwable);
+                                        });
+                                    }
+
+                                    @Override
+                                    public void onTelemetrySummary(TelemetrySummary summary) {
+                                        apiTelemetryWork.acknowledge();
+                                    }
+
+                                    @Override
+                                    public void onBeginSummary(BeginSummary summary) {
+                                        beginFuture.complete(null);
+                                    }
+                                })
+                                .whenComplete((ignored, throwable) -> {
+                                    if (throwable != null) {
+                                        connection.close().whenComplete((closeResult, closeThrowable) -> {
+                                            if (closeThrowable != null) {
+                                                throwable.addSuppressed(closeThrowable);
+                                            }
+                                            beginFuture.completeExceptionally(throwable);
+                                        });
+                                    }
+                                });
+                        return beginFuture.thenApply(ignored -> this);
+                    } else {
+                        return CompletableFuture.completedFuture(this);
                     }
-                    return this;
-                })
-                .whenComplete(futureCompletingConsumer(beginFuture));
-        return flush ? beginFuture : CompletableFuture.completedFuture(this);
+                });
     }
 
     public CompletionStage<Void> closeAsync() {
@@ -186,20 +217,125 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
 
     public CompletionStage<ResultCursor> runAsync(Query query) {
         ensureCanRunQueries();
-        var cursorStage = protocol.runInUnmanagedTransaction(connection, query, this, fetchSize)
-                .asyncResult();
-        resultCursors.add(cursorStage);
-        return beginFuture.thenCompose(ignored -> cursorStage
-                .thenCompose(AsyncResultCursor::mapSuccessfulRunCompletionAsync)
-                .thenApply(Function.identity()));
+        var cursorFuture = new CompletableFuture<DisposableResultCursorImpl>();
+        var parameters = query.parameters().asMap(Values::value);
+        var transaction = this;
+        var st = connection
+                .run(query.text(), parameters)
+                .thenCompose(ignored2 -> connection.pull(-1, fetchSize))
+                .thenCompose(ignored2 -> connection.flush(new ResponseHandler() {
+                    @Override
+                    public void onError(Throwable throwable) {
+                        throwable = Futures.completionExceptionCause(throwable);
+                        if (throwable instanceof IllegalStateException) {
+                            throwable = ErrorUtil.newConnectionTerminatedError();
+                        }
+                        if (beginFuture.completeExceptionally(throwable)) {
+                            //noinspection ThrowableNotThrown
+                            markTerminated(throwable);
+                        } else {
+                            if (!cursorFuture.completeExceptionally(throwable)) {
+                                cursorFuture.getNow(null).delegate().onError(throwable);
+                            } else {
+                                //noinspection ThrowableNotThrown
+                                markTerminated(throwable);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onTelemetrySummary(TelemetrySummary summary) {
+                        apiTelemetryWork.acknowledge();
+                    }
+
+                    @Override
+                    public void onBeginSummary(BeginSummary summary) {
+                        beginFuture.complete(transaction);
+                    }
+
+                    @Override
+                    public void onRunSummary(RunSummary summary) {
+                        cursorFuture.complete(new DisposableResultCursorImpl(new ResultCursorImpl(
+                                connection,
+                                query,
+                                fetchSize,
+                                transaction::markTerminated,
+                                (bookmark) -> {},
+                                false,
+                                summary,
+                                () -> executeWithLock(lock, () -> causeOfTermination))));
+                    }
+
+                    @Override
+                    public void onRecord(Value[] fields) {
+                        cursorFuture.getNow(null).delegate().onRecord(fields);
+                    }
+
+                    @Override
+                    public void onPullSummary(PullSummary summary) {
+                        cursorFuture.getNow(null).delegate().onPullSummary(summary);
+                    }
+
+                    @Override
+                    public void onDiscardSummary(DiscardSummary summary) {
+                        cursorFuture.getNow(null).delegate().onDiscardSummary(summary);
+                    }
+                }));
+
+        return beginFuture.thenCompose(ignored -> {
+            var cursorStage = st.thenCompose(flushResult -> cursorFuture);
+            resultCursors.add(cursorStage);
+            return cursorStage.thenApply(Function.identity());
+        });
     }
 
     public CompletionStage<RxResultCursor> runRx(Query query) {
         ensureCanRunQueries();
-        var cursorStage = protocol.runInUnmanagedTransaction(connection, query, this, fetchSize)
-                .rxResult();
-        resultCursors.add(cursorStage);
-        return cursorStage;
+        var cursorFuture = new CompletableFuture<RxResultCursor>();
+        var parameters = query.parameters().asMap(Values::value);
+        var transaction = this;
+        var st = connection
+                .run(query.text(), parameters)
+                .thenCompose(ignored2 -> connection.flush(new ResponseHandler() {
+                    @Override
+                    public void onError(Throwable throwable) {
+                        throwable = Futures.completionExceptionCause(throwable);
+                        if (throwable instanceof IllegalStateException) {
+                            throwable = ErrorUtil.newConnectionTerminatedError();
+                        }
+                        if (beginFuture.completeExceptionally(throwable)) {
+                            //noinspection ThrowableNotThrown
+                            markTerminated(throwable);
+                        } else {
+                            cursorFuture.completeExceptionally(throwable);
+                            //noinspection ThrowableNotThrown
+                            markTerminated(throwable);
+                        }
+                    }
+
+                    @Override
+                    public void onTelemetrySummary(TelemetrySummary summary) {
+                        apiTelemetryWork.acknowledge();
+                    }
+
+                    @Override
+                    public void onRunSummary(RunSummary summary) {
+                        cursorFuture.complete(new RxResultCursorImpl(
+                                connection,
+                                query,
+                                summary,
+                                bookmark -> {},
+                                transaction::markTerminated,
+                                false,
+                                () -> executeWithLock(lock, () -> causeOfTermination)));
+                    }
+                }));
+
+        return beginFuture.thenCompose(ignored -> {
+            var cursorStage = st.thenCompose(flushResult -> cursorFuture);
+            resultCursors.add(cursorStage);
+            return cursorStage.thenApply(Function.identity());
+        });
     }
 
     public boolean isOpen() {
@@ -230,15 +366,6 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         }
     }
 
-    public Connection connection() {
-        return connection;
-    }
-
-    @Override
-    public void execute(Consumer<Throwable> causeOfTerminationConsumer) {
-        executeWithLock(lock, () -> causeOfTerminationConsumer.accept(causeOfTermination));
-    }
-
     public CompletionStage<Void> terminateAsync() {
         return executeWithLock(lock, () -> {
             if (!isOpen() || commitFuture != null || rollbackFuture != null) {
@@ -248,7 +375,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                     return terminationStage != null ? terminationStage : completedFuture(null);
                 } else {
                     var terminationException = markTerminated(null);
-                    terminationStage = connection.reset(terminationException);
+                    //                    terminationStage = connection.reset(terminationException);
                     return terminationStage;
                 }
             }
@@ -287,19 +414,61 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                                         + "It has been rolled back either because of an error or explicit termination",
                                 cursorFailure != causeOfTermination ? causeOfTermination : null)
                         : null);
-        return exception != null
-                ? failedFuture(exception)
-                : protocol.commitTransaction(connection).thenAccept(bookmarkConsumer);
+
+        if (exception != null) {
+            return failedFuture(exception);
+        } else {
+            var commitSummary = new CompletableFuture<CommitSummary>();
+            connection
+                    .commit()
+                    .thenCompose(connection -> connection.flush(new ResponseHandler() {
+                        @Override
+                        public void onError(Throwable throwable) {
+                            commitSummary.completeExceptionally(throwable);
+                        }
+
+                        @Override
+                        public void onCommitSummary(CommitSummary summary) {
+                            summary.bookmark()
+                                    .map(bookmark -> new DatabaseBookmark(null, Bookmark.from(bookmark)))
+                                    .ifPresent(bookmarkConsumer);
+                            commitSummary.complete(summary);
+                        }
+                    }));
+            // todo bookmarkConsumer.accept(summary.getBookmark())
+            return commitSummary.thenApply(summary -> null);
+        }
     }
 
     private CompletionStage<Void> doRollbackAsync() {
-        return executeWithLock(lock, () -> state) == State.TERMINATED
-                ? completedWithNull()
-                : protocol.rollbackTransaction(connection);
+        if (executeWithLock(lock, () -> state) == State.TERMINATED) {
+            return completedWithNull();
+        } else {
+            var rollbackFuture = new CompletableFuture<Void>();
+            connection
+                    .rollback()
+                    .thenCompose(connection -> connection.flush(new ResponseHandler() {
+                        @Override
+                        public void onError(Throwable throwable) {
+                            rollbackFuture.completeExceptionally(throwable);
+                        }
+
+                        @Override
+                        public void onRollbackSummary(RollbackSummary summary) {
+                            rollbackFuture.complete(null);
+                        }
+                    }));
+
+            return rollbackFuture;
+        }
     }
 
     private static BiFunction<Void, Throwable, Void> handleCommitOrRollback(Throwable cursorFailure) {
         return (ignore, commitOrRollbackError) -> {
+            commitOrRollbackError = Futures.completionExceptionCause(commitOrRollbackError);
+            if (commitOrRollbackError instanceof IllegalStateException) {
+                commitOrRollbackError = ErrorUtil.newConnectionTerminatedError();
+            }
             var combinedError = combineErrors(cursorFailure, commitOrRollbackError);
             if (combinedError != null) {
                 throw combinedError;
@@ -308,7 +477,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         };
     }
 
-    private void handleTransactionCompletion(boolean commitAttempt, Throwable throwable) {
+    private CompletionStage<Void> handleTransactionCompletion(boolean commitAttempt, Throwable throwable) {
         executeWithLock(lock, () -> {
             if (commitAttempt && throwable == null) {
                 state = State.COMMITTED;
@@ -316,13 +485,12 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                 state = State.ROLLED_BACK;
             }
         });
-        if (throwable instanceof AuthorizationExpiredException) {
-            connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
-        } else if (throwable instanceof ConnectionReadTimeoutException) {
-            connection.terminateAndRelease(throwable.getMessage());
-        } else {
-            connection.release(); // release in background
-        }
+        return connection
+                .close()
+                .exceptionally(th -> null)
+                .thenCompose(ignored -> throwable != null
+                        ? CompletableFuture.failedStage(throwable)
+                        : CompletableFuture.completedStage(null));
     }
 
     private CompletionStage<Void> closeAsync(boolean commit, boolean completeWithNullIfNotOpen) {
@@ -371,7 +539,8 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             resultCursors
                     .retrieveNotConsumedError()
                     .thenCompose(targetAction)
-                    .whenComplete((ignored, throwable) -> handleTransactionCompletion(commit, throwable))
+                    .handle((ignored, throwable) -> handleTransactionCompletion(commit, throwable))
+                    .thenCompose(Function.identity())
                     .whenComplete(futureCompletingConsumer(targetFuture));
             stage = targetFuture;
         }

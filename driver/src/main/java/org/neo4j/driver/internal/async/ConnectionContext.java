@@ -22,8 +22,7 @@ import java.util.function.Supplier;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.DatabaseName;
 
 /**
  * Describes what kind of connection to return by {@link ConnectionProvider}

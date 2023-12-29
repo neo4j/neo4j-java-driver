@@ -29,7 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
+import org.neo4j.driver.internal.bolt.basicimpl.async.connection.EventLoopGroupFactory;
 
 public final class Futures {
     private static final CompletableFuture<?> COMPLETED_WITH_NULL = completedFuture(null);

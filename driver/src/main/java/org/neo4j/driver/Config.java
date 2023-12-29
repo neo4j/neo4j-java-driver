@@ -32,9 +32,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.SecuritySettings;
-import org.neo4j.driver.internal.async.pool.PoolSettings;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
+import org.neo4j.driver.internal.bolt.basicimpl.async.pool.PoolSettings;
+import org.neo4j.driver.internal.bolt.routedimpl.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Experimental;
@@ -371,7 +370,7 @@ public final class Config implements Serializable {
         private long maxTransactionRetryTimeMillis = ExponentialBackoffRetryLogic.DEFAULT_MAX_RETRY_TIME_MS;
         private ServerAddressResolver resolver;
         private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
-        private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
+        private long fetchSize = 1000;
         private int eventLoopThreads = 0;
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
 
@@ -602,7 +601,11 @@ public final class Config implements Serializable {
          * @return this builder
          */
         public ConfigBuilder withFetchSize(long size) {
-            this.fetchSize = FetchSizeUtil.assertValidFetchSize(size);
+            if (size <= 0 && size != -1) {
+                throw new IllegalArgumentException(String.format(
+                        "The record fetch size may not be 0 or negative. Illegal record fetch size: %s.", size));
+            }
+            this.fetchSize = size;
             return this;
         }
 

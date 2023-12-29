@@ -32,7 +32,8 @@ import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.basicimpl.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalDatabaseInfo;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
@@ -98,6 +99,26 @@ public class MetadataExtractor {
                 connection.serverAgent(),
                 connection.serverAddress(),
                 connection.protocol().version());
+        var dbInfo = extractDatabaseInfo(metadata);
+        return new InternalResultSummary(
+                query,
+                serverInfo,
+                dbInfo,
+                extractQueryType(metadata),
+                extractCounters(metadata),
+                extractPlan(metadata),
+                extractProfiledPlan(metadata),
+                extractNotifications(metadata),
+                resultAvailableAfter,
+                extractResultConsumedAfter(metadata, resultConsumedAfterMetadataKey));
+    }
+
+    public ResultSummary extractSummary(
+            Query query, BoltConnection connection, long resultAvailableAfter, Map<String, Value> metadata) {
+        ServerInfo serverInfo = new InternalServerInfo(
+                connection.connectionInfo().serverAgent(),
+                connection.connectionInfo().serverAddress(),
+                connection.connectionInfo().protocolVersion());
         var dbInfo = extractDatabaseInfo(metadata);
         return new InternalResultSummary(
                 query,

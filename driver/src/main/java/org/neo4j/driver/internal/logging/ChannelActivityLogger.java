@@ -22,7 +22,7 @@ import static org.neo4j.driver.internal.util.Format.valueOrEmpty;
 import io.netty.channel.Channel;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.async.connection.ChannelAttributes;
+import org.neo4j.driver.internal.bolt.basicimpl.async.connection.ChannelAttributes;
 
 public class ChannelActivityLogger extends ReformattedLogger {
     private final Channel channel;

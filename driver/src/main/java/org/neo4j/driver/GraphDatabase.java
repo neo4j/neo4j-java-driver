@@ -29,6 +29,7 @@ import org.neo4j.driver.internal.security.ValidatingAuthTokenManager;
  * @since 1.0
  */
 public final class GraphDatabase {
+
     private GraphDatabase() {}
 
     /**

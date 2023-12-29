@@ -18,11 +18,16 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.NetworkSession;
 
 public interface SessionFactory {
-    NetworkSession newInstance(SessionConfig sessionConfig, AuthToken overrideAuthToken, boolean telemetryDisabled);
+    NetworkSession newInstance(
+            SessionConfig sessionConfig,
+            NotificationConfig notificationConfig,
+            AuthToken overrideAuthToken,
+            boolean telemetryDisabled);
 
     CompletionStage<Void> verifyConnectivity();
 

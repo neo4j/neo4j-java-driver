@@ -36,8 +36,8 @@ import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 
 public class InternalAsyncSession extends AsyncAbstractQueryRunner implements AsyncSession {

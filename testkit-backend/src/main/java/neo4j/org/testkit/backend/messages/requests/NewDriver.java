@@ -48,13 +48,12 @@ import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.DefaultDomainNameResolver;
-import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.InternalNotificationCategory;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.internal.SecuritySettings;
-import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
+import org.neo4j.driver.internal.bolt.api.DefaultDomainNameResolver;
+import org.neo4j.driver.internal.bolt.api.DomainNameResolver;
 import org.neo4j.driver.internal.security.SecurityPlans;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.net.ServerAddressResolver;
@@ -304,11 +303,6 @@ public class NewDriver implements TestkitRequest {
         @Override
         protected DomainNameResolver getDomainNameResolver() {
             return domainNameResolver;
-        }
-
-        @Override
-        protected void handleNewLoadBalancer(LoadBalancer loadBalancer) {
-            testkitState.getRoutingTableRegistry().put(driverId, loadBalancer.getRoutingTableRegistry());
         }
 
         @Override

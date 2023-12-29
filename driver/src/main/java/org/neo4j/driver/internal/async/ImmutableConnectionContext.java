@@ -16,8 +16,8 @@
  */
 package org.neo4j.driver.internal.async;
 
-import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
+import static org.neo4j.driver.internal.bolt.api.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.driver.internal.bolt.api.DatabaseNameUtil.systemDatabase;
 
 import java.util.Collections;
 import java.util.Set;
@@ -25,8 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.bolt.api.DatabaseName;
+import org.neo4j.driver.internal.bolt.basicimpl.spi.Connection;
 
 /**
  * A {@link Connection} shall fulfil this {@link ImmutableConnectionContext} when acquired from a connection provider.

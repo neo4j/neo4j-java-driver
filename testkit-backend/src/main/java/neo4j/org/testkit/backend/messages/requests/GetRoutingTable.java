@@ -27,7 +27,7 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RoutingTable;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.DatabaseNameUtil;
+import org.neo4j.driver.internal.bolt.api.DatabaseNameUtil;
 import reactor.core.publisher.Mono;
 
 @Setter

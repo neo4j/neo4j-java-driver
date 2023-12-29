@@ -16,9 +16,9 @@
  */
 package org.neo4j.driver.internal.util;
 
-import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
+import org.neo4j.driver.internal.bolt.basicimpl.messaging.v51.BoltProtocolV51;
+import org.neo4j.driver.internal.bolt.basicimpl.spi.Connection;
 
 public class SessionAuthUtil {
     public static boolean supportsSessionAuth(Connection connection) {

@@ -18,7 +18,7 @@ package org.neo4j.driver.internal.summary;
 
 import java.util.Objects;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
+import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
 import org.neo4j.driver.summary.ServerInfo;
 
 public class InternalServerInfo implements ServerInfo {

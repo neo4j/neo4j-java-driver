@@ -17,8 +17,8 @@
 package org.neo4j.driver.internal;
 
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.bolt.basicimpl.messaging.v44.BoltProtocolV44;
+import org.neo4j.driver.internal.bolt.basicimpl.spi.Connection;
 
 public class ImpersonationUtil {
     public static final String IMPERSONATION_UNSUPPORTED_ERROR_MESSAGE =
