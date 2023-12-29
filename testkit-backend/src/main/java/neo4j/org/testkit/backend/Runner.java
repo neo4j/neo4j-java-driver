@@ -32,10 +32,7 @@ import org.neo4j.driver.Logging;
 public class Runner {
     public static void main(String[] args) throws InterruptedException {
         var backendMode = getBackendMode(args);
-        var levelString = System.getenv("TESTKIT_BACKEND_LOGGING_LEVEL");
-        var logging = levelString == null || levelString.isEmpty()
-                ? Logging.none()
-                : Logging.console(Level.parse(levelString));
+        var logging = Logging.console(Level.FINE);
 
         EventLoopGroup group = new NioEventLoopGroup();
         try {

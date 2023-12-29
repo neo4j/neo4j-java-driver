@@ -18,46 +18,66 @@ package org.neo4j.driver.internal.async;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.internal.util.Futures.completionExceptionCause;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.TransactionNestingException;
+import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.DatabaseBookmark;
-import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.FailableCursor;
-import org.neo4j.driver.internal.ImpersonationUtil;
-import org.neo4j.driver.internal.cursor.AsyncResultCursor;
-import org.neo4j.driver.internal.cursor.ResultCursorFactory;
+import org.neo4j.driver.internal.NotificationConfigMapper;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
+import org.neo4j.driver.internal.bolt.api.DatabaseName;
+import org.neo4j.driver.internal.bolt.api.DatabaseNameUtil;
+import org.neo4j.driver.internal.bolt.api.NotificationConfig;
+import org.neo4j.driver.internal.bolt.api.ResponseHandler;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
+import org.neo4j.driver.internal.bolt.api.exception.MinVersionAcquisitionException;
+import org.neo4j.driver.internal.bolt.api.summary.DiscardSummary;
+import org.neo4j.driver.internal.bolt.api.summary.PullSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
+import org.neo4j.driver.internal.cursor.DisposableResultCursorImpl;
+import org.neo4j.driver.internal.cursor.ResultCursorImpl;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
+import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
 import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
+import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.internal.util.Futures;
 
 public class NetworkSession {
-    private final ConnectionProvider connectionProvider;
+    private final BoltConnectionProvider boltConnectionProvider;
     private final NetworkSessionConnectionContext connectionContext;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
@@ -66,18 +86,20 @@ public class NetworkSession {
 
     private final long fetchSize;
     private volatile CompletionStage<UnmanagedTransaction> transactionStage = completedWithNull();
-    private volatile CompletionStage<Connection> connectionStage = completedWithNull();
+    private volatile CompletionStage<BoltConnection> connectionStage = completedWithNull();
     private volatile CompletionStage<? extends FailableCursor> resultCursorStage = completedWithNull();
 
     private final AtomicBoolean open = new AtomicBoolean(true);
     private final BookmarkManager bookmarkManager;
     private volatile Set<Bookmark> lastUsedBookmarks = Collections.emptySet();
     private volatile Set<Bookmark> lastReceivedBookmarks;
+    private final NotificationConfig driverNotificationConfig;
     private final NotificationConfig notificationConfig;
     private final boolean telemetryDisabled;
+    private final AuthTokenManager authTokenManager;
 
     public NetworkSession(
-            ConnectionProvider connectionProvider,
+            BoltConnectionProvider boltConnectionProvider,
             RetryLogic retryLogic,
             DatabaseName databaseName,
             AccessMode mode,
@@ -86,12 +108,14 @@ public class NetworkSession {
             long fetchSize,
             Logging logging,
             BookmarkManager bookmarkManager,
-            NotificationConfig notificationConfig,
+            org.neo4j.driver.NotificationConfig driverNotificationConfig,
+            org.neo4j.driver.NotificationConfig notificationConfig,
             AuthToken overrideAuthToken,
-            boolean telemetryDisabled) {
+            boolean telemetryDisabled,
+            AuthTokenManager authTokenManager) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
-        this.connectionProvider = connectionProvider;
+        this.boltConnectionProvider = Objects.requireNonNull(boltConnectionProvider);
         this.mode = mode;
         this.retryLogic = retryLogic;
         this.logging = logging;
@@ -105,28 +129,171 @@ public class NetworkSession {
         this.connectionContext = new NetworkSessionConnectionContext(
                 databaseNameFuture, determineBookmarks(false), impersonatedUser, overrideAuthToken);
         this.fetchSize = fetchSize;
-        this.notificationConfig = notificationConfig;
+        this.driverNotificationConfig = NotificationConfigMapper.map(driverNotificationConfig);
+        this.notificationConfig = NotificationConfigMapper.map(notificationConfig);
         this.telemetryDisabled = telemetryDisabled;
+        this.authTokenManager = authTokenManager;
     }
 
     public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config) {
-        var newResultCursorStage =
-                buildResultCursorFactory(query, config).thenCompose(ResultCursorFactory::asyncResult);
+        return ensureNoOpenTxBeforeRunningQuery()
+                .thenCompose(ignore -> acquireConnection(mode))
+                .thenCompose(connection -> {
+                    var cursorFuture = new CompletableFuture<DisposableResultCursorImpl>();
+                    var parameters = query.parameters().asMap(Values::value);
+                    var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.AUTO_COMMIT_TRANSACTION);
+                    apiTelemetryWork.setEnabled(!telemetryDisabled);
+                    var session = this;
+                    var cursorStage = apiTelemetryWork
+                            .pipelineTelemetryIfEnabled(connection)
+                            .thenCompose(conn -> conn.runInAutoCommitTransaction(
+                                    connectionContext.databaseNameFuture.getNow(null),
+                                    asBoltAccessMode(mode),
+                                    connectionContext.impersonatedUser,
+                                    determineBookmarks(true).stream()
+                                            .map(Bookmark::value)
+                                            .collect(Collectors.toSet()),
+                                    query.text(),
+                                    parameters,
+                                    config.timeout(),
+                                    config.metadata(),
+                                    notificationConfig))
+                            .thenCompose(conn -> conn.pull(-1, fetchSize))
+                            .thenCompose(conn -> conn.flush(new ResponseHandler() {
+                                @Override
+                                public void onError(Throwable throwable) {
+                                    throwable = Futures.completionExceptionCause(throwable);
+                                    if (throwable instanceof IllegalStateException) {
+                                        throwable = ErrorUtil.newConnectionTerminatedError();
+                                    }
+                                    if (!cursorFuture.completeExceptionally(throwable)) {
+                                        cursorFuture.getNow(null).delegate().onError(throwable);
+                                    }
+                                }
 
-        resultCursorStage = newResultCursorStage.exceptionally(error -> null);
-        return newResultCursorStage
-                .thenCompose(AsyncResultCursor::mapSuccessfulRunCompletionAsync)
-                .thenApply(Function.identity()); // convert the return type
+                                @Override
+                                public void onRunSummary(RunSummary summary) {
+                                    cursorFuture.complete(new DisposableResultCursorImpl(new ResultCursorImpl(
+                                            connection,
+                                            query,
+                                            fetchSize,
+                                            null,
+                                            session::handleNewBookmark,
+                                            true,
+                                            summary,
+                                            () -> null)));
+                                }
+
+                                @Override
+                                public void onRecord(Value[] fields) {
+                                    cursorFuture.getNow(null).delegate().onRecord(fields);
+                                }
+
+                                @Override
+                                public void onPullSummary(PullSummary summary) {
+                                    cursorFuture.getNow(null).delegate().onPullSummary(summary);
+                                }
+
+                                @Override
+                                public void onDiscardSummary(DiscardSummary summary) {
+                                    cursorFuture.getNow(null).delegate().onDiscardSummary(summary);
+                                }
+                            }))
+                            .thenCompose(flushResult -> cursorFuture)
+                            .handle((resultCursor, throwable) -> {
+                                var error = completionExceptionCause(throwable);
+                                if (error != null) {
+                                    return connection
+                                            .close()
+                                            .<DisposableResultCursorImpl>handle((ignored, closeError) -> {
+                                                if (closeError != null) {
+                                                    error.addSuppressed(closeError);
+                                                }
+                                                if (error instanceof RuntimeException runtimeException) {
+                                                    throw runtimeException;
+                                                } else {
+                                                    throw new CompletionException(error);
+                                                }
+                                            });
+                                } else {
+                                    return CompletableFuture.completedStage(resultCursor);
+                                }
+                            })
+                            .thenCompose(Function.identity());
+                    resultCursorStage = cursorStage.exceptionally(error -> null);
+                    return cursorStage.thenApply(Function.identity());
+                });
     }
 
     public CompletionStage<RxResultCursor> runRx(
             Query query, TransactionConfig config, CompletionStage<RxResultCursor> cursorPublishStage) {
-        var newResultCursorStage = buildResultCursorFactory(query, config).thenCompose(ResultCursorFactory::rxResult);
 
-        resultCursorStage = newResultCursorStage
-                .thenCompose(cursor -> cursor == null ? CompletableFuture.completedFuture(null) : cursorPublishStage)
-                .exceptionally(throwable -> null);
-        return newResultCursorStage;
+        return ensureNoOpenTxBeforeRunningQuery()
+                .thenCompose(ignore -> acquireConnection(mode))
+                .thenCompose(connection -> {
+                    var cursorFuture = new CompletableFuture<RxResultCursor>();
+                    var parameters = query.parameters().asMap(Values::value);
+                    var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.AUTO_COMMIT_TRANSACTION);
+                    apiTelemetryWork.setEnabled(!telemetryDisabled);
+                    var session = this;
+                    var cursorStage = apiTelemetryWork
+                            .pipelineTelemetryIfEnabled(connection)
+                            .thenCompose(conn -> conn.runInAutoCommitTransaction(
+                                    connectionContext.databaseNameFuture.getNow(null),
+                                    asBoltAccessMode(mode),
+                                    connectionContext.impersonatedUser,
+                                    determineBookmarks(true).stream()
+                                            .map(Bookmark::value)
+                                            .collect(Collectors.toSet()),
+                                    query.text(),
+                                    parameters,
+                                    config.timeout(),
+                                    config.metadata(),
+                                    notificationConfig))
+                            .thenCompose(conn -> conn.flush(new ResponseHandler() {
+                                @Override
+                                public void onError(Throwable throwable) {
+                                    throwable = Futures.completionExceptionCause(throwable);
+                                    if (throwable instanceof IllegalStateException) {
+                                        throwable = ErrorUtil.newConnectionTerminatedError();
+                                    }
+                                    cursorFuture.completeExceptionally(throwable);
+                                }
+
+                                @Override
+                                public void onRunSummary(RunSummary summary) {
+                                    cursorFuture.complete(new RxResultCursorImpl(
+                                            connection,
+                                            query,
+                                            summary,
+                                            session::handleNewBookmark,
+                                            (ignored) -> {},
+                                            true,
+                                            () -> null));
+                                }
+                            }))
+                            .thenCompose(flushResult -> cursorFuture)
+                            .handle((resultCursor, throwable) -> {
+                                var error = completionExceptionCause(throwable);
+                                if (error != null) {
+                                    return connection.close().<RxResultCursor>handle((ignored, closeError) -> {
+                                        if (closeError != null) {
+                                            error.addSuppressed(closeError);
+                                        }
+                                        if (error instanceof RuntimeException runtimeException) {
+                                            throw runtimeException;
+                                        } else {
+                                            throw new CompletionException(error);
+                                        }
+                                    });
+                                } else {
+                                    return CompletableFuture.completedStage(resultCursor);
+                                }
+                            })
+                            .thenCompose(Function.identity());
+                    resultCursorStage = cursorStage.exceptionally(error -> null);
+                    return cursorStage.thenApply(Function.identity());
+                });
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
@@ -140,12 +307,12 @@ public class NetworkSession {
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
-            AccessMode mode, TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
+            org.neo4j.driver.AccessMode mode, TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
         return beginTransactionAsync(mode, config, null, apiTelemetryWork, true);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
-            AccessMode mode,
+            org.neo4j.driver.AccessMode mode,
             TransactionConfig config,
             String txType,
             ApiTelemetryWork apiTelemetryWork,
@@ -157,11 +324,14 @@ public class NetworkSession {
         // create a chain that acquires connection and starts a transaction
         var newTransactionStage = ensureNoOpenTxBeforeStartingTx()
                 .thenCompose(ignore -> acquireConnection(mode))
-                .thenApply(connection ->
-                        ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
+                //                .thenApply(connection -> ImpersonationUtil.ensureImpersonationSupport(connection,
+                // connection.impersonatedUser()))
                 .thenCompose(connection -> {
                     var tx = new UnmanagedTransaction(
                             connection,
+                            connectionContext.databaseNameFuture.getNow(null),
+                            asBoltAccessMode(mode),
+                            connectionContext.impersonatedUser,
                             this::handleNewBookmark,
                             fetchSize,
                             notificationConfig,
@@ -199,7 +369,7 @@ public class NetworkSession {
                 .thenCompose(connection -> {
                     if (connection != null) {
                         // there exists an active connection, send a RESET message over it
-                        return connection.reset(terminationException.get());
+                        //                        return connection.reset(terminationException.get());
                     }
                     return completedWithNull();
                 });
@@ -217,14 +387,14 @@ public class NetworkSession {
         return connectionStage.thenCompose(connection -> {
             if (connection != null) {
                 // there exists connection, try to release it back to the pool
-                return connection.release();
+                return connection.close();
             }
             // no connection so return null
             return completedWithNull();
         });
     }
 
-    public CompletionStage<Connection> connectionAsync() {
+    public CompletionStage<BoltConnection> connectionAsync() {
         return connectionStage;
     }
 
@@ -258,51 +428,22 @@ public class NetworkSession {
         return completedWithNull();
     }
 
-    protected CompletionStage<Boolean> currentConnectionIsOpen() {
-        return connectionStage.handle((connection, error) -> error == null
-                && // no acquisition error
-                connection != null
-                && // some connection has actually been acquired
-                connection.isOpen()); // and it's still open
+    //    protected CompletionStage<Boolean> currentConnectionIsOpen() {
+    //        return connectionStage.handle((connection, error) -> error == null
+    //                && // no acquisition error
+    //                connection != null
+    //                && // some connection has actually been acquired
+    //                connection.isOpen()); // and it's still open
+    //    }
+
+    private org.neo4j.driver.internal.bolt.api.AccessMode asBoltAccessMode(AccessMode mode) {
+        return switch (mode) {
+            case WRITE -> org.neo4j.driver.internal.bolt.api.AccessMode.WRITE;
+            case READ -> org.neo4j.driver.internal.bolt.api.AccessMode.READ;
+        };
     }
 
-    private CompletionStage<ResultCursorFactory> buildResultCursorFactory(Query query, TransactionConfig config) {
-        ensureSessionIsOpen();
-
-        return ensureNoOpenTxBeforeRunningQuery()
-                .thenCompose(ignore -> acquireConnection(mode))
-                .thenApply(connection ->
-                        ImpersonationUtil.ensureImpersonationSupport(connection, connection.impersonatedUser()))
-                .thenCompose(connection -> {
-                    try {
-                        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.AUTO_COMMIT_TRANSACTION);
-                        apiTelemetryWork.setEnabled(!telemetryDisabled);
-                        var telemetryStage = apiTelemetryWork.execute(connection, connection.protocol());
-                        var factory = connection
-                                .protocol()
-                                .runInAutoCommitTransaction(
-                                        connection,
-                                        query,
-                                        determineBookmarks(true),
-                                        this::handleNewBookmark,
-                                        config,
-                                        fetchSize,
-                                        notificationConfig,
-                                        logging);
-                        var future = completedFuture(factory);
-                        telemetryStage.whenComplete((unused, throwable) -> {
-                            if (throwable != null) {
-                                future.completeExceptionally(throwable);
-                            }
-                        });
-                        return future;
-                    } catch (Throwable e) {
-                        return Futures.failedFuture(e);
-                    }
-                });
-    }
-
-    private CompletionStage<Connection> acquireConnection(AccessMode mode) {
+    private CompletionStage<BoltConnection> acquireConnection(AccessMode mode) {
         var currentConnectionStage = connectionStage;
 
         var newConnectionStage = resultCursorStage
@@ -328,11 +469,80 @@ public class NetworkSession {
                     }
                 })
                 .thenCompose(existingConnection -> {
-                    if (existingConnection != null && existingConnection.isOpen()) {
-                        // there somehow is an existing open connection, this should not happen, just a precondition
-                        throw new IllegalStateException("Existing open connection detected");
+                    //                    if (existingConnection != null && existingConnection.isOpen()) {
+                    //                        // there somehow is an existing open connection, this should not happen,
+                    // just a precondition
+                    //                        throw new IllegalStateException("Existing open connection detected");
+                    //                    }
+                    var databaseName = connectionContext.databaseNameFuture.getNow(null);
+
+                    Supplier<CompletionStage<Map<String, Value>>> tokenStageSupplier;
+                    BoltProtocolVersion minVersion = null;
+                    if (connectionContext.impersonatedUser() != null) {
+                        minVersion = new BoltProtocolVersion(4, 4);
                     }
-                    return connectionProvider.acquireConnection(connectionContext.contextWithMode(mode));
+                    var overrideAuthToken = connectionContext.overrideAuthToken();
+                    if (overrideAuthToken != null) {
+                        tokenStageSupplier = () -> CompletableFuture.completedStage(connectionContext.authToken)
+                                .thenApply(token -> ((InternalAuthToken) token).toMap());
+                        minVersion = new BoltProtocolVersion(5, 1);
+                    } else {
+                        tokenStageSupplier = () ->
+                                authTokenManager.getToken().thenApply(token -> ((InternalAuthToken) token).toMap());
+                    }
+                    return boltConnectionProvider
+                            .connect(
+                                    databaseName,
+                                    tokenStageSupplier,
+                                    switch (mode) {
+                                        case WRITE -> org.neo4j.driver.internal.bolt.api.AccessMode.WRITE;
+                                        case READ -> org.neo4j.driver.internal.bolt.api.AccessMode.READ;
+                                    },
+                                    connectionContext.rediscoveryBookmarks().stream()
+                                            .map(Bookmark::value)
+                                            .collect(Collectors.toSet()),
+                                    connectionContext.impersonatedUser(),
+                                    minVersion,
+                                    driverNotificationConfig,
+                                    (name) -> connectionContext
+                                            .databaseNameFuture()
+                                            .complete(name == null ? DatabaseNameUtil.defaultDatabase() : name))
+                            .thenApply(connection -> (BoltConnection) new BoltConnectionWithAuthTokenManager(
+                                    connection,
+                                    overrideAuthToken != null
+                                            ? new AuthTokenManager() {
+                                                @Override
+                                                public CompletionStage<AuthToken> getToken() {
+                                                    return null;
+                                                }
+
+                                                @Override
+                                                public boolean handleSecurityException(
+                                                        AuthToken authToken, SecurityException exception) {
+                                                    return false;
+                                                }
+                                            }
+                                            : authTokenManager))
+                            .exceptionally(throwable -> {
+                                throwable = Futures.completionExceptionCause(throwable);
+                                if (throwable instanceof TimeoutException) {
+                                    throw new ClientException(throwable.getMessage(), throwable);
+                                }
+                                if (throwable
+                                        instanceof MinVersionAcquisitionException minVersionAcquisitionException) {
+                                    if (overrideAuthToken == null && connectionContext.impersonatedUser() != null) {
+                                        throw new ClientException(
+                                                "Detected connection that does not support impersonation, please make sure to have all servers running 4.4 version or above and communicating"
+                                                        + " over Bolt version 4.4 or above when using impersonation feature");
+                                    } else {
+                                        throw new CompletionException(new UnsupportedFeatureException(String.format(
+                                                "Detected Bolt %s connection that does not support the auth token override feature, please make sure to have all servers communicating over Bolt 5.1 or above to use the feature",
+                                                minVersionAcquisitionException.version())));
+                                    }
+                                } else {
+                                    throw new CompletionException(throwable);
+                                }
+                            });
                 });
 
         connectionStage = newConnectionStage.exceptionally(error -> null);

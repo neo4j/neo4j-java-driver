@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.metrics;
 
 import org.neo4j.driver.Metrics;
+import org.neo4j.driver.internal.bolt.api.MetricsListener;
 
 /**
  * An adapter that collects driver metrics via {@link MetricsListener} and publishes them via {@link Metrics} instance.

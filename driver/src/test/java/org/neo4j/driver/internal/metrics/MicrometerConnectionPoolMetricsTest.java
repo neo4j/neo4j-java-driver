@@ -29,7 +29,8 @@ import java.util.function.IntSupplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.ListenerEvent;
 
 class MicrometerConnectionPoolMetricsTest {
     static final String ID = "id";

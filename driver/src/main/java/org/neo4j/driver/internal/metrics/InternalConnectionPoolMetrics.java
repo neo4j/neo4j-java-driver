@@ -23,10 +23,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntSupplier;
 import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.ListenerEvent;
 
 final class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, ConnectionPoolMetricsListener {
-    private final ServerAddress address;
+    private final BoltServerAddress address;
     private final IntSupplier inUseSupplier;
     private final IntSupplier idleSupplier;
 
@@ -50,7 +51,7 @@ final class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Conn
     private final String id;
 
     InternalConnectionPoolMetrics(
-            String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
+            String poolId, BoltServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
         Objects.requireNonNull(address);
         Objects.requireNonNull(inUseSupplier);
         Objects.requireNonNull(idleSupplier);
@@ -218,7 +219,7 @@ final class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Conn
 
     // This is used by the Testkit backend
     @SuppressWarnings("unused")
-    public ServerAddress getAddress() {
+    public BoltServerAddress getAddress() {
         return address;
     }
 }

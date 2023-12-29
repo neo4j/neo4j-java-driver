@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -45,7 +46,8 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.testutil.CertificateUtil.CertificateKeyPair;
 import org.testcontainers.DockerClientFactory;
@@ -104,7 +106,10 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
                     "%s://%s:%d", neo4jHttpUri.getScheme(), neo4jHttpUri.getHost(), nginx.getMappedPort(HTTP_PORT)));
 
             authToken = AuthTokens.basic("neo4j", neo4jContainer.getAdminPassword());
-            driver = GraphDatabase.driver(boltUri, authToken);
+            driver = GraphDatabase.driver(
+                    boltUri,
+                    authToken,
+                    Config.builder().withLogging(Logging.console(Level.FINE)).build());
             waitForBoltAvailability();
         } else {
             // stub init, this is not usable when Docker is unavailable
@@ -154,7 +159,9 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         Map<String, String> updatedConfig = new HashMap<>(defaultConfig);
         updatedConfig.putAll(config);
 
-        neo4jContainer.stop();
+        try (var cmd = neo4jContainer.getDockerClient().killContainerCmd(neo4jContainer.getContainerId())) {
+            cmd.exec();
+        }
         neo4jContainer = setupNeo4jContainer(cert, key, updatedConfig);
         neo4jContainer.start();
         if (REQUIRED.toString().equals(config.get(BOLT_TLS_LEVEL))) {

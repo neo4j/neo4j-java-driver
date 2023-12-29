@@ -55,7 +55,8 @@
     <svm.version>23.1.1</svm.version>
     <micrometer.version>1.12.0</micrometer.version>
     <blockhound.version>1.0.8.RELEASE</blockhound.version>
-    <testcontainers.version>1.19.3</testcontainers.version>
+    <testcontainers.version>1.19.7</testcontainers.version>
+    <archunit-junit5.version>1.2.1</archunit-junit5.version>
     <build-resources.version>5.14.0</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
@@ -201,6 +202,12 @@
         <version>${testcontainers.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5</artifactId>
+        <version>${archunit-junit5.version}</version>
+        <scope>test</scope>
       </dependency>
 
       <!-- Testkit Backend Dependencies -->

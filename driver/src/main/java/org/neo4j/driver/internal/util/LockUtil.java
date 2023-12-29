@@ -16,8 +16,6 @@
  */
 package org.neo4j.driver.internal.util;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
 
@@ -38,13 +36,6 @@ public class LockUtil {
         } finally {
             unlock(lock);
         }
-    }
-
-    public static <T> void executeWithLockAsync(Lock lock, Supplier<CompletionStage<T>> stageSupplier) {
-        lock(lock);
-        CompletableFuture.completedFuture(lock)
-                .thenCompose(ignored -> stageSupplier.get())
-                .whenComplete((ignored, throwable) -> unlock(lock));
     }
 
     /**

@@ -16,180 +16,432 @@
  */
 package org.neo4j.driver.internal.cursor;
 
-import static org.neo4j.driver.internal.cursor.RxResultCursorImpl.RecordConsumerStatus.DISCARD_INSTALLED;
-import static org.neo4j.driver.internal.cursor.RxResultCursorImpl.RecordConsumerStatus.INSTALLED;
-import static org.neo4j.driver.internal.cursor.RxResultCursorImpl.RecordConsumerStatus.NOT_INSTALLED;
-import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
+import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.TransactionNestingException;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
+import org.neo4j.driver.internal.DatabaseBookmark;
+import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.ResponseHandler;
+import org.neo4j.driver.internal.bolt.api.summary.DiscardSummary;
+import org.neo4j.driver.internal.bolt.api.summary.PullSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
+import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.summary.ResultSummary;
 
-public class RxResultCursorImpl implements RxResultCursor {
-    static final BiConsumer<Record, Throwable> DISCARD_RECORD_CONSUMER = (record, throwable) -> {
-        /*do nothing*/
-    };
-    private final RunResponseHandler runHandler;
-    private final PullResponseHandler pullHandler;
-    private final Throwable runResponseError;
-    private final Supplier<CompletionStage<Void>> connectionReleaseSupplier;
-    private boolean runErrorSurfaced;
+public class RxResultCursorImpl implements RxResultCursor, ResponseHandler {
+    public static final MetadataExtractor METADATA_EXTRACTOR = new MetadataExtractor("t_last");
+    private final BoltConnection boltConnection;
+    private final Query query;
+    private final RunSummary runSummary;
+    private final Consumer<DatabaseBookmark> bookmarkConsumer;
+    private final Consumer<Throwable> throwableConsumer;
+    private final Supplier<Throwable> termSupplier;
+    private final boolean closeOnSummary;
     private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
-    private boolean summaryFutureExposed;
-    private boolean resultConsumed;
-    private RecordConsumerStatus consumerStatus = NOT_INSTALLED;
 
-    // for testing only
-    public RxResultCursorImpl(RunResponseHandler runHandler, PullResponseHandler pullHandler) {
-        this(null, runHandler, pullHandler, () -> CompletableFuture.completedFuture(null));
+    private State state;
+    private long outstandingDemand;
+    private BiConsumer<Record, Throwable> recordConsumer;
+    private boolean discardPending;
+    private boolean summaryExposed;
+
+    private enum State {
+        READY,
+        STREAMING,
+        DISCARDING,
+        FAILED,
+        SUCCEDED
     }
 
     public RxResultCursorImpl(
-            Throwable runError,
-            RunResponseHandler runHandler,
-            PullResponseHandler pullHandler,
-            Supplier<CompletionStage<Void>> connectionReleaseSupplier) {
-        Objects.requireNonNull(runHandler);
-        Objects.requireNonNull(pullHandler);
-
-        this.runResponseError = runError;
-        this.runHandler = runHandler;
-        this.pullHandler = pullHandler;
-        this.connectionReleaseSupplier = connectionReleaseSupplier;
-        installSummaryConsumer();
+            BoltConnection boltConnection,
+            Query query,
+            RunSummary runSummary,
+            Consumer<DatabaseBookmark> bookmarkConsumer,
+            Consumer<Throwable> throwableConsumer,
+            boolean closeOnSummary,
+            Supplier<Throwable> termSupplier) {
+        this.boltConnection = boltConnection;
+        this.query = query;
+        this.runSummary = runSummary;
+        this.bookmarkConsumer = bookmarkConsumer;
+        this.closeOnSummary = closeOnSummary;
+        this.throwableConsumer = throwableConsumer;
+        this.termSupplier = termSupplier;
+        this.state = State.READY;
     }
 
     @Override
-    public List<String> keys() {
-        return runHandler.queryKeys().keys();
-    }
+    public void onError(Throwable throwable) {
+        Runnable runnable;
 
-    @Override
-    public void installRecordConsumer(BiConsumer<Record, Throwable> recordConsumer) {
-        if (resultConsumed) {
-            throw newResultConsumedError();
+        synchronized (this) {
+            if (state == State.FAILED) {
+                return;
+            }
+            state = State.FAILED;
+            var summary = METADATA_EXTRACTOR.extractSummary(
+                    query, boltConnection, runSummary.resultAvailableAfter(), Collections.emptyMap());
+
+            if (recordConsumer != null) {
+                // records subscriber present
+                runnable = () -> {
+                    var closeStage = closeOnSummary ? boltConnection.close() : CompletableFuture.completedStage(null);
+                    closeStage.whenComplete((ignored, closeThrowable) -> {
+                        var error = Futures.completionExceptionCause(closeThrowable);
+                        if (error != null) {
+                            throwable.addSuppressed(error);
+                        }
+                        throwableConsumer.accept(throwable);
+                        recordConsumer.accept(null, throwable);
+                        summaryFuture.complete(summary);
+                    });
+                };
+            } else {
+                runnable = () -> {
+                    var closeStage = closeOnSummary ? boltConnection.close() : CompletableFuture.completedStage(null);
+                    closeStage.whenComplete((ignored, closeThrowable) -> {
+                        var error = Futures.completionExceptionCause(closeThrowable);
+                        if (error != null) {
+                            throwable.addSuppressed(error);
+                        }
+                        throwableConsumer.accept(throwable);
+                        summaryFuture.completeExceptionally(throwable);
+                    });
+                };
+            }
         }
 
-        if (consumerStatus.isInstalled()) {
-            return;
+        runnable.run();
+    }
+
+    @Override
+    public void onRecord(Value[] fields) {
+        var record = new InternalRecord(runSummary.keys(), fields);
+        synchronized (this) {
+            decrementDemand();
         }
-        consumerStatus = recordConsumer == DISCARD_RECORD_CONSUMER ? DISCARD_INSTALLED : INSTALLED;
-        pullHandler.installRecordConsumer(recordConsumer);
-        assertRunCompletedSuccessfully();
+        recordConsumer.accept(record, null);
     }
 
     @Override
-    public void request(long n) {
-        if (n == Long.MAX_VALUE) {
-            n = -1;
+    public void onPullSummary(PullSummary summary) {
+        var term = termSupplier.get();
+        if (term == null) {
+            if (summary.hasMore()) {
+                synchronized (this) {
+                    if (discardPending) {
+                        discardPending = false;
+                        state = State.DISCARDING;
+                        boltConnection
+                                .discard(runSummary.queryId(), -1)
+                                .thenCompose(conn -> conn.flush(this))
+                                .whenComplete((ignored, throwable) -> {
+                                    var error = Futures.completionExceptionCause(throwable);
+                                    if (error != null) {
+                                        onError(error);
+                                    }
+                                });
+                    } else {
+                        var demand = getDemand();
+                        if (demand > 0) {
+                            state = State.STREAMING;
+                            boltConnection
+                                    .pull(runSummary.queryId(), demand)
+                                    .thenCompose(conn -> conn.flush(this))
+                                    .whenComplete((ignored, throwable) -> {
+                                        var error = Futures.completionExceptionCause(throwable);
+                                        if (error != null) {
+                                            onError(error);
+                                        }
+                                    });
+                        } else {
+                            state = State.READY;
+                        }
+                    }
+                }
+            } else {
+                var resultSummaryRef = new AtomicReference<ResultSummary>();
+                CompletableFuture<ResultSummary> resultSummaryFuture;
+                Throwable summaryError = null;
+                synchronized (this) {
+                    resultSummaryFuture = summaryFuture;
+                    try {
+                        resultSummaryRef.set(METADATA_EXTRACTOR.extractSummary(
+                                query, boltConnection, runSummary.resultAvailableAfter(), summary.metadata()));
+                        state = State.SUCCEDED;
+                    } catch (Throwable throwable) {
+                        summaryError = throwable;
+                    }
+                }
+
+                if (summaryError == null) {
+                    var metadata = summary.metadata();
+                    var bookmarkValue = metadata.get("bookmark");
+                    if (bookmarkValue != null
+                            && !bookmarkValue.isNull()
+                            && bookmarkValue.hasType(TYPE_SYSTEM.STRING())) {
+                        var bookmarkStr = bookmarkValue.asString();
+                        if (!bookmarkStr.isEmpty()) {
+                            var databaseBookmark = new DatabaseBookmark(null, Bookmark.from(bookmarkStr));
+                            bookmarkConsumer.accept(databaseBookmark);
+                        }
+                    }
+
+                    recordConsumer.accept(null, null);
+
+                    var closeStage = closeOnSummary ? boltConnection.close() : CompletableFuture.completedStage(null);
+                    closeStage.whenComplete((ignored, throwable) -> {
+                        var error = Futures.completionExceptionCause(throwable);
+                        if (error != null) {
+                            resultSummaryFuture.completeExceptionally(error);
+                        } else {
+                            resultSummaryFuture.complete(resultSummaryRef.get());
+                        }
+                    });
+                } else {
+                    onError(summaryError);
+                }
+            }
+        } else {
+            onError(term);
         }
-        pullHandler.request(n);
     }
 
     @Override
-    public void cancel() {
-        pullHandler.cancel();
+    public void onDiscardSummary(DiscardSummary summary) {
+        var resultSummaryRef = new AtomicReference<ResultSummary>();
+        CompletableFuture<ResultSummary> resultSummaryFuture;
+        Throwable summaryError = null;
+        synchronized (this) {
+            resultSummaryFuture = summaryFuture;
+            try {
+                resultSummaryRef.set(METADATA_EXTRACTOR.extractSummary(
+                        query, boltConnection, runSummary.resultAvailableAfter(), summary.metadata()));
+                state = State.SUCCEDED;
+            } catch (Throwable throwable) {
+                summaryError = throwable;
+            }
+        }
+
+        if (summaryError == null) {
+            var metadata = summary.metadata();
+            var bookmarkValue = metadata.get("bookmark");
+            if (bookmarkValue != null && !bookmarkValue.isNull() && bookmarkValue.hasType(TYPE_SYSTEM.STRING())) {
+                var bookmarkStr = bookmarkValue.asString();
+                if (!bookmarkStr.isEmpty()) {
+                    var databaseBookmark = new DatabaseBookmark(null, Bookmark.from(bookmarkStr));
+                    bookmarkConsumer.accept(databaseBookmark);
+                }
+            }
+
+            var closeStage = closeOnSummary ? boltConnection.close() : CompletableFuture.completedStage(null);
+            closeStage.whenComplete((ignored, throwable) -> {
+                var error = Futures.completionExceptionCause(throwable);
+                if (error != null) {
+                    resultSummaryFuture.completeExceptionally(error);
+                } else {
+                    resultSummaryFuture.complete(resultSummaryRef.get());
+                }
+            });
+        } else {
+            onError(summaryError);
+        }
     }
 
     @Override
-    public CompletionStage<Throwable> discardAllFailureAsync() {
-        // calling this method will enforce discarding record stream and finish running cypher query
-        return summaryStage()
-                .thenApply(summary -> (Throwable) null)
-                .exceptionally(throwable -> runErrorSurfaced || summaryFutureExposed ? null : throwable);
+    public synchronized CompletionStage<Throwable> discardAllFailureAsync() {
+        var exposed = summaryExposed;
+        return switch (state) {
+            case READY -> {
+                state = State.DISCARDING;
+                boltConnection
+                        .discard(runSummary.queryId(), -1)
+                        .thenCompose(conn -> conn.flush(this))
+                        .whenComplete((ignored, throwable) -> {
+                            var error = Futures.completionExceptionCause(throwable);
+                            if (error != null) {
+                                onError(error);
+                            }
+                        });
+                yield summaryFuture.handle((ignored, throwable) -> exposed ? null : throwable);
+            }
+            case STREAMING -> {
+                discardPending = true;
+                yield summaryFuture.handle((ignored, throwable) -> exposed ? null : throwable);
+            }
+            case DISCARDING, FAILED -> summaryFuture.handle((ignored, throwable) -> exposed ? null : throwable);
+            case SUCCEDED -> CompletableFuture.completedStage(null);
+        };
     }
 
     @Override
     public CompletionStage<Throwable> pullAllFailureAsync() {
-        if (consumerStatus.isInstalled() && !isDone()) {
-            return CompletableFuture.completedFuture(
-                    new TransactionNestingException(
-                            "You cannot run another query or begin a new transaction in the same session before you've fully consumed the previous run result."));
+        synchronized (this) {
+            if (recordConsumer != null && !isDone()) {
+                return CompletableFuture.completedFuture(
+                        new TransactionNestingException(
+                                "You cannot run another query or begin a new transaction in the same session before you've fully consumed the previous run result."));
+            }
         }
-        // It is safe to discard records as either the streaming has not started at all, or the streaming is fully
-        // finished.
         return discardAllFailureAsync();
     }
 
     @Override
-    public CompletionStage<ResultSummary> summaryAsync() {
-        summaryFutureExposed = true;
-        return summaryStage();
+    public List<String> keys() {
+        return runSummary.keys();
     }
 
     @Override
-    public boolean isDone() {
-        return summaryFuture.isDone();
+    public void installRecordConsumer(BiConsumer<Record, Throwable> recordConsumer) {
+        Objects.requireNonNull(recordConsumer);
+        synchronized (this) {
+            if (this.recordConsumer == null) {
+                this.recordConsumer = recordConsumer;
+            }
+        }
+    }
+
+    @Override
+    public CompletionStage<ResultSummary> summaryAsync() {
+        synchronized (this) {
+            if (summaryExposed) {
+                return summaryFuture;
+            }
+            summaryExposed = true;
+            switch (state) {
+                case SUCCEDED, FAILED, DISCARDING -> {}
+                case READY -> {
+                    var term = termSupplier.get();
+                    if (term == null) {
+                        state = State.DISCARDING;
+                        boltConnection
+                                .discard(runSummary.queryId(), -1)
+                                .thenCompose(conn -> conn.flush(this))
+                                .whenComplete((ignored, throwable) -> {
+                                    var error = Futures.completionExceptionCause(throwable);
+                                    if (error != null) {
+                                        onError(error);
+                                    }
+                                });
+                    } else {
+                        onError(term);
+                    }
+                }
+                case STREAMING -> discardPending = true;
+            }
+        }
+        return summaryFuture;
+    }
+
+    @Override
+    public synchronized boolean isDone() {
+        return switch (state) {
+            case DISCARDING, STREAMING, READY -> false;
+            case FAILED, SUCCEDED -> true;
+        };
     }
 
     @Override
     public Throwable getRunError() {
-        runErrorSurfaced = true;
-        return runResponseError;
+        return null;
     }
 
     @Override
     public CompletionStage<Void> rollback() {
-        summaryFuture.complete(null);
-        return connectionReleaseSupplier.get();
+        return null;
     }
 
-    public CompletionStage<ResultSummary> summaryStage() {
-        if (!isDone() && !resultConsumed) // the summary is called before record streaming
-        {
-            installRecordConsumer(DISCARD_RECORD_CONSUMER);
-            cancel();
-            resultConsumed = true;
-        }
-        return this.summaryFuture;
-    }
-
-    private void assertRunCompletedSuccessfully() {
-        if (runResponseError != null) {
-            pullHandler.onFailure(runResponseError);
-        }
-    }
-
-    private void installSummaryConsumer() {
-        pullHandler.installSummaryConsumer((summary, error) -> {
-            if (error != null && consumerStatus.isDiscardConsumer()) {
-                // We will only report the error to summary if there is no user record consumer installed
-                // When a user record consumer is installed, the error will be reported to record consumer instead.
-                summaryFuture.completeExceptionally(error);
-            } else if (summary != null) {
-                summaryFuture.complete(summary);
+    private synchronized long appendDemand(long n) {
+        if (n == Long.MAX_VALUE) {
+            outstandingDemand = -1;
+        } else {
+            try {
+                outstandingDemand = Math.addExact(outstandingDemand, n);
+            } catch (ArithmeticException ex) {
+                outstandingDemand = -1;
             }
-            // else (null, null) to indicate a has_more success
-        });
+        }
+        return outstandingDemand;
     }
 
-    enum RecordConsumerStatus {
-        NOT_INSTALLED(false, false),
-        INSTALLED(true, false),
-        DISCARD_INSTALLED(true, true);
+    private synchronized long getDemand() {
+        return outstandingDemand;
+    }
 
-        private final boolean isInstalled;
-        private final boolean isDiscardConsumer;
-
-        RecordConsumerStatus(boolean isInstalled, boolean isDiscardConsumer) {
-            this.isInstalled = isInstalled;
-            this.isDiscardConsumer = isDiscardConsumer;
+    private synchronized void decrementDemand() {
+        if (outstandingDemand > 0) {
+            outstandingDemand--;
         }
+    }
 
-        boolean isInstalled() {
-            return isInstalled;
+    @Override
+    public void request(long n) {
+        if (n <= 0) {
+            throw new IllegalArgumentException("n must not be 0 or negative");
         }
+        synchronized (this) {
+            switch (state) {
+                case READY -> {
+                    var term = termSupplier.get();
+                    if (term == null) {
+                        var request = appendDemand(n);
+                        state = State.STREAMING;
+                        boltConnection
+                                .pull(runSummary.queryId(), request)
+                                .thenCompose(conn -> conn.flush(this))
+                                .whenComplete((ignored, throwable) -> {
+                                    var error = Futures.completionExceptionCause(throwable);
+                                    if (error != null) {
+                                        onError(error);
+                                    }
+                                });
+                    } else {
+                        onError(term);
+                    }
+                }
+                case STREAMING -> appendDemand(n);
+                case DISCARDING, FAILED, SUCCEDED -> {}
+            }
+        }
+    }
 
-        boolean isDiscardConsumer() {
-            return isDiscardConsumer;
+    @Override
+    public void cancel() {
+        synchronized (this) {
+            switch (state) {
+                case READY -> {
+                    state = State.DISCARDING;
+                    boltConnection
+                            .discard(runSummary.queryId(), -1)
+                            .thenCompose(conn -> conn.flush(this))
+                            .whenComplete((ignored, throwable) -> {
+                                if (throwable != null) {
+                                    var error = Futures.completionExceptionCause(throwable);
+                                    if (error != null) {
+                                        onError(error);
+                                    }
+                                }
+                            });
+                }
+                case STREAMING -> discardPending = true;
+                case DISCARDING, FAILED, SUCCEDED -> {}
+            }
         }
     }
 }

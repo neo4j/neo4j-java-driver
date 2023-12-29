@@ -19,6 +19,7 @@ package org.neo4j.driver.internal.reactive;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,10 +49,10 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -122,7 +123,7 @@ class InternalRxSessionTest {
 
         // Run failed with error
         when(session.runRx(any(Query.class), any(TransactionConfig.class), any()))
-                .thenReturn(Futures.failedFuture(error));
+                .thenReturn(failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
         var rxSession = new InternalRxSession(session);
@@ -169,7 +170,7 @@ class InternalRxSessionTest {
 
         // Run failed with error
         when(session.beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork)))
-                .thenReturn(Futures.failedFuture(error));
+                .thenReturn(failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
         var rxSession = new InternalRxSession(session);

@@ -16,6 +16,7 @@
  */
 package org.neo4j.driver.internal;
 
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -26,7 +27,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.time.Clock;
@@ -37,8 +37,8 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.bolt.api.SecurityPlan;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
 
 class InternalDriverTest {
     @Test
@@ -131,7 +131,12 @@ class InternalDriverTest {
 
     private static InternalDriver newDriver(SessionFactory sessionFactory) {
         return new InternalDriver(
-                SecurityPlanImpl.insecure(), sessionFactory, DevNullMetricsProvider.INSTANCE, true, DEV_NULL_LOGGING);
+                insecureSecurityPlan(),
+                sessionFactory,
+                DevNullMetricsProvider.INSTANCE,
+                true,
+                Config.defaultConfig().notificationConfig(),
+                DEV_NULL_LOGGING);
     }
 
     private static SessionFactory sessionFactoryMock() {
@@ -148,6 +153,16 @@ class InternalDriverTest {
         }
 
         var metricsProvider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
-        return new InternalDriver(SecurityPlanImpl.insecure(), sessionFactory, metricsProvider, true, DEV_NULL_LOGGING);
+        return new InternalDriver(
+                insecureSecurityPlan(),
+                sessionFactory,
+                metricsProvider,
+                true,
+                Config.defaultConfig().notificationConfig(),
+                DEV_NULL_LOGGING);
+    }
+
+    private static SecurityPlan insecureSecurityPlan() {
+        return mock(SecurityPlan.class);
     }
 }

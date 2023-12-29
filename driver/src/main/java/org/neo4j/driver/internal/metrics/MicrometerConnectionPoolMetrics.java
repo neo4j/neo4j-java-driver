@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntSupplier;
 import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.ListenerEvent;
 
 final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsListener, ConnectionPoolMetrics {
     public static final String PREFIX = "neo4j.driver.connections";
@@ -61,7 +61,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
 
     MicrometerConnectionPoolMetrics(
             String poolId,
-            ServerAddress address,
+            BoltServerAddress address,
             IntSupplier inUseSupplier,
             IntSupplier idleSupplier,
             MeterRegistry registry) {
@@ -70,7 +70,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
 
     MicrometerConnectionPoolMetrics(
             String poolId,
-            ServerAddress address,
+            BoltServerAddress address,
             IntSupplier inUseSupplier,
             IntSupplier idleSupplier,
             MeterRegistry registry,
@@ -84,9 +84,8 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
         this.id = poolId;
         this.inUseSupplier = inUseSupplier;
         this.idleSupplier = idleSupplier;
-        var host =
-                address instanceof BoltServerAddress ? ((BoltServerAddress) address).connectionHost() : address.host();
-        Iterable<Tag> tags = Tags.concat(initialTags, "address", String.format("%s:%d", host, address.port()));
+        Iterable<Tag> tags =
+                Tags.concat(initialTags, "address", String.format("%s:%d", address.connectionHost(), address.port()));
 
         Gauge.builder(IN_USE, this::inUse).tags(tags).register(registry);
         Gauge.builder(IDLE, this::idle).tags(tags).register(registry);

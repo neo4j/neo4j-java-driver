@@ -24,7 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntSupplier;
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.ListenerEvent;
+import org.neo4j.driver.internal.bolt.api.MetricsListener;
 
 final class MicrometerMetrics implements Metrics, MetricsListener {
     private final MeterRegistry meterRegistry;
@@ -97,7 +99,7 @@ final class MicrometerMetrics implements Metrics, MetricsListener {
 
     @Override
     public void registerPoolMetrics(
-            String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
+            String poolId, BoltServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
         this.connectionPoolMetrics.put(
                 poolId,
                 new MicrometerConnectionPoolMetrics(poolId, address, inUseSupplier, idleSupplier, this.meterRegistry));

@@ -16,13 +16,9 @@
  */
 package org.neo4j.driver.internal.security;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.RevocationCheckingStrategy.NO_CHECKS;
-import static org.neo4j.driver.RevocationCheckingStrategy.STRICT;
-import static org.neo4j.driver.RevocationCheckingStrategy.VERIFY_IF_PRESENT;
 
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -67,7 +63,6 @@ class SecurityPlansTest {
 
         assertTrue(securityPlan.requiresEncryption());
         assertTrue(securityPlan.requiresHostnameVerification());
-        assertEquals(NO_CHECKS, securityPlan.revocationCheckingStrategy());
     }
 
     @ParameterizedTest
@@ -155,46 +150,5 @@ class SecurityPlansTest {
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
 
         assertTrue(securityPlan.requiresEncryption());
-    }
-
-    @ParameterizedTest
-    @MethodSource("unencryptedSchemes")
-    void testConfigureStrictRevocationChecking(String scheme) {
-        var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withTrustStrategy(
-                        Config.TrustStrategy.trustSystemCertificates().withStrictRevocationChecks())
-                .withEncryption()
-                .build();
-
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
-
-        assertEquals(STRICT, securityPlan.revocationCheckingStrategy());
-    }
-
-    @ParameterizedTest
-    @MethodSource("unencryptedSchemes")
-    void testConfigureVerifyIfPresentRevocationChecking(String scheme) {
-        var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withTrustStrategy(
-                        Config.TrustStrategy.trustSystemCertificates().withVerifyIfPresentRevocationChecks())
-                .withEncryption()
-                .build();
-
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
-
-        assertEquals(VERIFY_IF_PRESENT, securityPlan.revocationCheckingStrategy());
-    }
-
-    @ParameterizedTest
-    @MethodSource("unencryptedSchemes")
-    void testRevocationCheckingDisabledByDefault(String scheme) {
-        var securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
-                .withEncryption()
-                .build();
-
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
-
-        assertEquals(NO_CHECKS, securityPlan.revocationCheckingStrategy());
     }
 }

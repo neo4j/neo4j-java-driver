@@ -16,12 +16,12 @@
  */
 package org.neo4j.driver.internal.reactivestreams;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.reactive.AbstractReactiveTransaction;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
 import org.neo4j.driver.reactivestreams.ReactiveTransaction;
 import org.reactivestreams.Publisher;
@@ -40,7 +40,7 @@ public class InternalReactiveTransaction extends AbstractReactiveTransaction
         try {
             cursorStage = tx.runRx(query);
         } catch (Throwable t) {
-            cursorStage = Futures.failedFuture(t);
+            cursorStage = CompletableFuture.failedFuture(t);
         }
 
         return Mono.fromCompletionStage(cursorStage)

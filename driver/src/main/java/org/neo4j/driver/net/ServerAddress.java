@@ -16,7 +16,7 @@
  */
 package org.neo4j.driver.net;
 
-import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.InternalServerAddress;
 
 /**
  * Represents a host and port. Host can either be an IP address or a DNS name.
@@ -45,6 +45,6 @@ public interface ServerAddress {
      * @return new server address with the specified host and port.
      */
     static ServerAddress of(String host, int port) {
-        return new BoltServerAddress(host, port);
+        return new InternalServerAddress(host, port);
     }
 }

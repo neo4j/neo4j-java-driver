@@ -33,9 +33,9 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
@@ -192,7 +192,7 @@ public abstract class AbstractReactiveSession<S> {
         try {
             cursorStage = session.runRx(query, config, finalStage);
         } catch (Throwable t) {
-            cursorStage = Futures.failedFuture(t);
+            cursorStage = CompletableFuture.failedFuture(t);
         }
 
         return cursorStage
