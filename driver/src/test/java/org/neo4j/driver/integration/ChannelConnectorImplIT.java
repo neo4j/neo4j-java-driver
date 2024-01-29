@@ -45,6 +45,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.AuthToken;
@@ -158,6 +159,7 @@ class ChannelConnectorImplIT {
     }
 
     @Test
+    @Disabled("TLS actually fails, the test setup is not valid")
     void shouldFailWhenTLSHandshakeTakesTooLong() throws Exception {
         // run with TLS so that TLS handshake is the very first operation after connection is established
         testReadTimeoutOnConnect(trustAllCertificates());
