@@ -73,9 +73,9 @@ import org.neo4j.driver.internal.logging.Slf4jLogging;
  * Example of driver configuration with SLF4J logging:
  * <pre>
  * {@code
- * Driver driver = GraphDatabase.driver("bolt://localhost:7687",
+ * Driver driver = GraphDatabase.driver("neo4j://localhost:7687",
  *                                         AuthTokens.basic("neo4j", "password"),
- *                                         Config.build().withLogging(Logging.slf4j()).toConfig());
+ *                                         Config.builder().withLogging(Logging.slf4j()).build());
  * }
  * </pre>
  *
