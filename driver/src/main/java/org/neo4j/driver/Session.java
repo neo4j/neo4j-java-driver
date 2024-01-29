@@ -175,7 +175,7 @@ public interface Session extends BaseSession, Resource, QueryRunner {
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work
      * will result in a rollback attempt.
      * <p>
-     * This method works equivalently to {@link #executeWrite(TransactionCallback)}, but it allows for void returns.
+     * This method works equivalently to {@link #executeWrite(TransactionCallback)}, but does not have a return value.
      *
      * @param contextConsumer the consumer representing the unit of work.
      */
