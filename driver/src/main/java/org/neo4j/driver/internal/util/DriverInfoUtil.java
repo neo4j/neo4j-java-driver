@@ -45,7 +45,7 @@ public class DriverInfoUtil {
                 productInfo,
                 platformBuilder.isEmpty() ? null : platformBuilder.toString(),
                 language.orElse(null),
-                languageDetails.isEmpty() ? null : languageDetails.toString());
+                languageDetails.map(StringBuilder::toString).orElse(null));
     }
 
     /**
