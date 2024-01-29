@@ -142,7 +142,11 @@ public class ChannelConnectorImpl implements ChannelConnector {
 
         // remove timeout handler from the pipeline once TLS and Bolt handshakes are completed. regular protocol
         // messages will flow next and we do not want to have read timeout for them
-        handshakeCompleted.addListener(future -> pipeline.remove(ConnectTimeoutHandler.class));
+        handshakeCompleted.addListener(future -> {
+            if (future.isSuccess()) {
+                pipeline.remove(ConnectTimeoutHandler.class);
+            }
+        });
 
         // add listener that sends an INIT message. connection is now fully established. channel pipeline if fully
         // set to send/receive messages for a selected protocol version
