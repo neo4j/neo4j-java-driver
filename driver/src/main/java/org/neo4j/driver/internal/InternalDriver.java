@@ -83,7 +83,7 @@ public class InternalDriver implements Driver {
 
     @Override
     public ExecutableQuery executableQuery(String query) {
-        return new InternalExecutableQuery(this, new Query(query), QueryConfig.defaultConfig());
+        return new InternalExecutableQuery(this, new Query(query), QueryConfig.defaultConfig(), null);
     }
 
     @Override

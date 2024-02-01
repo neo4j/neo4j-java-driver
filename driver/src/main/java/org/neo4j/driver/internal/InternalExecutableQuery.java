@@ -21,12 +21,14 @@ import static java.util.Objects.requireNonNull;
 import java.util.Map;
 import java.util.stream.Collector;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.ExecutableQuery;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.RoutingControl;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
@@ -36,26 +38,33 @@ public class InternalExecutableQuery implements ExecutableQuery {
     private final Driver driver;
     private final Query query;
     private final QueryConfig config;
+    private final AuthToken authToken;
 
-    public InternalExecutableQuery(Driver driver, Query query, QueryConfig config) {
+    public InternalExecutableQuery(Driver driver, Query query, QueryConfig config, AuthToken authToken) {
         requireNonNull(driver, "driver must not be null");
         requireNonNull(query, "query must not be null");
         requireNonNull(config, "config must not be null");
         this.driver = driver;
         this.query = query;
         this.config = config;
+        this.authToken = authToken;
     }
 
     @Override
     public ExecutableQuery withParameters(Map<String, Object> parameters) {
         requireNonNull(parameters, "parameters must not be null");
-        return new InternalExecutableQuery(driver, query.withParameters(parameters), config);
+        return new InternalExecutableQuery(driver, query.withParameters(parameters), config, authToken);
     }
 
     @Override
     public ExecutableQuery withConfig(QueryConfig config) {
         requireNonNull(config, "config must not be null");
-        return new InternalExecutableQuery(driver, query, config);
+        return new InternalExecutableQuery(driver, query, config, authToken);
+    }
+
+    @Override
+    public ExecutableQuery withAuthToken(AuthToken authToken) {
+        return new InternalExecutableQuery(driver, query, config, authToken);
     }
 
     @Override
@@ -68,7 +77,7 @@ public class InternalExecutableQuery implements ExecutableQuery {
         var supplier = recordCollector.supplier();
         var accumulator = recordCollector.accumulator();
         var finisher = recordCollector.finisher();
-        try (var session = (InternalSession) driver.session(sessionConfigBuilder.build())) {
+        try (var session = (InternalSession) driver.session(Session.class, sessionConfigBuilder.build(), authToken)) {
             TransactionCallback<T> txCallback = tx -> {
                 var result = tx.run(query);
                 var container = supplier.get();
@@ -106,5 +115,10 @@ public class InternalExecutableQuery implements ExecutableQuery {
     // For testing only
     public QueryConfig config() {
         return config;
+    }
+
+    // For testing only
+    public AuthToken authToken() {
+        return authToken;
     }
 }
