@@ -22,6 +22,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.EagerResultValue;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -97,7 +98,7 @@ public interface ExecutableQuery {
     /**
      * Sets query parameters.
      *
-     * @param parameters parameters map, must not be {@code null}
+     * @param parameters parameters map, must not be {@literal null}
      * @return a new executable query
      */
     ExecutableQuery withParameters(Map<String, Object> parameters);
@@ -107,10 +108,26 @@ public interface ExecutableQuery {
      * <p>
      * By default, {@link ExecutableQuery} has {@link QueryConfig#defaultConfig()} value.
      *
-     * @param config query config, must not be {@code null}
+     * @param config query config, must not be {@literal null}
      * @return a new executable query
      */
     ExecutableQuery withConfig(QueryConfig config);
+
+    /**
+     * Sets an {@link AuthToken} to be used for this query.
+     * <p>
+     * The default value is {@literal null}.
+     * <p>
+     * The minimum Bolt protocol version for this feature is 5.1. An {@link UnsupportedFeatureException} will be emitted on
+     * query execution for previous Bolt versions.
+     *
+     * @param authToken the {@link AuthToken} for this query or {@literal null} to use the driver default
+     * @return a new executable query
+     * @since 5.18
+     */
+    default ExecutableQuery withAuthToken(AuthToken authToken) {
+        throw new UnsupportedFeatureException("Session AuthToken is not supported.");
+    }
 
     /**
      * Executes query, collects all results eagerly and returns a result.

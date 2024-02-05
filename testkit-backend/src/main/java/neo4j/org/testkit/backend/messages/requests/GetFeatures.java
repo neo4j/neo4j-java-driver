@@ -78,6 +78,7 @@ public class GetFeatures implements TestkitRequest {
             "Optimization:ResultListFetchAll",
             "Feature:API:Result.Single",
             "Feature:API:Driver.ExecuteQuery",
+            "Feature:API:Driver.ExecuteQuery:WithAuth",
             "Feature:API:Driver.VerifyAuthentication",
             "Optimization:ExecuteQueryPipelining"));
 
