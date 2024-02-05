@@ -67,6 +67,7 @@
     <module>examples</module>
     <module>testkit-backend</module>
     <module>testkit-tests</module>
+    <module>benchkit-backend</module>
   </modules>
 
   <licenses>
