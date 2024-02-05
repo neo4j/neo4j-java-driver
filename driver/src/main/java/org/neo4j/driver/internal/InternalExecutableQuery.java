@@ -98,27 +98,27 @@ public class InternalExecutableQuery implements ExecutableQuery {
     }
 
     // For testing only
-    public Driver driver() {
+    Driver driver() {
         return driver;
     }
 
     // For testing only
-    public String query() {
+    String query() {
         return query.text();
     }
 
     // For testing only
-    public Map<String, Object> parameters() {
+    Map<String, Object> parameters() {
         return query.parameters().asMap();
     }
 
     // For testing only
-    public QueryConfig config() {
+    QueryConfig config() {
         return config;
     }
 
     // For testing only
-    public AuthToken authToken() {
+    AuthToken authToken() {
         return authToken;
     }
 }
