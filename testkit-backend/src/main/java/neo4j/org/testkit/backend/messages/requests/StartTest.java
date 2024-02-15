@@ -83,6 +83,9 @@ public class StartTest implements TestkitRequest {
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query$", skipMessage);
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query_nested$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.routing\\.test_routing_v[^.]*\\.RoutingV[^.]*\\.test_ipv6_read",
+                "Needs trying all DNS resolved addresses for hosts in the routing table");
 
         SYNC_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
         skipMessage =
