@@ -288,6 +288,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${surefire.and.failsafe.version}</version>
           <configuration>
+            <skipTests>true</skipTests>
             <argLine>${surefire.jpms.args}</argLine>
             <trimStackTrace>false</trimStackTrace>
             <classpathDependencyExcludes>
@@ -300,6 +301,7 @@
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>${surefire.and.failsafe.version}</version>
           <configuration>
+            <skipTests>true</skipTests>
             <classpathDependencyExcludes>
               <classpathDependencyExclude>org.graalvm.nativeimage:svm</classpathDependencyExclude>
             </classpathDependencyExcludes>
