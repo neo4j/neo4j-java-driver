@@ -36,27 +36,29 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.106.Final</netty-bom.version>
+    <netty-bom.version>4.1.107.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2023.0.2</reactor-bom.version>
+    <reactor-bom.version>2023.0.3</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest.version>2.2</hamcrest.version>
     <mockito-core.version>5.8.0</mockito-core.version>
-    <junit.version>5.10.1</junit.version>
+    <junit.version>5.10.2</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.9.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
+    <!-- supply a newer version than the one supplied by the jarchivelib 1.2.0 -->
+    <commons-compress.version>1.25.0</commons-compress.version>
     <bouncycastle-jdk18on.version>1.77</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
     <jackson.version>2.16.1</jackson.version>
     <lombok.version>1.18.30</lombok.version>
     <svm.version>23.1.2</svm.version>
-    <micrometer.version>1.12.2</micrometer.version>
+    <micrometer.version>1.12.3</micrometer.version>
     <blockhound.version>1.0.8.RELEASE</blockhound.version>
-    <testcontainers.version>1.19.3</testcontainers.version>
-    <build-resources.version>5.16.0</build-resources.version>
+    <testcontainers.version>1.19.6</testcontainers.version>
+    <build-resources.version>5.17.0</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
@@ -170,6 +172,12 @@
         <groupId>org.rauschig</groupId>
         <artifactId>jarchivelib</artifactId>
         <version>${jarchivelib.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${commons-compress.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
