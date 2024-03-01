@@ -49,7 +49,9 @@
     <testng.version>7.9.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <!-- supply a newer version than the one supplied by the jarchivelib 1.2.0 -->
-    <commons-compress.version>1.25.0</commons-compress.version>
+    <commons-compress.version>1.26.0</commons-compress.version>
+    <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
+    <commons-codec.version>1.16.1</commons-codec.version>
     <bouncycastle-jdk18on.version>1.77</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
     <jackson.version>2.16.1</jackson.version>
@@ -178,6 +180,12 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>${commons-compress.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>${commons-codec.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
