@@ -352,7 +352,7 @@ class TransactionIT {
         var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
 
         try (var driver = factory.newInstance(
-                session.uri(), session.authTokenManager(), config, SecurityPlanImpl.insecure(), null, null)) {
+                session.uri(), session.authTokenManager(), null, config, SecurityPlanImpl.insecure(), null, null)) {
             var e = assertThrows(ServiceUnavailableException.class, () -> {
                 try (var session1 = driver.session();
                         var tx = session1.beginTransaction()) {

@@ -16,6 +16,10 @@
  */
 package org.neo4j.driver.internal.security;
 
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.CompletionStage;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import org.neo4j.driver.RevocationCheckingStrategy;
 
@@ -25,9 +29,15 @@ import org.neo4j.driver.RevocationCheckingStrategy;
 public interface SecurityPlan {
     boolean requiresEncryption();
 
-    SSLContext sslContext();
+    boolean requiresClientAuth();
+
+    CompletionStage<SSLContext> sslContext();
 
     boolean requiresHostnameVerification();
 
     RevocationCheckingStrategy revocationCheckingStrategy();
+
+    interface SSLContextSupplier {
+        SSLContext get(KeyManager[] keyManagers) throws NoSuchAlgorithmException, KeyManagementException;
+    }
 }

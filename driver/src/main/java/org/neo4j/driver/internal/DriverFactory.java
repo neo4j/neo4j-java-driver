@@ -29,6 +29,7 @@ import java.net.URI;
 import java.time.Clock;
 import java.util.function.Supplier;
 import org.neo4j.driver.AuthTokenManager;
+import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logging;
@@ -64,13 +65,18 @@ public class DriverFactory {
     public static final String NO_ROUTING_CONTEXT_ERROR_MESSAGE =
             "Routing parameters are not supported with scheme 'bolt'. Given URI: ";
 
-    public final Driver newInstance(URI uri, AuthTokenManager authTokenManager, Config config) {
-        return newInstance(uri, authTokenManager, config, null, null, null);
+    public final Driver newInstance(
+            URI uri,
+            AuthTokenManager authTokenManager,
+            ClientCertificateManager clientCertificateManager,
+            Config config) {
+        return newInstance(uri, authTokenManager, clientCertificateManager, config, null, null, null);
     }
 
     public final Driver newInstance(
             URI uri,
             AuthTokenManager authTokenManager,
+            ClientCertificateManager clientCertificateManager,
             Config config,
             SecurityPlan securityPlan,
             EventLoopGroup eventLoopGroup,
@@ -89,7 +95,8 @@ public class DriverFactory {
 
         if (securityPlan == null) {
             var settings = new SecuritySettings(config.encrypted(), config.trustStrategy());
-            securityPlan = SecurityPlans.createSecurityPlan(settings, uri.getScheme());
+            securityPlan = SecurityPlans.createSecurityPlan(
+                    settings, uri.getScheme(), clientCertificateManager, config.logging());
         }
 
         var address = new BoltServerAddress(uri);

@@ -43,6 +43,7 @@ import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.BookmarkManager;
+import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import reactor.core.publisher.Mono;
@@ -54,6 +55,8 @@ public class TestkitState {
     private static final String RESULT_NOT_FOUND_MESSAGE = "Could not find result";
     private static final String BOOKMARK_MANAGER_NOT_FOUND_MESSAGE = "Could not find bookmark manager";
     private static final String AUTH_PROVIDER_NOT_FOUND_MESSAGE = "Could not find authentication provider";
+    private static final String CLIENT_CERTIFICATE_PROVIDER_NOT_FOUND_MESSAGE =
+            "Could not find client certificate provider";
 
     private final Map<String, DriverHolder> driverIdToDriverHolder = new HashMap<>();
 
@@ -79,6 +82,7 @@ public class TestkitState {
     private final Map<String, BookmarkManager> bookmarkManagerIdToBookmarkManager = new HashMap<>();
     private final Logging logging;
     private final Map<String, AuthTokenManager> authProviderIdToAuthProvider = new HashMap<>();
+    private final Map<String, ClientCertificateManager> managerIdToClientCertificateManager = new HashMap<>();
 
     @Getter
     private final Map<String, Exception> errors = new HashMap<>();
@@ -257,6 +261,20 @@ public class TestkitState {
     public void removeAuthProvider(String id) {
         if (authProviderIdToAuthProvider.remove(id) == null) {
             throw new RuntimeException(AUTH_PROVIDER_NOT_FOUND_MESSAGE);
+        }
+    }
+
+    public void addClientCertificateManager(String id, ClientCertificateManager manager) {
+        managerIdToClientCertificateManager.put(id, manager);
+    }
+
+    public ClientCertificateManager getClientCertificateManager(String id) {
+        return get(id, managerIdToClientCertificateManager, CLIENT_CERTIFICATE_PROVIDER_NOT_FOUND_MESSAGE);
+    }
+
+    public void removeClientCertificateManager(String id) {
+        if (managerIdToClientCertificateManager.remove(id) == null) {
+            throw new RuntimeException(CLIENT_CERTIFICATE_PROVIDER_NOT_FOUND_MESSAGE);
         }
     }
 

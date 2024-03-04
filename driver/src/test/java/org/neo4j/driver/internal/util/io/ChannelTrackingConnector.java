@@ -20,6 +20,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import java.util.List;
+import java.util.function.Function;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 
@@ -33,9 +34,13 @@ public class ChannelTrackingConnector implements ChannelConnector {
     }
 
     @Override
-    public ChannelFuture connect(BoltServerAddress address, Bootstrap bootstrap) {
-        var channelFuture = realConnector.connect(address, bootstrap);
-        channels.add(channelFuture.channel());
-        return channelFuture;
+    public ChannelFuture connect(
+            BoltServerAddress address,
+            Bootstrap bootstrap,
+            Function<ChannelFuture, ChannelFuture> channelFutureExtensionMapper) {
+        return realConnector.connect(address, bootstrap, channelFuture -> {
+            channels.add(channelFuture.channel());
+            return channelFutureExtensionMapper.apply(channelFuture);
+        });
     }
 }

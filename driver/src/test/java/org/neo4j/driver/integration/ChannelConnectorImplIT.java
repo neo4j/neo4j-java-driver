@@ -31,13 +31,15 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V51;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelFuture;
 import io.netty.handler.ssl.SslHandler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
-import java.security.GeneralSecurityException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -45,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -88,7 +91,11 @@ class ChannelConnectorImplIT {
     void shouldConnect() throws Exception {
         ChannelConnector connector = newConnector(neo4j.authTokenManager());
 
-        var channelFuture = connector.connect(neo4j.address(), bootstrap);
+        var ft = new CompletableFuture<ChannelFuture>();
+        connector
+                .connect(neo4j.address(), bootstrap, Function.identity())
+                .addListener(future -> ft.complete((ChannelFuture) future));
+        var channelFuture = ft.join();
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
         var channel = channelFuture.channel();
 
@@ -100,7 +107,11 @@ class ChannelConnectorImplIT {
     void shouldSetupHandlers() throws Exception {
         ChannelConnector connector = newConnector(neo4j.authTokenManager(), trustAllCertificates(), 10_000);
 
-        var channelFuture = connector.connect(neo4j.address(), bootstrap);
+        var ft = new CompletableFuture<ChannelFuture>();
+        connector
+                .connect(neo4j.address(), bootstrap, Function.identity())
+                .addListener(future -> ft.complete((ChannelFuture) future));
+        var channelFuture = ft.join();
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
 
         var channel = channelFuture.channel();
@@ -115,7 +126,11 @@ class ChannelConnectorImplIT {
     void shouldFailToConnectToWrongAddress() throws Exception {
         ChannelConnector connector = newConnector(neo4j.authTokenManager());
 
-        var channelFuture = connector.connect(new BoltServerAddress("wrong-localhost"), bootstrap);
+        var ft = new CompletableFuture<ChannelFuture>();
+        connector
+                .connect(new BoltServerAddress("wrong-localhost"), bootstrap, Function.identity())
+                .addListener(future -> ft.complete((ChannelFuture) future));
+        var channelFuture = ft.join();
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
         var channel = channelFuture.channel();
 
@@ -133,7 +148,11 @@ class ChannelConnectorImplIT {
         var authToken = AuthTokens.basic("neo4j", "wrong-password");
         ChannelConnector connector = newConnector(new StaticAuthTokenManager(authToken));
 
-        var channelFuture = connector.connect(neo4j.address(), bootstrap);
+        var ft = new CompletableFuture<ChannelFuture>();
+        connector
+                .connect(neo4j.address(), bootstrap, Function.identity())
+                .addListener(future -> ft.complete((ChannelFuture) future));
+        var channelFuture = ft.join();
         assertTrue(channelFuture.await(10, TimeUnit.SECONDS));
         var channel = channelFuture.channel();
 
@@ -143,11 +162,15 @@ class ChannelConnectorImplIT {
     }
 
     @Test
-    void shouldEnforceConnectTimeout() throws Exception {
+    void shouldEnforceConnectTimeout() {
         ChannelConnector connector = newConnector(neo4j.authTokenManager(), 1000);
 
         // try connect to a non-routable ip address 10.0.0.0, it will never respond
-        var channelFuture = connector.connect(new BoltServerAddress("10.0.0.0"), bootstrap);
+        var ft = new CompletableFuture<ChannelFuture>();
+        connector
+                .connect(new BoltServerAddress("10.0.0.0"), bootstrap, Function.identity())
+                .addListener(future -> ft.complete((ChannelFuture) future));
+        var channelFuture = ft.join();
 
         assertThrows(ServiceUnavailableException.class, () -> await(channelFuture));
     }
@@ -184,7 +207,11 @@ class ChannelConnectorImplIT {
         });
 
         ChannelConnector connector = newConnector(neo4j.authTokenManager());
-        var channelFuture = connector.connect(address, bootstrap);
+        var ft = new CompletableFuture<ChannelFuture>();
+        connector
+                .connect(address, bootstrap, Function.identity())
+                .addListener(future -> ft.complete((ChannelFuture) future));
+        var channelFuture = ft.join();
 
         // connect operation should fail with ServiceUnavailableException
         assertThrows(ServiceUnavailableException.class, () -> await(channelFuture));
@@ -197,19 +224,22 @@ class ChannelConnectorImplIT {
             var address = new BoltServerAddress("localhost", server.getLocalPort());
             ChannelConnector connector = newConnector(neo4j.authTokenManager(), securityPlan, timeoutMillis);
 
-            var channelFuture = connector.connect(address, bootstrap);
+            var ft = new CompletableFuture<ChannelFuture>();
+            connector
+                    .connect(address, bootstrap, Function.identity())
+                    .addListener(future -> ft.complete((ChannelFuture) future));
+            var channelFuture = ft.join();
 
             var e = assertThrows(ServiceUnavailableException.class, () -> await(channelFuture));
             assertEquals(e.getMessage(), "Unable to establish connection in " + timeoutMillis + "ms");
         }
     }
 
-    private ChannelConnectorImpl newConnector(AuthTokenManager authTokenManager) throws Exception {
+    private ChannelConnectorImpl newConnector(AuthTokenManager authTokenManager) {
         return newConnector(authTokenManager, Integer.MAX_VALUE);
     }
 
-    private ChannelConnectorImpl newConnector(AuthTokenManager authTokenManager, int connectTimeoutMillis)
-            throws Exception {
+    private ChannelConnectorImpl newConnector(AuthTokenManager authTokenManager, int connectTimeoutMillis) {
         return newConnector(authTokenManager, trustAllCertificates(), connectTimeoutMillis);
     }
 
@@ -227,7 +257,7 @@ class ChannelConnectorImplIT {
                 BoltAgentUtil.VALUE);
     }
 
-    private static SecurityPlan trustAllCertificates() throws GeneralSecurityException {
-        return SecurityPlanImpl.forAllCertificates(false, RevocationCheckingStrategy.NO_CHECKS);
+    private static SecurityPlan trustAllCertificates() {
+        return SecurityPlanImpl.forAllCertificates(false, RevocationCheckingStrategy.NO_CHECKS, null, Logging.none());
     }
 }

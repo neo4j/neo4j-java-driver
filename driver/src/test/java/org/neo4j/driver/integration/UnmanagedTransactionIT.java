@@ -207,7 +207,7 @@ class UnmanagedTransactionIT {
         var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
 
         try (var driver = driverFactory.newInstance(
-                neo4j.uri(), neo4j.authTokenManager(), config, SecurityPlanImpl.insecure(), null, null)) {
+                neo4j.uri(), neo4j.authTokenManager(), null, config, SecurityPlanImpl.insecure(), null, null)) {
             var session = ((InternalDriver) driver).newSession(SessionConfig.defaultConfig(), null);
             {
                 var tx = beginTransaction(session);

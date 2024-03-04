@@ -91,23 +91,24 @@ public class NettyChannelPool implements ExtendedChannelPool {
                     @Override
                     protected ChannelFuture connectChannel(Bootstrap bootstrap) {
                         var creatingEvent = handler.channelCreating(id);
-                        var connectedChannelFuture = connector.connect(address, bootstrap);
-                        var channel = connectedChannelFuture.channel();
-                        // This ensures that handler.channelCreated is called before SimpleChannelPool calls
-                        // handler.channelAcquired
-                        var trackedChannelFuture = channel.newPromise();
-                        connectedChannelFuture.addListener(future -> {
-                            if (future.isSuccess()) {
-                                // notify pool handler about a successful connection
-                                setPoolId(channel, id);
-                                handler.channelCreated(channel, creatingEvent);
-                                trackedChannelFuture.setSuccess();
-                            } else {
-                                handler.channelFailedToCreate(id);
-                                trackedChannelFuture.setFailure(future.cause());
-                            }
+                        return connector.connect(address, bootstrap, connectedChannelFuture -> {
+                            var channel = connectedChannelFuture.channel();
+                            // This ensures that handler.channelCreated is called before SimpleChannelPool calls
+                            // handler.channelAcquired
+                            var trackedChannelFuture = channel.newPromise();
+                            connectedChannelFuture.addListener(future -> {
+                                if (future.isSuccess()) {
+                                    // notify pool handler about a successful connection
+                                    setPoolId(channel, id);
+                                    handler.channelCreated(channel, creatingEvent);
+                                    trackedChannelFuture.setSuccess();
+                                } else {
+                                    handler.channelFailedToCreate(id);
+                                    trackedChannelFuture.setFailure(future.cause());
+                                }
+                            });
+                            return trackedChannelFuture;
                         });
-                        return trackedChannelFuture;
                     }
                 };
     }

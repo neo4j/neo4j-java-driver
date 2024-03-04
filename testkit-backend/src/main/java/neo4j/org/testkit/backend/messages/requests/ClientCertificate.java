@@ -14,16 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async.connection;
+package neo4j.org.testkit.backend.messages.requests;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import java.util.function.Function;
-import org.neo4j.driver.internal.BoltServerAddress;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
+import lombok.Setter;
 
-public interface ChannelConnector {
-    ChannelFuture connect(
-            BoltServerAddress address,
-            Bootstrap bootstrap,
-            Function<ChannelFuture, ChannelFuture> channelFutureExtensionMapper);
+@Setter
+@Getter
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "name")
+public class ClientCertificate {
+    private Data data;
+
+    @Getter
+    @Setter
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class Data {
+        String certfile;
+        String keyfile;
+        String password;
+    }
 }

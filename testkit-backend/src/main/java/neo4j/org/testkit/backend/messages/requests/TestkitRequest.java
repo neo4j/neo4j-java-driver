@@ -73,7 +73,10 @@ import reactor.core.publisher.Mono;
     @JsonSubTypes.Type(FakeTimeTick.class),
     @JsonSubTypes.Type(FakeTimeUninstall.class),
     @JsonSubTypes.Type(CheckSessionAuthSupport.class),
-    @JsonSubTypes.Type(VerifyAuthentication.class)
+    @JsonSubTypes.Type(VerifyAuthentication.class),
+    @JsonSubTypes.Type(NewClientCertificateProvider.class),
+    @JsonSubTypes.Type(ClientCertificateProviderCompleted.class),
+    @JsonSubTypes.Type(ClientCertificateProviderClose.class)
 })
 public interface TestkitRequest {
     TestkitResponse process(TestkitState testkitState);

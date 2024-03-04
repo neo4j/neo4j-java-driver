@@ -22,21 +22,28 @@ import static org.neo4j.driver.internal.security.SecurityPlanImpl.insecure;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Config;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.Scheme;
 import org.neo4j.driver.internal.SecuritySettings;
 
 public class SecurityPlans {
-    public static SecurityPlan createSecurityPlan(SecuritySettings settings, String uriScheme) {
+    public static SecurityPlan createSecurityPlan(
+            SecuritySettings settings,
+            String uriScheme,
+            ClientCertificateManager clientCertificateManager,
+            Logging logging) {
         Scheme.validateScheme(uriScheme);
         try {
             if (isSecurityScheme(uriScheme)) {
                 assertSecuritySettingsNotUserConfigured(settings, uriScheme);
-                return createSecurityPlanFromScheme(uriScheme);
+                return createSecurityPlanFromScheme(uriScheme, clientCertificateManager, logging);
             } else {
-                return createSecurityPlanImpl(settings.encrypted(), settings.trustStrategy());
+                return createSecurityPlanImpl(
+                        settings.encrypted(), settings.trustStrategy(), clientCertificateManager, logging);
             }
         } catch (GeneralSecurityException | IOException ex) {
             throw new ClientException("Unable to establish SSL parameters", ex);
@@ -68,12 +75,15 @@ public class SecurityPlans {
                 && t1.revocationCheckingStrategy() == t2.revocationCheckingStrategy();
     }
 
-    private static SecurityPlan createSecurityPlanFromScheme(String scheme)
+    private static SecurityPlan createSecurityPlanFromScheme(
+            String scheme, ClientCertificateManager clientCertificateManager, Logging logging)
             throws GeneralSecurityException, IOException {
         if (isHighTrustScheme(scheme)) {
-            return SecurityPlanImpl.forSystemCASignedCertificates(true, RevocationCheckingStrategy.NO_CHECKS);
+            return SecurityPlanImpl.forSystemCASignedCertificates(
+                    true, RevocationCheckingStrategy.NO_CHECKS, clientCertificateManager, logging);
         } else {
-            return SecurityPlanImpl.forAllCertificates(false, RevocationCheckingStrategy.NO_CHECKS);
+            return SecurityPlanImpl.forAllCertificates(
+                    false, RevocationCheckingStrategy.NO_CHECKS, clientCertificateManager, logging);
         }
     }
 
@@ -81,18 +91,26 @@ public class SecurityPlans {
      * Establish a complete SecurityPlan based on the details provided for
      * driver construction.
      */
-    private static SecurityPlan createSecurityPlanImpl(boolean encrypted, Config.TrustStrategy trustStrategy)
+    private static SecurityPlan createSecurityPlanImpl(
+            boolean encrypted,
+            Config.TrustStrategy trustStrategy,
+            ClientCertificateManager clientCertificateManager,
+            Logging logging)
             throws GeneralSecurityException, IOException {
         if (encrypted) {
             var hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();
             var revocationCheckingStrategy = trustStrategy.revocationCheckingStrategy();
             return switch (trustStrategy.strategy()) {
                 case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES -> SecurityPlanImpl.forCustomCASignedCertificates(
-                        trustStrategy.certFiles(), hostnameVerificationEnabled, revocationCheckingStrategy);
+                        trustStrategy.certFiles(),
+                        hostnameVerificationEnabled,
+                        revocationCheckingStrategy,
+                        clientCertificateManager,
+                        logging);
                 case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES -> SecurityPlanImpl.forSystemCASignedCertificates(
-                        hostnameVerificationEnabled, revocationCheckingStrategy);
+                        hostnameVerificationEnabled, revocationCheckingStrategy, clientCertificateManager, logging);
                 case TRUST_ALL_CERTIFICATES -> SecurityPlanImpl.forAllCertificates(
-                        hostnameVerificationEnabled, revocationCheckingStrategy);
+                        hostnameVerificationEnabled, revocationCheckingStrategy, clientCertificateManager, logging);
             };
         } else {
             return insecure();

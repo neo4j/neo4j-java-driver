@@ -45,6 +45,7 @@ class CustomSecurityPlanTest {
         driverFactory.newInstance(
                 URI.create("neo4j://somewhere:1234"),
                 new StaticAuthTokenManager(AuthTokens.none()),
+                null,
                 Config.defaultConfig(),
                 securityPlan,
                 null,

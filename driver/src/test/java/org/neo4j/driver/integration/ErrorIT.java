@@ -255,8 +255,8 @@ class ErrorIT {
         var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
         Throwable queryError = null;
 
-        try (var driver =
-                driverFactory.newInstance(uri, authTokenProvider, config, SecurityPlanImpl.insecure(), null, null)) {
+        try (var driver = driverFactory.newInstance(
+                uri, authTokenProvider, null, config, SecurityPlanImpl.insecure(), null, null)) {
             driver.verifyConnectivity();
             try (var session = driver.session()) {
                 messageFormatSetup.accept(driverFactory.getFailingMessageFormat());

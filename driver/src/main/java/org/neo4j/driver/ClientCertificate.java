@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async.connection;
+package org.neo4j.driver;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import java.util.function.Function;
-import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.InternalClientCertificate;
+import org.neo4j.driver.util.Preview;
 
-public interface ChannelConnector {
-    ChannelFuture connect(
-            BoltServerAddress address,
-            Bootstrap bootstrap,
-            Function<ChannelFuture, ChannelFuture> channelFutureExtensionMapper);
-}
+/**
+ * An opaque container for client certificate used for mTLS.
+ * <p>
+ * Use {@link ClientCertificates} to create new instances.
+ * @since 5.19
+ */
+@Preview(name = "mTLS")
+public sealed interface ClientCertificate permits InternalClientCertificate {}

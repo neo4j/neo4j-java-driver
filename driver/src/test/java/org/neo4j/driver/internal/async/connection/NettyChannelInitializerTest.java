@@ -34,12 +34,12 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.ssl.SslHandler;
-import java.security.GeneralSecurityException;
 import java.time.Clock;
 import javax.net.ssl.SNIHostName;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -56,7 +56,7 @@ class NettyChannelInitializerTest {
     }
 
     @Test
-    void shouldAddSslHandlerWhenRequiresEncryption() throws Exception {
+    void shouldAddSslHandlerWhenRequiresEncryption() {
         var security = trustAllCertificates();
         var initializer = newInitializer(security);
 
@@ -76,7 +76,7 @@ class NettyChannelInitializerTest {
     }
 
     @Test
-    void shouldAddSslHandlerWithHandshakeTimeout() throws Exception {
+    void shouldAddSslHandlerWithHandshakeTimeout() {
         var timeoutMillis = 424242;
         var security = trustAllCertificates();
         var initializer = newInitializer(security, timeoutMillis);
@@ -104,13 +104,15 @@ class NettyChannelInitializerTest {
     }
 
     @Test
-    void shouldIncludeSniHostName() throws Exception {
+    void shouldIncludeSniHostName() {
         var address = new BoltServerAddress("database.neo4j.com", 8989);
+        var securityPlan = trustAllCertificates();
         var initializer = new NettyChannelInitializer(
                 address,
-                trustAllCertificates(),
+                securityPlan,
                 10000,
                 new StaticAuthTokenManager(AuthTokens.none()),
+                securityPlan.sslContext().toCompletableFuture().join(),
                 Clock.systemUTC(),
                 DEV_NULL_LOGGING);
 
@@ -126,18 +128,18 @@ class NettyChannelInitializerTest {
     }
 
     @Test
-    void shouldEnableHostnameVerificationWhenConfigured() throws Exception {
+    void shouldEnableHostnameVerificationWhenConfigured() {
         testHostnameVerificationSetting(true, "HTTPS");
     }
 
     @Test
-    void shouldNotEnableHostnameVerificationWhenNotConfigured() throws Exception {
+    void shouldNotEnableHostnameVerificationWhenNotConfigured() {
         testHostnameVerificationSetting(false, null);
     }
 
-    private void testHostnameVerificationSetting(boolean enabled, String expectedValue) throws Exception {
-        var initializer =
-                newInitializer(SecurityPlanImpl.forAllCertificates(enabled, RevocationCheckingStrategy.NO_CHECKS));
+    private void testHostnameVerificationSetting(boolean enabled, String expectedValue) {
+        var initializer = newInitializer(SecurityPlanImpl.forAllCertificates(
+                enabled, RevocationCheckingStrategy.NO_CHECKS, null, Logging.none()));
 
         initializer.initChannel(channel);
 
@@ -162,11 +164,12 @@ class NettyChannelInitializerTest {
                 securityPlan,
                 connectTimeoutMillis,
                 new StaticAuthTokenManager(AuthTokens.none()),
+                securityPlan.sslContext().toCompletableFuture().join(),
                 clock,
                 DEV_NULL_LOGGING);
     }
 
-    private static SecurityPlan trustAllCertificates() throws GeneralSecurityException {
-        return SecurityPlanImpl.forAllCertificates(false, RevocationCheckingStrategy.NO_CHECKS);
+    private static SecurityPlan trustAllCertificates() {
+        return SecurityPlanImpl.forAllCertificates(false, RevocationCheckingStrategy.NO_CHECKS, null, Logging.none());
     }
 }

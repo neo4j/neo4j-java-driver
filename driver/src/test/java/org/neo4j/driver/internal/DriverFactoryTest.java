@@ -211,6 +211,7 @@ class DriverFactoryTest {
         var driver = driverFactory.newInstance(
                 URI.create("neo4j://localhost:7687"),
                 new StaticAuthTokenManager(AuthTokens.none()),
+                null,
                 Config.defaultConfig(),
                 null,
                 null,
@@ -237,6 +238,7 @@ class DriverFactoryTest {
         var driver = driverFactory.newInstance(
                 URI.create("neo4j://localhost:7687"),
                 new StaticAuthTokenManager(AuthTokens.none()),
+                null,
                 Config.defaultConfig(),
                 null,
                 null,
@@ -256,7 +258,7 @@ class DriverFactoryTest {
 
     private Driver createDriver(String uri, DriverFactory driverFactory, Config config) {
         var auth = AuthTokens.none();
-        return driverFactory.newInstance(URI.create(uri), new StaticAuthTokenManager(auth), config);
+        return driverFactory.newInstance(URI.create(uri), new StaticAuthTokenManager(auth), null, config);
     }
 
     private static ConnectionPool connectionPoolMock() {

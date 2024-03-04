@@ -14,16 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async.connection;
+package neo4j.org.testkit.backend.messages.requests;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import java.util.function.Function;
-import org.neo4j.driver.internal.BoltServerAddress;
+import lombok.Getter;
+import lombok.Setter;
 
-public interface ChannelConnector {
-    ChannelFuture connect(
-            BoltServerAddress address,
-            Bootstrap bootstrap,
-            Function<ChannelFuture, ChannelFuture> channelFutureExtensionMapper);
+@Setter
+@Getter
+public class ClientCertificateProviderCompleted implements TestkitCallbackResult {
+    private ClientCertificateProviderCompletedBody data;
+
+    @Override
+    public String getCallbackId() {
+        return data.getRequestId();
+    }
+
+    @Setter
+    @Getter
+    public static class ClientCertificateProviderCompletedBody {
+        private String requestId;
+        private ClientCertificate clientCertificate;
+        private boolean hasUpdate;
+    }
 }

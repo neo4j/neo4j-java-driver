@@ -26,6 +26,8 @@ import io.netty.resolver.AddressResolverGroup;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Clock;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.NotificationConfig;
@@ -36,6 +38,7 @@ import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.Futures;
 
 public class ChannelConnectorImpl implements ChannelConnector {
     private final String userAgent;
@@ -97,30 +100,45 @@ public class ChannelConnectorImpl implements ChannelConnector {
     }
 
     @Override
-    public ChannelFuture connect(BoltServerAddress address, Bootstrap bootstrap) {
-        bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis);
-        bootstrap.handler(new NettyChannelInitializer(
-                address, securityPlan, connectTimeoutMillis, authTokenManager, clock, logging));
-        bootstrap.resolver(addressResolverGroup);
+    public ChannelFuture connect(
+            BoltServerAddress address,
+            Bootstrap bootstrap,
+            Function<ChannelFuture, ChannelFuture> channelFutureExtensionMapper) {
+        var sslContextStage = securityPlan.sslContext();
 
-        SocketAddress socketAddress;
-        try {
-            socketAddress =
-                    new InetSocketAddress(domainNameResolver.resolve(address.connectionHost())[0], address.port());
-        } catch (Throwable t) {
-            socketAddress = InetSocketAddress.createUnresolved(address.connectionHost(), address.port());
-        }
+        var channelFutureCompletableFuture = new CompletableFuture<ChannelFuture>();
 
-        var channelConnected = bootstrap.connect(socketAddress);
+        sslContextStage.whenComplete((sslContext, throwable) -> {
+            if (throwable != null) {
+                channelFutureCompletableFuture.completeExceptionally(Futures.completionExceptionCause(throwable));
+            } else {
+                bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis);
+                bootstrap.handler(new NettyChannelInitializer(
+                        address, securityPlan, connectTimeoutMillis, authTokenManager, sslContext, clock, logging));
+                bootstrap.resolver(addressResolverGroup);
 
-        var channel = channelConnected.channel();
-        var handshakeCompleted = channel.newPromise();
-        var connectionInitialized = channel.newPromise();
+                SocketAddress socketAddress;
+                try {
+                    socketAddress = new InetSocketAddress(
+                            domainNameResolver.resolve(address.connectionHost())[0], address.port());
+                } catch (Throwable t) {
+                    socketAddress = InetSocketAddress.createUnresolved(address.connectionHost(), address.port());
+                }
 
-        installChannelConnectedListeners(address, channelConnected, handshakeCompleted);
-        installHandshakeCompletedListeners(handshakeCompleted, connectionInitialized);
+                var channelConnected = bootstrap.connect(socketAddress);
 
-        return connectionInitialized;
+                var channel = channelConnected.channel();
+                var handshakeCompleted = channel.newPromise();
+                var connectionInitialized = channel.newPromise();
+
+                installChannelConnectedListeners(address, channelConnected, handshakeCompleted);
+                installHandshakeCompletedListeners(handshakeCompleted, connectionInitialized);
+
+                channelFutureCompletableFuture.complete(channelFutureExtensionMapper.apply(connectionInitialized));
+            }
+        });
+
+        return new DeferredChannelFuture(channelFutureCompletableFuture, logging);
     }
 
     private void installChannelConnectedListeners(
