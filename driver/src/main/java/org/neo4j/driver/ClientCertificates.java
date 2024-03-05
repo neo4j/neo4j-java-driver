@@ -17,6 +17,7 @@
 package org.neo4j.driver;
 
 import java.io.File;
+import java.util.Objects;
 import org.neo4j.driver.internal.InternalClientCertificate;
 import org.neo4j.driver.util.Preview;
 
@@ -30,24 +31,24 @@ public final class ClientCertificates {
 
     /**
      * Creates a new instance of {@link ClientCertificate} with certificate {@link File} and private key {@link File}.
-     * @param certificate the certificate file
-     * @param privateKey the key file
-     * @param hasUpdate indicates if the files have changed and must be reloaded
+     * @param certificate the certificate file, must not be {@literal null}
+     * @param privateKey the key file, must not be {@literal null}
      * @return the client certificate
      */
-    public static ClientCertificate of(File certificate, File privateKey, boolean hasUpdate) {
-        return new InternalClientCertificate(certificate, privateKey, null, hasUpdate);
+    public static ClientCertificate of(File certificate, File privateKey) {
+        return of(certificate, privateKey, null);
     }
 
     /**
      * Creates a new instance of {@link ClientCertificate} with certificate {@link File}, private key {@link File} and key password.
-     * @param certificate the certificate file
-     * @param privateKey the key file
+     * @param certificate the certificate file, must not be {@literal null}
+     * @param privateKey the key file, must not be {@literal null}
      * @param password the key password
-     * @param hasUpdate indicates if the files have changed and must be reloaded
      * @return the client certificate
      */
-    public static ClientCertificate of(File certificate, File privateKey, String password, boolean hasUpdate) {
-        return new InternalClientCertificate(certificate, privateKey, password, hasUpdate);
+    public static ClientCertificate of(File certificate, File privateKey, String password) {
+        Objects.requireNonNull(certificate);
+        Objects.requireNonNull(privateKey);
+        return new InternalClientCertificate(certificate, privateKey, password);
     }
 }

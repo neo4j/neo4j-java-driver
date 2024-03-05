@@ -66,11 +66,12 @@ public class NewClientCertificateProvider extends AbstractBasicTestkitRequest {
                     var data = clientCertificateComplete.getData();
                     var certificateData = data.getClientCertificate().getData();
                     var hasUpdate = data.isHasUpdate();
-                    clientCertificate = ClientCertificates.of(
-                            Paths.get(certificateData.getCertfile()).toFile(),
-                            Paths.get(certificateData.getKeyfile()).toFile(),
-                            certificateData.getPassword(),
-                            hasUpdate);
+                    if (hasUpdate) {
+                        clientCertificate = ClientCertificates.of(
+                                Paths.get(certificateData.getCertfile()).toFile(),
+                                Paths.get(certificateData.getKeyfile()).toFile(),
+                                certificateData.getPassword());
+                    }
                 }
             } catch (Exception e) {
                 throw new RuntimeException("Unexpected failure during Testkit callback", e);

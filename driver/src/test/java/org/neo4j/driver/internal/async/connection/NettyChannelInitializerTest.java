@@ -34,6 +34,8 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.ssl.SslHandler;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import javax.net.ssl.SNIHostName;
 import org.junit.jupiter.api.AfterEach;
@@ -56,7 +58,7 @@ class NettyChannelInitializerTest {
     }
 
     @Test
-    void shouldAddSslHandlerWhenRequiresEncryption() {
+    void shouldAddSslHandlerWhenRequiresEncryption() throws NoSuchAlgorithmException, KeyManagementException {
         var security = trustAllCertificates();
         var initializer = newInitializer(security);
 
@@ -76,7 +78,7 @@ class NettyChannelInitializerTest {
     }
 
     @Test
-    void shouldAddSslHandlerWithHandshakeTimeout() {
+    void shouldAddSslHandlerWithHandshakeTimeout() throws NoSuchAlgorithmException, KeyManagementException {
         var timeoutMillis = 424242;
         var security = trustAllCertificates();
         var initializer = newInitializer(security, timeoutMillis);
@@ -104,7 +106,7 @@ class NettyChannelInitializerTest {
     }
 
     @Test
-    void shouldIncludeSniHostName() {
+    void shouldIncludeSniHostName() throws NoSuchAlgorithmException, KeyManagementException {
         var address = new BoltServerAddress("database.neo4j.com", 8989);
         var securityPlan = trustAllCertificates();
         var initializer = new NettyChannelInitializer(
@@ -128,16 +130,18 @@ class NettyChannelInitializerTest {
     }
 
     @Test
-    void shouldEnableHostnameVerificationWhenConfigured() {
+    void shouldEnableHostnameVerificationWhenConfigured() throws NoSuchAlgorithmException, KeyManagementException {
         testHostnameVerificationSetting(true, "HTTPS");
     }
 
     @Test
-    void shouldNotEnableHostnameVerificationWhenNotConfigured() {
+    void shouldNotEnableHostnameVerificationWhenNotConfigured()
+            throws NoSuchAlgorithmException, KeyManagementException {
         testHostnameVerificationSetting(false, null);
     }
 
-    private void testHostnameVerificationSetting(boolean enabled, String expectedValue) {
+    private void testHostnameVerificationSetting(boolean enabled, String expectedValue)
+            throws NoSuchAlgorithmException, KeyManagementException {
         var initializer = newInitializer(SecurityPlanImpl.forAllCertificates(
                 enabled, RevocationCheckingStrategy.NO_CHECKS, null, Logging.none()));
 
@@ -169,7 +173,7 @@ class NettyChannelInitializerTest {
                 DEV_NULL_LOGGING);
     }
 
-    private static SecurityPlan trustAllCertificates() {
+    private static SecurityPlan trustAllCertificates() throws NoSuchAlgorithmException, KeyManagementException {
         return SecurityPlanImpl.forAllCertificates(false, RevocationCheckingStrategy.NO_CHECKS, null, Logging.none());
     }
 }

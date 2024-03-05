@@ -47,20 +47,25 @@ class SSLContextManager {
     private final Logger logger;
     private CompletableFuture<SSLContext> sslContextFuture;
     private SSLContext sslContext;
+    private Throwable throwable;
 
     public SSLContextManager(
             ClientCertificateManager clientCertificateManager,
             SecurityPlan.SSLContextSupplier sslContextSupplier,
-            Logging logging) {
+            Logging logging)
+            throws NoSuchAlgorithmException, KeyManagementException {
         this.clientCertificateManager = clientCertificateManager;
         this.sslContextSupplier = sslContextSupplier;
         logger = logging.getLog(getClass());
+
+        if (clientCertificateManager == null) {
+            var sslContext = sslContextSupplier.get(new KeyManager[0]);
+            sslContextFuture = CompletableFuture.completedFuture(sslContext);
+        }
     }
 
-    public CompletionStage<SSLContext> get() {
-        return clientCertificateManager != null
-                ? getSSLContextWithClientCertificate()
-                : getSSLContextWithoutClientCertificate();
+    public CompletionStage<SSLContext> getSSLContext() {
+        return clientCertificateManager != null ? getSSLContextWithClientCertificate() : sslContextFuture;
     }
 
     private CompletionStage<SSLContext> getSSLContextWithClientCertificate() {
@@ -71,21 +76,36 @@ class SSLContextManager {
                 this.sslContextFuture = new CompletableFuture<>();
                 sslContextFuture = this.sslContextFuture;
                 var sslContext = this.sslContext;
+                var previousThrowable = this.throwable;
                 sslContextStage = clientCertificateManager
                         .getClientCertificate()
                         .thenApply(clientCertificate -> {
-                            var certificate = (InternalClientCertificate) clientCertificate;
-                            if (certificate.hasUpdate() || sslContext == null) {
+                            if (clientCertificate != null) {
+                                var certificate = (InternalClientCertificate) clientCertificate;
                                 try {
                                     var keyManagers = createKeyManagers(certificate);
                                     return sslContextSupplier.get(keyManagers);
                                 } catch (Throwable throwable) {
-                                    logger.error("An error occured while loading client certficate.", throwable);
-                                    throw new CompletionException(new ClientException(
-                                            "An error occured while loading client certficate.", throwable));
+                                    var exception = new ClientException(
+                                            "An error occured while loading client certficate.", throwable);
+                                    logger.error("An error occured while loading client certficate.", exception);
+                                    throw new CompletionException(exception);
                                 }
                             } else {
-                                return sslContext;
+                                if (previousThrowable != null) {
+                                    throw new CompletionException(previousThrowable);
+                                } else {
+                                    if (sslContext == null) {
+                                        var exception = new ClientException(
+                                                "The initial client certificate returned by the manager must not be null.");
+                                        logger.error(
+                                                "The initial client certificate returned by the manager must not be null.",
+                                                exception);
+                                        throw new CompletionException(exception);
+                                    } else {
+                                        return sslContext;
+                                    }
+                                }
                             }
                         });
             } else {
@@ -94,15 +114,17 @@ class SSLContextManager {
         }
 
         if (sslContextStage != null) {
-            sslContextStage.whenComplete((newSslContext, throwable) -> {
+            sslContextStage.whenComplete((sslContext, throwable) -> {
+                throwable = Futures.completionExceptionCause(throwable);
                 synchronized (this) {
                     this.sslContextFuture = null;
-                    this.sslContext = newSslContext;
+                    this.sslContext = sslContext;
+                    this.throwable = throwable;
                 }
                 if (throwable != null) {
-                    sslContextFuture.completeExceptionally(Futures.completionExceptionCause(throwable));
+                    sslContextFuture.completeExceptionally(throwable);
                 } else {
-                    sslContextFuture.complete(newSslContext);
+                    sslContextFuture.complete(this.sslContext);
                 }
             });
         }
@@ -110,18 +132,7 @@ class SSLContextManager {
         return sslContextFuture;
     }
 
-    private CompletionStage<SSLContext> getSSLContextWithoutClientCertificate() {
-        var sslContextFuture = new CompletableFuture<SSLContext>();
-        try {
-            var sslContext = sslContextSupplier.get(new KeyManager[0]);
-            sslContextFuture.complete(sslContext);
-        } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            sslContextFuture.completeExceptionally(e);
-        }
-        return sslContextFuture;
-    }
-
-    private KeyManager[] createKeyManagers(InternalClientCertificate clientCertificate)
+    protected KeyManager[] createKeyManagers(InternalClientCertificate clientCertificate)
             throws CertificateException, IOException, KeyException, KeyStoreException, NoSuchAlgorithmException,
                     UnrecoverableKeyException {
         var certificateFactory = CertificateFactory.getInstance("X.509");

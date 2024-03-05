@@ -21,7 +21,6 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.ClientCertificate;
 import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.util.Futures;
 
 public class ValidatingClientCertificateManager implements ClientCertificateManager {
     private final ClientCertificateManager delegate;
@@ -39,12 +38,6 @@ public class ValidatingClientCertificateManager implements ClientCertificateMana
             return CompletableFuture.failedFuture(
                     new ClientException("An exception has been thrown by the ClientCertificateManager.", throwable));
         }
-        return certificateStage.thenApply(certtificate -> {
-            if (certtificate == null) {
-                throw Futures.asCompletionException(
-                        new ClientException("The ClientCertificateManager stage must not complete with null."));
-            }
-            return certtificate;
-        });
+        return certificateStage;
     }
 }

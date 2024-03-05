@@ -24,8 +24,10 @@ import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.PKIXBuilderParameters;
@@ -54,9 +56,9 @@ public class SecurityPlanImpl implements SecurityPlan {
             boolean requiresHostnameVerification,
             RevocationCheckingStrategy revocationCheckingStrategy,
             ClientCertificateManager clientCertificateManager,
-            Logging logging) {
+            Logging logging)
+            throws NoSuchAlgorithmException, KeyManagementException {
         return new SecurityPlanImpl(
-                true,
                 keyManagers -> {
                     var sslContext = SSLContext.getInstance("TLS");
                     sslContext.init(keyManagers, new TrustManager[] {new TrustAllTrustManager()}, null);
@@ -77,7 +79,6 @@ public class SecurityPlanImpl implements SecurityPlan {
             throws GeneralSecurityException, IOException {
         var sslContext = configureSSLContextSupplier(certFiles, revocationCheckingStrategy);
         return new SecurityPlanImpl(
-                true,
                 sslContext,
                 requiresHostnameVerification,
                 revocationCheckingStrategy,
@@ -93,7 +94,6 @@ public class SecurityPlanImpl implements SecurityPlan {
             throws GeneralSecurityException, IOException {
         var sslContext = configureSSLContextSupplier(Collections.emptyList(), revocationCheckingStrategy);
         return new SecurityPlanImpl(
-                true,
                 sslContext,
                 requiresHostnameVerification,
                 revocationCheckingStrategy,
@@ -174,7 +174,7 @@ public class SecurityPlanImpl implements SecurityPlan {
     }
 
     public static SecurityPlan insecure() {
-        return new SecurityPlanImpl(false, null, false, RevocationCheckingStrategy.NO_CHECKS, null, null);
+        return new SecurityPlanImpl(false, RevocationCheckingStrategy.NO_CHECKS);
     }
 
     private final boolean requiresEncryption;
@@ -184,24 +184,27 @@ public class SecurityPlanImpl implements SecurityPlan {
     private final Supplier<CompletionStage<SSLContext>> sslContextSupplier;
 
     private SecurityPlanImpl(
-            boolean requiresEncryption,
             SSLContextSupplier sslContextSupplier,
             boolean requiresHostnameVerification,
             RevocationCheckingStrategy revocationCheckingStrategy,
             ClientCertificateManager clientCertificateManager,
-            Logging logging) {
-        this.requiresEncryption = requiresEncryption;
+            Logging logging)
+            throws NoSuchAlgorithmException, KeyManagementException {
+        this.requiresEncryption = true;
         this.requiresHostnameVerification = requiresHostnameVerification;
         this.revocationCheckingStrategy = revocationCheckingStrategy;
+        var sslContextManager = new SSLContextManager(clientCertificateManager, sslContextSupplier, logging);
+        this.sslContextSupplier = sslContextManager::getSSLContext;
+        this.requiresClientAuth = clientCertificateManager != null;
+    }
 
-        if (requiresEncryption) {
-            var sslContextManager = new SSLContextManager(clientCertificateManager, sslContextSupplier, logging);
-            this.sslContextSupplier = sslContextManager::get;
-            this.requiresClientAuth = clientCertificateManager != null;
-        } else {
-            this.sslContextSupplier = Futures::completedWithNull;
-            this.requiresClientAuth = false;
-        }
+    private SecurityPlanImpl(
+            boolean requiresHostnameVerification, RevocationCheckingStrategy revocationCheckingStrategy) {
+        this.requiresEncryption = false;
+        this.requiresHostnameVerification = requiresHostnameVerification;
+        this.revocationCheckingStrategy = revocationCheckingStrategy;
+        this.sslContextSupplier = Futures::completedWithNull;
+        this.requiresClientAuth = false;
     }
 
     @Override

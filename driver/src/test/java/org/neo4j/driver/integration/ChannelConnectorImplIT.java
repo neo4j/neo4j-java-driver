@@ -36,6 +36,8 @@ import io.netty.handler.ssl.SslHandler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -162,7 +164,7 @@ class ChannelConnectorImplIT {
     }
 
     @Test
-    void shouldEnforceConnectTimeout() {
+    void shouldEnforceConnectTimeout() throws NoSuchAlgorithmException, KeyManagementException {
         ChannelConnector connector = newConnector(neo4j.authTokenManager(), 1000);
 
         // try connect to a non-routable ip address 10.0.0.0, it will never respond
@@ -235,11 +237,13 @@ class ChannelConnectorImplIT {
         }
     }
 
-    private ChannelConnectorImpl newConnector(AuthTokenManager authTokenManager) {
+    private ChannelConnectorImpl newConnector(AuthTokenManager authTokenManager)
+            throws NoSuchAlgorithmException, KeyManagementException {
         return newConnector(authTokenManager, Integer.MAX_VALUE);
     }
 
-    private ChannelConnectorImpl newConnector(AuthTokenManager authTokenManager, int connectTimeoutMillis) {
+    private ChannelConnectorImpl newConnector(AuthTokenManager authTokenManager, int connectTimeoutMillis)
+            throws NoSuchAlgorithmException, KeyManagementException {
         return newConnector(authTokenManager, trustAllCertificates(), connectTimeoutMillis);
     }
 
@@ -257,7 +261,7 @@ class ChannelConnectorImplIT {
                 BoltAgentUtil.VALUE);
     }
 
-    private static SecurityPlan trustAllCertificates() {
+    private static SecurityPlan trustAllCertificates() throws NoSuchAlgorithmException, KeyManagementException {
         return SecurityPlanImpl.forAllCertificates(false, RevocationCheckingStrategy.NO_CHECKS, null, Logging.none());
     }
 }

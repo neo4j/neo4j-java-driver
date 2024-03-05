@@ -111,8 +111,7 @@ public class NewDriver implements TestkitRequest {
                         .map(certificateData -> ClientCertificates.of(
                                 Paths.get(certificateData.getCertfile()).toFile(),
                                 Paths.get(certificateData.getKeyfile()).toFile(),
-                                certificateData.getPassword(),
-                                true))
+                                certificateData.getPassword()))
                         .map(ClientCertificateManagers::rotating))
                 .orElse(null);
         configBuilder.withLogging(testkitState.getLogging());

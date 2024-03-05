@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.ClientCertificate;
-import org.neo4j.driver.ClientCertificates;
 import org.neo4j.driver.RotatingClientCertificateManager;
 
 public final class InternalRotatingClientCertificateManager implements RotatingClientCertificateManager {
@@ -29,20 +28,14 @@ public final class InternalRotatingClientCertificateManager implements RotatingC
 
     public InternalRotatingClientCertificateManager(ClientCertificate clientCertificate) {
         Objects.requireNonNull(clientCertificate);
-        clientCertificateStage = CompletableFuture.completedStage(clientCertificate);
-        this.clientCertificate = (InternalClientCertificate) clientCertificate;
+        updateState(clientCertificate);
     }
 
     @Override
     public synchronized CompletionStage<ClientCertificate> getClientCertificate() {
-        if (clientCertificate.hasUpdate()) {
+        if (clientCertificate != null) {
             var stage = clientCertificateStage;
-            clientCertificate = (InternalClientCertificate) ClientCertificates.of(
-                    clientCertificate.certificate(),
-                    clientCertificate.privateKey(),
-                    clientCertificate.password(),
-                    false);
-            clientCertificateStage = CompletableFuture.completedStage(clientCertificate);
+            updateState(null);
             return stage;
         } else {
             return clientCertificateStage;
@@ -50,14 +43,15 @@ public final class InternalRotatingClientCertificateManager implements RotatingC
     }
 
     @Override
-    public void update(ClientCertificate clientCertificate) {
+    public void rotate(ClientCertificate clientCertificate) {
         Objects.requireNonNull(clientCertificate);
-        var certificate = (InternalClientCertificate) clientCertificate;
-        if (certificate.hasUpdate()) {
-            synchronized (this) {
-                clientCertificateStage = CompletableFuture.completedStage(certificate);
-                this.clientCertificate = certificate;
-            }
+        synchronized (this) {
+            updateState(clientCertificate);
         }
+    }
+
+    private void updateState(ClientCertificate clientCertificate) {
+        this.clientCertificateStage = CompletableFuture.completedStage(clientCertificate);
+        this.clientCertificate = (InternalClientCertificate) clientCertificate;
     }
 }

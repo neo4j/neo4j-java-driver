@@ -29,8 +29,8 @@ public final class ClientCertificateManagers {
     private ClientCertificateManagers() {}
 
     /**
-     * Returns a {@link RotatingClientCertificateManager} that supports updating its {@link ClientCertificate} using the
-     * {@link RotatingClientCertificateManager#update(ClientCertificate)} method.
+     * Returns a {@link RotatingClientCertificateManager} that supports rotating its {@link ClientCertificate} using the
+     * {@link RotatingClientCertificateManager#rotate(ClientCertificate)} method.
      *
      * @param clientCertificate an initial certificate, must not be {@literal null}
      * @return a new manager

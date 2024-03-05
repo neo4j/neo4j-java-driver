@@ -16,7 +16,6 @@
  */
 package org.neo4j.driver;
 
-import java.io.File;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.util.Preview;
 
@@ -24,13 +23,9 @@ import org.neo4j.driver.util.Preview;
  * A manager of {@link ClientCertificate} instances used by the driver for mTLS.
  * <p>
  * The driver uses the {@link ClientCertificate} supplied by the manager for setting up new connections. Therefore,
- * a change of the certificate affects new connections only.
+ * a change of the certificate affects subsequent new connections only.
  * <p>
- * For efficiency reasons, the driver will only reload the certificate and the key from the files when the
- * {@code hasUpdate} flag is set to {@literal true}. See {@link ClientCertificates#of(File, File, boolean)} and
- * {@link ClientCertificates#of(File, File, String, boolean)}.
- * <p>
- * The manager must never return {@literal null} or {@link CompletionStage} completing with {@literal null}.
+ * The manager must never return {@literal null}. Exceptions must be emitted via the {@link CompletionStage} only.
  * <p>
  * All implementations of this interface must be thread-safe and non-blocking for caller threads. For instance, IO
  * operations must not done on the calling thread.
@@ -39,8 +34,15 @@ import org.neo4j.driver.util.Preview;
 @Preview(name = "mTLS")
 public interface ClientCertificateManager {
     /**
-     * Returns a {@link CompletionStage} of the {@link ClientCertificate}.
-     * @return the certificate stage, must not be {@literal null} or complete with {@literal null}
+     * Returns a {@link CompletionStage} of a new {@link ClientCertificate}.
+     * <p>
+     * The first {@link CompletionStage} supplied to the driver must not complete with {@literal null} to ensure the
+     * driver has the initial {@link ClientCertificate}.
+     * <p>
+     * Afterwards, the {@link CompletionStage} may complete with {@literal null} to indicate no update. If the
+     * {@link CompletionStage} completes with {@link ClientCertificate}, the driver loads the supplied
+     * {@link ClientCertificate}.
+     * @return the certificate stage, must not be {@literal null}
      */
     CompletionStage<ClientCertificate> getClientCertificate();
 }

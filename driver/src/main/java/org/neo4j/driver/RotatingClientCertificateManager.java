@@ -19,17 +19,15 @@ package org.neo4j.driver;
 import org.neo4j.driver.util.Preview;
 
 /**
- * A {@link ClientCertificateManager} that supports rotating (updating) its {@link ClientCertificate}.
+ * A {@link ClientCertificateManager} that supports rotating its {@link ClientCertificate}.
  * @since 5.19
  */
 @Preview(name = "mTLS")
 public sealed interface RotatingClientCertificateManager extends ClientCertificateManager
         permits org.neo4j.driver.internal.InternalRotatingClientCertificateManager {
     /**
-     * Updates the current {@link ClientCertificate}.
-     * <p>
-     * Certificates with {@code hasUpdate = false} will be ignored.
+     * Rotates the current {@link ClientCertificate}.
      * @param clientCertificate the new certificate, must not be {@literal null}
      */
-    void update(ClientCertificate clientCertificate);
+    void rotate(ClientCertificate clientCertificate);
 }
