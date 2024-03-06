@@ -174,7 +174,7 @@ public class SecurityPlanImpl implements SecurityPlan {
     }
 
     public static SecurityPlan insecure() {
-        return new SecurityPlanImpl(false, RevocationCheckingStrategy.NO_CHECKS);
+        return new SecurityPlanImpl();
     }
 
     private final boolean requiresEncryption;
@@ -198,11 +198,10 @@ public class SecurityPlanImpl implements SecurityPlan {
         this.requiresClientAuth = clientCertificateManager != null;
     }
 
-    private SecurityPlanImpl(
-            boolean requiresHostnameVerification, RevocationCheckingStrategy revocationCheckingStrategy) {
+    private SecurityPlanImpl() {
         this.requiresEncryption = false;
-        this.requiresHostnameVerification = requiresHostnameVerification;
-        this.revocationCheckingStrategy = revocationCheckingStrategy;
+        this.requiresHostnameVerification = false;
+        this.revocationCheckingStrategy = RevocationCheckingStrategy.NO_CHECKS;
         this.sslContextSupplier = Futures::completedWithNull;
         this.requiresClientAuth = false;
     }
