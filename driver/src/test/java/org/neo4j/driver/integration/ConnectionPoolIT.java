@@ -92,7 +92,7 @@ class ConnectionPoolIT {
                 .withMaxConnectionLifetime(maxConnLifetimeHours, TimeUnit.HOURS)
                 .build();
         driver = driverFactory.newInstance(
-                neo4j.uri(), neo4j.authTokenManager(), config, SecurityPlanImpl.insecure(), null, null);
+                neo4j.uri(), neo4j.authTokenManager(), null, config, SecurityPlanImpl.insecure(), null, null);
 
         // force driver create channel and return it to the pool
         startAndCloseTransactions(driver, 1);

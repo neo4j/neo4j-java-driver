@@ -24,8 +24,10 @@ import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.PKIXBuilderParameters;
@@ -34,44 +36,72 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 import javax.net.ssl.CertPathTrustManagerParameters;
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import org.neo4j.driver.ClientCertificateManager;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.RevocationCheckingStrategy;
+import org.neo4j.driver.internal.util.Futures;
 
 /**
  * A SecurityPlan consists of encryption and trust details.
  */
 public class SecurityPlanImpl implements SecurityPlan {
     public static SecurityPlan forAllCertificates(
-            boolean requiresHostnameVerification, RevocationCheckingStrategy revocationCheckingStrategy)
-            throws GeneralSecurityException {
-        var sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(new KeyManager[0], new TrustManager[] {new TrustAllTrustManager()}, null);
-
-        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationCheckingStrategy);
+            boolean requiresHostnameVerification,
+            RevocationCheckingStrategy revocationCheckingStrategy,
+            ClientCertificateManager clientCertificateManager,
+            Logging logging)
+            throws NoSuchAlgorithmException, KeyManagementException {
+        return new SecurityPlanImpl(
+                keyManagers -> {
+                    var sslContext = SSLContext.getInstance("TLS");
+                    sslContext.init(keyManagers, new TrustManager[] {new TrustAllTrustManager()}, null);
+                    return sslContext;
+                },
+                requiresHostnameVerification,
+                revocationCheckingStrategy,
+                clientCertificateManager,
+                logging);
     }
 
     public static SecurityPlan forCustomCASignedCertificates(
             List<File> certFiles,
             boolean requiresHostnameVerification,
-            RevocationCheckingStrategy revocationCheckingStrategy)
+            RevocationCheckingStrategy revocationCheckingStrategy,
+            ClientCertificateManager clientCertificateManager,
+            Logging logging)
             throws GeneralSecurityException, IOException {
-        var sslContext = configureSSLContext(certFiles, revocationCheckingStrategy);
-        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationCheckingStrategy);
+        var sslContext = configureSSLContextSupplier(certFiles, revocationCheckingStrategy);
+        return new SecurityPlanImpl(
+                sslContext,
+                requiresHostnameVerification,
+                revocationCheckingStrategy,
+                clientCertificateManager,
+                logging);
     }
 
     public static SecurityPlan forSystemCASignedCertificates(
-            boolean requiresHostnameVerification, RevocationCheckingStrategy revocationCheckingStrategy)
+            boolean requiresHostnameVerification,
+            RevocationCheckingStrategy revocationCheckingStrategy,
+            ClientCertificateManager clientCertificateManager,
+            Logging logging)
             throws GeneralSecurityException, IOException {
-        var sslContext = configureSSLContext(Collections.emptyList(), revocationCheckingStrategy);
-        return new SecurityPlanImpl(true, sslContext, requiresHostnameVerification, revocationCheckingStrategy);
+        var sslContext = configureSSLContextSupplier(Collections.emptyList(), revocationCheckingStrategy);
+        return new SecurityPlanImpl(
+                sslContext,
+                requiresHostnameVerification,
+                revocationCheckingStrategy,
+                clientCertificateManager,
+                logging);
     }
 
-    private static SSLContext configureSSLContext(
+    private static SSLContextSupplier configureSSLContextSupplier(
             List<File> customCertFiles, RevocationCheckingStrategy revocationCheckingStrategy)
             throws GeneralSecurityException, IOException {
         var trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -86,7 +116,6 @@ public class SecurityPlanImpl implements SecurityPlan {
 
         var pkixBuilderParameters = configurePKIXBuilderParameters(trustedKeyStore, revocationCheckingStrategy);
 
-        var sslContext = SSLContext.getInstance("TLS");
         var trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 
         if (pkixBuilderParameters == null) {
@@ -95,9 +124,11 @@ public class SecurityPlanImpl implements SecurityPlan {
             trustManagerFactory.init(new CertPathTrustManagerParameters(pkixBuilderParameters));
         }
 
-        sslContext.init(new KeyManager[0], trustManagerFactory.getTrustManagers(), null);
-
-        return sslContext;
+        return keyManagers -> {
+            var sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(keyManagers, trustManagerFactory.getTrustManagers(), null);
+            return sslContext;
+        };
     }
 
     private static PKIXBuilderParameters configurePKIXBuilderParameters(
@@ -143,23 +174,36 @@ public class SecurityPlanImpl implements SecurityPlan {
     }
 
     public static SecurityPlan insecure() {
-        return new SecurityPlanImpl(false, null, false, RevocationCheckingStrategy.NO_CHECKS);
+        return new SecurityPlanImpl();
     }
 
     private final boolean requiresEncryption;
-    private final SSLContext sslContext;
+    private final boolean requiresClientAuth;
     private final boolean requiresHostnameVerification;
     private final RevocationCheckingStrategy revocationCheckingStrategy;
+    private final Supplier<CompletionStage<SSLContext>> sslContextSupplier;
 
     private SecurityPlanImpl(
-            boolean requiresEncryption,
-            SSLContext sslContext,
+            SSLContextSupplier sslContextSupplier,
             boolean requiresHostnameVerification,
-            RevocationCheckingStrategy revocationCheckingStrategy) {
-        this.requiresEncryption = requiresEncryption;
-        this.sslContext = sslContext;
+            RevocationCheckingStrategy revocationCheckingStrategy,
+            ClientCertificateManager clientCertificateManager,
+            Logging logging)
+            throws NoSuchAlgorithmException, KeyManagementException {
+        this.requiresEncryption = true;
         this.requiresHostnameVerification = requiresHostnameVerification;
         this.revocationCheckingStrategy = revocationCheckingStrategy;
+        var sslContextManager = new SSLContextManager(clientCertificateManager, sslContextSupplier, logging);
+        this.sslContextSupplier = sslContextManager::getSSLContext;
+        this.requiresClientAuth = clientCertificateManager != null;
+    }
+
+    private SecurityPlanImpl() {
+        this.requiresEncryption = false;
+        this.requiresHostnameVerification = false;
+        this.revocationCheckingStrategy = RevocationCheckingStrategy.NO_CHECKS;
+        this.sslContextSupplier = Futures::completedWithNull;
+        this.requiresClientAuth = false;
     }
 
     @Override
@@ -168,8 +212,13 @@ public class SecurityPlanImpl implements SecurityPlan {
     }
 
     @Override
-    public SSLContext sslContext() {
-        return sslContext;
+    public boolean requiresClientAuth() {
+        return requiresClientAuth;
+    }
+
+    @Override
+    public CompletionStage<SSLContext> sslContext() {
+        return sslContextSupplier.get();
     }
 
     @Override

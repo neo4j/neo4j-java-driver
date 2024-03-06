@@ -90,6 +90,7 @@ class ConnectionHandlingIT {
         driver = driverFactory.newInstance(
                 neo4j.uri(),
                 authTokenProvider,
+                null,
                 Config.builder().withFetchSize(1).build(),
                 SecurityPlanImpl.insecure(),
                 null,

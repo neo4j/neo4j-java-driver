@@ -14,16 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async.connection;
+package org.neo4j.driver.internal;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import java.util.function.Function;
-import org.neo4j.driver.internal.BoltServerAddress;
+import java.io.File;
+import org.neo4j.driver.ClientCertificate;
 
-public interface ChannelConnector {
-    ChannelFuture connect(
-            BoltServerAddress address,
-            Bootstrap bootstrap,
-            Function<ChannelFuture, ChannelFuture> channelFutureExtensionMapper);
-}
+public record InternalClientCertificate(File certificate, File privateKey, String password)
+        implements ClientCertificate {}

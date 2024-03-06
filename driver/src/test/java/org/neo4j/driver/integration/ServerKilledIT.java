@@ -123,6 +123,6 @@ class ServerKilledIT {
     private Driver createDriver(Clock clock, Config config) {
         DriverFactory factory = new DriverFactoryWithClock(clock);
         return factory.newInstance(
-                neo4j.uri(), neo4j.authTokenManager(), config, SecurityPlanImpl.insecure(), null, null);
+                neo4j.uri(), neo4j.authTokenManager(), null, config, SecurityPlanImpl.insecure(), null, null);
     }
 }

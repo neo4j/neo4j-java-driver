@@ -128,7 +128,7 @@ class SessionIT {
     @Test
     void shouldHandleNullConfig() {
         // Given
-        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), null);
+        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), (Config) null);
         var session = driver.session();
 
         // When
@@ -1317,7 +1317,13 @@ class SessionIT {
     private Driver newDriverWithFixedRetries(int maxRetriesCount) {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic(maxRetriesCount);
         return driverFactory.newInstance(
-                neo4j.uri(), neo4j.authTokenManager(), noLoggingConfig(), SecurityPlanImpl.insecure(), null, null);
+                neo4j.uri(),
+                neo4j.authTokenManager(),
+                null,
+                noLoggingConfig(),
+                SecurityPlanImpl.insecure(),
+                null,
+                null);
     }
 
     private Driver newDriverWithLimitedRetries(int maxTxRetryTime) {

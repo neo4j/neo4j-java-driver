@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.Config;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.SecuritySettings;
 
@@ -53,7 +54,7 @@ class SecurityPlansTest {
     void testEncryptionSchemeEnablesEncryption(String scheme) {
         var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertTrue(securityPlan.requiresEncryption());
     }
@@ -63,7 +64,7 @@ class SecurityPlansTest {
     void testSystemCertCompatibleConfiguration(String scheme) {
         var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertTrue(securityPlan.requiresEncryption());
         assertTrue(securityPlan.requiresHostnameVerification());
@@ -75,7 +76,7 @@ class SecurityPlansTest {
     void testSelfSignedCertConfigDisablesHostnameVerification(String scheme) {
         var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertTrue(securityPlan.requiresEncryption());
         assertFalse(securityPlan.requiresHostnameVerification());
@@ -87,7 +88,9 @@ class SecurityPlansTest {
         var securitySettings =
                 new SecuritySettings.SecuritySettingsBuilder().withEncryption().build();
 
-        var ex = assertThrows(ClientException.class, () -> SecurityPlans.createSecurityPlan(securitySettings, scheme));
+        var ex = assertThrows(
+                ClientException.class,
+                () -> SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none()));
 
         assertTrue(ex.getMessage()
                 .contains(String.format(
@@ -101,7 +104,9 @@ class SecurityPlansTest {
                 .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
                 .build();
 
-        var ex = assertThrows(ClientException.class, () -> SecurityPlans.createSecurityPlan(securitySettings, scheme));
+        var ex = assertThrows(
+                ClientException.class,
+                () -> SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none()));
 
         assertTrue(ex.getMessage()
                 .contains(String.format(
@@ -116,7 +121,9 @@ class SecurityPlansTest {
                 .withEncryption()
                 .build();
 
-        var ex = assertThrows(ClientException.class, () -> SecurityPlans.createSecurityPlan(securitySettings, scheme));
+        var ex = assertThrows(
+                ClientException.class,
+                () -> SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none()));
 
         assertTrue(ex.getMessage()
                 .contains(String.format(
@@ -128,7 +135,7 @@ class SecurityPlansTest {
     void testNoEncryption(String scheme) {
         var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertFalse(securityPlan.requiresEncryption());
     }
@@ -139,7 +146,7 @@ class SecurityPlansTest {
         var securitySettings =
                 new SecuritySettings.SecuritySettingsBuilder().withEncryption().build();
 
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertTrue(securityPlan.requiresEncryption());
     }
@@ -152,7 +159,7 @@ class SecurityPlansTest {
                 .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
                 .build();
 
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertTrue(securityPlan.requiresEncryption());
     }
@@ -166,7 +173,7 @@ class SecurityPlansTest {
                 .withEncryption()
                 .build();
 
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertEquals(STRICT, securityPlan.revocationCheckingStrategy());
     }
@@ -180,7 +187,7 @@ class SecurityPlansTest {
                 .withEncryption()
                 .build();
 
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertEquals(VERIFY_IF_PRESENT, securityPlan.revocationCheckingStrategy());
     }
@@ -193,7 +200,7 @@ class SecurityPlansTest {
                 .withEncryption()
                 .build();
 
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme);
+        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertEquals(NO_CHECKS, securityPlan.revocationCheckingStrategy());
     }

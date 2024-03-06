@@ -265,7 +265,13 @@ class SessionBoltV3IT {
         var driverFactory = new MessageRecordingDriverFactory();
 
         try (var otherDriver = driverFactory.newInstance(
-                driver.uri(), driver.authTokenManager(), defaultConfig(), SecurityPlanImpl.insecure(), null, null)) {
+                driver.uri(),
+                driver.authTokenManager(),
+                null,
+                defaultConfig(),
+                SecurityPlanImpl.insecure(),
+                null,
+                null)) {
             List<Session> sessions = new ArrayList<>();
             List<Transaction> txs = new ArrayList<>();
             for (var i = 0; i < txCount; i++) {

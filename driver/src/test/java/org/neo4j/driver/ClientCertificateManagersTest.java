@@ -14,16 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async.connection;
+package org.neo4j.driver;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import java.util.function.Function;
-import org.neo4j.driver.internal.BoltServerAddress;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 
-public interface ChannelConnector {
-    ChannelFuture connect(
-            BoltServerAddress address,
-            Bootstrap bootstrap,
-            Function<ChannelFuture, ChannelFuture> channelFutureExtensionMapper);
+import java.io.File;
+import org.junit.jupiter.api.Test;
+
+class ClientCertificateManagersTest {
+    @Test
+    void shoudReturnRotatingManager() {
+        var file = mock(File.class);
+        var certificate = ClientCertificates.of(file, file);
+        var manager = ClientCertificateManagers.rotating(certificate);
+
+        assertNotNull(manager);
+    }
 }

@@ -14,16 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async.connection;
+package org.neo4j.driver;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import java.util.function.Function;
-import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.util.Preview;
 
-public interface ChannelConnector {
-    ChannelFuture connect(
-            BoltServerAddress address,
-            Bootstrap bootstrap,
-            Function<ChannelFuture, ChannelFuture> channelFutureExtensionMapper);
+/**
+ * A {@link ClientCertificateManager} that supports rotating its {@link ClientCertificate}.
+ * @since 5.19
+ */
+@Preview(name = "mTLS")
+public sealed interface RotatingClientCertificateManager extends ClientCertificateManager
+        permits org.neo4j.driver.internal.InternalRotatingClientCertificateManager {
+    /**
+     * Rotates the current {@link ClientCertificate}.
+     * @param clientCertificate the new certificate, must not be {@literal null}
+     */
+    void rotate(ClientCertificate clientCertificate);
 }

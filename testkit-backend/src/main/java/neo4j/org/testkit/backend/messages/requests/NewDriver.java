@@ -45,6 +45,9 @@ import neo4j.org.testkit.backend.messages.responses.ResolverResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AuthTokenManager;
+import org.neo4j.driver.ClientCertificateManager;
+import org.neo4j.driver.ClientCertificateManagers;
+import org.neo4j.driver.ClientCertificates;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -101,6 +104,16 @@ public class NewDriver implements TestkitRequest {
         configBuilder.withNotificationConfig(
                 toNotificationConfig(data.notificationsMinSeverity, data.notificationsDisabledCategories));
         configBuilder.withDriverMetrics();
+        var clientCertificateManager = Optional.ofNullable(data.getClientCertificateProviderId())
+                .map(testkitState::getClientCertificateManager)
+                .or(() -> Optional.ofNullable(data.getClientCertificate())
+                        .map(ClientCertificate::getData)
+                        .map(certificateData -> ClientCertificates.of(
+                                Paths.get(certificateData.getCertfile()).toFile(),
+                                Paths.get(certificateData.getKeyfile()).toFile(),
+                                certificateData.getPassword()))
+                        .map(ClientCertificateManagers::rotating))
+                .orElse(null);
         configBuilder.withLogging(testkitState.getLogging());
         org.neo4j.driver.Driver driver;
         var config = configBuilder.build();
@@ -108,6 +121,7 @@ public class NewDriver implements TestkitRequest {
             driver = driver(
                     URI.create(data.uri),
                     authTokenManager,
+                    clientCertificateManager,
                     config,
                     domainNameResolver,
                     configureSecuritySettingsBuilder(),
@@ -203,15 +217,17 @@ public class NewDriver implements TestkitRequest {
     private org.neo4j.driver.Driver driver(
             URI uri,
             AuthTokenManager authTokenManager,
+            ClientCertificateManager clientCertificateManager,
             Config config,
             DomainNameResolver domainNameResolver,
             SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder,
             TestkitState testkitState,
             String driverId) {
         var securitySettings = securitySettingsBuilder.build();
-        var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, uri.getScheme());
+        var securityPlan = SecurityPlans.createSecurityPlan(
+                securitySettings, uri.getScheme(), clientCertificateManager, config.logging());
         return new DriverFactoryWithDomainNameResolver(domainNameResolver, testkitState, driverId)
-                .newInstance(uri, authTokenManager, config, securityPlan, null, null);
+                .newInstance(uri, authTokenManager, clientCertificateManager, config, securityPlan, null, null);
     }
 
     private Optional<TestkitResponse> handleExceptionAsErrorResponse(TestkitState testkitState, RuntimeException e) {
@@ -293,6 +309,8 @@ public class NewDriver implements TestkitRequest {
         private boolean encrypted;
         private List<String> trustedCertificates;
         private Boolean telemetryDisabled;
+        private ClientCertificate clientCertificate;
+        private String clientCertificateProviderId;
     }
 
     @RequiredArgsConstructor

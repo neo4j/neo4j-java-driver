@@ -25,6 +25,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.ssl.SslHandler;
 import java.time.Clock;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Logging;
@@ -38,6 +39,7 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel> {
     private final SecurityPlan securityPlan;
     private final int connectTimeoutMillis;
     private final AuthTokenManager authTokenManager;
+    private final SSLContext sslContext;
     private final Clock clock;
     private final Logging logging;
 
@@ -46,12 +48,14 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel> {
             SecurityPlan securityPlan,
             int connectTimeoutMillis,
             AuthTokenManager authTokenManager,
+            SSLContext sslContext,
             Clock clock,
             Logging logging) {
         this.address = address;
         this.securityPlan = securityPlan;
         this.connectTimeoutMillis = connectTimeoutMillis;
         this.authTokenManager = authTokenManager;
+        this.sslContext = sslContext;
         this.clock = clock;
         this.logging = logging;
     }
@@ -74,8 +78,8 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel> {
     }
 
     private SSLEngine createSslEngine() {
-        var sslContext = securityPlan.sslContext();
         var sslEngine = sslContext.createSSLEngine(address.host(), address.port());
+        sslEngine.setNeedClientAuth(securityPlan.requiresClientAuth());
         sslEngine.setUseClientMode(true);
         if (securityPlan.requiresHostnameVerification()) {
             var sslParameters = sslEngine.getSSLParameters();
