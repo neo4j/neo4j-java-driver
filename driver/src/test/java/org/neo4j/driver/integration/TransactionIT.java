@@ -29,12 +29,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 
+import io.github.nettyplus.leakdetector.junit.NettyLeakDetectorExtension;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -53,6 +55,7 @@ import org.neo4j.driver.testutil.SessionExtension;
 import org.neo4j.driver.testutil.TestUtil;
 
 @ParallelizableIT
+@ExtendWith(NettyLeakDetectorExtension.class)
 class TransactionIT {
     @RegisterExtension
     static final SessionExtension session = new SessionExtension();
