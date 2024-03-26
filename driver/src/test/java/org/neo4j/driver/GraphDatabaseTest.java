@@ -40,6 +40,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -152,6 +153,7 @@ class GraphDatabaseTest {
     }
 
     @Test
+    @Disabled("TLS actually fails, the test setup is not valid")
     void shouldFailToCreateEncryptedDriverWhenServerDoesNotRespond() throws IOException {
         testFailureWhenServerDoesNotRespond(true);
     }

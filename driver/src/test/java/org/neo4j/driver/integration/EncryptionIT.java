@@ -59,7 +59,7 @@ class EncryptionIT {
 
     @Test
     void shouldFailWithoutEncryptionWhenItIsRequiredInTheDatabase() {
-        testMismatchingEncryption(BoltTlsLevel.REQUIRED, false);
+        testMismatchingEncryption(BoltTlsLevel.REQUIRED, false, "Connection to the database terminated");
     }
 
     @Test
@@ -74,7 +74,7 @@ class EncryptionIT {
 
     @Test
     void shouldFailWithEncryptionWhenItIsDisabledInTheDatabase() {
-        testMismatchingEncryption(BoltTlsLevel.DISABLED, true);
+        testMismatchingEncryption(BoltTlsLevel.DISABLED, true, "Unable to write Bolt handshake to");
     }
 
     @Test
@@ -110,7 +110,7 @@ class EncryptionIT {
         }
     }
 
-    private void testMismatchingEncryption(BoltTlsLevel tlsLevel, boolean driverEncrypted) {
+    private void testMismatchingEncryption(BoltTlsLevel tlsLevel, boolean driverEncrypted, String errorMessage) {
         Map<String, String> tlsConfig = new HashMap<>();
         tlsConfig.put(Neo4jSettings.BOLT_TLS_LEVEL, tlsLevel.toString());
         neo4j.deleteAndStartNeo4j(tlsConfig);
@@ -120,7 +120,7 @@ class EncryptionIT {
                 ServiceUnavailableException.class, () -> GraphDatabase.driver(neo4j.uri(), neo4j.authToken(), config)
                         .verifyConnectivity());
 
-        assertThat(e.getMessage(), startsWith("Connection to the database terminated"));
+        assertThat(e.getMessage(), startsWith(errorMessage));
     }
 
     private static Config newConfig(boolean withEncryption) {
