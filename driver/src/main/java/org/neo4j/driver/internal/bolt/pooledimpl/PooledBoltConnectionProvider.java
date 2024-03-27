@@ -444,7 +444,7 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
 
     private CompletionStage<Void> livenessCheckStage(ConnectionEntry entry) {
         CompletionStage<Void> stage;
-        if (entry.lastUsedTimestamp + idleBeforeTest < clock.millis()) {
+        if (idleBeforeTest >= 0 && entry.lastUsedTimestamp + idleBeforeTest < clock.millis()) {
             var future = new CompletableFuture<Void>();
             entry.connection
                     .reset()
