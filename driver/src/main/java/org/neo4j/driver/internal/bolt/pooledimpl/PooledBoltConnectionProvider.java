@@ -51,7 +51,9 @@ import org.neo4j.driver.internal.bolt.api.BoltConnectionState;
 import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
 import org.neo4j.driver.internal.bolt.api.DatabaseName;
 import org.neo4j.driver.internal.bolt.api.NotificationConfig;
+import org.neo4j.driver.internal.bolt.api.ResponseHandler;
 import org.neo4j.driver.internal.bolt.api.exception.MinVersionAcquisitionException;
+import org.neo4j.driver.internal.bolt.api.summary.ResetSummary;
 import org.neo4j.driver.internal.bolt.basicimpl.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.bolt.basicimpl.messaging.v51.BoltProtocolV51;
 import org.neo4j.driver.internal.bolt.routedimpl.cluster.RoutingContext;
@@ -175,126 +177,16 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
                 return;
             }
 
-            ConnectionEntryWithMetadata connectionEntryWithMetadata = null;
-            Throwable pendingAcquisitionsFull = null;
-            var empty = new AtomicBoolean();
-            synchronized (this) {
-                try {
-                    empty.set(pooledConnectionEntries.isEmpty());
-                    try {
-                        // go over existing entries first
-                        connectionEntryWithMetadata =
-                                acquireExistingEntry(databaseName, authMap, mode, impersonatedUser, minVersion);
-                    } catch (MinVersionAcquisitionException e) {
-                        acquisitionFuture.completeExceptionally(e);
-                        return;
-                    }
-
-                    if (connectionEntryWithMetadata == null) {
-                        // no entry found
-                        if (pooledConnectionEntries.size() < maxSize) {
-                            // space is available, reserve
-                            var acquiredEntry = new ConnectionEntry(null);
-                            pooledConnectionEntries.add(acquiredEntry);
-                            connectionEntryWithMetadata = new ConnectionEntryWithMetadata(acquiredEntry, false);
-                        } else {
-                            // fallback to queue
-                            if (pendingAcquisitions.size() < 100 && !acquisitionFuture.isDone()) {
-                                pendingAcquisitions.add(acquisitionFuture);
-                            } else {
-                                pendingAcquisitionsFull = new TransientException(
-                                        "N/A", "Connection pool pending acquisition queue is full.");
-                            }
-                        }
-                    }
-
-                } catch (Throwable throwable) {
-                    if (connectionEntryWithMetadata != null) {
-                        if (connectionEntryWithMetadata.connectionEntry.connection != null) {
-                            // not new entry, make it available
-                            connectionEntryWithMetadata.connectionEntry.available = true;
-                        } else {
-                            // new empty entry
-                            pooledConnectionEntries.remove(connectionEntryWithMetadata.connectionEntry);
-                        }
-                    }
-                    pendingAcquisitions.remove(acquisitionFuture);
-                    acquisitionFuture.completeExceptionally(throwable);
-                }
-            }
-
-            if (pendingAcquisitionsFull != null) {
-                // no space in queue was available
-                acquisitionFuture.completeExceptionally(pendingAcquisitionsFull);
-            } else if (connectionEntryWithMetadata != null) {
-                if (connectionEntryWithMetadata.connectionEntry.connection != null) {
-                    // entry with connection
-                    var entry = connectionEntryWithMetadata.connectionEntry;
-                    var pooledConnection = new PooledBoltConnection(
-                            entry.connection, this, () -> release(entry), () -> purge(entry), logging);
-                    reauthStage(connectionEntryWithMetadata, authMap).whenComplete((ignored, throwable) -> {
-                        if (!acquisitionFuture.complete(pooledConnection)) {
-                            // acquisition timed out
-                            CompletableFuture<PooledBoltConnection> pendingAcquisition;
-                            synchronized (this) {
-                                pendingAcquisition = pendingAcquisitions.poll();
-                                if (pendingAcquisition == null) {
-                                    // nothing pending, just make the entry available
-                                    entry.available = true;
-                                }
-                            }
-                            if (pendingAcquisition != null) {
-                                pendingAcquisition.complete(pooledConnection);
-                            }
-                        }
-                    });
-                } else {
-                    // get reserved entry
-                    var entry = connectionEntryWithMetadata.connectionEntry;
-                    boltConnectionProvider
-                            .connect(
-                                    databaseName,
-                                    empty.get()
-                                            ? () -> CompletableFuture.completedStage(authMap)
-                                            : authMapStageSupplier,
-                                    mode,
-                                    bookmarks,
-                                    impersonatedUser,
-                                    minVersion,
-                                    notificationConfig,
-                                    (ignored) -> {})
-                            .whenComplete((boltConnection, throwable) -> {
-                                var error = completionExceptionCause(throwable);
-                                if (error != null) {
-                                    // todo decide if retry can be done
-                                    synchronized (this) {
-                                        pooledConnectionEntries.remove(entry);
-                                    }
-                                    acquisitionFuture.completeExceptionally(error);
-                                } else {
-                                    synchronized (this) {
-                                        entry.connection = boltConnection;
-                                    }
-                                    var pooledConnection = new PooledBoltConnection(
-                                            boltConnection, this, () -> release(entry), () -> purge(entry), logging);
-                                    if (!acquisitionFuture.complete(pooledConnection)) {
-                                        // acquisition timed out
-                                        CompletableFuture<PooledBoltConnection> pendingAcquisition;
-                                        synchronized (this) {
-                                            pendingAcquisition = pendingAcquisitions.poll();
-                                            if (pendingAcquisition == null) {
-                                                // nothing pending, just make the entry available
-                                                entry.available = true;
-                                            }
-                                        }
-                                        if (pendingAcquisition != null) {
-                                            pendingAcquisition.complete(pooledConnection);
-                                        }
-                                    }
-                                }
-                            });
-                }
-            }
+            connect(
+                    acquisitionFuture,
+                    databaseName,
+                    authMap,
+                    authMapStageSupplier,
+                    mode,
+                    bookmarks,
+                    impersonatedUser,
+                    minVersion,
+                    notificationConfig);
         });
 
         return acquisitionFuture
@@ -304,6 +196,157 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
                     }
                 })
                 .thenApply(Function.identity());
+    }
+
+    public void connect(
+            CompletableFuture<PooledBoltConnection> acquisitionFuture,
+            DatabaseName databaseName,
+            Map<String, Value> authMap,
+            Supplier<CompletionStage<Map<String, Value>>> authMapStageSupplier,
+            AccessMode mode,
+            Set<String> bookmarks,
+            String impersonatedUser,
+            BoltProtocolVersion minVersion,
+            NotificationConfig notificationConfig) {
+
+        ConnectionEntryWithMetadata connectionEntryWithMetadata = null;
+        Throwable pendingAcquisitionsFull = null;
+        var empty = new AtomicBoolean();
+        synchronized (this) {
+            try {
+                empty.set(pooledConnectionEntries.isEmpty());
+                try {
+                    // go over existing entries first
+                    connectionEntryWithMetadata =
+                            acquireExistingEntry(databaseName, authMap, mode, impersonatedUser, minVersion);
+                } catch (MinVersionAcquisitionException e) {
+                    acquisitionFuture.completeExceptionally(e);
+                    return;
+                }
+
+                if (connectionEntryWithMetadata == null) {
+                    // no entry found
+                    if (pooledConnectionEntries.size() < maxSize) {
+                        // space is available, reserve
+                        var acquiredEntry = new ConnectionEntry(null);
+                        pooledConnectionEntries.add(acquiredEntry);
+                        connectionEntryWithMetadata = new ConnectionEntryWithMetadata(acquiredEntry, false);
+                    } else {
+                        // fallback to queue
+                        if (pendingAcquisitions.size() < 100 && !acquisitionFuture.isDone()) {
+                            pendingAcquisitions.add(acquisitionFuture);
+                        } else {
+                            pendingAcquisitionsFull =
+                                    new TransientException("N/A", "Connection pool pending acquisition queue is full.");
+                        }
+                    }
+                }
+
+            } catch (Throwable throwable) {
+                if (connectionEntryWithMetadata != null) {
+                    if (connectionEntryWithMetadata.connectionEntry.connection != null) {
+                        // not new entry, make it available
+                        connectionEntryWithMetadata.connectionEntry.available = true;
+                    } else {
+                        // new empty entry
+                        pooledConnectionEntries.remove(connectionEntryWithMetadata.connectionEntry);
+                    }
+                }
+                pendingAcquisitions.remove(acquisitionFuture);
+                acquisitionFuture.completeExceptionally(throwable);
+            }
+        }
+
+        if (pendingAcquisitionsFull != null) {
+            // no space in queue was available
+            acquisitionFuture.completeExceptionally(pendingAcquisitionsFull);
+        } else if (connectionEntryWithMetadata != null) {
+            if (connectionEntryWithMetadata.connectionEntry.connection != null) {
+                // entry with connection
+                var entryWithMetadata = connectionEntryWithMetadata;
+                var entry = entryWithMetadata.connectionEntry;
+
+                livenessCheckStage(entry).whenComplete((ignored, throwable) -> {
+                    if (throwable != null) {
+                        // liveness check failed
+                        purge(entry);
+                        connect(
+                                acquisitionFuture,
+                                databaseName,
+                                authMap,
+                                authMapStageSupplier,
+                                mode,
+                                bookmarks,
+                                impersonatedUser,
+                                minVersion,
+                                notificationConfig);
+                    } else {
+                        // liveness check green or not needed
+                        var pooledConnection = new PooledBoltConnection(
+                                entry.connection, this, () -> release(entry), () -> purge(entry), logging);
+                        reauthStage(entryWithMetadata, authMap).whenComplete((ignored2, throwable2) -> {
+                            if (!acquisitionFuture.complete(pooledConnection)) {
+                                // acquisition timed out
+                                CompletableFuture<PooledBoltConnection> pendingAcquisition;
+                                synchronized (this) {
+                                    pendingAcquisition = pendingAcquisitions.poll();
+                                    if (pendingAcquisition == null) {
+                                        // nothing pending, just make the entry available
+                                        entry.available = true;
+                                    }
+                                }
+                                if (pendingAcquisition != null) {
+                                    pendingAcquisition.complete(pooledConnection);
+                                }
+                            }
+                        });
+                    }
+                });
+            } else {
+                // get reserved entry
+                var entry = connectionEntryWithMetadata.connectionEntry;
+                boltConnectionProvider
+                        .connect(
+                                databaseName,
+                                empty.get() ? () -> CompletableFuture.completedStage(authMap) : authMapStageSupplier,
+                                mode,
+                                bookmarks,
+                                impersonatedUser,
+                                minVersion,
+                                notificationConfig,
+                                (ignored) -> {})
+                        .whenComplete((boltConnection, throwable) -> {
+                            var error = completionExceptionCause(throwable);
+                            if (error != null) {
+                                // todo decide if retry can be done
+                                synchronized (this) {
+                                    pooledConnectionEntries.remove(entry);
+                                }
+                                acquisitionFuture.completeExceptionally(error);
+                            } else {
+                                synchronized (this) {
+                                    entry.connection = boltConnection;
+                                }
+                                var pooledConnection = new PooledBoltConnection(
+                                        boltConnection, this, () -> release(entry), () -> purge(entry), logging);
+                                if (!acquisitionFuture.complete(pooledConnection)) {
+                                    // acquisition timed out
+                                    CompletableFuture<PooledBoltConnection> pendingAcquisition;
+                                    synchronized (this) {
+                                        pendingAcquisition = pendingAcquisitions.poll();
+                                        if (pendingAcquisition == null) {
+                                            // nothing pending, just make the entry available
+                                            entry.available = true;
+                                        }
+                                    }
+                                    if (pendingAcquisition != null) {
+                                        pendingAcquisition.complete(pooledConnection);
+                                    }
+                                }
+                            }
+                        });
+            }
+        }
     }
 
     private synchronized ConnectionEntryWithMetadata acquireExistingEntry(
@@ -399,6 +442,30 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
         return stage;
     }
 
+    private CompletionStage<Void> livenessCheckStage(ConnectionEntry entry) {
+        CompletionStage<Void> stage;
+        if (entry.lastUsedTimestamp + idleBeforeTest < clock.millis()) {
+            var future = new CompletableFuture<Void>();
+            entry.connection
+                    .reset()
+                    .thenCompose(conn -> conn.flush(new ResponseHandler() {
+                        @Override
+                        public void onError(Throwable throwable) {
+                            future.completeExceptionally(throwable);
+                        }
+
+                        @Override
+                        public void onResetSummary(ResetSummary summary) {
+                            future.complete(null);
+                        }
+                    }));
+            stage = future;
+        } else {
+            stage = CompletableFuture.completedStage(null);
+        }
+        return stage;
+    }
+
     @Override
     public CompletionStage<Void> verifyConnectivity(Map<String, Value> authMap) {
         return connect(
@@ -479,6 +546,7 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
     private void release(ConnectionEntry entry) {
         CompletableFuture<PooledBoltConnection> pendingAcquisition;
         synchronized (this) {
+            entry.lastUsedTimestamp = clock.millis();
             pendingAcquisition = pendingAcquisitions.poll();
             if (pendingAcquisition == null) {
                 // nothing pending, just make the entry available
@@ -508,6 +576,7 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
     private static class ConnectionEntry {
         private BoltConnection connection;
         private boolean available;
+        private long lastUsedTimestamp;
 
         private ConnectionEntry(BoltConnection connection) {
             this.connection = connection;
