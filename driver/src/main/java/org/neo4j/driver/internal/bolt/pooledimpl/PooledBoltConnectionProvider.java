@@ -133,6 +133,7 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
                 address, securityPlan, routingContext, boltAgent, userAgent, connectTimeoutMillis, metricsListener);
     }
 
+    @SuppressWarnings({"ReassignedVariable", "ConstantValue"})
     @Override
     public CompletionStage<BoltConnection> connect(
             DatabaseName databaseName,
@@ -174,99 +175,28 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
                 return;
             }
 
-            ConnectionEntry acquiredEntry = null;
+            ConnectionEntryWithMetadata connectionEntryWithMetadata = null;
             Throwable pendingAcquisitionsFull = null;
             var empty = new AtomicBoolean();
-            var reauthStage = CompletableFuture.<Void>completedStage(null);
             synchronized (this) {
                 try {
                     empty.set(pooledConnectionEntries.isEmpty());
-                    // go over existing entries first
-                    var iterator = pooledConnectionEntries.iterator();
-                    while (iterator.hasNext()) {
-                        var connectionEntry = iterator.next();
-
-                        // unavailable
-                        if (!connectionEntry.available) {
-                            continue;
-                        }
-
-                        var connection = connectionEntry.connection;
-                        // unusable
-                        if (connection.state() != BoltConnectionState.OPEN) {
-                            iterator.remove();
-                            continue;
-                        }
-
-                        // lower version is present
-                        if (minVersion != null
-                                && minVersion.compareTo(
-                                                connection.connectionInfo().protocolVersion())
-                                        > 0) {
-                            acquisitionFuture.completeExceptionally(new MinVersionAcquisitionException(
-                                    "lower version", connection.connectionInfo().protocolVersion()));
-                            return;
-                        }
-
-                        // the pool must not have unauthenticated connections
-                        var lastestAuthMillis = connection
-                                .latestAuthMillis()
-                                .toCompletableFuture()
-                                .join();
-
-                        var expiredByError = minAuthTimestamp > 0 && lastestAuthMillis <= minAuthTimestamp;
-                        var authMatches = authMap.equals(connectionEntry.connection.authMap());
-
-                        if (expiredByError || !authMatches) {
-                            if (new BoltProtocolVersion(5, 1)
-                                            .compareTo(connectionEntry
-                                                    .connection
-                                                    .connectionInfo()
-                                                    .protocolVersion())
-                                    > 0) {
-                                log.debug("reauth is not supported, the connection is voided");
-                                iterator.remove();
-                                connectionEntry.connection.close().whenComplete((ignored, throwable) -> {
-                                    if (throwable != null) {
-                                        log.warn(
-                                                "Connection close has failed with %s.",
-                                                throwable.getClass().getCanonicalName());
-                                    }
-                                });
-                                continue;
-                            }
-                            reauthStage = connectionEntry
-                                    .connection
-                                    .logoff()
-                                    .thenCompose(ignored -> connection.logon(authMap))
-                                    .handle((ignored, throwable) -> {
-                                        if (throwable != null) {
-                                            connection.close();
-                                            synchronized (this) {
-                                                pooledConnectionEntries.remove(connectionEntry);
-                                            }
-                                        }
-                                        return null;
-                                    });
-                        }
-                        log.debug("Connection acquired from the pool. " + address);
-                        connectionEntry.available = false;
-                        connection.setDatabase(
-                                databaseName != null
-                                        ? databaseName.databaseName().orElse(null)
-                                        : null);
-                        connection.setAccessMode(mode);
-                        connection.setImpersonatedUser(impersonatedUser);
-                        acquiredEntry = connectionEntry;
-                        break;
+                    try {
+                        // go over existing entries first
+                        connectionEntryWithMetadata =
+                                acquireExistingEntry(databaseName, authMap, mode, impersonatedUser, minVersion);
+                    } catch (MinVersionAcquisitionException e) {
+                        acquisitionFuture.completeExceptionally(e);
+                        return;
                     }
 
-                    if (acquiredEntry == null) {
+                    if (connectionEntryWithMetadata == null) {
                         // no entry found
                         if (pooledConnectionEntries.size() < maxSize) {
                             // space is available, reserve
-                            acquiredEntry = new ConnectionEntry(null);
+                            var acquiredEntry = new ConnectionEntry(null);
                             pooledConnectionEntries.add(acquiredEntry);
+                            connectionEntryWithMetadata = new ConnectionEntryWithMetadata(acquiredEntry, false);
                         } else {
                             // fallback to queue
                             if (pendingAcquisitions.size() < 100 && !acquisitionFuture.isDone()) {
@@ -279,8 +209,14 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
                     }
 
                 } catch (Throwable throwable) {
-                    if (acquiredEntry != null) {
-                        acquiredEntry.available = true;
+                    if (connectionEntryWithMetadata != null) {
+                        if (connectionEntryWithMetadata.connectionEntry.connection != null) {
+                            // not new entry, make it available
+                            connectionEntryWithMetadata.connectionEntry.available = true;
+                        } else {
+                            // new empty entry
+                            pooledConnectionEntries.remove(connectionEntryWithMetadata.connectionEntry);
+                        }
                     }
                     pendingAcquisitions.remove(acquisitionFuture);
                     acquisitionFuture.completeExceptionally(throwable);
@@ -290,13 +226,13 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
             if (pendingAcquisitionsFull != null) {
                 // no space in queue was available
                 acquisitionFuture.completeExceptionally(pendingAcquisitionsFull);
-            } else if (acquiredEntry != null) {
-                if (acquiredEntry.connection != null) {
+            } else if (connectionEntryWithMetadata != null) {
+                if (connectionEntryWithMetadata.connectionEntry.connection != null) {
                     // entry with connection
-                    var entry = acquiredEntry;
+                    var entry = connectionEntryWithMetadata.connectionEntry;
                     var pooledConnection = new PooledBoltConnection(
                             entry.connection, this, () -> release(entry), () -> purge(entry), logging);
-                    reauthStage.whenComplete((ignored, throwable) -> {
+                    reauthStage(connectionEntryWithMetadata, authMap).whenComplete((ignored, throwable) -> {
                         if (!acquisitionFuture.complete(pooledConnection)) {
                             // acquisition timed out
                             CompletableFuture<PooledBoltConnection> pendingAcquisition;
@@ -314,7 +250,7 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
                     });
                 } else {
                     // get reserved entry
-                    var entry = acquiredEntry;
+                    var entry = connectionEntryWithMetadata.connectionEntry;
                     boltConnectionProvider
                             .connect(
                                     databaseName,
@@ -368,6 +304,99 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
                     }
                 })
                 .thenApply(Function.identity());
+    }
+
+    private synchronized ConnectionEntryWithMetadata acquireExistingEntry(
+            DatabaseName databaseName,
+            Map<String, Value> authMap,
+            AccessMode mode,
+            String impersonatedUser,
+            BoltProtocolVersion minVersion) {
+        ConnectionEntryWithMetadata connectionEntryWithMetadata = null;
+        var iterator = pooledConnectionEntries.iterator();
+        while (iterator.hasNext()) {
+            var connectionEntry = iterator.next();
+
+            // unavailable
+            if (!connectionEntry.available) {
+                continue;
+            }
+
+            var connection = connectionEntry.connection;
+            // unusable
+            if (connection.state() != BoltConnectionState.OPEN) {
+                iterator.remove();
+                continue;
+            }
+
+            // lower version is present
+            if (minVersion != null
+                    && minVersion.compareTo(connection.connectionInfo().protocolVersion()) > 0) {
+                throw new MinVersionAcquisitionException(
+                        "lower version", connection.connectionInfo().protocolVersion());
+            }
+
+            // the pool must not have unauthenticated connections
+            var lastestAuthMillis =
+                    connection.latestAuthMillis().toCompletableFuture().join();
+
+            var expiredByError = minAuthTimestamp > 0 && lastestAuthMillis <= minAuthTimestamp;
+            var authMatches = authMap.equals(connectionEntry.connection.authMap());
+            var reauthNeeded = expiredByError || !authMatches;
+
+            if (reauthNeeded) {
+                if (new BoltProtocolVersion(5, 1)
+                                .compareTo(connectionEntry
+                                        .connection
+                                        .connectionInfo()
+                                        .protocolVersion())
+                        > 0) {
+                    log.debug("reauth is not supported, the connection is voided");
+                    iterator.remove();
+                    connectionEntry.connection.close().whenComplete((ignored, throwable) -> {
+                        if (throwable != null) {
+                            log.warn(
+                                    "Connection close has failed with %s.",
+                                    throwable.getClass().getCanonicalName());
+                        }
+                    });
+                    continue;
+                }
+            }
+            log.debug("Connection acquired from the pool. " + address);
+            connectionEntry.available = false;
+            connection.setDatabase(
+                    databaseName != null ? databaseName.databaseName().orElse(null) : null);
+            connection.setAccessMode(mode);
+            connection.setImpersonatedUser(impersonatedUser);
+            connectionEntryWithMetadata = new ConnectionEntryWithMetadata(connectionEntry, reauthNeeded);
+            break;
+        }
+        return connectionEntryWithMetadata;
+    }
+
+    private CompletionStage<Void> reauthStage(
+            ConnectionEntryWithMetadata connectionEntryWithMetadata, Map<String, Value> authMap) {
+        CompletionStage<Void> stage;
+        if (connectionEntryWithMetadata.reauthNeeded) {
+            stage = connectionEntryWithMetadata
+                    .connectionEntry
+                    .connection
+                    .logoff()
+                    .thenCompose(conn -> conn.logon(authMap))
+                    .handle((ignored, throwable) -> {
+                        if (throwable != null) {
+                            connectionEntryWithMetadata.connectionEntry.connection.close();
+                            synchronized (this) {
+                                pooledConnectionEntries.remove(connectionEntryWithMetadata.connectionEntry);
+                            }
+                        }
+                        return null;
+                    });
+        } else {
+            stage = CompletableFuture.completedStage(null);
+        }
+        return stage;
     }
 
     @Override
@@ -482,6 +511,16 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
 
         private ConnectionEntry(BoltConnection connection) {
             this.connection = connection;
+        }
+    }
+
+    private static class ConnectionEntryWithMetadata {
+        private final ConnectionEntry connectionEntry;
+        private final boolean reauthNeeded;
+
+        private ConnectionEntryWithMetadata(ConnectionEntry connectionEntry, boolean reauthNeeded) {
+            this.connectionEntry = connectionEntry;
+            this.reauthNeeded = reauthNeeded;
         }
     }
 }
