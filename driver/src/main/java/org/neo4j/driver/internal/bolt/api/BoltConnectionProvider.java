@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.bolt.routedimpl.cluster.RoutingContext;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
 public interface BoltConnectionProvider {
@@ -36,7 +37,8 @@ public interface BoltConnectionProvider {
             RoutingContext routingContext,
             BoltAgent boltAgent,
             String userAgent,
-            int connectTimeoutMillis);
+            int connectTimeoutMillis,
+            MetricsListener metricsListener);
 
     CompletionStage<BoltConnection> connect(
             DatabaseName databaseName,

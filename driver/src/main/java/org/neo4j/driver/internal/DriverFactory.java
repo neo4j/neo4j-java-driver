@@ -184,7 +184,8 @@ public class DriverFactory {
                     new RoutingContext(uri),
                     boltAgent,
                     config.userAgent(),
-                    config.connectionTimeoutMillis());
+                    config.connectionTimeoutMillis(),
+                    metricsProvider.metricsListener());
             // todo assertNoRoutingContext(uri, routingSettings);
             var sessionFactory = createSessionFactory(boltConnectionProvider, retryLogic, config, authTokenManager);
             var driver = createDriver(securityPlan, sessionFactory, metricsProvider, config);

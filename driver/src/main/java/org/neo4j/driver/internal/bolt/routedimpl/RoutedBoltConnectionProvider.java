@@ -66,6 +66,7 @@ import org.neo4j.driver.internal.bolt.routedimpl.cluster.RoutingTableRegistry;
 import org.neo4j.driver.internal.bolt.routedimpl.cluster.RoutingTableRegistryImpl;
 import org.neo4j.driver.internal.bolt.routedimpl.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
 import org.neo4j.driver.internal.bolt.routedimpl.cluster.loadbalancing.LoadBalancingStrategy;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -103,6 +104,7 @@ public class RoutedBoltConnectionProvider implements BoltConnectionProvider {
     private int connectTimeoutMillis;
     private CompletableFuture<Void> closeFuture;
     private final Clock clock;
+    private MetricsListener metricsListener;
 
     public RoutedBoltConnectionProvider(
             Supplier<BoltConnectionProvider> boltConnectionProviderSupplier,
@@ -137,7 +139,8 @@ public class RoutedBoltConnectionProvider implements BoltConnectionProvider {
             RoutingContext routingContext,
             BoltAgent boltAgent,
             String userAgent,
-            int connectTimeoutMillis) {
+            int connectTimeoutMillis,
+            MetricsListener metricsListener) {
         this.address = address;
         this.securityPlan = securityPlan;
         this.routingContext = routingContext;
@@ -146,6 +149,7 @@ public class RoutedBoltConnectionProvider implements BoltConnectionProvider {
         this.connectTimeoutMillis = connectTimeoutMillis;
         this.rediscovery = new RediscoveryImpl(address, resolver, logging, domainNameResolver);
         this.registry = new RoutingTableRegistryImpl(this::get, rediscovery, clock, logging, 1000);
+        this.metricsListener = Objects.requireNonNull(metricsListener);
 
         return CompletableFuture.completedStage(null);
     }
@@ -430,7 +434,14 @@ public class RoutedBoltConnectionProvider implements BoltConnectionProvider {
             var provider = addressToProvider.get(address);
             if (provider == null) {
                 provider = boltConnectionProviderSupplier.get();
-                provider.init(address, securityPlan, routingContext, boltAgent, userAgent, connectTimeoutMillis);
+                provider.init(
+                        address,
+                        securityPlan,
+                        routingContext,
+                        boltAgent,
+                        userAgent,
+                        connectTimeoutMillis,
+                        metricsListener);
                 addressToProvider.put(address, provider);
             }
             return provider;

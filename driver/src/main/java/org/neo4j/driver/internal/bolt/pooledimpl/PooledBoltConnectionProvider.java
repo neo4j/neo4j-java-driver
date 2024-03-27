@@ -55,6 +55,7 @@ import org.neo4j.driver.internal.bolt.api.exception.MinVersionAcquisitionExcepti
 import org.neo4j.driver.internal.bolt.basicimpl.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.bolt.basicimpl.messaging.v51.BoltProtocolV51;
 import org.neo4j.driver.internal.bolt.routedimpl.cluster.RoutingContext;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
 public class PooledBoltConnectionProvider implements BoltConnectionProvider {
@@ -69,6 +70,7 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
     private final long maxLifetime;
     private final long idleBeforeTest;
     private final Clock clock;
+    private MetricsListener metricsListener;
     private CompletionStage<Void> closeStage;
     private BoltServerAddress address;
 
@@ -106,10 +108,29 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
             RoutingContext routingContext,
             BoltAgent boltAgent,
             String userAgent,
-            int connectTimeoutMillis) {
+            int connectTimeoutMillis,
+            MetricsListener metricsListener) {
         this.address = Objects.requireNonNull(address);
+        this.metricsListener = Objects.requireNonNull(metricsListener);
+        metricsListener.registerPoolMetrics(
+                String.valueOf(hashCode()),
+                address,
+                () -> {
+                    synchronized (this) {
+                        return (int) pooledConnectionEntries.stream()
+                                .filter(entry -> !entry.available)
+                                .count();
+                    }
+                },
+                () -> {
+                    synchronized (this) {
+                        return (int) pooledConnectionEntries.stream()
+                                .filter(entry -> entry.available)
+                                .count();
+                    }
+                });
         return boltConnectionProvider.init(
-                address, securityPlan, routingContext, boltAgent, userAgent, connectTimeoutMillis);
+                address, securityPlan, routingContext, boltAgent, userAgent, connectTimeoutMillis, metricsListener);
     }
 
     @Override
@@ -415,6 +436,7 @@ public class PooledBoltConnectionProvider implements BoltConnectionProvider {
                     }
                     iterator.remove();
                 }
+                metricsListener.removePoolMetrics(String.valueOf(hashCode()));
                 this.closeStage = this.closeStage
                         .thenCompose(ignored -> boltConnectionProvider.close())
                         .exceptionally(throwable -> null)

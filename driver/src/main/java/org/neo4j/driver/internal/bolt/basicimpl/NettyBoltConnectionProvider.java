@@ -50,6 +50,7 @@ import org.neo4j.driver.internal.bolt.api.exception.MinVersionAcquisitionExcepti
 import org.neo4j.driver.internal.bolt.basicimpl.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.bolt.basicimpl.messaging.v51.BoltProtocolV51;
 import org.neo4j.driver.internal.bolt.routedimpl.cluster.RoutingContext;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
 public final class NettyBoltConnectionProvider implements BoltConnectionProvider {
@@ -91,7 +92,8 @@ public final class NettyBoltConnectionProvider implements BoltConnectionProvider
             RoutingContext routingContext,
             BoltAgent boltAgent,
             String userAgent,
-            int connectTimeoutMillis) {
+            int connectTimeoutMillis,
+            MetricsListener metricsListener) {
         this.address = address;
         this.securityPlan = securityPlan;
         this.routingContext = routingContext;
