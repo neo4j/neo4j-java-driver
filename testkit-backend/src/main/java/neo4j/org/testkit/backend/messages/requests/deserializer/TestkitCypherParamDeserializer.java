@@ -56,7 +56,7 @@ public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String, 
             if (t != JsonToken.FIELD_NAME) {
                 ctxt.reportWrongTokenException(this, JsonToken.FIELD_NAME, null);
             }
-            key = p.getCurrentName();
+            key = p.currentName();
         }
 
         for (; key != null; key = p.nextFieldName()) {

@@ -30,7 +30,7 @@ public class TestkitCypherTypeMapper {
                 || token == JsonToken.VALUE_NUMBER_INT
                 || token == JsonToken.VALUE_STRING) {
             if (token == JsonToken.VALUE_NUMBER_INT) {
-                var field = p.getCurrentName();
+                var field = p.currentName();
                 if (fieldIsType(data, field, Long.class)) {
                     setField(data, field, p.getLongValue());
                 } else if (fieldIsType(data, field, Integer.class)) {
@@ -39,7 +39,7 @@ public class TestkitCypherTypeMapper {
                     throw new RuntimeException("Unhandled field type: " + field);
                 }
             } else if (token == JsonToken.VALUE_STRING) {
-                var field = p.getCurrentName();
+                var field = p.currentName();
                 var value = p.getValueAsString();
                 setField(data, field, value);
             }
