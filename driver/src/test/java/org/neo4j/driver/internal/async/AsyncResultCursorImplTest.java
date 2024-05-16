@@ -37,6 +37,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -88,6 +89,7 @@ class AsyncResultCursorImplTest {
                 null,
                 null,
                 emptyList(),
+                Collections.emptySet(),
                 42,
                 42);
         when(pullAllHandler.consumeAsync()).thenReturn(completedFuture(summary));

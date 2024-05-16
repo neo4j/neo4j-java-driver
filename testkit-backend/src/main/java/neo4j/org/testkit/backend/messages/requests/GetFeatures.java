@@ -41,6 +41,7 @@ public class GetFeatures implements TestkitRequest {
             "Feature:Bolt:5.2",
             "Feature:Bolt:5.3",
             "Feature:Bolt:5.4",
+            "Feature:Bolt:5.5",
             "AuthorizationExpiredTreatment",
             "ConfHint:connection.recv_timeout_seconds",
             "Feature:Auth:Bearer",
@@ -69,7 +70,8 @@ public class GetFeatures implements TestkitRequest {
             "Feature:Auth:Managed",
             "Feature:API:Driver.SupportsSessionAuth",
             "Feature:API:RetryableExceptions",
-            "Feature:API:SSLClientCertificate"));
+            "Feature:API:SSLClientCertificate",
+            "Feature:API:Summary:GqlStatusObjects"));
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:3.0",

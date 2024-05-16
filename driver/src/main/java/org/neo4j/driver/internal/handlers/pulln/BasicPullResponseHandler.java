@@ -29,18 +29,21 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.handlers.AbstractRecordStateResponseHandler;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
+import org.neo4j.driver.internal.messaging.v55.BoltProtocolV55;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.internal.value.BooleanValue;
+import org.neo4j.driver.summary.GqlStatusObject;
 import org.neo4j.driver.summary.ResultSummary;
 
 /**
  * Provides basic handling of pull responses from sever. The state is managed by {@link State}.
  */
-public class BasicPullResponseHandler implements PullResponseHandler {
+public class BasicPullResponseHandler extends AbstractRecordStateResponseHandler implements PullResponseHandler {
     private static final Runnable NO_OP_RUNNABLE = () -> {};
     private final Query query;
     protected final RunResponseHandler runResponseHandler;
@@ -94,9 +97,15 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             if (newState == State.SUCCEEDED_STATE) {
                 completionListener.afterSuccess(metadata);
                 try {
-                    summary = extractResultSummary(metadata);
+                    summary = extractResultSummary(
+                            metadata,
+                            generateGqlStatusObject(
+                                    runResponseHandler.queryKeys().keys()));
                 } catch (Neo4jException e) {
-                    summary = extractResultSummary(emptyMap());
+                    summary = extractResultSummary(
+                            emptyMap(),
+                            generateGqlStatusObject(
+                                    runResponseHandler.queryKeys().keys()));
                     exception = e;
                 }
                 recordConsumer = this.recordConsumer;
@@ -128,7 +137,7 @@ public class BasicPullResponseHandler implements PullResponseHandler {
             assertRecordAndSummaryConsumerInstalled();
             state.onFailure(this);
             completionListener.afterFailure(error);
-            summary = extractResultSummary(emptyMap());
+            summary = extractResultSummary(emptyMap(), null);
             recordConsumer = this.recordConsumer;
             summaryConsumer = this.summaryConsumer;
             if (syncSignals) {
@@ -147,6 +156,7 @@ public class BasicPullResponseHandler implements PullResponseHandler {
         Record record = null;
         synchronized (this) {
             assertRecordAndSummaryConsumerInstalled();
+            recordState = RecordState.HAD_RECORD;
             state.onRecord(this);
             newState = state;
             if (newState == State.STREAMING_STATE) {
@@ -166,6 +176,7 @@ public class BasicPullResponseHandler implements PullResponseHandler {
         Runnable postAction;
         synchronized (this) {
             assertRecordAndSummaryConsumerInstalled();
+            recordState = RecordState.NO_RECORD;
             postAction = state.request(this, size);
             if (syncSignals) {
                 postAction.run();
@@ -219,9 +230,15 @@ public class BasicPullResponseHandler implements PullResponseHandler {
         return state.equals(State.SUCCEEDED_STATE) || state.equals(State.FAILURE_STATE);
     }
 
-    private ResultSummary extractResultSummary(Map<String, Value> metadata) {
+    private ResultSummary extractResultSummary(Map<String, Value> metadata, GqlStatusObject gqlStatusObject) {
         var resultAvailableAfter = runResponseHandler.resultAvailableAfter();
-        return metadataExtractor.extractSummary(query, connection, resultAvailableAfter, metadata);
+        return metadataExtractor.extractSummary(
+                query,
+                connection,
+                resultAvailableAfter,
+                metadata,
+                connection.protocol().version().compareTo(BoltProtocolV55.VERSION) < 0,
+                gqlStatusObject);
     }
 
     private void addToRequest(long toAdd) {

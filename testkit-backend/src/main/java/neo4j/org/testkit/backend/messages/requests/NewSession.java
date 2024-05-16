@@ -16,8 +16,6 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
-import static neo4j.org.testkit.backend.messages.requests.NewDriver.toNotificationConfig;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -39,9 +37,11 @@ import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.NotificationClassification;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 import reactor.core.publisher.Mono;
@@ -107,8 +107,14 @@ public class NewSession implements TestkitRequest {
                 .map(testkitState::getBookmarkManager)
                 .ifPresent(builder::withBookmarkManager);
 
-        builder.withNotificationConfig(
-                toNotificationConfig(data.notificationsMinSeverity, data.notificationsDisabledCategories));
+        Optional.ofNullable(data.notificationsMinSeverity)
+                .flatMap(InternalNotificationSeverity::valueOf)
+                .ifPresent(builder::withMinimumNotificationSeverity);
+        Optional.ofNullable(data.notificationsDisabledCategories)
+                .map(categories -> categories.stream()
+                        .map(NotificationClassification::valueOf)
+                        .collect(Collectors.toSet()))
+                .ifPresent(builder::withDisabledNotificationClassifications);
 
         var userSwitchAuthToken = data.getAuthorizationToken() != null
                 ? AuthTokenUtil.parseAuthToken(data.getAuthorizationToken())

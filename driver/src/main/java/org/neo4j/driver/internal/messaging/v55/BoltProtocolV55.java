@@ -14,25 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v52;
+package org.neo4j.driver.internal.messaging.v55;
 
-import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
+import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
 
-public class BoltProtocolV52 extends BoltProtocolV51 {
-    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(5, 2);
-    public static final BoltProtocol INSTANCE = new BoltProtocolV52();
-
-    @Override
-    protected Neo4jException verifyNotificationConfigSupported(GqlNotificationConfig notificationConfig) {
-        return null;
-    }
+public class BoltProtocolV55 extends BoltProtocolV54 {
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(5, 5);
+    public static final BoltProtocol INSTANCE = new BoltProtocolV55();
 
     @Override
     public BoltProtocolVersion version() {
         return VERSION;
+    }
+
+    @Override
+    protected boolean useLegacyNotifications() {
+        return false;
     }
 }

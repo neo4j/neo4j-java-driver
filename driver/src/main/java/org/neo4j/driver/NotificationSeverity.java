@@ -19,6 +19,7 @@ package org.neo4j.driver;
 import static org.neo4j.driver.internal.InternalNotificationSeverity.Type;
 
 import java.io.Serializable;
+import org.neo4j.driver.Config.ConfigBuilder;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 
 /**
@@ -36,4 +37,11 @@ public sealed interface NotificationSeverity extends Serializable, Comparable<No
      * A warning severity level.
      */
     NotificationSeverity WARNING = new InternalNotificationSeverity(Type.WARNING, 900);
+    /**
+     * A special severity level used in configuration to turn off all notifications.
+     * @since 5.22.0
+     * @see ConfigBuilder#withMinimumNotificationSeverity(NotificationSeverity)
+     * @see SessionConfig.Builder#withMinimumNotificationSeverity(NotificationSeverity)
+     */
+    NotificationSeverity OFF = new InternalNotificationSeverity(Type.OFF, Integer.MAX_VALUE);
 }

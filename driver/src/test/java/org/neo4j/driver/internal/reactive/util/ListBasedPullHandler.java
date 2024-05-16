@@ -20,10 +20,12 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.List;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
@@ -31,6 +33,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.internal.util.QueryKeys;
@@ -63,12 +66,16 @@ public class ListBasedPullHandler extends BasicPullResponseHandler {
                 mock(PullResponseCompletionListener.class));
         this.list = list;
         this.error = error;
-        when(super.metadataExtractor.extractSummary(any(Query.class), any(Connection.class), anyLong(), any()))
+        when(super.metadataExtractor.extractSummary(
+                        any(Query.class), any(Connection.class), anyLong(), any(), anyBoolean(), any()))
                 .thenReturn(mock(ResultSummary.class));
         if (list.size() > 1) {
             var record = list.get(0);
             when(super.runResponseHandler.queryKeys()).thenReturn(new QueryKeys(record.keys()));
+        } else {
+            when(super.runResponseHandler.queryKeys()).thenReturn(new QueryKeys(Collections.emptyList()));
         }
+        when(super.connection.protocol()).thenReturn(BoltProtocolV5.INSTANCE);
     }
 
     @Override

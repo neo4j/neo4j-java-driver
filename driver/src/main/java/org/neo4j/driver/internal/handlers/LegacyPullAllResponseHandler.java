@@ -36,16 +36,18 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.v55.BoltProtocolV55;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.util.MetadataExtractor;
+import org.neo4j.driver.summary.GqlStatusObject;
 import org.neo4j.driver.summary.ResultSummary;
 
 /**
  * This is the Pull All response handler that handles pull all messages in Bolt v3 and previous protocol versions.
  */
-public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
+public class LegacyPullAllResponseHandler extends AbstractRecordStateResponseHandler implements PullAllResponseHandler {
     private static final Queue<Record> UNINITIALIZED_RECORDS = Iterables.emptyQueue();
 
     static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger("recordBufferLowWatermark", 300);
@@ -92,7 +94,9 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
         finished = true;
         Neo4jException exception = null;
         try {
-            summary = extractResultSummary(metadata);
+            summary = extractResultSummary(
+                    metadata,
+                    generateGqlStatusObject(runResponseHandler.queryKeys().keys()));
         } catch (Neo4jException e) {
             exception = e;
         }
@@ -110,7 +114,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
     @Override
     public synchronized void onFailure(Throwable error) {
         finished = true;
-        summary = extractResultSummary(emptyMap());
+        summary = extractResultSummary(emptyMap(), null);
 
         completionListener.afterFailure(error);
 
@@ -129,6 +133,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
 
     @Override
     public synchronized void onRecord(Value[] fields) {
+        recordState = RecordState.HAD_RECORD;
         if (ignoreRecords) {
             completeRecordFuture(null);
         } else {
@@ -189,6 +194,9 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
 
     @Override
     public void prePopulateRecords() {
+        synchronized (this) {
+            recordState = RecordState.NO_RECORD;
+        }
         connection.writeAndFlush(PullAllMessage.PULL_ALL, this);
     }
 
@@ -291,9 +299,15 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler {
         return false;
     }
 
-    private ResultSummary extractResultSummary(Map<String, Value> metadata) {
+    private ResultSummary extractResultSummary(Map<String, Value> metadata, GqlStatusObject gqlStatusObject) {
         var resultAvailableAfter = runResponseHandler.resultAvailableAfter();
-        return metadataExtractor.extractSummary(query, connection, resultAvailableAfter, metadata);
+        return metadataExtractor.extractSummary(
+                query,
+                connection,
+                resultAvailableAfter,
+                metadata,
+                connection.protocol().version().compareTo(BoltProtocolV55.VERSION) < 0,
+                gqlStatusObject);
     }
 
     private void enableAutoRead() {

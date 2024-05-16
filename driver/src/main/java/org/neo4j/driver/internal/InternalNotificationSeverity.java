@@ -22,9 +22,6 @@ import java.util.Optional;
 import org.neo4j.driver.NotificationSeverity;
 
 public record InternalNotificationSeverity(Type type, int level) implements NotificationSeverity {
-    public static final InternalNotificationSeverity OFF =
-            new InternalNotificationSeverity(Type.OFF, Integer.MAX_VALUE);
-
     public InternalNotificationSeverity {
         Objects.requireNonNull(type, "type must not be null");
     }
@@ -47,7 +44,7 @@ public record InternalNotificationSeverity(Type type, int level) implements Noti
                 .map(type -> switch (type) {
                     case INFORMATION -> NotificationSeverity.INFORMATION;
                     case WARNING -> NotificationSeverity.WARNING;
-                    case OFF -> InternalNotificationSeverity.OFF;
+                    case OFF -> NotificationSeverity.OFF;
                 });
     }
 }

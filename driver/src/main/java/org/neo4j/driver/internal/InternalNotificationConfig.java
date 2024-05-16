@@ -22,6 +22,7 @@ import org.neo4j.driver.NotificationCategory;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.NotificationSeverity;
 
+@SuppressWarnings("deprecation")
 public record InternalNotificationConfig(
         NotificationSeverity minimumSeverity, Set<NotificationCategory> disabledCategories)
         implements NotificationConfig {
@@ -33,7 +34,7 @@ public record InternalNotificationConfig(
 
     @Override
     public NotificationConfig disableCategories(Set<NotificationCategory> disabledCategories) {
-        Objects.requireNonNull(disabledCategories, "disabledCategories must not be null");
+        Objects.requireNonNull(disabledCategories, "disabledClassifications must not be null");
         return new InternalNotificationConfig(minimumSeverity, Set.copyOf(disabledCategories));
     }
 }

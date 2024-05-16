@@ -30,11 +30,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.BoltAgent;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DomainNameResolver;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -52,7 +52,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
     private final Clock clock;
     private final DomainNameResolver domainNameResolver;
     private final AddressResolverGroup<InetSocketAddress> addressResolverGroup;
-    private final NotificationConfig notificationConfig;
+    private final GqlNotificationConfig notificationConfig;
 
     public ChannelConnectorImpl(
             ConnectionSettings connectionSettings,
@@ -61,7 +61,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
             Clock clock,
             RoutingContext routingContext,
             DomainNameResolver domainNameResolver,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
             BoltAgent boltAgent) {
         this(
                 connectionSettings,
@@ -83,7 +83,7 @@ public class ChannelConnectorImpl implements ChannelConnector {
             Clock clock,
             RoutingContext routingContext,
             DomainNameResolver domainNameResolver,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
             BoltAgent boltAgent) {
         this.userAgent = connectionSettings.userAgent();
         this.boltAgent = requireNonNull(boltAgent);

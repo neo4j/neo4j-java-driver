@@ -56,6 +56,7 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalInputPosition;
+import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.ResultSummary;
 
 class MetadataExtractorTest {
@@ -104,7 +105,7 @@ class MetadataExtractorTest {
         var query =
                 new Query("UNWIND range(10, 100) AS x CREATE (:Node {name: $name, x: x})", singletonMap("name", "Apa"));
 
-        var summary = extractor.extractSummary(query, connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query, connectionMock(), 42, emptyMap(), true, null);
 
         assertEquals(query, summary.query());
     }
@@ -113,7 +114,7 @@ class MetadataExtractorTest {
     void shouldBuildResultSummaryWithServerAddress() {
         var connection = connectionMock(new BoltServerAddress("server:42"));
 
-        var summary = extractor.extractSummary(query(), connection, 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connection, 42, emptyMap(), true, null);
 
         assertEquals("server:42", summary.server().address());
     }
@@ -145,7 +146,7 @@ class MetadataExtractorTest {
 
         var metadata = singletonMap("stats", stats);
 
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
 
         assertEquals(42, summary.counters().nodesCreated());
         assertEquals(4242, summary.counters().nodesDeleted());
@@ -162,24 +163,27 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutCounters() {
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), true, null);
         assertEquals(EMPTY_STATS, summary.counters());
     }
 
     @Test
     void shouldBuildResultSummaryWithPlan() {
         var plan = value(parameters(
-                "operatorType", "Projection",
-                "args", parameters("n", 42),
-                "identifiers", values("a", "b"),
+                "operatorType",
+                "Projection",
+                "args",
+                parameters("n", 42),
+                "identifiers",
+                values("a", "b"),
                 "children",
-                        values(parameters(
-                                "operatorType", "AllNodeScan",
-                                "args", parameters("x", 4242),
-                                "identifiers", values("n", "t", "f")))));
+                values(parameters(
+                        "operatorType", "AllNodeScan",
+                        "args", parameters("x", 4242),
+                        "identifiers", values("n", "t", "f")))));
         var metadata = singletonMap("plan", plan);
 
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
 
         assertTrue(summary.hasPlan());
         assertEquals("Projection", summary.plan().operatorType());
@@ -198,7 +202,7 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutPlan() {
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), true, null);
         assertFalse(summary.hasPlan());
         assertNull(summary.plan());
     }
@@ -206,22 +210,28 @@ class MetadataExtractorTest {
     @Test
     void shouldBuildResultSummaryWithProfiledPlan() {
         var profile = value(parameters(
-                "operatorType", "ProduceResult",
-                "args", parameters("a", 42),
-                "identifiers", values("a", "b"),
-                "rows", value(424242),
-                "dbHits", value(242424),
-                "time", value(999),
+                "operatorType",
+                "ProduceResult",
+                "args",
+                parameters("a", 42),
+                "identifiers",
+                values("a", "b"),
+                "rows",
+                value(424242),
+                "dbHits",
+                value(242424),
+                "time",
+                value(999),
                 "children",
-                        values(parameters(
-                                "operatorType", "LabelScan",
-                                "args", parameters("x", 1),
-                                "identifiers", values("y", "z"),
-                                "rows", value(2),
-                                "dbHits", value(4)))));
+                values(parameters(
+                        "operatorType", "LabelScan",
+                        "args", parameters("x", 1),
+                        "identifiers", values("y", "z"),
+                        "rows", value(2),
+                        "dbHits", value(4)))));
         var metadata = singletonMap("profile", profile);
 
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
 
         assertTrue(summary.hasPlan());
         assertTrue(summary.hasProfile());
@@ -249,7 +259,7 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutProfiledPlan() {
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), true, null);
         assertFalse(summary.hasProfile());
         assertNull(summary.profile());
     }
@@ -258,30 +268,30 @@ class MetadataExtractorTest {
     @SuppressWarnings({"deprecation", "OptionalGetWithoutIsPresent"})
     void shouldBuildResultSummaryWithNotifications() {
         var notification1 = parameters(
-                "description", "Almost bad thing",
-                "code", "Neo.DummyNotification",
-                "title", "A title",
-                "severity", "WARNING",
-                "category", "DEPRECATION",
+                "description",
+                "Almost bad thing",
+                "code",
+                "Neo.DummyNotification",
+                "title",
+                "A title",
+                "severity",
+                "WARNING",
+                "category",
+                "DEPRECATION",
                 "position",
-                        parameters(
-                                "offset", 42,
-                                "line", 4242,
-                                "column", 424242));
+                parameters(
+                        "offset", 42,
+                        "line", 4242,
+                        "column", 424242));
         var notification2 = parameters(
                 "description", "Almost good thing",
                 "code", "Neo.GoodNotification",
                 "title", "Good",
-                "severity", "INFO",
-                "position",
-                        parameters(
-                                "offset", 1,
-                                "line", 2,
-                                "column", 3));
+                "severity", "INFO");
         var notifications = value(notification1, notification2);
         var metadata = singletonMap("notifications", notifications);
 
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
 
         assertEquals(2, summary.notifications().size());
         var firstNotification = summary.notifications().get(0);
@@ -303,12 +313,79 @@ class MetadataExtractorTest {
         assertEquals("Neo.GoodNotification", secondNotification.code());
         assertEquals("Good", secondNotification.title());
         assertEquals("INFO", secondNotification.severity());
-        assertEquals(new InternalInputPosition(1, 2, 3), secondNotification.position());
+        assertTrue(secondNotification.inputPosition().isEmpty());
+        assertNull(secondNotification.position());
+
+        assertEquals(2, summary.gqlStatusObjects().size());
+        var gqlStatusObjectsIterator = summary.gqlStatusObjects().iterator();
+        var firstGqlStatusObject = (Notification) gqlStatusObjectsIterator.next();
+        var secondGqlStatusObject = (Notification) gqlStatusObjectsIterator.next();
+        assertEquals(firstNotification, firstGqlStatusObject);
+        assertEquals(secondNotification, secondGqlStatusObject);
+    }
+
+    @Test
+    @SuppressWarnings({"deprecation", "OptionalGetWithoutIsPresent"})
+    void shouldBuildResultSummaryWithGqlStatusObjects() {
+        var gqlStatusObject1 = parameters(
+                "gql_status", "gql_status",
+                "status_description", "status_description",
+                "neo4j_code", "neo4j_code",
+                "title", "title",
+                "diagnostic_record",
+                        parameters(
+                                "_severity",
+                                "WARNING",
+                                "_classification",
+                                "SECURITY",
+                                "_position",
+                                parameters(
+                                        "offset", 42,
+                                        "line", 4242,
+                                        "column", 424242)));
+        var gqlStatusObject2 = parameters(
+                "gql_status", "gql_status",
+                "status_description", "status_description",
+                "diagnostic_record",
+                        parameters(
+                                "_severity", "WARNING",
+                                "_classification", "SECURITY"));
+        var gqlStatusObjects = value(gqlStatusObject1, gqlStatusObject2);
+        var metadata = singletonMap("statuses", gqlStatusObjects);
+
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
+
+        assertEquals(2, summary.gqlStatusObjects().size());
+        var gqlStatusObjectsIterator = summary.gqlStatusObjects().iterator();
+        var firstGqlStatusObject = (Notification) gqlStatusObjectsIterator.next();
+        var secondGqlStatusObject = gqlStatusObjectsIterator.next();
+
+        assertEquals("gql_status", firstGqlStatusObject.gqlStatus());
+        assertEquals("status_description", firstGqlStatusObject.statusDescription());
+        assertEquals("status_description", firstGqlStatusObject.description());
+        assertEquals("neo4j_code", firstGqlStatusObject.code());
+        assertEquals("title", firstGqlStatusObject.title());
+        assertEquals("WARNING", firstGqlStatusObject.severity());
+        assertEquals(
+                NotificationSeverity.WARNING,
+                firstGqlStatusObject.severityLevel().get());
+        assertEquals("WARNING", firstGqlStatusObject.rawSeverityLevel().get());
+        assertEquals(
+                NotificationCategory.SECURITY, firstGqlStatusObject.category().get());
+        assertEquals("SECURITY", firstGqlStatusObject.rawCategory().get());
+        assertEquals(new InternalInputPosition(42, 4242, 424242), firstGqlStatusObject.position());
+
+        assertFalse(secondGqlStatusObject instanceof Notification);
+        assertEquals("gql_status", secondGqlStatusObject.gqlStatus());
+        assertEquals("status_description", secondGqlStatusObject.statusDescription());
+
+        assertEquals(1, summary.notifications().size());
+        assertEquals(firstGqlStatusObject, summary.notifications().get(0));
     }
 
     @Test
     void shouldBuildResultSummaryWithoutNotifications() {
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), true, null);
         assertEquals(0, summary.notifications().size());
     }
 
@@ -316,7 +393,7 @@ class MetadataExtractorTest {
     void shouldBuildResultSummaryWithResultAvailableAfter() {
         var value = 42_000;
 
-        var summary = extractor.extractSummary(query(), connectionMock(), value, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), value, emptyMap(), true, null);
 
         assertEquals(42, summary.resultAvailableAfter(TimeUnit.SECONDS));
         assertEquals(value, summary.resultAvailableAfter(TimeUnit.MILLISECONDS));
@@ -327,7 +404,7 @@ class MetadataExtractorTest {
         var value = 42_000;
         var metadata = singletonMap(RESULT_CONSUMED_AFTER_KEY, value(value));
 
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
 
         assertEquals(42, summary.resultConsumedAfter(TimeUnit.SECONDS));
         assertEquals(value, summary.resultConsumedAfter(TimeUnit.MILLISECONDS));
@@ -335,7 +412,7 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutResultConsumedAfter() {
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap());
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), true, null);
         assertEquals(-1, summary.resultConsumedAfter(TimeUnit.SECONDS));
         assertEquals(-1, summary.resultConsumedAfter(TimeUnit.MILLISECONDS));
     }
@@ -430,7 +507,7 @@ class MetadataExtractorTest {
 
     private ResultSummary createWithQueryType(Value typeValue) {
         var metadata = singletonMap("type", typeValue);
-        return extractor.extractSummary(query(), connectionMock(), 42, metadata);
+        return extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
     }
 
     private static Query query() {

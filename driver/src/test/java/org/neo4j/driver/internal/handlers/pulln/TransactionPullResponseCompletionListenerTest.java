@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +34,7 @@ import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.TransactionPullResponseCompletionListener;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.QueryKeys;
 import org.neo4j.driver.summary.ResultSummary;
 
 public class TransactionPullResponseCompletionListenerTest extends BasicPullResponseHandlerTestBase {
@@ -96,6 +98,7 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
             UnmanagedTransaction tx,
             BasicPullResponseHandler.State state) {
         var runHandler = mock(RunResponseHandler.class);
+        given(runHandler.queryKeys()).willReturn(new QueryKeys(Collections.emptyList()));
         var listener = new TransactionPullResponseCompletionListener(tx);
         var handler = new BasicPullResponseHandler(
                 mock(Query.class), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener);

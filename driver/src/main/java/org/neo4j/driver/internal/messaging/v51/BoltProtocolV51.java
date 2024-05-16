@@ -24,8 +24,8 @@ import java.time.Clock;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.BoltAgent;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.handlers.HelloV51ResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -45,7 +45,7 @@ public class BoltProtocolV51 extends BoltProtocolV5 {
             AuthToken authToken,
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
             Clock clock) {
         var exception = verifyNotificationConfigSupported(notificationConfig);
         if (exception != null) {
@@ -57,9 +57,16 @@ public class BoltProtocolV51 extends BoltProtocolV5 {
 
         if (routingContext.isServerRoutingEnabled()) {
             message = new HelloMessage(
-                    userAgent, null, Collections.emptyMap(), routingContext.toMap(), false, notificationConfig);
+                    userAgent,
+                    null,
+                    Collections.emptyMap(),
+                    routingContext.toMap(),
+                    false,
+                    notificationConfig,
+                    useLegacyNotifications());
         } else {
-            message = new HelloMessage(userAgent, null, Collections.emptyMap(), null, false, notificationConfig);
+            message = new HelloMessage(
+                    userAgent, null, Collections.emptyMap(), null, false, notificationConfig, useLegacyNotifications());
         }
 
         var helloFuture = new CompletableFuture<Void>();

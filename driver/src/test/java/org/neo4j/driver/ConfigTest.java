@@ -409,6 +409,7 @@ class ConfigTest {
     @Nested
     class SerializationTest {
         @Test
+        @SuppressWarnings("deprecation")
         void shouldSerialize() throws Exception {
             var config = Config.builder()
                     .withMaxConnectionPoolSize(123)
@@ -528,5 +529,39 @@ class ConfigTest {
 
         // Then
         assertEquals(disabled, telemetryDisabled);
+    }
+
+    @Test
+    void shouldNotHaveMinimumNotificationSeverity() {
+        var config = Config.defaultConfig();
+
+        assertTrue(config.minimumNotificationSeverity().isEmpty());
+    }
+
+    @Test
+    void shouldSetMinimumNotificationSeverity() {
+        var config = Config.builder()
+                .withMinimumNotificationSeverity(NotificationSeverity.WARNING)
+                .build();
+
+        assertEquals(
+                NotificationSeverity.WARNING,
+                config.minimumNotificationSeverity().orElse(null));
+    }
+
+    @Test
+    void shouldNotHaveDisabledNotificationClassifications() {
+        var config = Config.defaultConfig();
+
+        assertTrue(config.disabledNotificationClassifications().isEmpty());
+    }
+
+    @Test
+    void shouldSetDisabledNotificationClassifications() {
+        var config = Config.builder()
+                .withDisabledNotificationClassifications(Set.of(NotificationClassification.SECURITY))
+                .build();
+
+        assertEquals(Set.of(NotificationClassification.SECURITY), config.disabledNotificationClassifications());
     }
 }

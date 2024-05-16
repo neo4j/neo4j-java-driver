@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
@@ -35,6 +34,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BoltAgent;
 import org.neo4j.driver.internal.DatabaseBookmark;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -49,6 +49,7 @@ import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
 import org.neo4j.driver.internal.messaging.v52.BoltProtocolV52;
 import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
 import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
+import org.neo4j.driver.internal.messaging.v55.BoltProtocolV55;
 import org.neo4j.driver.internal.spi.Connection;
 
 public interface BoltProtocol {
@@ -67,7 +68,7 @@ public interface BoltProtocol {
      * @param authToken                 the authentication token.
      * @param routingContext            the configured routing context
      * @param channelInitializedPromise the promise to be notified when initialization is completed.
-     * @param notificationConfig        the notification configuration
+     * @param GqlNotificationConfig     the notification configuration
      * @param clock                     the clock to use
      */
     void initializeChannel(
@@ -76,7 +77,7 @@ public interface BoltProtocol {
             AuthToken authToken,
             RoutingContext routingContext,
             ChannelPromise channelInitializedPromise,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig GqlNotificationConfig,
             Clock clock);
 
     /**
@@ -92,7 +93,7 @@ public interface BoltProtocol {
      * @param bookmarks          the bookmarks. Never null, should be empty when there are no bookmarks.
      * @param config             the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
      * @param txType             the Kernel transaction type
-     * @param notificationConfig the notification configuration
+     * @param GqlNotificationConfig the notification configuration
      * @param logging            the driver logging
      * @param flush              defines whether to flush the message to the connection
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
@@ -102,7 +103,7 @@ public interface BoltProtocol {
             Set<Bookmark> bookmarks,
             TransactionConfig config,
             String txType,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig GqlNotificationConfig,
             Logging logging,
             boolean flush);
 
@@ -138,7 +139,7 @@ public interface BoltProtocol {
      * @param bookmarkConsumer   the database bookmark consumer.
      * @param config             the transaction config for the implicitly started auto-commit transaction.
      * @param fetchSize          the record fetch size for PULL message.
-     * @param notificationConfig the notification configuration
+     * @param GqlNotificationConfig the notification configuration
      * @param logging            the driver logging
      * @return stage with cursor.
      */
@@ -149,7 +150,7 @@ public interface BoltProtocol {
             Consumer<DatabaseBookmark> bookmarkConsumer,
             TransactionConfig config,
             long fetchSize,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig GqlNotificationConfig,
             Logging logging);
 
     /**
@@ -211,6 +212,8 @@ public interface BoltProtocol {
             return BoltProtocolV53.INSTANCE;
         } else if (BoltProtocolV54.VERSION.equals(version)) {
             return BoltProtocolV54.INSTANCE;
+        } else if (BoltProtocolV55.VERSION.equals(version)) {
+            return BoltProtocolV55.INSTANCE;
         }
         throw new ClientException("Unknown protocol version: " + version);
     }

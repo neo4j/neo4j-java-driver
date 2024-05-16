@@ -169,6 +169,7 @@ public class DriverFactory {
         };
     }
 
+    @SuppressWarnings("deprecation")
     protected ChannelConnector createConnector(
             ConnectionSettings settings,
             SecurityPlan securityPlan,
@@ -183,7 +184,7 @@ public class DriverFactory {
                 clock,
                 routingContext,
                 getDomainNameResolver(),
-                config.notificationConfig(),
+                GqlNotificationConfig.from(config.notificationConfig()),
                 boltAgent);
     }
 

@@ -49,12 +49,11 @@ import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.ClientCertificateManagers;
 import org.neo4j.driver.ClientCertificates;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.NotificationConfig;
+import org.neo4j.driver.NotificationClassification;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.InternalNotificationCategory;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
@@ -101,8 +100,14 @@ public class NewDriver implements TestkitRequest {
         Optional.ofNullable(data.connectionAcquisitionTimeoutMs)
                 .ifPresent(timeout -> configBuilder.withConnectionAcquisitionTimeout(timeout, TimeUnit.MILLISECONDS));
         Optional.ofNullable(data.telemetryDisabled).ifPresent(configBuilder::withTelemetryDisabled);
-        configBuilder.withNotificationConfig(
-                toNotificationConfig(data.notificationsMinSeverity, data.notificationsDisabledCategories));
+        Optional.ofNullable(data.notificationsMinSeverity)
+                .flatMap(InternalNotificationSeverity::valueOf)
+                .ifPresent(configBuilder::withMinimumNotificationSeverity);
+        Optional.ofNullable(data.notificationsDisabledCategories)
+                .map(categories -> categories.stream()
+                        .map(NotificationClassification::valueOf)
+                        .collect(Collectors.toSet()))
+                .ifPresent(configBuilder::withDisabledNotificationClassifications);
         configBuilder.withDriverMetrics();
         var clientCertificateManager = Optional.ofNullable(data.getClientCertificateProviderId())
                 .map(testkitState::getClientCertificateManager)
@@ -270,23 +275,6 @@ public class NewDriver implements TestkitRequest {
             securitySettingsBuilder.withTrustStrategy(Config.TrustStrategy.trustSystemCertificates());
         }
         return securitySettingsBuilder;
-    }
-
-    public static NotificationConfig toNotificationConfig(
-            String minimumSeverityString, Set<String> disabledCategoryStrings) {
-        var config = NotificationConfig.defaultConfig();
-        config = Optional.ofNullable(minimumSeverityString)
-                .flatMap(InternalNotificationSeverity::valueOf)
-                .map(config::enableMinimumSeverity)
-                .orElse(config);
-        config = Optional.ofNullable(disabledCategoryStrings)
-                .map(categories -> categories.stream()
-                        .map(InternalNotificationCategory::valueOf)
-                        .map(opt -> opt.orElse(null))
-                        .collect(Collectors.toSet()))
-                .map(config::disableCategories)
-                .orElse(config);
-        return config;
     }
 
     @Setter

@@ -176,6 +176,7 @@ public class BoltProtocolV51Test {
                                 null,
                                 null,
                                 null,
+                                true,
                                 Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
@@ -199,6 +200,7 @@ public class BoltProtocolV51Test {
                                 null,
                                 null,
                                 null,
+                                true,
                                 Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
@@ -221,6 +223,7 @@ public class BoltProtocolV51Test {
                                 null,
                                 null,
                                 null,
+                                true,
                                 Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
@@ -236,7 +239,7 @@ public class BoltProtocolV51Test {
         verify(connection)
                 .writeAndFlush(
                         eq(new BeginMessage(
-                                bookmarks, txConfig, defaultDatabase(), WRITE, null, null, null, Logging.none())),
+                                bookmarks, txConfig, defaultDatabase(), WRITE, null, null, null, true, Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -550,7 +553,7 @@ public class BoltProtocolV51Test {
             AccessMode mode,
             DatabaseName databaseName) {
         var runMessage = RunWithMetadataMessage.autoCommitTxRunMessage(
-                QUERY, config, databaseName, mode, bookmark, null, null, Logging.none());
+                QUERY, config, databaseName, mode, bookmark, null, null, true, Logging.none());
         return verifyRunInvoked(connection, runMessage);
     }
 
@@ -570,8 +573,8 @@ public class BoltProtocolV51Test {
     private void verifyBeginInvoked(
             Connection connection, Set<Bookmark> bookmarks, TransactionConfig config, DatabaseName databaseName) {
         var beginHandlerCaptor = ArgumentCaptor.forClass(ResponseHandler.class);
-        var beginMessage =
-                new BeginMessage(bookmarks, config, databaseName, AccessMode.WRITE, null, null, null, Logging.none());
+        var beginMessage = new BeginMessage(
+                bookmarks, config, databaseName, AccessMode.WRITE, null, null, null, true, Logging.none());
         verify(connection).writeAndFlush(eq(beginMessage), beginHandlerCaptor.capture());
         assertThat(beginHandlerCaptor.getValue(), instanceOf(BeginTxResponseHandler.class));
     }

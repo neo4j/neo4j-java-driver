@@ -16,29 +16,26 @@
  */
 package org.neo4j.driver;
 
-import java.io.Serializable;
-
 /**
- * Notification category.
+ * Notification classification.
  *
- * @since 5.7
- * @deprecated superseded by {@link NotificationClassification}
+ * @since 5.22.0
  */
-@Deprecated
-public sealed interface NotificationCategory extends Serializable permits NotificationClassification {
+@SuppressWarnings("deprecation")
+public enum NotificationClassification implements NotificationCategory {
     /**
      * A hint category.
      * <p>
      * For instance, the given hint cannot be satisfied.
      */
-    NotificationCategory HINT = NotificationClassification.HINT;
+    HINT,
 
     /**
      * An unrecognized category.
      * <p>
      * For instance, the query or command mentions entities that are unknown to the system.
      */
-    NotificationCategory UNRECOGNIZED = NotificationClassification.UNRECOGNIZED;
+    UNRECOGNIZED,
 
     /**
      * An unsupported category.
@@ -46,21 +43,21 @@ public sealed interface NotificationCategory extends Serializable permits Notifi
      * For instance, the query/command is trying to use features that are not supported by the current system or using
      * features that are experimental and should not be used in production.
      */
-    NotificationCategory UNSUPPORTED = NotificationClassification.UNSUPPORTED;
+    UNSUPPORTED,
 
     /**
      * A performance category.
      * <p>
      * For instance, the query uses costly operations and might be slow.
      */
-    NotificationCategory PERFORMANCE = NotificationClassification.PERFORMANCE;
+    PERFORMANCE,
 
     /**
      * A deprecation category.
      * <p>
      * For instance, the query/command use deprecated features that should be replaced.
      */
-    NotificationCategory DEPRECATION = NotificationClassification.DEPRECATION;
+    DEPRECATION,
 
     /**
      * A security category.
@@ -69,10 +66,8 @@ public sealed interface NotificationCategory extends Serializable permits Notifi
      * <p>
      * Please note that this category was added to a later server version. Therefore, a compatible server version is
      * required to use it.
-     *
-     * @since 5.14
      */
-    NotificationCategory SECURITY = NotificationClassification.SECURITY;
+    SECURITY,
 
     /**
      * A topology category.
@@ -81,15 +76,13 @@ public sealed interface NotificationCategory extends Serializable permits Notifi
      * <p>
      * Please note that this category was added to a later server version. Therefore, a compatible server version is
      * required to use it.
-     *
-     * @since 5.14
      */
-    NotificationCategory TOPOLOGY = NotificationClassification.TOPOLOGY;
+    TOPOLOGY,
 
     /**
      * A generic category.
      * <p>
      * For instance, notifications that are not part of a more specific class.
      */
-    NotificationCategory GENERIC = NotificationClassification.GENERIC;
+    GENERIC
 }

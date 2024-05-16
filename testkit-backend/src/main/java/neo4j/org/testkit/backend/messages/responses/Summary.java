@@ -16,6 +16,7 @@
  */
 package neo4j.org.testkit.backend.messages.responses;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
 import lombok.Builder;
@@ -45,6 +46,8 @@ public class Summary implements TestkitResponse {
         private String database;
 
         private List<Notification> notifications;
+
+        private List<GqlStatusObject> gqlStatusObjects;
 
         private Plan plan;
 
@@ -127,6 +130,29 @@ public class Summary implements TestkitResponse {
         private String category;
 
         private String rawCategory;
+    }
+
+    @Getter
+    @Builder
+    public static class GqlStatusObject {
+        private String gqlStatus;
+
+        private String statusDescription;
+
+        private InputPosition position;
+
+        private String severity;
+
+        private String rawSeverity;
+
+        private String classification;
+
+        private String rawClassification;
+
+        @JsonProperty("isNotification")
+        private boolean notification;
+
+        private Map<String, Value> diagnosticRecord;
     }
 
     @Getter

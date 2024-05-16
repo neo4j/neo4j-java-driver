@@ -207,6 +207,7 @@ public class BoltProtocolV3Test {
                                 null,
                                 null,
                                 null,
+                                true,
                                 Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
@@ -230,6 +231,7 @@ public class BoltProtocolV3Test {
                                 null,
                                 null,
                                 null,
+                                true,
                                 Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
@@ -252,6 +254,7 @@ public class BoltProtocolV3Test {
                                 null,
                                 null,
                                 null,
+                                true,
                                 Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
@@ -267,7 +270,7 @@ public class BoltProtocolV3Test {
         verify(connection)
                 .writeAndFlush(
                         eq(new BeginMessage(
-                                bookmarks, txConfig, defaultDatabase(), WRITE, null, null, null, Logging.none())),
+                                bookmarks, txConfig, defaultDatabase(), WRITE, null, null, null, true, Logging.none())),
                         any(BeginTxResponseHandler.class));
         assertNull(await(stage));
     }
@@ -583,7 +586,7 @@ public class BoltProtocolV3Test {
         RunWithMetadataMessage expectedMessage;
         if (session) {
             expectedMessage = RunWithMetadataMessage.autoCommitTxRunMessage(
-                    QUERY, config, defaultDatabase(), mode, bookmarks, null, null, Logging.none());
+                    QUERY, config, defaultDatabase(), mode, bookmarks, null, null, true, Logging.none());
         } else {
             expectedMessage = RunWithMetadataMessage.unmanagedTxRunMessage(QUERY);
         }

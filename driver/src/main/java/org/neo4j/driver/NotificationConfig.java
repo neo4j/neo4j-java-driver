@@ -38,7 +38,13 @@ import org.neo4j.driver.summary.ResultSummary;
  * @since 5.7
  * @see ResultSummary#notifications()
  * @see org.neo4j.driver.summary.Notification
+ * @deprecated superseded by {@link Config.ConfigBuilder#withMinimumNotificationSeverity(NotificationSeverity)},
+ * {@link Config.ConfigBuilder#withDisabledNotificationClassifications(Set)},
+ * {@link SessionConfig.Builder#withMinimumNotificationSeverity(NotificationSeverity)} and
+ * {@link SessionConfig.Builder#withDisabledNotificationClassifications(Set)}
  */
+@Deprecated
+@SuppressWarnings("DeprecatedIsStillUsed")
 public sealed interface NotificationConfig extends Serializable permits InternalNotificationConfig {
     /**
      * Returns a default notification configuration.

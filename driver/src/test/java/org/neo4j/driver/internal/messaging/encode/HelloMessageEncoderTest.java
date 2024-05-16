@@ -40,7 +40,7 @@ class HelloMessageEncoderTest {
         authToken.put("username", value("bob"));
         authToken.put("password", value("secret"));
 
-        encoder.encode(new HelloMessage("MyDriver", BoltAgentUtil.VALUE, authToken, null, false, null), packer);
+        encoder.encode(new HelloMessage("MyDriver", BoltAgentUtil.VALUE, authToken, null, false, null, true), packer);
 
         var order = inOrder(packer);
         order.verify(packer).packStructHeader(1, HelloMessage.SIGNATURE);
@@ -61,7 +61,8 @@ class HelloMessageEncoderTest {
         routingContext.put("policy", "eu-fast");
 
         encoder.encode(
-                new HelloMessage("MyDriver", BoltAgentUtil.VALUE, authToken, routingContext, false, null), packer);
+                new HelloMessage("MyDriver", BoltAgentUtil.VALUE, authToken, routingContext, false, null, true),
+                packer);
 
         var order = inOrder(packer);
         order.verify(packer).packStructHeader(1, HelloMessage.SIGNATURE);

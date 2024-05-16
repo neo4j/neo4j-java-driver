@@ -93,7 +93,7 @@ class HandshakeCompletedListenerTest {
         given(authContext.getAuthTokenManager()).willReturn(authTokenManager);
         setAuthContext(channel, authContext);
         testWritingOfInitializationMessage(
-                new HelloMessage(USER_AGENT, null, authToken().toMap(), Collections.emptyMap(), false, null));
+                new HelloMessage(USER_AGENT, null, authToken().toMap(), Collections.emptyMap(), false, null, true));
         then(authContext).should().initiateAuth(authToken);
     }
 

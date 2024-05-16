@@ -23,8 +23,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromise;
 import java.time.Clock;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.BoltAgent;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
@@ -34,7 +34,7 @@ public class HandshakeCompletedListener implements ChannelFutureListener {
     private final BoltAgent boltAgent;
     private final RoutingContext routingContext;
     private final ChannelPromise connectionInitializedPromise;
-    private final NotificationConfig notificationConfig;
+    private final GqlNotificationConfig notificationConfig;
     private final Clock clock;
 
     public HandshakeCompletedListener(
@@ -42,7 +42,7 @@ public class HandshakeCompletedListener implements ChannelFutureListener {
             BoltAgent boltAgent,
             RoutingContext routingContext,
             ChannelPromise connectionInitializedPromise,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
             Clock clock) {
         requireNonNull(clock, "clock must not be null");
         this.userAgent = requireNonNull(userAgent);

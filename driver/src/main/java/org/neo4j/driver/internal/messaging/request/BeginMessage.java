@@ -25,10 +25,10 @@ import java.util.Set;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 
 public class BeginMessage extends MessageWithMetadata {
     public static final byte SIGNATURE = 0x11;
@@ -40,7 +40,8 @@ public class BeginMessage extends MessageWithMetadata {
             AccessMode mode,
             String impersonatedUser,
             String txType,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
+            boolean legacyNotifications,
             Logging logging) {
         this(
                 bookmarks,
@@ -51,6 +52,7 @@ public class BeginMessage extends MessageWithMetadata {
                 impersonatedUser,
                 txType,
                 notificationConfig,
+                legacyNotifications,
                 logging);
     }
 
@@ -62,7 +64,8 @@ public class BeginMessage extends MessageWithMetadata {
             DatabaseName databaseName,
             String impersonatedUser,
             String txType,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
+            boolean legacyNotifications,
             Logging logging) {
         super(buildMetadata(
                 txTimeout,
@@ -73,6 +76,7 @@ public class BeginMessage extends MessageWithMetadata {
                 impersonatedUser,
                 txType,
                 notificationConfig,
+                legacyNotifications,
                 logging));
     }
 

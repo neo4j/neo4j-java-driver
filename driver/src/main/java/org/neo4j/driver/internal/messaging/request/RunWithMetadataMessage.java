@@ -27,11 +27,11 @@ import java.util.Set;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 
 public class RunWithMetadataMessage extends MessageWithMetadata {
     public static final byte SIGNATURE = 0x10;
@@ -46,7 +46,8 @@ public class RunWithMetadataMessage extends MessageWithMetadata {
             AccessMode mode,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
+            boolean legacyNotifications,
             Logging logging) {
         return autoCommitTxRunMessage(
                 query,
@@ -57,6 +58,7 @@ public class RunWithMetadataMessage extends MessageWithMetadata {
                 bookmarks,
                 impersonatedUser,
                 notificationConfig,
+                legacyNotifications,
                 logging);
     }
 
@@ -68,7 +70,8 @@ public class RunWithMetadataMessage extends MessageWithMetadata {
             AccessMode mode,
             Set<Bookmark> bookmarks,
             String impersonatedUser,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
+            boolean legacyNotifications,
             Logging logging) {
         var metadata = buildMetadata(
                 txTimeout,
@@ -79,6 +82,7 @@ public class RunWithMetadataMessage extends MessageWithMetadata {
                 impersonatedUser,
                 null,
                 notificationConfig,
+                legacyNotifications,
                 logging);
         return new RunWithMetadataMessage(query.text(), query.parameters().asMap(ofValue()), metadata);
     }

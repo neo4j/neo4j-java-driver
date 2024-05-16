@@ -45,10 +45,10 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationCategory;
-import org.neo4j.driver.NotificationConfig;
+import org.neo4j.driver.NotificationClassification;
 import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.InternalBookmark;
 
 public class TransactionMetadataBuilderTest {
@@ -66,7 +66,7 @@ public class TransactionMetadataBuilderTest {
         var txTimeout = Duration.ofSeconds(7);
 
         var metadata = buildMetadata(
-                txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null, null, null, Logging.none());
+                txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null, null, null, true, Logging.none());
 
         Map<String, Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put(
@@ -94,7 +94,16 @@ public class TransactionMetadataBuilderTest {
         var txTimeout = Duration.ofSeconds(7);
 
         var metadata = buildMetadata(
-                txTimeout, txMetadata, database(databaseName), WRITE, bookmarks, null, null, null, Logging.none());
+                txTimeout,
+                txMetadata,
+                database(databaseName),
+                WRITE,
+                bookmarks,
+                null,
+                null,
+                null,
+                true,
+                Logging.none());
 
         Map<String, Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put(
@@ -109,12 +118,12 @@ public class TransactionMetadataBuilderTest {
     @Test
     void shouldNotHaveMetadataForDatabaseNameWhenIsNull() {
         var metadata = buildMetadata(
-                null, null, defaultDatabase(), WRITE, Collections.emptySet(), null, null, null, Logging.none());
+                null, null, defaultDatabase(), WRITE, Collections.emptySet(), null, null, null, true, Logging.none());
         assertTrue(metadata.isEmpty());
     }
 
     @Test
-    void shouldIncludeNotificationConfig() {
+    void shouldIncludeGqlNotificationConfig() {
         var metadata = buildMetadata(
                 null,
                 null,
@@ -123,9 +132,8 @@ public class TransactionMetadataBuilderTest {
                 Collections.emptySet(),
                 null,
                 null,
-                NotificationConfig.defaultConfig()
-                        .enableMinimumSeverity(NotificationSeverity.WARNING)
-                        .disableCategories(Set.of(NotificationCategory.UNSUPPORTED)),
+                new GqlNotificationConfig(NotificationSeverity.WARNING, Set.of(NotificationClassification.UNSUPPORTED)),
+                true,
                 Logging.none());
 
         var expectedMetadata = new HashMap<String, Value>();
@@ -152,6 +160,7 @@ public class TransactionMetadataBuilderTest {
                 null,
                 null,
                 null,
+                true,
                 logging);
 
         // then
@@ -184,6 +193,7 @@ public class TransactionMetadataBuilderTest {
                 null,
                 null,
                 null,
+                true,
                 logging);
 
         // then
