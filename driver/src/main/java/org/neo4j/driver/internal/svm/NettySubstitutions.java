@@ -43,6 +43,7 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.JdkLoggerFactory;
 import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.Map;
 import javax.net.ssl.KeyManagerFactory;
@@ -85,6 +86,7 @@ final class Target_io_netty_handler_ssl_JdkSslServerContext {
             ClientAuth clientAuth,
             String[] protocols,
             boolean startTls,
+            SecureRandom secureRandom,
             String keyStore)
             throws SSLException {}
 }
@@ -107,6 +109,7 @@ final class Target_io_netty_handler_ssl_JdkSslClientContext {
             String[] protocols,
             long sessionCacheSize,
             long sessionTimeout,
+            SecureRandom secureRandom,
             String keyStoreType)
             throws SSLException {}
 }
@@ -215,6 +218,7 @@ final class Target_io_netty_handler_ssl_SslContext {
             String[] protocols,
             boolean startTls,
             boolean enableOcsp,
+            SecureRandom secureRandom,
             String keyStoreType,
             Map.Entry<SslContextOption<?>, Object>... ctxOptions)
             throws SSLException {
@@ -238,6 +242,7 @@ final class Target_io_netty_handler_ssl_SslContext {
                 clientAuth,
                 protocols,
                 startTls,
+                secureRandom,
                 keyStoreType);
     }
 
@@ -258,6 +263,7 @@ final class Target_io_netty_handler_ssl_SslContext {
             long sessionCacheSize,
             long sessionTimeout,
             boolean enableOcsp,
+            SecureRandom secureRandom,
             String keyStoreType,
             Map.Entry<SslContextOption<?>, Object>... options)
             throws SSLException {
@@ -278,6 +284,7 @@ final class Target_io_netty_handler_ssl_SslContext {
                 protocols,
                 sessionCacheSize,
                 sessionTimeout,
+                secureRandom,
                 keyStoreType);
     }
 }
