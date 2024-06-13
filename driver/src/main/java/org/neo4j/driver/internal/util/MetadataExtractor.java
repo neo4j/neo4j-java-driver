@@ -298,11 +298,11 @@ public class MetadataExtractor {
                 if (NotificationSeverity.WARNING.equals(severityLevel)) {
                     gqlStatusCode = "01N42";
                     if (gqlStatusDescription == null || "null".equals(gqlStatusDescription)) {
-                        gqlStatusDescription = "warn: warning - unknown warning";
+                        gqlStatusDescription = "warn: unknown warning";
                     }
                 } else {
                     if (gqlStatusDescription == null || "null".equals(gqlStatusDescription)) {
-                        gqlStatusDescription = "info: informational - unknown notification";
+                        gqlStatusDescription = "info: unknown notification";
                     }
                 }
 
