@@ -28,7 +28,6 @@ import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Notification;
 
 public class InternalNotification extends InternalGqlStatusObject implements Notification {
-    @SuppressWarnings("deprecation")
     public static Optional<NotificationCategory> valueOf(String value) {
         return Arrays.stream(NotificationClassification.values())
                 .filter(type -> type.toString().equals(value))
@@ -121,13 +120,11 @@ public class InternalNotification extends InternalGqlStatusObject implements Not
         return Optional.ofNullable(rawClassification);
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public Optional<NotificationCategory> category() {
         return Optional.ofNullable(classification);
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public Optional<String> rawCategory() {
         return Optional.ofNullable(rawClassification);

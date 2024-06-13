@@ -29,7 +29,6 @@ public record GqlNotificationConfig(
         return new GqlNotificationConfig(null, null);
     }
 
-    @SuppressWarnings("deprecation")
     public static GqlNotificationConfig from(NotificationConfig notificationConfig) {
         Objects.requireNonNull(notificationConfig);
         var config = (InternalNotificationConfig) notificationConfig;

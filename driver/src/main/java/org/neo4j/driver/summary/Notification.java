@@ -21,6 +21,7 @@ import org.neo4j.driver.NotificationCategory;
 import org.neo4j.driver.NotificationClassification;
 import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.util.Immutable;
+import org.neo4j.driver.util.Preview;
 
 /**
  * Representation for notifications found when executing a query.
@@ -33,27 +34,20 @@ public interface Notification extends GqlStatusObject {
     /**
      * Returns a notification code for the discovered issue.
      * @return the notification code
-     * @deprecated the code is superseded by the GQLSTATUS that may be obtained from the {@link #gqlStatus()}
      */
-    @Deprecated
     String code();
 
     /**
      * Returns a short summary of the notification.
      * @return the title of the notification.
-     * @deprecated the title has been deprecated, please refer to the GQLSTATUS codes in the GQL standard.
      * @see #gqlStatus()
      */
-    @Deprecated
     String title();
 
     /**
      * Returns a longer description of the notification.
      * @return the description of the notification.
-     * @deprecated the description is superseded by the GQLSTATUS description that may be obtained from the
-     * {@link #statusDescription()}
      */
-    @Deprecated
     String description();
 
     /**
@@ -62,9 +56,7 @@ public interface Notification extends GqlStatusObject {
      *
      * @return the position in the query where the issue was found, or null if no position is associated with this
      * notification.
-     * @deprecated superseded by {@link #inputPosition()}
      */
-    @Deprecated
     InputPosition position();
 
     /**
@@ -75,6 +67,7 @@ public interface Notification extends GqlStatusObject {
      * @return an {@link Optional} of the {@link InputPosition} if available or an empty {@link Optional} otherwise
      * @since 5.22.0
      */
+    @Preview(name = "GQL-status object")
     default Optional<InputPosition> inputPosition() {
         return Optional.ofNullable(position());
     }
@@ -120,6 +113,7 @@ public interface Notification extends GqlStatusObject {
      * @since 5.22.0
      * @see #diagnosticRecord()
      */
+    @Preview(name = "GQL-status object")
     default Optional<NotificationClassification> classification() {
         return Optional.empty();
     }
@@ -131,6 +125,7 @@ public interface Notification extends GqlStatusObject {
      * @since 5.22.0
      * @see #diagnosticRecord()
      */
+    @Preview(name = "GQL-status object")
     default Optional<String> rawClassification() {
         return Optional.empty();
     }
@@ -140,10 +135,7 @@ public interface Notification extends GqlStatusObject {
      *
      * @return the category of the notification
      * @since 5.7
-     * @deprecated superseded by {@link #classification()}
      */
-    @Deprecated
-    @SuppressWarnings("DeprecatedIsStillUsed")
     default Optional<NotificationCategory> category() {
         return Optional.empty();
     }
@@ -153,10 +145,7 @@ public interface Notification extends GqlStatusObject {
      *
      * @return the category of the notification
      * @since 5.7
-     * @deprecated superseded by {@link #rawClassification()}
      */
-    @Deprecated
-    @SuppressWarnings("DeprecatedIsStillUsed")
     default Optional<String> rawCategory() {
         return Optional.empty();
     }

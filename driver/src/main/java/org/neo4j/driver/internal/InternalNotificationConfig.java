@@ -22,7 +22,6 @@ import org.neo4j.driver.NotificationCategory;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.NotificationSeverity;
 
-@SuppressWarnings("deprecation")
 public record InternalNotificationConfig(
         NotificationSeverity minimumSeverity, Set<NotificationCategory> disabledCategories)
         implements NotificationConfig {

@@ -50,7 +50,6 @@ public class SessionFactoryImpl implements SessionFactory {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public NetworkSession newInstance(
             SessionConfig sessionConfig, AuthToken overrideAuthToken, boolean telemetryDisabled) {
         return createSession(

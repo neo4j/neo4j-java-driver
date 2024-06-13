@@ -169,7 +169,6 @@ public class DriverFactory {
         };
     }
 
-    @SuppressWarnings("deprecation")
     protected ChannelConnector createConnector(
             ConnectionSettings settings,
             SecurityPlan securityPlan,

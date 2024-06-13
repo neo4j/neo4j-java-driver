@@ -45,6 +45,7 @@ import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
+import org.neo4j.driver.util.Preview;
 import org.neo4j.driver.util.Resource;
 
 /**
@@ -147,7 +148,6 @@ public final class Config implements Serializable {
     /**
      * The notification config.
      */
-    @SuppressWarnings("deprecation")
     private final NotificationConfig notificationConfig;
     /**
      * The {@link MetricsAdapter}.
@@ -318,10 +318,7 @@ public final class Config implements Serializable {
      *
      * @return the notification config
      * @since 5.7
-     * @deprecated superseded by {@link #minimumNotificationSeverity()} and
-     * {@link #disabledNotificationClassifications()}
      */
-    @Deprecated
     public NotificationConfig notificationConfig() {
         return notificationConfig;
     }
@@ -332,6 +329,7 @@ public final class Config implements Serializable {
      * @return an {@link Optional} of minimum {@link NotificationSeverity} or an empty {@link Optional} if it is not set
      * @since 5.22.0
      */
+    @Preview(name = "GQL-status object")
     public Optional<NotificationSeverity> minimumNotificationSeverity() {
         return Optional.ofNullable(((InternalNotificationConfig) notificationConfig).minimumSeverity());
     }
@@ -341,6 +339,7 @@ public final class Config implements Serializable {
      * @return the {@link Set} of disabled {@link NotificationClassification}
      * @since 5.22.0
      */
+    @Preview(name = "GQL-status object")
     public Set<NotificationClassification> disabledNotificationClassifications() {
         var disabledCategories = ((InternalNotificationConfig) notificationConfig).disabledCategories();
         return disabledCategories != null
@@ -416,7 +415,6 @@ public final class Config implements Serializable {
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
 
-        @SuppressWarnings("deprecation")
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
 
         private boolean telemetryDisabled = false;
@@ -806,10 +804,7 @@ public final class Config implements Serializable {
          * @param notificationConfig the notification config
          * @return this builder
          * @since 5.7
-         * @deprecated superseded by {@link #withMinimumNotificationSeverity(NotificationSeverity)} and {@link #withDisabledNotificationClassifications(Set)}
          */
-        @Deprecated
-        @SuppressWarnings("DeprecatedIsStillUsed")
         public ConfigBuilder withNotificationConfig(NotificationConfig notificationConfig) {
             this.notificationConfig = Objects.requireNonNull(notificationConfig, "notificationConfig must not be null");
             return this;
@@ -822,7 +817,7 @@ public final class Config implements Serializable {
          * @return this builder
          * @since 5.22.0
          */
-        @SuppressWarnings("deprecation")
+        @Preview(name = "GQL-status object")
         public ConfigBuilder withMinimumNotificationSeverity(NotificationSeverity minimumNotificationSeverity) {
             if (minimumNotificationSeverity == null) {
                 notificationConfig = NotificationConfig.disableAllConfig();
@@ -839,7 +834,7 @@ public final class Config implements Serializable {
          * @return this builder
          * @since 5.22.0
          */
-        @SuppressWarnings("deprecation")
+        @Preview(name = "GQL-status object")
         public ConfigBuilder withDisabledNotificationClassifications(
                 Set<NotificationClassification> disabledNotificationClassifications) {
             var disabledCategories = disabledNotificationClassifications == null
