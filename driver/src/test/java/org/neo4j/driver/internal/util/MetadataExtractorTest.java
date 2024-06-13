@@ -308,6 +308,19 @@ class MetadataExtractorTest {
                 NotificationCategory.DEPRECATION, firstNotification.category().get());
         assertEquals("DEPRECATION", firstNotification.rawCategory().get());
         assertEquals(new InternalInputPosition(42, 4242, 424242), firstNotification.position());
+        assertEquals(
+                Map.of(
+                        "OPERATION", Values.value(""),
+                        "OPERATION_CODE", Values.value("0"),
+                        "CURRENT_SCHEMA", Values.value("/"),
+                        "_severity", Values.value("WARNING"),
+                        "_classification", Values.value("DEPRECATION"),
+                        "_position",
+                                parameters(
+                                        "offset", 42,
+                                        "line", 4242,
+                                        "column", 424242)),
+                firstNotification.diagnosticRecord());
 
         assertEquals("Almost good thing", secondNotification.description());
         assertEquals("Neo.GoodNotification", secondNotification.code());
@@ -315,6 +328,13 @@ class MetadataExtractorTest {
         assertEquals("INFO", secondNotification.severity());
         assertTrue(secondNotification.inputPosition().isEmpty());
         assertNull(secondNotification.position());
+        assertEquals(
+                Map.of(
+                        "OPERATION", Values.value(""),
+                        "OPERATION_CODE", Values.value("0"),
+                        "CURRENT_SCHEMA", Values.value("/"),
+                        "_severity", Values.value("INFO")),
+                secondNotification.diagnosticRecord());
 
         assertEquals(2, summary.gqlStatusObjects().size());
         var gqlStatusObjectsIterator = summary.gqlStatusObjects().iterator();
@@ -328,28 +348,34 @@ class MetadataExtractorTest {
     @SuppressWarnings({"deprecation", "OptionalGetWithoutIsPresent"})
     void shouldBuildResultSummaryWithGqlStatusObjects() {
         var gqlStatusObject1 = parameters(
-                "gql_status", "gql_status",
-                "status_description", "status_description",
-                "neo4j_code", "neo4j_code",
-                "title", "title",
+                "gql_status",
+                "gql_status",
+                "status_description",
+                "status_description",
+                "neo4j_code",
+                "neo4j_code",
+                "title",
+                "title",
                 "diagnostic_record",
+                parameters(
+                        "_severity",
+                        "WARNING",
+                        "_classification",
+                        "SECURITY",
+                        "_position",
                         parameters(
-                                "_severity",
-                                "WARNING",
-                                "_classification",
-                                "SECURITY",
-                                "_position",
-                                parameters(
-                                        "offset", 42,
-                                        "line", 4242,
-                                        "column", 424242)));
+                                "offset", 42,
+                                "line", 4242,
+                                "column", 424242)));
         var gqlStatusObject2 = parameters(
-                "gql_status", "gql_status",
-                "status_description", "status_description",
+                "gql_status",
+                "gql_status",
+                "status_description",
+                "status_description",
                 "diagnostic_record",
-                        parameters(
-                                "_severity", "WARNING",
-                                "_classification", "SECURITY"));
+                parameters(
+                        "_severity", "WARNING",
+                        "_classification", "SECURITY"));
         var gqlStatusObjects = value(gqlStatusObject1, gqlStatusObject2);
         var metadata = singletonMap("statuses", gqlStatusObjects);
 
@@ -374,10 +400,31 @@ class MetadataExtractorTest {
                 NotificationCategory.SECURITY, firstGqlStatusObject.category().get());
         assertEquals("SECURITY", firstGqlStatusObject.rawCategory().get());
         assertEquals(new InternalInputPosition(42, 4242, 424242), firstGqlStatusObject.position());
+        assertEquals(
+                Map.of(
+                        "OPERATION", Values.value(""),
+                        "OPERATION_CODE", Values.value("0"),
+                        "CURRENT_SCHEMA", Values.value("/"),
+                        "_severity", Values.value("WARNING"),
+                        "_classification", Values.value("SECURITY"),
+                        "_position",
+                                parameters(
+                                        "offset", 42,
+                                        "line", 4242,
+                                        "column", 424242)),
+                firstGqlStatusObject.diagnosticRecord());
 
         assertFalse(secondGqlStatusObject instanceof Notification);
         assertEquals("gql_status", secondGqlStatusObject.gqlStatus());
         assertEquals("status_description", secondGqlStatusObject.statusDescription());
+        assertEquals(
+                Map.of(
+                        "OPERATION", Values.value(""),
+                        "OPERATION_CODE", Values.value("0"),
+                        "CURRENT_SCHEMA", Values.value("/"),
+                        "_severity", Values.value("WARNING"),
+                        "_classification", Values.value("SECURITY")),
+                secondGqlStatusObject.diagnosticRecord());
 
         assertEquals(1, summary.notifications().size());
         assertEquals(firstGqlStatusObject, summary.notifications().get(0));

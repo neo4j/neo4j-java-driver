@@ -374,7 +374,7 @@ public class MetadataExtractor {
                     diagnosticRecord.put("OPERATION", Values.value(""));
                 }
                 if (!containsOperationCode) {
-                    diagnosticRecord.put("OPERATION_CODE", Values.value(""));
+                    diagnosticRecord.put("OPERATION_CODE", Values.value("0"));
                 }
                 if (!containsCurrentSchema) {
                     diagnosticRecord.put("CURRENT_SCHEMA", Values.value("/"));
