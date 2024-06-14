@@ -409,7 +409,6 @@ class ConfigTest {
     @Nested
     class SerializationTest {
         @Test
-        @SuppressWarnings("deprecation")
         void shouldSerialize() throws Exception {
             var config = Config.builder()
                     .withMaxConnectionPoolSize(123)
