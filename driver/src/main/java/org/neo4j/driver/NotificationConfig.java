@@ -21,6 +21,7 @@ import java.util.Set;
 import org.neo4j.driver.internal.InternalNotificationConfig;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.driver.util.Preview;
 
 /**
  * A notification configuration defining what notifications should be supplied by the server.
@@ -39,6 +40,7 @@ import org.neo4j.driver.summary.ResultSummary;
  * @see ResultSummary#notifications()
  * @see org.neo4j.driver.summary.Notification
  */
+@Preview(name = "GQL-status object")
 public sealed interface NotificationConfig extends Serializable permits InternalNotificationConfig {
     /**
      * Returns a default notification configuration.

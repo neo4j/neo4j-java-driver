@@ -33,7 +33,7 @@ public record InternalNotificationConfig(
 
     @Override
     public NotificationConfig disableCategories(Set<NotificationCategory> disabledCategories) {
-        Objects.requireNonNull(disabledCategories, "disabledCategories must not be null");
+        Objects.requireNonNull(disabledCategories, "disabledClassifications must not be null");
         return new InternalNotificationConfig(minimumSeverity, Set.copyOf(disabledCategories));
     }
 }

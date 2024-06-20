@@ -20,6 +20,7 @@ import static java.lang.String.format;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.DriverInfoUtil.driverVersion;
 
+import io.netty.channel.EventLoop;
 import java.io.File;
 import java.io.Serial;
 import java.io.Serializable;
@@ -28,9 +29,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
+import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
+import org.neo4j.driver.internal.InternalNotificationConfig;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -39,6 +45,8 @@ import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
+import org.neo4j.driver.util.Preview;
+import org.neo4j.driver.util.Resource;
 
 /**
  * A configuration class to config driver properties.
@@ -223,6 +231,7 @@ public final class Config implements Serializable {
 
     /**
      * Returns the maximum connection pool size.
+     *
      * @return the maximum size
      */
     public int maxConnectionPoolSize() {
@@ -231,6 +240,7 @@ public final class Config implements Serializable {
 
     /**
      * Returns the connection acquisition timeout in milliseconds.
+     *
      * @return the acquisition timeout
      */
     public long connectionAcquisitionTimeoutMillis() {
@@ -296,6 +306,7 @@ public final class Config implements Serializable {
 
     /**
      * Returns the fetch size.
+     *
      * @return the fetch size
      */
     public long fetchSize() {
@@ -304,6 +315,7 @@ public final class Config implements Serializable {
 
     /**
      * Returns notification config.
+     *
      * @return the notification config
      * @since 5.7
      */
@@ -312,7 +324,35 @@ public final class Config implements Serializable {
     }
 
     /**
-     * Returns the number of {@link io.netty.channel.EventLoop} threads.
+     * Returns a minimum notification severity.
+     *
+     * @return an {@link Optional} of minimum {@link NotificationSeverity} or an empty {@link Optional} if it is not set
+     * @since 5.22.0
+     */
+    @Preview(name = "GQL-status object")
+    public Optional<NotificationSeverity> minimumNotificationSeverity() {
+        return Optional.ofNullable(((InternalNotificationConfig) notificationConfig).minimumSeverity());
+    }
+
+    /**
+     * Returns a set of disabled notification classifications.
+     * @return the {@link Set} of disabled {@link NotificationClassification}
+     * @since 5.22.0
+     */
+    @Preview(name = "GQL-status object")
+    public Set<NotificationClassification> disabledNotificationClassifications() {
+        var disabledCategories = ((InternalNotificationConfig) notificationConfig).disabledCategories();
+        return disabledCategories != null
+                ? ((InternalNotificationConfig) notificationConfig)
+                        .disabledCategories().stream()
+                                .map(NotificationClassification.class::cast)
+                                .collect(Collectors.toUnmodifiableSet())
+                : Collections.emptySet();
+    }
+
+    /**
+     * Returns the number of {@link EventLoop} threads.
+     *
      * @return the number of threads
      */
     public int eventLoopThreads() {
@@ -328,6 +368,7 @@ public final class Config implements Serializable {
 
     /**
      * Returns the {@link MetricsAdapter}.
+     *
      * @return the metrics adapter
      */
     public MetricsAdapter metricsAdapter() {
@@ -373,6 +414,7 @@ public final class Config implements Serializable {
         private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
+
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
 
         private boolean telemetryDisabled = false;
@@ -399,7 +441,7 @@ public final class Config implements Serializable {
          * Enable logging of leaked sessions.
          * <p>
          * Each {@link Session session} is associated with a network connection and thus is a
-         * {@link org.neo4j.driver.util.Resource resource} that needs to be explicitly closed.
+         * {@link Resource resource} that needs to be explicitly closed.
          * Unclosed sessions will result in socket leaks and could cause {@link OutOfMemoryError}s.
          * <p>
          * Session is considered to be leaked when it is finalized via {@link Object#finalize()} while not being
@@ -579,8 +621,8 @@ public final class Config implements Serializable {
         public ConfigBuilder withRoutingTablePurgeDelay(long delay, TimeUnit unit) {
             var routingTablePurgeDelayMillis = unit.toMillis(delay);
             if (routingTablePurgeDelayMillis < 0) {
-                throw new IllegalArgumentException(String.format(
-                        "The routing table purge delay may not be smaller than 0, but was %d %s.", delay, unit));
+                throw new IllegalArgumentException(
+                        format("The routing table purge delay may not be smaller than 0, but was %d %s.", delay, unit));
             }
             this.routingTablePurgeDelayMillis = routingTablePurgeDelayMillis;
             return this;
@@ -591,11 +633,11 @@ public final class Config implements Serializable {
          * This config is only valid when the driver is used with servers that support Bolt V4 (Server version 4.0 and later).
          * <p>
          * Bolt V4 enables pulling records in batches to allow client to take control of data population and apply back pressure to server.
-         * This config specifies the default fetch size for all query runs using {@link Session} and {@link org.neo4j.driver.async.AsyncSession}.
+         * This config specifies the default fetch size for all query runs using {@link Session} and {@link AsyncSession}.
          * By default, the value is set to {@code 1000}.
          * Use {@code -1} to disables back pressure and config client to pull all records at once after each run.
          * <p>
-         * This config only applies to run results obtained via {@link Session} and {@link org.neo4j.driver.async.AsyncSession}.
+         * This config only applies to run results obtained via {@link Session} and {@link AsyncSession}.
          * As with the reactive sessions the batch size is managed by the subscription requests instead.
          *
          * @param size the default record fetch size when pulling records in batches using Bolt V4.
@@ -627,11 +669,11 @@ public final class Config implements Serializable {
             var connectionTimeoutMillis = unit.toMillis(value);
             if (connectionTimeoutMillis < 0) {
                 throw new IllegalArgumentException(
-                        String.format("The connection timeout may not be smaller than 0, but was %d %s.", value, unit));
+                        format("The connection timeout may not be smaller than 0, but was %d %s.", value, unit));
             }
             var connectionTimeoutMillisInt = (int) connectionTimeoutMillis;
             if (connectionTimeoutMillisInt != connectionTimeoutMillis) {
-                throw new IllegalArgumentException(String.format(
+                throw new IllegalArgumentException(format(
                         "The connection timeout must represent int value when converted to milliseconds %d.",
                         connectionTimeoutMillis));
             }
@@ -655,7 +697,7 @@ public final class Config implements Serializable {
             var maxRetryTimeMs = unit.toMillis(value);
             if (maxRetryTimeMs < 0) {
                 throw new IllegalArgumentException(
-                        String.format("The max retry time may not be smaller than 0, but was %d %s.", value, unit));
+                        format("The max retry time may not be smaller than 0, but was %d %s.", value, unit));
             }
             this.maxTransactionRetryTimeMillis = maxRetryTimeMs;
             return this;
@@ -732,7 +774,7 @@ public final class Config implements Serializable {
         public ConfigBuilder withEventLoopThreads(int size) {
             if (size < 1) {
                 throw new IllegalArgumentException(
-                        String.format("The event loop thread may not be smaller than 1, but was %d.", size));
+                        format("The event loop thread may not be smaller than 1, but was %d.", size));
             }
             this.eventLoopThreads = size;
             return this;
@@ -765,6 +807,42 @@ public final class Config implements Serializable {
          */
         public ConfigBuilder withNotificationConfig(NotificationConfig notificationConfig) {
             this.notificationConfig = Objects.requireNonNull(notificationConfig, "notificationConfig must not be null");
+            return this;
+        }
+
+        /**
+         * Sets a minimum severity for notifications produced by the server.
+         *
+         * @param minimumNotificationSeverity the minimum notification severity
+         * @return this builder
+         * @since 5.22.0
+         */
+        @Preview(name = "GQL-status object")
+        public ConfigBuilder withMinimumNotificationSeverity(NotificationSeverity minimumNotificationSeverity) {
+            if (minimumNotificationSeverity == null) {
+                notificationConfig = NotificationConfig.disableAllConfig();
+            } else {
+                notificationConfig = notificationConfig.enableMinimumSeverity(minimumNotificationSeverity);
+            }
+            return this;
+        }
+
+        /**
+         * Sets a set of disabled classifications for notifications produced by the server.
+         *
+         * @param disabledNotificationClassifications the set of disabled notification classifications
+         * @return this builder
+         * @since 5.22.0
+         */
+        @Preview(name = "GQL-status object")
+        public ConfigBuilder withDisabledNotificationClassifications(
+                Set<NotificationClassification> disabledNotificationClassifications) {
+            var disabledCategories = disabledNotificationClassifications == null
+                    ? Collections.<NotificationCategory>emptySet()
+                    : disabledNotificationClassifications.stream()
+                            .map(NotificationCategory.class::cast)
+                            .collect(Collectors.toSet());
+            notificationConfig = notificationConfig.disableCategories(disabledCategories);
             return this;
         }
 

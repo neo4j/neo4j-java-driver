@@ -68,6 +68,7 @@ class BeginMessageEncoderTest {
                         impersonatedUser,
                         txType,
                         null,
+                        true,
                         Logging.none()),
                 packer);
 

@@ -16,12 +16,13 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.summary.DatabaseInfo;
+import org.neo4j.driver.summary.GqlStatusObject;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
@@ -38,6 +39,7 @@ public class InternalResultSummary implements ResultSummary {
     private final Plan plan;
     private final ProfiledPlan profile;
     private final List<Notification> notifications;
+    private final Set<GqlStatusObject> gqlStatusObjects;
     private final long resultAvailableAfter;
     private final long resultConsumedAfter;
     private final DatabaseInfo databaseInfo;
@@ -51,6 +53,7 @@ public class InternalResultSummary implements ResultSummary {
             Plan plan,
             ProfiledPlan profile,
             List<Notification> notifications,
+            Set<GqlStatusObject> gqlStatusObjects,
             long resultAvailableAfter,
             long resultConsumedAfter) {
         this.query = query;
@@ -60,7 +63,8 @@ public class InternalResultSummary implements ResultSummary {
         this.counters = counters;
         this.plan = resolvePlan(plan, profile);
         this.profile = profile;
-        this.notifications = notifications;
+        this.notifications = Objects.requireNonNull(notifications);
+        this.gqlStatusObjects = Objects.requireNonNull(gqlStatusObjects);
         this.resultAvailableAfter = resultAvailableAfter;
         this.resultConsumedAfter = resultConsumedAfter;
     }
@@ -102,7 +106,12 @@ public class InternalResultSummary implements ResultSummary {
 
     @Override
     public List<Notification> notifications() {
-        return notifications == null ? Collections.emptyList() : notifications;
+        return notifications;
+    }
+
+    @Override
+    public Set<GqlStatusObject> gqlStatusObjects() {
+        return gqlStatusObjects;
     }
 
     @Override
@@ -146,7 +155,7 @@ public class InternalResultSummary implements ResultSummary {
                 && Objects.equals(counters, that.counters)
                 && Objects.equals(plan, that.plan)
                 && Objects.equals(profile, that.profile)
-                && Objects.equals(notifications, that.notifications);
+                && Objects.equals(gqlStatusObjects, that.gqlStatusObjects);
     }
 
     @Override
@@ -158,7 +167,7 @@ public class InternalResultSummary implements ResultSummary {
                 counters,
                 plan,
                 profile,
-                notifications,
+                gqlStatusObjects,
                 resultAvailableAfter,
                 resultConsumedAfter);
     }
@@ -172,8 +181,8 @@ public class InternalResultSummary implements ResultSummary {
                 + queryType + ", counters="
                 + counters + ", plan="
                 + plan + ", profile="
-                + profile + ", notifications="
-                + notifications + ", resultAvailableAfter="
+                + profile + ", gqlStatusObjects="
+                + gqlStatusObjects + ", resultAvailableAfter="
                 + resultAvailableAfter + ", resultConsumedAfter="
                 + resultConsumedAfter + '}';
     }

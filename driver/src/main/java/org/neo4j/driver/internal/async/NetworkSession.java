@@ -35,7 +35,6 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
@@ -44,6 +43,7 @@ import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.FailableCursor;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.ImpersonationUtil;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -73,7 +73,7 @@ public class NetworkSession {
     private final BookmarkManager bookmarkManager;
     private volatile Set<Bookmark> lastUsedBookmarks = Collections.emptySet();
     private volatile Set<Bookmark> lastReceivedBookmarks;
-    private final NotificationConfig notificationConfig;
+    private final GqlNotificationConfig notificationConfig;
     private final boolean telemetryDisabled;
 
     public NetworkSession(
@@ -86,7 +86,7 @@ public class NetworkSession {
             long fetchSize,
             Logging logging,
             BookmarkManager bookmarkManager,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
             AuthToken overrideAuthToken,
             boolean telemetryDisabled) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");

@@ -26,8 +26,8 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
@@ -45,7 +45,7 @@ public class LeakLoggingNetworkSession extends NetworkSession {
             long fetchSize,
             Logging logging,
             BookmarkManager bookmarkManager,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
             AuthToken overrideAuthToken,
             boolean telemetryDisabled) {
         super(

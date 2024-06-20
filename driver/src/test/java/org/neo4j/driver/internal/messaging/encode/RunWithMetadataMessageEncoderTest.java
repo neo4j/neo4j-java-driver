@@ -64,7 +64,16 @@ class RunWithMetadataMessageEncoderTest {
         var query = new Query("RETURN $answer", value(params));
         encoder.encode(
                 autoCommitTxRunMessage(
-                        query, txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null, null, Logging.none()),
+                        query,
+                        txTimeout,
+                        txMetadata,
+                        defaultDatabase(),
+                        mode,
+                        bookmarks,
+                        null,
+                        null,
+                        true,
+                        Logging.none()),
                 packer);
 
         var order = inOrder(packer);

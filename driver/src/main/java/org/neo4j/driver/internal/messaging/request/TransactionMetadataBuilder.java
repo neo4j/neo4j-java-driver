@@ -25,9 +25,9 @@ import java.util.Set;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.util.Iterables;
 
 public class TransactionMetadataBuilder {
@@ -48,7 +48,8 @@ public class TransactionMetadataBuilder {
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             String txType,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
+            boolean legacyNotifications,
             Logging logging) {
         var bookmarksPresent = !bookmarks.isEmpty();
         var txTimeoutPresent = txTimeout != null;
@@ -97,7 +98,7 @@ public class TransactionMetadataBuilder {
         if (txTypePresent) {
             result.put(TX_TYPE_KEY, value(txType));
         }
-        MessageWithMetadata.appendNotificationConfig(result, notificationConfig);
+        MessageWithMetadata.appendNotificationConfig(result, notificationConfig, legacyNotifications);
 
         databaseName.databaseName().ifPresent(name -> result.put(DATABASE_NAME_KEY, value(name)));
 

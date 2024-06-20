@@ -50,8 +50,8 @@ public final class ChannelAttributes {
 
     // configuration hints provided by the server
     private static final AttributeKey<Long> CONNECTION_READ_TIMEOUT = newInstance("connectionReadTimeout");
-
     private static final AttributeKey<Boolean> TELEMETRY_ENABLED = newInstance("telemetryEnabled");
+    private static final AttributeKey<Boolean> GQL_STATUS_ENABLED = newInstance("tryUseGqlStatus");
 
     private ChannelAttributes() {}
 
@@ -178,8 +178,16 @@ public final class ChannelAttributes {
         setOnce(channel, TELEMETRY_ENABLED, telemetryEnabled);
     }
 
-    public static Boolean telemetryEnabled(Channel channel) {
+    public static boolean telemetryEnabled(Channel channel) {
         return Optional.ofNullable(get(channel, TELEMETRY_ENABLED)).orElse(false);
+    }
+
+    public static void setGqlStatusEnabled(Channel channel, Boolean gqlStatusEnabled) {
+        setOnce(channel, GQL_STATUS_ENABLED, gqlStatusEnabled);
+    }
+
+    public static boolean gqlStatusEnabled(Channel channel) {
+        return Optional.ofNullable(get(channel, GQL_STATUS_ENABLED)).orElse(false);
     }
 
     private static <T> T get(Channel channel, AttributeKey<T> key) {

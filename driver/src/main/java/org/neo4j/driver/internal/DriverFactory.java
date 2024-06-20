@@ -183,7 +183,7 @@ public class DriverFactory {
                 clock,
                 routingContext,
                 getDomainNameResolver(),
-                config.notificationConfig(),
+                GqlNotificationConfig.from(config.notificationConfig()),
                 boltAgent);
     }
 

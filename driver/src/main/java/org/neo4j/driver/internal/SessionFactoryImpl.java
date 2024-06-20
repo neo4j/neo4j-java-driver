@@ -28,7 +28,6 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -63,7 +62,7 @@ public class SessionFactoryImpl implements SessionFactory {
                 sessionConfig.impersonatedUser().orElse(null),
                 logging,
                 sessionConfig.bookmarkManager().orElse(NoOpBookmarkManager.INSTANCE),
-                sessionConfig.notificationConfig(),
+                GqlNotificationConfig.from(sessionConfig.notificationConfig()),
                 overrideAuthToken,
                 telemetryDisabled);
     }
@@ -141,7 +140,7 @@ public class SessionFactoryImpl implements SessionFactory {
             String impersonatedUser,
             Logging logging,
             BookmarkManager bookmarkManager,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
             AuthToken authToken,
             boolean telemetryDisabled) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");

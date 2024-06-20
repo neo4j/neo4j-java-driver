@@ -231,4 +231,38 @@ class SessionConfigTest {
                         .disableCategories(Set.of(NotificationCategory.UNSUPPORTED, NotificationCategory.UNRECOGNIZED)),
                 config.notificationConfig());
     }
+
+    @Test
+    void shouldNotHaveMinimumNotificationSeverity() {
+        var config = builder().build();
+
+        assertTrue(config.minimumNotificationSeverity().isEmpty());
+    }
+
+    @Test
+    void shouldSetMinimumNotificationSeverity() {
+        var config = Config.builder()
+                .withMinimumNotificationSeverity(NotificationSeverity.WARNING)
+                .build();
+
+        assertEquals(
+                NotificationSeverity.WARNING,
+                config.minimumNotificationSeverity().orElse(null));
+    }
+
+    @Test
+    void shouldNotHaveDisabledNotificationClassifications() {
+        var config = builder().build();
+
+        assertTrue(config.disabledNotificationClassifications().isEmpty());
+    }
+
+    @Test
+    void shouldSetDisabledNotificationClassifications() {
+        var config = Config.builder()
+                .withDisabledNotificationClassifications(Set.of(NotificationClassification.SECURITY))
+                .build();
+
+        assertEquals(Set.of(NotificationClassification.SECURITY), config.disabledNotificationClassifications());
+    }
 }

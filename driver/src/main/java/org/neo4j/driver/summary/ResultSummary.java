@@ -17,9 +17,11 @@
 package org.neo4j.driver.summary;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.util.Immutable;
+import org.neo4j.driver.util.Preview;
 
 /**
  * The result summary of running a query. The result summary interface can be used to investigate
@@ -29,6 +31,7 @@ import org.neo4j.driver.util.Immutable;
  * The result summary is only available after all result records have been consumed.
  * <p>
  * Keeping the result summary around does not influence the lifecycle of any associated session and/or transaction.
+ *
  * @since 1.0
  */
 @Immutable
@@ -82,11 +85,24 @@ public interface ResultSummary {
      * in a client.
      * <p>
      * Unlike failures or errors, notifications do not affect the execution of a query.
+     * <p>
+     * Since {@link Notification} is a subtype of {@link GqlStatusObject}, the list of notifications is a subset of all
+     * GQL-status objects that are of {@link Notification} type. However, the order might be different.
      *
      * @return a list of notifications produced while executing the query. The list will be empty if no
      * notifications produced while executing the query.
+     * @see #gqlStatusObjects()
      */
     List<Notification> notifications();
+
+    /**
+     * Returns a sequenced set of GQL-status objects resulting from the request execution.
+     *
+     * @return the sequenced set of GQL-status objects
+     * @since 5.22.0
+     */
+    @Preview(name = "GQL-status object")
+    Set<GqlStatusObject> gqlStatusObjects();
 
     /**
      * The time it took the server to make the result available for consumption.
@@ -106,12 +122,14 @@ public interface ResultSummary {
 
     /**
      * The basic information of the server where the result is obtained from
+     *
      * @return basic information of the server where the result is obtained from
      */
     ServerInfo server();
 
     /**
      * The basic information of the database where the result is obtained from
+     *
      * @return the basic information of the database where the result is obtained from
      */
     DatabaseInfo database();

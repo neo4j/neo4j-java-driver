@@ -22,12 +22,17 @@ import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.assertValid
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
+import org.neo4j.driver.internal.InternalNotificationConfig;
 import org.neo4j.driver.reactive.ReactiveSession;
+import org.neo4j.driver.util.Preview;
 
 /**
  * The session configurations used to configure a session.
@@ -171,6 +176,33 @@ public final class SessionConfig implements Serializable {
         return notificationConfig;
     }
 
+    /**
+     * Returns a minimum notification severity.
+     *
+     * @return an {@link Optional} of minimum {@link NotificationSeverity} or an empty {@link Optional} if it is not set
+     * @since 5.22.0
+     */
+    @Preview(name = "GQL-status object")
+    public Optional<NotificationSeverity> minimumNotificationSeverity() {
+        return Optional.ofNullable(((InternalNotificationConfig) notificationConfig).minimumSeverity());
+    }
+
+    /**
+     * Returns a set of disabled notification classifications.
+     * @return the {@link Set} of disabled {@link NotificationClassification}
+     * @since 5.22.0
+     */
+    @Preview(name = "GQL-status object")
+    public Set<NotificationClassification> disabledNotificationClassifications() {
+        var disabledCategories = ((InternalNotificationConfig) notificationConfig).disabledCategories();
+        return disabledCategories != null
+                ? ((InternalNotificationConfig) notificationConfig)
+                        .disabledCategories().stream()
+                                .map(NotificationClassification.class::cast)
+                                .collect(Collectors.toUnmodifiableSet())
+                : Collections.emptySet();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -214,6 +246,7 @@ public final class SessionConfig implements Serializable {
         private String database = null;
         private String impersonatedUser = null;
         private BookmarkManager bookmarkManager;
+
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
 
         private Builder() {}
@@ -394,6 +427,42 @@ public final class SessionConfig implements Serializable {
          */
         public Builder withNotificationConfig(NotificationConfig notificationConfig) {
             this.notificationConfig = Objects.requireNonNull(notificationConfig, "notificationConfig must not be null");
+            return this;
+        }
+
+        /**
+         * Sets a minimum severity for notifications produced by the server.
+         *
+         * @param minimumNotificationSeverity the minimum notification severity
+         * @return this builder
+         * @since 5.22.0
+         */
+        @Preview(name = "GQL-status object")
+        public Builder withMinimumNotificationSeverity(NotificationSeverity minimumNotificationSeverity) {
+            if (minimumNotificationSeverity == null) {
+                notificationConfig = NotificationConfig.disableAllConfig();
+            } else {
+                notificationConfig = notificationConfig.enableMinimumSeverity(minimumNotificationSeverity);
+            }
+            return this;
+        }
+
+        /**
+         * Sets a set of disabled classifications for notifications produced by the server.
+         *
+         * @param disabledNotificationClassifications the set of disabled notification classifications
+         * @return this builder
+         * @since 5.22.0
+         */
+        @Preview(name = "GQL-status object")
+        public Builder withDisabledNotificationClassifications(
+                Set<NotificationClassification> disabledNotificationClassifications) {
+            var disabledCategories = disabledNotificationClassifications == null
+                    ? Collections.<NotificationCategory>emptySet()
+                    : disabledNotificationClassifications.stream()
+                            .map(NotificationCategory.class::cast)
+                            .collect(Collectors.toSet());
+            notificationConfig = notificationConfig.disableCategories(disabledCategories);
             return this;
         }
 

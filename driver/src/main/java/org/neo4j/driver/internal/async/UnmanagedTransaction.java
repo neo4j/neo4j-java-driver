@@ -36,7 +36,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
@@ -45,6 +44,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.DatabaseBookmark;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -97,7 +97,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     private CompletableFuture<Void> rollbackFuture;
     private Throwable causeOfTermination;
     private CompletionStage<Void> terminationStage;
-    private final NotificationConfig notificationConfig;
+    private final GqlNotificationConfig notificationConfig;
     private final CompletableFuture<UnmanagedTransaction> beginFuture = new CompletableFuture<>();
     private final Logging logging;
 
@@ -107,7 +107,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             Connection connection,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             long fetchSize,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
             ApiTelemetryWork apiTelemetryWork,
             Logging logging) {
         this(
@@ -125,7 +125,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             Consumer<DatabaseBookmark> bookmarkConsumer,
             long fetchSize,
             ResultCursorsHolder resultCursors,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
             ApiTelemetryWork apiTelemetryWork,
             Logging logging) {
         this.connection = connection;

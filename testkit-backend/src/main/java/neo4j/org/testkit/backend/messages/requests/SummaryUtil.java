@@ -18,13 +18,14 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import neo4j.org.testkit.backend.messages.responses.Summary;
-import org.neo4j.driver.internal.InternalNotificationCategory;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.summary.InputPosition;
+import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.QueryType;
@@ -72,20 +73,48 @@ public class SummaryUtil {
                                 .map(InternalNotificationSeverity.Type::toString)
                                 .orElse("UNKNOWN"))
                         .rawSeverityLevel(s.rawSeverityLevel().orElse(null))
-                        .category(s.category()
-                                .map(InternalNotificationCategory.class::cast)
-                                .map(InternalNotificationCategory::type)
-                                .map(InternalNotificationCategory.Type::toString)
-                                .orElse("UNKNOWN"))
+                        .category(s.category().map(Objects::toString).orElse("UNKNOWN"))
                         .rawCategory(s.rawCategory().orElse(null))
                         .build())
                 .collect(Collectors.toList());
+        var gqlStatusObjects = summary.gqlStatusObjects().stream()
+                .map(gqlStatusObject -> {
+                    var builder = Summary.GqlStatusObject.builder()
+                            .gqlStatus(gqlStatusObject.gqlStatus())
+                            .statusDescription(gqlStatusObject.statusDescription())
+                            .diagnosticRecord(gqlStatusObject.diagnosticRecord());
+                    if (gqlStatusObject instanceof Notification notification) {
+                        builder = builder.position(toInputPosition(notification.position()))
+                                .severity(notification
+                                        .severityLevel()
+                                        .map(InternalNotificationSeverity.class::cast)
+                                        .map(InternalNotificationSeverity::type)
+                                        .map(InternalNotificationSeverity.Type::toString)
+                                        .orElse("UNKNOWN"))
+                                .rawSeverity(notification.rawSeverityLevel().orElse(null))
+                                .classification(notification
+                                        .classification()
+                                        .map(Objects::toString)
+                                        .orElse("UNKNOWN"))
+                                .rawClassification(
+                                        notification.rawClassification().orElse(null))
+                                .notification(true);
+                    } else {
+                        builder = builder.position(null)
+                                .severity("UNKNOWN")
+                                .classification("UNKNOWN")
+                                .diagnosticRecord(gqlStatusObject.diagnosticRecord());
+                    }
+                    return builder.build();
+                })
+                .toList();
         return Summary.SummaryBody.builder()
                 .serverInfo(serverInfo)
                 .counters(counters)
                 .query(query)
                 .database(summary.database().name())
                 .notifications(notifications)
+                .gqlStatusObjects(gqlStatusObjects)
                 .plan(toPlan(summary.plan()))
                 .profile(toProfile(summary.profile()))
                 .queryType(toQueryType(summary.queryType()))

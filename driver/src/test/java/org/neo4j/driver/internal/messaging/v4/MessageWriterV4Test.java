@@ -110,7 +110,8 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         ((InternalAuthToken) basic("neo4j", "neo4j")).toMap(),
                         Collections.emptyMap(),
                         false,
-                        null),
+                        null,
+                        true),
                 GOODBYE,
                 new BeginMessage(
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx123")),
@@ -121,6 +122,7 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         null,
                         null,
                         null,
+                        true,
                         Logging.none()),
                 new BeginMessage(
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx123")),
@@ -131,6 +133,7 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         null,
                         null,
                         null,
+                        true,
                         Logging.none()),
                 COMMIT,
                 ROLLBACK,
@@ -144,6 +147,7 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx1")),
                         null,
                         null,
+                        true,
                         Logging.none()),
                 autoCommitTxRunMessage(
                         new Query("RETURN 1"),
@@ -154,6 +158,7 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx1")),
                         null,
                         null,
+                        true,
                         Logging.none()),
                 unmanagedTxRunMessage(new Query("RETURN 1")),
 
@@ -167,6 +172,7 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         Collections.emptySet(),
                         null,
                         null,
+                        true,
                         Logging.none()),
                 autoCommitTxRunMessage(
                         new Query("RETURN $x", singletonMap("x", value(ZonedDateTime.now()))),
@@ -177,6 +183,7 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase {
                         Collections.emptySet(),
                         null,
                         null,
+                        true,
                         Logging.none()),
                 unmanagedTxRunMessage(new Query("RETURN $x", singletonMap("x", point(42, 1, 2, 3)))));
     }
