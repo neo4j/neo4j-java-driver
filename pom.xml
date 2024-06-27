@@ -36,11 +36,11 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.110.Final</netty-bom.version>
+    <netty-bom.version>4.1.111.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2023.0.6</reactor-bom.version>
+    <reactor-bom.version>2023.0.7</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest.version>2.2</hamcrest.version>
     <mockito-core.version>5.12.0</mockito-core.version>
@@ -57,7 +57,7 @@
     <jackson.version>2.17.1</jackson.version>
     <lombok.version>1.18.32</lombok.version>
     <svm.version>24.0.1</svm.version>
-    <micrometer.version>1.13.0</micrometer.version>
+    <micrometer.version>1.13.1</micrometer.version>
     <blockhound.version>1.0.9.RELEASE</blockhound.version>
     <testcontainers.version>1.19.8</testcontainers.version>
     <build-resources.version>5.18.1</build-resources.version>
