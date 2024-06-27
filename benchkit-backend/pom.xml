@@ -7,7 +7,7 @@
     <parent>
         <artifactId>neo4j-java-driver-parent</artifactId>
         <groupId>org.neo4j.driver</groupId>
-        <version>5.21-SNAPSHOT</version>
+        <version>5.22-SNAPSHOT</version>
     </parent>
 
     <artifactId>benchkit-backend</artifactId>
