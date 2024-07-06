@@ -14,27 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.exceptions;
+package org.neo4j.driver.internal.messaging;
 
-import java.io.Serial;
+import java.util.Map;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.GqlStatusError;
 
-/**
- * This exception indicates a user is nesting new transaction with an on-going transaction (unmanaged and/or auto-commit).
- */
-public class TransactionNestingException extends ClientException {
-    @Serial
-    private static final long serialVersionUID = -8264319542004457065L;
+public record GqlError(
+        String gqlStatus,
+        String statusDescription,
+        String code,
+        String message,
+        Map<String, Value> diagnosticRecord,
+        GqlError cause) {
 
-    /**
-     * Creates a new instance.
-     * @param message the message
-     */
-    public TransactionNestingException(String message) {
-        super(
+    // for testing only
+    public GqlError(String code, String message) {
+        this(
                 GqlStatusError.UNKNOWN.getStatus(),
                 GqlStatusError.UNKNOWN.getStatusDescription(message),
-                "N/A",
+                code,
                 message,
                 GqlStatusError.DIAGNOSTIC_RECORD,
                 null);

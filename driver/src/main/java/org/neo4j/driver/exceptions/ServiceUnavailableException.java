@@ -17,6 +17,7 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
+import org.neo4j.driver.internal.GqlStatusError;
 
 /**
  * An <em>ServiceUnavailableException</em> indicates that the driver cannot communicate with the cluster.
@@ -32,7 +33,7 @@ public class ServiceUnavailableException extends Neo4jException implements Retry
      * @param message the message
      */
     public ServiceUnavailableException(String message) {
-        super(message);
+        this(message, null);
     }
 
     /**
@@ -41,6 +42,12 @@ public class ServiceUnavailableException extends Neo4jException implements Retry
      * @param throwable the throwable
      */
     public ServiceUnavailableException(String message, Throwable throwable) {
-        super(message, throwable);
+        super(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                throwable);
     }
 }

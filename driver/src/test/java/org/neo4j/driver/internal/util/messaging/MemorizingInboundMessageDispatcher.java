@@ -24,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.messaging.GqlError;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
@@ -52,8 +53,8 @@ public class MemorizingInboundMessageDispatcher extends InboundMessageDispatcher
     }
 
     @Override
-    public void handleFailureMessage(String code, String message) {
-        messages.add(new FailureMessage(code, message));
+    public void handleFailureMessage(GqlError gqlError) {
+        messages.add(new FailureMessage(gqlError.code(), gqlError.message()));
     }
 
     @Override

@@ -17,6 +17,7 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
+import org.neo4j.driver.internal.GqlStatusError;
 
 /**
  * An error has happened while getting routing table with a remote server.
@@ -36,6 +37,12 @@ public class DiscoveryException extends Neo4jException {
      * @param cause the cause
      */
     public DiscoveryException(String message, Throwable cause) {
-        super(message, cause);
+        super(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                cause);
     }
 }

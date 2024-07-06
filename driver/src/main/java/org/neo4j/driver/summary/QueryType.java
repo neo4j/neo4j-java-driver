@@ -19,6 +19,7 @@ package org.neo4j.driver.summary;
 import java.util.function.Function;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.internal.GqlStatusError;
 
 /**
  * The type of query executed.
@@ -45,7 +46,13 @@ public enum QueryType {
 
     private static final String UNEXPECTED_TYPE_MSG_FMT = "Unknown query type: `%s`.";
     private static final Function<String, ClientException> UNEXPECTED_TYPE_EXCEPTION_SUPPLIER =
-            (type) -> new ClientException(String.format(UNEXPECTED_TYPE_MSG_FMT, type));
+            (type) -> new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(String.format(UNEXPECTED_TYPE_MSG_FMT, type)),
+                    "N/A",
+                    String.format(UNEXPECTED_TYPE_MSG_FMT, type),
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
 
     /**
      * Creates a query type from a {@link String} value.

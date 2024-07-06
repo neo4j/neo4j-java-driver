@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v56;
+package org.neo4j.driver.internal.messaging.v57;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -24,10 +24,11 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.v5.MessageReaderV5;
 import org.neo4j.driver.internal.messaging.v54.MessageWriterV54;
+import org.neo4j.driver.internal.messaging.v56.BoltProtocolV56;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
-class MessageFormatV56Test {
+class MessageFormatV57Test {
     private static final MessageFormat format = BoltProtocolV56.INSTANCE.createMessageFormat();
 
     @Test

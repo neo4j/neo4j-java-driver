@@ -37,9 +37,11 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.SecurityRetryableException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.logging.ChannelErrorLogger;
+import org.neo4j.driver.internal.messaging.GqlError;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
@@ -105,10 +107,10 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
     }
 
     @Override
-    public void handleFailureMessage(String code, String message) {
-        log.debug("S: FAILURE %s \"%s\"", code, message);
+    public void handleFailureMessage(GqlError gqlError) {
+        log.debug("S: FAILURE %s \"%s\"", gqlError.code(), gqlError.message());
 
-        currentError = ErrorUtil.newNeo4jError(code, message);
+        currentError = ErrorUtil.newNeo4jError(gqlError);
 
         if (ErrorUtil.isFatal(currentError)) {
             // we should not continue using channel after a fatal error
@@ -159,7 +161,14 @@ public class InboundMessageDispatcher implements ResponseMessageHandler {
                     log.warn(
                             "Received IGNORED message for handler %s but error is missing and RESET is not in progress. Current handlers %s",
                             handler, handlers);
-                    return new ClientException("Database ignored the request");
+                    var message = "Database ignored the request";
+                    return new ClientException(
+                            GqlStatusError.UNKNOWN.getStatus(),
+                            GqlStatusError.UNKNOWN.getStatusDescription(message),
+                            "N/A",
+                            message,
+                            GqlStatusError.DIAGNOSTIC_RECORD,
+                            null);
                 }));
         handler.onFailure(error);
     }

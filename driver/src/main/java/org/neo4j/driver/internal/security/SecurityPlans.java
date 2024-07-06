@@ -27,6 +27,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.Scheme;
 import org.neo4j.driver.internal.SecuritySettings;
 
@@ -46,14 +47,28 @@ public class SecurityPlans {
                         settings.encrypted(), settings.trustStrategy(), clientCertificateManager, logging);
             }
         } catch (GeneralSecurityException | IOException ex) {
-            throw new ClientException("Unable to establish SSL parameters", ex);
+            var message = "Unable to establish SSL parameters";
+            throw new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    ex);
         }
     }
 
     private static void assertSecuritySettingsNotUserConfigured(SecuritySettings settings, String uriScheme) {
         if (isCustomized(settings)) {
-            throw new ClientException(String.format(
-                    "Scheme %s is not configurable with manual encryption and trust settings", uriScheme));
+            var message =
+                    String.format("Scheme %s is not configurable with manual encryption and trust settings", uriScheme);
+            throw new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
         }
     }
 

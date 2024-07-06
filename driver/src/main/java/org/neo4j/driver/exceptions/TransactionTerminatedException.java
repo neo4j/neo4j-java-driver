@@ -17,6 +17,10 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
+import java.util.Map;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.util.Preview;
 
 /**
  * Indicates that the transaction has been terminated.
@@ -39,8 +43,15 @@ public class TransactionTerminatedException extends ClientException {
      *
      * @param message the message
      */
+    // for testing only
     public TransactionTerminatedException(String message) {
-        super(message);
+        this(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 
     /**
@@ -49,8 +60,15 @@ public class TransactionTerminatedException extends ClientException {
      * @param code    the code
      * @param message the message
      */
+    // for testing only
     public TransactionTerminatedException(String code, String message) {
-        super(code, message);
+        this(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                code,
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 
     /**
@@ -59,7 +77,35 @@ public class TransactionTerminatedException extends ClientException {
      * @param message the message
      * @param cause   the cause
      */
+    // for testing only
     public TransactionTerminatedException(String message, Throwable cause) {
-        super(message, cause);
+        this(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                cause);
+    }
+
+    /**
+     * Creates a new instance.
+     * @param gqlStatus the GQLSTATUS as defined by the GQL standard
+     * @param statusDescription the status description
+     * @param code the code
+     * @param message the message
+     * @param diagnosticRecord the diagnostic record
+     * @param cause the cause
+     * @since 5.26.0
+     */
+    @Preview(name = "GQL-error")
+    public TransactionTerminatedException(
+            String gqlStatus,
+            String statusDescription,
+            String code,
+            String message,
+            Map<String, Value> diagnosticRecord,
+            Throwable cause) {
+        super(gqlStatus, statusDescription, code, message, diagnosticRecord, cause);
     }
 }

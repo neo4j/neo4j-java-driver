@@ -46,6 +46,7 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
@@ -215,9 +216,15 @@ public class ConnectionPoolImpl implements ConnectionPool {
                 // NettyChannelPool returns future failed with TimeoutException if acquire operation takes more than
                 // configured time, translate this exception to a prettier one and re-throw
                 metricsListener.afterTimedOutToAcquireOrCreate(pool.id());
+                var message = "Unable to acquire connection from the pool within configured maximum time of "
+                        + settings.connectionAcquisitionTimeout() + "ms";
                 throw new ClientException(
-                        "Unable to acquire connection from the pool within configured maximum time of "
-                                + settings.connectionAcquisitionTimeout() + "ms");
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null);
             } else if (pool.isClosed()) {
                 // There is a race condition where a thread tries to acquire a connection while the pool is closed by
                 // another concurrent thread.

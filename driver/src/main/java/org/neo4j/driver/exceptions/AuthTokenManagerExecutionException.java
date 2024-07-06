@@ -18,6 +18,7 @@ package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
 import org.neo4j.driver.AuthTokenManager;
+import org.neo4j.driver.internal.GqlStatusError;
 
 /**
  * The {@link org.neo4j.driver.AuthTokenManager} execution has lead to an unexpected result.
@@ -42,6 +43,12 @@ public class AuthTokenManagerExecutionException extends ClientException {
      * @param cause the cause
      */
     public AuthTokenManagerExecutionException(String message, Throwable cause) {
-        super(message, cause);
+        super(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                cause);
     }
 }

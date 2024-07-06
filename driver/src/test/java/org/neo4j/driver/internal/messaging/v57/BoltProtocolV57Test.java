@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v4;
+package org.neo4j.driver.internal.messaging.v57;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyMap;
@@ -69,13 +69,13 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.BoltAgentUtil;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -83,27 +83,26 @@ import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.TelemetryResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.GqlError;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.CommitMessage;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
-import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+import org.neo4j.driver.internal.messaging.request.TelemetryMessage;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
-public final class BoltProtocolV4Test {
+public class BoltProtocolV57Test {
+    protected static final String QUERY_TEXT = "RETURN $x";
+    protected static final Map<String, Value> PARAMS = singletonMap("x", value(42));
+    protected static final Query QUERY = new Query(QUERY_TEXT, value(PARAMS));
 
-    private static final String QUERY_TEXT = "RETURN $x";
-    private static final Map<String, Value> PARAMS = singletonMap("x", value(42));
-    private static final Query QUERY = new Query(QUERY_TEXT, value(PARAMS));
-
-    private final BoltProtocol protocol = createProtocol();
+    protected final BoltProtocol protocol = createProtocol();
     private final EmbeddedChannel channel = new EmbeddedChannel();
     private final InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher(channel, Logging.none());
 
@@ -111,6 +110,11 @@ public final class BoltProtocolV4Test {
             .withTimeout(ofSeconds(12))
             .withMetadata(singletonMap("key", value(42)))
             .build();
+
+    @SuppressWarnings("SameReturnValue")
+    protected BoltProtocol createProtocol() {
+        return BoltProtocolV57.INSTANCE;
+    }
 
     @BeforeEach
     void beforeEach() {
@@ -130,31 +134,29 @@ public final class BoltProtocolV4Test {
     @Test
     void shouldInitializeChannel() {
         var promise = channel.newPromise();
-        var clock = mock(Clock.class);
-        var time = 1L;
-        when(clock.millis()).thenReturn(time);
-        var authContext = mock(AuthContext.class);
-        when(authContext.getAuthToken()).thenReturn(dummyAuthToken());
-        ChannelAttributes.setAuthContext(channel, authContext);
 
         protocol.initializeChannel(
-                "MyDriver/0.0.1", null, dummyAuthToken(), RoutingContext.EMPTY, promise, null, clock);
+                "MyDriver/0.0.1",
+                BoltAgentUtil.VALUE,
+                dummyAuthToken(),
+                RoutingContext.EMPTY,
+                promise,
+                null,
+                mock(Clock.class));
 
-        assertThat(channel.outboundMessages(), hasSize(1));
-        assertThat(channel.outboundMessages().poll(), instanceOf(HelloMessage.class));
+        assertThat(channel.outboundMessages(), hasSize(0));
         assertEquals(1, messageDispatcher.queuedHandlersCount());
-        assertFalse(promise.isDone());
+        assertTrue(promise.isDone());
 
         Map<String, Value> metadata = new HashMap<>();
-        metadata.put("server", value("Neo4j/4.0.0"));
+        metadata.put("server", value("Neo4j/4.4.0"));
         metadata.put("connection_id", value("bolt-42"));
 
         messageDispatcher.handleSuccessMessage(metadata);
 
+        channel.flush();
         assertTrue(promise.isDone());
         assertTrue(promise.isSuccess());
-        verify(clock).millis();
-        verify(authContext).finishAuth(time);
     }
 
     @Test
@@ -164,25 +166,6 @@ public final class BoltProtocolV4Test {
         assertThat(channel.outboundMessages(), hasSize(1));
         assertThat(channel.outboundMessages().poll(), instanceOf(GoodbyeMessage.class));
         assertEquals(1, messageDispatcher.queuedHandlersCount());
-    }
-
-    @Test
-    void shouldFailToInitializeChannelWhenErrorIsReceived() {
-        var promise = channel.newPromise();
-
-        protocol.initializeChannel(
-                "MyDriver/2.2.1", null, dummyAuthToken(), RoutingContext.EMPTY, promise, null, mock(Clock.class));
-
-        assertThat(channel.outboundMessages(), hasSize(1));
-        assertThat(channel.outboundMessages().poll(), instanceOf(HelloMessage.class));
-        assertEquals(1, messageDispatcher.queuedHandlersCount());
-        assertFalse(promise.isDone());
-
-        messageDispatcher.handleFailureMessage(
-                new GqlError("Neo.TransientError.General.DatabaseUnavailable", "Error!"));
-
-        assertTrue(promise.isDone());
-        assertFalse(promise.isSuccess());
     }
 
     @Test
@@ -395,26 +378,25 @@ public final class BoltProtocolV4Test {
     }
 
     @Test
-    void shouldTelemetryReturnCompletedStageWithoutSendAnyMessage() {
+    void shouldTelemetrySendTelemetryMessage() {
         var connection = connectionMock();
+        doAnswer((invocationOnMock) -> {
+                    var handler = (TelemetryResponseHandler) invocationOnMock.getArgument(1);
+                    handler.onSuccess(Map.of());
+                    return null;
+                })
+                .when(connection)
+                .write(Mockito.any(), Mockito.any());
+        var expectedApi = 1;
 
-        await(protocol.telemetry(connection, 1));
+        await(protocol.telemetry(connection, expectedApi));
 
-        verify(connection, never()).write(Mockito.any(), Mockito.any());
+        verify(connection).write(Mockito.eq(new TelemetryMessage(expectedApi)), Mockito.any());
         verify(connection, never()).writeAndFlush(Mockito.any(), Mockito.any());
     }
 
-    @SuppressWarnings("SameReturnValue")
-    private BoltProtocol createProtocol() {
-        return BoltProtocolV4.INSTANCE;
-    }
-
     private Class<? extends MessageFormat> expectedMessageFormatType() {
-        return MessageFormatV4.class;
-    }
-
-    private static InternalAuthToken dummyAuthToken() {
-        return (InternalAuthToken) AuthTokens.basic("hello", "world");
+        return MessageFormatV57.class;
     }
 
     private void testFailedRunInAutoCommitTxWithWaitingForResponse(
@@ -567,6 +549,8 @@ public final class BoltProtocolV4Test {
                     connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));
             runHandler.onSuccess(emptyMap());
             await(resultStage);
+            verifySessionRunInvoked(
+                    connection, Collections.emptySet(), TransactionConfig.empty(), AccessMode.WRITE, database("foo"));
         } else {
             var txStage = protocol.beginTransaction(
                     connection, Collections.emptySet(), TransactionConfig.empty(), null, null, Logging.none(), true);
@@ -581,12 +565,12 @@ public final class BoltProtocolV4Test {
 
     private ResponseHandler verifySessionRunInvoked(
             Connection connection,
-            Set<Bookmark> bookmarks,
+            Set<Bookmark> bookmark,
             TransactionConfig config,
             AccessMode mode,
             DatabaseName databaseName) {
         var runMessage = RunWithMetadataMessage.autoCommitTxRunMessage(
-                QUERY, config, databaseName, mode, bookmarks, null, null, true, Logging.none());
+                QUERY, config, databaseName, mode, bookmark, null, null, true, Logging.none());
         return verifyRunInvoked(connection, runMessage);
     }
 
@@ -610,5 +594,9 @@ public final class BoltProtocolV4Test {
                 bookmarks, config, databaseName, AccessMode.WRITE, null, null, null, true, Logging.none());
         verify(connection).writeAndFlush(eq(beginMessage), beginHandlerCaptor.capture());
         assertThat(beginHandlerCaptor.getValue(), instanceOf(BeginTxResponseHandler.class));
+    }
+
+    private static InternalAuthToken dummyAuthToken() {
+        return (InternalAuthToken) AuthTokens.basic("hello", "world");
     }
 }

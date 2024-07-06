@@ -102,7 +102,14 @@ public class InternalResult implements Result {
 
     @Override
     public void remove() {
-        throw new ClientException("Removing records from a result is not supported.");
+        var message = "Removing records from a result is not supported.";
+        throw new ClientException(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 
     private <T> T blockingGet(CompletionStage<T> stage) {

@@ -16,8 +16,10 @@
  */
 package neo4j.org.testkit.backend.messages.responses;
 
+import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
+import org.neo4j.driver.Value;
 
 @Getter
 @Builder
@@ -36,10 +38,22 @@ public class DriverError implements TestkitResponse {
 
         private String errorType;
 
+        private String gqlStatus;
+
+        private String statusDescription;
+
         private String code;
 
         private String msg;
 
         private boolean retryable;
+
+        private Map<String, Value> diagnosticRecord;
+
+        private String classification;
+
+        private String rawClassification;
+
+        private GqlError cause;
     }
 }

@@ -33,6 +33,7 @@ import java.util.function.Function;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.InternalPair;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
@@ -175,13 +176,34 @@ public final class Extract {
 
     public static void assertParameter(Object value) {
         if (value instanceof Node || value instanceof NodeValue) {
-            throw new ClientException("Nodes can't be used as parameters.");
+            var message = "Nodes can't be used as parameters.";
+            throw new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
         }
         if (value instanceof Relationship || value instanceof RelationshipValue) {
-            throw new ClientException("Relationships can't be used as parameters.");
+            var message = "Relationships can't be used as parameters.";
+            throw new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
         }
         if (value instanceof Path || value instanceof PathValue) {
-            throw new ClientException("Paths can't be used as parameters.");
+            var message = "Paths can't be used as parameters.";
+            throw new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
         }
     }
 }

@@ -35,6 +35,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BoltAgent;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.GqlNotificationConfig;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -51,6 +52,7 @@ import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
 import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
 import org.neo4j.driver.internal.messaging.v55.BoltProtocolV55;
 import org.neo4j.driver.internal.messaging.v56.BoltProtocolV56;
+import org.neo4j.driver.internal.messaging.v57.BoltProtocolV57;
 import org.neo4j.driver.internal.spi.Connection;
 
 public interface BoltProtocol {
@@ -217,7 +219,16 @@ public interface BoltProtocol {
             return BoltProtocolV55.INSTANCE;
         } else if (BoltProtocolV56.VERSION.equals(version)) {
             return BoltProtocolV56.INSTANCE;
+        } else if (BoltProtocolV57.VERSION.equals(version)) {
+            return BoltProtocolV57.INSTANCE;
         }
-        throw new ClientException("Unknown protocol version: " + version);
+        var message = "Unknown protocol version: " + version;
+        throw new ClientException(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 }

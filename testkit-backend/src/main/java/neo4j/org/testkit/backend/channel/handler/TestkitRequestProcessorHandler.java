@@ -33,6 +33,7 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
+import neo4j.org.testkit.backend.messages.responses.GqlError;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -114,15 +115,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
         if (throwable instanceof Neo4jException e) {
             var id = testkitState.newId();
             testkitState.getErrors().put(id, e);
-            return DriverError.builder()
-                    .data(DriverError.DriverErrorBody.builder()
-                            .id(id)
-                            .errorType(e.getClass().getName())
-                            .code(e.code())
-                            .msg(e.getMessage())
-                            .retryable(e instanceof RetryableException)
-                            .build())
-                    .build();
+            return mapToDriverError(id, e);
         } else if (isConnectionPoolClosedException(throwable)
                 || throwable instanceof UntrustedServerException
                 || throwable instanceof NoSuchRecordException
@@ -156,6 +149,41 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                             .build())
                     .build();
         }
+    }
+
+    private DriverError mapToDriverError(String id, Neo4jException e) {
+        return DriverError.builder()
+                .data(DriverError.DriverErrorBody.builder()
+                        .id(id)
+                        .errorType(e.getClass().getName())
+                        .gqlStatus(e.gqlStatus())
+                        .statusDescription(e.statusDescription())
+                        .code(e.code())
+                        .msg(e.getMessage())
+                        .diagnosticRecord(e.diagnosticRecord())
+                        .classification(e.classification().map(Enum::toString).orElse("UNKNOWN"))
+                        .rawClassification(e.rawClassification().orElse(null))
+                        .retryable(e instanceof RetryableException)
+                        .cause(mapToGqlError(e.gqlCause().orElse(null)))
+                        .build())
+                .build();
+    }
+
+    private GqlError mapToGqlError(Neo4jException e) {
+        if (e == null) {
+            return null;
+        }
+        return GqlError.builder()
+                .data(GqlError.GqlErrorBody.builder()
+                        .gqlStatus(e.gqlStatus())
+                        .statusDescription(e.statusDescription())
+                        .msg(e.getMessage())
+                        .diagnosticRecord(e.diagnosticRecord())
+                        .classification(e.classification().map(Enum::toString).orElse("UNKNOWN"))
+                        .rawClassification(e.rawClassification().orElse(null))
+                        .cause(mapToGqlError(e.gqlCause().orElse(null)))
+                        .build())
+                .build();
     }
 
     private boolean isConnectionPoolClosedException(Throwable throwable) {

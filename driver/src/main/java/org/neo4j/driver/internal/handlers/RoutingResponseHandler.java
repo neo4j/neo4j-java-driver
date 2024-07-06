@@ -27,6 +27,7 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
@@ -107,7 +108,14 @@ public class RoutingResponseHandler implements ResponseHandler {
             // In the future, we might be able to move this logic to the server.
             switch (accessMode) {
                 case READ -> {
-                    return new ClientException("Write queries cannot be performed in READ access mode.");
+                    var message = "Write queries cannot be performed in READ access mode.";
+                    return new ClientException(
+                            GqlStatusError.UNKNOWN.getStatus(),
+                            GqlStatusError.UNKNOWN.getStatusDescription(message),
+                            "N/A",
+                            message,
+                            GqlStatusError.DIAGNOSTIC_RECORD,
+                            null);
                 }
                 case WRITE -> {
                     errorHandler.onWriteFailure(address);

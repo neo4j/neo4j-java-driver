@@ -14,17 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.messaging.v57;
 
-import java.util.Map;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.v54.MessageWriterV54;
+import org.neo4j.driver.internal.packstream.PackInput;
+import org.neo4j.driver.internal.packstream.PackOutput;
 
-public interface ResponseMessageHandler {
-    void handleSuccessMessage(Map<String, Value> meta);
+public class MessageFormatV57 implements MessageFormat {
+    @Override
+    public Writer newWriter(PackOutput output) {
+        return new MessageWriterV54(output);
+    }
 
-    void handleRecordMessage(Value[] fields);
-
-    void handleFailureMessage(GqlError error);
-
-    void handleIgnoredMessage();
+    @Override
+    public Reader newReader(PackInput input) {
+        return new MessageReaderV57(input);
+    }
 }

@@ -17,6 +17,7 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
+import org.neo4j.driver.internal.GqlStatusError;
 
 /**
  * A <em>SessionExpiredException</em> indicates that the session can no longer satisfy the criteria under which it was acquired, e.g. a server no longer accepts
@@ -33,7 +34,7 @@ public class SessionExpiredException extends Neo4jException implements Retryable
      * @param message the message
      */
     public SessionExpiredException(String message) {
-        super(message);
+        this(message, null);
     }
 
     /**
@@ -42,6 +43,12 @@ public class SessionExpiredException extends Neo4jException implements Retryable
      * @param throwable the throwable
      */
     public SessionExpiredException(String message, Throwable throwable) {
-        super(message, throwable);
+        super(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                throwable);
     }
 }

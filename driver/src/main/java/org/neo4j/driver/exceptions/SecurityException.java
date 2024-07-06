@@ -17,6 +17,10 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
+import java.util.Map;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.util.Preview;
 
 /**
  * Failed to communicate with the server due to security errors.
@@ -33,6 +37,7 @@ public class SecurityException extends ClientException {
      * @param code the code
      * @param message the message
      */
+    // for testing only
     public SecurityException(String code, String message) {
         super(code, message);
     }
@@ -43,6 +48,33 @@ public class SecurityException extends ClientException {
      * @param t the throwable
      */
     public SecurityException(String message, Throwable t) {
-        super(message, t);
+        this(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                t);
+    }
+
+    /**
+     * Creates a new instance.
+     * @param gqlStatus the GQLSTATUS as defined by the GQL standard
+     * @param statusDescription the status description
+     * @param code the code
+     * @param message the message
+     * @param diagnosticRecord the diagnostic record
+     * @param cause the cause
+     * @since 5.26.0
+     */
+    @Preview(name = "GQL-error")
+    public SecurityException(
+            String gqlStatus,
+            String statusDescription,
+            String code,
+            String message,
+            Map<String, Value> diagnosticRecord,
+            Throwable cause) {
+        super(gqlStatus, statusDescription, code, message, diagnosticRecord, cause);
     }
 }

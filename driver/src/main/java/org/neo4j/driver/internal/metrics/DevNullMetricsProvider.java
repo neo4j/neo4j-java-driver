@@ -18,6 +18,7 @@ package org.neo4j.driver.internal.metrics;
 
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.GqlStatusError;
 
 public enum DevNullMetricsProvider implements MetricsProvider {
     INSTANCE;
@@ -25,8 +26,15 @@ public enum DevNullMetricsProvider implements MetricsProvider {
     @Override
     public Metrics metrics() {
         // To outside users, we forbid access to the metrics API
+        var message =
+                "Driver metrics are not enabled. You need to enable driver metrics in driver configuration in order to access them.";
         throw new ClientException(
-                "Driver metrics are not enabled. You need to enable driver metrics in driver configuration in order to access them.");
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 
     @Override

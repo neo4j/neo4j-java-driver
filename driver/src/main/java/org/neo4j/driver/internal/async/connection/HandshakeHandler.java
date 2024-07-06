@@ -30,6 +30,7 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.logging.ChannelErrorLogger;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -132,20 +133,39 @@ public class HandshakeHandler extends ReplayingDecoder<Void> {
     }
 
     private static Throwable protocolNoSupportedByServerError() {
-        return new ClientException("The server does not support any of the protocol versions supported by "
+        var message = "The server does not support any of the protocol versions supported by "
                 + "this driver. Ensure that you are using driver and server versions that "
-                + "are compatible with one another.");
+                + "are compatible with one another.";
+        return new ClientException(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 
     private static Throwable httpEndpointError() {
+        var message = "Server responded HTTP. Make sure you are not trying to connect to the http endpoint "
+                + "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)";
         return new ClientException(
-                "Server responded HTTP. Make sure you are not trying to connect to the http endpoint "
-                        + "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)");
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 
     private static Throwable protocolNoSupportedByDriverError(BoltProtocolVersion suggestedProtocolVersion) {
+        var message = "Protocol error, server suggested unexpected protocol version: " + suggestedProtocolVersion;
         return new ClientException(
-                "Protocol error, server suggested unexpected protocol version: " + suggestedProtocolVersion);
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 
     private static Throwable transformError(Throwable error) {

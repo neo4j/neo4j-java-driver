@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
 import org.neo4j.driver.internal.async.inbound.ByteBufInput;
+import org.neo4j.driver.internal.messaging.GqlError;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
@@ -51,7 +52,7 @@ public abstract class AbstractMessageReaderTestBase {
         if (message instanceof SuccessMessage successMessage) {
             verify(handler).handleSuccessMessage(successMessage.metadata());
         } else if (message instanceof FailureMessage failureMessage) {
-            verify(handler).handleFailureMessage(failureMessage.code(), failureMessage.message());
+            verify(handler).handleFailureMessage(new GqlError(failureMessage.code(), failureMessage.message()));
         } else if (message instanceof IgnoredMessage) {
             verify(handler).handleIgnoredMessage();
         } else if (message instanceof RecordMessage recordMessage) {

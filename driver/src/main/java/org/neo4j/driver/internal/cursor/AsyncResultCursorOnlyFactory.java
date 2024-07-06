@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
@@ -67,8 +68,14 @@ public class AsyncResultCursorOnlyFactory implements ResultCursorFactory {
     }
 
     public CompletionStage<RxResultCursor> rxResult() {
-        return Futures.failedFuture(
-                new ClientException("Driver is connected to the database that does not support driver reactive API. "
-                        + "In order to use the driver reactive API, please upgrade to neo4j 4.0.0 or later."));
+        var message = "Driver is connected to the database that does not support driver reactive API. "
+                + "In order to use the driver reactive API, please upgrade to neo4j 4.0.0 or later.";
+        return Futures.failedFuture(new ClientException(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null));
     }
 }

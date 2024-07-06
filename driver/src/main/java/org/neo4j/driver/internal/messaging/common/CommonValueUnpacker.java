@@ -40,6 +40,7 @@ import java.util.function.Supplier;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ProtocolException;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
@@ -354,18 +355,32 @@ public class CommonValueUnpacker implements ValueUnpacker {
     protected final void ensureCorrectStructSize(TypeConstructor typeConstructor, int expected, long actual) {
         if (expected != actual) {
             var structName = typeConstructor.toString();
-            throw new ClientException(String.format(
+            var message = String.format(
                     "Invalid message received, serialized %s structures should have %d fields, "
                             + "received %s structure has %d fields.",
-                    structName, expected, structName, actual));
+                    structName, expected, structName, actual);
+            throw new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
         }
     }
 
     protected void ensureCorrectStructSignature(String structName, byte expected, byte actual) {
         if (expected != actual) {
-            throw new ClientException(String.format(
+            var message = String.format(
                     "Invalid message received, expected a `%s`, signature 0x%s. Received signature was 0x%s.",
-                    structName, Integer.toHexString(expected), Integer.toHexString(actual)));
+                    structName, Integer.toHexString(expected), Integer.toHexString(actual));
+            throw new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
         }
     }
 

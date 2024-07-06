@@ -45,6 +45,7 @@ import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.GqlNotificationConfig;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -214,8 +215,15 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                 }
             } else {
                 state = State.TERMINATED;
-                causeOfTermination =
-                        cause != null ? cause : new TransactionTerminatedException(EXPLICITLY_TERMINATED_MSG);
+                causeOfTermination = cause != null
+                        ? cause
+                        : new TransactionTerminatedException(
+                                GqlStatusError.UNKNOWN.getStatus(),
+                                GqlStatusError.UNKNOWN.getStatusDescription(EXPLICITLY_TERMINATED_MSG),
+                                "N/A",
+                                EXPLICITLY_TERMINATED_MSG,
+                                GqlStatusError.DIAGNOSTIC_RECORD,
+                                null);
             }
             return causeOfTermination;
         });
@@ -242,7 +250,14 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     public CompletionStage<Void> terminateAsync() {
         return executeWithLock(lock, () -> {
             if (!isOpen() || commitFuture != null || rollbackFuture != null) {
-                return failedFuture(new ClientException("Can't terminate closed or closing transaction"));
+                var message = "Can't terminate closed or closing transaction";
+                return failedFuture(new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null));
             } else {
                 if (state == State.TERMINATED) {
                     return terminationStage != null ? terminationStage : completedFuture(null);
@@ -258,22 +273,55 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     private void ensureCanRunQueries() {
         executeWithLock(lock, () -> {
             if (state == State.COMMITTED) {
-                throw new ClientException("Cannot run more queries in this transaction, it has been committed");
+                var message = "Cannot run more queries in this transaction, it has been committed";
+                throw new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null);
             } else if (state == State.ROLLED_BACK) {
-                throw new ClientException("Cannot run more queries in this transaction, it has been rolled back");
+                var message = "Cannot run more queries in this transaction, it has been rolled back";
+                throw new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null);
             } else if (state == State.TERMINATED) {
                 if (causeOfTermination instanceof TransactionTerminatedException transactionTerminatedException) {
                     throw transactionTerminatedException;
                 } else {
+                    var message =
+                            "Cannot run more queries in this transaction, it has either experienced an fatal error or was explicitly terminated";
                     throw new TransactionTerminatedException(
-                            "Cannot run more queries in this transaction, "
-                                    + "it has either experienced an fatal error or was explicitly terminated",
+                            GqlStatusError.UNKNOWN.getStatus(),
+                            GqlStatusError.UNKNOWN.getStatusDescription(message),
+                            "N/A",
+                            message,
+                            GqlStatusError.DIAGNOSTIC_RECORD,
                             causeOfTermination);
                 }
             } else if (commitFuture != null) {
-                throw new ClientException("Cannot run more queries in this transaction, it is being committed");
+                var message = "Cannot run more queries in this transaction, it is being committed";
+                throw new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null);
             } else if (rollbackFuture != null) {
-                throw new ClientException("Cannot run more queries in this transaction, it is being rolled back");
+                var message = "Cannot run more queries in this transaction, it is being rolled back";
+                throw new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null);
             }
         });
     }
@@ -283,8 +331,12 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                 lock,
                 () -> state == State.TERMINATED
                         ? new TransactionTerminatedException(
-                                "Transaction can't be committed. "
-                                        + "It has been rolled back either because of an error or explicit termination",
+                                GqlStatusError.UNKNOWN.getStatus(),
+                                GqlStatusError.UNKNOWN.getStatusDescription(
+                                        "Transaction can't be committed. It has been rolled back either because of an error or explicit termination"),
+                                "N/A",
+                                "Transaction can't be committed. It has been rolled back either because of an error or explicit termination",
+                                GqlStatusError.DIAGNOSTIC_RECORD,
                                 cursorFailure != causeOfTermination ? causeOfTermination : null)
                         : null);
         return exception != null
@@ -325,21 +377,40 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         }
     }
 
+    @SuppressWarnings("DuplicatedCode")
     private CompletionStage<Void> closeAsync(boolean commit, boolean completeWithNullIfNotOpen) {
         var stage = executeWithLock(lock, () -> {
             CompletionStage<Void> resultStage = null;
             if (completeWithNullIfNotOpen && !isOpen()) {
                 resultStage = completedWithNull();
             } else if (state == State.COMMITTED) {
-                resultStage = failedFuture(
-                        new ClientException(commit ? CANT_COMMIT_COMMITTED_MSG : CANT_ROLLBACK_COMMITTED_MSG));
+                var message = commit ? CANT_COMMIT_COMMITTED_MSG : CANT_ROLLBACK_COMMITTED_MSG;
+                resultStage = failedFuture(new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null));
             } else if (state == State.ROLLED_BACK) {
-                resultStage = failedFuture(
-                        new ClientException(commit ? CANT_COMMIT_ROLLED_BACK_MSG : CANT_ROLLBACK_ROLLED_BACK_MSG));
+                var message = commit ? CANT_COMMIT_ROLLED_BACK_MSG : CANT_ROLLBACK_ROLLED_BACK_MSG;
+                resultStage = failedFuture(new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null));
             } else {
                 if (commit) {
                     if (rollbackFuture != null) {
-                        resultStage = failedFuture(new ClientException(CANT_COMMIT_ROLLING_BACK_MSG));
+                        resultStage = failedFuture(new ClientException(
+                                GqlStatusError.UNKNOWN.getStatus(),
+                                GqlStatusError.UNKNOWN.getStatusDescription(CANT_COMMIT_ROLLING_BACK_MSG),
+                                "N/A",
+                                CANT_COMMIT_ROLLING_BACK_MSG,
+                                GqlStatusError.DIAGNOSTIC_RECORD,
+                                null));
                     } else if (commitFuture != null) {
                         resultStage = commitFuture;
                     } else {
@@ -347,7 +418,13 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                     }
                 } else {
                     if (commitFuture != null) {
-                        resultStage = failedFuture(new ClientException(CANT_ROLLBACK_COMMITTING_MSG));
+                        resultStage = failedFuture(new ClientException(
+                                GqlStatusError.UNKNOWN.getStatus(),
+                                GqlStatusError.UNKNOWN.getStatusDescription(CANT_ROLLBACK_COMMITTING_MSG),
+                                "N/A",
+                                CANT_ROLLBACK_COMMITTING_MSG,
+                                GqlStatusError.DIAGNOSTIC_RECORD,
+                                null));
                     } else if (rollbackFuture != null) {
                         resultStage = rollbackFuture;
                     } else {

@@ -17,6 +17,10 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
+import java.util.Map;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.util.Preview;
 
 /**
  * A <em>ClientException</em> indicates that the client has carried out an operation incorrectly.
@@ -31,8 +35,15 @@ public class ClientException extends Neo4jException {
      * Creates a new instance.
      * @param message the message
      */
+    // for testing only
     public ClientException(String message) {
-        super(message);
+        this(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 
     /**
@@ -40,8 +51,15 @@ public class ClientException extends Neo4jException {
      * @param message the message
      * @param cause the cause
      */
+    // for testing only
     public ClientException(String message, Throwable cause) {
-        super(message, cause);
+        this(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                cause);
     }
 
     /**
@@ -49,7 +67,35 @@ public class ClientException extends Neo4jException {
      * @param code the code
      * @param message the message
      */
+    // for testing only
     public ClientException(String code, String message) {
-        super(code, message);
+        this(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                code,
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
+    }
+
+    /**
+     * Creates a new instance.
+     * @param gqlStatus the GQLSTATUS as defined by the GQL standard
+     * @param statusDescription the status description
+     * @param code the code
+     * @param message the message
+     * @param diagnosticRecord the diagnostic record
+     * @param cause the cause
+     * @since 5.26.0
+     */
+    @Preview(name = "GQL-error")
+    public ClientException(
+            String gqlStatus,
+            String statusDescription,
+            String code,
+            String message,
+            Map<String, Value> diagnosticRecord,
+            Throwable cause) {
+        super(gqlStatus, statusDescription, code, message, diagnosticRecord, cause);
     }
 }

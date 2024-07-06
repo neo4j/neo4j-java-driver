@@ -43,6 +43,7 @@ public class GetFeatures implements TestkitRequest {
             "Feature:Bolt:5.4",
             "Feature:Bolt:5.5",
             "Feature:Bolt:5.6",
+            "Feature:Bolt:5.7",
             "AuthorizationExpiredTreatment",
             "ConfHint:connection.recv_timeout_seconds",
             "Feature:Auth:Bearer",

@@ -31,6 +31,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransactionNestingException;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
@@ -109,19 +110,40 @@ public abstract class AbstractReactiveSession<S> {
             AccessMode mode, Function<S, ? extends Publisher<T>> work, TransactionConfig config) {
         work = work.andThen(publisher -> Flux.from(publisher).handle((value, sink) -> {
             if (value instanceof ReactiveResult) {
-                sink.error(new ClientException(String.format(
+                var message = String.format(
                         "%s is not a valid return value, it should be consumed before producing a return value",
-                        ReactiveResult.class.getName())));
+                        ReactiveResult.class.getName());
+                sink.error(new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null));
                 return;
             } else if (value instanceof org.neo4j.driver.reactive.ReactiveResult) {
-                sink.error(new ClientException(String.format(
+                var message = String.format(
                         "%s is not a valid return value, it should be consumed before producing a return value",
-                        org.neo4j.driver.reactive.ReactiveResult.class.getName())));
+                        org.neo4j.driver.reactive.ReactiveResult.class.getName());
+                sink.error(new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null));
                 return;
             } else if (value instanceof RxResult) {
-                sink.error(new ClientException(String.format(
+                var message = String.format(
                         "%s is not a valid return value, it should be consumed before producing a return value",
-                        RxResult.class.getName())));
+                        RxResult.class.getName());
+                sink.error(new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null));
                 return;
             }
             sink.next(value);

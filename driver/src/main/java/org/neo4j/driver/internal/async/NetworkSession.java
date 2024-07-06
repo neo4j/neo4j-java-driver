@@ -44,6 +44,7 @@ import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.GqlNotificationConfig;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.ImpersonationUtil;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -383,8 +384,15 @@ public class NetworkSession {
 
     private void ensureSessionIsOpen() {
         if (!open.get()) {
+            var message =
+                    "No more interaction with this session are allowed as the current session is already closed. ";
             throw new ClientException(
-                    "No more interaction with this session are allowed as the current session is already closed. ");
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
         }
     }
 
