@@ -38,6 +38,7 @@ import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
+import io.github.nettyplus.leakdetector.junit.NettyLeakDetectorExtension;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,6 +49,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.async.AsyncSession;
@@ -60,6 +62,7 @@ import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
 @ParallelizableIT
+@ExtendWith(NettyLeakDetectorExtension.class)
 class AsyncTransactionIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();

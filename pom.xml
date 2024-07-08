@@ -45,6 +45,7 @@
     <hamcrest.version>2.2</hamcrest.version>
     <mockito-core.version>5.12.0</mockito-core.version>
     <junit.version>5.10.2</junit.version>
+    <netty-leak-detector.version>0.0.5</netty-leak-detector.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.10.2</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
@@ -218,6 +219,11 @@
         <version>${testcontainers.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.github.nettyplus</groupId>
+        <artifactId>netty-leak-detector-junit-extension</artifactId>
+        <version>${netty-leak-detector.version}</version>
       </dependency>
 
       <!-- Testkit Backend Dependencies -->
