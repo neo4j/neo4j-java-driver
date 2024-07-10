@@ -14,76 +14,76 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//package org.neo4j.driver.internal.async;
+// package org.neo4j.driver.internal.async;
 //
-//import static java.util.Collections.singletonList;
-//import static java.util.Collections.singletonMap;
-//import static java.util.concurrent.CompletableFuture.completedFuture;
-//import static org.hamcrest.CoreMatchers.equalTo;
-//import static org.hamcrest.CoreMatchers.instanceOf;
-//import static org.hamcrest.MatcherAssert.assertThat;
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.junit.jupiter.api.Assertions.assertFalse;
-//import static org.junit.jupiter.api.Assertions.assertNotNull;
-//import static org.junit.jupiter.api.Assertions.assertThrows;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.BDDMockito.given;
-//import static org.mockito.BDDMockito.then;
-//import static org.mockito.Mockito.mock;
-//import static org.mockito.Mockito.never;
-//import static org.mockito.Mockito.spy;
-//import static org.mockito.Mockito.times;
-//import static org.mockito.Mockito.verify;
-//import static org.mockito.Mockito.when;
-//import static org.neo4j.driver.AccessMode.READ;
-//import static org.neo4j.driver.AccessMode.WRITE;
-//import static org.neo4j.driver.TransactionConfig.empty;
-//import static org.neo4j.driver.Values.parameters;
-//import static org.neo4j.driver.testutil.TestUtil.await;
-//import static org.neo4j.driver.testutil.TestUtil.connectionMock;
-//import static org.neo4j.driver.testutil.TestUtil.newSession;
-//import static org.neo4j.driver.testutil.TestUtil.setupFailingCommit;
-//import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunAndPull;
-//import static org.neo4j.driver.testutil.TestUtil.verifyBeginTx;
-//import static org.neo4j.driver.testutil.TestUtil.verifyCommitTx;
-//import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
-//import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
+// import static java.util.Collections.singletonList;
+// import static java.util.Collections.singletonMap;
+// import static java.util.concurrent.CompletableFuture.completedFuture;
+// import static org.hamcrest.CoreMatchers.equalTo;
+// import static org.hamcrest.CoreMatchers.instanceOf;
+// import static org.hamcrest.MatcherAssert.assertThat;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.junit.jupiter.api.Assertions.assertFalse;
+// import static org.junit.jupiter.api.Assertions.assertNotNull;
+// import static org.junit.jupiter.api.Assertions.assertThrows;
+// import static org.mockito.ArgumentMatchers.any;
+// import static org.mockito.BDDMockito.given;
+// import static org.mockito.BDDMockito.then;
+// import static org.mockito.Mockito.mock;
+// import static org.mockito.Mockito.never;
+// import static org.mockito.Mockito.spy;
+// import static org.mockito.Mockito.times;
+// import static org.mockito.Mockito.verify;
+// import static org.mockito.Mockito.when;
+// import static org.neo4j.driver.AccessMode.READ;
+// import static org.neo4j.driver.AccessMode.WRITE;
+// import static org.neo4j.driver.TransactionConfig.empty;
+// import static org.neo4j.driver.Values.parameters;
+// import static org.neo4j.driver.testutil.TestUtil.await;
+// import static org.neo4j.driver.testutil.TestUtil.connectionMock;
+// import static org.neo4j.driver.testutil.TestUtil.newSession;
+// import static org.neo4j.driver.testutil.TestUtil.setupFailingCommit;
+// import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunAndPull;
+// import static org.neo4j.driver.testutil.TestUtil.verifyBeginTx;
+// import static org.neo4j.driver.testutil.TestUtil.verifyCommitTx;
+// import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
+// import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
 //
-//import java.util.Arrays;
-//import java.util.Collections;
-//import java.util.List;
-//import java.util.concurrent.CompletableFuture;
-//import java.util.concurrent.CompletionStage;
-//import java.util.concurrent.ExecutionException;
-//import java.util.function.Function;
-//import java.util.function.Supplier;
-//import java.util.stream.Stream;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.params.ParameterizedTest;
-//import org.junit.jupiter.params.provider.MethodSource;
-//import org.neo4j.driver.AccessMode;
-//import org.neo4j.driver.Query;
-//import org.neo4j.driver.TransactionConfig;
-//import org.neo4j.driver.Value;
-//import org.neo4j.driver.async.AsyncSession;
-//import org.neo4j.driver.async.AsyncTransaction;
-//import org.neo4j.driver.async.AsyncTransactionCallback;
-//import org.neo4j.driver.async.AsyncTransactionWork;
-//import org.neo4j.driver.async.ResultCursor;
-//import org.neo4j.driver.exceptions.ServiceUnavailableException;
-//import org.neo4j.driver.exceptions.SessionExpiredException;
-//import org.neo4j.driver.internal.DatabaseNameUtil;
-//import org.neo4j.driver.internal.InternalBookmark;
-//import org.neo4j.driver.internal.InternalRecord;
-//import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-//import org.neo4j.driver.internal.retry.RetryLogic;
-//import org.neo4j.driver.internal.spi.Connection;
-//import org.neo4j.driver.internal.spi.ConnectionProvider;
-//import org.neo4j.driver.internal.util.FixedRetryLogic;
-//import org.neo4j.driver.internal.value.IntegerValue;
+// import java.util.Arrays;
+// import java.util.Collections;
+// import java.util.List;
+// import java.util.concurrent.CompletableFuture;
+// import java.util.concurrent.CompletionStage;
+// import java.util.concurrent.ExecutionException;
+// import java.util.function.Function;
+// import java.util.function.Supplier;
+// import java.util.stream.Stream;
+// import org.junit.jupiter.api.BeforeEach;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.params.ParameterizedTest;
+// import org.junit.jupiter.params.provider.MethodSource;
+// import org.neo4j.driver.AccessMode;
+// import org.neo4j.driver.Query;
+// import org.neo4j.driver.TransactionConfig;
+// import org.neo4j.driver.Value;
+// import org.neo4j.driver.async.AsyncSession;
+// import org.neo4j.driver.async.AsyncTransaction;
+// import org.neo4j.driver.async.AsyncTransactionCallback;
+// import org.neo4j.driver.async.AsyncTransactionWork;
+// import org.neo4j.driver.async.ResultCursor;
+// import org.neo4j.driver.exceptions.ServiceUnavailableException;
+// import org.neo4j.driver.exceptions.SessionExpiredException;
+// import org.neo4j.driver.internal.DatabaseNameUtil;
+// import org.neo4j.driver.internal.InternalBookmark;
+// import org.neo4j.driver.internal.InternalRecord;
+// import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+// import org.neo4j.driver.internal.retry.RetryLogic;
+// import org.neo4j.driver.internal.spi.Connection;
+// import org.neo4j.driver.internal.spi.ConnectionProvider;
+// import org.neo4j.driver.internal.util.FixedRetryLogic;
+// import org.neo4j.driver.internal.value.IntegerValue;
 //
-//class InternalAsyncSessionTest {
+// class InternalAsyncSessionTest {
 //    private static final String DATABASE = "neo4j";
 //    private Connection connection;
 //    private ConnectionProvider connectionProvider;
@@ -235,7 +235,8 @@
 //        var logic = mock(RetryLogic.class);
 //        var expected = "";
 //        given(networkSession.retryLogic()).willReturn(logic);
-//        AsyncTransactionCallback<CompletionStage<String>> tc = (ignored) -> CompletableFuture.completedFuture(expected);
+//        AsyncTransactionCallback<CompletionStage<String>> tc = (ignored) ->
+// CompletableFuture.completedFuture(expected);
 //        given(logic.<String>retryAsync(any())).willReturn(tc.execute(null));
 //        var config = TransactionConfig.builder().build();
 //
@@ -399,4 +400,4 @@
 //    }
 //
 //    private record ExecuteVariation(boolean readOnly, boolean explicitTxConfig) {}
-//}
+// }

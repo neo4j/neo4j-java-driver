@@ -14,39 +14,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//package org.neo4j.driver.internal.async;
+// package org.neo4j.driver.internal.async;
 //
-//import static java.util.concurrent.CompletableFuture.completedFuture;
-//import static org.hamcrest.MatcherAssert.assertThat;
-//import static org.hamcrest.Matchers.containsString;
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.ArgumentMatchers.anyString;
-//import static org.mockito.Mockito.mock;
-//import static org.mockito.Mockito.never;
-//import static org.mockito.Mockito.verify;
-//import static org.mockito.Mockito.when;
-//import static org.neo4j.driver.AccessMode.READ;
-//import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-//import static org.neo4j.driver.testutil.TestUtil.DEFAULT_TEST_PROTOCOL;
+// import static java.util.concurrent.CompletableFuture.completedFuture;
+// import static org.hamcrest.MatcherAssert.assertThat;
+// import static org.hamcrest.Matchers.containsString;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.mockito.ArgumentMatchers.any;
+// import static org.mockito.ArgumentMatchers.anyString;
+// import static org.mockito.Mockito.mock;
+// import static org.mockito.Mockito.never;
+// import static org.mockito.Mockito.verify;
+// import static org.mockito.Mockito.when;
+// import static org.neo4j.driver.AccessMode.READ;
+// import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
+// import static org.neo4j.driver.testutil.TestUtil.DEFAULT_TEST_PROTOCOL;
 //
-//import java.util.Collections;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.TestInfo;
-//import org.mockito.ArgumentCaptor;
-//import org.neo4j.driver.BookmarkManager;
-//import org.neo4j.driver.Logger;
-//import org.neo4j.driver.Logging;
-//import org.neo4j.driver.TransactionConfig;
-//import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
-//import org.neo4j.driver.internal.spi.Connection;
-//import org.neo4j.driver.internal.spi.ConnectionProvider;
-//import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-//import org.neo4j.driver.internal.telemetry.TelemetryApi;
-//import org.neo4j.driver.internal.util.FixedRetryLogic;
-//import org.neo4j.driver.testutil.TestUtil;
+// import java.util.Collections;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.api.TestInfo;
+// import org.mockito.ArgumentCaptor;
+// import org.neo4j.driver.BookmarkManager;
+// import org.neo4j.driver.Logger;
+// import org.neo4j.driver.Logging;
+// import org.neo4j.driver.TransactionConfig;
+// import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
+// import org.neo4j.driver.internal.spi.Connection;
+// import org.neo4j.driver.internal.spi.ConnectionProvider;
+// import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
+// import org.neo4j.driver.internal.telemetry.TelemetryApi;
+// import org.neo4j.driver.internal.util.FixedRetryLogic;
+// import org.neo4j.driver.testutil.TestUtil;
 //
-//class LeakLoggingNetworkSessionTest {
+// class LeakLoggingNetworkSessionTest {
 //    @Test
 //    void logsNothingDuringFinalizationIfClosed() throws Exception {
 //        var logging = mock(Logging.class);
@@ -120,4 +120,4 @@
 //        when(connection.isOpen()).thenReturn(open);
 //        return connection;
 //    }
-//}
+// }

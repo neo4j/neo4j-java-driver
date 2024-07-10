@@ -22,6 +22,9 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Value;
 
+/**
+ * TODO
+ */
 public interface BoltConnection {
     CompletionStage<BoltConnection> route(DatabaseName databaseName, String impersonatedUser, Set<String> bookmarks);
 

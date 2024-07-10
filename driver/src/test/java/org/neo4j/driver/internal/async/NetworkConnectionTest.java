@@ -14,69 +14,69 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//package org.neo4j.driver.internal.async;
+// package org.neo4j.driver.internal.async;
 //
-//import static java.util.Collections.emptyMap;
-//import static org.hamcrest.MatcherAssert.assertThat;
-//import static org.hamcrest.Matchers.startsWith;
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.junit.jupiter.api.Assertions.assertFalse;
-//import static org.junit.jupiter.api.Assertions.assertThrows;
-//import static org.junit.jupiter.api.Assertions.assertTrue;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.BDDMockito.then;
-//import static org.mockito.Mockito.doAnswer;
-//import static org.mockito.Mockito.mock;
-//import static org.mockito.Mockito.never;
-//import static org.mockito.Mockito.spy;
-//import static org.mockito.Mockito.verify;
-//import static org.mockito.Mockito.when;
-//import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
-//import static org.neo4j.driver.internal.async.connection.ChannelAttributes.terminationReason;
-//import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-//import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
-//import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
-//import static org.neo4j.driver.internal.util.Iterables.single;
-//import static org.neo4j.driver.testutil.DaemonThreadFactory.daemon;
-//import static org.neo4j.driver.testutil.TestUtil.DEFAULT_TEST_PROTOCOL_VERSION;
+// import static java.util.Collections.emptyMap;
+// import static org.hamcrest.MatcherAssert.assertThat;
+// import static org.hamcrest.Matchers.startsWith;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.junit.jupiter.api.Assertions.assertFalse;
+// import static org.junit.jupiter.api.Assertions.assertThrows;
+// import static org.junit.jupiter.api.Assertions.assertTrue;
+// import static org.mockito.ArgumentMatchers.any;
+// import static org.mockito.BDDMockito.then;
+// import static org.mockito.Mockito.doAnswer;
+// import static org.mockito.Mockito.mock;
+// import static org.mockito.Mockito.never;
+// import static org.mockito.Mockito.spy;
+// import static org.mockito.Mockito.verify;
+// import static org.mockito.Mockito.when;
+// import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
+// import static org.neo4j.driver.internal.async.connection.ChannelAttributes.terminationReason;
+// import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+// import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
+// import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
+// import static org.neo4j.driver.internal.util.Iterables.single;
+// import static org.neo4j.driver.testutil.DaemonThreadFactory.daemon;
+// import static org.neo4j.driver.testutil.TestUtil.DEFAULT_TEST_PROTOCOL_VERSION;
 //
-//import io.netty.channel.Channel;
-//import io.netty.channel.DefaultEventLoop;
-//import io.netty.channel.EventLoop;
-//import io.netty.channel.embedded.EmbeddedChannel;
-//import java.util.List;
-//import java.util.Set;
-//import java.util.concurrent.ConcurrentHashMap;
-//import java.util.concurrent.ExecutorService;
-//import java.util.concurrent.Executors;
-//import java.util.concurrent.TimeUnit;
-//import java.util.function.Consumer;
-//import org.junit.jupiter.api.AfterEach;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.params.ParameterizedTest;
-//import org.junit.jupiter.params.provider.MethodSource;
-//import org.junit.jupiter.params.provider.ValueSource;
-//import org.mockito.ArgumentCaptor;
-//import org.neo4j.driver.Query;
-//import org.neo4j.driver.exceptions.Neo4jException;
-//import org.neo4j.driver.internal.BoltServerAddress;
-//import org.neo4j.driver.internal.async.connection.ChannelAttributes;
-//import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-//import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
-//import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
-//import org.neo4j.driver.internal.messaging.Message;
-//import org.neo4j.driver.internal.messaging.request.CommitMessage;
-//import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
-//import org.neo4j.driver.internal.messaging.request.DiscardMessage;
-//import org.neo4j.driver.internal.messaging.request.PullAllMessage;
-//import org.neo4j.driver.internal.messaging.request.PullMessage;
-//import org.neo4j.driver.internal.messaging.request.RollbackMessage;
-//import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-//import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
-//import org.neo4j.driver.internal.spi.ResponseHandler;
-//import org.neo4j.driver.internal.util.FakeClock;
+// import io.netty.channel.Channel;
+// import io.netty.channel.DefaultEventLoop;
+// import io.netty.channel.EventLoop;
+// import io.netty.channel.embedded.EmbeddedChannel;
+// import java.util.List;
+// import java.util.Set;
+// import java.util.concurrent.ConcurrentHashMap;
+// import java.util.concurrent.ExecutorService;
+// import java.util.concurrent.Executors;
+// import java.util.concurrent.TimeUnit;
+// import java.util.function.Consumer;
+// import org.junit.jupiter.api.AfterEach;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.params.ParameterizedTest;
+// import org.junit.jupiter.params.provider.MethodSource;
+// import org.junit.jupiter.params.provider.ValueSource;
+// import org.mockito.ArgumentCaptor;
+// import org.neo4j.driver.Query;
+// import org.neo4j.driver.exceptions.Neo4jException;
+// import org.neo4j.driver.internal.BoltServerAddress;
+// import org.neo4j.driver.internal.async.connection.ChannelAttributes;
+// import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+// import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
+// import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+// import org.neo4j.driver.internal.messaging.Message;
+// import org.neo4j.driver.internal.messaging.request.CommitMessage;
+// import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
+// import org.neo4j.driver.internal.messaging.request.DiscardMessage;
+// import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+// import org.neo4j.driver.internal.messaging.request.PullMessage;
+// import org.neo4j.driver.internal.messaging.request.RollbackMessage;
+// import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+// import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
+// import org.neo4j.driver.internal.spi.ResponseHandler;
+// import org.neo4j.driver.internal.util.FakeClock;
 //
-//class NetworkConnectionTest {
+// class NetworkConnectionTest {
 //    private static final NoOpResponseHandler NO_OP_HANDLER = NoOpResponseHandler.INSTANCE;
 //
 //    private ExecutorService executor;
@@ -630,7 +630,8 @@
 //    }
 //
 //    private static NetworkConnection newConnection(Channel channel, ExtendedChannelPool pool) {
-//        return new NetworkConnection(channel, pool, new FakeClock(), DevNullMetricsListener.INSTANCE, DEV_NULL_LOGGING);
+//        return new NetworkConnection(channel, pool, new FakeClock(), DevNullMetricsListener.INSTANCE,
+// DEV_NULL_LOGGING);
 //    }
 //
 //    private static void assertConnectionReleasedError(IllegalStateException e) {
@@ -655,4 +656,4 @@
 //            super.enqueue(handler);
 //        }
 //    }
-//}
+// }

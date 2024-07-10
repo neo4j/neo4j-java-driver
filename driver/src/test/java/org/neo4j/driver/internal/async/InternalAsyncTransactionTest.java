@@ -14,51 +14,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//package org.neo4j.driver.internal.async;
+// package org.neo4j.driver.internal.async;
 //
-//import static java.util.Collections.singletonList;
-//import static java.util.Collections.singletonMap;
-//import static java.util.concurrent.CompletableFuture.completedFuture;
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.junit.jupiter.api.Assertions.assertFalse;
-//import static org.junit.jupiter.api.Assertions.assertThrows;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.BDDMockito.given;
-//import static org.mockito.BDDMockito.then;
-//import static org.mockito.Mockito.mock;
-//import static org.mockito.Mockito.verify;
-//import static org.mockito.Mockito.when;
-//import static org.neo4j.driver.Values.parameters;
-//import static org.neo4j.driver.testutil.TestUtil.await;
-//import static org.neo4j.driver.testutil.TestUtil.connectionMock;
-//import static org.neo4j.driver.testutil.TestUtil.newSession;
-//import static org.neo4j.driver.testutil.TestUtil.setupFailingCommit;
-//import static org.neo4j.driver.testutil.TestUtil.setupFailingRollback;
-//import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunAndPull;
-//import static org.neo4j.driver.testutil.TestUtil.verifyCommitTx;
-//import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
-//import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
+// import static java.util.Collections.singletonList;
+// import static java.util.Collections.singletonMap;
+// import static java.util.concurrent.CompletableFuture.completedFuture;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.junit.jupiter.api.Assertions.assertFalse;
+// import static org.junit.jupiter.api.Assertions.assertThrows;
+// import static org.mockito.ArgumentMatchers.any;
+// import static org.mockito.BDDMockito.given;
+// import static org.mockito.BDDMockito.then;
+// import static org.mockito.Mockito.mock;
+// import static org.mockito.Mockito.verify;
+// import static org.mockito.Mockito.when;
+// import static org.neo4j.driver.Values.parameters;
+// import static org.neo4j.driver.testutil.TestUtil.await;
+// import static org.neo4j.driver.testutil.TestUtil.connectionMock;
+// import static org.neo4j.driver.testutil.TestUtil.newSession;
+// import static org.neo4j.driver.testutil.TestUtil.setupFailingCommit;
+// import static org.neo4j.driver.testutil.TestUtil.setupFailingRollback;
+// import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunAndPull;
+// import static org.neo4j.driver.testutil.TestUtil.verifyCommitTx;
+// import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
+// import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
 //
-//import java.util.concurrent.CompletionStage;
-//import java.util.concurrent.ExecutionException;
-//import java.util.function.Function;
-//import java.util.stream.Stream;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.params.ParameterizedTest;
-//import org.junit.jupiter.params.provider.MethodSource;
-//import org.neo4j.driver.Query;
-//import org.neo4j.driver.Value;
-//import org.neo4j.driver.async.AsyncTransaction;
-//import org.neo4j.driver.async.ResultCursor;
-//import org.neo4j.driver.internal.DatabaseNameUtil;
-//import org.neo4j.driver.internal.InternalRecord;
-//import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-//import org.neo4j.driver.internal.spi.Connection;
-//import org.neo4j.driver.internal.spi.ConnectionProvider;
-//import org.neo4j.driver.internal.value.IntegerValue;
+// import java.util.concurrent.CompletionStage;
+// import java.util.concurrent.ExecutionException;
+// import java.util.function.Function;
+// import java.util.stream.Stream;
+// import org.junit.jupiter.api.BeforeEach;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.params.ParameterizedTest;
+// import org.junit.jupiter.params.provider.MethodSource;
+// import org.neo4j.driver.Query;
+// import org.neo4j.driver.Value;
+// import org.neo4j.driver.async.AsyncTransaction;
+// import org.neo4j.driver.async.ResultCursor;
+// import org.neo4j.driver.internal.DatabaseNameUtil;
+// import org.neo4j.driver.internal.InternalRecord;
+// import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+// import org.neo4j.driver.internal.spi.Connection;
+// import org.neo4j.driver.internal.spi.ConnectionProvider;
+// import org.neo4j.driver.internal.value.IntegerValue;
 //
-//class InternalAsyncTransactionTest {
+// class InternalAsyncTransactionTest {
 //    private static final String DATABASE = "neo4j";
 //    private Connection connection;
 //    private InternalAsyncTransaction tx;
@@ -149,4 +149,4 @@
 //        assertEquals(expected, actual);
 //        then(utx).should().isOpen();
 //    }
-//}
+// }

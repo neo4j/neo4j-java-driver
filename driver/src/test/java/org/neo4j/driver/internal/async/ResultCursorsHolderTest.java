@@ -14,27 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//package org.neo4j.driver.internal.async;
+// package org.neo4j.driver.internal.async;
 //
-//import static java.util.concurrent.CompletableFuture.completedFuture;
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.junit.jupiter.api.Assertions.assertFalse;
-//import static org.junit.jupiter.api.Assertions.assertNull;
-//import static org.junit.jupiter.api.Assertions.assertThrows;
-//import static org.junit.jupiter.api.Assertions.assertTrue;
-//import static org.mockito.Mockito.mock;
-//import static org.mockito.Mockito.when;
-//import static org.neo4j.driver.testutil.TestUtil.await;
+// import static java.util.concurrent.CompletableFuture.completedFuture;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.junit.jupiter.api.Assertions.assertFalse;
+// import static org.junit.jupiter.api.Assertions.assertNull;
+// import static org.junit.jupiter.api.Assertions.assertThrows;
+// import static org.junit.jupiter.api.Assertions.assertTrue;
+// import static org.mockito.Mockito.mock;
+// import static org.mockito.Mockito.when;
+// import static org.neo4j.driver.testutil.TestUtil.await;
 //
-//import java.io.IOException;
-//import java.util.concurrent.CompletableFuture;
-//import java.util.concurrent.CompletionStage;
-//import java.util.concurrent.TimeoutException;
-//import org.junit.jupiter.api.Test;
-//import org.neo4j.driver.internal.cursor.AsyncResultCursorImpl;
-//import org.neo4j.driver.internal.util.Futures;
+// import java.io.IOException;
+// import java.util.concurrent.CompletableFuture;
+// import java.util.concurrent.CompletionStage;
+// import java.util.concurrent.TimeoutException;
+// import org.junit.jupiter.api.Test;
+// import org.neo4j.driver.internal.cursor.AsyncResultCursorImpl;
+// import org.neo4j.driver.internal.util.Futures;
 //
-//class ResultCursorsHolderTest {
+// class ResultCursorsHolderTest {
 //    @Test
 //    void shouldReturnNoErrorWhenNoCursorStages() {
 //        var holder = new ResultCursorsHolder();
@@ -132,9 +132,10 @@
 //        return cursorWithFailureFuture(completedFuture(error));
 //    }
 //
-//    private static CompletionStage<AsyncResultCursorImpl> cursorWithFailureFuture(CompletableFuture<Throwable> future) {
+//    private static CompletionStage<AsyncResultCursorImpl> cursorWithFailureFuture(CompletableFuture<Throwable> future)
+// {
 //        var cursor = mock(AsyncResultCursorImpl.class);
 //        when(cursor.discardAllFailureAsync()).thenReturn(future);
 //        return completedFuture(cursor);
 //    }
-//}
+// }

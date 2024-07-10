@@ -14,83 +14,83 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//package org.neo4j.driver.internal.async;
+// package org.neo4j.driver.internal.async;
 //
-//import static java.util.Collections.emptyMap;
-//import static java.util.concurrent.CompletableFuture.completedFuture;
-//import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.junit.jupiter.api.Assertions.assertFalse;
-//import static org.junit.jupiter.api.Assertions.assertNotNull;
-//import static org.junit.jupiter.api.Assertions.assertNull;
-//import static org.junit.jupiter.api.Assertions.assertSame;
-//import static org.junit.jupiter.api.Assertions.assertThrows;
-//import static org.junit.jupiter.api.Assertions.assertTrue;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.ArgumentMatchers.anyBoolean;
-//import static org.mockito.ArgumentMatchers.anySet;
-//import static org.mockito.ArgumentMatchers.anyString;
-//import static org.mockito.ArgumentMatchers.argThat;
-//import static org.mockito.ArgumentMatchers.eq;
-//import static org.mockito.BDDMockito.given;
-//import static org.mockito.BDDMockito.then;
-//import static org.mockito.Mockito.doAnswer;
-//import static org.mockito.Mockito.doReturn;
-//import static org.mockito.Mockito.inOrder;
-//import static org.mockito.Mockito.mock;
-//import static org.mockito.Mockito.never;
-//import static org.mockito.Mockito.times;
-//import static org.mockito.Mockito.verify;
-//import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
-//import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
-//import static org.neo4j.driver.testutil.TestUtil.await;
-//import static org.neo4j.driver.testutil.TestUtil.beginMessage;
-//import static org.neo4j.driver.testutil.TestUtil.connectionMock;
-//import static org.neo4j.driver.testutil.TestUtil.setupFailingRun;
-//import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunAndPull;
-//import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunRx;
-//import static org.neo4j.driver.testutil.TestUtil.verifyBeginTx;
-//import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
-//import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
-//import static org.neo4j.driver.testutil.TestUtil.verifyRunRx;
+// import static java.util.Collections.emptyMap;
+// import static java.util.concurrent.CompletableFuture.completedFuture;
+// import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.junit.jupiter.api.Assertions.assertFalse;
+// import static org.junit.jupiter.api.Assertions.assertNotNull;
+// import static org.junit.jupiter.api.Assertions.assertNull;
+// import static org.junit.jupiter.api.Assertions.assertSame;
+// import static org.junit.jupiter.api.Assertions.assertThrows;
+// import static org.junit.jupiter.api.Assertions.assertTrue;
+// import static org.mockito.ArgumentMatchers.any;
+// import static org.mockito.ArgumentMatchers.anyBoolean;
+// import static org.mockito.ArgumentMatchers.anySet;
+// import static org.mockito.ArgumentMatchers.anyString;
+// import static org.mockito.ArgumentMatchers.argThat;
+// import static org.mockito.ArgumentMatchers.eq;
+// import static org.mockito.BDDMockito.given;
+// import static org.mockito.BDDMockito.then;
+// import static org.mockito.Mockito.doAnswer;
+// import static org.mockito.Mockito.doReturn;
+// import static org.mockito.Mockito.inOrder;
+// import static org.mockito.Mockito.mock;
+// import static org.mockito.Mockito.never;
+// import static org.mockito.Mockito.times;
+// import static org.mockito.Mockito.verify;
+// import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
+// import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
+// import static org.neo4j.driver.testutil.TestUtil.await;
+// import static org.neo4j.driver.testutil.TestUtil.beginMessage;
+// import static org.neo4j.driver.testutil.TestUtil.connectionMock;
+// import static org.neo4j.driver.testutil.TestUtil.setupFailingRun;
+// import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunAndPull;
+// import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunRx;
+// import static org.neo4j.driver.testutil.TestUtil.verifyBeginTx;
+// import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
+// import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
+// import static org.neo4j.driver.testutil.TestUtil.verifyRunRx;
 //
-//import java.util.Collections;
-//import java.util.List;
-//import java.util.Set;
-//import java.util.concurrent.CompletableFuture;
-//import java.util.concurrent.CompletionStage;
-//import java.util.concurrent.ExecutionException;
-//import java.util.function.Consumer;
-//import java.util.function.Function;
-//import java.util.function.Supplier;
-//import java.util.stream.Stream;
-//import org.junit.jupiter.api.Named;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.params.ParameterizedTest;
-//import org.junit.jupiter.params.provider.Arguments;
-//import org.junit.jupiter.params.provider.MethodSource;
-//import org.neo4j.driver.Bookmark;
-//import org.neo4j.driver.Logging;
-//import org.neo4j.driver.Query;
-//import org.neo4j.driver.TransactionConfig;
-//import org.neo4j.driver.exceptions.AuthorizationExpiredException;
-//import org.neo4j.driver.exceptions.ClientException;
-//import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
-//import org.neo4j.driver.exceptions.Neo4jException;
-//import org.neo4j.driver.exceptions.TransactionTerminatedException;
-//import org.neo4j.driver.internal.DatabaseBookmark;
-//import org.neo4j.driver.internal.FailableCursor;
-//import org.neo4j.driver.internal.InternalBookmark;
-//import org.neo4j.driver.internal.messaging.BoltProtocol;
-//import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-//import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
-//import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
-//import org.neo4j.driver.internal.spi.Connection;
-//import org.neo4j.driver.internal.spi.ResponseHandler;
-//import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-//import org.neo4j.driver.internal.telemetry.TelemetryApi;
+// import java.util.Collections;
+// import java.util.List;
+// import java.util.Set;
+// import java.util.concurrent.CompletableFuture;
+// import java.util.concurrent.CompletionStage;
+// import java.util.concurrent.ExecutionException;
+// import java.util.function.Consumer;
+// import java.util.function.Function;
+// import java.util.function.Supplier;
+// import java.util.stream.Stream;
+// import org.junit.jupiter.api.Named;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.params.ParameterizedTest;
+// import org.junit.jupiter.params.provider.Arguments;
+// import org.junit.jupiter.params.provider.MethodSource;
+// import org.neo4j.driver.Bookmark;
+// import org.neo4j.driver.Logging;
+// import org.neo4j.driver.Query;
+// import org.neo4j.driver.TransactionConfig;
+// import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+// import org.neo4j.driver.exceptions.ClientException;
+// import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
+// import org.neo4j.driver.exceptions.Neo4jException;
+// import org.neo4j.driver.exceptions.TransactionTerminatedException;
+// import org.neo4j.driver.internal.DatabaseBookmark;
+// import org.neo4j.driver.internal.FailableCursor;
+// import org.neo4j.driver.internal.InternalBookmark;
+// import org.neo4j.driver.internal.messaging.BoltProtocol;
+// import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+// import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
+// import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
+// import org.neo4j.driver.internal.spi.Connection;
+// import org.neo4j.driver.internal.spi.ResponseHandler;
+// import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
+// import org.neo4j.driver.internal.telemetry.TelemetryApi;
 //
-//class UnmanagedTransactionTest {
+// class UnmanagedTransactionTest {
 //    @Test
 //    void shouldFlushOnRunAsync() {
 //        // Given
@@ -560,7 +560,8 @@
 //        doReturn(beginFuture)
 //                .when(protocol)
 //                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
-//        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+//        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork,
+// null);
 //
 //        assertFalse(unmanagedTransaction
 //                .beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)
@@ -587,7 +588,8 @@
 //        doReturn(new CompletableFuture<>())
 //                .when(protocol)
 //                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
-//        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+//        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork,
+// null);
 //
 //        assertThrows(
 //                SecurityException.class,
@@ -606,7 +608,8 @@
 //        doReturn(CompletableFuture.failedFuture(new ClientException("other error")))
 //                .when(protocol)
 //                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
-//        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+//        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork,
+// null);
 //
 //        assertThrows(
 //                SecurityException.class,
@@ -625,7 +628,8 @@
 //        doReturn(new CompletableFuture<>())
 //                .when(protocol)
 //                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
-//        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+//        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork,
+// null);
 //
 //        assertDoesNotThrow(
 //                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", false)));
@@ -643,7 +647,8 @@
 //        doReturn(CompletableFuture.failedFuture(new ClientException("other error")))
 //                .when(protocol)
 //                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
-//        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
+//        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork,
+// null);
 //
 //        assertDoesNotThrow(
 //                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", false)));
@@ -748,4 +753,4 @@
 //        }
 //        return action;
 //    }
-//}
+// }
