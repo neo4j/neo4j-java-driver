@@ -394,6 +394,8 @@ public class MetadataExtractor {
             return new InternalGqlStatusObject(status, description, diagnosticRecord);
         } else {
             var title = value.get("title").asString();
+            var notificationDescription =
+                    value.containsKey("description") ? value.get("description").asString() : description;
 
             var positionValue = diagnosticRecord.get("_position");
             InputPosition position = null;
@@ -427,7 +429,7 @@ public class MetadataExtractor {
                     diagnosticRecord,
                     neo4jCode,
                     title,
-                    description,
+                    notificationDescription,
                     severity,
                     rawSeverity,
                     classification,
