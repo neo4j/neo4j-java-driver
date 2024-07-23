@@ -356,6 +356,8 @@ class MetadataExtractorTest {
                 "neo4j_code",
                 "title",
                 "title",
+                "description",
+                "notification_description",
                 "diagnostic_record",
                 parameters(
                         "_severity",
@@ -388,7 +390,7 @@ class MetadataExtractorTest {
 
         assertEquals("gql_status", firstGqlStatusObject.gqlStatus());
         assertEquals("status_description", firstGqlStatusObject.statusDescription());
-        assertEquals("status_description", firstGqlStatusObject.description());
+        assertEquals("notification_description", firstGqlStatusObject.description());
         assertEquals("neo4j_code", firstGqlStatusObject.code());
         assertEquals("title", firstGqlStatusObject.title());
         assertEquals("WARNING", firstGqlStatusObject.severity());
