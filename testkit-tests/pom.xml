@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver-parent</artifactId>
-        <version>5.23-SNAPSHOT</version>
+        <version>5.24-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -20,7 +20,7 @@
         <rootDir>${project.basedir}/..</rootDir>
 
         <testkit.url>https://github.com/neo4j-drivers/testkit.git</testkit.url>
-        <testkit.version>022-gql-notifications</testkit.version>
+        <testkit.version>5.0</testkit.version>
         <!-- See the testkit-custom-args profile if you want to customize this on individual runs. -->
         <testkit.args>--tests TESTKIT_TESTS INTEGRATION_TESTS STUB_TESTS STRESS_TESTS TLS_TESTS</testkit.args>
         <testkit.timeout>7200000</testkit.timeout>
