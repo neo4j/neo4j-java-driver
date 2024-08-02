@@ -627,4 +627,10 @@
         <method>java.util.Optional rawClassification()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/net/ServerAddress</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.net.ServerAddress of(java.lang.String)</method>
+    </difference>
+
 </differences>

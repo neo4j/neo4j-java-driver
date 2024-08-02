@@ -47,4 +47,14 @@ public interface ServerAddress {
     static ServerAddress of(String host, int port) {
         return new BoltServerAddress(host, port);
     }
+
+    /**
+     * Create a new address with the given host using the default bolt port.
+     *
+     * @param host the host portion. Should not be {@code null}.
+     * @return new server address with the specified host and default bolt port.
+     */
+    static ServerAddress of(String host) {
+        return ServerAddress.of(host, BoltServerAddress.DEFAULT_PORT);
+    }
 }
