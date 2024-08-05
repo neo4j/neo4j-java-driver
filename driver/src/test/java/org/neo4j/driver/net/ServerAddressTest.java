@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.BoltServerAddress;
 
 class ServerAddressTest {
     @Test
@@ -32,6 +33,13 @@ class ServerAddressTest {
     @Test
     void shouldFailToCreateAddressWithInvalidHost() {
         assertThrows(NullPointerException.class, () -> ServerAddress.of(null, 9999));
+    }
+
+    @Test
+    void shouldCreateAddressWithDefaultPort() {
+        var address = ServerAddress.of("my.database.example.com");
+        assertEquals("my.database.example.com", address.host());
+        assertEquals(BoltServerAddress.DEFAULT_PORT, address.port());
     }
 
     @Test
