@@ -53,6 +53,7 @@ public interface ServerAddress {
      *
      * @param host the host portion. Should not be {@code null}.
      * @return new server address with the specified host and default bolt port.
+     * @since 5.24.0
      */
     static ServerAddress of(String host) {
         return ServerAddress.of(host, BoltServerAddress.DEFAULT_PORT);
