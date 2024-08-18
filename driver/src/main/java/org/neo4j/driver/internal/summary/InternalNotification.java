@@ -41,6 +41,7 @@ public class InternalNotification extends InternalGqlStatusObject implements Not
                     case SECURITY -> NotificationCategory.SECURITY;
                     case TOPOLOGY -> NotificationCategory.TOPOLOGY;
                     case GENERIC -> NotificationCategory.GENERIC;
+                    case SCHEMA -> NotificationCategory.SCHEMA;
                 });
     }
 
