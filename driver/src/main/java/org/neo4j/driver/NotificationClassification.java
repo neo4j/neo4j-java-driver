@@ -86,5 +86,15 @@ public enum NotificationClassification implements NotificationCategory {
      * <p>
      * For instance, notifications that are not part of a more specific class.
      */
-    GENERIC
+    GENERIC,
+    /**
+     * A schema category.
+     * <p>
+     * For instance, notifications about indexes and constraints.
+     * <p>
+     * Please note that this category was added to a later server version. Therefore, a compatible server version is
+     * required to use it.
+     * @since 5.24.0
+     */
+    SCHEMA
 }
