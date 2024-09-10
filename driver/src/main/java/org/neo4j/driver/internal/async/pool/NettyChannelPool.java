@@ -31,6 +31,8 @@ import io.netty.channel.pool.FixedChannelPool;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
@@ -45,10 +47,12 @@ public class NettyChannelPool implements ExtendedChannelPool {
      */
     private static final boolean RELEASE_HEALTH_CHECK = false;
 
+    private final Logger log;
     private final FixedChannelPool delegate;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final String id;
     private final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
+    private final int maxConnections;
 
     NettyChannelPool(
             BoltServerAddress address,
@@ -57,10 +61,12 @@ public class NettyChannelPool implements ExtendedChannelPool {
             NettyChannelTracker handler,
             ChannelHealthChecker healthCheck,
             long acquireTimeoutMillis,
-            int maxConnections) {
+            int maxConnections,
+            Logging logging) {
         requireNonNull(address);
         requireNonNull(connector);
         requireNonNull(handler);
+        this.log = logging.getLog(getClass());
         this.id = poolId(address);
         this.delegate =
                 new FixedChannelPool(
@@ -94,11 +100,14 @@ public class NettyChannelPool implements ExtendedChannelPool {
                         return trackedChannelFuture;
                     }
                 };
+        this.maxConnections = maxConnections;
+        this.log.debug("Opened pool id=%s", id);
     }
 
     @Override
     public CompletionStage<Void> close() {
         if (closed.compareAndSet(false, true)) {
+            log.debug("Closing pool id=%s acquired=%d size=%d", id, delegate.acquiredChannelCount(), maxConnections);
             asCompletionStage(delegate.closeAsync(), closeFuture);
         }
         return closeFuture;

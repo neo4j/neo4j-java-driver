@@ -71,6 +71,9 @@ public class ChannelConnectedListener implements ChannelFutureListener {
                         error = new ServiceUnavailableException(
                                 String.format("Unable to write Bolt handshake to %s.", this.address), error);
                     }
+                    if (log.isTraceEnabled()) {
+                        log.error(String.format("Failed to write handshake to %s", this.address), error);
+                    }
                     this.handshakeCompletedPromise.setFailure(error);
                 }
             });

@@ -60,6 +60,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
     private final NettyChannelTracker nettyChannelTracker;
     private final NettyChannelHealthChecker channelHealthChecker;
     private final PoolSettings settings;
+    private final Logging logging;
     private final Logger log;
     private final MetricsListener metricsListener;
     private final boolean ownsEventLoopGroup;
@@ -109,6 +110,7 @@ public class ConnectionPoolImpl implements ConnectionPool {
         this.channelHealthChecker = nettyChannelHealthChecker;
         this.settings = settings;
         this.metricsListener = metricsListener;
+        this.logging = logging;
         this.log = logging.getLog(getClass());
         this.ownsEventLoopGroup = ownsEventLoopGroup;
         this.connectionFactory = connectionFactory;
@@ -263,7 +265,8 @@ public class ConnectionPoolImpl implements ConnectionPool {
                 nettyChannelTracker,
                 channelHealthChecker,
                 settings.connectionAcquisitionTimeout(),
-                settings.maxConnectionPoolSize());
+                settings.maxConnectionPoolSize(),
+                logging);
     }
 
     private ExtendedChannelPool getOrCreatePool(BoltServerAddress address) {
