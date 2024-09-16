@@ -63,18 +63,29 @@ public class ChannelConnectedListener implements ChannelFutureListener {
             pipeline.addLast(new HandshakeHandler(pipelineBuilder, handshakeCompletedPromise, logging));
             log.debug("C: [Bolt Handshake] %s", handshakeString());
             channel.writeAndFlush(BoltProtocolUtil.handshakeBuf()).addListener(f -> {
+                log.trace("handshake write future %s", f);
                 if (!f.isSuccess()) {
-                    Throwable error = f.cause();
-                    if (error instanceof SSLHandshakeException) {
-                        error = new SecurityException("Failed to establish secured connection with the server", error);
+                    if (f.isCancelled()) {
+                        log.trace("handshake write future cancelled");
+                        this.handshakeCompletedPromise.setFailure(new ServiceUnavailableException(
+                                String.format("Unable to write Bolt handshake to %s.", this.address)));
                     } else {
-                        error = new ServiceUnavailableException(
-                                String.format("Unable to write Bolt handshake to %s.", this.address), error);
+                        Throwable error = f.cause();
+                        if (log.isTraceEnabled()) {
+                            log.error("Failed writing Bolt handshake to " + this.address, error);
+                        }
+                        if (error instanceof SSLHandshakeException) {
+                            error = new SecurityException(
+                                    "Failed to establish secured connection with the server", error);
+                        } else {
+                            error = new ServiceUnavailableException(
+                                    String.format("Unable to write Bolt handshake to %s.", this.address), error);
+                        }
+                        if (log.isTraceEnabled()) {
+                            log.error(String.format("Failed to write handshake to %s", this.address), error);
+                        }
+                        this.handshakeCompletedPromise.setFailure(error);
                     }
-                    if (log.isTraceEnabled()) {
-                        log.error(String.format("Failed to write handshake to %s", this.address), error);
-                    }
-                    this.handshakeCompletedPromise.setFailure(error);
                 }
             });
         } else {
