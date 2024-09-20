@@ -176,7 +176,14 @@ class NettyChannelPoolIT {
                 RoutingContext.EMPTY,
                 DefaultDomainNameResolver.getInstance());
         return new NettyChannelPool(
-                neo4j.address(), connector, bootstrap, poolHandler, ChannelHealthChecker.ACTIVE, 1_000, maxConnections);
+                neo4j.address(),
+                connector,
+                bootstrap,
+                poolHandler,
+                ChannelHealthChecker.ACTIVE,
+                1_000,
+                maxConnections,
+                DEV_NULL_LOGGING);
     }
 
     private static Channel acquire(NettyChannelPool pool) throws Exception {

@@ -35,7 +35,7 @@ public class ChannelErrorLogger extends ChannelActivityLogger {
 
     public void traceOrDebug(String message, Throwable error) {
         if (isTraceEnabled()) {
-            trace(message, error);
+            error(message, error);
         } else {
             debug(String.format(DEBUG_MESSAGE_FORMAT, message, error.getClass()));
         }
