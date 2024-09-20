@@ -25,6 +25,7 @@ import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.net.URI;
 import org.neo4j.driver.AuthToken;
@@ -109,6 +110,13 @@ public class DriverFactory {
                 config,
                 ownsEventLoopGroup,
                 newRoutingSettings.routingContext());
+
+        Logger logger = config.logging().getLog(getClass());
+        logger.debug("maxDirectMemory %d", PlatformDependent.maxDirectMemory());
+        Runtime env = Runtime.getRuntime();
+        logger.debug("maxMemory %d", env.maxMemory());
+        logger.debug("totalMemory %d", env.totalMemory());
+        logger.debug("freeMemory %d", env.freeMemory());
 
         return createDriver(
                 uri,
