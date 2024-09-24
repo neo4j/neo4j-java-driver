@@ -20,7 +20,6 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -28,22 +27,32 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.FailableCursor;
 
 public class ResultCursorsHolder {
-    private final List<CompletionStage<? extends FailableCursor>> cursorStages =
-            Collections.synchronizedList(new ArrayList<>());
+    private final List<CompletionStage<? extends FailableCursor>> cursorStages = new ArrayList<>();
 
-    public void add(CompletionStage<? extends FailableCursor> cursorStage) {
+    void add(CompletionStage<? extends FailableCursor> cursorStage) {
         Objects.requireNonNull(cursorStage);
-        cursorStages.add(cursorStage);
+        synchronized (this) {
+            cursorStages.add(cursorStage);
+        }
+        cursorStage.thenCompose(FailableCursor::consumed).whenComplete((ignored, throwable) -> {
+            synchronized (this) {
+                cursorStages.remove(cursorStage);
+            }
+        });
     }
 
     CompletionStage<Throwable> retrieveNotConsumedError() {
-        var failures = retrieveAllFailures();
-
+        List<CompletionStage<? extends FailableCursor>> cursorStages;
+        synchronized (this) {
+            cursorStages = List.copyOf(this.cursorStages);
+        }
+        var failures = retrieveAllFailures(cursorStages);
         return CompletableFuture.allOf(failures).thenApply(ignore -> findFirstFailure(failures));
     }
 
     @SuppressWarnings("unchecked")
-    private CompletableFuture<Throwable>[] retrieveAllFailures() {
+    private static CompletableFuture<Throwable>[] retrieveAllFailures(
+            List<CompletionStage<? extends FailableCursor>> cursorStages) {
         return cursorStages.stream()
                 .map(ResultCursorsHolder::retrieveFailure)
                 .map(CompletionStage::toCompletableFuture)

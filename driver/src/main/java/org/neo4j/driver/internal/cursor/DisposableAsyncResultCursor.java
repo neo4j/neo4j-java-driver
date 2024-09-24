@@ -96,6 +96,11 @@ public class DisposableAsyncResultCursor implements AsyncResultCursor {
         return delegate.pullAllFailureAsync();
     }
 
+    @Override
+    public CompletionStage<Void> consumed() {
+        return delegate.consumed();
+    }
+
     private <T> CompletableFuture<T> assertNotDisposed() {
         if (isDisposed) {
             return failedFuture(newResultConsumedError());

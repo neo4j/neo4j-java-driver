@@ -28,4 +28,6 @@ public interface FailableCursor {
      * Pulling all unconsumed records into memory and returning failure if there is any pull errors.
      */
     CompletionStage<Throwable> pullAllFailureAsync();
+
+    CompletionStage<Void> consumed();
 }

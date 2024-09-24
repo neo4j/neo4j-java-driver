@@ -32,6 +32,7 @@ public class AsyncResultCursorImpl implements AsyncResultCursor {
     private final Throwable runError;
     private final RunResponseHandler runHandler;
     private final PullAllResponseHandler pullAllHandler;
+    private final CompletableFuture<Void> consumedFuture = new CompletableFuture<>();
 
     public AsyncResultCursorImpl(
             Throwable runError, RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler) {
@@ -47,7 +48,18 @@ public class AsyncResultCursorImpl implements AsyncResultCursor {
 
     @Override
     public CompletionStage<ResultSummary> consumeAsync() {
-        return pullAllHandler.consumeAsync();
+        var summaryFuture = new CompletableFuture<ResultSummary>();
+        pullAllHandler.consumeAsync().whenComplete((summary, throwable) -> {
+            throwable = Futures.completionExceptionCause(throwable);
+            if (throwable != null) {
+                consumedFuture.completeExceptionally(throwable);
+                summaryFuture.completeExceptionally(throwable);
+            } else {
+                consumedFuture.complete(null);
+                summaryFuture.complete(summary);
+            }
+        });
+        return summaryFuture;
     }
 
     @Override
@@ -137,5 +149,10 @@ public class AsyncResultCursorImpl implements AsyncResultCursor {
     @Override
     public CompletableFuture<AsyncResultCursor> mapSuccessfulRunCompletionAsync() {
         return runError != null ? Futures.failedFuture(runError) : CompletableFuture.completedFuture(this);
+    }
+
+    @Override
+    public CompletableFuture<Void> consumed() {
+        return consumedFuture;
     }
 }
