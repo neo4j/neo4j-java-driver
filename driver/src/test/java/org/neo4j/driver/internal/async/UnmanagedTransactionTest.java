@@ -724,6 +724,7 @@ class UnmanagedTransactionTest {
     private ResultCursorsHolder mockResultCursorWith(ClientException clientException) {
         var resultCursorsHolder = new ResultCursorsHolder();
         var cursor = mock(FailableCursor.class);
+        given(cursor.consumed()).willReturn(new CompletableFuture<>());
         doReturn(completedFuture(clientException)).when(cursor).discardAllFailureAsync();
         resultCursorsHolder.add(completedFuture(cursor));
         return resultCursorsHolder;

@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.testutil.TestUtil.await;
@@ -30,7 +32,9 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.cursor.AsyncResultCursorImpl;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -124,6 +128,38 @@ class ResultCursorsHolderTest {
         assertEquals(error1, await(failureFuture));
     }
 
+    @Test
+    void shouldRemoveConsumedResults() {
+        var holder = new ResultCursorsHolder();
+        var list = IntStream.range(0, 100)
+                .mapToObj(i -> {
+                    var cursor = mock(FailableCursor.class);
+                    var consume = new CompletableFuture<Void>();
+                    given(cursor.consumed()).willReturn(consume);
+                    holder.add(CompletableFuture.completedFuture(cursor));
+                    if (i % 2 == 0) {
+                        consume.complete(null);
+                        given(cursor.discardAllFailureAsync())
+                                .willReturn(CompletableFuture.failedFuture(new RuntimeException()));
+                    } else {
+                        given(cursor.discardAllFailureAsync()).willReturn(CompletableFuture.completedStage(null));
+                    }
+                    return cursor;
+                })
+                .toList();
+
+        holder.retrieveNotConsumedError().toCompletableFuture().join();
+
+        for (var i = 0; i < list.size(); i++) {
+            var cursor = list.get(i);
+            then(cursor).should().consumed();
+            if (i % 2 == 1) {
+                then(cursor).should().discardAllFailureAsync();
+            }
+            then(cursor).shouldHaveNoMoreInteractions();
+        }
+    }
+
     private static CompletionStage<AsyncResultCursorImpl> cursorWithoutError() {
         return cursorWithError(null);
     }
@@ -134,6 +170,7 @@ class ResultCursorsHolderTest {
 
     private static CompletionStage<AsyncResultCursorImpl> cursorWithFailureFuture(CompletableFuture<Throwable> future) {
         var cursor = mock(AsyncResultCursorImpl.class);
+        when(cursor.consumed()).thenReturn(new CompletableFuture<>());
         when(cursor.discardAllFailureAsync()).thenReturn(future);
         return completedFuture(cursor);
     }

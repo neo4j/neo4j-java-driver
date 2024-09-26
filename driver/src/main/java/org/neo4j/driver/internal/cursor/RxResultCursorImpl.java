@@ -31,6 +31,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.summary.ResultSummary;
 
 public class RxResultCursorImpl implements RxResultCursor {
@@ -46,6 +47,7 @@ public class RxResultCursorImpl implements RxResultCursor {
     private boolean summaryFutureExposed;
     private boolean resultConsumed;
     private RecordConsumerStatus consumerStatus = NOT_INSTALLED;
+    private final CompletableFuture<Void> consumedFuture = new CompletableFuture<>();
 
     // for testing only
     public RxResultCursorImpl(RunResponseHandler runHandler, PullResponseHandler pullHandler) {
@@ -120,9 +122,25 @@ public class RxResultCursorImpl implements RxResultCursor {
     }
 
     @Override
+    public CompletionStage<Void> consumed() {
+        return consumedFuture;
+    }
+
+    @Override
     public CompletionStage<ResultSummary> summaryAsync() {
         summaryFutureExposed = true;
-        return summaryStage();
+        var summaryFuture = new CompletableFuture<ResultSummary>();
+        summaryStage().whenComplete((summary, throwable) -> {
+            throwable = Futures.completionExceptionCause(throwable);
+            if (throwable != null) {
+                consumedFuture.completeExceptionally(throwable);
+                summaryFuture.completeExceptionally(throwable);
+            } else {
+                consumedFuture.complete(null);
+                summaryFuture.complete(summary);
+            }
+        });
+        return summaryFuture;
     }
 
     @Override
