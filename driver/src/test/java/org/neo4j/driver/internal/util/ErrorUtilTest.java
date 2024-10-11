@@ -42,6 +42,7 @@ import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.messaging.GqlError;
 
 class ErrorUtilTest {
     @Test
@@ -49,7 +50,7 @@ class ErrorUtilTest {
         var code = "Neo.ClientError.Security.Unauthorized";
         var message = "Wrong credentials";
 
-        var error = newNeo4jError(code, message);
+        var error = newNeo4jError(new GqlError(code, message));
 
         assertThat(error, instanceOf(AuthenticationException.class));
         assertEquals(code, error.code());
@@ -61,7 +62,7 @@ class ErrorUtilTest {
         var code = "Neo.ClientError.Transaction.InvalidBookmark";
         var message = "Wrong bookmark";
 
-        var error = newNeo4jError(code, message);
+        var error = newNeo4jError(new GqlError(code, message));
 
         assertThat(error, instanceOf(ClientException.class));
         assertEquals(code, error.code());
@@ -73,7 +74,7 @@ class ErrorUtilTest {
         var code = "Neo.TransientError.Transaction.DeadlockDetected";
         var message = "Deadlock occurred";
 
-        var error = newNeo4jError(code, message);
+        var error = newNeo4jError(new GqlError(code, message));
 
         assertThat(error, instanceOf(TransientException.class));
         assertEquals(code, error.code());
@@ -85,7 +86,7 @@ class ErrorUtilTest {
         var code = "Neo.DatabaseError.Transaction.TransactionLogError";
         var message = "Failed to write the transaction log";
 
-        var error = newNeo4jError(code, message);
+        var error = newNeo4jError(new GqlError(code, message));
 
         assertThat(error, instanceOf(DatabaseException.class));
         assertEquals(code, error.code());
@@ -97,7 +98,7 @@ class ErrorUtilTest {
         var code = "WrongErrorCode";
         var message = "Some really strange error";
 
-        var error = newNeo4jError(code, message);
+        var error = newNeo4jError(new GqlError(code, message));
 
         assertThat(error, instanceOf(DatabaseException.class));
         assertEquals(code, error.code());
@@ -156,7 +157,7 @@ class ErrorUtilTest {
         var code = "Neo.ClientError.Security.AuthorizationExpired";
         var message = "Expired authorization info";
 
-        var error = newNeo4jError(code, message);
+        var error = newNeo4jError(new GqlError(code, message));
 
         assertThat(error, instanceOf(AuthorizationExpiredException.class));
         assertEquals(code, error.code());
@@ -168,7 +169,7 @@ class ErrorUtilTest {
         var code = "Neo.ClientError.Security.TokenExpired";
         var message = "message";
 
-        var error = newNeo4jError(code, message);
+        var error = newNeo4jError(new GqlError(code, message));
 
         assertThat(error, instanceOf(TokenExpiredException.class));
         assertEquals(code, error.code());
@@ -180,7 +181,7 @@ class ErrorUtilTest {
         var code = "Neo.TransientError.Transaction.Terminated";
         var message = "message";
 
-        var error = newNeo4jError(code, message);
+        var error = newNeo4jError(new GqlError(code, message));
 
         assertThat(error, instanceOf(ClientException.class));
         assertEquals("Neo.ClientError.Transaction.Terminated", error.code());
@@ -192,7 +193,7 @@ class ErrorUtilTest {
         var code = "Neo.TransientError.Transaction.LockClientStopped";
         var message = "message";
 
-        var error = newNeo4jError(code, message);
+        var error = newNeo4jError(new GqlError(code, message));
 
         assertThat(error, instanceOf(ClientException.class));
         assertEquals("Neo.ClientError.Transaction.LockClientStopped", error.code());

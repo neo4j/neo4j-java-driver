@@ -37,6 +37,7 @@ import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.InternalClientCertificate;
 import org.neo4j.driver.internal.pki.PemParser;
 import org.neo4j.driver.internal.util.Futures;
@@ -86,8 +87,14 @@ class SSLContextManager {
                                     var keyManagers = createKeyManagers(certificate);
                                     return sslContextSupplier.get(keyManagers);
                                 } catch (Throwable throwable) {
+                                    var message = "An error occured while loading client certficate.";
                                     var exception = new ClientException(
-                                            "An error occured while loading client certficate.", throwable);
+                                            GqlStatusError.UNKNOWN.getStatus(),
+                                            GqlStatusError.UNKNOWN.getStatusDescription(message),
+                                            "N/A",
+                                            message,
+                                            GqlStatusError.DIAGNOSTIC_RECORD,
+                                            throwable);
                                     logger.error("An error occured while loading client certficate.", exception);
                                     throw new CompletionException(exception);
                                 }
@@ -96,8 +103,15 @@ class SSLContextManager {
                                     throw new CompletionException(previousThrowable);
                                 } else {
                                     if (sslContext == null) {
+                                        var message =
+                                                "The initial client certificate returned by the manager must not be null.";
                                         var exception = new ClientException(
-                                                "The initial client certificate returned by the manager must not be null.");
+                                                GqlStatusError.UNKNOWN.getStatus(),
+                                                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                                                "N/A",
+                                                message,
+                                                GqlStatusError.DIAGNOSTIC_RECORD,
+                                                null);
                                         logger.error(
                                                 "The initial client certificate returned by the manager must not be null.",
                                                 exception);

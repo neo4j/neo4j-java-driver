@@ -27,7 +27,13 @@ public class ImpersonationUtil {
 
     public static Connection ensureImpersonationSupport(Connection connection, String impersonatedUser) {
         if (impersonatedUser != null && !supportsImpersonation(connection)) {
-            throw new ClientException(IMPERSONATION_UNSUPPORTED_ERROR_MESSAGE);
+            throw new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(IMPERSONATION_UNSUPPORTED_ERROR_MESSAGE),
+                    "N/A",
+                    IMPERSONATION_UNSUPPORTED_ERROR_MESSAGE,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
         }
         return connection;
     }

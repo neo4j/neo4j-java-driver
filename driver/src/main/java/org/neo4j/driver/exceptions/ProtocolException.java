@@ -17,6 +17,7 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
+import org.neo4j.driver.internal.GqlStatusError;
 
 /**
  * A signal that the contract for client-server communication has broken down.
@@ -33,7 +34,7 @@ public class ProtocolException extends Neo4jException {
      * @param message the message
      */
     public ProtocolException(String message) {
-        super(CODE + message);
+        this(CODE + message, null);
     }
 
     /**
@@ -42,6 +43,12 @@ public class ProtocolException extends Neo4jException {
      * @param e the throwable
      */
     public ProtocolException(String message, Throwable e) {
-        super(CODE + message, e);
+        super(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                CODE + message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                e);
     }
 }

@@ -35,8 +35,14 @@ public class ValidatingClientCertificateManager implements ClientCertificateMana
         try {
             certificateStage = delegate.getClientCertificate();
         } catch (Throwable throwable) {
-            return CompletableFuture.failedFuture(
-                    new ClientException("An exception has been thrown by the ClientCertificateManager.", throwable));
+            var message = "An exception has been thrown by the ClientCertificateManager.";
+            return CompletableFuture.failedFuture(new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    throwable));
         }
         return certificateStage;
     }

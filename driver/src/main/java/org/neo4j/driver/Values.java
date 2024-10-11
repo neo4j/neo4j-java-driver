@@ -40,6 +40,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.AsValue;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
@@ -213,7 +214,14 @@ public final class Values {
             return value(Arrays.asList((Object[]) value));
         }
 
-        throw new ClientException("Unable to convert " + value.getClass().getName() + " to Neo4j Value.");
+        var message = "Unable to convert " + value.getClass().getName() + " to Neo4j Value.";
+        throw new ClientException(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 
     /**
@@ -588,10 +596,17 @@ public final class Values {
      */
     public static Value parameters(Object... keysAndValues) {
         if (keysAndValues.length % 2 != 0) {
-            throw new ClientException("Parameters function requires an even number " + "of arguments, "
+            var message = "Parameters function requires an even number " + "of arguments, "
                     + "alternating key and value. Arguments were: "
                     + Arrays.toString(keysAndValues)
-                    + ".");
+                    + ".";
+            throw new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
         }
         HashMap<String, Value> map = newHashMapWithSize(keysAndValues.length / 2);
         for (var i = 0; i < keysAndValues.length; i += 2) {

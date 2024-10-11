@@ -35,6 +35,7 @@ import org.neo4j.driver.async.AsyncTransactionCallback;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.telemetry.TelemetryApi;
@@ -165,9 +166,16 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
             if (error != null) {
                 closeTxAfterFailedTransactionWork(tx, resultFuture, error);
             } else if (result instanceof ResultCursor) {
-                error = new ClientException(String.format(
+                var message = String.format(
                         "%s is not a valid return value, it should be consumed before producing a return value",
-                        ResultCursor.class.getName()));
+                        ResultCursor.class.getName());
+                error = new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null);
                 closeTxAfterFailedTransactionWork(tx, resultFuture, error);
             } else {
                 closeTxAfterSucceededTransactionWork(tx, resultFuture, result);

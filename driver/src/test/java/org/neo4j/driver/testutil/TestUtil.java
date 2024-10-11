@@ -99,6 +99,7 @@ import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
 import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
 import org.neo4j.driver.internal.messaging.v55.BoltProtocolV55;
 import org.neo4j.driver.internal.messaging.v56.BoltProtocolV56;
+import org.neo4j.driver.internal.messaging.v57.BoltProtocolV57;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -469,7 +470,8 @@ public final class TestUtil {
                         BoltProtocolV53.VERSION,
                         BoltProtocolV54.VERSION,
                         BoltProtocolV55.VERSION,
-                        BoltProtocolV56.VERSION)
+                        BoltProtocolV56.VERSION,
+                        BoltProtocolV57.VERSION)
                 .contains(version)) {
             setupSuccessResponse(connection, CommitMessage.class);
             setupSuccessResponse(connection, RollbackMessage.class);

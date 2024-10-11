@@ -61,6 +61,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.internal.async.inbound.ConnectionReadTimeoutHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
+import org.neo4j.driver.internal.messaging.GqlError;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
@@ -350,7 +351,7 @@ class NettyChannelHealthCheckerTest {
             dispatcher.handleSuccessMessage(Collections.emptyMap());
             assertThat(await(healthy), is(true));
         } else {
-            dispatcher.handleFailureMessage("Neo.ClientError.General.Unknown", "Error!");
+            dispatcher.handleFailureMessage(new GqlError("Neo.ClientError.General.Unknown", "Error!"));
             assertThat(await(healthy), is(false));
         }
     }

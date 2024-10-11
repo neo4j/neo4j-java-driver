@@ -84,6 +84,7 @@ import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.GqlError;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.CommitMessage;
@@ -181,7 +182,8 @@ public class BoltProtocolV44Test {
         assertEquals(1, messageDispatcher.queuedHandlersCount());
         assertFalse(promise.isDone());
 
-        messageDispatcher.handleFailureMessage("Neo.TransientError.General.DatabaseUnavailable", "Error!");
+        messageDispatcher.handleFailureMessage(
+                new GqlError("Neo.TransientError.General.DatabaseUnavailable", "Error!"));
 
         assertTrue(promise.isDone());
         assertFalse(promise.isSuccess());

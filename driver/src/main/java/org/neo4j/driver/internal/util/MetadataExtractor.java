@@ -357,6 +357,7 @@ public class MetadataExtractor {
         }
     }
 
+    @SuppressWarnings("DuplicatedCode")
     private static GqlStatusObject extractGqlStatusObject(Value value) {
         var status = value.get("gql_status").asString();
         var description = value.get("status_description").asString();

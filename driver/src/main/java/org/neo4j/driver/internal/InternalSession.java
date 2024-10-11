@@ -177,9 +177,16 @@ public class InternalSession extends AbstractQueryRunner implements Session {
 
                 var result = work.execute(tx);
                 if (result instanceof Result) {
-                    throw new ClientException(String.format(
+                    var message = String.format(
                             "%s is not a valid return value, it should be consumed before producing a return value",
-                            Result.class.getName()));
+                            Result.class.getName());
+                    throw new ClientException(
+                            GqlStatusError.UNKNOWN.getStatus(),
+                            GqlStatusError.UNKNOWN.getStatusDescription(message),
+                            "N/A",
+                            message,
+                            GqlStatusError.DIAGNOSTIC_RECORD,
+                            null);
                 }
                 if (tx.isOpen()) {
                     // commit tx if a user has not explicitly committed or rolled back the transaction

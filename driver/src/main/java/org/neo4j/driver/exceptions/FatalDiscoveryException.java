@@ -17,6 +17,10 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
+import java.util.Map;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.util.Preview;
 
 /**
  * This error indicate a fatal problem to obtain routing tables such as the routing table for a specified database does not exist.
@@ -31,8 +35,15 @@ public class FatalDiscoveryException extends ClientException {
      * Creates a new instance.
      * @param message the message
      */
+    // for testing only
     public FatalDiscoveryException(String message) {
-        super(message);
+        this(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 
     /**
@@ -40,7 +51,36 @@ public class FatalDiscoveryException extends ClientException {
      * @param code the code
      * @param message the message
      */
+    // for testing only
+    @Deprecated
     public FatalDiscoveryException(String code, String message) {
-        super(code, message);
+        this(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                code,
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
+    }
+
+    /**
+     * Creates a new instance.
+     * @param gqlStatus the GQLSTATUS as defined by the GQL standard
+     * @param statusDescription the status description
+     * @param code the code
+     * @param message the message
+     * @param diagnosticRecord the diagnostic record
+     * @param cause the cause
+     * @since 5.26.0
+     */
+    @Preview(name = "GQL-error")
+    public FatalDiscoveryException(
+            String gqlStatus,
+            String statusDescription,
+            String code,
+            String message,
+            Map<String, Value> diagnosticRecord,
+            Throwable cause) {
+        super(gqlStatus, statusDescription, code, message, diagnosticRecord, cause);
     }
 }

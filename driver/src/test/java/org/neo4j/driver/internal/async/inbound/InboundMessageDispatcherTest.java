@@ -67,6 +67,7 @@ import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.internal.async.pool.AuthContext;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.logging.ChannelErrorLogger;
+import org.neo4j.driver.internal.messaging.GqlError;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
@@ -123,7 +124,7 @@ class InboundMessageDispatcherTest {
         dispatcher.enqueue(handler);
         assertEquals(1, dispatcher.queuedHandlersCount());
 
-        dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
+        dispatcher.handleFailureMessage(new GqlError(FAILURE_CODE, FAILURE_MESSAGE));
 
         // "RESET after failure" handler should remain queued
         assertEquals(1, dispatcher.queuedHandlersCount());
@@ -147,7 +148,7 @@ class InboundMessageDispatcherTest {
         dispatcher.enqueue(mock(ResponseHandler.class));
         assertEquals(1, dispatcher.queuedHandlersCount());
 
-        dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
+        dispatcher.handleFailureMessage(new GqlError(FAILURE_CODE, FAILURE_MESSAGE));
 
         verify(channel).writeAndFlush(eq(RESET), any());
     }
@@ -167,7 +168,7 @@ class InboundMessageDispatcherTest {
         dispatcher.enqueue(mock(ResponseHandler.class));
         assertEquals(1, dispatcher.queuedHandlersCount());
 
-        dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
+        dispatcher.handleFailureMessage(new GqlError(FAILURE_CODE, FAILURE_MESSAGE));
         dispatcher.handleSuccessMessage(emptyMap());
 
         assertNull(dispatcher.currentError());
@@ -236,7 +237,7 @@ class InboundMessageDispatcherTest {
         var handler = mock(ResponseHandler.class);
         dispatcher.enqueue(handler);
 
-        dispatcher.handleFailureMessage("Neo.ClientError", "First error!");
+        dispatcher.handleFailureMessage(new GqlError("Neo.ClientError", "First error!"));
         var fatalError = new RuntimeException("Second Error!");
         dispatcher.handleChannelError(fatalError);
 
@@ -275,7 +276,7 @@ class InboundMessageDispatcherTest {
         dispatcher.enqueue(handler1);
         dispatcher.enqueue(handler2);
 
-        dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
+        dispatcher.handleFailureMessage(new GqlError(FAILURE_CODE, FAILURE_MESSAGE));
         verifyFailure(handler1);
         verify(handler2, only()).canManageAutoRead();
 
@@ -310,7 +311,7 @@ class InboundMessageDispatcherTest {
 
         dispatcher.enqueue(handler1);
         dispatcher.enqueue(handler2);
-        dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
+        dispatcher.handleFailureMessage(new GqlError(FAILURE_CODE, FAILURE_MESSAGE));
         dispatcher.handleIgnoredMessage();
 
         // "RESET after failure" handler should remain queued
@@ -430,7 +431,7 @@ class InboundMessageDispatcherTest {
                 verify(logger).debug(anyString(), any(Map.class));
             };
         } else if (FailureMessage.class.isAssignableFrom(message)) {
-            dispatcher.handleFailureMessage(FAILURE_CODE, FAILURE_MESSAGE);
+            dispatcher.handleFailureMessage(new GqlError(FAILURE_CODE, FAILURE_MESSAGE));
             loggerVerification = () -> {
                 verify(logger).isDebugEnabled();
                 verify(logger).debug(anyString(), anyString(), anyString());
@@ -500,7 +501,7 @@ class InboundMessageDispatcherTest {
         var message = "message";
 
         // when
-        dispatcher.handleFailureMessage(code, message);
+        dispatcher.handleFailureMessage(new GqlError(code, message));
 
         // then
         assertEquals(0, dispatcher.queuedHandlersCount());
@@ -529,7 +530,7 @@ class InboundMessageDispatcherTest {
         var message = "message";
 
         // when
-        dispatcher.handleFailureMessage(code, message);
+        dispatcher.handleFailureMessage(new GqlError(code, message));
 
         // then
         assertEquals(0, dispatcher.queuedHandlersCount());

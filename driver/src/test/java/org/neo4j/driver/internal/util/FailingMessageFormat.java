@@ -19,6 +19,7 @@ package org.neo4j.driver.internal.util;
 import io.netty.util.internal.PlatformDependent;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
+import org.neo4j.driver.internal.messaging.GqlError;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
@@ -85,7 +86,7 @@ public class FailingMessageFormat implements MessageFormat {
 
             var failureMsg = failureRef.getAndSet(null);
             if (failureMsg != null) {
-                handler.handleFailureMessage(failureMsg.code(), failureMsg.message());
+                handler.handleFailureMessage(new GqlError(failureMsg.code(), failureMsg.message()));
                 return;
             }
 

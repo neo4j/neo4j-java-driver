@@ -35,6 +35,7 @@ import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.spi.Connection;
@@ -72,10 +73,17 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
 
     Query procedureQuery(BoltProtocolVersion protocolVersion, DatabaseName databaseName) {
         if (databaseName.databaseName().isPresent()) {
-            throw new FatalDiscoveryException(String.format(
+            var message = String.format(
                     "Refreshing routing table for multi-databases is not supported over Bolt protocol lower than 4.0. "
                             + "Current protocol version: %s. Database name: '%s'",
-                    protocolVersion, databaseName.description()));
+                    protocolVersion, databaseName.description());
+            throw new FatalDiscoveryException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
         }
         return new Query(GET_ROUTING_TABLE, parameters(ROUTING_CONTEXT, context.toMap()));
     }

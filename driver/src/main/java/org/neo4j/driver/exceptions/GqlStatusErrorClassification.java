@@ -14,17 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.exceptions;
 
-import java.util.Map;
-import org.neo4j.driver.Value;
-
-public interface ResponseMessageHandler {
-    void handleSuccessMessage(Map<String, Value> meta);
-
-    void handleRecordMessage(Value[] fields);
-
-    void handleFailureMessage(GqlError error);
-
-    void handleIgnoredMessage();
+/**
+ * The GQLSTATUS error classification.
+ * <p>
+ * The GQLSTATUS error classification is supplied by the server upon a failure, see
+ * {@link Neo4jException#classification()} for more details.
+ * @since 5.26.0
+ * @see Neo4jException#classification()
+ */
+public enum GqlStatusErrorClassification {
+    /**
+     * Client error.
+     */
+    CLIENT_ERROR,
+    /**
+     * Database error.
+     */
+    DATABASE_ERROR,
+    /**
+     * Transient error.
+     */
+    TRANSIENT_ERROR
 }

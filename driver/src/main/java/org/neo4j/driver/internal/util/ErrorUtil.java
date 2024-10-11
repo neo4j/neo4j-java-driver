@@ -31,6 +31,8 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.messaging.GqlError;
 
 public final class ErrorUtil {
     private ErrorUtil() {}
@@ -54,26 +56,69 @@ public final class ErrorUtil {
                         + "or the query runner where the result is created has already been closed.");
     }
 
-    public static Neo4jException newNeo4jError(String code, String message) {
+    public static Neo4jException newNeo4jError(GqlError gqlError) {
+        var code = gqlError.code();
         switch (extractErrorClass(code)) {
             case "ClientError" -> {
                 if ("Security".equals(extractErrorSubClass(code))) {
                     if (code.equalsIgnoreCase("Neo.ClientError.Security.Unauthorized")) {
-                        return new AuthenticationException(code, message);
+                        return new AuthenticationException(
+                                gqlError.gqlStatus(),
+                                gqlError.statusDescription(),
+                                code,
+                                gqlError.message(),
+                                gqlError.diagnosticRecord(),
+                                map(gqlError.cause()));
                     } else if (code.equalsIgnoreCase("Neo.ClientError.Security.AuthorizationExpired")) {
-                        return new AuthorizationExpiredException(code, message);
+                        return new AuthorizationExpiredException(
+                                gqlError.gqlStatus(),
+                                gqlError.statusDescription(),
+                                code,
+                                gqlError.message(),
+                                gqlError.diagnosticRecord(),
+                                map(gqlError.cause()));
                     } else if (code.equalsIgnoreCase("Neo.ClientError.Security.TokenExpired")) {
-                        return new TokenExpiredException(code, message);
+                        return new TokenExpiredException(
+                                gqlError.gqlStatus(),
+                                gqlError.statusDescription(),
+                                code,
+                                gqlError.message(),
+                                gqlError.diagnosticRecord(),
+                                map(gqlError.cause()));
                     } else {
-                        return new SecurityException(code, message);
+                        return new SecurityException(
+                                gqlError.gqlStatus(),
+                                gqlError.statusDescription(),
+                                code,
+                                gqlError.message(),
+                                gqlError.diagnosticRecord(),
+                                map(gqlError.cause()));
                     }
                 } else {
                     if (code.equalsIgnoreCase("Neo.ClientError.Database.DatabaseNotFound")) {
-                        return new FatalDiscoveryException(code, message);
+                        return new FatalDiscoveryException(
+                                gqlError.gqlStatus(),
+                                gqlError.statusDescription(),
+                                code,
+                                gqlError.message(),
+                                gqlError.diagnosticRecord(),
+                                map(gqlError.cause()));
                     } else if (code.equalsIgnoreCase("Neo.ClientError.Transaction.Terminated")) {
-                        return new TransactionTerminatedException(code, message);
+                        return new TransactionTerminatedException(
+                                gqlError.gqlStatus(),
+                                gqlError.statusDescription(),
+                                code,
+                                gqlError.message(),
+                                gqlError.diagnosticRecord(),
+                                map(gqlError.cause()));
                     } else {
-                        return new ClientException(code, message);
+                        return new ClientException(
+                                gqlError.gqlStatus(),
+                                gqlError.statusDescription(),
+                                code,
+                                gqlError.message(),
+                                gqlError.diagnosticRecord(),
+                                map(gqlError.cause()));
                     }
                 }
             }
@@ -81,16 +126,54 @@ public final class ErrorUtil {
                 // Since 5.0 these 2 errors have been moved to ClientError class.
                 // This mapping is required if driver is connection to earlier server versions.
                 if ("Neo.TransientError.Transaction.Terminated".equals(code)) {
-                    return new TransactionTerminatedException("Neo.ClientError.Transaction.Terminated", message);
+                    return new TransactionTerminatedException(
+                            gqlError.gqlStatus(),
+                            gqlError.statusDescription(),
+                            "Neo.ClientError.Transaction.Terminated",
+                            gqlError.message(),
+                            gqlError.diagnosticRecord(),
+                            map(gqlError.cause()));
                 } else if ("Neo.TransientError.Transaction.LockClientStopped".equals(code)) {
-                    return new ClientException("Neo.ClientError.Transaction.LockClientStopped", message);
+                    return new ClientException(
+                            gqlError.gqlStatus(),
+                            gqlError.statusDescription(),
+                            "Neo.ClientError.Transaction.LockClientStopped",
+                            gqlError.message(),
+                            gqlError.diagnosticRecord(),
+                            map(gqlError.cause()));
                 } else {
-                    return new TransientException(code, message);
+                    return new TransientException(
+                            gqlError.gqlStatus(),
+                            gqlError.statusDescription(),
+                            code,
+                            gqlError.message(),
+                            gqlError.diagnosticRecord(),
+                            map(gqlError.cause()));
                 }
             }
             default -> {
-                return new DatabaseException(code, message);
+                return new DatabaseException(
+                        gqlError.gqlStatus(),
+                        gqlError.statusDescription(),
+                        code,
+                        gqlError.message(),
+                        gqlError.diagnosticRecord(),
+                        map(gqlError.cause()));
             }
+        }
+    }
+
+    public static Neo4jException map(GqlError gqlError) {
+        if (gqlError == null) {
+            return null;
+        } else {
+            return new Neo4jException(
+                    gqlError.gqlStatus(),
+                    gqlError.statusDescription(),
+                    gqlError.code(),
+                    gqlError.message(),
+                    gqlError.diagnosticRecord(),
+                    map(gqlError.cause()));
         }
     }
 
@@ -120,7 +203,14 @@ public final class ErrorUtil {
         if (error instanceof RuntimeException) {
             exception = (RuntimeException) error;
         } else {
-            exception = new Neo4jException("Driver execution failed", error);
+            var message = "Driver execution failed";
+            exception = new Neo4jException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    error);
         }
         throw exception;
     }

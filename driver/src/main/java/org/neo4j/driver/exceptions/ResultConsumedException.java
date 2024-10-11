@@ -18,6 +18,7 @@ package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
 import org.neo4j.driver.QueryRunner;
+import org.neo4j.driver.internal.GqlStatusError;
 
 /**
  * A user is trying to access resources that are no longer valid due to
@@ -33,6 +34,12 @@ public class ResultConsumedException extends ClientException {
      * @param message the message
      */
     public ResultConsumedException(String message) {
-        super(message);
+        super(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                null);
     }
 }

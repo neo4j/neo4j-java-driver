@@ -64,6 +64,7 @@ import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.messaging.GqlError;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.CommitMessage;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
@@ -415,7 +416,8 @@ class NetworkConnectionTest {
         channel.runPendingTasks();
         assertFalse(resetFuture.isDone());
 
-        messageDispatcher(channel).handleFailureMessage("Neo.TransientError.Transaction.Terminated", "Message");
+        messageDispatcher(channel)
+                .handleFailureMessage(new GqlError("Neo.TransientError.Transaction.Terminated", "Message"));
         assertTrue(resetFuture.isDone());
         assertFalse(resetFuture.isCompletedExceptionally());
     }

@@ -17,6 +17,7 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
+import org.neo4j.driver.internal.GqlStatusError;
 
 /**
  * A feature is not supported in a given setup.
@@ -31,7 +32,7 @@ public class UnsupportedFeatureException extends ClientException {
      * @param message the message
      */
     public UnsupportedFeatureException(String message) {
-        super(message);
+        this(message, null);
     }
 
     /**
@@ -40,6 +41,12 @@ public class UnsupportedFeatureException extends ClientException {
      * @param cause the cause
      */
     public UnsupportedFeatureException(String message, Throwable cause) {
-        super(message, cause);
+        super(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                "N/A",
+                message,
+                GqlStatusError.DIAGNOSTIC_RECORD,
+                cause);
     }
 }

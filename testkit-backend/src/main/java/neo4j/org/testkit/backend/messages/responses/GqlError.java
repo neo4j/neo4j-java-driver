@@ -14,17 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package neo4j.org.testkit.backend.messages.responses;
 
 import java.util.Map;
+import lombok.Builder;
+import lombok.Getter;
 import org.neo4j.driver.Value;
 
-public interface ResponseMessageHandler {
-    void handleSuccessMessage(Map<String, Value> meta);
+@Getter
+@Builder
+public class GqlError implements TestkitResponse {
+    private GqlErrorBody data;
 
-    void handleRecordMessage(Value[] fields);
+    @Override
+    public String testkitName() {
+        return "GqlError";
+    }
 
-    void handleFailureMessage(GqlError error);
+    @Getter
+    @Builder
+    public static class GqlErrorBody {
+        private String gqlStatus;
 
-    void handleIgnoredMessage();
+        private String statusDescription;
+
+        private String msg;
+
+        private Map<String, Value> diagnosticRecord;
+
+        private String classification;
+
+        private String rawClassification;
+
+        private GqlError cause;
+    }
 }

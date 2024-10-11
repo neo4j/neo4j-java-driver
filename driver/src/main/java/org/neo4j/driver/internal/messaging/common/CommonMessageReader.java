@@ -17,6 +17,10 @@
 package org.neo4j.driver.internal.messaging.common;
 
 import java.io.IOException;
+import java.util.Map;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.messaging.GqlError;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.messaging.ValueUnpacker;
@@ -27,7 +31,7 @@ import org.neo4j.driver.internal.messaging.response.SuccessMessage;
 import org.neo4j.driver.internal.packstream.PackInput;
 
 public class CommonMessageReader implements MessageFormat.Reader {
-    private final ValueUnpacker unpacker;
+    protected final ValueUnpacker unpacker;
 
     public CommonMessageReader(PackInput input, boolean dateTimeUtcEnabled) {
         this(new CommonValueUnpacker(input, dateTimeUtcEnabled));
@@ -55,11 +59,22 @@ public class CommonMessageReader implements MessageFormat.Reader {
         output.handleSuccessMessage(map);
     }
 
-    private void unpackFailureMessage(ResponseMessageHandler output) throws IOException {
+    protected void unpackFailureMessage(ResponseMessageHandler output) throws IOException {
         var params = unpacker.unpackMap();
         var code = params.get("code").asString();
         var message = params.get("message").asString();
-        output.handleFailureMessage(code, message);
+        var diagnosticRecord = Map.ofEntries(
+                Map.entry("CURRENT_SCHEMA", Values.value("/")),
+                Map.entry("OPERATION", Values.value("")),
+                Map.entry("OPERATION_CODE", Values.value("0")));
+        var gqlError = new GqlError(
+                GqlStatusError.UNKNOWN.getStatus(),
+                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                code,
+                message,
+                diagnosticRecord,
+                null);
+        output.handleFailureMessage(gqlError);
     }
 
     private void unpackIgnoredMessage(ResponseMessageHandler output) {
