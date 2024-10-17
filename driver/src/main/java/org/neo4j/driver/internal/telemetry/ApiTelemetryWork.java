@@ -16,67 +16,47 @@
  */
 package org.neo4j.driver.internal.telemetry;
 
-import static org.neo4j.driver.internal.util.Futures.futureCompletingConsumer;
-
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 
-public class ApiTelemetryWork {
-    private final TelemetryApi telemetryApi;
-    private final AtomicBoolean completedWithSuccess;
-
-    private final AtomicBoolean enabled;
-
+public record ApiTelemetryWork(TelemetryApi telemetryApi, AtomicBoolean enabled, AtomicBoolean acknowledged) {
     public ApiTelemetryWork(TelemetryApi telemetryApi) {
-        this.telemetryApi = telemetryApi;
-        this.completedWithSuccess = new AtomicBoolean(false);
-        this.enabled = new AtomicBoolean(true);
+        this(telemetryApi, new AtomicBoolean(), new AtomicBoolean());
     }
 
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
     }
 
-    public CompletionStage<Void> execute(Connection connection, BoltProtocol protocol) {
-        var future = new CompletableFuture<Void>();
-        if (connection.isTelemetryEnabled() && enabled.get() && !this.completedWithSuccess.get()) {
-            protocol.telemetry(connection, telemetryApi.getValue())
-                    .thenAccept((unused) -> completedWithSuccess.set(true))
-                    .whenComplete(futureCompletingConsumer(future));
-        } else {
-            future.complete(null);
-        }
-        return future;
+    public void acknowledge() {
+        this.acknowledged.set(true);
     }
 
+    public CompletionStage<BoltConnection> pipelineTelemetryIfEnabled(BoltConnection connection) {
+        if (enabled.get() && connection.telemetrySupported() && !(acknowledged.get())) {
+            return connection.telemetry(telemetryApi);
+        } else {
+            return CompletableFuture.completedStage(connection);
+        }
+    }
+
+    // for testing
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         var that = (ApiTelemetryWork) o;
-        return telemetryApi == that.telemetryApi
-                && Objects.equals(completedWithSuccess.get(), that.completedWithSuccess.get())
-                && Objects.equals(enabled.get(), that.enabled.get());
-    }
-
-    @Override
-    public String toString() {
-        return "ApiTelemetryWork{" + "telemetryApi="
-                + telemetryApi + ", completedWithSuccess="
-                + completedWithSuccess.get() + ", enabled="
-                + enabled.get() + '}';
+        return Objects.equals(enabled.get(), that.enabled.get())
+                && telemetryApi == that.telemetryApi
+                && Objects.equals(acknowledged.get(), that.acknowledged.get());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(telemetryApi, completedWithSuccess, enabled);
+        return Objects.hash(telemetryApi, enabled.get(), acknowledged.get());
     }
 }

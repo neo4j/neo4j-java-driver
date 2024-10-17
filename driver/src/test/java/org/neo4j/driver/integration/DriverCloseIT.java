@@ -28,7 +28,6 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
@@ -101,7 +100,7 @@ class DriverCloseIT {
                     CompletableFuture.runAsync(driver::close);
                     return result.list();
                 }));
-        assertEquals(ConnectionPool.CONNECTION_POOL_CLOSED_ERROR_MESSAGE, exception.getMessage());
+        assertEquals("Connection provider is closed.", exception.getMessage());
     }
 
     private static Driver createDriver() {

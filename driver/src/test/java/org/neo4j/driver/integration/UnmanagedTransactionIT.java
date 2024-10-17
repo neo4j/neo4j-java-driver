@@ -25,31 +25,25 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import java.io.IOException;
-import java.time.Clock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Config;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
-import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
@@ -63,7 +57,8 @@ class UnmanagedTransactionIT {
     @BeforeEach
     @SuppressWarnings("resource")
     void setUp() {
-        session = ((InternalDriver) neo4j.driver()).newSession(SessionConfig.defaultConfig(), null);
+        session = ((InternalDriver) neo4j.driver())
+                .newSession(SessionConfig.defaultConfig(), NotificationConfig.defaultConfig(), null);
     }
 
     @AfterEach
@@ -110,7 +105,6 @@ class UnmanagedTransactionIT {
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldFailToCommitAfterTermination() {
         var tx = beginTransaction();
 
@@ -142,7 +136,6 @@ class UnmanagedTransactionIT {
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldRollbackAfterTermination() {
         var tx = beginTransaction();
 
@@ -153,7 +146,6 @@ class UnmanagedTransactionIT {
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldFailToRunQueryWhenTerminated() {
         var tx = beginTransaction();
         txRun(tx, "CREATE (:MyLabel)");
@@ -166,7 +158,6 @@ class UnmanagedTransactionIT {
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldBePossibleToRunMoreTransactionsAfterOneIsTerminated() {
         var tx1 = beginTransaction();
         tx1.markTerminated(null);
@@ -185,51 +176,10 @@ class UnmanagedTransactionIT {
         assertEquals(1, countNodesWithId(42));
     }
 
-    @Test
-    void shouldPropagateCommitFailureAfterFatalError() {
-        testCommitAndRollbackFailurePropagation(true);
-    }
-
-    @Test
-    void shouldPropagateRollbackFailureAfterFatalError() {
-        testCommitAndRollbackFailurePropagation(false);
-    }
-
     @SuppressWarnings("SameParameterValue")
     private int countNodesWithId(Object id) {
         var query = new Query("MATCH (n:Node {id: $id}) RETURN count(n)", parameters("id", id));
         var cursor = sessionRun(session, query);
         return await(cursor.singleAsync()).get(0).asInt();
-    }
-
-    private void testCommitAndRollbackFailurePropagation(boolean commit) {
-        var driverFactory = new ChannelTrackingDriverFactory(1, Clock.systemUTC());
-        var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
-
-        try (var driver = driverFactory.newInstance(
-                neo4j.uri(), neo4j.authTokenManager(), null, config, SecurityPlanImpl.insecure(), null, null)) {
-            var session = ((InternalDriver) driver).newSession(SessionConfig.defaultConfig(), null);
-            {
-                var tx = beginTransaction(session);
-
-                // run query but do not consume the result
-                txRun(tx, "UNWIND range(0, 10000) AS x RETURN x + 1");
-
-                var ioError = new IOException("Connection reset by peer");
-                for (var channel : driverFactory.channels()) {
-                    // make channel experience a fatal network error
-                    // run in the event loop thread and wait for the whole operation to complete
-                    var future =
-                            channel.eventLoop().submit(() -> channel.pipeline().fireExceptionCaught(ioError));
-                    await(future);
-                }
-
-                var commitOrRollback = commit ? tx.commitAsync() : tx.rollbackAsync();
-
-                // commit/rollback should fail and propagate the network error
-                var e = assertThrows(ServiceUnavailableException.class, () -> await(commitOrRollback));
-                assertEquals(ioError, e.getCause());
-            }
-        }
     }
 }

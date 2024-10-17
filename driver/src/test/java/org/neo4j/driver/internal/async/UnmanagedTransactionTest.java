@@ -16,9 +16,7 @@
  */
 package org.neo4j.driver.internal.async;
 
-import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,32 +25,19 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 import static org.neo4j.driver.testutil.TestUtil.await;
-import static org.neo4j.driver.testutil.TestUtil.beginMessage;
 import static org.neo4j.driver.testutil.TestUtil.connectionMock;
-import static org.neo4j.driver.testutil.TestUtil.setupFailingRun;
-import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunAndPull;
-import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunRx;
-import static org.neo4j.driver.testutil.TestUtil.verifyBeginTx;
-import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
+import static org.neo4j.driver.testutil.TestUtil.setupConnectionAnswers;
 import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
-import static org.neo4j.driver.testutil.TestUtil.verifyRunRx;
 
 import java.util.Collections;
 import java.util.List;
@@ -60,7 +45,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -78,25 +62,43 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
-import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
-import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.bolt.api.AccessMode;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
+import org.neo4j.driver.internal.bolt.api.DatabaseNameUtil;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
+import org.neo4j.driver.internal.bolt.api.summary.BeginSummary;
+import org.neo4j.driver.internal.bolt.api.summary.CommitSummary;
+import org.neo4j.driver.internal.bolt.api.summary.PullSummary;
+import org.neo4j.driver.internal.bolt.api.summary.ResetSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RollbackSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
 
 class UnmanagedTransactionTest {
     @Test
     void shouldFlushOnRunAsync() {
         // Given
-        var connection = connectionMock(BoltProtocolV4.INSTANCE);
+        var connection = connectionMock(new BoltProtocolVersion(5, 0));
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.run(any(), any())).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.pull(anyLong(), anyLong())).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRunSummary(mock(RunSummary.class));
+                            handler.onPullSummary(mock(PullSummary.class));
+                            handler.onComplete();
+                        }));
         var tx = beginTx(connection);
-        setupSuccessfulRunAndPull(connection);
 
         // When
         await(tx.runAsync(new Query("RETURN 1")));
@@ -108,63 +110,103 @@ class UnmanagedTransactionTest {
     @Test
     void shouldFlushOnRunRx() {
         // Given
-        var connection = connectionMock(BoltProtocolV4.INSTANCE);
+        var connection = connectionMock(new BoltProtocolVersion(5, 0));
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.run(any(), any())).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRunSummary(mock(RunSummary.class));
+                            handler.onComplete();
+                        }));
         var tx = beginTx(connection);
-        setupSuccessfulRunRx(connection);
 
         // When
         await(tx.runRx(new Query("RETURN 1")));
 
         // Then
-        verifyRunRx(connection, "RETURN 1");
+        then(connection).should().run("RETURN 1", Collections.emptyMap());
+        then(connection).should(times(2)).flush(any());
     }
 
     @Test
     void shouldRollbackOnImplicitFailure() {
         // Given
         var connection = connectionMock();
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRollbackSummary(mock(RollbackSummary.class));
+                            handler.onComplete();
+                        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var tx = beginTx(connection);
 
         // When
         await(tx.closeAsync());
 
         // Then
-        var order = inOrder(connection);
-        verifyBeginTx(connection);
-        verifyRollbackTx(connection);
-        order.verify(connection).release();
+        then(connection).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        then(connection).should().rollback();
+        then(connection).should(times(2)).flush(any());
+        then(connection).should().close();
     }
 
     @Test
-    void shouldOnlyQueueMessagesWhenNoBookmarkGiven() {
+    void shouldBeginTransaction() {
         var connection = connectionMock();
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onBeginSummary(mock(BeginSummary.class));
+            handler.onComplete();
+        }));
 
         beginTx(connection, Collections.emptySet());
 
-        verifyBeginTx(connection);
-    }
-
-    @Test
-    void shouldFlushWhenBookmarkGiven() {
-        var bookmarks = Collections.singleton(InternalBookmark.parse("hi, I'm bookmark"));
-        var connection = connectionMock();
-
-        beginTx(connection, bookmarks);
-
-        verifyBeginTx(connection);
+        then(connection).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        then(connection).should().flush(any());
     }
 
     @Test
     void shouldBeOpenAfterConstruction() {
-        var tx = beginTx(connectionMock());
+        var connection = connectionMock();
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onBeginSummary(mock(BeginSummary.class));
+            handler.onComplete();
+        }));
+
+        var tx = beginTx(connection);
 
         assertTrue(tx.isOpen());
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldBeClosedWhenMarkedAsTerminated() {
-        var tx = beginTx(connectionMock());
+        var connection = connectionMock();
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onBeginSummary(mock(BeginSummary.class));
+            handler.onComplete();
+        }));
+        var tx = beginTx(connection);
 
         tx.markTerminated(null);
 
@@ -172,9 +214,16 @@ class UnmanagedTransactionTest {
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldBeClosedWhenMarkedTerminatedAndClosed() {
-        var tx = beginTx(connectionMock());
+        var connection = connectionMock();
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onBeginSummary(mock(BeginSummary.class));
+            handler.onComplete();
+        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
+        var tx = beginTx(connection);
 
         tx.markTerminated(null);
         await(tx.closeAsync());
@@ -185,10 +234,25 @@ class UnmanagedTransactionTest {
     @Test
     void shouldReleaseConnectionWhenBeginFails() {
         var error = new RuntimeException("Wrong bookmark!");
-        var connection = connectionWithBegin(handler -> handler.onFailure(error));
+        var connection = connectionMock();
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onError(error);
+            handler.onComplete();
+        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
 
         var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
@@ -196,52 +260,78 @@ class UnmanagedTransactionTest {
         var e = assertThrows(RuntimeException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null, true)));
 
         assertEquals(error, e);
-        verify(connection).release();
+        verify(connection).close();
     }
 
     @Test
     void shouldNotReleaseConnectionWhenBeginSucceeds() {
-        var connection = connectionWithBegin(handler -> handler.onSuccess(emptyMap()));
+        var connection = connectionMock();
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onBeginSummary(mock(BeginSummary.class));
+            handler.onComplete();
+        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
 
         var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
         await(tx.beginAsync(bookmarks, txConfig, null, true));
 
-        verify(connection, never()).release();
+        verify(connection, never()).close();
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldReleaseConnectionWhenTerminatedAndCommitted() {
         var connection = connectionMock();
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
 
         tx.markTerminated(null);
 
         assertThrows(TransactionTerminatedException.class, () -> await(tx.commitAsync()));
 
         assertFalse(tx.isOpen());
-        verify(connection).release();
+        verify(connection).close();
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldNotCreateCircularExceptionWhenTerminationCauseEqualsToCursorFailure() {
         var connection = connectionMock();
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var terminationCause = new ClientException("Custom exception");
 
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var resultCursorsHolder = mockResultCursorWith(terminationCause);
         var tx = new UnmanagedTransaction(
                 connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
                 (ignored) -> {},
-                UNLIMITED_FETCH_SIZE,
+                -1,
                 resultCursorsHolder,
                 null,
                 apiTelemetryWork,
@@ -255,16 +345,19 @@ class UnmanagedTransactionTest {
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldNotCreateCircularExceptionWhenTerminationCauseDifferentFromCursorFailure() {
         var connection = connectionMock();
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var terminationCause = new ClientException("Custom exception");
         var resultCursorsHolder = mockResultCursorWith(new ClientException("Cursor error"));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
                 (ignored) -> {},
-                UNLIMITED_FETCH_SIZE,
+                -1,
                 resultCursorsHolder,
                 null,
                 apiTelemetryWork,
@@ -281,13 +374,21 @@ class UnmanagedTransactionTest {
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldNotCreateCircularExceptionWhenTerminatedWithoutFailure() {
         var connection = connectionMock();
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var terminationCause = new ClientException("Custom exception");
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
 
         tx.markTerminated(terminationCause);
 
@@ -298,38 +399,75 @@ class UnmanagedTransactionTest {
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldReleaseConnectionWhenTerminatedAndRolledBack() {
         var connection = connectionMock();
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
 
         tx.markTerminated(null);
         await(tx.rollbackAsync());
 
-        verify(connection).release();
+        verify(connection).close();
     }
 
     @Test
     void shouldReleaseConnectionWhenClose() {
         var connection = connectionMock();
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onRollbackSummary(mock(RollbackSummary.class));
+            handler.onComplete();
+        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
 
         await(tx.closeAsync());
 
-        verify(connection).release();
+        verify(connection).close();
     }
 
     @Test
     void shouldReleaseConnectionOnConnectionAuthorizationExpiredExceptionFailure() {
         var exception = new AuthorizationExpiredException("code", "message");
-        var connection = connectionWithBegin(handler -> handler.onFailure(exception));
+        var connection = connectionMock();
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onError(exception);
+            handler.onComplete();
+        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
         var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
@@ -337,16 +475,30 @@ class UnmanagedTransactionTest {
                 AuthorizationExpiredException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null, true)));
 
         assertSame(exception, actualException);
-        verify(connection).terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
-        verify(connection, never()).release();
+        verify(connection).close();
     }
 
     @Test
     void shouldReleaseConnectionOnConnectionReadTimeoutExceptionFailure() {
-        var connection = connectionWithBegin(handler -> handler.onFailure(ConnectionReadTimeoutException.INSTANCE));
+        var connection = connectionMock();
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onError(ConnectionReadTimeoutException.INSTANCE);
+            handler.onComplete();
+        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
         var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
@@ -354,8 +506,7 @@ class UnmanagedTransactionTest {
                 ConnectionReadTimeoutException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null, true)));
 
         assertSame(ConnectionReadTimeoutException.INSTANCE, actualException);
-        verify(connection).terminateAndRelease(ConnectionReadTimeoutException.INSTANCE.getMessage());
-        verify(connection, never()).release();
+        verify(connection).close();
     }
 
     private static Stream<Arguments> similarTransactionCompletingActionArgs() {
@@ -371,23 +522,31 @@ class UnmanagedTransactionTest {
     @MethodSource("similarTransactionCompletingActionArgs")
     void shouldReturnExistingStageOnSimilarCompletingAction(
             boolean protocolCommit, String initialAction, String similarAction) {
-        var connection = mock(Connection.class);
-        var protocol = mock(BoltProtocol.class);
-        given(connection.protocol()).willReturn(protocol);
-        given(protocolCommit ? protocol.commitTransaction(connection) : protocol.rollbackTransaction(connection))
-                .willReturn(new CompletableFuture<>());
+        var connection = connectionMock();
+        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.flush(any())).willReturn(CompletableFuture.completedStage(null));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
 
         var initialStage = mapTransactionAction(initialAction, tx).get();
         var similarStage = mapTransactionAction(similarAction, tx).get();
 
         assertSame(initialStage, similarStage);
         if (protocolCommit) {
-            then(protocol).should(times(1)).commitTransaction(connection);
+            then(connection).should(times(1)).commit();
         } else {
-            then(protocol).should(times(1)).rollbackTransaction(connection);
+            then(connection).should(times(1)).rollback();
         }
     }
 
@@ -413,24 +572,44 @@ class UnmanagedTransactionTest {
             String initialAction,
             String conflictingAction,
             String expectedErrorMsg) {
-        var connection = mock(Connection.class);
-        var protocol = mock(BoltProtocol.class);
-        given(connection.protocol()).willReturn(protocol);
-        given(protocolCommit ? protocol.commitTransaction(connection) : protocol.rollbackTransaction(connection))
-                .willReturn(protocolActionCompleted ? completedFuture(null) : new CompletableFuture<>());
+        var connection = connectionMock();
+        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
+        if (protocolActionCompleted) {
+            setupConnectionAnswers(connection, List.of(handler -> {
+                if (protocolCommit) {
+                    handler.onCommitSummary(mock(CommitSummary.class));
+                } else {
+                    handler.onRollbackSummary(mock(RollbackSummary.class));
+                }
+                handler.onComplete();
+            }));
+        } else {
+            given(connection.flush(any())).willReturn(CompletableFuture.completedStage(null));
+        }
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
 
         var originalActionStage = mapTransactionAction(initialAction, tx).get();
         var conflictingActionStage = mapTransactionAction(conflictingAction, tx).get();
 
         assertNotNull(originalActionStage);
         if (protocolCommit) {
-            then(protocol).should(times(1)).commitTransaction(connection);
+            then(connection).should().commit();
         } else {
-            then(protocol).should(times(1)).rollbackTransaction(connection);
+            then(connection).should().rollback();
         }
+        then(connection).should().flush(any());
         assertTrue(conflictingActionStage.toCompletableFuture().isCompletedExceptionally());
         var throwable = assertThrows(
                         ExecutionException.class,
@@ -456,14 +635,29 @@ class UnmanagedTransactionTest {
     @MethodSource("closingNotActionTransactionArgs")
     void shouldReturnCompletedWithNullStageOnClosingInactiveTransactionExceptCommittingAborted(
             boolean protocolCommit, int expectedProtocolInvocations, String originalAction, Boolean commitOnClose) {
-        var connection = mock(Connection.class);
-        var protocol = mock(BoltProtocol.class);
-        given(connection.protocol()).willReturn(protocol);
-        given(protocolCommit ? protocol.commitTransaction(connection) : protocol.rollbackTransaction(connection))
-                .willReturn(completedFuture(null));
+        var connection = connectionMock();
+        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            if (protocolCommit) {
+                handler.onCommitSummary(mock(CommitSummary.class));
+            } else {
+                handler.onRollbackSummary(mock(RollbackSummary.class));
+            }
+            handler.onComplete();
+        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
 
         var originalActionStage = mapTransactionAction(originalAction, tx).get();
         var closeStage = commitOnClose != null ? tx.closeAsync(commitOnClose) : tx.closeAsync();
@@ -471,30 +665,62 @@ class UnmanagedTransactionTest {
         assertTrue(originalActionStage.toCompletableFuture().isDone());
         assertFalse(originalActionStage.toCompletableFuture().isCompletedExceptionally());
         if (protocolCommit) {
-            then(protocol).should(times(expectedProtocolInvocations)).commitTransaction(connection);
+            then(connection).should(times(expectedProtocolInvocations)).commit();
         } else {
-            then(protocol).should(times(expectedProtocolInvocations)).rollbackTransaction(connection);
+            then(connection).should(times(expectedProtocolInvocations)).rollback();
         }
+        then(connection).should(times(expectedProtocolInvocations)).flush(any());
         assertNull(closeStage.toCompletableFuture().join());
     }
 
     @Test
     void shouldTerminateOnTerminateAsync() {
         // Given
-        var connection = connectionMock(BoltProtocolV4.INSTANCE);
+        var connection = connectionMock(new BoltProtocolVersion(4, 0));
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.completedStage(connection));
+        given(connection.clear()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.reset()).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onResetSummary(mock(ResetSummary.class));
+                            handler.onComplete();
+                        }));
         var tx = beginTx(connection);
 
         // When
         await(tx.terminateAsync());
 
         // Then
-        then(connection).should().reset(any());
+        then(connection).should().clear();
+        then(connection).should().reset();
     }
 
     @Test
     void shouldServeTheSameStageOnTerminateAsync() {
         // Given
-        var connection = connectionMock(BoltProtocolV4.INSTANCE);
+        var connection = connectionMock(new BoltProtocolVersion(4, 0));
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.completedStage(connection));
+        given(connection.clear()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.reset()).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onResetSummary(mock(ResetSummary.class));
+                            handler.onComplete();
+                        }));
         var tx = beginTx(connection);
 
         // When
@@ -508,9 +734,23 @@ class UnmanagedTransactionTest {
     @Test
     void shouldHandleTerminationWhenAlreadyTerminated() throws ExecutionException, InterruptedException {
         // Given
-        var connection = connectionMock(BoltProtocolV4.INSTANCE);
+        var connection = connectionMock(new BoltProtocolVersion(4, 0));
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.completedStage(connection));
+        given(connection.run(any(), any())).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.pull(anyLong(), anyLong())).willReturn(CompletableFuture.completedStage(connection));
         var exception = new Neo4jException("message");
-        setupFailingRun(connection, exception);
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onError(exception);
+                            handler.onComplete();
+                        }));
         var tx = beginTx(connection);
         Throwable actualException = null;
 
@@ -530,14 +770,19 @@ class UnmanagedTransactionTest {
     @MethodSource("transactionClosingTestParams")
     void shouldThrowOnRunningNewQueriesWhenTransactionIsClosing(TransactionClosingTestParams testParams) {
         // Given
-        var boltProtocol = mock(BoltProtocol.class);
-        given(boltProtocol.version()).willReturn(BoltProtocolV53.VERSION);
-        var closureStage = new CompletableFuture<DatabaseBookmark>();
-        var connection = connectionMock(boltProtocol);
-        given(boltProtocol.beginTransaction(eq(connection), any(), any(), any(), any(), any(), eq(true)))
-                .willReturn(completedFuture(null));
-        given(boltProtocol.commitTransaction(connection)).willReturn(closureStage);
-        given(boltProtocol.rollbackTransaction(connection)).willReturn(closureStage.thenApply(ignored -> null));
+        var connection = connectionMock();
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.completedStage(connection));
+        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {}));
         var tx = beginTx(connection);
 
         // When
@@ -547,106 +792,6 @@ class UnmanagedTransactionTest {
 
         // Then
         assertEquals(testParams.expectedMessage(), exception.getMessage());
-    }
-
-    @Test
-    void shouldBeginAsyncTelemetryNotCompleteReturnedFuture() {
-        var protocol = mock(BoltProtocol.class);
-        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
-        var connection = connectionMock(protocol);
-        var apiTelemetryWork = mock(ApiTelemetryWork.class);
-        var beginFuture = new CompletableFuture<>();
-        doReturn(CompletableFuture.completedFuture(null)).when(apiTelemetryWork).execute(connection, protocol);
-        doReturn(beginFuture)
-                .when(protocol)
-                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
-        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
-
-        assertFalse(unmanagedTransaction
-                .beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)
-                .toCompletableFuture()
-                .isDone());
-
-        beginFuture.complete(null);
-
-        assertTrue(unmanagedTransaction
-                .beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)
-                .toCompletableFuture()
-                .isDone());
-    }
-
-    @Test
-    void shouldBeginAsyncThrowErrorOnTelemetryIfFlushIsTrueAndBeginDontFinish() {
-        var protocol = mock(BoltProtocol.class);
-        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
-        var connection = connectionMock(protocol);
-        var apiTelemetryWork = mock(ApiTelemetryWork.class);
-        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
-                .when(apiTelemetryWork)
-                .execute(connection, protocol);
-        doReturn(new CompletableFuture<>())
-                .when(protocol)
-                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
-        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
-
-        assertThrows(
-                SecurityException.class,
-                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)));
-    }
-
-    @Test
-    void shouldBeginAsyncThrowErrorOnTelemetryIfFlushIsTrueAndBeginFailed() {
-        var protocol = mock(BoltProtocol.class);
-        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
-        var connection = connectionMock(protocol);
-        var apiTelemetryWork = mock(ApiTelemetryWork.class);
-        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
-                .when(apiTelemetryWork)
-                .execute(connection, protocol);
-        doReturn(CompletableFuture.failedFuture(new ClientException("other error")))
-                .when(protocol)
-                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
-        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
-
-        assertThrows(
-                SecurityException.class,
-                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", true)));
-    }
-
-    @Test
-    void shouldBeginAsyncNotThrowErrorOnTelemetryIfNotFlushIsTrueAndBeginDontFinish() {
-        var protocol = mock(BoltProtocol.class);
-        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
-        var connection = connectionMock(protocol);
-        var apiTelemetryWork = mock(ApiTelemetryWork.class);
-        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
-                .when(apiTelemetryWork)
-                .execute(connection, protocol);
-        doReturn(new CompletableFuture<>())
-                .when(protocol)
-                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
-        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
-
-        assertDoesNotThrow(
-                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", false)));
-    }
-
-    @Test
-    void shouldBeginAsyncNotThrowErrorOnTelemetryIfNotFlushIsTrueAndBeginFailed() {
-        var protocol = mock(BoltProtocol.class);
-        given(protocol.version()).willReturn(BoltProtocolV54.VERSION);
-        var connection = connectionMock(protocol);
-        var apiTelemetryWork = mock(ApiTelemetryWork.class);
-        doReturn(CompletableFuture.failedFuture(new SecurityException("My Exception")))
-                .when(apiTelemetryWork)
-                .execute(connection, protocol);
-        doReturn(CompletableFuture.failedFuture(new ClientException("other error")))
-                .when(protocol)
-                .beginTransaction(any(), anySet(), any(), anyString(), any(), any(), anyBoolean());
-        var unmanagedTransaction = new UnmanagedTransaction(connection, (bm) -> {}, 100, null, apiTelemetryWork, null);
-
-        assertDoesNotThrow(
-                () -> await(unmanagedTransaction.beginAsync(Set.of(), TransactionConfig.empty(), "tx", false)));
     }
 
     static List<Arguments> transactionClosingTestParams() {
@@ -696,29 +841,23 @@ class UnmanagedTransactionTest {
             Function<UnmanagedTransaction, CompletionStage<?>> runAction,
             String expectedMessage) {}
 
-    private static UnmanagedTransaction beginTx(Connection connection) {
+    private static UnmanagedTransaction beginTx(BoltConnection connection) {
         return beginTx(connection, Collections.emptySet());
     }
 
-    private static UnmanagedTransaction beginTx(Connection connection, Set<Bookmark> initialBookmarks) {
+    private static UnmanagedTransaction beginTx(BoltConnection connection, Set<Bookmark> initialBookmarks) {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
-                connection, (ignored) -> {}, UNLIMITED_FETCH_SIZE, null, apiTelemetryWork, Logging.none());
+                connection,
+                DatabaseNameUtil.defaultDatabase(),
+                AccessMode.WRITE,
+                null,
+                (ignored) -> {},
+                -1,
+                null,
+                apiTelemetryWork,
+                Logging.none());
         return await(tx.beginAsync(initialBookmarks, TransactionConfig.empty(), null, true));
-    }
-
-    private static Connection connectionWithBegin(Consumer<ResponseHandler> beginBehaviour) {
-        var connection = connectionMock();
-
-        doAnswer(invocation -> {
-                    ResponseHandler beginHandler = invocation.getArgument(1);
-                    beginBehaviour.accept(beginHandler);
-                    return null;
-                })
-                .when(connection)
-                .writeAndFlush(argThat(beginMessage()), any());
-
-        return connection;
     }
 
     private ResultCursorsHolder mockResultCursorWith(ClientException clientException) {
@@ -730,7 +869,6 @@ class UnmanagedTransactionTest {
         return resultCursorsHolder;
     }
 
-    @SuppressWarnings("ThrowableNotThrown")
     private Supplier<CompletionStage<Void>> mapTransactionAction(String actionName, UnmanagedTransaction tx) {
         Supplier<CompletionStage<Void>> action;
         if ("commit".equals(actionName)) {

@@ -20,7 +20,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
+import static org.neo4j.driver.internal.IdentityResolver.IDENTITY_RESOLVER;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.net.ServerAddress;

@@ -18,41 +18,63 @@ package org.neo4j.driver.internal;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.SessionConfig;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.DatabaseName;
+import org.neo4j.driver.internal.bolt.api.DatabaseNameUtil;
+import org.neo4j.driver.internal.bolt.api.SecurityPlan;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 
 public class SessionFactoryImpl implements SessionFactory {
-    private final ConnectionProvider connectionProvider;
+    private final BoltSecurityPlanManager securityPlanManager;
+    private final BoltConnectionProvider connectionProvider;
     private final RetryLogic retryLogic;
     private final Logging logging;
     private final boolean leakedSessionsLoggingEnabled;
     private final long defaultFetchSize;
+    private final AuthTokenManager authTokenManager;
 
-    SessionFactoryImpl(ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config) {
+    SessionFactoryImpl(
+            BoltSecurityPlanManager securityPlanManager,
+            BoltConnectionProvider connectionProvider,
+            RetryLogic retryLogic,
+            Config config,
+            AuthTokenManager authTokenManager) {
+        this.securityPlanManager = Objects.requireNonNull(securityPlanManager);
         this.connectionProvider = connectionProvider;
         this.leakedSessionsLoggingEnabled = config.logLeakedSessions();
         this.retryLogic = retryLogic;
         this.logging = config.logging();
         this.defaultFetchSize = config.fetchSize();
+        this.authTokenManager = authTokenManager;
     }
 
     @Override
     public NetworkSession newInstance(
-            SessionConfig sessionConfig, AuthToken overrideAuthToken, boolean telemetryDisabled) {
+            SessionConfig sessionConfig,
+            NotificationConfig notificationConfig,
+            AuthToken overrideAuthToken,
+            boolean telemetryDisabled) {
         return createSession(
+                securityPlanManager,
                 connectionProvider,
                 retryLogic,
                 parseDatabaseName(sessionConfig),
@@ -62,9 +84,11 @@ public class SessionFactoryImpl implements SessionFactory {
                 sessionConfig.impersonatedUser().orElse(null),
                 logging,
                 sessionConfig.bookmarkManager().orElse(NoOpBookmarkManager.INSTANCE),
-                GqlNotificationConfig.from(sessionConfig.notificationConfig()),
+                notificationConfig,
+                sessionConfig.notificationConfig(),
                 overrideAuthToken,
-                telemetryDisabled);
+                telemetryDisabled,
+                authTokenManager);
     }
 
     private Set<Bookmark> toDistinctSet(Iterable<Bookmark> bookmarks) {
@@ -101,7 +125,13 @@ public class SessionFactoryImpl implements SessionFactory {
 
     @Override
     public CompletionStage<Void> verifyConnectivity() {
-        return connectionProvider.verifyConnectivity();
+        return securityPlanManager
+                .plan()
+                .thenCompose(securityPlan -> authTokenManager
+                        .getToken()
+                        .thenApply(authToken ->
+                                new SecurityPlanAndAuthToken(securityPlan, ((InternalAuthToken) authToken).toMap())))
+                .thenCompose(tuple -> connectionProvider.verifyConnectivity(tuple.securityPlan(), tuple.authToken()));
     }
 
     @Override
@@ -111,27 +141,29 @@ public class SessionFactoryImpl implements SessionFactory {
 
     @Override
     public CompletionStage<Boolean> supportsMultiDb() {
-        return connectionProvider.supportsMultiDb();
+        return securityPlanManager
+                .plan()
+                .thenCompose(securityPlan -> authTokenManager
+                        .getToken()
+                        .thenApply(authToken ->
+                                new SecurityPlanAndAuthToken(securityPlan, ((InternalAuthToken) authToken).toMap())))
+                .thenCompose(tuple -> connectionProvider.supportsMultiDb(tuple.securityPlan(), tuple.authToken()));
     }
 
     @Override
     public CompletionStage<Boolean> supportsSessionAuth() {
-        return connectionProvider.supportsSessionAuth();
-    }
-
-    /**
-     * Get the underlying connection provider.
-     * <p>
-     * <b>This method is only for testing</b>
-     *
-     * @return the connection provider used by this factory.
-     */
-    public ConnectionProvider getConnectionProvider() {
-        return connectionProvider;
+        return securityPlanManager
+                .plan()
+                .thenCompose(securityPlan -> authTokenManager
+                        .getToken()
+                        .thenApply(authToken ->
+                                new SecurityPlanAndAuthToken(securityPlan, ((InternalAuthToken) authToken).toMap())))
+                .thenCompose(tuple -> connectionProvider.supportsSessionAuth(tuple.securityPlan(), tuple.authToken()));
     }
 
     private NetworkSession createSession(
-            ConnectionProvider connectionProvider,
+            BoltSecurityPlanManager securityPlanManager,
+            BoltConnectionProvider connectionProvider,
             RetryLogic retryLogic,
             DatabaseName databaseName,
             AccessMode mode,
@@ -140,13 +172,16 @@ public class SessionFactoryImpl implements SessionFactory {
             String impersonatedUser,
             Logging logging,
             BookmarkManager bookmarkManager,
-            GqlNotificationConfig notificationConfig,
+            NotificationConfig driverNotificationConfig,
+            NotificationConfig notificationConfig,
             AuthToken authToken,
-            boolean telemetryDisabled) {
+            boolean telemetryDisabled,
+            AuthTokenManager authTokenManager) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         return leakedSessionsLoggingEnabled
                 ? new LeakLoggingNetworkSession(
+                        securityPlanManager,
                         connectionProvider,
                         retryLogic,
                         databaseName,
@@ -156,10 +191,13 @@ public class SessionFactoryImpl implements SessionFactory {
                         fetchSize,
                         logging,
                         bookmarkManager,
+                        driverNotificationConfig,
                         notificationConfig,
                         authToken,
-                        telemetryDisabled)
+                        telemetryDisabled,
+                        authTokenManager)
                 : new NetworkSession(
+                        securityPlanManager,
                         connectionProvider,
                         retryLogic,
                         databaseName,
@@ -169,8 +207,16 @@ public class SessionFactoryImpl implements SessionFactory {
                         fetchSize,
                         logging,
                         bookmarkManager,
+                        driverNotificationConfig,
                         notificationConfig,
                         authToken,
-                        telemetryDisabled);
+                        telemetryDisabled,
+                        authTokenManager);
     }
+
+    public BoltConnectionProvider getConnectionProvider() {
+        return connectionProvider;
+    }
+
+    private record SecurityPlanAndAuthToken(SecurityPlan securityPlan, Map<String, Value> authToken) {}
 }

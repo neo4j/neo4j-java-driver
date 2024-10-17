@@ -17,44 +17,29 @@
 package org.neo4j.driver.integration;
 
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.util.Iterables.single;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.messaging.response.FailureMessage;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
-import org.neo4j.driver.internal.util.FailingMessageFormat;
-import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
-import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactoryWithFailingMessageFormat;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.neo4j.driver.testutil.SessionExtension;
 
@@ -183,55 +168,6 @@ class ErrorIT {
     }
 
     @Test
-    void shouldCloseChannelOnRuntimeExceptionInOutboundMessage() throws InterruptedException {
-        var error = new RuntimeException("Unable to encode message");
-        var queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeWriterThrow(error));
-
-        assertEquals(error, queryError);
-    }
-
-    @Test
-    void shouldCloseChannelOnIOExceptionInOutboundMessage() throws InterruptedException {
-        var error = new IOException("Unable to write");
-        var queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeWriterThrow(error));
-
-        assertThat(queryError, instanceOf(ServiceUnavailableException.class));
-        assertEquals("Connection to the database failed", queryError.getMessage());
-        assertEquals(error, queryError.getCause());
-    }
-
-    @Test
-    void shouldCloseChannelOnRuntimeExceptionInInboundMessage() throws InterruptedException {
-        var error = new RuntimeException("Unable to decode message");
-        var queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeReaderThrow(error));
-
-        assertEquals(error, queryError);
-    }
-
-    @Test
-    void shouldCloseChannelOnIOExceptionInInboundMessage() throws InterruptedException {
-        var error = new IOException("Unable to read");
-        var queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeReaderThrow(error));
-
-        assertThat(queryError, instanceOf(ServiceUnavailableException.class));
-        assertEquals("Connection to the database failed", queryError.getMessage());
-        assertEquals(error, queryError.getCause());
-    }
-
-    @Test
-    void shouldCloseChannelOnInboundFatalFailureMessage() throws InterruptedException {
-        var errorCode = "Neo.ClientError.Request.Invalid";
-        var errorMessage = "Very wrong request";
-        var failureMsg = new FailureMessage(errorCode, errorMessage);
-
-        var queryError = testChannelErrorHandling(messageFormat -> messageFormat.makeReaderFail(failureMsg));
-
-        assertThat(queryError, instanceOf(ClientException.class));
-        assertEquals(((ClientException) queryError).code(), errorCode);
-        assertEquals(queryError.getMessage(), errorMessage);
-    }
-
-    @Test
     void shouldThrowErrorWithNiceStackTrace(TestInfo testInfo) {
         var error = assertThrows(
                 ClientException.class, () -> session.run("RETURN 10 / 0").consume());
@@ -244,49 +180,6 @@ class ErrorIT {
 
         // thrown error should have a suppressed error with an async stacktrace
         assertThat(asList(error.getSuppressed()), hasSize(greaterThanOrEqualTo(1)));
-    }
-
-    private Throwable testChannelErrorHandling(Consumer<FailingMessageFormat> messageFormatSetup)
-            throws InterruptedException {
-        var driverFactory = new ChannelTrackingDriverFactoryWithFailingMessageFormat(new FakeClock());
-
-        var uri = session.uri();
-        var authTokenProvider = session.authTokenManager();
-        var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
-        Throwable queryError = null;
-
-        try (var driver = driverFactory.newInstance(
-                uri, authTokenProvider, null, config, SecurityPlanImpl.insecure(), null, null)) {
-            driver.verifyConnectivity();
-            try (var session = driver.session()) {
-                messageFormatSetup.accept(driverFactory.getFailingMessageFormat());
-
-                try {
-                    session.run("RETURN 1").consume();
-                    fail("Exception expected");
-                } catch (Throwable error) {
-                    queryError = error;
-                }
-
-                assertSingleChannelIsClosed(driverFactory);
-                assertNewQueryCanBeExecuted(session, driverFactory);
-            }
-        }
-
-        return queryError;
-    }
-
-    private void assertSingleChannelIsClosed(ChannelTrackingDriverFactory driverFactory) throws InterruptedException {
-        var channel = single(driverFactory.channels());
-        assertTrue(channel.closeFuture().await(10, SECONDS));
-        assertFalse(channel.isActive());
-    }
-
-    private void assertNewQueryCanBeExecuted(Session session, ChannelTrackingDriverFactory driverFactory) {
-        assertEquals(42, session.run("RETURN 42").single().get(0).asInt());
-        var channels = driverFactory.channels();
-        var lastChannel = channels.get(channels.size() - 1);
-        assertTrue(lastChannel.isActive());
     }
 
     private static boolean testClassAndMethodMatch(TestInfo testInfo, StackTraceElement element) {

@@ -21,28 +21,39 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
-import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.testutil.TestUtil.DEFAULT_TEST_PROTOCOL;
+import static org.neo4j.driver.internal.bolt.api.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.driver.testutil.TestUtil.setupConnectionAnswers;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.mockito.ArgumentCaptor;
+import org.neo4j.driver.AuthTokenManagers;
+import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.NotificationConfig;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
+import org.neo4j.driver.internal.bolt.api.summary.BeginSummary;
+import org.neo4j.driver.internal.bolt.api.summary.PullSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
+import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.testutil.TestUtil;
 
@@ -52,7 +63,23 @@ class LeakLoggingNetworkSessionTest {
         var logging = mock(Logging.class);
         var log = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(log);
-        var session = newSession(logging, false);
+        var connection = TestUtil.connectionMock();
+        given(connection.runInAutoCommitTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.pull(anyLong(), anyLong())).willReturn(completedFuture(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onRunSummary(mock(RunSummary.class));
+            handler.onPullSummary(mock(PullSummary.class));
+            handler.onComplete();
+        }));
+        given(connection.close()).willReturn(completedFuture(null));
+        var session = newSession(logging, connection);
+        session.runAsync(new Query("query"), TransactionConfig.empty())
+                .toCompletableFuture()
+                .join()
+                .consumeAsync()
+                .toCompletableFuture()
+                .join();
 
         finalize(session);
 
@@ -65,10 +92,19 @@ class LeakLoggingNetworkSessionTest {
         var logging = mock(Logging.class);
         var log = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(log);
-        var session = newSession(logging, true);
+        var connection = TestUtil.connectionMock();
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onBeginSummary(mock(BeginSummary.class));
+            handler.onComplete();
+        }));
+        var session = newSession(logging, connection);
         // begin transaction to make session obtain a connection
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
-        session.beginTransactionAsync(TransactionConfig.empty(), apiTelemetryWork);
+        session.beginTransactionAsync(TransactionConfig.empty(), apiTelemetryWork)
+                .toCompletableFuture()
+                .join();
 
         finalize(session);
 
@@ -92,32 +128,29 @@ class LeakLoggingNetworkSessionTest {
         finalizeMethod.invoke(session);
     }
 
-    private static LeakLoggingNetworkSession newSession(Logging logging, boolean openConnection) {
+    private static LeakLoggingNetworkSession newSession(Logging logging, BoltConnection connection) {
         return new LeakLoggingNetworkSession(
-                connectionProviderMock(openConnection),
+                BoltSecurityPlanManager.insecure(),
+                connectionProviderMock(connection),
                 new FixedRetryLogic(0),
                 defaultDatabase(),
                 READ,
                 Collections.emptySet(),
                 null,
-                FetchSizeUtil.UNLIMITED_FETCH_SIZE,
+                -1,
                 logging,
                 mock(BookmarkManager.class),
+                NotificationConfig.defaultConfig(),
+                NotificationConfig.defaultConfig(),
                 null,
-                null,
-                true);
+                true,
+                AuthTokenManagers.basic(AuthTokens::none));
     }
 
-    private static ConnectionProvider connectionProviderMock(boolean openConnection) {
-        var provider = mock(ConnectionProvider.class);
-        var connection = connectionMock(openConnection);
-        when(provider.acquireConnection(any(ConnectionContext.class))).thenReturn(completedFuture(connection));
+    private static BoltConnectionProvider connectionProviderMock(BoltConnection connection) {
+        var provider = mock(BoltConnectionProvider.class);
+        when(provider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(CompletableFuture.completedFuture(connection));
         return provider;
-    }
-
-    private static Connection connectionMock(boolean open) {
-        var connection = TestUtil.connectionMock(DEFAULT_TEST_PROTOCOL);
-        when(connection.isOpen()).thenReturn(open);
-        return connection;
     }
 }

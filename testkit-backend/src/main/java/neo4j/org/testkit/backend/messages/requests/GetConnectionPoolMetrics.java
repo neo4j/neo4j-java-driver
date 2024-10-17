@@ -24,8 +24,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.ConnectionPoolMetrics;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
 import reactor.core.publisher.Mono;
 
 @Getter
@@ -66,15 +65,15 @@ public class GetConnectionPoolMetrics implements TestkitRequest {
                 .filter(pm -> {
                     // Brute forcing the access via reflections avoid having the InternalConnectionPoolMetrics a public
                     // class
-                    ServerAddress poolAddress;
+                    BoltServerAddress poolAddress;
                     try {
                         var m = pm.getClass().getDeclaredMethod("getAddress");
                         m.setAccessible(true);
-                        poolAddress = (ServerAddress) m.invoke(pm);
+                        poolAddress = (BoltServerAddress) m.invoke(pm);
                     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                         return false;
                     }
-                    ServerAddress address = new BoltServerAddress(data.getAddress());
+                    var address = new BoltServerAddress(data.getAddress());
                     return address.host().equals(poolAddress.host()) && address.port() == poolAddress.port();
                 })
                 .findFirst()

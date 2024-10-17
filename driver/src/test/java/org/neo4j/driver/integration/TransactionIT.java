@@ -26,10 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.testutil.TestUtil.assertNoCircularReferences;
 
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -46,8 +44,6 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.InternalTransaction;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
-import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.neo4j.driver.testutil.SessionExtension;
 import org.neo4j.driver.testutil.TestUtil;
@@ -344,38 +340,6 @@ class TransactionIT {
                 Thread.interrupted();
             }
         }
-    }
-
-    @Test
-    void shouldThrowWhenConnectionKilledDuringTransaction() {
-        var factory = new ChannelTrackingDriverFactory(1, Clock.systemUTC());
-        var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
-
-        try (var driver = factory.newInstance(
-                session.uri(), session.authTokenManager(), null, config, SecurityPlanImpl.insecure(), null, null)) {
-            var e = assertThrows(ServiceUnavailableException.class, () -> {
-                try (var session1 = driver.session();
-                        var tx = session1.beginTransaction()) {
-                    tx.run("CREATE (:MyNode {id: 1})").consume();
-
-                    // kill all network channels
-                    for (var channel : factory.channels()) {
-                        channel.close().syncUninterruptibly();
-                    }
-
-                    tx.run("CREATE (:MyNode {id: 1})").consume();
-                }
-            });
-
-            assertThat(e.getMessage(), containsString("Connection to the database terminated"));
-        }
-
-        assertEquals(
-                0,
-                session.run("MATCH (n:MyNode {id: 1}) RETURN count(n)")
-                        .single()
-                        .get(0)
-                        .asInt());
     }
 
     @Test

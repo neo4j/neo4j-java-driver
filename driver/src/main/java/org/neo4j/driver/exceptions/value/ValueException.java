@@ -18,7 +18,7 @@ package org.neo4j.driver.exceptions.value;
 
 import java.io.Serial;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 
 /**
  * A <em>ValueException</em> indicates that the client has carried out an operation on values incorrectly.

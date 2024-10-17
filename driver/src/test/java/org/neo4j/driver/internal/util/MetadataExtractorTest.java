@@ -17,7 +17,6 @@
 package org.neo4j.driver.internal.util;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -34,13 +33,11 @@ import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
 import static org.neo4j.driver.internal.summary.InternalSummaryCounters.EMPTY_STATS;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractDatabaseInfo;
-import static org.neo4j.driver.internal.util.MetadataExtractor.extractServer;
 import static org.neo4j.driver.summary.QueryType.READ_ONLY;
 import static org.neo4j.driver.summary.QueryType.READ_WRITE;
 import static org.neo4j.driver.summary.QueryType.SCHEMA_WRITE;
 import static org.neo4j.driver.summary.QueryType.WRITE_ONLY;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -49,63 +46,25 @@ import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.exceptions.value.Uncoercible;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
 import org.neo4j.driver.internal.summary.InternalInputPosition;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.ResultSummary;
 
 class MetadataExtractorTest {
-    private static final String RESULT_AVAILABLE_AFTER_KEY = "available_after";
     private static final String RESULT_CONSUMED_AFTER_KEY = "consumed_after";
 
-    private final MetadataExtractor extractor =
-            new MetadataExtractor(RESULT_AVAILABLE_AFTER_KEY, RESULT_CONSUMED_AFTER_KEY);
-
-    @Test
-    void shouldExtractQueryKeys() {
-        var keys = asList("hello", " ", "world", "!");
-        Map<String, Integer> keyIndex = new HashMap<>();
-        keyIndex.put("hello", 0);
-        keyIndex.put(" ", 1);
-        keyIndex.put("world", 2);
-        keyIndex.put("!", 3);
-
-        var extracted = extractor.extractQueryKeys(singletonMap("fields", value(keys)));
-        assertEquals(keys, extracted.keys());
-        assertEquals(keyIndex, extracted.keyIndex());
-    }
-
-    @Test
-    void shouldExtractEmptyQueryKeysWhenNoneInMetadata() {
-        var extracted = extractor.extractQueryKeys(emptyMap());
-        assertEquals(emptyList(), extracted.keys());
-        assertEquals(emptyMap(), extracted.keyIndex());
-    }
-
-    @Test
-    void shouldExtractResultAvailableAfter() {
-        var metadata = singletonMap(RESULT_AVAILABLE_AFTER_KEY, value(424242));
-        var extractedResultAvailableAfter = extractor.extractResultAvailableAfter(metadata);
-        assertEquals(424242L, extractedResultAvailableAfter);
-    }
-
-    @Test
-    void shouldExtractNoResultAvailableAfterWhenNoneInMetadata() {
-        var extractedResultAvailableAfter = extractor.extractResultAvailableAfter(emptyMap());
-        assertEquals(-1, extractedResultAvailableAfter);
-    }
+    private final MetadataExtractor extractor = new MetadataExtractor(RESULT_CONSUMED_AFTER_KEY);
 
     @Test
     void shouldBuildResultSummaryWithQuery() {
         var query =
                 new Query("UNWIND range(10, 100) AS x CREATE (:Node {name: $name, x: x})", singletonMap("name", "Apa"));
 
-        var summary = extractor.extractSummary(query, connectionMock(), 42, emptyMap(), true, null);
+        var summary = extractor.extractSummary(query, connectionMock(), 42, emptyMap(), false, null);
 
         assertEquals(query, summary.query());
     }
@@ -114,7 +73,7 @@ class MetadataExtractorTest {
     void shouldBuildResultSummaryWithServerAddress() {
         var connection = connectionMock(new BoltServerAddress("server:42"));
 
-        var summary = extractor.extractSummary(query(), connection, 42, emptyMap(), true, null);
+        var summary = extractor.extractSummary(query(), connection, 42, emptyMap(), false, null);
 
         assertEquals("server:42", summary.server().address());
     }
@@ -146,7 +105,7 @@ class MetadataExtractorTest {
 
         var metadata = singletonMap("stats", stats);
 
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
 
         assertEquals(42, summary.counters().nodesCreated());
         assertEquals(4242, summary.counters().nodesDeleted());
@@ -163,27 +122,24 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutCounters() {
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), true, null);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), false, null);
         assertEquals(EMPTY_STATS, summary.counters());
     }
 
     @Test
     void shouldBuildResultSummaryWithPlan() {
         var plan = value(parameters(
-                "operatorType",
-                "Projection",
-                "args",
-                parameters("n", 42),
-                "identifiers",
-                values("a", "b"),
+                "operatorType", "Projection",
+                "args", parameters("n", 42),
+                "identifiers", values("a", "b"),
                 "children",
-                values(parameters(
-                        "operatorType", "AllNodeScan",
-                        "args", parameters("x", 4242),
-                        "identifiers", values("n", "t", "f")))));
+                        values(parameters(
+                                "operatorType", "AllNodeScan",
+                                "args", parameters("x", 4242),
+                                "identifiers", values("n", "t", "f")))));
         var metadata = singletonMap("plan", plan);
 
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
 
         assertTrue(summary.hasPlan());
         assertEquals("Projection", summary.plan().operatorType());
@@ -202,7 +158,7 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutPlan() {
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), true, null);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), false, null);
         assertFalse(summary.hasPlan());
         assertNull(summary.plan());
     }
@@ -210,28 +166,22 @@ class MetadataExtractorTest {
     @Test
     void shouldBuildResultSummaryWithProfiledPlan() {
         var profile = value(parameters(
-                "operatorType",
-                "ProduceResult",
-                "args",
-                parameters("a", 42),
-                "identifiers",
-                values("a", "b"),
-                "rows",
-                value(424242),
-                "dbHits",
-                value(242424),
-                "time",
-                value(999),
+                "operatorType", "ProduceResult",
+                "args", parameters("a", 42),
+                "identifiers", values("a", "b"),
+                "rows", value(424242),
+                "dbHits", value(242424),
+                "time", value(999),
                 "children",
-                values(parameters(
-                        "operatorType", "LabelScan",
-                        "args", parameters("x", 1),
-                        "identifiers", values("y", "z"),
-                        "rows", value(2),
-                        "dbHits", value(4)))));
+                        values(parameters(
+                                "operatorType", "LabelScan",
+                                "args", parameters("x", 1),
+                                "identifiers", values("y", "z"),
+                                "rows", value(2),
+                                "dbHits", value(4)))));
         var metadata = singletonMap("profile", profile);
 
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
 
         assertTrue(summary.hasPlan());
         assertTrue(summary.hasProfile());
@@ -259,7 +209,7 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutProfiledPlan() {
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), true, null);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), false, null);
         assertFalse(summary.hasProfile());
         assertNull(summary.profile());
     }
@@ -310,16 +260,21 @@ class MetadataExtractorTest {
         assertEquals(new InternalInputPosition(42, 4242, 424242), firstNotification.position());
         assertEquals(
                 Map.of(
-                        "OPERATION", Values.value(""),
-                        "OPERATION_CODE", Values.value("0"),
-                        "CURRENT_SCHEMA", Values.value("/"),
-                        "_severity", Values.value("WARNING"),
-                        "_classification", Values.value("DEPRECATION"),
+                        "OPERATION",
+                        Values.value(""),
+                        "OPERATION_CODE",
+                        Values.value("0"),
+                        "CURRENT_SCHEMA",
+                        Values.value("/"),
+                        "_severity",
+                        Values.value("WARNING"),
+                        "_classification",
+                        Values.value("DEPRECATION"),
                         "_position",
-                                parameters(
-                                        "offset", 42,
-                                        "line", 4242,
-                                        "column", 424242)),
+                        parameters(
+                                "offset", 42,
+                                "line", 4242,
+                                "column", 424242)),
                 firstNotification.diagnosticRecord());
 
         assertEquals("Almost good thing", secondNotification.description());
@@ -404,16 +359,21 @@ class MetadataExtractorTest {
         assertEquals(new InternalInputPosition(42, 4242, 424242), firstGqlStatusObject.position());
         assertEquals(
                 Map.of(
-                        "OPERATION", Values.value(""),
-                        "OPERATION_CODE", Values.value("0"),
-                        "CURRENT_SCHEMA", Values.value("/"),
-                        "_severity", Values.value("WARNING"),
-                        "_classification", Values.value("SECURITY"),
+                        "OPERATION",
+                        Values.value(""),
+                        "OPERATION_CODE",
+                        Values.value("0"),
+                        "CURRENT_SCHEMA",
+                        Values.value("/"),
+                        "_severity",
+                        Values.value("WARNING"),
+                        "_classification",
+                        Values.value("SECURITY"),
                         "_position",
-                                parameters(
-                                        "offset", 42,
-                                        "line", 4242,
-                                        "column", 424242)),
+                        parameters(
+                                "offset", 42,
+                                "line", 4242,
+                                "column", 424242)),
                 firstGqlStatusObject.diagnosticRecord());
 
         assertFalse(secondGqlStatusObject instanceof Notification);
@@ -434,7 +394,7 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutNotifications() {
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), true, null);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), false, null);
         assertEquals(0, summary.notifications().size());
     }
 
@@ -442,7 +402,7 @@ class MetadataExtractorTest {
     void shouldBuildResultSummaryWithResultAvailableAfter() {
         var value = 42_000;
 
-        var summary = extractor.extractSummary(query(), connectionMock(), value, emptyMap(), true, null);
+        var summary = extractor.extractSummary(query(), connectionMock(), value, emptyMap(), false, null);
 
         assertEquals(42, summary.resultAvailableAfter(TimeUnit.SECONDS));
         assertEquals(value, summary.resultAvailableAfter(TimeUnit.MILLISECONDS));
@@ -453,7 +413,7 @@ class MetadataExtractorTest {
         var value = 42_000;
         var metadata = singletonMap(RESULT_CONSUMED_AFTER_KEY, value(value));
 
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
 
         assertEquals(42, summary.resultConsumedAfter(TimeUnit.SECONDS));
         assertEquals(value, summary.resultConsumedAfter(TimeUnit.MILLISECONDS));
@@ -461,49 +421,9 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithoutResultConsumedAfter() {
-        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), true, null);
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), false, null);
         assertEquals(-1, summary.resultConsumedAfter(TimeUnit.SECONDS));
         assertEquals(-1, summary.resultConsumedAfter(TimeUnit.MILLISECONDS));
-    }
-
-    @Test
-    void shouldExtractBookmark() {
-        var bookmarkValue = "neo4j:bookmark:v1:tx123456";
-
-        var bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", value(bookmarkValue)));
-
-        assertEquals(InternalBookmark.parse(bookmarkValue), bookmark);
-    }
-
-    @Test
-    void shouldExtractNoBookmarkWhenMetadataContainsNull() {
-        var bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", null));
-
-        assertNull(bookmark);
-    }
-
-    @Test
-    void shouldExtractNoBookmarkWhenMetadataContainsNullValue() {
-        var bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", Values.NULL));
-
-        assertNull(bookmark);
-    }
-
-    @Test
-    void shouldExtractNoBookmarkWhenMetadataContainsValueOfIncorrectType() {
-        var bookmark = MetadataExtractor.extractBookmark(singletonMap("bookmark", value(42)));
-
-        assertNull(bookmark);
-    }
-
-    @Test
-    void shouldExtractServer() {
-        var agent = "Neo4j/3.5.0";
-        var metadata = singletonMap("server", value(agent));
-
-        var serverValue = extractServer(metadata);
-
-        assertEquals(agent, serverValue.asString());
     }
 
     @Test
@@ -542,35 +462,23 @@ class MetadataExtractorTest {
         assertThat(error.getMessage(), startsWith("Cannot coerce INTEGER to Java String"));
     }
 
-    @Test
-    void shouldFailToExtractServerVersionWhenMetadataDoesNotContainIt() {
-        assertThrows(UntrustedServerException.class, () -> extractServer(singletonMap("server", Values.NULL)));
-        assertThrows(UntrustedServerException.class, () -> extractServer(singletonMap("server", null)));
-    }
-
-    @Test
-    void shouldFailToExtractServerVersionFromNonNeo4jProduct() {
-        assertThrows(
-                UntrustedServerException.class, () -> extractServer(singletonMap("server", value("NotNeo4j/1.2.3"))));
-    }
-
     private ResultSummary createWithQueryType(Value typeValue) {
         var metadata = singletonMap("type", typeValue);
-        return extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
+        return extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
     }
 
     private static Query query() {
         return new Query("RETURN 1");
     }
 
-    private static Connection connectionMock() {
+    private static BoltConnection connectionMock() {
         return connectionMock(BoltServerAddress.LOCAL_DEFAULT);
     }
 
-    private static Connection connectionMock(BoltServerAddress address) {
-        var connection = mock(Connection.class);
+    private static BoltConnection connectionMock(BoltServerAddress address) {
+        var connection = mock(BoltConnection.class);
         when(connection.serverAddress()).thenReturn(address);
-        when(connection.protocol()).thenReturn(BoltProtocolV43.INSTANCE);
+        when(connection.protocolVersion()).thenReturn(new BoltProtocolVersion(4, 3));
         when(connection.serverAgent()).thenReturn("Neo4j/4.2.5");
         return connection;
     }

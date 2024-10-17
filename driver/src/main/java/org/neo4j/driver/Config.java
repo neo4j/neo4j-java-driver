@@ -37,10 +37,8 @@ import java.util.stream.Collectors;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.InternalNotificationConfig;
+import org.neo4j.driver.internal.RoutingSettings;
 import org.neo4j.driver.internal.SecuritySettings;
-import org.neo4j.driver.internal.async.pool.PoolSettings;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Experimental;
@@ -400,10 +398,10 @@ public final class Config implements Serializable {
     public static final class ConfigBuilder {
         private Logging logging = DEV_NULL_LOGGING;
         private boolean logLeakedSessions;
-        private int maxConnectionPoolSize = PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
-        private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
-        private long maxConnectionLifetimeMillis = PoolSettings.DEFAULT_MAX_CONNECTION_LIFETIME;
-        private long connectionAcquisitionTimeoutMillis = PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
+        private int maxConnectionPoolSize = 100;
+        private long idleTimeBeforeConnectionTest = -1;
+        private long maxConnectionLifetimeMillis = TimeUnit.HOURS.toMillis(1);
+        private long connectionAcquisitionTimeoutMillis = TimeUnit.SECONDS.toMillis(60);
         private String userAgent = format("neo4j-java/%s", driverVersion());
         private final SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder =
                 new SecuritySettings.SecuritySettingsBuilder();
@@ -412,7 +410,7 @@ public final class Config implements Serializable {
         private long maxTransactionRetryTimeMillis = ExponentialBackoffRetryLogic.DEFAULT_MAX_RETRY_TIME_MS;
         private ServerAddressResolver resolver;
         private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
-        private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
+        private long fetchSize = 1000;
         private int eventLoopThreads = 0;
 
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
@@ -644,7 +642,11 @@ public final class Config implements Serializable {
          * @return this builder
          */
         public ConfigBuilder withFetchSize(long size) {
-            this.fetchSize = FetchSizeUtil.assertValidFetchSize(size);
+            if (size <= 0 && size != -1) {
+                throw new IllegalArgumentException(String.format(
+                        "The record fetch size may not be 0 or negative. Illegal record fetch size: %s.", size));
+            }
+            this.fetchSize = size;
             return this;
         }
 

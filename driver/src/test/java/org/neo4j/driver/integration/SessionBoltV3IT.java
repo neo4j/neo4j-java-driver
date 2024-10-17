@@ -20,38 +20,27 @@ import static java.time.Duration.ofMillis;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.driver.Config.defaultConfig;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.testutil.TestUtil.TX_TIMEOUT_TEST_TIMEOUT;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
-import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.internal.util.MessageRecordingDriverFactory;
 import org.neo4j.driver.testutil.DriverExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 
@@ -259,47 +248,43 @@ class SessionBoltV3IT {
         assertNotEquals(bookmark2, bookmark3);
     }
 
-    @Test
-    void shouldSendGoodbyeWhenClosingDriver() {
-        var txCount = 13;
-        var driverFactory = new MessageRecordingDriverFactory();
-
-        try (var otherDriver = driverFactory.newInstance(
-                driver.uri(),
-                driver.authTokenManager(),
-                null,
-                defaultConfig(),
-                SecurityPlanImpl.insecure(),
-                null,
-                null)) {
-            List<Session> sessions = new ArrayList<>();
-            List<Transaction> txs = new ArrayList<>();
-            for (var i = 0; i < txCount; i++) {
-                var session = otherDriver.session();
-                sessions.add(session);
-                var tx = session.beginTransaction();
-                txs.add(tx);
-            }
-
-            for (var i = 0; i < txCount; i++) {
-                var session = sessions.get(i);
-                var tx = txs.get(i);
-
-                tx.run("CREATE ()");
-                tx.commit();
-                session.close();
-            }
-        }
-
-        var messagesByChannel = driverFactory.getMessagesByChannel();
-        assertEquals(txCount, messagesByChannel.size());
-
-        for (var messages : messagesByChannel.values()) {
-            assertThat(messages.size(), greaterThan(2));
-            assertThat(messages.get(0), instanceOf(HelloMessage.class)); // first message is HELLO
-            assertThat(messages.get(messages.size() - 1), instanceOf(GoodbyeMessage.class)); // last message is GOODBYE
-        }
-    }
+    //    @Test
+    //    void shouldSendGoodbyeWhenClosingDriver() {
+    //        var txCount = 13;
+    //        var driverFactory = new MessageRecordingDriverFactory();
+    //
+    //        try (var otherDriver = driverFactory.newInstance(
+    //                driver.uri(), driver.authTokenManager(), defaultConfig(), SecurityPlanImpl.insecure(), null,
+    // null)) {
+    //            List<Session> sessions = new ArrayList<>();
+    //            List<Transaction> txs = new ArrayList<>();
+    //            for (var i = 0; i < txCount; i++) {
+    //                var session = otherDriver.session();
+    //                sessions.add(session);
+    //                var tx = session.beginTransaction();
+    //                txs.add(tx);
+    //            }
+    //
+    //            for (var i = 0; i < txCount; i++) {
+    //                var session = sessions.get(i);
+    //                var tx = txs.get(i);
+    //
+    //                tx.run("CREATE ()");
+    //                tx.commit();
+    //                session.close();
+    //            }
+    //        }
+    //
+    //        var messagesByChannel = driverFactory.getMessagesByChannel();
+    //        assertEquals(txCount, messagesByChannel.size());
+    //
+    //        for (var messages : messagesByChannel.values()) {
+    //            assertThat(messages.size(), greaterThan(2));
+    //            assertThat(messages.get(0), instanceOf(HelloMessage.class)); // first message is HELLO
+    //            assertThat(messages.get(messages.size() - 1), instanceOf(GoodbyeMessage.class)); // last message is
+    // GOODBYE
+    //        }
+    //    }
 
     @SuppressWarnings("deprecation")
     private static void testTransactionMetadataWithAsyncTransactionFunctions(boolean read) {

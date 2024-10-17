@@ -29,7 +29,9 @@ import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.ListenerEvent;
+import org.neo4j.driver.internal.bolt.api.MetricsListener;
 
 final class InternalMetrics implements Metrics, MetricsListener {
     private final Map<String, ConnectionPoolMetrics> connectionPoolMetrics;
@@ -45,7 +47,7 @@ final class InternalMetrics implements Metrics, MetricsListener {
 
     @Override
     public void registerPoolMetrics(
-            String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
+            String poolId, BoltServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier) {
         this.connectionPoolMetrics.put(
                 poolId, new InternalConnectionPoolMetrics(poolId, serverAddress, inUseSupplier, idleSupplier));
     }

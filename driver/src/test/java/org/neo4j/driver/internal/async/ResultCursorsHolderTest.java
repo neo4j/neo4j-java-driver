@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.async;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -35,8 +36,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.FailableCursor;
-import org.neo4j.driver.internal.cursor.AsyncResultCursorImpl;
-import org.neo4j.driver.internal.util.Futures;
 
 class ResultCursorsHolderTest {
     @Test
@@ -71,10 +70,10 @@ class ResultCursorsHolderTest {
     void shouldNotReturnStageErrors() {
         var holder = new ResultCursorsHolder();
 
-        holder.add(Futures.failedFuture(new RuntimeException("Failed to acquire a connection")));
+        holder.add(failedFuture(new RuntimeException("Failed to acquire a connection")));
         holder.add(cursorWithoutError());
         holder.add(cursorWithoutError());
-        holder.add(Futures.failedFuture(new IOException("Failed to do IO")));
+        holder.add(failedFuture(new IOException("Failed to do IO")));
 
         var error = await(holder.retrieveNotConsumedError());
         assertNull(error);
@@ -160,16 +159,16 @@ class ResultCursorsHolderTest {
         }
     }
 
-    private static CompletionStage<AsyncResultCursorImpl> cursorWithoutError() {
+    private static CompletionStage<FailableCursor> cursorWithoutError() {
         return cursorWithError(null);
     }
 
-    private static CompletionStage<AsyncResultCursorImpl> cursorWithError(Throwable error) {
+    private static CompletionStage<FailableCursor> cursorWithError(Throwable error) {
         return cursorWithFailureFuture(completedFuture(error));
     }
 
-    private static CompletionStage<AsyncResultCursorImpl> cursorWithFailureFuture(CompletableFuture<Throwable> future) {
-        var cursor = mock(AsyncResultCursorImpl.class);
+    private static CompletionStage<FailableCursor> cursorWithFailureFuture(CompletableFuture<Throwable> future) {
+        var cursor = mock(FailableCursor.class);
         when(cursor.consumed()).thenReturn(new CompletableFuture<>());
         when(cursor.discardAllFailureAsync()).thenReturn(future);
         return completedFuture(cursor);

@@ -32,7 +32,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
+import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.testutil.DatabaseExtension;
@@ -123,6 +123,6 @@ class ServerKilledIT {
     private Driver createDriver(Clock clock, Config config) {
         DriverFactory factory = new DriverFactoryWithClock(clock);
         return factory.newInstance(
-                neo4j.uri(), neo4j.authTokenManager(), null, config, SecurityPlanImpl.insecure(), null, null);
+                neo4j.uri(), neo4j.authTokenManager(), config, BoltSecurityPlanManager.insecure(), null, null);
     }
 }

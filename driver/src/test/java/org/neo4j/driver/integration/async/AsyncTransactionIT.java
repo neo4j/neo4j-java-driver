@@ -55,6 +55,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -608,10 +609,10 @@ class AsyncTransactionIT {
     void shouldFailToCommitWhenQueriesFail() {
         var tx = await(session.beginTransactionAsync());
 
-        tx.runAsync("CREATE (:TestNode)");
-        tx.runAsync("CREATE (:TestNode)");
-        tx.runAsync("RETURN 1 * \"x\"");
-        tx.runAsync("CREATE (:TestNode)");
+        await(tx.runAsync("CREATE (:TestNode)"));
+        await(tx.runAsync("CREATE (:TestNode)"));
+        await(tx.runAsync("RETURN 1 * \"x\"").exceptionally(ignored -> null));
+        assertThrows(TransactionTerminatedException.class, () -> await(tx.runAsync("CREATE (:TestNode)")));
 
         var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertNoCircularReferences(e);
@@ -624,7 +625,7 @@ class AsyncTransactionIT {
     void shouldFailToCommitWhenRunFailed() {
         var tx = await(session.beginTransactionAsync());
 
-        tx.runAsync("RETURN ILLEGAL");
+        await(tx.runAsync("RETURN ILLEGAL").exceptionally(ignored -> null));
 
         var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertNoCircularReferences(e);
@@ -647,7 +648,7 @@ class AsyncTransactionIT {
     void shouldRollbackSuccessfullyWhenRunFailed() {
         var tx = await(session.beginTransactionAsync());
 
-        tx.runAsync("RETURN ILLEGAL");
+        await(tx.runAsync("RETURN ILLEGAL").exceptionally(ignored -> null));
 
         await(tx.rollbackAsync());
     }
@@ -665,7 +666,7 @@ class AsyncTransactionIT {
     void shouldPropagatePullAllFailureFromCommit() {
         var tx = await(session.beginTransactionAsync());
 
-        tx.runAsync("UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x");
+        await(tx.runAsync("UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x"));
 
         var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
         assertNoCircularReferences(e);
@@ -687,7 +688,7 @@ class AsyncTransactionIT {
     void shouldPropagatePullAllFailureFromRollback() {
         var tx = await(session.beginTransactionAsync());
 
-        tx.runAsync("UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x");
+        await(tx.runAsync("UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x"));
 
         var e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
         assertThat(e.code(), containsString("TypeError"));

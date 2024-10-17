@@ -25,8 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
+import static org.neo4j.driver.internal.bolt.api.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
@@ -41,8 +40,9 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.InternalSession;
 import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 
 class ParametersTest {
     static Stream<Arguments> addressesToParse() {
@@ -100,21 +100,24 @@ class ParametersTest {
     }
 
     private Session mockedSession() {
-        var provider = mock(ConnectionProvider.class);
+        var provider = mock(BoltConnectionProvider.class);
         var retryLogic = mock(RetryLogic.class);
         var session = new NetworkSession(
+                BoltSecurityPlanManager.insecure(),
                 provider,
                 retryLogic,
                 defaultDatabase(),
                 AccessMode.WRITE,
                 Collections.emptySet(),
                 null,
-                UNLIMITED_FETCH_SIZE,
+                -1,
                 DEV_NULL_LOGGING,
                 mock(BookmarkManager.class),
+                Config.defaultConfig().notificationConfig(),
+                Config.defaultConfig().notificationConfig(),
                 null,
-                null,
-                true);
+                false,
+                mock(AuthTokenManager.class));
         return new InternalSession(session);
     }
 }

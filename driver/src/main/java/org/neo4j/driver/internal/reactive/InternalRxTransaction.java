@@ -33,7 +33,6 @@ public class InternalRxTransaction extends AbstractReactiveTransaction implement
     }
 
     @Override
-    @SuppressWarnings("ThrowableNotThrown")
     public RxResult run(Query query) {
         return new InternalRxResult(() -> {
             var cursorFuture = new CompletableFuture<RxResultCursor>();

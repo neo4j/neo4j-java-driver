@@ -27,8 +27,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
+import org.neo4j.driver.internal.bolt.basicimpl.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.bolt.basicimpl.async.outbound.OutboundMessageHandler;
 
 public class LoggingUtil {
     public static Logging boltLogging(List<String> messages) {

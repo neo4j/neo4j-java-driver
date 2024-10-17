@@ -17,7 +17,9 @@
 package org.neo4j.driver.internal.metrics;
 
 import java.util.function.IntSupplier;
-import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.ListenerEvent;
+import org.neo4j.driver.internal.bolt.api.MetricsListener;
 
 public enum DevNullMetricsListener implements MetricsListener {
     INSTANCE;
@@ -59,7 +61,7 @@ public enum DevNullMetricsListener implements MetricsListener {
 
     @Override
     public void registerPoolMetrics(
-            String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier) {}
+            String poolId, BoltServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier) {}
 
     @Override
     public void removePoolMetrics(String poolId) {}

@@ -84,7 +84,7 @@ import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
+import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
@@ -128,7 +128,7 @@ class SessionIT {
     @Test
     void shouldHandleNullConfig() {
         // Given
-        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), (Config) null);
+        driver = GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), null, null);
         var session = driver.session();
 
         // When
@@ -1319,9 +1319,8 @@ class SessionIT {
         return driverFactory.newInstance(
                 neo4j.uri(),
                 neo4j.authTokenManager(),
-                null,
                 noLoggingConfig(),
-                SecurityPlanImpl.insecure(),
+                BoltSecurityPlanManager.insecure(),
                 null,
                 null);
     }

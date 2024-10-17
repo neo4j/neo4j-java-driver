@@ -50,7 +50,7 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionContext;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.summary.ResultSummary;
 
 class InternalExecutableQueryTest {

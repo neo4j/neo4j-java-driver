@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.async;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 @FunctionalInterface
 public interface TerminationAwareStateLockingExecutor {
@@ -25,5 +26,5 @@ public interface TerminationAwareStateLockingExecutor {
      *
      * @param causeOfTerminationConsumer the consumer accepting
      */
-    void execute(Consumer<Throwable> causeOfTerminationConsumer);
+    <T> T execute(Function<Throwable, T> causeOfTerminationConsumer);
 }

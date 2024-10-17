@@ -19,6 +19,8 @@ package org.neo4j.driver.integration.async;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.completedStage;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -32,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
@@ -706,10 +707,10 @@ class AsyncSessionIT {
 
     @Test
     void shouldNotPropagateFailureInCloseFromPreviousRun() {
-        session.runAsync("CREATE ()");
-        session.runAsync("CREATE ()");
-        session.runAsync("CREATE ()");
-        session.runAsync("RETURN invalid");
+        await(session.runAsync("CREATE ()"));
+        await(session.runAsync("CREATE ()"));
+        await(session.runAsync("CREATE ()"));
+        assertThrows(ClientException.class, () -> await(session.runAsync("RETURN invalid")));
 
         await(session.closeAsync());
     }
@@ -804,11 +805,11 @@ class AsyncSessionIT {
         var response = session.runAsync(
                 "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p", parameters("id", id, "age", age));
 
-        response.whenComplete((cursor, error) -> {
+        response.thenCompose(ResultCursor::nextAsync).whenComplete((entry, error) -> {
             if (error != null) {
                 resultFuture.completeExceptionally(Futures.completionExceptionCause(error));
             } else {
-                stages.add(cursor.nextAsync());
+                stages.add(completedStage(entry));
                 runNestedQueries(inputCursor, stages, resultFuture);
             }
         });

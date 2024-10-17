@@ -17,10 +17,9 @@
 package org.neo4j.driver.internal.async;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Futures.asCompletionException;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.combineErrors;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.futureCompletingConsumer;
 import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
 
@@ -28,29 +27,44 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.DatabaseBookmark;
-import org.neo4j.driver.internal.GqlNotificationConfig;
-import org.neo4j.driver.internal.GqlStatusError;
-import org.neo4j.driver.internal.cursor.AsyncResultCursor;
+import org.neo4j.driver.internal.bolt.api.AccessMode;
+import org.neo4j.driver.internal.bolt.api.BasicResponseHandler;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.DatabaseName;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.NotificationConfig;
+import org.neo4j.driver.internal.bolt.api.ResponseHandler;
+import org.neo4j.driver.internal.bolt.api.TransactionType;
+import org.neo4j.driver.internal.bolt.api.summary.BeginSummary;
+import org.neo4j.driver.internal.bolt.api.summary.CommitSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
+import org.neo4j.driver.internal.bolt.api.summary.TelemetrySummary;
+import org.neo4j.driver.internal.cursor.DisposableResultCursorImpl;
+import org.neo4j.driver.internal.cursor.ResultCursorImpl;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
+import org.neo4j.driver.internal.util.ErrorUtil;
+import org.neo4j.driver.internal.util.Futures;
 
 public class UnmanagedTransaction implements TerminationAwareStateLockingExecutor {
     private enum State {
@@ -87,8 +101,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             "Can't rollback, transaction has been requested to be committed";
     private static final EnumSet<State> OPEN_STATES = EnumSet.of(State.ACTIVE, State.TERMINATED);
 
-    private final Connection connection;
-    private final BoltProtocol protocol;
+    private final TerminationAwareBoltConnection connection;
     private final Consumer<DatabaseBookmark> bookmarkConsumer;
     private final ResultCursorsHolder resultCursors;
     private final long fetchSize;
@@ -98,21 +111,29 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     private CompletableFuture<Void> rollbackFuture;
     private Throwable causeOfTermination;
     private CompletionStage<Void> terminationStage;
-    private final GqlNotificationConfig notificationConfig;
+    private final NotificationConfig notificationConfig;
     private final CompletableFuture<UnmanagedTransaction> beginFuture = new CompletableFuture<>();
-    private final Logging logging;
+    private final DatabaseName databaseName;
+    private final AccessMode accessMode;
+    private final String impersonatedUser;
 
     private final ApiTelemetryWork apiTelemetryWork;
 
     public UnmanagedTransaction(
-            Connection connection,
+            BoltConnection connection,
+            DatabaseName databaseName,
+            AccessMode accessMode,
+            String impersonatedUser,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             long fetchSize,
-            GqlNotificationConfig notificationConfig,
+            NotificationConfig notificationConfig,
             ApiTelemetryWork apiTelemetryWork,
             Logging logging) {
         this(
                 connection,
+                databaseName,
+                accessMode,
+                impersonatedUser,
                 bookmarkConsumer,
                 fetchSize,
                 new ResultCursorsHolder(),
@@ -122,51 +143,69 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     }
 
     protected UnmanagedTransaction(
-            Connection connection,
+            BoltConnection connection,
+            DatabaseName databaseName,
+            AccessMode accessMode,
+            String impersonatedUser,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             long fetchSize,
             ResultCursorsHolder resultCursors,
-            GqlNotificationConfig notificationConfig,
+            NotificationConfig notificationConfig,
             ApiTelemetryWork apiTelemetryWork,
             Logging logging) {
-        this.connection = connection;
-        this.protocol = connection.protocol();
+        this.connection = new TerminationAwareBoltConnection(connection, this);
+        this.databaseName = databaseName;
+        this.accessMode = accessMode;
+        this.impersonatedUser = impersonatedUser;
         this.bookmarkConsumer = bookmarkConsumer;
         this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
         this.notificationConfig = notificationConfig;
-        this.logging = logging;
         this.apiTelemetryWork = apiTelemetryWork;
-
-        connection.bindTerminationAwareStateLockingExecutor(this);
     }
 
     // flush = false is only supported for async mode with a single subsequent run
     public CompletionStage<UnmanagedTransaction> beginAsync(
             Set<Bookmark> initialBookmarks, TransactionConfig config, String txType, boolean flush) {
 
-        apiTelemetryWork.execute(connection, protocol).whenComplete((unused, throwable) -> {
-            if (throwable != null) {
-                beginFuture.completeExceptionally(throwable);
-            }
-        });
+        var bookmarks = initialBookmarks.stream().map(Bookmark::value).collect(Collectors.toSet());
 
-        protocol.beginTransaction(connection, initialBookmarks, config, txType, notificationConfig, logging, flush)
-                .handle((ignore, beginError) -> {
-                    if (beginError != null) {
-                        if (beginError instanceof AuthorizationExpiredException) {
-                            connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
-                        } else if (beginError instanceof ConnectionReadTimeoutException) {
-                            connection.terminateAndRelease(beginError.getMessage());
-                        } else {
-                            connection.release();
-                        }
-                        throw asCompletionException(beginError);
+        return apiTelemetryWork
+                .pipelineTelemetryIfEnabled(connection)
+                .thenCompose(connection -> connection.beginTransaction(
+                        databaseName,
+                        accessMode,
+                        impersonatedUser,
+                        bookmarks,
+                        TransactionType.DEFAULT,
+                        config.timeout(),
+                        config.metadata(),
+                        txType,
+                        notificationConfig))
+                .thenCompose(connection -> {
+                    if (flush) {
+                        var responseHandler = new BeginResponseHandler(
+                                apiTelemetryWork, () -> executeWithLock(lock, () -> causeOfTermination));
+                        connection
+                                .flush(responseHandler)
+                                .thenCompose(ignored -> responseHandler.summaryFuture)
+                                .whenComplete((summary, throwable) -> {
+                                    if (throwable != null) {
+                                        connection.close().whenComplete((ignored, closeThrowable) -> {
+                                            if (closeThrowable != null) {
+                                                throwable.addSuppressed(closeThrowable);
+                                            }
+                                            beginFuture.completeExceptionally(throwable);
+                                        });
+                                    } else {
+                                        beginFuture.complete(this);
+                                    }
+                                });
+                        return beginFuture.thenApply(ignored -> this);
+                    } else {
+                        return CompletableFuture.completedFuture(this);
                     }
-                    return this;
-                })
-                .whenComplete(futureCompletingConsumer(beginFuture));
-        return flush ? beginFuture : CompletableFuture.completedFuture(this);
+                });
     }
 
     public CompletionStage<Void> closeAsync() {
@@ -187,28 +226,56 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
 
     public CompletionStage<ResultCursor> runAsync(Query query) {
         ensureCanRunQueries();
-        var cursorStage = protocol.runInUnmanagedTransaction(connection, query, this, fetchSize)
-                .asyncResult();
-        resultCursors.add(cursorStage);
-        return beginFuture.thenCompose(ignored -> cursorStage
-                .thenCompose(AsyncResultCursor::mapSuccessfulRunCompletionAsync)
-                .thenApply(Function.identity()));
+        var parameters = query.parameters().asMap(Values::value);
+        var resultCursor = new ResultCursorImpl(
+                connection,
+                query,
+                fetchSize,
+                this::markTerminated,
+                (bookmark) -> {},
+                false,
+                () -> executeWithLock(lock, () -> causeOfTermination),
+                beginFuture,
+                apiTelemetryWork);
+        var flushStage = connection
+                .run(query.text(), parameters)
+                .thenCompose(ignored -> connection.pull(-1, fetchSize))
+                .thenCompose(ignored -> connection.flush(resultCursor));
+        return beginFuture.thenCompose(ignored -> {
+            var cursorStage = flushStage
+                    .thenCompose(flushResult -> resultCursor.resultCursor())
+                    .thenApply(DisposableResultCursorImpl::new);
+            resultCursors.add(cursorStage);
+            return cursorStage.thenApply(Function.identity());
+        });
     }
 
     public CompletionStage<RxResultCursor> runRx(Query query) {
         ensureCanRunQueries();
-        var cursorStage = protocol.runInUnmanagedTransaction(connection, query, this, fetchSize)
-                .rxResult();
-        resultCursors.add(cursorStage);
-        return cursorStage;
+        var parameters = query.parameters().asMap(Values::value);
+        var responseHandler = new RunRxResponseHandler(
+                apiTelemetryWork,
+                () -> executeWithLock(lock, () -> causeOfTermination),
+                this::markTerminated,
+                beginFuture,
+                this,
+                connection,
+                query);
+        var flushStage =
+                connection.run(query.text(), parameters).thenCompose(ignored2 -> connection.flush(responseHandler));
+        return beginFuture.thenCompose(ignored -> {
+            var cursorStage = flushStage.thenCompose(flushResult -> responseHandler.cursorFuture);
+            resultCursors.add(cursorStage);
+            return cursorStage.thenApply(Function.identity());
+        });
     }
 
     public boolean isOpen() {
         return OPEN_STATES.contains(executeWithLock(lock, () -> state));
     }
 
-    public Throwable markTerminated(Throwable cause) {
-        return executeWithLock(lock, () -> {
+    public void markTerminated(Throwable cause) {
+        executeWithLock(lock, () -> {
             if (state == State.TERMINATED) {
                 if (cause != null) {
                     addSuppressedWhenNotCaptured(causeOfTermination, cause);
@@ -225,8 +292,11 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                                 GqlStatusError.DIAGNOSTIC_RECORD,
                                 null);
             }
-            return causeOfTermination;
         });
+    }
+
+    public BoltConnection connection() {
+        return connection;
     }
 
     private void addSuppressedWhenNotCaptured(Throwable currentCause, Throwable newCause) {
@@ -236,15 +306,6 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                 currentCause.addSuppressed(newCause);
             }
         }
-    }
-
-    public Connection connection() {
-        return connection;
-    }
-
-    @Override
-    public void execute(Consumer<Throwable> causeOfTerminationConsumer) {
-        executeWithLock(lock, () -> causeOfTerminationConsumer.accept(causeOfTermination));
     }
 
     public CompletionStage<Void> terminateAsync() {
@@ -262,12 +323,17 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                 if (state == State.TERMINATED) {
                     return terminationStage != null ? terminationStage : completedFuture(null);
                 } else {
-                    var terminationException = markTerminated(null);
-                    terminationStage = connection.reset(terminationException);
+                    markTerminated(null);
+                    terminationStage = connection.clearAndReset().thenApply(ignored -> null);
                     return terminationStage;
                 }
             }
         });
+    }
+
+    @Override
+    public <T> T execute(Function<Throwable, T> causeOfTerminationConsumer) {
+        return executeWithLock(lock, () -> causeOfTerminationConsumer.apply(causeOfTermination));
     }
 
     private void ensureCanRunQueries() {
@@ -339,19 +405,94 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                                 GqlStatusError.DIAGNOSTIC_RECORD,
                                 cursorFailure != causeOfTermination ? causeOfTermination : null)
                         : null);
-        return exception != null
-                ? failedFuture(exception)
-                : protocol.commitTransaction(connection).thenAccept(bookmarkConsumer);
+
+        if (exception != null) {
+            return failedFuture(exception);
+        } else {
+            var commitSummary = new CompletableFuture<CommitSummary>();
+            var responseHandler = new BasicResponseHandler();
+            connection
+                    .commit()
+                    .thenCompose(connection -> connection.flush(responseHandler))
+                    .thenCompose(ignored -> responseHandler.summaries())
+                    .whenComplete((summaries, throwable) -> {
+                        if (throwable != null) {
+                            commitSummary.completeExceptionally(throwable);
+                        } else {
+                            var summary = summaries.commitSummary();
+                            if (summary != null) {
+                                summary.bookmark()
+                                        .map(bookmark -> new DatabaseBookmark(null, Bookmark.from(bookmark)))
+                                        .ifPresent(bookmarkConsumer);
+                                commitSummary.complete(summary);
+                            } else {
+                                throwable = executeWithLock(lock, () -> causeOfTermination);
+                                if (throwable == null) {
+                                    var message = summaries.ignored() > 0
+                                            ? "Commit exchange contains ignored messages"
+                                            : "Unexpected state during commit";
+                                    throwable = new ClientException(
+                                            GqlStatusError.UNKNOWN.getStatus(),
+                                            GqlStatusError.UNKNOWN.getStatusDescription(message),
+                                            "N/A",
+                                            message,
+                                            GqlStatusError.DIAGNOSTIC_RECORD,
+                                            null);
+                                }
+                                commitSummary.completeExceptionally(throwable);
+                            }
+                        }
+                    });
+            return commitSummary.thenApply(summary -> null);
+        }
     }
 
     private CompletionStage<Void> doRollbackAsync() {
-        return executeWithLock(lock, () -> state) == State.TERMINATED
-                ? completedWithNull()
-                : protocol.rollbackTransaction(connection);
+        if (executeWithLock(lock, () -> state) == State.TERMINATED) {
+            return completedWithNull();
+        } else {
+            var rollbackFuture = new CompletableFuture<Void>();
+            var responseHandler = new BasicResponseHandler();
+            connection
+                    .rollback()
+                    .thenCompose(connection -> connection.flush(responseHandler))
+                    .thenCompose(ignored -> responseHandler.summaries())
+                    .whenComplete((summaries, throwable) -> {
+                        if (throwable != null) {
+                            rollbackFuture.completeExceptionally(throwable);
+                        } else {
+                            var summary = summaries.rollbackSummary();
+                            if (summary != null) {
+                                rollbackFuture.complete(null);
+                            } else {
+                                throwable = executeWithLock(lock, () -> causeOfTermination);
+                                if (throwable == null) {
+                                    var message = summaries.ignored() > 0
+                                            ? "Rollback exchange contains ignored messages"
+                                            : "Unexpected state during rollback";
+                                    throwable = new ClientException(
+                                            GqlStatusError.UNKNOWN.getStatus(),
+                                            GqlStatusError.UNKNOWN.getStatusDescription(message),
+                                            "N/A",
+                                            message,
+                                            GqlStatusError.DIAGNOSTIC_RECORD,
+                                            null);
+                                }
+                                rollbackFuture.completeExceptionally(throwable);
+                            }
+                        }
+                    });
+
+            return rollbackFuture;
+        }
     }
 
     private static BiFunction<Void, Throwable, Void> handleCommitOrRollback(Throwable cursorFailure) {
         return (ignore, commitOrRollbackError) -> {
+            commitOrRollbackError = Futures.completionExceptionCause(commitOrRollbackError);
+            if (commitOrRollbackError instanceof IllegalStateException) {
+                commitOrRollbackError = ErrorUtil.newConnectionTerminatedError();
+            }
             var combinedError = combineErrors(cursorFailure, commitOrRollbackError);
             if (combinedError != null) {
                 throw combinedError;
@@ -360,7 +501,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         };
     }
 
-    private void handleTransactionCompletion(boolean commitAttempt, Throwable throwable) {
+    private CompletionStage<Void> handleTransactionCompletion(boolean commitAttempt, Throwable throwable) {
         executeWithLock(lock, () -> {
             if (commitAttempt && throwable == null) {
                 state = State.COMMITTED;
@@ -368,13 +509,12 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                 state = State.ROLLED_BACK;
             }
         });
-        if (throwable instanceof AuthorizationExpiredException) {
-            connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
-        } else if (throwable instanceof ConnectionReadTimeoutException) {
-            connection.terminateAndRelease(throwable.getMessage());
-        } else {
-            connection.release(); // release in background
-        }
+        return connection
+                .close()
+                .exceptionally(th -> null)
+                .thenCompose(ignored -> throwable != null
+                        ? CompletableFuture.failedStage(throwable)
+                        : CompletableFuture.completedStage(null));
     }
 
     @SuppressWarnings("DuplicatedCode")
@@ -448,11 +588,202 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             resultCursors
                     .retrieveNotConsumedError()
                     .thenCompose(targetAction)
-                    .whenComplete((ignored, throwable) -> handleTransactionCompletion(commit, throwable))
+                    .handle((ignored, throwable) -> handleTransactionCompletion(commit, throwable))
+                    .thenCompose(Function.identity())
                     .whenComplete(futureCompletingConsumer(targetFuture));
             stage = targetFuture;
         }
 
         return stage;
+    }
+
+    private static class BeginResponseHandler implements ResponseHandler {
+        final CompletableFuture<UnmanagedTransaction> summaryFuture = new CompletableFuture<>();
+        private final ApiTelemetryWork apiTelemetryWork;
+        private final Supplier<Throwable> termSupplier;
+        private Throwable error;
+        private BeginSummary beginSummary;
+        private int ignoredCount;
+
+        private BeginResponseHandler(ApiTelemetryWork apiTelemetryWork, Supplier<Throwable> termSupplier) {
+            this.apiTelemetryWork = apiTelemetryWork;
+            this.termSupplier = termSupplier;
+        }
+
+        @SuppressWarnings("DuplicatedCode")
+        @Override
+        public void onError(Throwable throwable) {
+            if (throwable instanceof CompletionException) {
+                throwable = throwable.getCause();
+            }
+            if (error == null) {
+                error = throwable;
+            } else {
+                if (error instanceof Neo4jException && !(throwable instanceof Neo4jException)) {
+                    // higher order error has occurred
+                    throwable.addSuppressed(error);
+                    error = throwable;
+                } else {
+                    error.addSuppressed(throwable);
+                }
+            }
+        }
+
+        @Override
+        public void onBeginSummary(BeginSummary summary) {
+            beginSummary = summary;
+        }
+
+        @Override
+        public void onTelemetrySummary(TelemetrySummary summary) {
+            apiTelemetryWork.acknowledge();
+        }
+
+        @Override
+        public void onIgnored() {
+            ignoredCount++;
+        }
+
+        @Override
+        public void onComplete() {
+            if (error != null) {
+                summaryFuture.completeExceptionally(error);
+            } else {
+                if (beginSummary != null) {
+                    summaryFuture.complete(null);
+                } else {
+                    var throwable = termSupplier.get();
+                    if (throwable == null) {
+                        var message = ignoredCount > 0
+                                ? "Begin exchange contains ignored messages"
+                                : "Unexpected state during begin";
+                        throwable = new ClientException(
+                                GqlStatusError.UNKNOWN.getStatus(),
+                                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                                "N/A",
+                                message,
+                                GqlStatusError.DIAGNOSTIC_RECORD,
+                                null);
+                    }
+                    summaryFuture.completeExceptionally(throwable);
+                }
+            }
+        }
+    }
+
+    private static class RunRxResponseHandler implements ResponseHandler {
+        final CompletableFuture<RxResultCursor> cursorFuture = new CompletableFuture<>();
+        private final ApiTelemetryWork apiTelemetryWork;
+        private final Supplier<Throwable> termSupplier;
+        private final Consumer<Throwable> markTerminated;
+        private final CompletableFuture<UnmanagedTransaction> beginFuture;
+        private final UnmanagedTransaction transaction;
+        private final BoltConnection connection;
+        private final Query query;
+        private Throwable error;
+        private RunSummary runSummary;
+        private int ignoredCount;
+
+        private RunRxResponseHandler(
+                ApiTelemetryWork apiTelemetryWork,
+                Supplier<Throwable> termSupplier,
+                Consumer<Throwable> markTerminated,
+                CompletableFuture<UnmanagedTransaction> beginFuture,
+                UnmanagedTransaction transaction,
+                BoltConnection connection,
+                Query query) {
+            this.apiTelemetryWork = apiTelemetryWork;
+            this.termSupplier = termSupplier;
+            this.markTerminated = markTerminated;
+            this.beginFuture = beginFuture;
+            this.transaction = transaction;
+            this.connection = connection;
+            this.query = query;
+        }
+
+        @SuppressWarnings("DuplicatedCode")
+        @Override
+        public void onError(Throwable throwable) {
+            if (throwable instanceof CompletionException) {
+                throwable = throwable.getCause();
+            }
+            if (error == null) {
+                error = throwable;
+            } else {
+                if (error instanceof Neo4jException && !(throwable instanceof Neo4jException)) {
+                    // higher order error has occurred
+                    throwable.addSuppressed(error);
+                    error = throwable;
+                } else {
+                    error.addSuppressed(throwable);
+                }
+            }
+        }
+
+        @Override
+        public void onTelemetrySummary(TelemetrySummary summary) {
+            apiTelemetryWork.acknowledge();
+        }
+
+        @Override
+        public void onRunSummary(RunSummary summary) {
+            runSummary = summary;
+        }
+
+        @Override
+        public void onIgnored() {
+            ignoredCount++;
+        }
+
+        @Override
+        public void onComplete() {
+            if (error != null) {
+                if (beginFuture.completeExceptionally(error)) {
+                    markTerminated.accept(error);
+                } else {
+                    markTerminated.accept(error);
+                    cursorFuture.complete(new RxResultCursorImpl(
+                            connection,
+                            query,
+                            null,
+                            error,
+                            termSupplier,
+                            bookmark -> {},
+                            transaction::markTerminated,
+                            false,
+                            termSupplier));
+                }
+            } else {
+                if (runSummary != null) {
+                    cursorFuture.complete(new RxResultCursorImpl(
+                            connection,
+                            query,
+                            runSummary,
+                            null,
+                            termSupplier,
+                            bookmark -> {},
+                            transaction::markTerminated,
+                            false,
+                            termSupplier));
+                } else {
+                    var throwable = termSupplier.get();
+                    if (throwable == null) {
+                        var message = ignoredCount > 0
+                                ? "Run exchange contains ignored messages"
+                                : "Unexpected state during run";
+                        throwable = new ClientException(
+                                GqlStatusError.UNKNOWN.getStatus(),
+                                GqlStatusError.UNKNOWN.getStatusDescription(message),
+                                "N/A",
+                                message,
+                                GqlStatusError.DIAGNOSTIC_RECORD,
+                                null);
+                    }
+                    if (!beginFuture.completeExceptionally(throwable)) {
+                        cursorFuture.completeExceptionally(throwable);
+                    }
+                }
+            }
+        }
     }
 }

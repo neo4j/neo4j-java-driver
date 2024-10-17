@@ -42,7 +42,7 @@ import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.messaging.GqlError;
+import org.neo4j.driver.internal.bolt.api.GqlError;
 
 class ErrorUtilTest {
     @Test

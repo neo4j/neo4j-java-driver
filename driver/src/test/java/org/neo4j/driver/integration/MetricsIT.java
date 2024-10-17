@@ -72,10 +72,14 @@ class MetricsIT {
             assertEquals(0, usageTimer.count());
 
             result.consume();
+            // todo chain close futures to fix this
+            Thread.sleep(1000);
             // assert released
             assertEquals(1, acquisitionTimer.count());
             assertEquals(1, creationTimer.count());
             assertEquals(1, usageTimer.count());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 }

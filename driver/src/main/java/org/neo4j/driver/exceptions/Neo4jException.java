@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 import org.neo4j.driver.types.TypeSystem;
 import org.neo4j.driver.util.Preview;
 

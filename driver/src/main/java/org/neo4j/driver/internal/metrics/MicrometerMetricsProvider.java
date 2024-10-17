@@ -18,6 +18,7 @@ package org.neo4j.driver.internal.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import org.neo4j.driver.Metrics;
+import org.neo4j.driver.internal.bolt.api.MetricsListener;
 
 /**
  * An adapter to bridge between driver metrics and Micrometer {@link MeterRegistry meter registry}.

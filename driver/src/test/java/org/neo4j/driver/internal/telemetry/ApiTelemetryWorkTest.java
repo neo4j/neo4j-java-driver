@@ -16,134 +16,77 @@
  */
 package org.neo4j.driver.internal.telemetry;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.testutil.TestUtil;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 
 class ApiTelemetryWorkTest {
 
     @ParameterizedTest
-    @MethodSource("shouldNotSendTelemetrySource")
-    public void shouldNotCallTelemetryAndCompleteStage(
-            boolean telemetryEnabled, Consumer<ApiTelemetryWork> transformWorker) {
-        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
-        var protocol = Mockito.mock(BoltProtocol.class);
-        var connection = Mockito.mock(Connection.class);
-        Mockito.doReturn(telemetryEnabled).when(connection).isTelemetryEnabled();
-        transformWorker.accept(apiTelemetryWork);
-
-        TestUtil.await(apiTelemetryWork.execute(connection, protocol));
-
-        Mockito.verify(protocol, Mockito.never()).telemetry(Mockito.any(), Mockito.any());
-    }
-
-    @ParameterizedTest
-    @MethodSource("shouldCallTelemetry")
-    public void shouldCallTelemetryWithCorrectValuesAndResolveFuture(
-            TelemetryApi telemetryApi, boolean telemetryEnabled, Consumer<ApiTelemetryWork> transformWorker) {
+    @EnumSource(TelemetryApi.class)
+    void shouldPipelineTelemetryWhenTelemetryIsEnabledAndConnectionSupportsTelemetry(TelemetryApi telemetryApi) {
         var apiTelemetryWork = new ApiTelemetryWork(telemetryApi);
-        var protocol = Mockito.mock(BoltProtocol.class);
-        var connection = Mockito.mock(Connection.class);
-        Mockito.doReturn(telemetryEnabled).when(connection).isTelemetryEnabled();
-        Mockito.doReturn(CompletableFuture.completedFuture(null))
-                .when(protocol)
-                .telemetry(Mockito.any(), Mockito.any());
-        transformWorker.accept(apiTelemetryWork);
-
-        TestUtil.await(apiTelemetryWork.execute(connection, protocol));
-
-        Mockito.verify(protocol, Mockito.only()).telemetry(connection, telemetryApi.getValue());
-    }
-
-    @ParameterizedTest
-    @MethodSource("shouldCallTelemetry")
-    public void shouldCallTelemetryWithCorrectValuesAndFailedFuture(
-            TelemetryApi telemetryApi, boolean telemetryEnabled, Consumer<ApiTelemetryWork> transformWorker) {
-        var apiTelemetryWork = new ApiTelemetryWork(telemetryApi);
-        var protocol = Mockito.mock(BoltProtocol.class);
-        var connection = Mockito.mock(Connection.class);
-        var exception = new RuntimeException("something wrong");
-        Mockito.doReturn(telemetryEnabled).when(connection).isTelemetryEnabled();
-        Mockito.doReturn(CompletableFuture.failedFuture(exception))
-                .when(protocol)
-                .telemetry(Mockito.any(), Mockito.any());
-        transformWorker.accept(apiTelemetryWork);
-
-        Assertions.assertThrows(
-                RuntimeException.class, () -> TestUtil.await(apiTelemetryWork.execute(connection, protocol)));
-
-        Mockito.verify(protocol, Mockito.only()).telemetry(connection, telemetryApi.getValue());
-    }
-
-    public static Stream<Arguments> shouldNotSendTelemetrySource() {
-        return Stream.of(
-                Arguments.of(false, (Consumer<ApiTelemetryWork>)
-                        ApiTelemetryWorkTest::callApiTelemetryWorkSetEnabledWithFalse),
-                Arguments.of(false, (Consumer<ApiTelemetryWork>)
-                        ApiTelemetryWorkTest::callApiTelemetryWorkSetEnabledWithTrue),
-                Arguments.of(false, (Consumer<ApiTelemetryWork>)
-                        ApiTelemetryWorkTest::callApiTelemetryWorkExecuteWithSuccess),
-                Arguments.of(
-                        false, (Consumer<ApiTelemetryWork>) ApiTelemetryWorkTest::callApiTelemetryWorkExecuteWithError),
-                Arguments.of(false, (Consumer<ApiTelemetryWork>) ApiTelemetryWorkTest::noop),
-                Arguments.of(true, (Consumer<ApiTelemetryWork>)
-                        ApiTelemetryWorkTest::callApiTelemetryWorkSetEnabledWithFalse),
-                Arguments.of(true, (Consumer<ApiTelemetryWork>)
-                        ApiTelemetryWorkTest::callApiTelemetryWorkExecuteWithSuccess));
-    }
-
-    private static Stream<Arguments> shouldCallTelemetry() {
-        return Stream.of(TelemetryApi.values())
-                .flatMap(telemetryApi -> Stream.of(
-                        Arguments.of(telemetryApi, true, (Consumer<ApiTelemetryWork>)
-                                ApiTelemetryWorkTest::callApiTelemetryWorkSetEnabledWithTrue),
-                        Arguments.of(telemetryApi, true, (Consumer<ApiTelemetryWork>)
-                                ApiTelemetryWorkTest::callApiTelemetryWorkExecuteWithError),
-                        Arguments.of(telemetryApi, true, (Consumer<ApiTelemetryWork>) ApiTelemetryWorkTest::noop)));
-    }
-
-    private static void callApiTelemetryWorkSetEnabledWithTrue(ApiTelemetryWork apiTelemetryWork) {
         apiTelemetryWork.setEnabled(true);
+        var boltConnection = Mockito.mock(BoltConnection.class);
+        var boltConnectionStage = CompletableFuture.completedFuture(boltConnection);
+        given(boltConnection.telemetrySupported()).willReturn(true);
+        given(boltConnection.telemetry(telemetryApi)).willReturn(boltConnectionStage);
+
+        var stage = apiTelemetryWork.pipelineTelemetryIfEnabled(boltConnection);
+
+        assertEquals(boltConnectionStage, stage);
+        then(boltConnection).should().telemetry(telemetryApi);
     }
 
-    private static void callApiTelemetryWorkSetEnabledWithFalse(ApiTelemetryWork apiTelemetryWork) {
-        apiTelemetryWork.setEnabled(false);
+    @ParameterizedTest
+    @EnumSource(TelemetryApi.class)
+    void shouldNotPipelineTelemetryWhenTelemetryIsEnabledAndConnectionDoesNotSupportTelemetry(
+            TelemetryApi telemetryApi) {
+        var apiTelemetryWork = new ApiTelemetryWork(telemetryApi);
+        apiTelemetryWork.setEnabled(true);
+        var boltConnection = Mockito.mock(BoltConnection.class);
+
+        var future = apiTelemetryWork.pipelineTelemetryIfEnabled(boltConnection).toCompletableFuture();
+
+        assertTrue(future.isDone());
+        assertEquals(boltConnection, future.join());
+        then(boltConnection).should().telemetrySupported();
+        then(boltConnection).shouldHaveNoMoreInteractions();
     }
 
-    @SuppressWarnings("EmptyMethod")
-    private static void noop(ApiTelemetryWork apiTelemetryWork) {}
+    @ParameterizedTest
+    @EnumSource(TelemetryApi.class)
+    void shouldNotPipelineTelemetryWhenTelemetryIsDisabledAndConnectionDoesNotSupportTelemetry(
+            TelemetryApi telemetryApi) {
+        var apiTelemetryWork = new ApiTelemetryWork(telemetryApi);
+        var boltConnection = Mockito.mock(BoltConnection.class);
 
-    private static void callApiTelemetryWorkExecuteWithSuccess(ApiTelemetryWork apiTelemetryWork) {
-        var protocol = Mockito.mock(BoltProtocol.class);
-        var connection = Mockito.mock(Connection.class);
-        Mockito.doReturn(CompletableFuture.completedFuture(null))
-                .when(protocol)
-                .telemetry(Mockito.any(), Mockito.any());
-        Mockito.doReturn(true).when(connection).isTelemetryEnabled();
+        var future = apiTelemetryWork.pipelineTelemetryIfEnabled(boltConnection).toCompletableFuture();
 
-        TestUtil.await(apiTelemetryWork.execute(connection, protocol));
+        assertTrue(future.isDone());
+        assertEquals(boltConnection, future.join());
+        then(boltConnection).shouldHaveNoInteractions();
     }
 
-    private static void callApiTelemetryWorkExecuteWithError(ApiTelemetryWork apiTelemetryWork) {
-        var protocol = Mockito.mock(BoltProtocol.class);
-        var connection = Mockito.mock(Connection.class);
-        Mockito.doReturn(CompletableFuture.failedFuture(new RuntimeException("WRONG")))
-                .when(protocol)
-                .telemetry(Mockito.any(), Mockito.any());
-        Mockito.doReturn(true).when(connection).isTelemetryEnabled();
+    @ParameterizedTest
+    @EnumSource(TelemetryApi.class)
+    void shouldNotPipelineTelemetryWhenTelemetryIsDisabledAndConnectionSupportsTelemetry(TelemetryApi telemetryApi) {
+        var apiTelemetryWork = new ApiTelemetryWork(telemetryApi);
+        var boltConnection = Mockito.mock(BoltConnection.class);
+        given(boltConnection.telemetrySupported()).willReturn(true);
 
-        try {
-            TestUtil.await(apiTelemetryWork.execute(connection, protocol));
-        } catch (Exception ex) {
-            // ignore since the error is expected.
-        }
+        var future = apiTelemetryWork.pipelineTelemetryIfEnabled(boltConnection).toCompletableFuture();
+
+        assertTrue(future.isDone());
+        assertEquals(boltConnection, future.join());
+        then(boltConnection).shouldHaveNoInteractions();
     }
 }

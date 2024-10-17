@@ -18,21 +18,23 @@ package org.neo4j.driver.internal;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
+import static org.mockito.BDDMockito.given;
 
-import io.netty.bootstrap.Bootstrap;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
+import javax.net.ssl.SSLContext;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.AuthTokenManager;
+import org.mockito.Mockito;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 
 class CustomSecurityPlanTest {
     @Test
@@ -40,7 +42,12 @@ class CustomSecurityPlanTest {
     void testCustomSecurityPlanUsed() {
         var driverFactory = new SecurityPlanCapturingDriverFactory();
 
-        var securityPlan = mock(SecurityPlan.class);
+        var securityPlan = Mockito.mock(SecurityPlan.class);
+        given(securityPlan.requiresEncryption()).willReturn(true);
+        given(securityPlan.requiresClientAuth()).willReturn(true);
+        var sslContext = Mockito.mock(SSLContext.class);
+        given(securityPlan.sslContext()).willReturn(CompletableFuture.completedStage(sslContext));
+        given(securityPlan.requiresHostnameVerification()).willReturn(true);
 
         driverFactory.newInstance(
                 URI.create("neo4j://somewhere:1234"),
@@ -52,40 +59,26 @@ class CustomSecurityPlanTest {
                 null);
 
         assertFalse(driverFactory.capturedSecurityPlans.isEmpty());
-        assertTrue(driverFactory.capturedSecurityPlans.stream().allMatch(capturePlan -> capturePlan == securityPlan));
+        assertTrue(driverFactory.capturedSecurityPlans.stream()
+                .allMatch(capturePlan -> capturePlan.requiresEncryption()
+                        && capturePlan.requiresClientAuth()
+                        && capturePlan.sslContext() == sslContext
+                        && capturePlan.requiresHostnameVerification()));
     }
 
     private static class SecurityPlanCapturingDriverFactory extends DriverFactory {
-        final List<SecurityPlan> capturedSecurityPlans = new ArrayList<>();
+        final List<org.neo4j.driver.internal.bolt.api.SecurityPlan> capturedSecurityPlans = new ArrayList<>();
 
         @Override
         protected InternalDriver createDriver(
-                SecurityPlan securityPlan,
+                BoltSecurityPlanManager securityPlanManager,
                 SessionFactory sessionFactory,
                 MetricsProvider metricsProvider,
+                Supplier<CompletionStage<Void>> shutdownSupplier,
                 Config config) {
-            capturedSecurityPlans.add(securityPlan);
-            return super.createDriver(securityPlan, sessionFactory, metricsProvider, config);
-        }
-
-        @Override
-        protected ConnectionPool createConnectionPool(
-                AuthTokenManager authTokenManager,
-                SecurityPlan securityPlan,
-                Bootstrap bootstrap,
-                MetricsProvider metricsProvider,
-                Config config,
-                boolean ownsEventLoopGroup,
-                RoutingContext routingContext) {
-            capturedSecurityPlans.add(securityPlan);
-            return super.createConnectionPool(
-                    authTokenManager,
-                    securityPlan,
-                    bootstrap,
-                    metricsProvider,
-                    config,
-                    ownsEventLoopGroup,
-                    routingContext);
+            capturedSecurityPlans.add(
+                    securityPlanManager.plan().toCompletableFuture().join());
+            return super.createDriver(securityPlanManager, sessionFactory, metricsProvider, shutdownSupplier, config);
         }
     }
 }

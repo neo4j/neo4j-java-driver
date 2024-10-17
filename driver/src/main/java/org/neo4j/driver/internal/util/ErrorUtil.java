@@ -31,8 +31,8 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.GqlStatusError;
-import org.neo4j.driver.internal.messaging.GqlError;
+import org.neo4j.driver.internal.bolt.api.GqlError;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 
 public final class ErrorUtil {
     private ErrorUtil() {}

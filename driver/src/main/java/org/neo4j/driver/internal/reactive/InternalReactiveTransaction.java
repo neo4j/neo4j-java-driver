@@ -18,12 +18,12 @@ package org.neo4j.driver.internal.reactive;
 
 import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow.Publisher;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveTransaction;
 import reactor.core.publisher.Mono;
@@ -35,13 +35,13 @@ public class InternalReactiveTransaction extends AbstractReactiveTransaction
     }
 
     @Override
-    @SuppressWarnings({"ThrowableNotThrown", "DuplicatedCode"})
+    @SuppressWarnings({"DuplicatedCode"})
     public Publisher<ReactiveResult> run(Query query) {
         CompletionStage<RxResultCursor> cursorStage;
         try {
             cursorStage = tx.runRx(query);
         } catch (Throwable t) {
-            cursorStage = Futures.failedFuture(t);
+            cursorStage = CompletableFuture.failedFuture(t);
         }
 
         return publisherToFlowPublisher(Mono.fromCompletionStage(cursorStage)

@@ -39,6 +39,7 @@ public class ConnectionReadTimeoutException extends ServiceUnavailableException 
      * @deprecated superseded by the {@link ConnectionReadTimeoutException#INSTANCE} value
      */
     @Deprecated
+    @SuppressWarnings("DeprecatedIsStillUsed")
     public ConnectionReadTimeoutException(String message) {
         super(message);
     }

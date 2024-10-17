@@ -34,7 +34,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.TransactionConfig.empty;
@@ -42,26 +41,29 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.testutil.TestUtil.await;
 import static org.neo4j.driver.testutil.TestUtil.connectionMock;
 import static org.neo4j.driver.testutil.TestUtil.newSession;
-import static org.neo4j.driver.testutil.TestUtil.setupFailingCommit;
-import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunAndPull;
-import static org.neo4j.driver.testutil.TestUtil.verifyBeginTx;
+import static org.neo4j.driver.testutil.TestUtil.setupConnectionAnswers;
+import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulAutocommitRunAndPull;
+import static org.neo4j.driver.testutil.TestUtil.verifyAutocommitRunAndPull;
 import static org.neo4j.driver.testutil.TestUtil.verifyCommitTx;
 import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
-import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.stubbing.Answer;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
@@ -73,32 +75,38 @@ import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
+import org.neo4j.driver.internal.bolt.api.DatabaseName;
+import org.neo4j.driver.internal.bolt.api.ResponseHandler;
+import org.neo4j.driver.internal.bolt.api.summary.BeginSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RollbackSummary;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.value.IntegerValue;
 
 class InternalAsyncSessionTest {
-    private static final String DATABASE = "neo4j";
-    private Connection connection;
-    private ConnectionProvider connectionProvider;
+    private BoltConnection connection;
+    private BoltConnectionProvider connectionProvider;
     private AsyncSession asyncSession;
     private NetworkSession session;
 
     @BeforeEach
     void setUp() {
-        connection = connectionMock(BoltProtocolV4.INSTANCE);
-        connectionProvider = mock(ConnectionProvider.class);
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenAnswer(invocation -> {
-            var context = (ConnectionContext) invocation.getArgument(0);
-            context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
-            return completedFuture(connection);
-        });
+        connection = connectionMock(new BoltProtocolVersion(4, 0));
+        given(connection.close()).willReturn(completedFuture(null));
+        connectionProvider = mock(BoltConnectionProvider.class);
+        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willAnswer((Answer<CompletionStage<BoltConnection>>) invocation -> {
+                    var database = (DatabaseName) invocation.getArguments()[1];
+                    @SuppressWarnings("unchecked")
+                    var databaseConsumer = (Consumer<DatabaseName>) invocation.getArguments()[8];
+                    databaseConsumer.accept(database);
+                    return completedFuture(connection);
+                });
         session = newSession(connectionProvider);
         asyncSession = new InternalAsyncSession(session);
     }
@@ -134,30 +142,54 @@ class InternalAsyncSessionTest {
     @ParameterizedTest
     @MethodSource("allSessionRunMethods")
     void shouldFlushOnRun(Function<AsyncSession, CompletionStage<ResultCursor>> runReturnOne) {
-        setupSuccessfulRunAndPull(connection);
+        setupSuccessfulAutocommitRunAndPull(connection);
 
         var cursor = await(runReturnOne.apply(asyncSession));
 
-        verifyRunAndPull(connection, await(cursor.consumeAsync()).query().text());
+        verifyAutocommitRunAndPull(
+                connection, await(cursor.consumeAsync()).query().text());
     }
 
     @ParameterizedTest
     @MethodSource("allBeginTxMethods")
     void shouldDelegateBeginTx(Function<AsyncSession, CompletionStage<AsyncTransaction>> beginTx) {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        setupConnectionAnswers(connection, List.of(handler -> {
+            handler.onBeginSummary(mock(BeginSummary.class));
+            handler.onComplete();
+        }));
+
         var tx = await(beginTx.apply(asyncSession));
 
-        verifyBeginTx(connection);
+        verify(connection).beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(connection).flush(any());
         assertNotNull(tx);
     }
 
     @ParameterizedTest
     @MethodSource("allRunTxMethods")
     void txRunShouldBeginAndCommitTx(Function<AsyncSession, CompletionStage<String>> runTx) {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.commit()).willReturn(completedFuture(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onCommitSummary(Optional::empty);
+                            handler.onComplete();
+                        }));
+
         var string = await(runTx.apply(asyncSession));
 
-        verifyBeginTx(connection);
+        verify(connection).beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
         verifyCommitTx(connection);
-        verify(connection).release();
+        verify(connection).close();
         assertThat(string, equalTo("a"));
     }
 
@@ -256,6 +288,20 @@ class InternalAsyncSessionTest {
 
     @SuppressWarnings("deprecation")
     private void testTxRollbackWhenThrows(AccessMode transactionMode) {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRollbackSummary(mock(RollbackSummary.class));
+                            handler.onComplete();
+                        }));
         final RuntimeException error = new IllegalStateException("Oh!");
         AsyncTransactionWork<CompletionStage<Void>> work = tx -> {
             throw error;
@@ -264,14 +310,40 @@ class InternalAsyncSessionTest {
         var e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, transactionMode, work));
         assertEquals(error, e);
 
-        verify(connectionProvider).acquireConnection(any(ConnectionContext.class));
-        verifyBeginTx(connection);
+        verify(connectionProvider).connect(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(connection).beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
         verifyRollbackTx(connection);
     }
 
     private void testTxIsRetriedUntilSuccessWhenFunctionThrows(AccessMode mode) {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
         var failures = 12;
+        var failureHandlerStream = IntStream.range(0, failures)
+                .mapToObj(ignored -> Stream.<Consumer<ResponseHandler>>of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRollbackSummary(mock(RollbackSummary.class));
+                            handler.onComplete();
+                        }))
+                .flatMap(Function.identity());
         var retries = failures + 1;
+        var successHandlers = Stream.<Consumer<ResponseHandler>>of(
+                handler -> {
+                    handler.onBeginSummary(mock(BeginSummary.class));
+                    handler.onComplete();
+                },
+                handler -> {
+                    handler.onCommitSummary(Optional::empty);
+                    handler.onComplete();
+                });
+        var allHandlers = Stream.concat(failureHandlerStream, successHandlers).toList();
+        setupConnectionAnswers(connection, allHandlers);
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);
@@ -282,16 +354,40 @@ class InternalAsyncSessionTest {
 
         assertEquals(42, answer);
         verifyInvocationCount(work, failures + 1);
-        verifyCommitTx(connection);
+        verify(connection).commit();
         verifyRollbackTx(connection, times(failures));
     }
 
     private void testTxIsRetriedUntilSuccessWhenCommitThrows(AccessMode mode) {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
         var failures = 13;
+        var failureHandlerStream = IntStream.range(0, failures)
+                .mapToObj(ignored -> Stream.<Consumer<ResponseHandler>>of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onError(new ServiceUnavailableException(""));
+                            handler.onComplete();
+                        }))
+                .flatMap(Function.identity());
         var retries = failures + 1;
+        var successHandlers = Stream.<Consumer<ResponseHandler>>of(
+                handler -> {
+                    handler.onBeginSummary(mock(BeginSummary.class));
+                    handler.onComplete();
+                },
+                handler -> {
+                    handler.onCommitSummary(Optional::empty);
+                    handler.onComplete();
+                });
+        var allHandlers = Stream.concat(failureHandlerStream, successHandlers).toList();
+        setupConnectionAnswers(connection, allHandlers);
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
-        setupFailingCommit(connection, failures);
         session = newSession(connectionProvider, retryLogic);
         asyncSession = new InternalAsyncSession(session);
 
@@ -304,8 +400,23 @@ class InternalAsyncSessionTest {
     }
 
     private void testTxIsRetriedUntilFailureWhenFunctionThrows(AccessMode mode) {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
         var failures = 14;
+        var failureHandlerStream = IntStream.range(0, failures)
+                .mapToObj(ignored -> Stream.<Consumer<ResponseHandler>>of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRollbackSummary(mock(RollbackSummary.class));
+                            handler.onComplete();
+                        }))
+                .flatMap(Function.identity());
         var retries = failures - 1;
+        setupConnectionAnswers(connection, failureHandlerStream.toList());
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);
@@ -318,16 +429,30 @@ class InternalAsyncSessionTest {
         assertThat(e, instanceOf(SessionExpiredException.class));
         assertEquals("Oh!", e.getMessage());
         verifyInvocationCount(work, failures);
-        verifyCommitTx(connection, never());
+        verify(connection, never()).commit();
         verifyRollbackTx(connection, times(failures));
     }
 
     private void testTxIsRetriedUntilFailureWhenCommitFails(AccessMode mode) {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
         var failures = 17;
+        var failureHandlerStream = IntStream.range(0, failures)
+                .mapToObj(ignored -> Stream.<Consumer<ResponseHandler>>of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onError(new ServiceUnavailableException(""));
+                            handler.onComplete();
+                        }))
+                .flatMap(Function.identity());
         var retries = failures - 1;
+        setupConnectionAnswers(connection, failureHandlerStream.toList());
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
-        setupFailingCommit(connection, failures);
         session = newSession(connectionProvider, retryLogic);
         asyncSession = new InternalAsyncSession(session);
 

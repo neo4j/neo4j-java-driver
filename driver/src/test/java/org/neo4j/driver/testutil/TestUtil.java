@@ -16,26 +16,25 @@
  */
 package org.neo4j.driver.testutil;
 
-import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.SessionConfig.forDatabase;
-import static org.neo4j.driver.internal.DatabaseNameUtil.database;
-import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
+import static org.neo4j.driver.internal.bolt.api.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.PlatformDependent;
@@ -52,7 +51,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -60,50 +58,35 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Predicate;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.NoOpBookmarkManager;
 import org.neo4j.driver.internal.async.NetworkSession;
-import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
-import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.request.BeginMessage;
-import org.neo4j.driver.internal.messaging.request.CommitMessage;
-import org.neo4j.driver.internal.messaging.request.PullMessage;
-import org.neo4j.driver.internal.messaging.request.RollbackMessage;
-import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
-import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
-import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
-import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
-import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
-import org.neo4j.driver.internal.messaging.v51.BoltProtocolV51;
-import org.neo4j.driver.internal.messaging.v52.BoltProtocolV52;
-import org.neo4j.driver.internal.messaging.v53.BoltProtocolV53;
-import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
-import org.neo4j.driver.internal.messaging.v55.BoltProtocolV55;
-import org.neo4j.driver.internal.messaging.v56.BoltProtocolV56;
-import org.neo4j.driver.internal.messaging.v57.BoltProtocolV57;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.ResponseHandler;
+import org.neo4j.driver.internal.bolt.api.summary.CommitSummary;
+import org.neo4j.driver.internal.bolt.api.summary.PullSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
+import org.neo4j.driver.internal.bolt.basicimpl.async.connection.EventLoopGroupFactory;
+import org.neo4j.driver.internal.bolt.basicimpl.messaging.BoltProtocol;
+import org.neo4j.driver.internal.bolt.basicimpl.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -113,7 +96,7 @@ public final class TestUtil {
     public static final BoltProtocolVersion DEFAULT_TEST_PROTOCOL_VERSION = BoltProtocolV4.VERSION;
     public static final BoltProtocol DEFAULT_TEST_PROTOCOL = BoltProtocol.forVersion(DEFAULT_TEST_PROTOCOL_VERSION);
 
-    private static final long DEFAULT_WAIT_TIME_MS = MINUTES.toMillis(2);
+    private static final long DEFAULT_WAIT_TIME_MS = MINUTES.toMillis(100);
     private static final String ALPHANUMERICS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789";
     public static final Duration TX_TIMEOUT_TEST_TIMEOUT = Duration.ofSeconds(10);
 
@@ -233,254 +216,219 @@ public final class TestUtil {
         }
     }
 
-    public static NetworkSession newSession(ConnectionProvider connectionProvider, Set<Bookmark> bookmarks) {
+    public static NetworkSession newSession(BoltConnectionProvider connectionProvider, Set<Bookmark> bookmarks) {
         return newSession(connectionProvider, WRITE, bookmarks);
     }
 
     private static NetworkSession newSession(
-            ConnectionProvider connectionProvider, AccessMode mode, Set<Bookmark> bookmarks) {
+            BoltConnectionProvider connectionProvider, AccessMode mode, Set<Bookmark> bookmarks) {
         return newSession(connectionProvider, mode, new FixedRetryLogic(0), bookmarks);
     }
 
-    public static NetworkSession newSession(ConnectionProvider connectionProvider, AccessMode mode) {
+    public static NetworkSession newSession(BoltConnectionProvider connectionProvider, AccessMode mode) {
         return newSession(connectionProvider, mode, Collections.emptySet());
     }
 
-    public static NetworkSession newSession(ConnectionProvider connectionProvider, RetryLogic logic) {
+    public static NetworkSession newSession(BoltConnectionProvider connectionProvider, RetryLogic logic) {
         return newSession(connectionProvider, WRITE, logic, Collections.emptySet());
     }
 
-    public static NetworkSession newSession(ConnectionProvider connectionProvider) {
+    public static NetworkSession newSession(BoltConnectionProvider connectionProvider) {
         return newSession(connectionProvider, WRITE, Collections.emptySet());
     }
 
     public static NetworkSession newSession(
-            ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic, Set<Bookmark> bookmarks) {
+            BoltConnectionProvider connectionProvider,
+            AccessMode mode,
+            RetryLogic retryLogic,
+            Set<Bookmark> bookmarks) {
         return newSession(connectionProvider, mode, retryLogic, bookmarks, true);
     }
 
     public static NetworkSession newSession(
-            ConnectionProvider connectionProvider,
+            BoltConnectionProvider connectionProvider,
             AccessMode mode,
             RetryLogic retryLogic,
             Set<Bookmark> bookmarks,
             boolean telemetryDisabled) {
         return new NetworkSession(
+                BoltSecurityPlanManager.insecure(),
                 connectionProvider,
                 retryLogic,
                 defaultDatabase(),
                 mode,
                 bookmarks,
                 null,
-                UNLIMITED_FETCH_SIZE,
+                -1,
                 DEV_NULL_LOGGING,
                 NoOpBookmarkManager.INSTANCE,
+                Config.defaultConfig().notificationConfig(),
+                Config.defaultConfig().notificationConfig(),
                 null,
-                null,
-                telemetryDisabled);
+                telemetryDisabled,
+                mock(AuthTokenManager.class));
     }
 
-    public static void verifyRunRx(Connection connection, String query) {
-        verify(connection).writeAndFlush(argThat(runWithMetaMessageWithQueryMatcher(query)), any());
+    public static void setupConnectionAnswers(
+            BoltConnection connection, List<Consumer<ResponseHandler>> handlerConsumers) {
+        given(connection.flush(any())).willAnswer(new Answer<CompletionStage<Void>>() {
+            private int index;
+
+            @Override
+            public CompletionStage<Void> answer(InvocationOnMock invocation) {
+                var handler = (ResponseHandler) invocation.getArguments()[0];
+                var consumer = handlerConsumers.get(index++);
+                consumer.accept(handler);
+                return CompletableFuture.completedFuture(null);
+            }
+        });
     }
 
-    public static void verifyRunAndPull(Connection connection, String query) {
-        verify(connection).write(argThat(runWithMetaMessageWithQueryMatcher(query)), any());
-        verify(connection).writeAndFlush(any(PullMessage.class), any());
+    public static void verifyAutocommitRunRx(BoltConnection connection, String query) {
+        then(connection)
+                .should()
+                .runInAutoCommitTransaction(any(), any(), any(), any(), eq(query), any(), any(), any(), any());
+        then(connection).should().flush(any());
     }
 
-    public static void verifyCommitTx(Connection connection, VerificationMode mode) {
-        verify(connection, mode).writeAndFlush(any(CommitMessage.class), any());
+    public static void verifyRunAndPull(BoltConnection connection, String query) {
+        then(connection).should().run(eq(query), any());
+        then(connection).should().pull(anyLong(), anyLong());
+        then(connection).should(atLeastOnce()).flush(any());
     }
 
-    public static void verifyCommitTx(Connection connection) {
+    public static void verifyAutocommitRunAndPull(BoltConnection connection, String query) {
+        then(connection)
+                .should()
+                .runInAutoCommitTransaction(any(), any(), any(), any(), eq(query), any(), any(), any(), any());
+        then(connection).should().pull(anyLong(), anyLong());
+        then(connection).should().flush(any());
+    }
+
+    public static void verifyCommitTx(BoltConnection connection, VerificationMode mode) {
+        verify(connection, mode).commit();
+        verify(connection, mode).close();
+    }
+
+    public static void verifyCommitTx(BoltConnection connection) {
         verifyCommitTx(connection, times(1));
     }
 
-    public static void verifyRollbackTx(Connection connection, VerificationMode mode) {
-        verify(connection, mode).writeAndFlush(any(RollbackMessage.class), any());
+    public static void verifyRollbackTx(BoltConnection connection, VerificationMode mode) {
+        verify(connection, mode).rollback();
     }
 
-    public static void verifyRollbackTx(Connection connection) {
+    public static void verifyRollbackTx(BoltConnection connection) {
         verifyRollbackTx(connection, times(1));
+        verify(connection, atLeastOnce()).close();
     }
 
-    public static void verifyBeginTx(Connection connectionMock) {
-        verifyBeginTx(connectionMock, 1);
+    public static void setupFailingRun(BoltConnection connection, Throwable error) {
+        given(connection.run(any(), any())).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        given(connection.pull(anyLong(), anyLong())).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+            var handler = (ResponseHandler) invocation.getArgument(0);
+            handler.onError(error);
+            handler.onComplete();
+            return CompletableFuture.completedStage(null);
+        });
     }
 
-    public static void verifyBeginTx(Connection connectionMock, int times) {
-        verify(connectionMock, times(times)).writeAndFlush(any(BeginMessage.class), any(BeginTxResponseHandler.class));
-    }
-
-    public static void setupFailingRun(Connection connection, Throwable error) {
-        doAnswer(invocation -> {
-                    ResponseHandler runHandler = invocation.getArgument(1);
-                    runHandler.onFailure(error);
-                    return null;
-                })
-                .when(connection)
-                .write(any(RunWithMetadataMessage.class), any());
-
-        doAnswer(invocation -> {
-                    ResponseHandler pullHandler = invocation.getArgument(1);
-                    pullHandler.onFailure(error);
-                    return null;
-                })
-                .when(connection)
-                .writeAndFlush(any(PullMessage.class), any());
-    }
-
-    public static void setupFailingBegin(Connection connection, Throwable error) {
-        // with bookmarks
-        doAnswer(invocation -> {
-                    ResponseHandler handler = invocation.getArgument(1);
-                    handler.onFailure(error);
-                    return null;
-                })
-                .when(connection)
-                .writeAndFlush(any(BeginMessage.class), any(BeginTxResponseHandler.class));
-    }
-
-    public static void setupFailingCommit(Connection connection) {
+    public static void setupFailingCommit(BoltConnection connection) {
         setupFailingCommit(connection, 1);
     }
 
-    public static void setupFailingCommit(Connection connection, int times) {
-        doAnswer(new Answer<Void>() {
-                    int invoked;
+    public static void setupFailingCommit(BoltConnection connection, int times) {
+        given(connection.commit()).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        given(connection.flush(any())).willAnswer(new Answer<CompletionStage<Void>>() {
+            int invoked;
 
-                    @Override
-                    public Void answer(InvocationOnMock invocation) {
-                        ResponseHandler handler = invocation.getArgument(1);
-                        if (invoked++ < times) {
-                            handler.onFailure(new ServiceUnavailableException(""));
-                        } else {
-                            handler.onSuccess(emptyMap());
-                        }
-                        return null;
-                    }
-                })
-                .when(connection)
-                .writeAndFlush(any(CommitMessage.class), any());
+            @Override
+            public CompletionStage<Void> answer(InvocationOnMock invocation) {
+                var handler = (ResponseHandler) invocation.getArgument(0);
+                if (invoked++ < times) {
+                    handler.onError(new ServiceUnavailableException(""));
+                } else {
+                    handler.onCommitSummary(mock(CommitSummary.class));
+                }
+                handler.onComplete();
+                return CompletableFuture.completedStage(null);
+            }
+        });
     }
 
-    public static void setupFailingRollback(Connection connection) {
+    public static void setupFailingRollback(BoltConnection connection) {
         setupFailingRollback(connection, 1);
     }
 
-    public static void setupFailingRollback(Connection connection, int times) {
-        doAnswer(new Answer<Void>() {
-                    int invoked;
+    public static void setupFailingRollback(BoltConnection connection, int times) {
+        given(connection.rollback()).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        given(connection.flush(any())).willAnswer(new Answer<CompletionStage<Void>>() {
+            int invoked;
 
-                    @Override
-                    public Void answer(InvocationOnMock invocation) {
-                        ResponseHandler handler = invocation.getArgument(1);
-                        if (invoked++ < times) {
-                            handler.onFailure(new ServiceUnavailableException(""));
-                        } else {
-                            handler.onSuccess(emptyMap());
-                        }
-                        return null;
-                    }
-                })
-                .when(connection)
-                .writeAndFlush(any(RollbackMessage.class), any());
+            @Override
+            public CompletionStage<Void> answer(InvocationOnMock invocation) {
+                var handler = (ResponseHandler) invocation.getArgument(0);
+                if (invoked++ < times) {
+                    handler.onError(new ServiceUnavailableException(""));
+                } else {
+                    handler.onCommitSummary(mock(CommitSummary.class));
+                }
+                handler.onComplete();
+                return CompletableFuture.completedStage(null);
+            }
+        });
     }
 
-    public static void setupSuccessfulRunAndPull(Connection connection) {
-        doAnswer(invocation -> {
-                    ResponseHandler runHandler = invocation.getArgument(1);
-                    runHandler.onSuccess(emptyMap());
-                    return null;
-                })
-                .when(connection)
-                .write(any(RunWithMetadataMessage.class), any());
-
-        doAnswer(invocation -> {
-                    ResponseHandler pullHandler = invocation.getArgument(1);
-                    pullHandler.onSuccess(emptyMap());
-                    return null;
-                })
-                .when(connection)
-                .writeAndFlush(any(PullMessage.class), any());
+    public static void setupSuccessfulRunAndPull(BoltConnection connection) {
+        given(connection.run(any(), any())).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        given(connection.pull(anyLong(), anyLong())).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+            var handler = (ResponseHandler) invocation.getArgument(0);
+            var runSummary = mock(RunSummary.class);
+            given(runSummary.keys()).willReturn(Collections.emptyList());
+            handler.onRunSummary(runSummary);
+            var pullSummary = mock(PullSummary.class);
+            given(pullSummary.metadata()).willReturn(Collections.emptyMap());
+            handler.onPullSummary(pullSummary);
+            handler.onComplete();
+            return CompletableFuture.completedStage(null);
+        });
     }
 
-    public static void setupSuccessfulRunRx(Connection connection) {
-        doAnswer(invocation -> {
-                    ResponseHandler runHandler = invocation.getArgument(1);
-                    runHandler.onSuccess(emptyMap());
-                    return null;
-                })
-                .when(connection)
-                .writeAndFlush(any(RunWithMetadataMessage.class), any());
+    public static void setupSuccessfulAutocommitRunAndPull(BoltConnection connection) {
+        given(connection.runInAutoCommitTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willAnswer((Answer<CompletionStage<BoltConnection>>)
+                        invocation -> CompletableFuture.completedStage(connection));
+        given(connection.pull(anyLong(), anyLong())).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+            var handler = (ResponseHandler) invocation.getArgument(0);
+            var runSummary = mock(RunSummary.class);
+            given(runSummary.keys()).willReturn(Collections.emptyList());
+            handler.onRunSummary(runSummary);
+            var pullSummary = mock(PullSummary.class);
+            given(pullSummary.metadata()).willReturn(Collections.emptyMap());
+            handler.onPullSummary(pullSummary);
+            handler.onComplete();
+            return CompletableFuture.completedStage(null);
+        });
     }
 
-    public static void setupSuccessfulRunAndPull(Connection connection, String query) {
-        doAnswer(invocation -> {
-                    ResponseHandler runHandler = invocation.getArgument(1);
-                    runHandler.onSuccess(emptyMap());
-                    return null;
-                })
-                .when(connection)
-                .write(argThat(runWithMetaMessageWithQueryMatcher(query)), any());
-
-        doAnswer(invocation -> {
-                    ResponseHandler pullHandler = invocation.getArgument(1);
-                    pullHandler.onSuccess(emptyMap());
-                    return null;
-                })
-                .when(connection)
-                .writeAndFlush(any(PullMessage.class), any());
+    public static BoltConnection connectionMock() {
+        return connectionMock(new BoltProtocolVersion(4, 2));
     }
 
-    public static Connection connectionMock() {
-        return connectionMock(BoltProtocolV42.INSTANCE);
-    }
-
-    public static Connection connectionMock(BoltProtocol protocol) {
-        return connectionMock(WRITE, protocol);
-    }
-
-    public static Connection connectionMock(AccessMode mode, BoltProtocol protocol) {
-        return connectionMock(null, mode, protocol);
-    }
-
-    public static Connection connectionMock(String databaseName, BoltProtocol protocol) {
-        return connectionMock(databaseName, WRITE, protocol);
-    }
-
-    public static Connection connectionMock(String databaseName, AccessMode mode, BoltProtocol protocol) {
-        var connection = mock(Connection.class);
+    public static BoltConnection connectionMock(BoltProtocolVersion protocolVersion) {
+        var connection = mock(BoltConnection.class);
         when(connection.serverAddress()).thenReturn(BoltServerAddress.LOCAL_DEFAULT);
-        when(connection.protocol()).thenReturn(protocol);
-        when(connection.mode()).thenReturn(mode);
-        when(connection.databaseName()).thenReturn(database(databaseName));
-        var version = protocol.version();
-        if (List.of(
-                        BoltProtocolV3.VERSION,
-                        BoltProtocolV4.VERSION,
-                        BoltProtocolV41.VERSION,
-                        BoltProtocolV42.VERSION,
-                        BoltProtocolV43.VERSION,
-                        BoltProtocolV44.VERSION,
-                        BoltProtocolV5.VERSION,
-                        BoltProtocolV51.VERSION,
-                        BoltProtocolV52.VERSION,
-                        BoltProtocolV53.VERSION,
-                        BoltProtocolV54.VERSION,
-                        BoltProtocolV55.VERSION,
-                        BoltProtocolV56.VERSION,
-                        BoltProtocolV57.VERSION)
-                .contains(version)) {
-            setupSuccessResponse(connection, CommitMessage.class);
-            setupSuccessResponse(connection, RollbackMessage.class);
-            setupSuccessResponse(connection, BeginMessage.class);
-            when(connection.release()).thenReturn(completedWithNull());
-            when(connection.reset(any())).thenReturn(completedWithNull());
-        } else {
-            throw new IllegalArgumentException("Unsupported bolt protocol version: " + version);
-        }
+        when(connection.protocolVersion()).thenReturn(protocolVersion);
         return connection;
     }
 
@@ -511,19 +459,6 @@ public final class TestUtil {
                 .collect(Collectors.joining());
     }
 
-    public static ArgumentMatcher<Message> runWithMetaMessageWithQueryMatcher(String query) {
-        return message -> message instanceof RunWithMetadataMessage
-                && Objects.equals(query, ((RunWithMetadataMessage) message).query());
-    }
-
-    public static ArgumentMatcher<Message> beginMessage() {
-        return beginMessageWithPredicate(ignored -> true);
-    }
-
-    public static ArgumentMatcher<Message> beginMessageWithPredicate(Predicate<BeginMessage> predicate) {
-        return message -> message instanceof BeginMessage && predicate.test((BeginMessage) message);
-    }
-
     public static void assertNoCircularReferences(Throwable ex) {
         assertNoCircularReferences(ex, new ArrayList<>());
     }
@@ -542,16 +477,6 @@ public final class TestUtil {
             }
             assertNoCircularReferences(suppressed, list);
         }
-    }
-
-    private static void setupSuccessResponse(Connection connection, Class<? extends Message> messageType) {
-        doAnswer(invocation -> {
-                    ResponseHandler handler = invocation.getArgument(1);
-                    handler.onSuccess(emptyMap());
-                    return null;
-                })
-                .when(connection)
-                .writeAndFlush(any(messageType), any());
     }
 
     private static void cleanDb(Session session) {

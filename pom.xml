@@ -36,30 +36,31 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.114.Final</netty-bom.version>
+    <netty-bom.version>4.1.112.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2023.0.10</reactor-bom.version>
+    <reactor-bom.version>2023.0.8</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
-    <hamcrest.version>3.0</hamcrest.version>
-    <mockito-core.version>5.14.1</mockito-core.version>
-    <junit.version>5.11.2</junit.version>
+    <hamcrest.version>2.2</hamcrest.version>
+    <mockito-core.version>5.12.0</mockito-core.version>
+    <junit.version>5.10.3</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.10.2</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <!-- supply a newer version than the one supplied by the jarchivelib 1.2.0 -->
-    <commons-compress.version>1.27.1</commons-compress.version>
+    <commons-compress.version>1.26.2</commons-compress.version>
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
     <commons-codec.version>1.17.1</commons-codec.version>
     <bouncycastle-jdk18on.version>1.78.1</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
-    <jackson.version>2.18.0</jackson.version>
+    <jackson.version>2.17.2</jackson.version>
     <lombok.version>1.18.34</lombok.version>
-    <svm.version>24.1.0</svm.version>
-    <micrometer.version>1.13.5</micrometer.version>
+    <svm.version>24.0.2</svm.version>
+    <micrometer.version>1.13.2</micrometer.version>
     <blockhound.version>1.0.9.RELEASE</blockhound.version>
-    <testcontainers.version>1.20.2</testcontainers.version>
+    <testcontainers.version>1.20.0</testcontainers.version>
+    <archunit-junit5.version>1.3.0</archunit-junit5.version>
     <build-resources.version>5.18.1</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
@@ -218,6 +219,12 @@
         <version>${testcontainers.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5</artifactId>
+        <version>${archunit-junit5.version}</version>
+        <scope>test</scope>
       </dependency>
 
       <!-- Testkit Backend Dependencies -->

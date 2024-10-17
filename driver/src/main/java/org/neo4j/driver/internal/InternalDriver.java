@@ -22,6 +22,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.BaseSession;
@@ -33,6 +34,7 @@ import org.neo4j.driver.ExecutableQuery;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
+import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Session;
@@ -45,7 +47,7 @@ import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.reactive.InternalRxSession;
-import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxSession;
@@ -59,7 +61,7 @@ public class InternalDriver implements Driver {
             "Neo.ClientError.Security.Unauthorized");
     private final BookmarkManager queryBookmarkManager =
             BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build());
-    private final SecurityPlan securityPlan;
+    private final BoltSecurityPlanManager securityPlanManager;
     private final SessionFactory sessionFactory;
     private final Logger log;
 
@@ -67,18 +69,24 @@ public class InternalDriver implements Driver {
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final MetricsProvider metricsProvider;
+    private final NotificationConfig notificationConfig;
+    private final Supplier<CompletionStage<Void>> shutdownSupplier;
 
     InternalDriver(
-            SecurityPlan securityPlan,
+            BoltSecurityPlanManager securityPlanManager,
             SessionFactory sessionFactory,
             MetricsProvider metricsProvider,
             boolean telemetryDisabled,
+            NotificationConfig notificationConfig,
+            Supplier<CompletionStage<Void>> shutdownSupplier,
             Logging logging) {
-        this.securityPlan = securityPlan;
+        this.securityPlanManager = securityPlanManager;
         this.sessionFactory = sessionFactory;
         this.metricsProvider = metricsProvider;
         this.log = logging.getLog(getClass());
         this.telemetryDisabled = telemetryDisabled;
+        this.notificationConfig = notificationConfig;
+        this.shutdownSupplier = shutdownSupplier;
     }
 
     @Override
@@ -99,17 +107,17 @@ public class InternalDriver implements Driver {
         requireNonNull(sessionClass, "sessionConfig must not be null");
         T session;
         if (Session.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalSession(newSession(sessionConfig, sessionAuthToken));
+            session = (T) new InternalSession(newSession(sessionConfig, notificationConfig, sessionAuthToken));
         } else if (AsyncSession.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalAsyncSession(newSession(sessionConfig, sessionAuthToken));
+            session = (T) new InternalAsyncSession(newSession(sessionConfig, notificationConfig, sessionAuthToken));
         } else if (org.neo4j.driver.reactive.ReactiveSession.class.isAssignableFrom(sessionClass)) {
             session = (T) new org.neo4j.driver.internal.reactive.InternalReactiveSession(
-                    newSession(sessionConfig, sessionAuthToken));
+                    newSession(sessionConfig, notificationConfig, sessionAuthToken));
         } else if (org.neo4j.driver.reactivestreams.ReactiveSession.class.isAssignableFrom(sessionClass)) {
             session = (T) new org.neo4j.driver.internal.reactivestreams.InternalReactiveSession(
-                    newSession(sessionConfig, sessionAuthToken));
+                    newSession(sessionConfig, notificationConfig, sessionAuthToken));
         } else if (RxSession.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalRxSession(newSession(sessionConfig, sessionAuthToken));
+            session = (T) new InternalRxSession(newSession(sessionConfig, notificationConfig, sessionAuthToken));
         } else {
             throw new IllegalArgumentException(
                     String.format("Unsupported session type '%s'", sessionClass.getCanonicalName()));
@@ -130,7 +138,7 @@ public class InternalDriver implements Driver {
     @Override
     public boolean isEncrypted() {
         assertOpen();
-        return securityPlan.requiresEncryption();
+        return securityPlanManager.requiresEncryption();
     }
 
     @Override
@@ -142,7 +150,7 @@ public class InternalDriver implements Driver {
     public CompletionStage<Void> closeAsync() {
         if (closed.compareAndSet(false, true)) {
             log.info("Closing driver instance %s", hashCode());
-            return sessionFactory.close();
+            return sessionFactory.close().thenCompose(ignored -> shutdownSupplier.get());
         }
         return completedWithNull();
     }
@@ -215,9 +223,10 @@ public class InternalDriver implements Driver {
         return new IllegalStateException("This driver instance has already been closed");
     }
 
-    public NetworkSession newSession(SessionConfig config, AuthToken overrideAuthToken) {
+    public NetworkSession newSession(
+            SessionConfig config, NotificationConfig notificationConfig, AuthToken overrideAuthToken) {
         assertOpen();
-        var session = sessionFactory.newInstance(config, overrideAuthToken, telemetryDisabled);
+        var session = sessionFactory.newInstance(config, notificationConfig, overrideAuthToken, telemetryDisabled);
         if (closed.get()) {
             // session does not immediately acquire connection, it is fine to just throw
             throw driverCloseException();

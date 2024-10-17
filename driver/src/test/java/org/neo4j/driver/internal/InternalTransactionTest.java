@@ -18,13 +18,12 @@ package org.neo4j.driver.internal;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.testutil.TestUtil.connectionMock;
 import static org.neo4j.driver.testutil.TestUtil.newSession;
@@ -36,6 +35,9 @@ import static org.neo4j.driver.testutil.TestUtil.verifyCommitTx;
 import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
 import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
 
+import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -43,32 +45,42 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.stubbing.Answer;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.async.ConnectionContext;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
+import org.neo4j.driver.internal.bolt.api.ResponseHandler;
+import org.neo4j.driver.internal.bolt.api.summary.BeginSummary;
+import org.neo4j.driver.internal.bolt.api.summary.CommitSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RollbackSummary;
 import org.neo4j.driver.internal.value.IntegerValue;
 
 class InternalTransactionTest {
-    private static final String DATABASE = "neo4j";
-    private Connection connection;
+    private BoltConnection connection;
     private Transaction tx;
 
     @BeforeEach
     @SuppressWarnings("resource")
     void setUp() {
-        connection = connectionMock(BoltProtocolV4.INSTANCE);
-        var connectionProvider = mock(ConnectionProvider.class);
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenAnswer(invocation -> {
-            var context = (ConnectionContext) invocation.getArgument(0);
-            context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
-            return completedFuture(connection);
+        connection = connectionMock(new BoltProtocolVersion(4, 0));
+        var connectionProvider = mock(BoltConnectionProvider.class);
+        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.completedFuture(connection));
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.completedStage(connection));
+        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+            var handler = (ResponseHandler) invocation.getArgument(0);
+            if (handler != null) {
+                handler.onBeginSummary(mock(BeginSummary.class));
+                handler.onComplete();
+            }
+            return CompletableFuture.completedFuture(null);
         });
-        var session = new InternalSession(newSession(connectionProvider));
+        var session = new InternalSession(newSession(connectionProvider, Collections.emptySet()));
         tx = session.beginTransaction();
     }
 
@@ -94,6 +106,15 @@ class InternalTransactionTest {
 
     @Test
     void shouldCommit() {
+        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+            var handler = (ResponseHandler) invocation.getArgument(0);
+            handler.onCommitSummary(mock(CommitSummary.class));
+            handler.onComplete();
+            return CompletableFuture.completedStage(null);
+        });
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
+
         tx.commit();
         tx.close();
 
@@ -103,6 +124,15 @@ class InternalTransactionTest {
 
     @Test
     void shouldRollbackByDefault() {
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+            var handler = (ResponseHandler) invocation.getArgument(0);
+            handler.onRollbackSummary(mock(RollbackSummary.class));
+            handler.onComplete();
+            return CompletableFuture.completedStage(null);
+        });
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
+
         tx.close();
 
         verifyRollbackTx(connection);
@@ -111,6 +141,15 @@ class InternalTransactionTest {
 
     @Test
     void shouldRollback() {
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+            var handler = (ResponseHandler) invocation.getArgument(0);
+            handler.onRollbackSummary(mock(RollbackSummary.class));
+            handler.onComplete();
+            return CompletableFuture.completedStage(null);
+        });
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
+
         tx.rollback();
         tx.close();
 
@@ -120,39 +159,43 @@ class InternalTransactionTest {
 
     @Test
     void shouldRollbackWhenFailedRun() {
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         setupFailingRun(connection, new RuntimeException("Bang!"));
+
         assertThrows(RuntimeException.class, () -> tx.run("RETURN 1"));
 
         tx.close();
 
-        verify(connection).release();
+        verify(connection).close();
         assertFalse(tx.isOpen());
     }
 
     @Test
-    void shouldReleaseConnectionWhenFailedToCommit() {
+    void shouldCloseConnectionWhenFailedToCommit() {
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         setupFailingCommit(connection);
+
         assertThrows(Exception.class, () -> tx.commit());
 
-        verify(connection).release();
+        verify(connection).close();
         assertFalse(tx.isOpen());
     }
 
     @Test
-    void shouldReleaseConnectionWhenFailedToRollback() {
-        shouldReleaseConnectionWhenFailedToAction(Transaction::rollback);
+    void shouldCloseConnectionWhenFailedToRollback() {
+        shouldCloseConnectionWhenFailedToAction(Transaction::rollback);
     }
 
     @Test
-    void shouldReleaseConnectionWhenFailedToClose() {
-        shouldReleaseConnectionWhenFailedToAction(Transaction::close);
+    void shouldCloseConnectionWhenFailedToClose() {
+        shouldCloseConnectionWhenFailedToAction(Transaction::close);
     }
 
-    private void shouldReleaseConnectionWhenFailedToAction(Consumer<Transaction> txAction) {
+    private void shouldCloseConnectionWhenFailedToAction(Consumer<Transaction> txAction) {
         setupFailingRollback(connection);
         assertThrows(Exception.class, () -> txAction.accept(tx));
 
-        verify(connection).release();
+        verify(connection).close();
         assertFalse(tx.isOpen());
     }
 }
