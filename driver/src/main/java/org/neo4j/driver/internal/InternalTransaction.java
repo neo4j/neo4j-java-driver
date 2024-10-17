@@ -55,7 +55,7 @@ public class InternalTransaction extends AbstractQueryRunner implements Transact
         var cursor = Futures.blockingGet(
                 tx.runAsync(query),
                 () -> terminateConnectionOnThreadInterrupt("Thread interrupted while running query in transaction"));
-        return new InternalResult(tx.connection(), cursor);
+        return new InternalResult(null, cursor);
     }
 
     @Override
@@ -80,6 +80,6 @@ public class InternalTransaction extends AbstractQueryRunner implements Transact
     }
 
     private void terminateConnectionOnThreadInterrupt(String reason) {
-        tx.connection().terminateAndRelease(reason);
+        tx.connection().forceClose(reason);
     }
 }

@@ -17,7 +17,7 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
-import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 
 /**
  * An error has happened while getting routing table with a remote server.

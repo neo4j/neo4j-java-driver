@@ -16,66 +16,15 @@
  */
 package org.neo4j.driver.internal.util;
 
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.DirectConnectionProvider;
-import org.neo4j.driver.internal.InternalDriver;
-import org.neo4j.driver.internal.SessionFactoryImpl;
-import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.summary.ResultSummary;
 
 public final class Matchers {
     private Matchers() {}
-
-    public static Matcher<Driver> directDriver() {
-        return new TypeSafeMatcher<>() {
-            @Override
-            protected boolean matchesSafely(Driver driver) {
-                return hasConnectionProvider(driver, DirectConnectionProvider.class);
-            }
-
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("direct 'bolt://' driver ");
-            }
-        };
-    }
-
-    public static Matcher<Driver> directDriverWithAddress(final BoltServerAddress address) {
-        return new TypeSafeMatcher<>() {
-            @Override
-            protected boolean matchesSafely(Driver driver) {
-                var provider = extractConnectionProvider(driver, DirectConnectionProvider.class);
-                return provider != null && Objects.equals(provider.getAddress(), address);
-            }
-
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("direct driver with address bolt://").appendValue(address);
-            }
-        };
-    }
-
-    public static Matcher<Driver> clusterDriver() {
-        return new TypeSafeMatcher<>() {
-            @Override
-            protected boolean matchesSafely(Driver driver) {
-                return hasConnectionProvider(driver, LoadBalancer.class);
-            }
-
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("cluster 'neo4j://' driver ");
-            }
-        };
-    }
 
     public static Matcher<ResultSummary> containsResultAvailableAfterAndResultConsumedAfter() {
         return new TypeSafeMatcher<>() {
@@ -163,22 +112,5 @@ public final class Matchers {
                 description.appendText("IllegalStateException about blocking operation in event loop thread ");
             }
         };
-    }
-
-    private static boolean hasConnectionProvider(Driver driver, Class<? extends ConnectionProvider> providerClass) {
-        return extractConnectionProvider(driver, providerClass) != null;
-    }
-
-    private static <T extends ConnectionProvider> T extractConnectionProvider(Driver driver, Class<T> providerClass) {
-        if (driver instanceof InternalDriver) {
-            var sessionFactory = ((InternalDriver) driver).getSessionFactory();
-            if (sessionFactory instanceof SessionFactoryImpl) {
-                var provider = ((SessionFactoryImpl) sessionFactory).getConnectionProvider();
-                if (providerClass.isInstance(provider)) {
-                    return providerClass.cast(provider);
-                }
-            }
-        }
-        return null;
     }
 }

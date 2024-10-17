@@ -18,6 +18,7 @@ package org.neo4j.driver.internal.reactive;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.function.Predicate.isEqual;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -25,26 +26,32 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.values;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.stubbing.Answer;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.ResponseHandler;
+import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
-import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.summary.ResultSummary;
@@ -128,12 +135,25 @@ class InternalRxResultTest {
     @Test
     void shouldObtainRecordsAndSummary() {
         // Given
+        var boltConnection = mock(BoltConnection.class);
+        given(boltConnection.pull(anyLong(), anyLong())).willReturn(CompletableFuture.completedFuture(boltConnection));
+        given(boltConnection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
+        given(boltConnection.protocolVersion()).willReturn(new BoltProtocolVersion(5, 1));
+        given(boltConnection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+            var handler = (ResponseHandler) invocation.getArguments()[0];
+            handler.onRecord(values(1, 1, 1));
+            handler.onRecord(values(2, 2, 2));
+            handler.onRecord(values(3, 3, 3));
+            handler.onPullSummary(mock());
+            return CompletableFuture.completedFuture(null);
+        });
+        var runSummary = mock(RunSummary.class);
+        given(runSummary.keys()).willReturn(List.of("key1", "key2", "key3"));
         Record record1 = new InternalRecord(asList("key1", "key2", "key3"), values(1, 1, 1));
         Record record2 = new InternalRecord(asList("key1", "key2", "key3"), values(2, 2, 2));
         Record record3 = new InternalRecord(asList("key1", "key2", "key3"), values(3, 3, 3));
 
-        PullResponseHandler pullHandler = new ListBasedPullHandler(Arrays.asList(record1, record2, record3));
-        RxResult rxResult = newRxResult(pullHandler);
+        RxResult rxResult = newRxResult(boltConnection, runSummary);
 
         // When
         StepVerifier.create(Flux.from(rxResult.records()))
@@ -147,12 +167,23 @@ class InternalRxResultTest {
     @Test
     void shouldCancelStreamingButObtainSummary() {
         // Given
+        var boltConnection = mock(BoltConnection.class);
+        given(boltConnection.pull(anyLong(), anyLong())).willReturn(CompletableFuture.completedFuture(boltConnection));
+        given(boltConnection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
+        given(boltConnection.protocolVersion()).willReturn(new BoltProtocolVersion(5, 1));
+        given(boltConnection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+            var handler = (ResponseHandler) invocation.getArguments()[0];
+            handler.onRecord(values(1, 1, 1));
+            handler.onRecord(values(2, 2, 2));
+            handler.onRecord(values(3, 3, 3));
+            handler.onPullSummary(mock());
+            return CompletableFuture.completedFuture(null);
+        });
+        var runSummary = mock(RunSummary.class);
+        given(runSummary.keys()).willReturn(List.of("key1", "key2", "key3"));
         Record record1 = new InternalRecord(asList("key1", "key2", "key3"), values(1, 1, 1));
-        Record record2 = new InternalRecord(asList("key1", "key2", "key3"), values(2, 2, 2));
-        Record record3 = new InternalRecord(asList("key1", "key2", "key3"), values(3, 3, 3));
 
-        PullResponseHandler pullHandler = new ListBasedPullHandler(Arrays.asList(record1, record2, record3));
-        RxResult rxResult = newRxResult(pullHandler);
+        RxResult rxResult = newRxResult(boltConnection, runSummary);
 
         // When
         StepVerifier.create(Flux.from(rxResult.records()).limitRate(1).take(1))
@@ -179,8 +210,17 @@ class InternalRxResultTest {
     @Test
     void shouldErrorIfFailedToStream() {
         // Given
+        var boltConnection = mock(BoltConnection.class);
+        given(boltConnection.pull(anyLong(), anyLong())).willReturn(CompletableFuture.completedFuture(boltConnection));
+        given(boltConnection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
+        given(boltConnection.protocolVersion()).willReturn(new BoltProtocolVersion(5, 1));
         Throwable error = new RuntimeException("Hi");
-        RxResult rxResult = newRxResult(new ListBasedPullHandler(error));
+        given(boltConnection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+            var handler = (ResponseHandler) invocation.getArguments()[0];
+            handler.onError(error);
+            return CompletableFuture.completedFuture(null);
+        });
+        RxResult rxResult = newRxResult(boltConnection);
 
         // When & Then
         StepVerifier.create(Flux.from(rxResult.records()))
@@ -207,9 +247,21 @@ class InternalRxResultTest {
         then(cursor).should().isDone();
     }
 
-    private InternalRxResult newRxResult(PullResponseHandler pullHandler) {
-        var runHandler = mock(RunResponseHandler.class);
-        RxResultCursor cursor = new RxResultCursorImpl(runHandler, pullHandler);
+    private InternalRxResult newRxResult(BoltConnection boltConnection) {
+        return newRxResult(boltConnection, mock());
+    }
+
+    private InternalRxResult newRxResult(BoltConnection boltConnection, RunSummary runSummary) {
+        RxResultCursor cursor = new RxResultCursorImpl(
+                boltConnection,
+                mock(),
+                runSummary,
+                null,
+                () -> null,
+                databaseBookmark -> {},
+                throwable -> {},
+                false,
+                () -> null);
         return newRxResult(cursor);
     }
 

@@ -18,7 +18,6 @@ package org.neo4j.driver.internal.async;
 
 import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -35,10 +34,10 @@ import org.neo4j.driver.async.AsyncTransactionCallback;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 
 public class InternalAsyncSession extends AsyncAbstractQueryRunner implements AsyncSession {
@@ -195,7 +194,7 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
             return result == null ? completedWithNull() : result;
         } catch (Throwable workError) {
             // work threw an exception, wrap it in a future and proceed
-            return failedFuture(workError);
+            return CompletableFuture.failedFuture(workError);
         }
     }
 

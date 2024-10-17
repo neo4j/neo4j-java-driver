@@ -45,7 +45,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.testutil.CertificateUtil.CertificateKeyPair;
 import org.testcontainers.DockerClientFactory;

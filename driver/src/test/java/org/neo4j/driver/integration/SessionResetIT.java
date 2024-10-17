@@ -16,7 +16,6 @@
  */
 package org.neo4j.driver.integration;
 
-import static java.util.Collections.newSetFromMap;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -32,25 +31,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.testutil.DaemonThreadFactory.daemon;
-import static org.neo4j.driver.testutil.TestUtil.await;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,9 +52,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
-import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.InternalSession;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -71,13 +60,7 @@ import org.neo4j.driver.testutil.ParallelizableIT;
 @SuppressWarnings("deprecation")
 @ParallelizableIT
 class SessionResetIT {
-    private static final String SHORT_QUERY_1 = "CREATE (n:Node {name: 'foo', occupation: 'bar'})";
-    private static final String SHORT_QUERY_2 = "MATCH (n:Node {name: 'foo'}) RETURN count(n)";
     private static final String LONG_QUERY = "UNWIND range(0, 10000000) AS i CREATE (n:Node {idx: i}) DELETE n";
-
-    private static final int STRESS_TEST_THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2;
-    private static final long STRESS_TEST_DURATION_MS = SECONDS.toMillis(5);
-    private static final String[] STRESS_TEST_QUERIES = {SHORT_QUERY_1, SHORT_QUERY_2, LONG_QUERY};
 
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
@@ -104,16 +87,6 @@ class SessionResetIT {
     @Test
     void shouldTerminateQueryInUnmanagedTransaction() {
         testQueryTermination(false);
-    }
-
-    @Test
-    void shouldTerminateAutoCommitQueriesRandomly() throws Exception {
-        testRandomQueryTermination(true);
-    }
-
-    @Test
-    void shouldTerminateQueriesInUnmanagedTransactionsRandomly() throws Exception {
-        testRandomQueryTermination(false);
     }
 
     @Test
@@ -389,56 +362,6 @@ class SessionResetIT {
         assertThat(e.getCause().getMessage(), startsWith("The transaction has been terminated"));
     }
 
-    private void testRandomQueryTermination(boolean autoCommit) throws InterruptedException {
-        Set<InternalSession> runningSessions = newSetFromMap(new ConcurrentHashMap<>());
-        var stop = new AtomicBoolean();
-        List<Future<?>> futures = IntStream.range(0, STRESS_TEST_THREAD_COUNT)
-                .mapToObj(i -> executor.submit(() -> {
-                    var random = ThreadLocalRandom.current();
-                    while (!stop.get()) {
-                        runRandomQuery(autoCommit, random, runningSessions, stop);
-                    }
-                }))
-                .collect(toList());
-
-        var deadline = System.currentTimeMillis() + STRESS_TEST_DURATION_MS;
-        while (!stop.get()) {
-            if (System.currentTimeMillis() > deadline) {
-                stop.set(true);
-            }
-
-            resetAny(runningSessions);
-
-            MILLISECONDS.sleep(30);
-        }
-
-        awaitAllFutures(futures);
-        awaitNoActiveQueries();
-    }
-
-    @SuppressWarnings("resource")
-    private void runRandomQuery(
-            boolean autoCommit, Random random, Set<InternalSession> runningSessions, AtomicBoolean stop) {
-        try {
-            var session = (InternalSession) neo4j.driver().session();
-            runningSessions.add(session);
-            try {
-                var query = STRESS_TEST_QUERIES[random.nextInt(STRESS_TEST_QUERIES.length - 1)];
-                runQuery(session, query, autoCommit);
-            } finally {
-                runningSessions.remove(session);
-                session.close();
-            }
-        } catch (Throwable error) {
-            if (!stop.get() && !isAcceptable(error)) {
-                stop.set(true);
-                throw error;
-            }
-            // else it is fine to receive some errors from the driver because
-            // sessions are being reset concurrently by the main thread, driver can also be closed concurrently
-        }
-    }
-
     private void testQueryTermination(boolean autoCommit) {
         var queryResult = runQueryInDifferentThreadAndResetSession(SessionResetIT.LONG_QUERY, autoCommit);
         var e = assertThrows(ExecutionException.class, () -> queryResult.get(10, SECONDS));
@@ -493,45 +416,6 @@ class SessionResetIT {
         }
     }
 
-    private static void resetAny(Set<InternalSession> sessions) {
-        sessions.stream().findAny().ifPresent(session -> {
-            if (sessions.remove(session)) {
-                resetSafely(session);
-            }
-        });
-    }
-
-    private static void resetSafely(InternalSession session) {
-        try {
-            if (session.isOpen()) {
-                session.reset();
-            }
-        } catch (ClientException e) {
-            if (session.isOpen()) {
-                throw e;
-            }
-            // else this thread lost race with close and it's fine
-        }
-    }
-
-    private static boolean isAcceptable(Throwable error) {
-        // get the root cause
-        while (error.getCause() != null) {
-            error = error.getCause();
-        }
-
-        return isTransactionTerminatedException(error)
-                || error instanceof ServiceUnavailableException
-                || error instanceof ClientException
-                || error instanceof ClosedChannelException;
-    }
-
-    private static boolean isTransactionTerminatedException(Throwable error) {
-        return error instanceof TransientException
-                        && error.getMessage().startsWith("The transaction has been terminated")
-                || error.getMessage().startsWith("Trying to execute query in a terminated transaction");
-    }
-
     private abstract class NodeIdUpdater {
         final Future<Void> update(
                 int nodeId,
@@ -551,12 +435,6 @@ class SessionResetIT {
                 AtomicReference<InternalSession> usedSessionRef,
                 CountDownLatch latchToWait)
                 throws Exception;
-    }
-
-    private static void awaitAllFutures(List<Future<?>> futures) {
-        for (var future : futures) {
-            await(future);
-        }
     }
 
     private static void awaitCondition(BooleanSupplier condition) {

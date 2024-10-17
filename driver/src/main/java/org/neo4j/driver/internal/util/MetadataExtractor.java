@@ -22,13 +22,11 @@ import static java.util.stream.Collectors.teeing;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.neo4j.driver.internal.summary.InternalDatabaseInfo.DEFAULT_DATABASE_INFO;
-import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 import static org.neo4j.driver.internal.value.NullValue.NULL;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,18 +36,14 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.NotificationClassification;
 import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ProtocolException;
-import org.neo4j.driver.exceptions.UntrustedServerException;
-import org.neo4j.driver.internal.DatabaseBookmark;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
 import org.neo4j.driver.internal.summary.InternalDatabaseInfo;
 import org.neo4j.driver.internal.summary.InternalGqlStatusObject;
 import org.neo4j.driver.internal.summary.InternalInputPosition;
@@ -91,56 +85,21 @@ public class MetadataExtractor {
                     return 4;
                 }
             });
-    private final String resultAvailableAfterMetadataKey;
     private final String resultConsumedAfterMetadataKey;
 
-    public MetadataExtractor(String resultAvailableAfterMetadataKey, String resultConsumedAfterMetadataKey) {
-        this.resultAvailableAfterMetadataKey = resultAvailableAfterMetadataKey;
+    public MetadataExtractor(String resultConsumedAfterMetadataKey) {
         this.resultConsumedAfterMetadataKey = resultConsumedAfterMetadataKey;
-    }
-
-    public QueryKeys extractQueryKeys(Map<String, Value> metadata) {
-        var keysValue = metadata.get("fields");
-        if (keysValue != null) {
-            if (!keysValue.isEmpty()) {
-                var keys = new QueryKeys(keysValue.size());
-                for (var value : keysValue.values()) {
-                    keys.add(value.asString());
-                }
-
-                return keys;
-            }
-        }
-        return QueryKeys.empty();
-    }
-
-    public long extractQueryId(Map<String, Value> metadata) {
-        var queryId = metadata.get("qid");
-        if (queryId != null) {
-            return queryId.asLong();
-        }
-        return ABSENT_QUERY_ID;
-    }
-
-    public long extractResultAvailableAfter(Map<String, Value> metadata) {
-        var resultAvailableAfterValue = metadata.get(resultAvailableAfterMetadataKey);
-        if (resultAvailableAfterValue != null) {
-            return resultAvailableAfterValue.asLong();
-        }
-        return -1;
     }
 
     public ResultSummary extractSummary(
             Query query,
-            Connection connection,
+            BoltConnection connection,
             long resultAvailableAfter,
             Map<String, Value> metadata,
             boolean legacyNotifications,
             GqlStatusObject gqlStatusObject) {
         ServerInfo serverInfo = new InternalServerInfo(
-                connection.serverAgent(),
-                connection.serverAddress(),
-                connection.protocol().version());
+                connection.serverAgent(), connection.serverAddress(), connection.protocolVersion());
         var dbInfo = extractDatabaseInfo(metadata);
         Set<GqlStatusObject> gqlStatusObjects;
         List<Notification> notifications;
@@ -183,25 +142,6 @@ public class MetadataExtractor {
                 extractResultConsumedAfter(metadata, resultConsumedAfterMetadataKey));
     }
 
-    public static DatabaseBookmark extractDatabaseBookmark(Map<String, Value> metadata) {
-        var databaseName = extractDatabaseInfo(metadata).name();
-        var bookmark = extractBookmark(metadata);
-        return new DatabaseBookmark(databaseName, bookmark);
-    }
-
-    public static Value extractServer(Map<String, Value> metadata) {
-        var versionValue = metadata.get("server");
-        if (versionValue == null || versionValue.isNull()) {
-            throw new UntrustedServerException("Server provides no product identifier");
-        }
-        var serverAgent = versionValue.asString();
-        if (!serverAgent.startsWith("Neo4j/")) {
-            throw new UntrustedServerException(
-                    "Server does not identify as a genuine Neo4j instance: '" + serverAgent + "'");
-        }
-        return versionValue;
-    }
-
     static DatabaseInfo extractDatabaseInfo(Map<String, Value> metadata) {
         var dbValue = metadata.get("db");
         if (dbValue == null || dbValue.isNull()) {
@@ -209,15 +149,6 @@ public class MetadataExtractor {
         } else {
             return new InternalDatabaseInfo(dbValue.asString());
         }
-    }
-
-    static Bookmark extractBookmark(Map<String, Value> metadata) {
-        var bookmarkValue = metadata.get("bookmark");
-        Bookmark bookmark = null;
-        if (bookmarkValue != null && !bookmarkValue.isNull() && bookmarkValue.hasType(TYPE_SYSTEM.STRING())) {
-            bookmark = InternalBookmark.parse(bookmarkValue.asString());
-        }
-        return bookmark;
     }
 
     private static QueryType extractQueryType(Map<String, Value> metadata) {
@@ -454,15 +385,6 @@ public class MetadataExtractor {
             return resultConsumedAfterValue.asLong();
         }
         return -1;
-    }
-
-    public static Set<String> extractBoltPatches(Map<String, Value> metadata) {
-        var boltPatch = metadata.get("patch_bolt");
-        if (boltPatch != null && !boltPatch.isNull()) {
-            return new HashSet<>(boltPatch.asList(Value::asString));
-        } else {
-            return Collections.emptySet();
-        }
     }
 
     private record GqlStatusObjectsAndNotifications(

@@ -21,6 +21,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.ClientCertificate;
 import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 
 public class ValidatingClientCertificateManager implements ClientCertificateManager {
     private final ClientCertificateManager delegate;

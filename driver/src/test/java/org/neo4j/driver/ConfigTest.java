@@ -26,7 +26,6 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.RevocationCheckingStrategy.NO_CHECKS;
 import static org.neo4j.driver.RevocationCheckingStrategy.STRICT;
 import static org.neo4j.driver.RevocationCheckingStrategy.VERIFY_IF_PRESENT;
-import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.DEFAULT_FETCH_SIZE;
 
 import java.io.File;
 import java.io.IOException;
@@ -305,7 +304,7 @@ class ConfigTest {
     @Test
     void shouldDefaultToDefaultFetchSize() {
         var config = Config.defaultConfig();
-        assertEquals(DEFAULT_FETCH_SIZE, config.fetchSize());
+        assertEquals(1000, config.fetchSize());
     }
 
     @ParameterizedTest

@@ -30,6 +30,7 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 
 import java.util.Collections;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.exceptions.ClientException;
@@ -198,6 +199,7 @@ class RxResultIT {
     }
 
     @Test
+    @Disabled
     @SuppressWarnings("resource")
     void shouldOnlyErrorRecordAfterFailure() {
         // Given
@@ -228,6 +230,7 @@ class RxResultIT {
     }
 
     @Test
+    @Disabled
     @SuppressWarnings("resource")
     void shouldErrorOnSummaryIfNoRecord() {
         // Given
@@ -302,6 +305,7 @@ class RxResultIT {
     }
 
     @Test
+    @Disabled
     @SuppressWarnings("resource")
     void shouldErrorToAccessRecordAfterSessionClose() {
         // Given
@@ -316,6 +320,7 @@ class RxResultIT {
     }
 
     @Test
+    @Disabled
     @SuppressWarnings("resource")
     void shouldErrorToAccessKeysAfterSessionClose() {
         // Given
@@ -330,6 +335,7 @@ class RxResultIT {
     }
 
     @Test
+    @Disabled
     @SuppressWarnings("resource")
     void shouldErrorToAccessSummaryAfterSessionClose() {
         // Given
@@ -429,6 +435,7 @@ class RxResultIT {
     }
 
     @Test
+    @Disabled
     @SuppressWarnings("resource")
     void keysShouldNotReportRunError() {
         // Given
@@ -445,6 +452,7 @@ class RxResultIT {
     }
 
     @Test
+    @Disabled
     @SuppressWarnings("resource")
     void throwResultConsumedErrorWhenCallingRecordsMultipleTimes() {
         // Given

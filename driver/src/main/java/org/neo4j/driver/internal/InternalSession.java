@@ -31,9 +31,10 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.async.NetworkSession;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.Futures;
 
 public class InternalSession extends AbstractQueryRunner implements Session {
@@ -207,7 +208,7 @@ public class InternalSession extends AbstractQueryRunner implements Session {
 
     private void terminateConnectionOnThreadInterrupt(String reason) {
         // try to get current connection if it has been acquired
-        Connection connection = null;
+        BoltConnection connection = null;
         try {
             connection = Futures.getNow(session.connectionAsync());
         } catch (Throwable ignore) {
@@ -215,7 +216,7 @@ public class InternalSession extends AbstractQueryRunner implements Session {
         }
 
         if (connection != null) {
-            connection.terminateAndRelease(reason);
+            connection.forceClose(reason);
         }
     }
 }

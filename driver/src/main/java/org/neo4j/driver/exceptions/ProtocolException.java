@@ -17,7 +17,7 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
-import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 
 /**
  * A signal that the contract for client-server communication has broken down.

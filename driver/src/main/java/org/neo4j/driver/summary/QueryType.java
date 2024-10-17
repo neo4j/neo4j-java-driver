@@ -19,7 +19,7 @@ package org.neo4j.driver.summary;
 import java.util.function.Function;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 
 /**
  * The type of query executed.

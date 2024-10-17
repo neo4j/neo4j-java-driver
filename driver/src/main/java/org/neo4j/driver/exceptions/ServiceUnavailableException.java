@@ -17,7 +17,7 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
-import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 
 /**
  * An <em>ServiceUnavailableException</em> indicates that the driver cannot communicate with the cluster.

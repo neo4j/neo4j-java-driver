@@ -17,8 +17,6 @@
 package org.neo4j.driver.internal;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
@@ -34,11 +32,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Records.column;
 import static org.neo4j.driver.Values.ofString;
 import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -48,18 +45,16 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.ResultConsumedException;
-import org.neo4j.driver.internal.cursor.AsyncResultCursor;
-import org.neo4j.driver.internal.cursor.AsyncResultCursorImpl;
-import org.neo4j.driver.internal.cursor.DisposableAsyncResultCursor;
-import org.neo4j.driver.internal.handlers.LegacyPullAllResponseHandler;
-import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
-import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
-import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.summary.PullSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
+import org.neo4j.driver.internal.cursor.DisposableResultCursorImpl;
+import org.neo4j.driver.internal.cursor.ResultCursorImpl;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.util.Pair;
 
@@ -331,7 +326,7 @@ class InternalResultTest {
     @ValueSource(booleans = {true, false})
     void shouldDelegateIsOpen(boolean expectedState) {
         // GIVEN
-        var cursor = mock(AsyncResultCursor.class);
+        var cursor = mock(ResultCursor.class);
         given(cursor.isOpenAsync()).willReturn(CompletableFuture.completedFuture(expectedState));
         Result result = new InternalResult(null, cursor);
 
@@ -344,29 +339,32 @@ class InternalResultTest {
     }
 
     private Result createResult(int numberOfRecords) {
-        var runHandler = new RunResponseHandler(
-                new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock(Connection.class), null);
-        runHandler.onSuccess(singletonMap("fields", value(Arrays.asList("k1", "k2"))));
-
         var query = new Query("<unknown>");
-        var connection = mock(Connection.class);
-        when(connection.serverAddress()).thenReturn(LOCAL_DEFAULT);
-        when(connection.protocol()).thenReturn(BoltProtocolV43.INSTANCE);
+        var connection = mock(BoltConnection.class);
+        when(connection.serverAddress()).thenReturn(BoltServerAddress.LOCAL_DEFAULT);
+        when(connection.protocolVersion()).thenReturn(new BoltProtocolVersion(4, 3));
         when(connection.serverAgent()).thenReturn("Neo4j/4.2.5");
-        PullAllResponseHandler pullAllHandler = new LegacyPullAllResponseHandler(
-                query,
-                runHandler,
-                connection,
-                BoltProtocolV3.METADATA_EXTRACTOR,
-                mock(PullResponseCompletionListener.class));
 
+        var resultCursor = new ResultCursorImpl(
+                connection, query, -1, ignored -> {}, ignored -> {}, false, () -> null, null, null);
+        var runSummary = mock(RunSummary.class);
+        given(runSummary.keys()).willReturn(asList("k1", "k2"));
+        resultCursor.onRunSummary(runSummary);
         for (var i = 1; i <= numberOfRecords; i++) {
-            pullAllHandler.onRecord(new Value[] {value("v1-" + i), value("v2-" + i)});
+            resultCursor.onRecord(new Value[] {value("v1-" + i), value("v2-" + i)});
         }
-        pullAllHandler.onSuccess(emptyMap());
+        resultCursor.onPullSummary(new PullSummary() {
+            @Override
+            public boolean hasMore() {
+                return false;
+            }
 
-        AsyncResultCursor cursor = new AsyncResultCursorImpl(null, runHandler, pullAllHandler);
-        return new InternalResult(connection, new DisposableAsyncResultCursor(cursor));
+            @Override
+            public Map<String, Value> metadata() {
+                return Map.of();
+            }
+        });
+        return new InternalResult(connection, new DisposableResultCursorImpl(resultCursor));
     }
 
     private List<Value> values(Record record) {

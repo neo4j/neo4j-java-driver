@@ -19,6 +19,8 @@ package org.neo4j.driver.internal;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
@@ -30,15 +32,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentMatcher;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionContext;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
 
 public class InternalSessionTest {
     NetworkSession networkSession;
@@ -93,12 +96,14 @@ public class InternalSessionTest {
         var config = TransactionConfig.empty();
         var type = "TYPE";
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
-        given(networkSession.beginTransactionAsync(config, type, apiTelemetryWork))
+        ArgumentMatcher<ApiTelemetryWork> apiMatcher =
+                argument -> apiTelemetryWork.telemetryApi().equals(argument.telemetryApi());
+        given(networkSession.beginTransactionAsync(eq(config), eq(type), argThat(apiMatcher)))
                 .willReturn(completedFuture(mock(UnmanagedTransaction.class)));
 
         internalSession.beginTransaction(config, type);
 
-        then(networkSession).should().beginTransactionAsync(config, type, apiTelemetryWork);
+        then(networkSession).should().beginTransactionAsync(eq(config), eq(type), argThat(apiMatcher));
     }
 
     static List<ExecuteVariation> executeVariations() {

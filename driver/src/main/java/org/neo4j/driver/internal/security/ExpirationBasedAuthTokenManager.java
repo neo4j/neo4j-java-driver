@@ -17,7 +17,6 @@
 package org.neo4j.driver.internal.security;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
 
 import java.time.Clock;
@@ -118,7 +117,7 @@ public class ExpirationBasedAuthTokenManager implements AuthTokenManager {
             upstreamStage = freshTokenSupplier.get();
             requireNonNull(upstreamStage, "upstream supplied a null value");
         } catch (Throwable t) {
-            upstreamStage = failedFuture(t);
+            upstreamStage = CompletableFuture.failedFuture(t);
         }
         return upstreamStage;
     }

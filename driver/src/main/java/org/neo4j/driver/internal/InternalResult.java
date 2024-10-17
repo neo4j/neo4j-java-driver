@@ -28,15 +28,16 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.summary.ResultSummary;
 
 public class InternalResult implements Result {
-    private final Connection connection;
+    private final BoltConnection connection;
     private final ResultCursor cursor;
 
-    public InternalResult(Connection connection, ResultCursor cursor) {
+    public InternalResult(BoltConnection connection, ResultCursor cursor) {
         this.connection = connection;
         this.cursor = cursor;
     }
@@ -117,6 +118,6 @@ public class InternalResult implements Result {
     }
 
     private void terminateConnectionOnThreadInterrupt() {
-        connection.terminateAndRelease("Thread interrupted while waiting for result to arrive");
+        connection.close();
     }
 }

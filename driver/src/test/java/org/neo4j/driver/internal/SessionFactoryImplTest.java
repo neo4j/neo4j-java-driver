@@ -24,10 +24,12 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 
 class SessionFactoryImplTest {
@@ -37,11 +39,17 @@ class SessionFactoryImplTest {
         var factory = newSessionFactory(config);
 
         var readSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.READ).build(), null, true);
+                builder().withDefaultAccessMode(AccessMode.READ).build(),
+                Config.defaultConfig().notificationConfig(),
+                null,
+                true);
         assertThat(readSession, instanceOf(NetworkSession.class));
 
         var writeSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.WRITE).build(), null, true);
+                builder().withDefaultAccessMode(AccessMode.WRITE).build(),
+                Config.defaultConfig().notificationConfig(),
+                null,
+                true);
         assertThat(writeSession, instanceOf(NetworkSession.class));
     }
 
@@ -54,15 +62,26 @@ class SessionFactoryImplTest {
         var factory = newSessionFactory(config);
 
         var readSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.READ).build(), null, true);
+                builder().withDefaultAccessMode(AccessMode.READ).build(),
+                Config.defaultConfig().notificationConfig(),
+                null,
+                true);
         assertThat(readSession, instanceOf(LeakLoggingNetworkSession.class));
 
         var writeSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.WRITE).build(), null, true);
+                builder().withDefaultAccessMode(AccessMode.WRITE).build(),
+                Config.defaultConfig().notificationConfig(),
+                null,
+                true);
         assertThat(writeSession, instanceOf(LeakLoggingNetworkSession.class));
     }
 
     private static SessionFactory newSessionFactory(Config config) {
-        return new SessionFactoryImpl(mock(ConnectionProvider.class), new FixedRetryLogic(0), config);
+        return new SessionFactoryImpl(
+                BoltSecurityPlanManager.insecure(),
+                mock(BoltConnectionProvider.class),
+                new FixedRetryLogic(0),
+                config,
+                mock(AuthTokenManager.class));
     }
 }

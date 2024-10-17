@@ -19,7 +19,6 @@ package org.neo4j.driver.internal.util;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -27,9 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
+import org.neo4j.driver.internal.bolt.basicimpl.async.connection.EventLoopGroupFactory;
 
 public final class Futures {
     private static final CompletableFuture<?> COMPLETED_WITH_NULL = completedFuture(null);
@@ -39,47 +36,6 @@ public final class Futures {
     @SuppressWarnings("unchecked")
     public static <T> CompletableFuture<T> completedWithNull() {
         return (CompletableFuture<T>) COMPLETED_WITH_NULL;
-    }
-
-    public static <T> void completeWithNullIfNoError(CompletableFuture<T> future, Throwable error) {
-        if (error != null) {
-            future.completeExceptionally(error);
-        } else {
-            future.complete(null);
-        }
-    }
-
-    public static <T> CompletionStage<T> asCompletionStage(io.netty.util.concurrent.Future<T> future) {
-        var result = new CompletableFuture<T>();
-        return asCompletionStage(future, result);
-    }
-
-    public static <T> CompletionStage<T> asCompletionStage(
-            io.netty.util.concurrent.Future<T> future, CompletableFuture<T> result) {
-        if (future.isCancelled()) {
-            result.cancel(true);
-        } else if (future.isSuccess()) {
-            result.complete(future.getNow());
-        } else if (future.cause() != null) {
-            result.completeExceptionally(future.cause());
-        } else {
-            future.addListener(ignore -> {
-                if (future.isCancelled()) {
-                    result.cancel(true);
-                } else if (future.isSuccess()) {
-                    result.complete(future.getNow());
-                } else {
-                    result.completeExceptionally(future.cause());
-                }
-            });
-        }
-        return result;
-    }
-
-    public static <T> CompletableFuture<T> failedFuture(Throwable error) {
-        var result = new CompletableFuture<T>();
-        result.completeExceptionally(error);
-        return result;
     }
 
     public static <V> V blockingGet(CompletionStage<V> stage) {
@@ -119,15 +75,6 @@ public final class Futures {
         return stage.toCompletableFuture().getNow(null);
     }
 
-    public static <T> T joinNowOrElseThrow(
-            CompletableFuture<T> future, Supplier<? extends RuntimeException> exceptionSupplier) {
-        if (future.isDone()) {
-            return future.join();
-        } else {
-            throw exceptionSupplier.get();
-        }
-    }
-
     /**
      * Helper method to extract cause of a {@link CompletionException}.
      * <p>
@@ -165,6 +112,7 @@ public final class Futures {
      * @param error2 the second error or {@code null}.
      * @return {@code null} if both errors are null, {@link CompletionException} otherwise.
      */
+    @SuppressWarnings("DuplicatedCode")
     public static CompletionException combineErrors(Throwable error1, Throwable error2) {
         if (error1 != null && error2 != null) {
             var cause1 = completionExceptionCause(error1);
@@ -180,38 +128,6 @@ public final class Futures {
         }
     }
 
-    /**
-     * Given a future, if the future completes successfully then return a new completed future with the completed value.
-     * Otherwise if the future completes with an error, then this method first saves the error in the error recorder, and then continues with the onErrorAction.
-     * @param future the future.
-     * @param errorRecorder saves error if the given future completes with an error.
-     * @param onErrorAction continues the future with this action if the future completes with an error.
-     * @param <T> type
-     * @return a new completed future with the same completed value if the given future completes successfully, otherwise continues with the onErrorAction.
-     */
-    @SuppressWarnings("ThrowableNotThrown")
-    public static <T> CompletableFuture<T> onErrorContinue(
-            CompletableFuture<T> future,
-            Throwable errorRecorder,
-            Function<Throwable, ? extends CompletionStage<T>> onErrorAction) {
-        Objects.requireNonNull(future);
-        return future.handle((value, error) -> {
-                    if (error != null) {
-                        // record error
-                        Futures.combineErrors(errorRecorder, error);
-                        return new CompletionResult<T>(null, error);
-                    }
-                    return new CompletionResult<>(value, null);
-                })
-                .thenCompose(result -> {
-                    if (result.value != null) {
-                        return completedFuture(result.value);
-                    } else {
-                        return onErrorAction.apply(result.error);
-                    }
-                });
-    }
-
     public static <T> BiConsumer<T, Throwable> futureCompletingConsumer(CompletableFuture<T> future) {
         return (value, throwable) -> {
             if (throwable != null) {
@@ -221,8 +137,6 @@ public final class Futures {
             }
         };
     }
-
-    private record CompletionResult<T>(T value, Throwable error) {}
 
     private static void safeRun(Runnable runnable) {
         try {

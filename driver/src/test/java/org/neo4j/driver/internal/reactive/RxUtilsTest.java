@@ -16,11 +16,11 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
 import static org.neo4j.driver.internal.reactive.RxUtils.createSingleItemPublisher;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -59,7 +59,7 @@ class RxUtilsTest {
 
     @Test
     void singleItemPublisherShouldErrorWhenFutureCompletesWithNull() {
-        var error = mock(Throwable.class);
+        var error = new RuntimeException();
         Publisher<String> publisher =
                 createSingleItemPublisher(Futures::completedWithNull, () -> error, (ignored) -> {});
 
@@ -68,7 +68,7 @@ class RxUtilsTest {
 
     @Test
     void singleItemPublisherShouldErrorWhenSupplierErrors() {
-        var error = mock(RuntimeException.class);
+        var error = new RuntimeException();
         Publisher<String> publisher =
                 createSingleItemPublisher(() -> failedFuture(error), () -> mock(Throwable.class), (ignored) -> {});
 

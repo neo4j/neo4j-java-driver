@@ -40,7 +40,6 @@ import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.RetryableException;
 import org.neo4j.driver.exceptions.UntrustedServerException;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 
 public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter {
     private final TestkitState testkitState;
@@ -189,7 +188,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     private boolean isConnectionPoolClosedException(Throwable throwable) {
         return throwable instanceof IllegalStateException
                 && throwable.getMessage() != null
-                && throwable.getMessage().equals(ConnectionPool.CONNECTION_POOL_CLOSED_ERROR_MESSAGE);
+                && throwable.getMessage().equals("Connection provider is closed.");
     }
 
     private void writeAndFlush(TestkitResponse response) {

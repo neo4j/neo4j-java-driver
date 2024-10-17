@@ -37,8 +37,8 @@ import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.InternalClientCertificate;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 import org.neo4j.driver.internal.pki.PemParser;
 import org.neo4j.driver.internal.util.Futures;
 

@@ -17,103 +17,110 @@
 package org.neo4j.driver.internal.async;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.hamcrest.CoreMatchers.containsString;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.testutil.TestUtil.await;
 import static org.neo4j.driver.testutil.TestUtil.connectionMock;
 import static org.neo4j.driver.testutil.TestUtil.newSession;
-import static org.neo4j.driver.testutil.TestUtil.setupFailingBegin;
-import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunAndPull;
-import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunRx;
-import static org.neo4j.driver.testutil.TestUtil.verifyBeginTx;
+import static org.neo4j.driver.testutil.TestUtil.setupConnectionAnswers;
+import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulAutocommitRunAndPull;
+import static org.neo4j.driver.testutil.TestUtil.verifyAutocommitRunAndPull;
+import static org.neo4j.driver.testutil.TestUtil.verifyAutocommitRunRx;
 import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
-import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
-import static org.neo4j.driver.testutil.TestUtil.verifyRunRx;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.DatabaseBookmark;
-import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.messaging.request.PullMessage;
-import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.messaging.v54.BoltProtocolV54;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
+import org.neo4j.driver.internal.bolt.api.DatabaseName;
+import org.neo4j.driver.internal.bolt.api.ResponseHandler;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
+import org.neo4j.driver.internal.bolt.api.summary.BeginSummary;
+import org.neo4j.driver.internal.bolt.api.summary.PullSummary;
+import org.neo4j.driver.internal.bolt.api.summary.ResetSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RollbackSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 
 class NetworkSessionTest {
-    private static final String DATABASE = "neo4j";
-    private Connection connection;
-    private ConnectionProvider connectionProvider;
+    private BoltConnection connection;
+    private BoltConnectionProvider connectionProvider;
     private NetworkSession session;
 
     @BeforeEach
     void setUp() {
-        connection = connectionMock(BoltProtocolV4.INSTANCE);
-        connectionProvider = mock(ConnectionProvider.class);
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenAnswer(invocation -> {
-            var context = (ConnectionContext) invocation.getArgument(0);
-            context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
-            return completedFuture(connection);
-        });
+        connection = connectionMock(new BoltProtocolVersion(5, 4));
+        given(connection.close()).willReturn(completedFuture(null));
+        connectionProvider = mock(BoltConnectionProvider.class);
+        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willAnswer((Answer<CompletionStage<BoltConnection>>) invocation -> {
+                    var database = (DatabaseName) invocation.getArguments()[1];
+                    @SuppressWarnings("unchecked")
+                    var databaseConsumer = (Consumer<DatabaseName>) invocation.getArguments()[8];
+                    databaseConsumer.accept(database);
+                    return completedFuture(connection);
+                });
         session = newSession(connectionProvider);
     }
 
     @Test
     void shouldFlushOnRunAsync() {
-        setupSuccessfulRunAndPull(connection);
+        setupSuccessfulAutocommitRunAndPull(connection);
         await(session.runAsync(new Query("RETURN 1"), TransactionConfig.empty()));
 
-        verifyRunAndPull(connection, "RETURN 1");
+        verifyAutocommitRunAndPull(connection, "RETURN 1");
     }
 
     @Test
     void shouldFlushOnRunRx() {
-        setupSuccessfulRunRx(connection);
+        setupSuccessfulAutocommitRunAndPull(connection);
         await(session.runRx(new Query("RETURN 1"), TransactionConfig.empty(), CompletableFuture.completedStage(null)));
 
-        verifyRunRx(connection, "RETURN 1");
+        verifyAutocommitRunRx(connection, "RETURN 1");
     }
 
     @Test
     void shouldNotAllowNewTxWhileOneIsRunning() {
         // Given
+        setupSuccessfulBegin(connection);
         beginTransaction(session);
 
         // Expect
@@ -123,6 +130,24 @@ class NetworkSessionTest {
     @Test
     void shouldBeAbleToOpenTxAfterPreviousIsClosed() {
         // Given
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRollbackSummary(mock(RollbackSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        }));
         await(beginTransaction(session).closeAsync());
 
         // When
@@ -136,6 +161,7 @@ class NetworkSessionTest {
     @Test
     void shouldNotBeAbleToUseSessionWhileOngoingTransaction() {
         // Given
+        setupSuccessfulBegin(connection);
         beginTransaction(session);
 
         // Expect
@@ -145,19 +171,50 @@ class NetworkSessionTest {
     @Test
     void shouldBeAbleToUseSessionAgainWhenTransactionIsClosed() {
         // Given
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedFuture(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRollbackSummary(mock(RollbackSummary.class));
+                            handler.onComplete();
+                        }));
         await(beginTransaction(session).closeAsync());
+        Mockito.reset(connection);
+        setupSuccessfulAutocommitRunAndPull(connection);
+        given(connection.protocolVersion()).willReturn(new BoltProtocolVersion(5, 5));
+        given(connection.close()).willReturn(CompletableFuture.completedFuture(null));
         var query = "RETURN 1";
-        setupSuccessfulRunAndPull(connection, query);
 
         // When
         run(session, query);
 
         // Then
-        verifyRunAndPull(connection, query);
+        verifyAutocommitRunAndPull(connection, query);
     }
 
     @Test
     void shouldNotCloseAlreadyClosedSession() {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedFuture(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRollbackSummary(mock(RollbackSummary.class));
+                            handler.onComplete();
+                        }));
         beginTransaction(session);
 
         close(session);
@@ -179,33 +236,29 @@ class NetworkSessionTest {
     @Test
     void acquiresNewConnectionForRun() {
         var query = "RETURN 1";
-        setupSuccessfulRunAndPull(connection, query);
+        setupSuccessfulAutocommitRunAndPull(connection);
 
         run(session, query);
 
-        verify(connectionProvider).acquireConnection(any(ConnectionContext.class));
+        verify(connectionProvider).connect(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
     void releasesOpenConnectionUsedForRunWhenSessionIsClosed() {
         var query = "RETURN 1";
-        setupSuccessfulRunAndPull(connection, query);
+        setupSuccessfulAutocommitRunAndPull(connection);
 
         run(session, query);
 
         close(session);
-
-        var inOrder = inOrder(connection);
-        inOrder.verify(connection).write(any(RunWithMetadataMessage.class), any());
-        inOrder.verify(connection).writeAndFlush(any(PullMessage.class), any());
-        inOrder.verify(connection, atLeastOnce()).release();
+        then(connection).should(atLeastOnce()).close();
     }
 
     @Test
     void resetDoesNothingWhenNoTransactionAndNoConnection() {
         await(session.resetAsync());
 
-        verify(connectionProvider, never()).acquireConnection(any(ConnectionContext.class));
+        verify(connectionProvider, never()).connect(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -214,27 +267,35 @@ class NetworkSessionTest {
 
         close(session);
 
-        verify(connectionProvider, never()).acquireConnection(any(ConnectionContext.class));
+        verify(connectionProvider, never()).connect(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
     void acquiresNewConnectionForBeginTx() {
+        setupSuccessfulBegin(connection);
         var tx = beginTransaction(session);
 
         assertNotNull(tx);
-        verify(connectionProvider).acquireConnection(any(ConnectionContext.class));
+        verify(connectionProvider).connect(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
     void updatesBookmarkWhenTxIsClosed() {
         var bookmarkAfterCommit = InternalBookmark.parse("TheBookmark");
-
-        var protocol = spy(BoltProtocolV4.INSTANCE);
-        doReturn(completedFuture(new DatabaseBookmark(DATABASE, bookmarkAfterCommit)))
-                .when(protocol)
-                .commitTransaction(any(Connection.class));
-
-        when(connection.protocol()).thenReturn(protocol);
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.commit()).willReturn(CompletableFuture.completedFuture(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onCommitSummary(() -> Optional.of(bookmarkAfterCommit.value()));
+                            handler.onComplete();
+                        }));
 
         var tx = beginTransaction(session);
         assertThat(session.lastBookmarks(), instanceOf(Set.class));
@@ -247,27 +308,53 @@ class NetworkSessionTest {
 
     @Test
     void releasesConnectionWhenTxIsClosed() {
-        var query = "RETURN 42";
-        setupSuccessfulRunAndPull(connection, query);
-
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.run(any(), any())).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        given(connection.pull(anyLong(), anyLong())).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        given(connection.rollback()).willReturn(CompletableFuture.completedFuture(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRunSummary(mock(RunSummary.class));
+                            handler.onPullSummary(mock(PullSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRollbackSummary(mock(RollbackSummary.class));
+                            handler.onComplete();
+                        }));
         var tx = beginTransaction(session);
+        verify(connectionProvider).connect(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        then(connection).should().flush(any());
+        var query = "RETURN 42";
         await(tx.runAsync(new Query(query)));
 
-        verify(connectionProvider).acquireConnection(any(ConnectionContext.class));
-        verifyRunAndPull(connection, query);
+        then(connection).should().run(eq(query), any());
+        then(connection).should().pull(anyLong(), anyLong());
+        then(connection).should(times(2)).flush(any());
 
         await(tx.closeAsync());
-        verify(connection).release();
+        verify(connection).close();
     }
 
     @Test
     void bookmarkIsPropagatedFromSession() {
         var bookmarks = Collections.singleton(InternalBookmark.parse("Bookmarks"));
         var session = newSession(connectionProvider, bookmarks);
+        setupSuccessfulBegin(connection);
 
         var tx = beginTransaction(session);
         assertNotNull(tx);
-        verifyBeginTx(connection);
+        then(connection).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        then(connection).should().flush(any());
     }
 
     @Test
@@ -277,21 +364,38 @@ class NetworkSessionTest {
 
         var session = newSession(connectionProvider);
 
-        var protocol = spy(BoltProtocolV4.INSTANCE);
-        doReturn(
-                        completedFuture(new DatabaseBookmark(DATABASE, bookmark1)),
-                        completedFuture(new DatabaseBookmark(DATABASE, bookmark2)))
-                .when(protocol)
-                .commitTransaction(any(Connection.class));
-
-        when(connection.protocol()).thenReturn(protocol);
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.commit()).willReturn(CompletableFuture.completedFuture(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onCommitSummary(() -> Optional.of(bookmark1.value()));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onCommitSummary(() -> Optional.of(bookmark2.value()));
+                            handler.onComplete();
+                        }));
 
         var tx1 = beginTransaction(session);
         await(tx1.commitAsync());
         assertEquals(Collections.singleton(bookmark1), session.lastBookmarks());
 
         var tx2 = beginTransaction(session);
-        verifyBeginTx(connection, 2);
+        then(connection)
+                .should(times(2))
+                .beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        then(connection).should(times(3)).flush(any());
         await(tx2.commitAsync());
 
         assertEquals(Collections.singleton(bookmark2), session.lastBookmarks());
@@ -299,44 +403,36 @@ class NetworkSessionTest {
 
     @Test
     void accessModeUsedToAcquireReadConnections() {
+        setupSuccessfulBegin(connection);
         accessModeUsedToAcquireConnections(READ);
     }
 
     @Test
     void accessModeUsedToAcquireWriteConnections() {
+        setupSuccessfulBegin(connection);
         accessModeUsedToAcquireConnections(WRITE);
     }
 
     private void accessModeUsedToAcquireConnections(AccessMode mode) {
         var session2 = newSession(connectionProvider, mode);
         beginTransaction(session2);
-        var argument = ArgumentCaptor.forClass(ConnectionContext.class);
-        verify(connectionProvider).acquireConnection(argument.capture());
-        assertEquals(mode, argument.getValue().mode());
+        var argument = ArgumentCaptor.forClass(org.neo4j.driver.internal.bolt.api.AccessMode.class);
+        verify(connectionProvider).connect(any(), any(), any(), argument.capture(), any(), any(), any(), any(), any());
+        assertEquals(
+                switch (mode) {
+                    case READ -> org.neo4j.driver.internal.bolt.api.AccessMode.READ;
+                    case WRITE -> org.neo4j.driver.internal.bolt.api.AccessMode.WRITE;
+                },
+                argument.getValue());
     }
 
     @Test
     void testPassingNoBookmarkShouldRetainBookmark() {
         var bookmarks = Collections.singleton(InternalBookmark.parse("X"));
         var session = newSession(connectionProvider, bookmarks);
+        setupSuccessfulBegin(connection);
         beginTransaction(session);
         assertThat(session.lastBookmarks(), equalTo(bookmarks));
-    }
-
-    @Test
-    void connectionShouldBeResetAfterSessionReset() {
-        var query = "RETURN 1";
-        setupSuccessfulRunAndPull(connection, query);
-
-        run(session, query);
-
-        var connectionInOrder = inOrder(connection);
-        connectionInOrder.verify(connection, never()).reset(null);
-        connectionInOrder.verify(connection).release();
-
-        await(session.resetAsync());
-        connectionInOrder.verify(connection).reset(null);
-        connectionInOrder.verify(connection, never()).release();
     }
 
     @Test
@@ -347,7 +443,9 @@ class NetworkSessionTest {
     @Test
     void shouldDoNothingWhenClosingWithoutAcquiredConnection() {
         var error = new RuntimeException("Hi");
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenReturn(failedFuture(error));
+        Mockito.reset(connectionProvider);
+        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(failedFuture(error));
 
         var e = assertThrows(Exception.class, () -> run(session, "RETURN 1"));
         assertEquals(error, e);
@@ -358,11 +456,15 @@ class NetworkSessionTest {
     @Test
     void shouldRunAfterRunFailure() {
         var error = new RuntimeException("Hi");
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
-                .thenReturn(failedFuture(error))
-                .thenAnswer(invocation -> {
-                    var context = (ConnectionContext) invocation.getArgument(0);
-                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+        Mockito.reset(connectionProvider);
+        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(failedFuture(error))
+                .willAnswer((Answer<CompletionStage<BoltConnection>>) invocation -> {
+                    var databaseName = (DatabaseName) invocation.getArguments()[1];
+                    @SuppressWarnings("unchecked")
+                    var databaseNameConsumer =
+                            (Consumer<DatabaseName>) invocation.getArguments()[8];
+                    databaseNameConsumer.accept(databaseName);
                     return completedFuture(connection);
                 });
 
@@ -371,30 +473,40 @@ class NetworkSessionTest {
         assertEquals(error, e);
 
         var query = "RETURN 2";
-        setupSuccessfulRunAndPull(connection, query);
+        setupSuccessfulAutocommitRunAndPull(connection);
 
         run(session, query);
 
-        verify(connectionProvider, times(2)).acquireConnection(any(ConnectionContext.class));
-        verifyRunAndPull(connection, query);
+        verify(connectionProvider, times(2)).connect(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verifyAutocommitRunAndPull(connection, query);
     }
 
     @Test
     void shouldRunAfterBeginTxFailureOnBookmark() {
         var error = new RuntimeException("Hi");
-        var connection1 = connectionMock(BoltProtocolV4.INSTANCE);
-        setupFailingBegin(connection1, error);
-        var connection2 = connectionMock(BoltProtocolV4.INSTANCE);
+        var connection1 = connectionMock(new BoltProtocolVersion(5, 0));
+        given(connection1.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.failedStage(error));
+        given(connection1.close()).willReturn(CompletableFuture.completedStage(null));
+        var connection2 = connectionMock(new BoltProtocolVersion(5, 0));
+        given(connection2.close()).willReturn(CompletableFuture.completedStage(null));
 
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
-                .thenAnswer(invocation -> {
-                    var context = (ConnectionContext) invocation.getArgument(0);
-                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+        Mockito.reset(connectionProvider);
+        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willAnswer((Answer<CompletionStage<BoltConnection>>) invocation -> {
+                    var databaseName = (DatabaseName) invocation.getArguments()[1];
+                    @SuppressWarnings("unchecked")
+                    var databaseNameConsumer =
+                            (Consumer<DatabaseName>) invocation.getArguments()[8];
+                    databaseNameConsumer.accept(databaseName);
                     return completedFuture(connection1);
                 })
-                .thenAnswer(invocation -> {
-                    var context = (ConnectionContext) invocation.getArgument(0);
-                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+                .willAnswer((Answer<CompletionStage<BoltConnection>>) invocation -> {
+                    var databaseName = (DatabaseName) invocation.getArguments()[1];
+                    @SuppressWarnings("unchecked")
+                    var databaseNameConsumer =
+                            (Consumer<DatabaseName>) invocation.getArguments()[8];
+                    databaseNameConsumer.accept(databaseName);
                     return completedFuture(connection2);
                 });
 
@@ -404,31 +516,45 @@ class NetworkSessionTest {
         var e = assertThrows(Exception.class, () -> beginTransaction(session));
         assertEquals(error, e);
         var query = "RETURN 2";
-        setupSuccessfulRunAndPull(connection2, query);
+        setupSuccessfulAutocommitRunAndPull(connection2);
 
         run(session, query);
 
-        verify(connectionProvider, times(2)).acquireConnection(any(ConnectionContext.class));
-        verifyBeginTx(connection1);
-        verifyRunAndPull(connection2, "RETURN 2");
+        verify(connectionProvider, times(2)).connect(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        then(connection1).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verifyAutocommitRunAndPull(connection2, "RETURN 2");
     }
 
     @Test
     void shouldBeginTxAfterBeginTxFailureOnBookmark() {
         var error = new RuntimeException("Hi");
-        var connection1 = connectionMock(BoltProtocolV4.INSTANCE);
-        setupFailingBegin(connection1, error);
-        var connection2 = connectionMock(BoltProtocolV4.INSTANCE);
+        var connection1 = connectionMock(new BoltProtocolVersion(5, 0));
+        given(connection1.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.failedStage(error));
+        var connection2 = connectionMock(new BoltProtocolVersion(5, 0));
+        given(connection2.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(CompletableFuture.completedStage(connection2));
+        setupConnectionAnswers(connection2, List.of(handler -> {
+            handler.onBeginSummary(mock(BeginSummary.class));
+            handler.onComplete();
+        }));
 
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
-                .thenAnswer(invocation -> {
-                    var context = (ConnectionContext) invocation.getArgument(0);
-                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+        Mockito.reset(connectionProvider);
+        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willAnswer((Answer<CompletionStage<BoltConnection>>) invocation -> {
+                    var databaseName = (DatabaseName) invocation.getArguments()[1];
+                    @SuppressWarnings("unchecked")
+                    var databaseNameConsumer =
+                            (Consumer<DatabaseName>) invocation.getArguments()[8];
+                    databaseNameConsumer.accept(databaseName);
                     return completedFuture(connection1);
                 })
-                .thenAnswer(invocation -> {
-                    var context = (ConnectionContext) invocation.getArgument(0);
-                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+                .willAnswer((Answer<CompletionStage<BoltConnection>>) invocation -> {
+                    var databaseName = (DatabaseName) invocation.getArguments()[1];
+                    @SuppressWarnings("unchecked")
+                    var databaseNameConsumer =
+                            (Consumer<DatabaseName>) invocation.getArguments()[8];
+                    databaseNameConsumer.accept(databaseName);
                     return completedFuture(connection2);
                 });
 
@@ -440,41 +566,60 @@ class NetworkSessionTest {
 
         beginTransaction(session);
 
-        verify(connectionProvider, times(2)).acquireConnection(any(ConnectionContext.class));
-        verifyBeginTx(connection1);
-        verifyBeginTx(connection2);
+        verify(connectionProvider, times(2)).connect(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        then(connection1).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        then(connection2).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
     void shouldBeginTxAfterRunFailureToAcquireConnection() {
         var error = new RuntimeException("Hi");
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class)))
-                .thenReturn(failedFuture(error))
-                .thenAnswer(invocation -> {
-                    var context = (ConnectionContext) invocation.getArgument(0);
-                    context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
+        Mockito.reset(connectionProvider);
+        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(failedFuture(error))
+                .willAnswer((Answer<CompletionStage<BoltConnection>>) invocation -> {
+                    var databaseName = (DatabaseName) invocation.getArguments()[1];
+                    @SuppressWarnings("unchecked")
+                    var databaseNameConsumer =
+                            (Consumer<DatabaseName>) invocation.getArguments()[8];
+                    databaseNameConsumer.accept(databaseName);
                     return completedFuture(connection);
                 });
+        setupSuccessfulBegin(connection);
 
         var e = assertThrows(Exception.class, () -> run(session, "RETURN 1"));
         assertEquals(error, e);
 
         beginTransaction(session);
 
-        verify(connectionProvider, times(2)).acquireConnection(any(ConnectionContext.class));
-        verifyBeginTx(connection);
+        verify(connectionProvider, times(2)).connect(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        then(connection).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
     void shouldMarkTransactionAsTerminatedAndThenResetConnectionOnReset() {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.reset()).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onResetSummary(mock(ResetSummary.class));
+                            handler.onComplete();
+                        }));
         var tx = beginTransaction(session);
 
         assertTrue(tx.isOpen());
-        verify(connection, never()).reset(null);
+        verify(connection, never()).reset();
 
         await(session.resetAsync());
 
-        verify(connection).reset(any());
+        verify(connection).reset();
     }
 
     @ParameterizedTest
@@ -482,20 +627,18 @@ class NetworkSessionTest {
     void shouldSendTelemetryIfEnabledOnBegin(boolean telemetryDisabled) {
         // given
         var session = newSession(connectionProvider, WRITE, new FixedRetryLogic(0), Set.of(), telemetryDisabled);
-        given(connection.isTelemetryEnabled()).willReturn(true);
-        var protocol = spy(BoltProtocolV54.INSTANCE);
-        when(connection.protocol()).thenReturn(protocol);
+        given(connection.telemetrySupported()).willReturn(true);
+        given(connection.telemetry(any())).willReturn(CompletableFuture.completedStage(connection));
+        setupSuccessfulBegin(connection);
 
         // when
         beginTransaction(session);
 
         // then
         if (telemetryDisabled) {
-            then(protocol).should(never()).telemetry(any(), any());
+            then(connection).should(never()).telemetry(any());
         } else {
-            then(protocol)
-                    .should(times(1))
-                    .telemetry(eq(connection), eq(TelemetryApi.UNMANAGED_TRANSACTION.getValue()));
+            then(connection).should().telemetry(eq(TelemetryApi.UNMANAGED_TRANSACTION));
         }
     }
 
@@ -504,24 +647,31 @@ class NetworkSessionTest {
     void shouldSendTelemetryIfEnabledOnRun(boolean telemetryDisabled) {
         // given
         var query = "RETURN 1";
-        setupSuccessfulRunAndPull(connection, query);
-        var apiTxWork = mock(ApiTelemetryWork.class);
+        setupSuccessfulAutocommitRunAndPull(connection);
         var session = newSession(connectionProvider, WRITE, new FixedRetryLogic(0), Set.of(), telemetryDisabled);
-        given(connection.isTelemetryEnabled()).willReturn(true);
-        var protocol = spy(BoltProtocolV54.INSTANCE);
-        when(connection.protocol()).thenReturn(protocol);
+        given(connection.telemetrySupported()).willReturn(true);
+        given(connection.telemetry(any())).willReturn(CompletableFuture.completedStage(connection));
 
         // when
         run(session, query);
 
         // then
         if (telemetryDisabled) {
-            then(protocol).should(never()).telemetry(any(), any());
+            then(connection).should(never()).telemetry(any());
         } else {
-            then(protocol)
-                    .should(times(1))
-                    .telemetry(eq(connection), eq(TelemetryApi.AUTO_COMMIT_TRANSACTION.getValue()));
+            then(connection).should().telemetry(eq(TelemetryApi.AUTO_COMMIT_TRANSACTION));
         }
+    }
+
+    private void setupSuccessfulBegin(BoltConnection connection) {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+            var handler = (ResponseHandler) invocation.getArguments()[0];
+            handler.onBeginSummary(mock(BeginSummary.class));
+            handler.onComplete();
+            return completedFuture(null);
+        });
     }
 
     private static void run(NetworkSession session, String query) {

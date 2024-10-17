@@ -37,6 +37,7 @@ public record InternalNotificationSeverity(Type type, int level) implements Noti
         OFF
     }
 
+    @SuppressWarnings("DuplicatedCode")
     public static Optional<NotificationSeverity> valueOf(String value) {
         return Arrays.stream(Type.values())
                 .filter(type -> type.toString().equals(value))

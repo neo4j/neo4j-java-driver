@@ -17,7 +17,6 @@
 package org.neo4j.driver;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.assertValidFetchSize;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -374,7 +373,11 @@ public final class SessionConfig implements Serializable {
          * @return this builder
          */
         public Builder withFetchSize(long size) {
-            this.fetchSize = assertValidFetchSize(size);
+            if (size <= 0 && size != -1) {
+                throw new IllegalArgumentException(String.format(
+                        "The record fetch size may not be 0 or negative. Illegal record fetch size: %s.", size));
+            }
+            this.fetchSize = size;
             return this;
         }
 

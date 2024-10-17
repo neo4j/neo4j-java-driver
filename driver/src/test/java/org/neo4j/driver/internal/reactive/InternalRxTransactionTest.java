@@ -19,6 +19,7 @@ package org.neo4j.driver.internal.reactive;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -108,14 +109,13 @@ class InternalRxTransactionTest {
 
     @ParameterizedTest
     @MethodSource("allTxRunMethods")
-    @SuppressWarnings("ThrowableNotThrown")
     void shouldMarkTxIfFailedToRun(Function<RxTransaction, RxResult> runReturnOne) {
         // Given
         Throwable error = new RuntimeException("Hi there");
         var tx = mock(UnmanagedTransaction.class);
 
         // Run failed with error
-        when(tx.runRx(any(Query.class))).thenReturn(Futures.failedFuture(error));
+        when(tx.runRx(any(Query.class))).thenReturn(failedFuture(error));
         var rxTx = new InternalRxTransaction(tx);
 
         // When

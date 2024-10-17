@@ -17,8 +17,8 @@
 package org.neo4j.driver.integration;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,7 +38,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
+import org.neo4j.driver.internal.bolt.basicimpl.async.connection.EventLoopGroupFactory;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 

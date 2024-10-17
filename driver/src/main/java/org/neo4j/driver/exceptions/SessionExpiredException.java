@@ -17,7 +17,7 @@
 package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
-import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 
 /**
  * A <em>SessionExpiredException</em> indicates that the session can no longer satisfy the criteria under which it was acquired, e.g. a server no longer accepts

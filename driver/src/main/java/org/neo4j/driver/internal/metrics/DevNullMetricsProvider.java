@@ -18,7 +18,8 @@ package org.neo4j.driver.internal.metrics;
 
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.MetricsListener;
 
 public enum DevNullMetricsProvider implements MetricsProvider {
     INSTANCE;

@@ -23,20 +23,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.GqlNotificationConfig;
+import org.neo4j.driver.NotificationConfig;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.DatabaseName;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.Futures;
 
 public class LeakLoggingNetworkSession extends NetworkSession {
     private final String stackTrace;
 
     public LeakLoggingNetworkSession(
-            ConnectionProvider connectionProvider,
+            BoltSecurityPlanManager securityPlanManager,
+            BoltConnectionProvider connectionProvider,
             RetryLogic retryLogic,
             DatabaseName databaseName,
             AccessMode mode,
@@ -45,10 +48,13 @@ public class LeakLoggingNetworkSession extends NetworkSession {
             long fetchSize,
             Logging logging,
             BookmarkManager bookmarkManager,
-            GqlNotificationConfig notificationConfig,
+            NotificationConfig driverNotificationConfig,
+            NotificationConfig notificationConfig,
             AuthToken overrideAuthToken,
-            boolean telemetryDisabled) {
+            boolean telemetryDisabled,
+            AuthTokenManager authTokenManager) {
         super(
+                securityPlanManager,
                 connectionProvider,
                 retryLogic,
                 databaseName,
@@ -58,9 +64,11 @@ public class LeakLoggingNetworkSession extends NetworkSession {
                 fetchSize,
                 logging,
                 bookmarkManager,
+                driverNotificationConfig,
                 notificationConfig,
                 overrideAuthToken,
-                telemetryDisabled);
+                telemetryDisabled,
+                authTokenManager);
         this.stackTrace = captureStackTrace();
     }
 

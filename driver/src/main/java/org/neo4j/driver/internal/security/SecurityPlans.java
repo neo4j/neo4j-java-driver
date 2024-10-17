@@ -27,9 +27,9 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.Scheme;
 import org.neo4j.driver.internal.SecuritySettings;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 
 public class SecurityPlans {
     public static SecurityPlan createSecurityPlan(

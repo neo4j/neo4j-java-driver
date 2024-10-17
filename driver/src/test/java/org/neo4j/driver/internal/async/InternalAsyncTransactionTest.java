@@ -23,58 +23,67 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.testutil.TestUtil.await;
 import static org.neo4j.driver.testutil.TestUtil.connectionMock;
 import static org.neo4j.driver.testutil.TestUtil.newSession;
-import static org.neo4j.driver.testutil.TestUtil.setupFailingCommit;
-import static org.neo4j.driver.testutil.TestUtil.setupFailingRollback;
-import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulRunAndPull;
+import static org.neo4j.driver.testutil.TestUtil.setupConnectionAnswers;
 import static org.neo4j.driver.testutil.TestUtil.verifyCommitTx;
 import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
 import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.stubbing.Answer;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.internal.DatabaseNameUtil;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.DatabaseName;
+import org.neo4j.driver.internal.bolt.api.summary.BeginSummary;
+import org.neo4j.driver.internal.bolt.api.summary.CommitSummary;
+import org.neo4j.driver.internal.bolt.api.summary.PullSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RollbackSummary;
+import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
+import org.neo4j.driver.internal.bolt.basicimpl.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.value.IntegerValue;
 
 class InternalAsyncTransactionTest {
-    private static final String DATABASE = "neo4j";
-    private Connection connection;
-    private InternalAsyncTransaction tx;
+    private BoltConnection connection;
+    private InternalAsyncSession session;
 
     @BeforeEach
     void setUp() {
-        connection = connectionMock(BoltProtocolV4.INSTANCE);
-        var connectionProvider = mock(ConnectionProvider.class);
-        when(connectionProvider.acquireConnection(any(ConnectionContext.class))).thenAnswer(invocation -> {
-            var context = (ConnectionContext) invocation.getArgument(0);
-            context.databaseNameFuture().complete(DatabaseNameUtil.database(DATABASE));
-            return completedFuture(connection);
-        });
+        connection = connectionMock(BoltProtocolV4.INSTANCE.version());
+        var connectionProvider = mock(BoltConnectionProvider.class);
+        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willAnswer((Answer<CompletionStage<BoltConnection>>) invocation -> {
+                    var database = (DatabaseName) invocation.getArguments()[1];
+                    @SuppressWarnings("unchecked")
+                    var databaseConsumer = (Consumer<DatabaseName>) invocation.getArguments()[8];
+                    databaseConsumer.accept(database);
+                    return completedFuture(connection);
+                });
         var networkSession = newSession(connectionProvider);
-        var session = new InternalAsyncSession(networkSession);
-        tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
+        session = new InternalAsyncSession(networkSession);
     }
 
     private static Stream<Function<AsyncTransaction, CompletionStage<ResultCursor>>> allSessionRunMethods() {
@@ -90,7 +99,25 @@ class InternalAsyncTransactionTest {
     @ParameterizedTest
     @MethodSource("allSessionRunMethods")
     void shouldFlushOnRun(Function<AsyncTransaction, CompletionStage<ResultCursor>> runReturnOne) {
-        setupSuccessfulRunAndPull(connection);
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.run(any(), any())).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        given(connection.pull(anyLong(), anyLong())).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRunSummary(mock(RunSummary.class));
+                            handler.onPullSummary(mock(PullSummary.class));
+                            handler.onComplete();
+                        }));
+        var tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
 
         var result = await(runReturnOne.apply(tx));
         var summary = await(result.consumeAsync());
@@ -100,37 +127,104 @@ class InternalAsyncTransactionTest {
 
     @Test
     void shouldCommit() {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.commit()).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onCommitSummary(mock(CommitSummary.class));
+                            handler.onComplete();
+                        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
+        var tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
+
         await(tx.commitAsync());
 
         verifyCommitTx(connection);
-        verify(connection).release();
+        verify(connection).close();
         assertFalse(tx.isOpen());
     }
 
     @Test
     void shouldRollback() {
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.rollback()).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onRollbackSummary(mock(RollbackSummary.class));
+                            handler.onComplete();
+                        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
+        var tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
         await(tx.rollbackAsync());
 
         verifyRollbackTx(connection);
-        verify(connection).release();
+        verify(connection).close();
         assertFalse(tx.isOpen());
     }
 
     @Test
     void shouldReleaseConnectionWhenFailedToCommit() {
-        setupFailingCommit(connection);
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.commit()).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onError(new ServiceUnavailableException(""));
+                            handler.onComplete();
+                        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
+        var tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
         assertThrows(Exception.class, () -> await(tx.commitAsync()));
 
-        verify(connection).release();
+        verify(connection).close();
         assertFalse(tx.isOpen());
     }
 
     @Test
     void shouldReleaseConnectionWhenFailedToRollback() {
-        setupFailingRollback(connection);
+        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(completedFuture(connection));
+        given(connection.rollback()).willAnswer((Answer<CompletionStage<BoltConnection>>)
+                invocation -> CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(
+                connection,
+                List.of(
+                        handler -> {
+                            handler.onBeginSummary(mock(BeginSummary.class));
+                            handler.onComplete();
+                        },
+                        handler -> {
+                            handler.onError(new ServiceUnavailableException(""));
+                            handler.onComplete();
+                        }));
+        given(connection.close()).willReturn(CompletableFuture.completedStage(null));
+        var tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
         assertThrows(Exception.class, () -> await(tx.rollbackAsync()));
 
-        verify(connection).release();
+        verify(connection).close();
         assertFalse(tx.isOpen());
     }
 
@@ -140,7 +234,7 @@ class InternalAsyncTransactionTest {
         var utx = mock(UnmanagedTransaction.class);
         var expected = false;
         given(utx.isOpen()).willReturn(expected);
-        tx = new InternalAsyncTransaction(utx);
+        var tx = new InternalAsyncTransaction(utx);
 
         // WHEN
         boolean actual = tx.isOpenAsync().toCompletableFuture().get();

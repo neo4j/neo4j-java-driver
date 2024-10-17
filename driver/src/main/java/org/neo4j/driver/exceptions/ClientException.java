@@ -19,7 +19,7 @@ package org.neo4j.driver.exceptions;
 import java.io.Serial;
 import java.util.Map;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 import org.neo4j.driver.util.Preview;
 
 /**

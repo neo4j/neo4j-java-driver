@@ -32,7 +32,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.internal.telemetry.TelemetryApi;
+import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 
 public class InternalExecutableQuery implements ExecutableQuery {
     private final Driver driver;

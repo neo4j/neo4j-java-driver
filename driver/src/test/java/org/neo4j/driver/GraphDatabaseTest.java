@@ -17,6 +17,7 @@
 package org.neo4j.driver;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,7 +54,9 @@ class GraphDatabaseTest {
             TestUtil.interruptWhenInWaitingState(Thread.currentThread());
 
             @SuppressWarnings("resource")
-            final var driver = GraphDatabase.driver("bolt://localhost:" + serverSocket.getLocalPort());
+            final var driver = GraphDatabase.driver(
+                    "bolt://localhost:" + serverSocket.getLocalPort(),
+                    Config.builder().withConnectionTimeout(1, SECONDS).build());
             try {
                 assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
             } finally {

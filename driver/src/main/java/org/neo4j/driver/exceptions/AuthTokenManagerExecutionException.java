@@ -18,7 +18,7 @@ package org.neo4j.driver.exceptions;
 
 import java.io.Serial;
 import org.neo4j.driver.AuthTokenManager;
-import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.bolt.api.GqlStatusError;
 
 /**
  * The {@link org.neo4j.driver.AuthTokenManager} execution has lead to an unexpected result.

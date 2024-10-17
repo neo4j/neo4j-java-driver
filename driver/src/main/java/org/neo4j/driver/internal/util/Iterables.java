@@ -38,7 +38,7 @@ public class Iterables {
             return ((Collection<?>) it).size();
         }
         var size = 0;
-        for (Object ignored : it) {
+        for (var ignored : it) {
             size++;
         }
         return size;
