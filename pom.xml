@@ -34,7 +34,7 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.115.Final</netty-bom.version>
+    <netty-bom.version>4.1.119.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
@@ -46,14 +46,14 @@
     <junit.version>5.9.3</junit.version>
     <testng-engine.version>1.0.5</testng-engine.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
-    <bouncycastle-jdk18on.version>1.79</bouncycastle-jdk18on.version>
+    <bouncycastle-jdk18on.version>1.80</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
-    <jackson.version>2.18.2</jackson.version>
+    <jackson.version>2.18.3</jackson.version>
     <lombok.version>1.18.36</lombok.version>
-    <svm.version>21.3.12</svm.version>
-    <micrometer.version>1.13.8</micrometer.version>
-    <testcontainers.version>1.20.4</testcontainers.version>
-    <build-resources.version>4.4.39</build-resources.version>
+    <svm.version>21.3.13</svm.version>
+    <micrometer.version>1.13.11</micrometer.version>
+    <testcontainers.version>1.20.5</testcontainers.version>
+    <build-resources.version>4.4.41</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
