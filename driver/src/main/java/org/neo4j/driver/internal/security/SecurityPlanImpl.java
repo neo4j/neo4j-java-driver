@@ -25,11 +25,11 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import javax.net.ssl.SSLContext;
+import org.neo4j.bolt.connection.ssl.SSLContexts;
+import org.neo4j.bolt.connection.ssl.TrustManagerFactories;
 import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.RevocationCheckingStrategy;
-import org.neo4j.driver.internal.bolt.api.ssl.SSLContexts;
-import org.neo4j.driver.internal.bolt.api.ssl.TrustManagerFactories;
 import org.neo4j.driver.internal.util.Futures;
 
 /**
@@ -140,13 +140,12 @@ public class SecurityPlanImpl implements SecurityPlan {
         return revocationCheckingStrategy;
     }
 
-    private static org.neo4j.driver.internal.bolt.api.ssl.RevocationCheckingStrategy map(
+    private static org.neo4j.bolt.connection.ssl.RevocationCheckingStrategy map(
             RevocationCheckingStrategy revocationCheckingStrategy) {
         return switch (revocationCheckingStrategy) {
-            case NO_CHECKS -> org.neo4j.driver.internal.bolt.api.ssl.RevocationCheckingStrategy.NO_CHECKS;
-            case VERIFY_IF_PRESENT -> org.neo4j.driver.internal.bolt.api.ssl.RevocationCheckingStrategy
-                    .VERIFY_IF_PRESENT;
-            case STRICT -> org.neo4j.driver.internal.bolt.api.ssl.RevocationCheckingStrategy.STRICT;
+            case NO_CHECKS -> org.neo4j.bolt.connection.ssl.RevocationCheckingStrategy.NO_CHECKS;
+            case VERIFY_IF_PRESENT -> org.neo4j.bolt.connection.ssl.RevocationCheckingStrategy.VERIFY_IF_PRESENT;
+            case STRICT -> org.neo4j.bolt.connection.ssl.RevocationCheckingStrategy.STRICT;
         };
     }
 }

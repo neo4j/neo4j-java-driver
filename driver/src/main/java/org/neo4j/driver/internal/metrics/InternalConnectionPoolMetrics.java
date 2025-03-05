@@ -22,9 +22,9 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntSupplier;
+import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.ListenerEvent;
 import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
-import org.neo4j.driver.internal.bolt.api.ListenerEvent;
 
 final class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, ConnectionPoolMetricsListener {
     private final BoltServerAddress address;

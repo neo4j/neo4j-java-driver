@@ -20,8 +20,7 @@
     <rootDir>${project.basedir}/..</rootDir>
     <api.classes.directory>${basedir}/target/classes-without-jpms</api.classes.directory>
     <maven.compiler.xlint.extras>,-try</maven.compiler.xlint.extras>
-    <surefire.jpms.args>--add-opens
-      org.neo4j.driver/org.neo4j.driver.internal.bolt.basicimpl.impl.util.messaging=ALL-UNNAMED</surefire.jpms.args>
+    <surefire.jpms.args>--add-opens org.neo4j.driver/org.neo4j.bolt.connection.netty.impl.util.messaging=ALL-UNNAMED</surefire.jpms.args>
     <failsafe.parallelizable.jpms.args>--add-opens org.neo4j.driver/org.neo4j.driver.internal.util=ALL-UNNAMED --add-opens org.neo4j.driver/org.neo4j.driver.internal.async=ALL-UNNAMED</failsafe.parallelizable.jpms.args>
     <blockhound.tag>blockHoundTest</blockhound.tag>
     <maven.deploy.skip>false</maven.deploy.skip>
@@ -30,40 +29,24 @@
   <dependencies>
     <!-- Compile dependencies -->
     <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-bolt-api</artifactId>
-      <version>${project.version}</version>
-      <optional>true</optional>
+      <groupId>org.neo4j.bolt</groupId>
+      <artifactId>neo4j-bolt-connection</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-bolt-api-netty</artifactId>
-      <version>${project.version}</version>
-      <optional>true</optional>
+      <groupId>org.neo4j.bolt</groupId>
+      <artifactId>neo4j-bolt-connection-netty</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-bolt-api-pooled</artifactId>
-      <version>${project.version}</version>
-      <optional>true</optional>
+      <groupId>org.neo4j.bolt</groupId>
+      <artifactId>neo4j-bolt-connection-pooled</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-bolt-api-routed</artifactId>
-      <version>${project.version}</version>
-      <optional>true</optional>
+      <groupId>org.neo4j.bolt</groupId>
+      <artifactId>neo4j-bolt-connection-routed</artifactId>
     </dependency>
     <dependency>
       <groupId>org.reactivestreams</groupId>
       <artifactId>reactive-streams</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-tcnative-classes</artifactId>
     </dependency>
     <dependency>
       <groupId>io.projectreactor</groupId>
@@ -143,10 +126,6 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.tngtech.archunit</groupId>
-      <artifactId>archunit-junit5</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
@@ -221,124 +200,6 @@
             </dependency>
           </dependencies>
         </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <executions>
-            <execution>
-              <phase>package</phase>
-              <goals>
-                <goal>shade</goal>
-              </goals>
-              <configuration>
-                <artifactSet>
-                  <includes>
-                    <include>${project.groupId}:neo4j-bolt-api</include>
-                    <include>${project.groupId}:neo4j-bolt-api-netty</include>
-                    <include>${project.groupId}:neo4j-bolt-api-pooled</include>
-                    <include>${project.groupId}:neo4j-bolt-api-routed</include>
-                  </includes>
-                </artifactSet>
-                <relocations>
-                  <relocation>
-                    <pattern>org.neo4j.driver.internal.bolt.api</pattern>
-                    <shadedPattern>org.neo4j.driver.internal.bolt.api</shadedPattern>
-                  </relocation>
-                  <relocation>
-                    <pattern>org.neo4j.driver.internal.bolt.basicimpl.impl</pattern>
-                    <shadedPattern>org.neo4j.driver.internal.bolt.basicimpl</shadedPattern>
-                  </relocation>
-                  <relocation>
-                    <pattern>org.neo4j.driver.internal.bolt.basicimpl.BootstrapFactory</pattern>
-                    <shadedPattern>org.neo4j.driver.internal.bolt.basicimpl.BootstrapFactory</shadedPattern>
-                  </relocation>
-                  <relocation>
-                    <pattern>org.neo4j.driver.internal.bolt.basicimpl.NettyBoltConnectionProvider</pattern>
-                    <shadedPattern>org.neo4j.driver.internal.bolt.basicimpl.NettyBoltConnectionProvider</shadedPattern>
-                  </relocation>
-                  <relocation>
-                    <pattern>org.neo4j.driver.internal.bolt.pooledimpl</pattern>
-                    <shadedPattern>org.neo4j.driver.internal.bolt.pooledimpl</shadedPattern>
-                  </relocation>
-                  <relocation>
-                    <pattern>org.neo4j.driver.internal.bolt.routedimpl</pattern>
-                    <shadedPattern>org.neo4j.driver.internal.bolt.routedimpl</shadedPattern>
-                  </relocation>
-                </relocations>
-                <transformers>
-                  <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                  <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                    <manifestEntries>
-                      <Include-Resource>META-INF/services/reactor.blockhound.integration.BlockHoundIntegration=src/main/resources/META-INF/services/reactor.blockhound.integration.BlockHoundIntegration,META-INF/native-image/org.neo4j.driver/neo4j-java-driver/native-image.properties=src/main/resources/META-INF/native-image/org.neo4j.driver/neo4j-java-driver/native-image.properties,META-INF/native-image/org.neo4j.driver/neo4j-java-driver/reflect-config.json=src/main/resources/META-INF/native-image/org.neo4j.driver/neo4j-java-driver/reflect-config.json</Include-Resource>
-                    </manifestEntries>
-                  </transformer>
-                </transformers>
-                <filters>
-                  <filter>
-                    <artifact>*:*</artifact>
-                    <excludes>
-                      <exclude>module-info.java</exclude>
-                      <exclude>META-INF/maven/**</exclude>
-                    </excludes>
-                  </filter>
-                </filters>
-                <shadeTestJar>true</shadeTestJar>
-                <createSourcesJar>true</createSourcesJar>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-antrun-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>add-module-info-to-sources</id>
-              <phase>package</phase>
-              <goals>
-                <goal>run</goal>
-              </goals>
-              <configuration>
-                <target>
-                  <unzip src="${project.build.directory}/${project.artifactId}-${project.version}-sources.jar" dest="${project.build.directory}/sources-with-module"/>
-                  <copy file="${project.basedir}/src/main/jpms/module-info.java" tofile="${project.build.directory}/sources-with-module/module-info.java" overwrite="true"/>
-                  <zip basedir="${project.build.directory}/sources-with-module" destfile="${project.build.directory}/${project.artifactId}-${project.version}-sources.jar"/>
-                </target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.moditect</groupId>
-          <artifactId>moditect-maven-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>add-module-infos</id>
-              <phase>package</phase>
-              <goals>
-                <goal>add-module-info</goal>
-              </goals>
-              <configuration>
-                <overwriteExistingFiles>true</overwriteExistingFiles>
-                <module>
-                  <moduleInfoFile>
-                    ${basedir}/src/main/jpms/module-info.java
-                  </moduleInfoFile>
-                </module>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <configuration>
-            <instructions combine.children="append">
-              <_removeheaders>Bnd-*,Private-Package,Bundle-ClassPath,Embed-Dependency,Embed-Transitive,Embedded-Artifacts,Include-Resource</_removeheaders>
-              <Embed-Dependency>neo4j-bolt-api-netty</Embed-Dependency>
-            </instructions>
-          </configuration>
-        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
@@ -411,18 +272,6 @@
             <version>${surefire.and.failsafe.version}</version>
           </dependency>
         </dependencies>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.moditect</groupId>
-        <artifactId>moditect-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

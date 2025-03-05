@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import org.neo4j.driver.internal.bolt.basicimpl.EventLoopThread;
+import org.neo4j.bolt.connection.netty.EventLoopThread;
 
 public final class Futures {
     private static final CompletableFuture<?> COMPLETED_WITH_NULL = completedFuture(null);

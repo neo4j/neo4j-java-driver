@@ -42,6 +42,6 @@ public class PathValue extends ObjectValueAdapter<Path> {
 
     @Override
     public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.driver.internal.bolt.api.values.Type.PATH);
+        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.PATH);
     }
 }

@@ -41,11 +41,11 @@ import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import org.neo4j.bolt.connection.routed.impl.cluster.RoutingTableRegistry;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.bolt.routedimpl.impl.cluster.RoutingTableRegistry;
 import reactor.core.publisher.Mono;
 
 public class TestkitState {

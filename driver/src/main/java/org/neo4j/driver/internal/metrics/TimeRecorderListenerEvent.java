@@ -17,7 +17,7 @@
 package org.neo4j.driver.internal.metrics;
 
 import java.time.Clock;
-import org.neo4j.driver.internal.bolt.api.ListenerEvent;
+import org.neo4j.bolt.connection.ListenerEvent;
 
 final class TimeRecorderListenerEvent implements ListenerEvent<Long> {
     private final Clock clock;

@@ -22,17 +22,17 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.neo4j.driver.internal.bolt.api.AccessMode;
-import org.neo4j.driver.internal.bolt.api.AuthToken;
-import org.neo4j.driver.internal.bolt.api.BoltAgent;
-import org.neo4j.driver.internal.bolt.api.BoltConnection;
-import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
-import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
-import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
-import org.neo4j.driver.internal.bolt.api.DatabaseName;
-import org.neo4j.driver.internal.bolt.api.NotificationConfig;
-import org.neo4j.driver.internal.bolt.api.RoutingContext;
-import org.neo4j.driver.internal.bolt.api.SecurityPlan;
+import org.neo4j.bolt.connection.AccessMode;
+import org.neo4j.bolt.connection.AuthToken;
+import org.neo4j.bolt.connection.BoltAgent;
+import org.neo4j.bolt.connection.BoltConnection;
+import org.neo4j.bolt.connection.BoltConnectionProvider;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
+import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.DatabaseName;
+import org.neo4j.bolt.connection.NotificationConfig;
+import org.neo4j.bolt.connection.RoutingContext;
+import org.neo4j.bolt.connection.SecurityPlan;
 
 final class ListeningBoltConnectionProvider implements BoltConnectionProvider {
     private final BoltConnectionProvider delegate;

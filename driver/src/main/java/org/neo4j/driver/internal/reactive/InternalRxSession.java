@@ -18,6 +18,7 @@ package org.neo4j.driver.internal.reactive;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -26,7 +27,6 @@ import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
-import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.Futures;

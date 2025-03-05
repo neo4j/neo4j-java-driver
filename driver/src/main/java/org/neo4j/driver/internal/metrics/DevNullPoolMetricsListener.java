@@ -16,7 +16,7 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.internal.bolt.api.ListenerEvent;
+import org.neo4j.bolt.connection.ListenerEvent;
 
 enum DevNullPoolMetricsListener implements ConnectionPoolMetricsListener {
     INSTANCE;

@@ -98,6 +98,6 @@ public class FloatValue extends NumberValueAdapter<Double> {
 
     @Override
     public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.driver.internal.bolt.api.values.Type.FLOAT);
+        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.FLOAT);
     }
 }

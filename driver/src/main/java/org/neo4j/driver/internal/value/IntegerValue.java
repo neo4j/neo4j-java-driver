@@ -90,6 +90,6 @@ public class IntegerValue extends NumberValueAdapter<Long> {
 
     @Override
     public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.driver.internal.bolt.api.values.Type.INTEGER);
+        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.INTEGER);
     }
 }

@@ -25,8 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
+import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
-import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 
 class ApiTelemetryWorkTest {
 

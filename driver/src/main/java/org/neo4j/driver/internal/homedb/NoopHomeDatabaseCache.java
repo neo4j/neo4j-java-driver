@@ -17,7 +17,7 @@
 package org.neo4j.driver.internal.homedb;
 
 import java.util.Optional;
-import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.bolt.connection.BoltConnection;
 
 final class NoopHomeDatabaseCache implements HomeDatabaseCache {
     @Override

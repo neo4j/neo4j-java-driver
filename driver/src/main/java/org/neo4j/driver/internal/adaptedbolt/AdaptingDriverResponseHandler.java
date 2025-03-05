@@ -19,19 +19,19 @@ package org.neo4j.driver.internal.adaptedbolt;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import org.neo4j.bolt.connection.ResponseHandler;
+import org.neo4j.bolt.connection.summary.BeginSummary;
+import org.neo4j.bolt.connection.summary.CommitSummary;
+import org.neo4j.bolt.connection.summary.DiscardSummary;
+import org.neo4j.bolt.connection.summary.LogoffSummary;
+import org.neo4j.bolt.connection.summary.LogonSummary;
+import org.neo4j.bolt.connection.summary.PullSummary;
+import org.neo4j.bolt.connection.summary.ResetSummary;
+import org.neo4j.bolt.connection.summary.RollbackSummary;
+import org.neo4j.bolt.connection.summary.RouteSummary;
+import org.neo4j.bolt.connection.summary.RunSummary;
+import org.neo4j.bolt.connection.summary.TelemetrySummary;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.bolt.api.ResponseHandler;
-import org.neo4j.driver.internal.bolt.api.summary.BeginSummary;
-import org.neo4j.driver.internal.bolt.api.summary.CommitSummary;
-import org.neo4j.driver.internal.bolt.api.summary.DiscardSummary;
-import org.neo4j.driver.internal.bolt.api.summary.LogoffSummary;
-import org.neo4j.driver.internal.bolt.api.summary.LogonSummary;
-import org.neo4j.driver.internal.bolt.api.summary.PullSummary;
-import org.neo4j.driver.internal.bolt.api.summary.ResetSummary;
-import org.neo4j.driver.internal.bolt.api.summary.RollbackSummary;
-import org.neo4j.driver.internal.bolt.api.summary.RouteSummary;
-import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
-import org.neo4j.driver.internal.bolt.api.summary.TelemetrySummary;
 import org.neo4j.driver.internal.value.BoltValue;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 
@@ -63,7 +63,7 @@ final class AdaptingDriverResponseHandler implements ResponseHandler {
     }
 
     @Override
-    public void onRecord(org.neo4j.driver.internal.bolt.api.values.Value[] fields) {
+    public void onRecord(org.neo4j.bolt.connection.values.Value[] fields) {
         var mappedFields = Arrays.stream(fields)
                 .map(field -> ((BoltValue) field).asDriverValue())
                 .toArray(Value[]::new);

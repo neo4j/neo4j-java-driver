@@ -61,6 +61,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
+import org.neo4j.bolt.connection.DatabaseName;
+import org.neo4j.bolt.connection.TelemetryApi;
+import org.neo4j.bolt.connection.summary.BeginSummary;
+import org.neo4j.bolt.connection.summary.ResetSummary;
+import org.neo4j.bolt.connection.summary.RollbackSummary;
+import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
@@ -70,13 +77,6 @@ import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
-import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
-import org.neo4j.driver.internal.bolt.api.DatabaseName;
-import org.neo4j.driver.internal.bolt.api.TelemetryApi;
-import org.neo4j.driver.internal.bolt.api.summary.BeginSummary;
-import org.neo4j.driver.internal.bolt.api.summary.ResetSummary;
-import org.neo4j.driver.internal.bolt.api.summary.RollbackSummary;
-import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 
@@ -420,13 +420,13 @@ class NetworkSessionTest {
     private void accessModeUsedToAcquireConnections(AccessMode mode) {
         var session2 = newSession(connectionProvider, mode);
         beginTransaction(session2);
-        var argument = ArgumentCaptor.forClass(org.neo4j.driver.internal.bolt.api.AccessMode.class);
+        var argument = ArgumentCaptor.forClass(org.neo4j.bolt.connection.AccessMode.class);
         verify(connectionProvider)
                 .connect(any(), any(), any(), argument.capture(), any(), any(), any(), any(), any(), any());
         assertEquals(
                 switch (mode) {
-                    case READ -> org.neo4j.driver.internal.bolt.api.AccessMode.READ;
-                    case WRITE -> org.neo4j.driver.internal.bolt.api.AccessMode.WRITE;
+                    case READ -> org.neo4j.bolt.connection.AccessMode.READ;
+                    case WRITE -> org.neo4j.bolt.connection.AccessMode.WRITE;
                 },
                 argument.getValue());
     }

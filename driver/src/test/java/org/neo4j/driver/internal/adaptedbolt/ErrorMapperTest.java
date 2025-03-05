@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import java.util.Collections;
 import javax.net.ssl.SSLHandshakeException;
 import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.connection.GqlStatusError;
+import org.neo4j.bolt.connection.exception.BoltFailureException;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
@@ -32,8 +34,6 @@ import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.bolt.api.GqlStatusError;
-import org.neo4j.driver.internal.bolt.api.exception.BoltFailureException;
 
 class ErrorMapperTest {
     private BoltFailureException newError(String code, String message) {

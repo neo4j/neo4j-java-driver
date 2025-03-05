@@ -21,12 +21,12 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.neo4j.bolt.connection.AccessMode;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
+import org.neo4j.bolt.connection.DatabaseName;
+import org.neo4j.bolt.connection.NotificationConfig;
+import org.neo4j.bolt.connection.SecurityPlan;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.bolt.api.AccessMode;
-import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
-import org.neo4j.driver.internal.bolt.api.DatabaseName;
-import org.neo4j.driver.internal.bolt.api.NotificationConfig;
-import org.neo4j.driver.internal.bolt.api.SecurityPlan;
 
 public interface DriverBoltConnectionProvider {
 

@@ -19,7 +19,7 @@ package org.neo4j.driver.internal;
 import org.neo4j.driver.types.Point;
 
 public record InternalPoint3D(int srid, double x, double y, double z)
-        implements Point, org.neo4j.driver.internal.bolt.api.values.Point {
+        implements Point, org.neo4j.bolt.connection.values.Point {
 
     @Override
     public boolean equals(Object o) {

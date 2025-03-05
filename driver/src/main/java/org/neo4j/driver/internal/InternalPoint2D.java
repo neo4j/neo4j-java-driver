@@ -18,8 +18,7 @@ package org.neo4j.driver.internal;
 
 import org.neo4j.driver.types.Point;
 
-public record InternalPoint2D(int srid, double x, double y)
-        implements Point, org.neo4j.driver.internal.bolt.api.values.Point {
+public record InternalPoint2D(int srid, double x, double y) implements Point, org.neo4j.bolt.connection.values.Point {
 
     @Override
     public double z() {

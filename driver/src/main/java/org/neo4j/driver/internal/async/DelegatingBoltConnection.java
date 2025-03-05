@@ -21,18 +21,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import org.neo4j.bolt.connection.AccessMode;
+import org.neo4j.bolt.connection.AuthInfo;
+import org.neo4j.bolt.connection.BoltConnectionState;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
+import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.DatabaseName;
+import org.neo4j.bolt.connection.NotificationConfig;
+import org.neo4j.bolt.connection.TelemetryApi;
+import org.neo4j.bolt.connection.TransactionType;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
-import org.neo4j.driver.internal.bolt.api.AccessMode;
-import org.neo4j.driver.internal.bolt.api.AuthInfo;
-import org.neo4j.driver.internal.bolt.api.BoltConnectionState;
-import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
-import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
-import org.neo4j.driver.internal.bolt.api.DatabaseName;
-import org.neo4j.driver.internal.bolt.api.NotificationConfig;
-import org.neo4j.driver.internal.bolt.api.TelemetryApi;
-import org.neo4j.driver.internal.bolt.api.TransactionType;
 
 public abstract class DelegatingBoltConnection implements DriverBoltConnection {
     protected final DriverBoltConnection delegate;

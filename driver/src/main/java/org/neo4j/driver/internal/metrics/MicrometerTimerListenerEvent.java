@@ -18,7 +18,7 @@ package org.neo4j.driver.internal.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import org.neo4j.driver.internal.bolt.api.ListenerEvent;
+import org.neo4j.bolt.connection.ListenerEvent;
 
 final class MicrometerTimerListenerEvent implements ListenerEvent<Timer.Sample> {
     private final MeterRegistry meterRegistry;
