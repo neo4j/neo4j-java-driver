@@ -45,14 +45,14 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
     public static final long DEFAULT_MAX_RETRY_TIME_MS = SECONDS.toMillis(30);
 
     private static final long INITIAL_RETRY_DELAY_MS = SECONDS.toMillis(1);
-    private static final double RETRY_DELAY_MULTIPLIER = 1;
+    private static final double RETRY_DELAY_MULTIPLIER = 2.0;
     private static final double RETRY_DELAY_JITTER_FACTOR = 0.2;
     private static final long MAX_RETRY_DELAY = Long.MAX_VALUE / 2;
 
     private final long maxRetryTimeMs;
-    private final long initialRetryDelayMs;
-    private final double multiplier;
-    private final double jitterFactor;
+    final long initialRetryDelayMs;
+    final double multiplier;
+    final double jitterFactor;
     private final EventExecutorGroup eventExecutorGroup;
     private final Clock clock;
     private final SleepTask sleepTask;
@@ -325,8 +325,8 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
         if (initialRetryDelayMs < 0) {
             throw new IllegalArgumentException("Initial retry delay should >= 0: " + initialRetryDelayMs);
         }
-        if (multiplier < 1.0) {
-            throw new IllegalArgumentException("Multiplier should be >= 1.0: " + multiplier);
+        if (multiplier < 2.0) {
+            throw new IllegalArgumentException("Multiplier should be >= 2.0: " + multiplier);
         }
         if (jitterFactor < 0 || jitterFactor > 1) {
             throw new IllegalArgumentException("Jitter factor should be in [0.0, 1.0]: " + jitterFactor);
