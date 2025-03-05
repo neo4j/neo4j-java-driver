@@ -325,8 +325,8 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
         if (initialRetryDelayMs < 0) {
             throw new IllegalArgumentException("Initial retry delay should >= 0: " + initialRetryDelayMs);
         }
-        if (multiplier < 1.0) {
-            throw new IllegalArgumentException("Multiplier should be >= 1.0: " + multiplier);
+        if (multiplier < 2.0) {
+            throw new IllegalArgumentException("Multiplier should be >= 2.0: " + multiplier);
         }
         if (jitterFactor < 0 || jitterFactor > 1) {
             throw new IllegalArgumentException("Jitter factor should be in [0.0, 1.0]: " + jitterFactor);
