@@ -19,6 +19,7 @@ package org.neo4j.driver.internal.retry;
 import static java.lang.Long.MAX_VALUE;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.closeTo;
@@ -118,6 +119,17 @@ class ExponentialBackoffRetryLogicTest {
         var error =
                 assertThrows(IllegalArgumentException.class, () -> newRetryLogic(1, 1, 1, 1, null, (ignored) -> {}));
         assertThat(error.getMessage(), containsString("Clock"));
+    }
+
+    @Test
+    void shouldInitialiseWithExpectedDefaultValues() {
+        var clock = mock(Clock.class);
+        var sleepTask = mock(ExponentialBackoffRetryLogic.SleepTask.class);
+        var logic = new ExponentialBackoffRetryLogic(MAX_VALUE, eventExecutor, clock, DEV_NULL_LOGGING, sleepTask);
+
+        assertEquals(SECONDS.toMillis(1), logic.initialRetryDelayMs);
+        assertEquals(2.0, logic.multiplier);
+        assertEquals(0.2, logic.jitterFactor);
     }
 
     @Test

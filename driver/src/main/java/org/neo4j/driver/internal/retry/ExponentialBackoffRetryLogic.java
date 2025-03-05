@@ -45,14 +45,14 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
     public static final long DEFAULT_MAX_RETRY_TIME_MS = SECONDS.toMillis(30);
 
     private static final long INITIAL_RETRY_DELAY_MS = SECONDS.toMillis(1);
-    private static final double RETRY_DELAY_MULTIPLIER = 1;
+    private static final double RETRY_DELAY_MULTIPLIER = 2.0;
     private static final double RETRY_DELAY_JITTER_FACTOR = 0.2;
     private static final long MAX_RETRY_DELAY = Long.MAX_VALUE / 2;
 
     private final long maxRetryTimeMs;
-    private final long initialRetryDelayMs;
-    private final double multiplier;
-    private final double jitterFactor;
+    final long initialRetryDelayMs;
+    final double multiplier;
+    final double jitterFactor;
     private final EventExecutorGroup eventExecutorGroup;
     private final Clock clock;
     private final SleepTask sleepTask;
