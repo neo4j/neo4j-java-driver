@@ -16,7 +16,7 @@
  */
 package org.neo4j.driver.internal.bolt.basicimpl.impl.async.connection;
 
-import static io.netty.util.AttributeKey.newInstance;
+import static io.netty.util.AttributeKey.valueOf;
 
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
@@ -30,23 +30,23 @@ import org.neo4j.driver.internal.bolt.basicimpl.impl.async.inbound.InboundMessag
 import org.neo4j.driver.internal.bolt.basicimpl.impl.messaging.BoltPatchesListener;
 
 public final class ChannelAttributes {
-    private static final AttributeKey<String> CONNECTION_ID = newInstance("connectionId");
-    private static final AttributeKey<BoltProtocolVersion> PROTOCOL_VERSION = newInstance("protocolVersion");
-    private static final AttributeKey<String> SERVER_AGENT = newInstance("serverAgent");
-    private static final AttributeKey<BoltServerAddress> ADDRESS = newInstance("serverAddress");
-    private static final AttributeKey<Long> CREATION_TIMESTAMP = newInstance("creationTimestamp");
-    private static final AttributeKey<Long> LAST_USED_TIMESTAMP = newInstance("lastUsedTimestamp");
-    private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER = newInstance("messageDispatcher");
-    private static final AttributeKey<String> TERMINATION_REASON = newInstance("terminationReason");
+    private static final AttributeKey<String> CONNECTION_ID = valueOf("connectionId");
+    private static final AttributeKey<BoltProtocolVersion> PROTOCOL_VERSION = valueOf("protocolVersion");
+    private static final AttributeKey<String> SERVER_AGENT = valueOf("serverAgent");
+    private static final AttributeKey<BoltServerAddress> ADDRESS = valueOf("serverAddress");
+    private static final AttributeKey<Long> CREATION_TIMESTAMP = valueOf("creationTimestamp");
+    private static final AttributeKey<Long> LAST_USED_TIMESTAMP = valueOf("lastUsedTimestamp");
+    private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER = valueOf("messageDispatcher");
+    private static final AttributeKey<String> TERMINATION_REASON = valueOf("terminationReason");
     private static final AttributeKey<AuthorizationStateListener> AUTHORIZATION_STATE_LISTENER =
-            newInstance("authorizationStateListener");
+            valueOf("authorizationStateListener");
     private static final AttributeKey<Set<BoltPatchesListener>> BOLT_PATCHES_LISTENERS =
-            newInstance("boltPatchesListeners");
+            valueOf("boltPatchesListeners");
 
     // configuration hints provided by the server
-    private static final AttributeKey<Long> CONNECTION_READ_TIMEOUT = newInstance("connectionReadTimeout");
-    private static final AttributeKey<Boolean> TELEMETRY_ENABLED = newInstance("telemetryEnabled");
-    private static final AttributeKey<Boolean> SSR_ENABLED = newInstance("ssr.enabled");
+    private static final AttributeKey<Long> CONNECTION_READ_TIMEOUT = valueOf("connectionReadTimeout");
+    private static final AttributeKey<Boolean> TELEMETRY_ENABLED = valueOf("telemetryEnabled");
+    private static final AttributeKey<Boolean> SSR_ENABLED = valueOf("ssr.enabled");
 
     private ChannelAttributes() {}
 
