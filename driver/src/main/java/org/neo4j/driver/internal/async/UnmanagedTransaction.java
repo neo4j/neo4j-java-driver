@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
@@ -46,6 +47,7 @@ import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
+import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
 
@@ -93,6 +95,7 @@ public class UnmanagedTransaction {
     private CompletableFuture<Void> rollbackFuture;
     private Throwable causeOfTermination;
     private final Logging logging;
+    private final Logger log;
 
     public UnmanagedTransaction(Connection connection, BookmarkHolder bookmarkHolder, long fetchSize, Logging logging) {
         this(connection, bookmarkHolder, fetchSize, new ResultCursorsHolder(), logging);
@@ -110,11 +113,16 @@ public class UnmanagedTransaction {
         this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
         this.logging = logging;
+        this.log = new PrefixedLogger(
+                "[" + Thread.currentThread().getName() + "][" + hashCode() + "]", logging.getLog(getClass()));
+        ;
     }
 
     public CompletionStage<UnmanagedTransaction> beginAsync(Bookmark initialBookmark, TransactionConfig config) {
+        log.trace("beginAsync");
         return protocol.beginTransaction(connection, initialBookmark, config, logging)
                 .handle((ignore, beginError) -> {
+                    log.trace("beginAsync protocol.beginTransaction finished");
                     if (beginError != null) {
                         if (beginError instanceof AuthorizationExpiredException) {
                             connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
@@ -242,13 +250,18 @@ public class UnmanagedTransaction {
     }
 
     private void handleTransactionCompletion(boolean commitAttempt, Throwable throwable) {
+        log.trace(
+                "handleTransactionCompletion(commitAttempt=%b, throwable is null=%b)",
+                commitAttempt, throwable == null);
         executeWithLock(lock, () -> {
+            log.trace("handleTransactionCompletion lock acquired");
             if (commitAttempt && throwable == null) {
                 state = State.COMMITTED;
             } else {
                 state = State.ROLLED_BACK;
             }
         });
+        log.trace("handleTransactionCompletion lock released");
         if (throwable instanceof AuthorizationExpiredException) {
             connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
         } else if (throwable instanceof ConnectionReadTimeoutException) {
@@ -256,42 +269,57 @@ public class UnmanagedTransaction {
         } else {
             connection.release(); // release in background
         }
+        log.trace("handleTransactionCompletion finished");
     }
 
     private CompletionStage<Void> closeAsync(boolean commit, boolean completeWithNullIfNotOpen) {
+        log.trace("closeAsync(commit=%b, completeWithNullIfNotOpen=%b) before lock", commit, completeWithNullIfNotOpen);
         CompletionStage<Void> stage = executeWithLock(lock, () -> {
+            log.trace("closeAsync lock acquired");
             CompletionStage<Void> resultStage = null;
             if (completeWithNullIfNotOpen && !isOpen()) {
+                log.trace("closeAsync will complete with null");
                 resultStage = completedWithNull();
             } else if (state == State.COMMITTED) {
+                log.trace("closeAsync state=%s", state);
                 resultStage = failedFuture(
                         new ClientException(commit ? CANT_COMMIT_COMMITTED_MSG : CANT_ROLLBACK_COMMITTED_MSG));
             } else if (state == State.ROLLED_BACK) {
+                log.trace("closeAsync state=%s", state);
                 resultStage = failedFuture(
                         new ClientException(commit ? CANT_COMMIT_ROLLED_BACK_MSG : CANT_ROLLBACK_ROLLED_BACK_MSG));
             } else {
+                log.trace("closeAsync state=%s", state);
                 if (commit) {
                     if (rollbackFuture != null) {
+                        log.trace("closeAsync rollbackFuture not null");
                         resultStage = failedFuture(new ClientException(CANT_COMMIT_ROLLING_BACK_MSG));
                     } else if (commitFuture != null) {
+                        log.trace("closeAsync commitFuture not null");
                         resultStage = commitFuture;
                     } else {
+                        log.trace("closeAsync initializing commitFuture");
                         commitFuture = new CompletableFuture<>();
                     }
                 } else {
                     if (commitFuture != null) {
+                        log.trace("closeAsync commitFuture not null");
                         resultStage = failedFuture(new ClientException(CANT_ROLLBACK_COMMITTING_MSG));
                     } else if (rollbackFuture != null) {
+                        log.trace("closeAsync rollbackFuture not null");
                         resultStage = rollbackFuture;
                     } else {
+                        log.trace("closeAsync initializing rollbackFuture");
                         rollbackFuture = new CompletableFuture<>();
                     }
                 }
             }
             return resultStage;
         });
+        log.trace("closeAsync lock released");
 
         if (stage == null) {
+            log.trace("closeAsync stage is null");
             CompletableFuture<Void> targetFuture;
             Function<Throwable, CompletionStage<Void>> targetAction;
             if (commit) {
@@ -309,6 +337,7 @@ public class UnmanagedTransaction {
             stage = targetFuture;
         }
 
+        log.trace("closeAsync finished");
         return stage;
     }
 }

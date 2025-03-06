@@ -76,7 +76,8 @@ public class NetworkSession {
         this.mode = mode;
         this.retryLogic = retryLogic;
         this.logging = logging;
-        this.log = new PrefixedLogger("[" + hashCode() + "]", logging.getLog(getClass()));
+        this.log = new PrefixedLogger(
+                "[" + Thread.currentThread().getName() + "][" + hashCode() + "]", logging.getLog(getClass()));
         this.bookmarkHolder = bookmarkHolder;
         CompletableFuture<DatabaseName> databaseNameFuture = databaseName
                 .databaseName()
@@ -267,7 +268,11 @@ public class NetworkSession {
                         // there somehow is an existing open connection, this should not happen, just a precondition
                         throw new IllegalStateException("Existing open connection detected");
                     }
-                    return connectionProvider.acquireConnection(connectionContext.contextWithMode(mode));
+                    log.trace("connectionProvider.acquireConnection");
+                    return connectionProvider
+                            .acquireConnection(connectionContext.contextWithMode(mode))
+                            .whenComplete(
+                                    (connection, error) -> log.trace("connectionProvider.acquireConnection finished"));
                 });
 
         connectionStage = newConnectionStage.exceptionally(error -> null);
