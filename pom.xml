@@ -44,7 +44,7 @@
     <reactor-bom.version>2023.0.15</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
-    <mockito-core.version>5.15.2</mockito-core.version>
+    <mockito-core.version>5.16.0</mockito-core.version>
     <junit.version>5.11.4</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.11.0</testng.version>
@@ -60,8 +60,7 @@
     <svm.version>24.1.2</svm.version>
     <micrometer.version>1.13.11</micrometer.version>
     <blockhound.version>1.0.11.RELEASE</blockhound.version>
-    <testcontainers.version>1.20.5</testcontainers.version>
-    <archunit-junit5.version>1.4.0</archunit-junit5.version>
+    <testcontainers.version>1.20.6</testcontainers.version>
     <build-resources.version>2024-12.1</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
