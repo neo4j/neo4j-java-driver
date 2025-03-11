@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import org.neo4j.driver.internal.bolt.api.BoltConnection;
+import org.neo4j.bolt.connection.BoltConnection;
 
 final class HomeDatabaseCacheImpl implements HomeDatabaseCache {
     private final Map<HomeDatabaseCacheKey, Entry> keyToEntry = new HashMap<>();

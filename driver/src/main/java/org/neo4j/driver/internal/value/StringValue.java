@@ -79,6 +79,6 @@ public class StringValue extends ValueAdapter {
 
     @Override
     public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.driver.internal.bolt.api.values.Type.STRING);
+        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.STRING);
     }
 }

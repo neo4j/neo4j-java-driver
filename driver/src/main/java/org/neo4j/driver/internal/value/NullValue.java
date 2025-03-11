@@ -63,6 +63,6 @@ public final class NullValue extends ValueAdapter {
 
     @Override
     public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.driver.internal.bolt.api.values.Type.NULL);
+        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.NULL);
     }
 }

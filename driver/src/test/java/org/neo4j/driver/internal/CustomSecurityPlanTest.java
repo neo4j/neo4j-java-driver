@@ -67,7 +67,7 @@ class CustomSecurityPlanTest {
     }
 
     private static class SecurityPlanCapturingDriverFactory extends DriverFactory {
-        final List<org.neo4j.driver.internal.bolt.api.SecurityPlan> capturedSecurityPlans = new ArrayList<>();
+        final List<org.neo4j.bolt.connection.SecurityPlan> capturedSecurityPlans = new ArrayList<>();
 
         @Override
         protected InternalDriver createDriver(

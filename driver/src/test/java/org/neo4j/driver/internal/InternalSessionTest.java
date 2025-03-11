@@ -33,13 +33,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatcher;
+import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionContext;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
-import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 

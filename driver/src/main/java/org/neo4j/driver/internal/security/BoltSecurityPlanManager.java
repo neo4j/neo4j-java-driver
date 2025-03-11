@@ -17,7 +17,7 @@
 package org.neo4j.driver.internal.security;
 
 import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.internal.bolt.api.SecurityPlan;
+import org.neo4j.bolt.connection.SecurityPlan;
 
 public interface BoltSecurityPlanManager {
     CompletionStage<SecurityPlan> plan();

@@ -20,6 +20,7 @@ import static java.util.Collections.emptyMap;
 
 import java.util.Map;
 import java.util.Set;
+import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -32,7 +33,6 @@ import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.async.NetworkSession;
-import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.Futures;
 

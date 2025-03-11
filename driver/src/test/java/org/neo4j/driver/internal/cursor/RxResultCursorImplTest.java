@@ -33,14 +33,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
+import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
-import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
-import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
-import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
 
 class RxResultCursorImplTest {
     @Mock

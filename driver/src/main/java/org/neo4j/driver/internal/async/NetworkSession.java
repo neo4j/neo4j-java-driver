@@ -35,6 +35,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
+import org.neo4j.bolt.connection.DatabaseName;
+import org.neo4j.bolt.connection.DatabaseNameUtil;
+import org.neo4j.bolt.connection.NotificationConfig;
+import org.neo4j.bolt.connection.SecurityPlan;
+import org.neo4j.bolt.connection.TelemetryApi;
+import org.neo4j.bolt.connection.exception.MinVersionAcquisitionException;
+import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokenManager;
@@ -59,14 +67,6 @@ import org.neo4j.driver.internal.NotificationConfigMapper;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
-import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
-import org.neo4j.driver.internal.bolt.api.DatabaseName;
-import org.neo4j.driver.internal.bolt.api.DatabaseNameUtil;
-import org.neo4j.driver.internal.bolt.api.NotificationConfig;
-import org.neo4j.driver.internal.bolt.api.SecurityPlan;
-import org.neo4j.driver.internal.bolt.api.TelemetryApi;
-import org.neo4j.driver.internal.bolt.api.exception.MinVersionAcquisitionException;
-import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
 import org.neo4j.driver.internal.cursor.DisposableResultCursorImpl;
 import org.neo4j.driver.internal.cursor.ResultCursorImpl;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
@@ -654,10 +654,10 @@ public class NetworkSession {
                 : () -> authTokenManager.getToken().thenApply(token -> ((InternalAuthToken) token).toMap());
     }
 
-    private static org.neo4j.driver.internal.bolt.api.AccessMode asBoltAccessMode(AccessMode mode) {
+    private static org.neo4j.bolt.connection.AccessMode asBoltAccessMode(AccessMode mode) {
         return switch (mode) {
-            case WRITE -> org.neo4j.driver.internal.bolt.api.AccessMode.WRITE;
-            case READ -> org.neo4j.driver.internal.bolt.api.AccessMode.READ;
+            case WRITE -> org.neo4j.bolt.connection.AccessMode.WRITE;
+            case READ -> org.neo4j.bolt.connection.AccessMode.READ;
         };
     }
 

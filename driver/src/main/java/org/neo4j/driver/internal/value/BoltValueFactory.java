@@ -22,16 +22,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.neo4j.bolt.connection.values.Node;
+import org.neo4j.bolt.connection.values.Path;
+import org.neo4j.bolt.connection.values.Relationship;
+import org.neo4j.bolt.connection.values.Segment;
+import org.neo4j.bolt.connection.values.Value;
+import org.neo4j.bolt.connection.values.ValueFactory;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.bolt.api.values.Node;
-import org.neo4j.driver.internal.bolt.api.values.Path;
-import org.neo4j.driver.internal.bolt.api.values.Relationship;
-import org.neo4j.driver.internal.bolt.api.values.Segment;
-import org.neo4j.driver.internal.bolt.api.values.Value;
-import org.neo4j.driver.internal.bolt.api.values.ValueFactory;
 
 public class BoltValueFactory implements ValueFactory {
     private static final BoltValueFactory INSTANCE = new BoltValueFactory();

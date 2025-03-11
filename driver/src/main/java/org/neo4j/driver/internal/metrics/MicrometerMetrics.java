@@ -22,11 +22,11 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntSupplier;
+import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.ListenerEvent;
+import org.neo4j.bolt.connection.MetricsListener;
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
-import org.neo4j.driver.internal.bolt.api.ListenerEvent;
-import org.neo4j.driver.internal.bolt.api.MetricsListener;
 
 final class MicrometerMetrics implements Metrics, MetricsListener {
     private final MeterRegistry meterRegistry;

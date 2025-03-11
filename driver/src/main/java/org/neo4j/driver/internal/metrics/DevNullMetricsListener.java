@@ -17,9 +17,9 @@
 package org.neo4j.driver.internal.metrics;
 
 import java.util.function.IntSupplier;
-import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
-import org.neo4j.driver.internal.bolt.api.ListenerEvent;
-import org.neo4j.driver.internal.bolt.api.MetricsListener;
+import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.ListenerEvent;
+import org.neo4j.bolt.connection.MetricsListener;
 
 public enum DevNullMetricsListener implements MetricsListener {
     INSTANCE;

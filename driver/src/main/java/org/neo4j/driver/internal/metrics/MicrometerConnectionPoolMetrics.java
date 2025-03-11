@@ -28,9 +28,9 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntSupplier;
+import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.ListenerEvent;
 import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
-import org.neo4j.driver.internal.bolt.api.ListenerEvent;
 
 final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsListener, ConnectionPoolMetrics {
     public static final String PREFIX = "neo4j.driver.connections";

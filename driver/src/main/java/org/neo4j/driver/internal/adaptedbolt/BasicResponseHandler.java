@@ -21,19 +21,19 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import org.neo4j.bolt.connection.summary.BeginSummary;
+import org.neo4j.bolt.connection.summary.CommitSummary;
+import org.neo4j.bolt.connection.summary.LogoffSummary;
+import org.neo4j.bolt.connection.summary.LogonSummary;
+import org.neo4j.bolt.connection.summary.ResetSummary;
+import org.neo4j.bolt.connection.summary.RollbackSummary;
+import org.neo4j.bolt.connection.summary.RouteSummary;
+import org.neo4j.bolt.connection.summary.RunSummary;
+import org.neo4j.bolt.connection.summary.TelemetrySummary;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.adaptedbolt.summary.DiscardSummary;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
-import org.neo4j.driver.internal.bolt.api.summary.BeginSummary;
-import org.neo4j.driver.internal.bolt.api.summary.CommitSummary;
-import org.neo4j.driver.internal.bolt.api.summary.LogoffSummary;
-import org.neo4j.driver.internal.bolt.api.summary.LogonSummary;
-import org.neo4j.driver.internal.bolt.api.summary.ResetSummary;
-import org.neo4j.driver.internal.bolt.api.summary.RollbackSummary;
-import org.neo4j.driver.internal.bolt.api.summary.RouteSummary;
-import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
-import org.neo4j.driver.internal.bolt.api.summary.TelemetrySummary;
 
 public class BasicResponseHandler implements DriverResponseHandler {
     private final CompletableFuture<Summaries> summariesFuture = new CompletableFuture<>();

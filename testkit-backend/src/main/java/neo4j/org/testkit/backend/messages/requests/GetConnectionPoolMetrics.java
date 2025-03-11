@@ -24,7 +24,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.ConnectionPoolMetrics;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
+import org.neo4j.bolt.connection.BoltServerAddress;
 import reactor.core.publisher.Mono;
 
 @Getter

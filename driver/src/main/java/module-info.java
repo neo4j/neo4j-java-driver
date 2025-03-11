@@ -30,10 +30,10 @@ module org.neo4j.driver {
     exports org.neo4j.driver.exceptions;
     exports org.neo4j.driver.exceptions.value;
 
-    requires org.neo4j.bolt.api;
-    requires org.neo4j.bolt.netty;
-    requires org.neo4j.bolt.pooled;
-    requires org.neo4j.bolt.routed;
+    requires org.neo4j.bolt.connection;
+    requires org.neo4j.bolt.connection.netty;
+    requires org.neo4j.bolt.connection.pooled;
+    requires org.neo4j.bolt.connection.routed;
     requires reactor.core;
     requires io.netty.common;
     requires transitive java.logging;

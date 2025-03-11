@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.BookmarkManager;
@@ -50,7 +51,6 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionContext;
-import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.summary.ResultSummary;
 
 class InternalExecutableQueryTest {

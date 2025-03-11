@@ -25,16 +25,16 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import org.neo4j.bolt.connection.values.IsoDuration;
+import org.neo4j.bolt.connection.values.Point;
+import org.neo4j.bolt.connection.values.Type;
+import org.neo4j.bolt.connection.values.Value;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
-import org.neo4j.driver.internal.bolt.api.values.IsoDuration;
-import org.neo4j.driver.internal.bolt.api.values.Point;
-import org.neo4j.driver.internal.bolt.api.values.Type;
-import org.neo4j.driver.internal.bolt.api.values.Value;
 
-public class BoltValue implements org.neo4j.driver.internal.bolt.api.values.Value {
+public class BoltValue implements org.neo4j.bolt.connection.values.Value {
     private final InternalValue value;
     private final Type type;
 
@@ -139,12 +139,12 @@ public class BoltValue implements org.neo4j.driver.internal.bolt.api.values.Valu
     }
 
     @Override
-    public org.neo4j.driver.internal.bolt.api.values.Value get(String key) {
+    public org.neo4j.bolt.connection.values.Value get(String key) {
         return ((InternalValue) value.get(key)).asBoltValue();
     }
 
     @Override
-    public Iterable<org.neo4j.driver.internal.bolt.api.values.Value> values() {
+    public Iterable<org.neo4j.bolt.connection.values.Value> values() {
         return () -> new Iterator<>() {
             private final Iterator<org.neo4j.driver.Value> iterator =
                     value.values().iterator();
@@ -167,7 +167,7 @@ public class BoltValue implements org.neo4j.driver.internal.bolt.api.values.Valu
     }
 
     @Override
-    public <T> Map<String, T> asMap(Function<org.neo4j.driver.internal.bolt.api.values.Value, T> mapFunction) {
+    public <T> Map<String, T> asMap(Function<org.neo4j.bolt.connection.values.Value, T> mapFunction) {
         return value.asMap(v -> mapFunction.apply(((InternalValue) v).asBoltValue()));
     }
 

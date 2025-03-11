@@ -16,8 +16,8 @@
  */
 package org.neo4j.driver.internal;
 
+import org.neo4j.bolt.connection.LoggingProvider;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.bolt.api.LoggingProvider;
 
 public class BoltLoggingProvider implements LoggingProvider {
     private final Logging logging;

@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Map;
 import java.util.stream.Collector;
+import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Driver;
@@ -32,7 +33,6 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 
 public class InternalExecutableQuery implements ExecutableQuery {
     private final Driver driver;

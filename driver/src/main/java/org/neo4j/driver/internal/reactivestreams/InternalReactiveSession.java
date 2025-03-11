@@ -18,13 +18,13 @@ package org.neo4j.driver.internal.reactivestreams;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
-import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 import org.neo4j.driver.internal.reactive.AbstractReactiveSession;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.reactivestreams.ReactiveResult;

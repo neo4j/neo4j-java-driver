@@ -32,45 +32,6 @@
       <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
-    <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-bolt-api</artifactId>
-      <version>${project.version}</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-bolt-api-netty</artifactId>
-      <version>${project.version}</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-bolt-api-pooled</artifactId>
-      <version>${project.version}</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-bolt-api-routed</artifactId>
-      <version>${project.version}</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-tcnative-classes</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>io.projectreactor</groupId>
-      <artifactId>reactor-core</artifactId>
-      <optional>true</optional>
-    </dependency>
 
     <!-- Optional and / or provided dependencies, as they are not transitive to the original driver they must be declared again. -->
     <dependency>
@@ -121,7 +82,7 @@
           <configuration>
             <instructions combine.children="append">
               <_removeheaders>Bnd-*,Private-Package,Bundle-ClassPath,Embed-Dependency,Embed-Transitive,Embedded-Artifacts,Include-Resource</_removeheaders>
-              <Embed-Dependency>neo4j-bolt-api-netty,netty-handler,netty-tcnative-classes,reactor-core</Embed-Dependency>
+              <Embed-Dependency>neo4j-bolt-connection-netty,netty-handler,netty-tcnative-classes,reactor-core</Embed-Dependency>
             </instructions>
           </configuration>
         </plugin>
@@ -232,38 +193,18 @@
             <configuration>
               <artifactSet>
                 <includes>
-                  <include>${project.groupId}:neo4j-bolt-api</include>
-                  <include>${project.groupId}:neo4j-bolt-api-netty</include>
-                  <include>${project.groupId}:neo4j-bolt-api-pooled</include>
-                  <include>${project.groupId}:neo4j-bolt-api-routed</include>
+                  <include>org.neo4j.bolt:neo4j-bolt-connection</include>
+                  <include>org.neo4j.bolt:neo4j-bolt-connection-netty</include>
+                  <include>org.neo4j.bolt:neo4j-bolt-connection-pooled</include>
+                  <include>org.neo4j.bolt:neo4j-bolt-connection-routed</include>
                   <include>io.netty:*</include>
                   <include>io.projectreactor:*</include>
                 </includes>
               </artifactSet>
               <relocations>
                 <relocation>
-                  <pattern>org.neo4j.driver.internal.bolt.api</pattern>
-                  <shadedPattern>org.neo4j.driver.internal.bolt.api</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.neo4j.driver.internal.bolt.basicimpl.impl</pattern>
-                  <shadedPattern>org.neo4j.driver.internal.bolt.basicimpl</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.neo4j.driver.internal.bolt.basicimpl.BootstrapFactory</pattern>
-                  <shadedPattern>org.neo4j.driver.internal.bolt.basicimpl.BootstrapFactory</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.neo4j.driver.internal.bolt.basicimpl.NettyBoltConnectionProvider</pattern>
-                  <shadedPattern>org.neo4j.driver.internal.bolt.basicimpl.NettyBoltConnectionProvider</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.neo4j.driver.internal.bolt.pooledimpl</pattern>
-                  <shadedPattern>org.neo4j.driver.internal.bolt.pooledimpl</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.neo4j.driver.internal.bolt.routedimpl</pattern>
-                  <shadedPattern>org.neo4j.driver.internal.bolt.routedimpl</shadedPattern>
+                  <pattern>org.neo4j.bolt.connection</pattern>
+                  <shadedPattern>org.neo4j.driver.internal.shaded.bolt.connection</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>io.netty</pattern>

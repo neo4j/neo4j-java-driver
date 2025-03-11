@@ -75,7 +75,7 @@ public abstract class BooleanValue extends ValueAdapter {
 
         @Override
         public BoltValue asBoltValue() {
-            return new BoltValue(this, org.neo4j.driver.internal.bolt.api.values.Type.BOOLEAN);
+            return new BoltValue(this, org.neo4j.bolt.connection.values.Type.BOOLEAN);
         }
     }
 
@@ -108,7 +108,7 @@ public abstract class BooleanValue extends ValueAdapter {
 
         @Override
         public BoltValue asBoltValue() {
-            return new BoltValue(this, org.neo4j.driver.internal.bolt.api.values.Type.BOOLEAN);
+            return new BoltValue(this, org.neo4j.bolt.connection.values.Type.BOOLEAN);
         }
     }
 }

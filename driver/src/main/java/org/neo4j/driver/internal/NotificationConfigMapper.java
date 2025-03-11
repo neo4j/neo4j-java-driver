@@ -17,10 +17,10 @@
 package org.neo4j.driver.internal;
 
 import java.util.stream.Collectors;
+import org.neo4j.bolt.connection.NotificationClassification;
+import org.neo4j.bolt.connection.NotificationConfig;
+import org.neo4j.bolt.connection.NotificationSeverity;
 import org.neo4j.driver.NotificationCategory;
-import org.neo4j.driver.internal.bolt.api.NotificationClassification;
-import org.neo4j.driver.internal.bolt.api.NotificationConfig;
-import org.neo4j.driver.internal.bolt.api.NotificationSeverity;
 
 public class NotificationConfigMapper {
     public static NotificationConfig map(org.neo4j.driver.NotificationConfig config) {

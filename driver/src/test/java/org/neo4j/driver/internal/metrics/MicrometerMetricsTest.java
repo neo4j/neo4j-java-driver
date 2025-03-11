@@ -26,9 +26,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.ListenerEvent;
 import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
-import org.neo4j.driver.internal.bolt.api.ListenerEvent;
 
 class MicrometerMetricsTest {
     static final String ID = "id";

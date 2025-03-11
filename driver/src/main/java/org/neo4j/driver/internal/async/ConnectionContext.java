@@ -18,9 +18,9 @@ package org.neo4j.driver.internal.async;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import org.neo4j.bolt.connection.DatabaseName;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.internal.bolt.api.DatabaseName;
 
 public interface ConnectionContext {
 

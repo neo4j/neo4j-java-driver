@@ -19,8 +19,8 @@ package org.neo4j.driver.internal.util;
 import static java.lang.String.format;
 
 import java.util.Optional;
+import org.neo4j.bolt.connection.BoltAgent;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.internal.bolt.api.BoltAgent;
 
 public class DriverInfoUtil {
     public static BoltAgent boltAgent() {

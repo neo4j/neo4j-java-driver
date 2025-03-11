@@ -16,8 +16,8 @@
  */
 package org.neo4j.driver.internal.boltlistener;
 
-import org.neo4j.driver.internal.bolt.api.BoltConnection;
-import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.bolt.connection.BoltConnection;
+import org.neo4j.bolt.connection.BoltConnectionProvider;
 
 public interface BoltConnectionListener {
     void onOpen(BoltConnection boltConnection);

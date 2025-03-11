@@ -19,6 +19,10 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Neo4j Bolt Connection (Netty reference impl)
+  Neo4j Bolt Connection (Pooled provider impl)
+  Neo4j Bolt Connection (Provider SPI)
+  Neo4j Bolt Connection (Routed provider impl)
   Netty/Buffer
   Netty/Codec
   Netty/Common

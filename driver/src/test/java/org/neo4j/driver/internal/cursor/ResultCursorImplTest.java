@@ -37,6 +37,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
+import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -45,9 +48,6 @@ import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
-import org.neo4j.driver.internal.bolt.api.BoltProtocolVersion;
-import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
-import org.neo4j.driver.internal.bolt.api.summary.RunSummary;
 
 class ResultCursorImplTest {
     ResultCursorImpl cursor;

@@ -20,8 +20,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
-import org.neo4j.driver.internal.bolt.api.TelemetryApi;
 
 public record ApiTelemetryWork(TelemetryApi telemetryApi, AtomicBoolean enabled, AtomicBoolean acknowledged) {
     public ApiTelemetryWork(TelemetryApi telemetryApi) {

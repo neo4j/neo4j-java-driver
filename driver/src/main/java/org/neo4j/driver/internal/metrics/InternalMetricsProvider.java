@@ -17,9 +17,9 @@
 package org.neo4j.driver.internal.metrics;
 
 import java.time.Clock;
+import org.neo4j.bolt.connection.MetricsListener;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.internal.bolt.api.MetricsListener;
 
 public final class InternalMetricsProvider implements MetricsProvider {
     private final InternalMetrics metrics;

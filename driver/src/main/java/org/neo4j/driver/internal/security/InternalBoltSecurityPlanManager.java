@@ -17,8 +17,8 @@
 package org.neo4j.driver.internal.security;
 
 import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.internal.bolt.api.SecurityPlan;
-import org.neo4j.driver.internal.bolt.api.SecurityPlans;
+import org.neo4j.bolt.connection.SecurityPlan;
+import org.neo4j.bolt.connection.SecurityPlans;
 
 public class InternalBoltSecurityPlanManager implements BoltSecurityPlanManager {
     private final org.neo4j.driver.internal.security.SecurityPlan securityPlan;
@@ -32,7 +32,7 @@ public class InternalBoltSecurityPlanManager implements BoltSecurityPlanManager 
         return securityPlan
                 .sslContext()
                 .thenApply(sslContext -> securityPlan.requiresEncryption()
-                        ? org.neo4j.driver.internal.bolt.api.SecurityPlans.encrypted(
+                        ? org.neo4j.bolt.connection.SecurityPlans.encrypted(
                                 securityPlan.requiresClientAuth(),
                                 sslContext,
                                 securityPlan.requiresHostnameVerification())

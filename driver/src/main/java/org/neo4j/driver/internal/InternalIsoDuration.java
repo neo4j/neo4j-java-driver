@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import org.neo4j.driver.types.IsoDuration;
 
-public class InternalIsoDuration implements IsoDuration, org.neo4j.driver.internal.bolt.api.values.IsoDuration {
+public class InternalIsoDuration implements IsoDuration, org.neo4j.bolt.connection.values.IsoDuration {
     private static final long NANOS_PER_SECOND = 1_000_000_000;
     private static final List<TemporalUnit> SUPPORTED_UNITS = List.of(MONTHS, DAYS, SECONDS, NANOS);
 
