@@ -17,6 +17,14 @@
 package org.neo4j.driver.internal.value;
 
 import java.time.DateTimeException;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +53,96 @@ public class BoltValueFactory implements ValueFactory {
     @Override
     public Value value(Object value) {
         return ((InternalValue) Values.value(value)).asBoltValue();
+    }
+
+    @Override
+    public Value value(boolean value) {
+        return ((InternalValue) Values.value(value)).asBoltValue();
+    }
+
+    @Override
+    public Value value(long value) {
+        return ((InternalValue) Values.value(value)).asBoltValue();
+    }
+
+    @Override
+    public Value value(double value) {
+        return ((InternalValue) Values.value(value)).asBoltValue();
+    }
+
+    @Override
+    public Value value(byte[] values) {
+        return ((InternalValue) Values.value(values)).asBoltValue();
+    }
+
+    @Override
+    public Value value(String value) {
+        return ((InternalValue) Values.value(value)).asBoltValue();
+    }
+
+    @Override
+    public Value value(Map<String, Value> stringToValue) {
+        return ((InternalValue) Values.value(stringToValue)).asBoltValue();
+    }
+
+    @Override
+    public Value value(Value[] values) {
+        return ((InternalValue) Values.value(values)).asBoltValue();
+    }
+
+    @Override
+    public Value value(Node node) {
+        return ((InternalValue) Values.value(node)).asBoltValue();
+    }
+
+    @Override
+    public Value value(Relationship relationship) {
+        return ((InternalValue) Values.value(relationship)).asBoltValue();
+    }
+
+    @Override
+    public Value value(Path path) {
+        return ((InternalValue) Values.value(path)).asBoltValue();
+    }
+
+    @Override
+    public Value value(LocalDate localDate) {
+        return ((InternalValue) Values.value(localDate)).asBoltValue();
+    }
+
+    @Override
+    public Value value(OffsetTime offsetTime) {
+        return ((InternalValue) Values.value(offsetTime)).asBoltValue();
+    }
+
+    @Override
+    public Value value(LocalTime localTime) {
+        return ((InternalValue) Values.value(localTime)).asBoltValue();
+    }
+
+    @Override
+    public Value value(LocalDateTime localDateTime) {
+        return ((InternalValue) Values.value(localDateTime)).asBoltValue();
+    }
+
+    @Override
+    public Value value(OffsetDateTime offsetDateTime) {
+        return ((InternalValue) Values.value(offsetDateTime)).asBoltValue();
+    }
+
+    @Override
+    public Value value(ZonedDateTime zonedDateTime) {
+        return ((InternalValue) Values.value(zonedDateTime)).asBoltValue();
+    }
+
+    @Override
+    public Value value(Period period) {
+        return ((InternalValue) Values.value(period)).asBoltValue();
+    }
+
+    @Override
+    public Value value(Duration duration) {
+        return ((InternalValue) Values.value(duration)).asBoltValue();
     }
 
     @Override
