@@ -72,6 +72,9 @@ public class BoltValueFactory implements ValueFactory {
 
     @Override
     public Value value(byte[] values) {
+        if (values == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(values)).asBoltValue();
     }
 
