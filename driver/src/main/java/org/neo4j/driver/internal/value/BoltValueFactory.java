@@ -77,71 +77,113 @@ public class BoltValueFactory implements ValueFactory {
 
     @Override
     public Value value(String value) {
+        if (value == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(value)).asBoltValue();
     }
 
     @Override
     public Value value(Map<String, Value> stringToValue) {
+        if (stringToValue == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(stringToValue)).asBoltValue();
     }
 
     @Override
     public Value value(Value[] values) {
+        if (values == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(values)).asBoltValue();
     }
 
     @Override
     public Value value(Node node) {
+        if (node == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(node)).asBoltValue();
     }
 
     @Override
     public Value value(Relationship relationship) {
+        if (relationship == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(relationship)).asBoltValue();
     }
 
     @Override
     public Value value(Path path) {
+        if (path == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(path)).asBoltValue();
     }
 
     @Override
     public Value value(LocalDate localDate) {
+        if (localDate == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(localDate)).asBoltValue();
     }
 
     @Override
     public Value value(OffsetTime offsetTime) {
+        if (offsetTime == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(offsetTime)).asBoltValue();
     }
 
     @Override
     public Value value(LocalTime localTime) {
+        if (localTime == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(localTime)).asBoltValue();
     }
 
     @Override
     public Value value(LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(localDateTime)).asBoltValue();
     }
 
     @Override
     public Value value(OffsetDateTime offsetDateTime) {
+        if (offsetDateTime == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(offsetDateTime)).asBoltValue();
     }
 
     @Override
     public Value value(ZonedDateTime zonedDateTime) {
+        if (zonedDateTime == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(zonedDateTime)).asBoltValue();
     }
 
     @Override
     public Value value(Period period) {
+        if (period == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(period)).asBoltValue();
     }
 
     @Override
     public Value value(Duration duration) {
+        if (duration == null) {
+            return value((Object) null);
+        }
         return ((InternalValue) Values.value(duration)).asBoltValue();
     }
 
