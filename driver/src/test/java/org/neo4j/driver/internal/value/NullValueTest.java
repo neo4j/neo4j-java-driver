@@ -20,6 +20,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.isoDuration;
 import static org.neo4j.driver.Values.ofValue;
@@ -34,6 +35,7 @@ import java.time.ZonedDateTime;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.types.TypeConstructor;
 
 class NullValueTest {
@@ -118,6 +120,14 @@ class NullValueTest {
     void shouldReturnAsDefaultValue() {
         assertComputeOrDefaultReturnDefault(Value::asObject, "null string");
         assertComputeOrDefaultReturnDefault(Value::asNumber, 10);
+    }
+
+    @Test
+    void shouldMapToType() {
+        var values = Values.value((Object) null);
+        // unlike asString(), this returns null
+        assertNull(values.as(String.class));
+        assertNull(values.as(Object.class));
     }
 
     private static <T> void assertComputeOrDefaultReturnDefault(Function<Value, T> f, T defaultAndExpectedValue) {

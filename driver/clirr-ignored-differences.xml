@@ -633,4 +633,16 @@
         <method>org.neo4j.driver.net.ServerAddress of(java.lang.String)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Value</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Object as(java.lang.Class)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Record</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Object as(java.lang.Class)</method>
+    </difference>
+
 </differences>

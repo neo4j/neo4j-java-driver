@@ -30,9 +30,11 @@ import java.util.stream.Collectors;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalMapAccessorWithDefaultValue;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.util.QueryKeys;
+import org.neo4j.driver.internal.value.mapping.MapAccessorMapperProvider;
 import org.neo4j.driver.util.Pair;
 
 public class InternalRecord extends InternalMapAccessorWithDefaultValue implements Record {
@@ -114,6 +116,16 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
     @Override
     public <T> Map<String, T> asMap(Function<Value, T> mapper) {
         return Extract.map(this, mapper);
+    }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(Record.class)) {
+            return targetClass.cast(this);
+        }
+        return MapAccessorMapperProvider.mapper(this, targetClass)
+                .map(mapper -> mapper.map(this, targetClass))
+                .orElseThrow(() -> new Uncoercible(getClass().getCanonicalName(), targetClass.getCanonicalName()));
     }
 
     @Override

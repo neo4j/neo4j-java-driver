@@ -16,6 +16,7 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.lang.reflect.ParameterizedType;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
@@ -38,6 +39,16 @@ public final class NullValue extends ValueAdapter {
     @Override
     public String asString() {
         return "null";
+    }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        return null;
+    }
+
+    @Override
+    public Object as(ParameterizedType type) {
+        return null;
     }
 
     @Override

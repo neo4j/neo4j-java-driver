@@ -19,12 +19,18 @@ package org.neo4j.driver.internal.value;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.value.BooleanValue.FALSE;
 import static org.neo4j.driver.internal.value.BooleanValue.TRUE;
 
+import java.io.Serializable;
+import java.lang.constant.Constable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.types.TypeSystem;
@@ -87,5 +93,16 @@ class BooleanValueTest {
         assertFalse(BooleanValue.FALSE.asBoolean());
         assertThat(TRUE.asObject(), equalTo((Object) Boolean.TRUE));
         assertThat(FALSE.asObject(), equalTo((Object) Boolean.FALSE));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldMapToType(boolean expected) {
+        var value = Values.value(expected);
+        assertEquals(expected, value.as(boolean.class));
+        assertEquals(expected, value.as(Boolean.class));
+        assertEquals(expected, value.as(Serializable.class));
+        assertEquals(expected, value.as(Constable.class));
+        assertEquals(expected, value.as(Object.class));
     }
 }

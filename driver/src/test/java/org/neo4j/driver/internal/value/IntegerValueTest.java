@@ -19,11 +19,16 @@ package org.neo4j.driver.internal.value;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.Serializable;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.value.LossyCoercion;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
@@ -123,5 +128,25 @@ class IntegerValueTest {
 
         assertThat(value1.asDouble(), equalTo(9007199254740992D));
         assertThrows(LossyCoercion.class, value2::asDouble);
+    }
+
+    @Test
+    void shouldMapToType() {
+        var expected = 0L;
+        var value = Values.value(expected);
+        assertEquals(expected, value.as(long.class));
+        assertEquals(expected, value.as(Long.class));
+        assertEquals(expected, value.as(Number.class));
+        assertEquals(expected, value.as(Serializable.class));
+        assertEquals(expected, value.as(Comparable.class));
+        assertEquals(expected, value.as(Constable.class));
+        assertEquals(expected, value.as(ConstantDesc.class));
+        assertEquals((int) expected, value.as(int.class));
+        assertEquals((int) expected, value.as(Integer.class));
+        assertEquals(expected, value.as(Object.class));
+        assertEquals(expected, value.as(double.class));
+        assertEquals(expected, value.as(Double.class));
+        assertEquals((float) expected, value.as(float.class));
+        assertEquals((float) expected, value.as(Float.class));
     }
 }

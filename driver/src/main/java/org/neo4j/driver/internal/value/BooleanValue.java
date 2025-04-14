@@ -16,6 +16,7 @@
  */
 package org.neo4j.driver.internal.value;
 
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
@@ -57,6 +58,17 @@ public abstract class BooleanValue extends ValueAdapter {
             return true;
         }
 
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T> T as(Class<T> targetClass) {
+            if (targetClass.isAssignableFrom(Boolean.class)) {
+                return targetClass.cast(Boolean.TRUE);
+            } else if (targetClass.isAssignableFrom(boolean.class)) {
+                return (T) Boolean.TRUE;
+            }
+            throw new Uncoercible(type().name(), targetClass.getCanonicalName());
+        }
+
         @Override
         public boolean isTrue() {
             return true;
@@ -88,6 +100,17 @@ public abstract class BooleanValue extends ValueAdapter {
         @Override
         public boolean asBoolean() {
             return false;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T> T as(Class<T> targetClass) {
+            if (targetClass.isAssignableFrom(Boolean.class)) {
+                return targetClass.cast(Boolean.FALSE);
+            } else if (targetClass.isAssignableFrom(boolean.class)) {
+                return (T) Boolean.FALSE;
+            }
+            throw new Uncoercible(type().name(), targetClass.getCanonicalName());
         }
 
         @Override

@@ -19,9 +19,13 @@ package org.neo4j.driver.internal.value;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.Serializable;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAdjuster;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 
@@ -53,5 +57,17 @@ class TimeValueTest {
         var timeValue = new TimeValue(time);
 
         assertThrows(Uncoercible.class, timeValue::asLong);
+    }
+
+    @Test
+    void shouldMapToType() {
+        var date = OffsetTime.now();
+        var values = Values.value(date);
+        assertEquals(date, values.as(OffsetTime.class));
+        assertEquals(date, values.as(Temporal.class));
+        assertEquals(date, values.as(TemporalAdjuster.class));
+        assertEquals(date, values.as(Comparable.class));
+        assertEquals(date, values.as(Serializable.class));
+        assertEquals(date, values.as(Object.class));
     }
 }

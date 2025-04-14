@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.value;
 
 import java.time.OffsetTime;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
@@ -38,5 +39,13 @@ public class TimeValue extends ObjectValueAdapter<OffsetTime> {
     @Override
     public BoltValue asBoltValue() {
         return new BoltValue(this, org.neo4j.bolt.connection.values.Type.TIME);
+    }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(OffsetTime.class)) {
+            return targetClass.cast(asOffsetTime());
+        }
+        throw new Uncoercible(type().name(), targetClass.getCanonicalName());
     }
 }

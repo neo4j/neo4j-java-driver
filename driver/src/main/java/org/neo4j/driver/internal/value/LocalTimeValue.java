@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.value;
 
 import java.time.LocalTime;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
@@ -38,5 +39,13 @@ public class LocalTimeValue extends ObjectValueAdapter<LocalTime> {
     @Override
     public BoltValue asBoltValue() {
         return new BoltValue(this, org.neo4j.bolt.connection.values.Type.LOCAL_TIME);
+    }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(LocalTime.class)) {
+            return targetClass.cast(asLocalTime());
+        }
+        throw new Uncoercible(type().name(), targetClass.getCanonicalName());
     }
 }

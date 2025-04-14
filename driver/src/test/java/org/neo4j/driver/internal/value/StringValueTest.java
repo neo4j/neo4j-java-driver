@@ -19,10 +19,15 @@ package org.neo4j.driver.internal.value;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import java.io.Serializable;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.types.TypeSystem;
@@ -83,5 +88,18 @@ class StringValueTest {
     void shouldHaveStringType() {
         InternalValue value = new StringValue("Spongebob");
         assertThat(value.type(), equalTo(InternalTypeSystem.TYPE_SYSTEM.STRING()));
+    }
+
+    @Test
+    void shouldMapToType() {
+        var string = "value";
+        var values = Values.value(string);
+        assertEquals(string, values.as(String.class));
+        assertEquals(string, values.as(Serializable.class));
+        assertEquals(string, values.as(Comparable.class));
+        assertEquals(string, values.as(CharSequence.class));
+        assertEquals(string, values.as(Constable.class));
+        assertEquals(string, values.as(ConstantDesc.class));
+        assertEquals(string, values.as(Object.class));
     }
 }

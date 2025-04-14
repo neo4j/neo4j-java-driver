@@ -20,6 +20,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.time.DateTimeException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
 
@@ -38,6 +39,11 @@ public class UnsupportedDateTimeValue extends ValueAdapter {
     @Override
     public ZonedDateTime asZonedDateTime() {
         throw instantiateDateTimeException();
+    }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        throw new Uncoercible(type().name(), targetClass.getCanonicalName());
     }
 
     @Override

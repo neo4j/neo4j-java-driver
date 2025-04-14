@@ -19,6 +19,7 @@ package org.neo4j.driver.exceptions.value;
 import java.io.Serial;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.util.Preview;
 
 /**
  * A <em>ValueException</em> indicates that the client has carried out an operation on values incorrectly.
@@ -33,12 +34,23 @@ public class ValueException extends ClientException {
      * @param message the message
      */
     public ValueException(String message) {
+        this(message, null);
+    }
+
+    /**
+     * Creates a new instance.
+     * @param message the message
+     * @param cause the cause
+     * @since 5.28.5
+     */
+    @Preview(name = "Object mapping")
+    public ValueException(String message, Throwable cause) {
         super(
                 GqlStatusError.UNKNOWN.getStatus(),
                 GqlStatusError.UNKNOWN.getStatusDescription(message),
                 "N/A",
                 message,
                 GqlStatusError.DIAGNOSTIC_RECORD,
-                null);
+                cause);
     }
 }

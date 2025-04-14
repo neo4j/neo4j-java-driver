@@ -39,4 +39,12 @@ public class NodeValue extends EntityValueAdapter<Node> {
     public BoltValue asBoltValue() {
         return new BoltValue(this, org.neo4j.bolt.connection.values.Type.NODE);
     }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(Node.class)) {
+            return targetClass.cast(asNode());
+        }
+        return asMapped(targetClass);
+    }
 }

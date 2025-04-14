@@ -39,4 +39,12 @@ public class RelationshipValue extends EntityValueAdapter<Relationship> {
     public BoltValue asBoltValue() {
         return new BoltValue(this, org.neo4j.bolt.connection.values.Type.RELATIONSHIP);
     }
+
+    @Override
+    public <T> T as(Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(Relationship.class)) {
+            return targetClass.cast(asRelationship());
+        }
+        return asMapped(targetClass);
+    }
 }

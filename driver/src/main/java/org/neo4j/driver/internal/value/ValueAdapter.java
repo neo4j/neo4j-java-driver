@@ -36,6 +36,7 @@ import org.neo4j.driver.exceptions.value.Unsizable;
 import org.neo4j.driver.internal.types.InternalMapAccessorWithDefaultValue;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.types.TypeRepresentation;
+import org.neo4j.driver.internal.value.mapping.MapAccessorMapperProvider;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.Node;
@@ -341,6 +342,12 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     @Override
     public final TypeConstructor typeConstructor() {
         return ((TypeRepresentation) type()).constructor();
+    }
+
+    protected <T> T asMapped(Class<T> targetClass) {
+        return MapAccessorMapperProvider.mapper(this, targetClass)
+                .map(mapper -> mapper.map(this, targetClass))
+                .orElseThrow(() -> new Uncoercible(type().name(), targetClass.getCanonicalName()));
     }
 
     // Force implementation

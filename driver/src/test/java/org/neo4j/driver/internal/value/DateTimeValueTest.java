@@ -19,10 +19,16 @@ package org.neo4j.driver.internal.value;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.Serializable;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.chrono.ChronoZonedDateTime;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAccessor;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 
@@ -65,5 +71,19 @@ class DateTimeValueTest {
         var dateTimeValue = new DateTimeValue(dateTime);
 
         assertThrows(Uncoercible.class, dateTimeValue::asLong);
+    }
+
+    @Test
+    void shouldMapToType() {
+        var date = ZonedDateTime.now();
+        var values = Values.value(date);
+        assertEquals(date, values.as(ZonedDateTime.class));
+        assertEquals(date, values.as(Temporal.class));
+        assertEquals(date, values.as(TemporalAccessor.class));
+        assertEquals(date, values.as(ChronoZonedDateTime.class));
+        assertEquals(date, values.as(Comparable.class));
+        assertEquals(date, values.as(Serializable.class));
+        assertEquals(date, values.as(Object.class));
+        assertEquals(date.toOffsetDateTime(), values.as(OffsetDateTime.class));
     }
 }
