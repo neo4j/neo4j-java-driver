@@ -131,9 +131,9 @@ public interface Driver extends AutoCloseable {
      * <p>
      * This operation works the same way as {@link #closeAsync()} but blocks until all resources are closed.
      * <p>
-     * Please note that this method is intended for graceful shutdown only and expects that all driver interactions have
-     * either been finished or no longer awaited for. Pending driver API calls may not be completed after this method is
-     * invoked.
+     * Since this method is intended for graceful shutdown only, it is strongly recommended to finish interaction with
+     * all driver resources (like sessions, transactions, results, etc.) before invoking this method. Not doing this may
+     * result in unspecified behaviour, including leaving driver execution unfinished indefinitely.
      */
     @Override
     void close();
@@ -144,9 +144,9 @@ public interface Driver extends AutoCloseable {
      * This operation is asynchronous and returns a {@link CompletionStage}. This stage is completed with
      * {@code null} when all resources are closed. It is completed exceptionally if termination fails.
      * <p>
-     * Please note that this method is intended for graceful shutdown only and expects that all driver interactions have
-     * either been finished or no longer awaited for. Pending driver API calls may not be completed after this method is
-     * invoked.
+     * Since this method is intended for graceful shutdown only, it is strongly recommended to finish interaction with
+     * all driver resources (like sessions, transactions, results, etc.) before invoking this method. Not doing this may
+     * result in unspecified behaviour, including leaving driver execution unfinished indefinitely.
      *
      * @return a {@link CompletionStage completion stage} that represents the asynchronous close.
      */
