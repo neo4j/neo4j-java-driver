@@ -29,8 +29,11 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -707,6 +710,7 @@ public class NetworkSession {
     }
 
     public static class RunRxResponseHandler implements DriverResponseHandler {
+        private static final Lock NOOP_LOCK = new NoopLock();
         final CompletableFuture<RxResultCursor> cursorFuture = new CompletableFuture<>();
         private final Logging logging;
         private final DriverBoltConnection connection;
@@ -763,8 +767,8 @@ public class NetworkSession {
                 if (error != null) {
                     runFailed.set(true);
                 }
-                cursorFuture.complete(
-                        new RxResultCursorImpl(connection, query, runSummary, error, bookmarkConsumer, true, logging));
+                cursorFuture.complete(new RxResultCursorImpl(
+                        connection, NOOP_LOCK, query, runSummary, error, bookmarkConsumer, true, logging));
             } else {
                 var message = ignoredCount > 0
                         ? "Run exchange contains ignored messages."
@@ -791,6 +795,32 @@ public class NetworkSession {
         @Override
         public boolean handleSecurityException(AuthToken authToken, SecurityException exception) {
             return false;
+        }
+    }
+
+    private static class NoopLock implements Lock {
+        @Override
+        public void lock() {}
+
+        @Override
+        public void lockInterruptibly() {}
+
+        @Override
+        public boolean tryLock() {
+            return true;
+        }
+
+        @Override
+        public boolean tryLock(long time, TimeUnit unit) {
+            return true;
+        }
+
+        @Override
+        public void unlock() {}
+
+        @Override
+        public Condition newCondition() {
+            return null;
         }
     }
 }

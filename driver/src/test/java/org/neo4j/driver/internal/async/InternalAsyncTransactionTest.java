@@ -43,6 +43,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,7 +74,10 @@ class InternalAsyncTransactionTest {
     @BeforeEach
     void setUp() {
         connection = connectionMock(new BoltProtocolVersion(4, 0));
-        given(connection.onLoop()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.onLoop(any())).willAnswer(invocationOnMock -> {
+            Supplier<?> supplier = invocationOnMock.getArgument(0);
+            return CompletableFuture.completedStage(supplier.get());
+        });
         var connectionProvider = mock(DriverBoltConnectionProvider.class);
         given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {

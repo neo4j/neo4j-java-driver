@@ -106,6 +106,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     private final ResultCursorsHolder resultCursors;
     private final long fetchSize;
     private final Lock lock = new ReentrantLock();
+    private final Lock connectionLock = new ReentrantLock();
     private State state = State.ACTIVE;
     private CompletableFuture<Void> commitFuture;
     private CompletableFuture<Void> rollbackFuture;
@@ -257,9 +258,17 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     public CompletionStage<RxResultCursor> runRx(Query query) {
         ensureCanRunQueries();
         var parameters = query.parameters().asMap(Values::value);
-        var responseHandler = new RunRxResponseHandler(logging, apiTelemetryWork, beginFuture, connection, query);
-        var flushStage =
-                connection.run(query.text(), parameters).thenCompose(ignored2 -> connection.flush(responseHandler));
+        var responseHandler =
+                new RunRxResponseHandler(logging, apiTelemetryWork, beginFuture, connection, connectionLock, query);
+        var flushStage = connection
+                .onLoop(() -> {
+                    connectionLock.lock();
+                    return connection
+                            .run(query.text(), parameters)
+                            .thenCompose(conn -> conn.flush(responseHandler))
+                            .whenComplete((ignored, throwable) -> connectionLock.unlock());
+                })
+                .thenCompose(Function.identity());
         return beginFuture.thenCompose(ignored -> {
             var cursorStage = flushStage.thenCompose(flushResult -> responseHandler.cursorFuture);
             resultCursors.add(cursorStage);
@@ -670,6 +679,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         private final ApiTelemetryWork apiTelemetryWork;
         private final CompletableFuture<UnmanagedTransaction> beginFuture;
         private final DriverBoltConnection connection;
+        private final Lock connectionLock;
         private final Query query;
         private Throwable error;
         private RunSummary runSummary;
@@ -680,11 +690,13 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                 ApiTelemetryWork apiTelemetryWork,
                 CompletableFuture<UnmanagedTransaction> beginFuture,
                 DriverBoltConnection connection,
+                Lock connectionLock,
                 Query query) {
             this.logging = logging;
             this.apiTelemetryWork = apiTelemetryWork;
             this.beginFuture = beginFuture;
             this.connection = connection;
+            this.connectionLock = connectionLock;
             this.query = query;
         }
 
@@ -720,13 +732,13 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         public void onComplete() {
             if (error != null) {
                 if (!beginFuture.completeExceptionally(error)) {
-                    cursorFuture.complete(
-                            new RxResultCursorImpl(connection, query, null, error, bookmark -> {}, false, logging));
+                    cursorFuture.complete(new RxResultCursorImpl(
+                            connection, connectionLock, query, null, error, bookmark -> {}, false, logging));
                 }
             } else {
                 if (runSummary != null) {
                     cursorFuture.complete(new RxResultCursorImpl(
-                            connection, query, runSummary, null, bookmark -> {}, false, logging));
+                            connection, connectionLock, query, runSummary, null, bookmark -> {}, false, logging));
                 } else {
                     var message =
                             ignoredCount > 0 ? "Run exchange contains ignored messages" : "Unexpected state during run";

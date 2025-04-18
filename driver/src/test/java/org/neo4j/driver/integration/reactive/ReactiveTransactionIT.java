@@ -22,12 +22,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.reactivestreams.InternalReactiveTransaction;
+import org.neo4j.driver.reactivestreams.ReactiveResult;
 import org.neo4j.driver.reactivestreams.ReactiveSession;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -212,6 +216,35 @@ class ReactiveTransactionIT {
         assertNotNull(result);
         assertThrows(TransactionTerminatedException.class, () -> Flux.from(result.records())
                 .blockLast());
+        Mono.fromDirect(tx.close()).block();
+    }
+
+    @Test
+    @SuppressWarnings("resource")
+    @Timeout(value = 20, unit = TimeUnit.MINUTES)
+    void shouldBeAbleToRunMultipleQueriesWhileFetchingRecords() {
+        // Given
+        var session = neo4j.driver().session(ReactiveSession.class);
+        var tx = Mono.fromDirect(session.beginTransaction()).block();
+        assertNotNull(tx);
+        var recordsFutures = new CompletableFuture<?>[100];
+
+        // When
+        for (var i = 0; i < recordsFutures.length; i++) {
+            var recordsFuture = new CompletableFuture<Void>();
+            recordsFutures[i] = recordsFuture;
+            // This effectively leads to the main thread submitting new queries while the driver thread is fetching
+            // records from results as they become available. The objective is to make sure the driver handles shared
+            // Bolt connection as expected.
+            Mono.fromDirect(tx.run("UNWIND range(0, 10) AS x RETURN x"))
+                    .flatMapMany(ReactiveResult::records)
+                    .collectList()
+                    .doOnNext(ignored -> recordsFuture.complete(null))
+                    .subscribe();
+        }
+
+        // Then
+        CompletableFuture.allOf(recordsFutures).join();
         Mono.fromDirect(tx.close()).block();
     }
 }
