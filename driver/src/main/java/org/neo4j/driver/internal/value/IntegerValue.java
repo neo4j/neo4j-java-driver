@@ -85,8 +85,19 @@ public class IntegerValue extends NumberValueAdapter<Long> {
             return (T) Float.valueOf(asFloat());
         } else if (targetClass.equals(Float.class)) {
             return targetClass.cast(asFloat());
+        } else if (targetClass.equals(short.class)) {
+            return (T) Short.valueOf(asShort());
+        } else if (targetClass.equals(Short.class)) {
+            return targetClass.cast(asShort());
         }
         throw new Uncoercible(type().name(), targetClass.getCanonicalName());
+    }
+
+    private short asShort() {
+        if (val > Short.MAX_VALUE || val < Short.MIN_VALUE) {
+            throw new LossyCoercion(type().name(), "Java short");
+        }
+        return (short) val;
     }
 
     @Override

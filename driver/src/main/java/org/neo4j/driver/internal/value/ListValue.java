@@ -18,6 +18,7 @@ package org.neo4j.driver.internal.value;
 
 import static org.neo4j.driver.Values.ofObject;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -26,6 +27,7 @@ import java.util.function.Function;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.value.Uncoercible;
+import org.neo4j.driver.exceptions.value.ValueException;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.types.Type;
@@ -64,6 +66,22 @@ public class ListValue extends ValueAdapter {
     public <T> T as(Class<T> targetClass) {
         if (targetClass.isAssignableFrom(List.class)) {
             return targetClass.cast(asList());
+        } else if (targetClass.isArray()) {
+            var componentType = targetClass.componentType();
+            var array = Array.newInstance(componentType, values.length);
+            for (var i = 0; i < values.length; i++) {
+                Object value;
+                try {
+                    value = values[i].as(componentType);
+                } catch (Throwable throwable) {
+                    throw new ValueException(
+                            "Failed to map LIST value to %s - an error occured while mapping the element at index %d"
+                                    .formatted(targetClass.getCanonicalName(), i),
+                            throwable);
+                }
+                Array.set(array, i, value);
+            }
+            return targetClass.cast(array);
         }
         throw new Uncoercible(type().name(), targetClass.getCanonicalName());
     }
