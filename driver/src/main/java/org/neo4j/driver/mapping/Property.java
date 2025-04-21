@@ -27,7 +27,7 @@ import org.neo4j.driver.util.Preview;
  *
  * @since 5.28.5
  */
-@Target(ElementType.PARAMETER)
+@Target({ElementType.PARAMETER, ElementType.RECORD_COMPONENT})
 @Retention(RetentionPolicy.RUNTIME)
 @Preview(name = "Object mapping")
 public @interface Property {
