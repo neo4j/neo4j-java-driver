@@ -35,6 +35,7 @@ import static org.neo4j.driver.testutil.TestUtil.setupConnectionAnswers;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.mockito.ArgumentCaptor;
@@ -93,7 +94,10 @@ class LeakLoggingNetworkSessionTest {
         var log = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(log);
         var connection = TestUtil.connectionMock();
-        given(connection.onLoop()).willReturn(CompletableFuture.completedStage(connection));
+        given(connection.onLoop(any())).willAnswer(invocationOnMock -> {
+            Supplier<?> supplier = invocationOnMock.getArgument(0);
+            return CompletableFuture.completedStage(supplier.get());
+        });
         given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .willReturn(completedFuture(connection));
         setupConnectionAnswers(connection, List.of(handler -> {

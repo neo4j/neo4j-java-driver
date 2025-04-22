@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 import org.neo4j.bolt.connection.AccessMode;
 import org.neo4j.bolt.connection.AuthInfo;
 import org.neo4j.bolt.connection.BoltConnectionState;
@@ -32,7 +33,7 @@ import org.neo4j.bolt.connection.TransactionType;
 import org.neo4j.driver.Value;
 
 public interface DriverBoltConnection {
-    CompletionStage<DriverBoltConnection> onLoop();
+    <T> CompletionStage<T> onLoop(Supplier<T> supplier);
 
     CompletionStage<DriverBoltConnection> route(
             DatabaseName databaseName, String impersonatedUser, Set<String> bookmarks);

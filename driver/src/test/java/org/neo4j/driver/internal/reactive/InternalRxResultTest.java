@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -137,6 +138,10 @@ class InternalRxResultTest {
     void shouldObtainRecordsAndSummary() {
         // Given
         var boltConnection = mock(DriverBoltConnection.class);
+        given(boltConnection.onLoop(any())).willAnswer(invocationOnMock -> {
+            Supplier<?> supplier = invocationOnMock.getArgument(0);
+            return CompletableFuture.completedStage(supplier.get());
+        });
         given(boltConnection.pull(anyLong(), anyLong())).willReturn(CompletableFuture.completedFuture(boltConnection));
         given(boltConnection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
         given(boltConnection.protocolVersion()).willReturn(new BoltProtocolVersion(5, 1));
@@ -170,6 +175,10 @@ class InternalRxResultTest {
     void shouldCancelStreamingButObtainSummary() {
         // Given
         var boltConnection = mock(DriverBoltConnection.class);
+        given(boltConnection.onLoop(any())).willAnswer(invocationOnMock -> {
+            Supplier<?> supplier = invocationOnMock.getArgument(0);
+            return CompletableFuture.completedStage(supplier.get());
+        });
         given(boltConnection.pull(anyLong(), anyLong())).willReturn(CompletableFuture.completedFuture(boltConnection));
         given(boltConnection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
         given(boltConnection.protocolVersion()).willReturn(new BoltProtocolVersion(5, 1));
@@ -214,6 +223,10 @@ class InternalRxResultTest {
     void shouldErrorIfFailedToStream() {
         // Given
         var boltConnection = mock(DriverBoltConnection.class);
+        given(boltConnection.onLoop(any())).willAnswer(invocationOnMock -> {
+            Supplier<?> supplier = invocationOnMock.getArgument(0);
+            return CompletableFuture.completedStage(supplier.get());
+        });
         given(boltConnection.pull(anyLong(), anyLong())).willReturn(CompletableFuture.completedFuture(boltConnection));
         given(boltConnection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
         given(boltConnection.protocolVersion()).willReturn(new BoltProtocolVersion(5, 1));
@@ -257,7 +270,7 @@ class InternalRxResultTest {
 
     private InternalRxResult newRxResult(DriverBoltConnection boltConnection, RunSummary runSummary) {
         RxResultCursor cursor = new RxResultCursorImpl(
-                boltConnection, mock(), runSummary, null, databaseBookmark -> {}, false, Logging.none());
+                boltConnection, mock(), mock(), runSummary, null, databaseBookmark -> {}, false, Logging.none());
         return newRxResult(cursor);
     }
 

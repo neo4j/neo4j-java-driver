@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 import org.neo4j.bolt.connection.AccessMode;
 import org.neo4j.bolt.connection.AuthInfo;
 import org.neo4j.bolt.connection.AuthTokens;
@@ -48,8 +49,8 @@ final class AdaptingDriverBoltConnection implements DriverBoltConnection {
     }
 
     @Override
-    public CompletionStage<DriverBoltConnection> onLoop() {
-        return connection.onLoop().exceptionally(errorMapper::mapAndTrow).thenApply(ignored -> this);
+    public <T> CompletionStage<T> onLoop(Supplier<T> supplier) {
+        return connection.onLoop(supplier);
     }
 
     @Override

@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
@@ -48,81 +49,82 @@ final class TerminationAwareBoltConnection extends DelegatingBoltConnection {
     public CompletionStage<DriverBoltConnection> clearAndReset() {
         var future = new CompletableFuture<DriverBoltConnection>();
         var thisVal = this;
-
-        delegate.onLoop()
-                .thenCompose(connection -> executor.execute(ignored -> connection
-                        .clear()
-                        .thenCompose(DriverBoltConnection::reset)
-                        .thenCompose(conn -> conn.flush(new DriverResponseHandler() {
-                            Throwable throwable = null;
-
-                            @Override
-                            public void onError(Throwable throwable) {
-                                log.error("Unexpected error occurred while resetting connection", throwable);
-                                throwableConsumer.accept(throwable);
-                                this.throwable = throwable;
-                            }
-
-                            @Override
-                            public void onComplete() {
-                                if (throwable != null) {
-                                    future.completeExceptionally(throwable);
-                                } else {
-                                    future.complete(thisVal);
-                                }
-                            }
-                        }))))
+        delegate.onLoop(() -> executor.execute(ignored -> clearAndResetBolt(future)))
+                .thenCompose(Function.identity())
                 .whenComplete((ignored, throwable) -> {
                     if (throwable != null) {
                         throwableConsumer.accept(throwable);
                         future.completeExceptionally(throwable);
                     }
                 });
-
         return future;
+    }
+
+    private CompletionStage<Void> clearAndResetBolt(CompletableFuture<DriverBoltConnection> future) {
+        var thisVal = this;
+        return delegate.clear()
+                .thenCompose(DriverBoltConnection::reset)
+                .thenCompose(conn -> conn.flush(new DriverResponseHandler() {
+                    Throwable throwable = null;
+
+                    @Override
+                    public void onError(Throwable throwable) {
+                        log.error("Unexpected error occurred while resetting connection", throwable);
+                        throwableConsumer.accept(throwable);
+                        this.throwable = throwable;
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        if (throwable != null) {
+                            future.completeExceptionally(throwable);
+                        } else {
+                            future.complete(thisVal);
+                        }
+                    }
+                }));
     }
 
     @Override
     public CompletionStage<Void> flush(DriverResponseHandler handler) {
-        return delegate.onLoop()
-                .thenCompose(connection -> executor.execute(causeOfTermination -> {
-                    if (causeOfTermination == null) {
-                        log.trace("This connection is active, will flush");
-                        var terminationAwareResponseHandler =
-                                new TerminationAwareResponseHandler(logging, handler, executor, throwableConsumer);
-                        return delegate.flush(terminationAwareResponseHandler).handle((ignored, flushThrowable) -> {
-                            flushThrowable = Futures.completionExceptionCause(flushThrowable);
-                            if (flushThrowable != null) {
-                                if (log.isTraceEnabled()) {
-                                    log.error("The flush has failed", flushThrowable);
-                                }
-                                var flushThrowableRef = flushThrowable;
-                                flushThrowable = executor.execute(existingThrowable -> {
-                                    if (existingThrowable != null) {
-                                        log.trace(
-                                                "The flush has failed, but there is an existing %s", existingThrowable);
-                                        return existingThrowable;
-                                    } else {
-                                        throwableConsumer.accept(flushThrowableRef);
-                                        return flushThrowableRef;
-                                    }
-                                });
-                                // rethrow
-                                if (flushThrowable instanceof RuntimeException runtimeException) {
-                                    throw runtimeException;
-                                } else {
-                                    throw new CompletionException(flushThrowable);
-                                }
-                            } else {
-                                return ignored;
-                            }
-                        });
-                    } else {
-                        // there is an existing error
-                        return connection
-                                .clear()
-                                .thenCompose(ignored -> CompletableFuture.failedStage(causeOfTermination));
+        return delegate.onLoop(() -> executor.execute(causeOfTermination -> flushBolt(causeOfTermination, handler)))
+                .thenCompose(Function.identity());
+    }
+
+    private CompletionStage<Void> flushBolt(Throwable causeOfTermination, DriverResponseHandler handler) {
+        if (causeOfTermination == null) {
+            log.trace("This connection is active, will flush");
+            var terminationAwareResponseHandler =
+                    new TerminationAwareResponseHandler(logging, handler, executor, throwableConsumer);
+            return delegate.flush(terminationAwareResponseHandler).handle((ignored, flushThrowable) -> {
+                flushThrowable = Futures.completionExceptionCause(flushThrowable);
+                if (flushThrowable != null) {
+                    if (log.isTraceEnabled()) {
+                        log.error("The flush has failed", flushThrowable);
                     }
-                }));
+                    var flushThrowableRef = flushThrowable;
+                    flushThrowable = executor.execute(existingThrowable -> {
+                        if (existingThrowable != null) {
+                            log.trace("The flush has failed, but there is an existing %s", existingThrowable);
+                            return existingThrowable;
+                        } else {
+                            throwableConsumer.accept(flushThrowableRef);
+                            return flushThrowableRef;
+                        }
+                    });
+                    // rethrow
+                    if (flushThrowable instanceof RuntimeException runtimeException) {
+                        throw runtimeException;
+                    } else {
+                        throw new CompletionException(flushThrowable);
+                    }
+                } else {
+                    return ignored;
+                }
+            });
+        } else {
+            // there is an existing error
+            return delegate.clear().thenCompose(ignored -> CompletableFuture.failedStage(causeOfTermination));
+        }
     }
 }

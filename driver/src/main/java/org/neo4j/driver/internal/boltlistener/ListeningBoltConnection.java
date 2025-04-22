@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 import org.neo4j.bolt.connection.AccessMode;
 import org.neo4j.bolt.connection.AuthInfo;
 import org.neo4j.bolt.connection.AuthToken;
@@ -46,8 +47,8 @@ final class ListeningBoltConnection implements BoltConnection {
     }
 
     @Override
-    public CompletionStage<BoltConnection> onLoop() {
-        return delegate.onLoop().thenApply(ignored -> this);
+    public <T> CompletionStage<T> onLoop(Supplier<T> supplier) {
+        return delegate.onLoop(supplier);
     }
 
     @Override

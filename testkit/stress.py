@@ -30,5 +30,7 @@ if __name__ == "__main__":
             "-DexecutionTimeSeconds=10",
             "-Dmaven.gitcommitid.skip=true",
     ]
+    if os.getenv("TEST_NEO4J_BOLT_CONNECTION", "false") == "true" :
+        cmd.append("-Dneo4j-bolt-connection-bom.version=0.0.0")
     subprocess.run(cmd, universal_newlines=True,
                    stderr=subprocess.STDOUT, check=True)
