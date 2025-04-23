@@ -22,6 +22,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.isoDuration;
@@ -50,10 +51,12 @@ import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -70,6 +73,8 @@ import org.neo4j.driver.internal.value.LocalDateTimeValue;
 import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.TimeValue;
+import org.neo4j.driver.types.IsoDuration;
+import org.neo4j.driver.types.Point;
 
 class ValuesTest {
     @Test
@@ -522,4 +527,82 @@ class ValuesTest {
         var value = value(stream);
         assertEquals(asList(null, null, null), value.asObject());
     }
+
+    @Test
+    void shouldMapJavaRecordToMap() {
+        // given
+        var string = "string";
+        var listWithString = List.of(string, string);
+        var bytes = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        var bool = false;
+        var boltInteger = Long.MIN_VALUE;
+        var boltFloat = Double.MIN_VALUE;
+        var date = LocalDate.now();
+        var time = OffsetTime.now();
+        var dateTime = ZonedDateTime.now();
+        var localDateTime = LocalDateTime.now();
+        var duration = new InternalIsoDuration(Duration.ZERO);
+        var period = Period.ofYears(1000);
+        var javaDuration = Duration.of(1000, ChronoUnit.MINUTES);
+        var point2d = new InternalPoint2D(0, 0, 0);
+        var point3d = new InternalPoint3D(0, 0, 0, 0);
+        var valueHolder = new ValueHolder(
+                string,
+                null,
+                listWithString,
+                bytes,
+                bool,
+                boltInteger,
+                boltFloat,
+                date,
+                time,
+                dateTime,
+                localDateTime,
+                duration,
+                period,
+                javaDuration,
+                point2d,
+                point3d);
+
+        // when
+        var mapValue = Values.value(valueHolder);
+
+        // then
+        assertEquals(15, mapValue.size());
+        assertEquals(string, mapValue.get("string").as(String.class));
+        assertFalse(mapValue.containsKey("nullValue"));
+        assertEquals(listWithString, mapValue.get("listWithString").as(List.class));
+        assertEquals(bytes, mapValue.get("bytes").as(byte[].class));
+        assertEquals(bool, mapValue.get("bool").as(boolean.class));
+        assertEquals(boltInteger, mapValue.get("boltInteger").as(long.class));
+        assertEquals(boltFloat, mapValue.get("boltFloat").as(double.class));
+        assertEquals(date, mapValue.get("date").as(LocalDate.class));
+        assertEquals(time, mapValue.get("time").as(OffsetTime.class));
+        assertEquals(dateTime, mapValue.get("dateTime").as(ZonedDateTime.class));
+        assertEquals(localDateTime, mapValue.get("localDateTime").as(LocalDateTime.class));
+        assertEquals(duration, mapValue.get("duration").as(IsoDuration.class));
+        assertEquals(period, mapValue.get("period").as(Period.class));
+        assertEquals(javaDuration, mapValue.get("javaDuration").as(Duration.class));
+        assertEquals(point2d, mapValue.get("point2d").as(Point.class));
+        assertEquals(point3d, mapValue.get("point3d").as(Point.class));
+        assertEquals(valueHolder, mapValue.as(ValueHolder.class));
+    }
+
+    public record ValueHolder(
+            String string,
+            Object nullValue,
+            List<String> listWithString,
+            byte[] bytes,
+            boolean bool,
+            long boltInteger,
+            double boltFloat,
+            LocalDate date,
+            OffsetTime time,
+            ZonedDateTime dateTime,
+            LocalDateTime localDateTime,
+            IsoDuration duration,
+            Period period,
+            Duration javaDuration,
+            Point point2d,
+            Point point3d) {}
 }

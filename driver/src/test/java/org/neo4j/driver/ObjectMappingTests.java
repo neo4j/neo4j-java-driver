@@ -68,8 +68,8 @@ class ObjectMappingTests {
         var duration = new InternalIsoDuration(Duration.ZERO);
         var period = Period.ofYears(1000);
         var javaDuration = Duration.of(1000, ChronoUnit.MINUTES);
-        var point2d = new InternalPoint2D(0, 0, 0);
-        var point3d = new InternalPoint3D(0, 0, 0, 0);
+        var point2d = (Point) new InternalPoint2D(0, 0, 0);
+        var point3d = (Point) new InternalPoint3D(0, 0, 0, 0);
 
         var properties = Map.ofEntries(
                 Map.entry("string", Values.value(string)),

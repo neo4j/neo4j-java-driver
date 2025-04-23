@@ -60,6 +60,7 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
+import org.neo4j.driver.mapping.Property;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.MapAccessor;
@@ -68,6 +69,7 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.TypeSystem;
+import org.neo4j.driver.util.Preview;
 
 /**
  * Utility for wrapping regular Java types and exposing them as {@link Value}
@@ -95,6 +97,10 @@ public final class Values {
 
     /**
      * Returns a value from object.
+     * <p>
+     * <b>Note that mapping from {@link java.lang.Record java.lang.Record} is in {@link Preview} status and should not
+     * be assumed to be in GA status.</b>
+     *
      * @param value the object value
      * @return the array of values
      */
@@ -182,6 +188,9 @@ public final class Values {
         }
         if (value instanceof Stream<?>) {
             return value((Stream<Object>) value);
+        }
+        if (value instanceof java.lang.Record record) {
+            return value(record);
         }
 
         if (value instanceof char[]) {
@@ -387,6 +396,99 @@ public final class Values {
     }
 
     /**
+     * Returns a {@link TypeSystem#MAP() map} value based on {@link java.lang.reflect.RecordComponent record components}
+     * of a given {@link java.lang.Record Java Record}.
+     * <p>
+     * Example (similar to the <a href=https://github.com/neo4j-graph-examples/movies>Neo4j Movies Database</a>):
+     * <pre>
+     * {@code
+     * // assuming the following Java record
+     * public record Movie(String title, String tagline, long released) {}
+     * // a new movie may be created in the following way
+     * var movie = new Movie("title", "tagline", 2025);
+     * var movieValue = Values.value(movie);
+     * driver.executableQuery("CREATE (:Movie $movie)")
+     *         .withParameters(Map.of("movie", movieValue))
+     *         .execute();
+     * }
+     * </pre>
+     * Because the driver methods accepting a {@code Map<String, Object>} as query parameters automatically map values
+     * to {@link Value} instances, it is possible to avoid mapping movie explicitly:
+     * <pre>
+     * {@code
+     * var movie = new Movie("title", "tagline", 2025);
+     * driver.executableQuery("CREATE (:Movie $movie)")
+     *         .withParameters(Map.of("movie", movie))
+     *         .execute();
+     * }
+     * </pre>
+     * Assuming movie titles being unique, it is possible to update the created movie in the following way:
+     * <pre>
+     * {@code
+     * var updatedMovie = new Movie("title", "updated tagline", 2024);
+     * driver.executableQuery("""
+     *                 MATCH (movie:Movie {title: $movie.title})
+     *                 SET movie += $movie
+     *                 """)
+     *         .withParameters(Map.of("movie", updatedMovie))
+     *         .execute();
+     * }
+     * </pre>
+     * The {@link Property} annotation may be used to override the record component name.
+     * <pre>
+     * {@code
+     * public record Movie(String title, String tagline, @Property("releasedYear") long released) {}
+     * }
+     * </pre>
+     * Note that those record components that have {@code null} value will be excluded from the map value.
+     * <p>
+     * It is also important to understand that sending all properties over network may not always be desirable and will
+     * depend on a use-case.
+     * <p>
+     * In addition, please note that while this mapping allows nested structures, like map of maps, there may be
+     * limitations on how those are supported by the database. Please read the Neo4j Cypher Manual for more up-to-date
+     * details. For example, at the time of writing, it is not possible to store maps as properties
+     * (see the following <a href="https://neo4j.com/docs/cypher-manual/current/values-and-types/property-structural-constructed/#constructed-types">page</a>).
+     *
+     * @param record the record to map
+     * @return the map value
+     * @see TypeSystem#MAP()
+     * @see java.lang.Record
+     * @see java.lang.reflect.RecordComponent
+     * @see Property
+     * @throws ClientException when mapping fails
+     * @since 5.28.5
+     */
+    @Preview(name = "Object mapping")
+    public static Value value(java.lang.Record record) {
+        var recordComponents = record.getClass().getRecordComponents();
+        Map<String, Value> val = new HashMap<>(recordComponents.length);
+        for (var recordComponent : recordComponents) {
+            var propertyAnnotation = recordComponent.getAnnotation(Property.class);
+            var property = propertyAnnotation != null ? propertyAnnotation.value() : recordComponent.getName();
+            Value value;
+            try {
+                var objectValue = recordComponent.getAccessor().invoke(record);
+                value = (objectValue != null) ? value(objectValue) : null;
+            } catch (Throwable throwable) {
+                var message = "Failed to map '%s' property to value during mapping '%s' to map value"
+                        .formatted(property, record.getClass().getCanonicalName());
+                throw new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        throwable);
+            }
+            if (value != null) {
+                val.put(property, value);
+            }
+        }
+        return new MapValue(val);
+    }
+
+    /**
      * Returns a value from char.
      * @param val the char value
      * @return the value
@@ -554,7 +656,7 @@ public final class Values {
      * @return the value
      */
     public static Value point(int srid, double x, double y) {
-        return value(new InternalPoint2D(srid, x, y));
+        return value((Point) new InternalPoint2D(srid, x, y));
     }
 
     /**
@@ -575,7 +677,7 @@ public final class Values {
      * @return the value
      */
     public static Value point(int srid, double x, double y, double z) {
-        return value(new InternalPoint3D(srid, x, y, z));
+        return value((Point) new InternalPoint3D(srid, x, y, z));
     }
 
     /**
