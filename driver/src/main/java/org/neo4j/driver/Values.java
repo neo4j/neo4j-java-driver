@@ -456,6 +456,7 @@ public final class Values {
      * @see java.lang.Record
      * @see java.lang.reflect.RecordComponent
      * @see Property
+     * @throws ClientException when mapping fails
      * @since 5.28.5
      */
     @Preview(name = "Object mapping")
