@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.value;
 
 import java.util.Objects;
+import org.neo4j.driver.exceptions.value.LossyCoercion;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.Type;
@@ -51,10 +52,17 @@ public class StringValue extends ValueAdapter {
         return val;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T as(Class<T> targetClass) {
         if (targetClass.isAssignableFrom(String.class)) {
             return targetClass.cast(asString());
+        } else if ((targetClass.isAssignableFrom(char.class) || targetClass.isAssignableFrom(Character.class))) {
+            if (val.length() == 1) {
+                return (T) Character.valueOf(val.charAt(0));
+            } else {
+                throw new LossyCoercion(type().name(), targetClass.getCanonicalName());
+            }
         }
         throw new Uncoercible(type().name(), targetClass.getCanonicalName());
     }

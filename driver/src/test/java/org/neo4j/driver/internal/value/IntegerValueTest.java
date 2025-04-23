@@ -148,5 +148,7 @@ class IntegerValueTest {
         assertEquals(expected, value.as(Double.class));
         assertEquals((float) expected, value.as(float.class));
         assertEquals((float) expected, value.as(Float.class));
+        assertEquals((short) expected, value.as(short.class));
+        assertEquals((short) expected, value.as(Short.class));
     }
 }

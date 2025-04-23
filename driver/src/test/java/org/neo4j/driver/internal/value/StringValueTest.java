@@ -92,9 +92,11 @@ class StringValueTest {
 
     @Test
     void shouldMapToType() {
-        var string = "value";
+        var string = "0";
         var values = Values.value(string);
         assertEquals(string, values.as(String.class));
+        assertEquals(string.charAt(0), values.as(char.class));
+        assertEquals(string.charAt(0), values.as(Character.class));
         assertEquals(string, values.as(Serializable.class));
         assertEquals(string, values.as(Comparable.class));
         assertEquals(string, values.as(CharSequence.class));

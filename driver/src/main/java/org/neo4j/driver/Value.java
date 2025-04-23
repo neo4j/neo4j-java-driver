@@ -545,11 +545,11 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
      *         </tr>
      *         <tr>
      *             <td>{@link TypeSystem#STRING}</td>
-     *             <td>{@link String}</td>
+     *             <td>{@link String}, {@code char}, {@link Character}</td>
      *         </tr>
      *         <tr>
      *             <td>{@link TypeSystem#INTEGER}</td>
-     *             <td>{@code long}, {@link Long}, {@code int}, {@link Integer}, {@code double}, {@link Double}, {@code float}, {@link Float}</td>
+     *             <td>{@code long}, {@link Long}, {@code int}, {@link Integer}, {@code short}, {@link Short}, {@code double}, {@link Double}, {@code float}, {@link Float}</td>
      *         </tr>
      *         <tr>
      *             <td>{@link TypeSystem#FLOAT}</td>
@@ -594,7 +594,9 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
      *         </tr>
      *         <tr>
      *             <td>{@link TypeSystem#LIST}</td>
-     *             <td>{@link List}</td>
+     *             <td>{@link List}, {@code T[]} as long as list elements may be mapped to the array component type
+     *             (for example, {@code char[]}, {@code boolean[]}, {@code String[]}, {@code long[]}, {@code int[]},
+     *             {@code short[]}, {@code double[]}, {@code float[]})</td>
      *         </tr>
      *         <tr>
      *             <td>{@link TypeSystem#MAP}</td>
@@ -662,6 +664,8 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
      * A {@code null} value is used for arguments that don't have a matching property. If the argument does not accept
      * {@code null} value (this includes primitive types), an alternative constructor that excludes it must be
      * available.
+     * <p>
+     * The mapping only works for types with directly accessible constructors, not interfaces or abstract types.
      * <p>
      * Example with optional property (using the <a href=https://github.com/neo4j-graph-examples/movies>Neo4j Movies Database</a>):
      * <pre>

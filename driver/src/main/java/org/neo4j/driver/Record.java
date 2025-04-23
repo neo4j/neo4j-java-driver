@@ -129,6 +129,8 @@ public interface Record extends MapAccessorWithDefaultValue {
      * {@code null} value (this includes primitive types), an alternative constructor that excludes it must be
      * available.
      * <p>
+     * The mapping only works for types with directly accessible constructors, not interfaces or abstract types.
+     * <p>
      * Types with generic parameters defined at the class level are not supported. However, constructor arguments with
      * specific types are permitted, see the {@code actors} parameter in the example above.
      * <p>
