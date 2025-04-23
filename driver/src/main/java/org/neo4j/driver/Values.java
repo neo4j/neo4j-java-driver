@@ -444,6 +444,11 @@ public final class Values {
      * <p>
      * It is also important to understand that sending all properties over network may not always be desirable and will
      * depend on a use-case.
+     * <p>
+     * In addition, please note that while this mapping may build nested structures, like map of maps, there are
+     * limitations on how those may be used by the database. Please read the Neo4j Cypher Manual for more up-to-date
+     * details. For example, at the time of writing, it is not possible to store maps as properties
+     * (see the following <a href="https://neo4j.com/docs/cypher-manual/current/values-and-types/property-structural-constructed/#constructed-types">page</a>).
      *
      * @param record the record to map
      * @return the map value
