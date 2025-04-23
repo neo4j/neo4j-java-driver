@@ -34,7 +34,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,7 +42,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
@@ -84,10 +82,7 @@ class ReactiveSessionIT {
     @SuppressWarnings("BusyWait")
     void shouldReleaseResultsOnSubscriptionCancellation(boolean request) throws InterruptedException {
         var messages = Collections.synchronizedList(new ArrayList<String>());
-        var config = Config.builder()
-                .withDriverMetrics()
-                .withLogging(Logging.console(Level.FINE))
-                .build();
+        var config = Config.builder().withDriverMetrics().build();
         try (var driver = neo4j.customDriver(config)) {
             // verify the database is available as runs may not report errors due to the subscription cancellation
             driver.verifyConnectivity();

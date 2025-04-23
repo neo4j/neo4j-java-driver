@@ -25,8 +25,7 @@
     <parallelizable.it.forkCount>2</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
-    <surefire.and.failsafe.version>3.1.2</surefire.and.failsafe.version>
-    <surefire.jpms.args/>
+    <surefire.and.failsafe.version>3.5.3</surefire.and.failsafe.version>
     <failsafe.parallelizable.jpms.args/>
     <!-- Skip deployment by default for everything in this project. -->
     <maven.deploy.skip>true</maven.deploy.skip>
@@ -37,15 +36,15 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.119.Final</netty-bom.version>
+    <netty-bom.version>4.1.120.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2023.0.16</reactor-bom.version>
+    <reactor-bom.version>2023.0.17</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
-    <mockito-core.version>5.16.1</mockito-core.version>
-    <junit.version>5.11.4</junit.version>
+    <mockito-core.version>5.17.0</mockito-core.version>
+    <junit.version>5.12.2</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.11.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
@@ -56,9 +55,9 @@
     <bouncycastle-jdk18on.version>1.80</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
     <jackson.version>2.18.3</jackson.version>
-    <lombok.version>1.18.36</lombok.version>
-    <svm.version>24.1.2</svm.version>
-    <micrometer.version>1.13.12</micrometer.version>
+    <lombok.version>1.18.38</lombok.version>
+    <svm.version>24.2.1</svm.version>
+    <micrometer.version>1.14.6</micrometer.version>
     <blockhound.version>1.0.11.RELEASE</blockhound.version>
     <testcontainers.version>1.20.6</testcontainers.version>
     <build-resources.version>2024-12.1</build-resources.version>
@@ -312,7 +311,6 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${surefire.and.failsafe.version}</version>
           <configuration>
-            <argLine>${surefire.jpms.args}</argLine>
             <trimStackTrace>false</trimStackTrace>
             <classpathDependencyExcludes>
               <classpathDependencyExclude>org.graalvm.nativeimage:svm</classpathDependencyExclude>
