@@ -20,7 +20,6 @@
     <rootDir>${project.basedir}/..</rootDir>
     <api.classes.directory>${basedir}/target/classes-without-jpms</api.classes.directory>
     <maven.compiler.xlint.extras>,-try</maven.compiler.xlint.extras>
-    <surefire.jpms.args>--add-opens org.neo4j.driver/org.neo4j.bolt.connection.netty.impl.util.messaging=ALL-UNNAMED</surefire.jpms.args>
     <failsafe.parallelizable.jpms.args>--add-opens org.neo4j.driver/org.neo4j.driver.internal.util=ALL-UNNAMED --add-opens org.neo4j.driver/org.neo4j.driver.internal.async=ALL-UNNAMED</failsafe.parallelizable.jpms.args>
     <blockhound.tag>blockHoundTest</blockhound.tag>
     <maven.deploy.skip>false</maven.deploy.skip>
