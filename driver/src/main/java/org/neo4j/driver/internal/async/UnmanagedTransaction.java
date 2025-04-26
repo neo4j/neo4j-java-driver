@@ -23,7 +23,6 @@ import static org.neo4j.driver.internal.util.Futures.combineErrors;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.futureCompletingConsumer;
-import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
 
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -34,6 +33,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -47,7 +47,6 @@ import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
-import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
 
@@ -113,16 +112,14 @@ public class UnmanagedTransaction {
         this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
         this.logging = logging;
-        this.log = new PrefixedLogger(
-                "[" + Thread.currentThread().getName() + "][" + hashCode() + "]", logging.getLog(getClass()));
-        ;
+        this.log = logging.getLog(getClass());
     }
 
     public CompletionStage<UnmanagedTransaction> beginAsync(Bookmark initialBookmark, TransactionConfig config) {
-        log.trace("beginAsync");
+        logTrace("beginAsync");
         return protocol.beginTransaction(connection, initialBookmark, config, logging)
                 .handle((ignore, beginError) -> {
-                    log.trace("beginAsync protocol.beginTransaction finished");
+                    logTrace("beginAsync protocol.beginTransaction finished");
                     if (beginError != null) {
                         if (beginError instanceof AuthorizationExpiredException) {
                             connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
@@ -174,10 +171,14 @@ public class UnmanagedTransaction {
     }
 
     public boolean isOpen() {
-        return OPEN_STATES.contains(executeWithLock(lock, () -> state));
+        logTrace("before isOpen lock");
+        boolean result = OPEN_STATES.contains(executeWithLock(lock, () -> state));
+        logTrace("after isOpen unlock");
+        return result;
     }
 
     public void markTerminated(Throwable cause) {
+        logTrace("before markTerminated lock");
         executeWithLock(lock, () -> {
             if (state == State.TERMINATED) {
                 if (causeOfTermination != null) {
@@ -188,6 +189,7 @@ public class UnmanagedTransaction {
                 causeOfTermination = cause;
             }
         });
+        logTrace("after markTerminated unlock");
     }
 
     private void addSuppressedWhenNotCaptured(Throwable currentCause, Throwable newCause) {
@@ -205,6 +207,7 @@ public class UnmanagedTransaction {
     }
 
     private void ensureCanRunQueries() {
+        logTrace("before ensureCanRunQueries lock");
         executeWithLock(lock, () -> {
             if (state == State.COMMITTED) {
                 throw new ClientException("Cannot run more queries in this transaction, it has been committed");
@@ -217,9 +220,11 @@ public class UnmanagedTransaction {
                         causeOfTermination);
             }
         });
+        logTrace("after ensureCanRunQueries unlock");
     }
 
     private CompletionStage<Void> doCommitAsync(Throwable cursorFailure) {
+        logTrace("before doCommitAsync lock");
         ClientException exception = executeWithLock(
                 lock,
                 () -> state == State.TERMINATED
@@ -228,15 +233,19 @@ public class UnmanagedTransaction {
                                         + "It has been rolled back either because of an error or explicit termination",
                                 cursorFailure != causeOfTermination ? causeOfTermination : null)
                         : null);
+        logTrace("after doCommitAsync unlock");
         return exception != null
                 ? failedFuture(exception)
                 : protocol.commitTransaction(connection).thenAccept(bookmarkHolder::setBookmark);
     }
 
     private CompletionStage<Void> doRollbackAsync() {
-        return executeWithLock(lock, () -> state) == State.TERMINATED
+        logTrace("before doRollbackAsync lock");
+        CompletionStage<Void> result = executeWithLock(lock, () -> state) == State.TERMINATED
                 ? completedWithNull()
                 : protocol.rollbackTransaction(connection);
+        logTrace("after doRollbackAsync unlock");
+        return result;
     }
 
     private static BiFunction<Void, Throwable, Void> handleCommitOrRollback(Throwable cursorFailure) {
@@ -250,18 +259,18 @@ public class UnmanagedTransaction {
     }
 
     private void handleTransactionCompletion(boolean commitAttempt, Throwable throwable) {
-        log.trace(
+        logTrace(String.format(
                 "handleTransactionCompletion(commitAttempt=%b, throwable is null=%b)",
-                commitAttempt, throwable == null);
+                commitAttempt, throwable == null));
         executeWithLock(lock, () -> {
-            log.trace("handleTransactionCompletion lock acquired");
+            logTrace("handleTransactionCompletion lock acquired");
             if (commitAttempt && throwable == null) {
                 state = State.COMMITTED;
             } else {
                 state = State.ROLLED_BACK;
             }
         });
-        log.trace("handleTransactionCompletion lock released");
+        logTrace("handleTransactionCompletion lock released");
         if (throwable instanceof AuthorizationExpiredException) {
             connection.terminateAndRelease(AuthorizationExpiredException.DESCRIPTION);
         } else if (throwable instanceof ConnectionReadTimeoutException) {
@@ -269,57 +278,58 @@ public class UnmanagedTransaction {
         } else {
             connection.release(); // release in background
         }
-        log.trace("handleTransactionCompletion finished");
+        logTrace("handleTransactionCompletion finished");
     }
 
     private CompletionStage<Void> closeAsync(boolean commit, boolean completeWithNullIfNotOpen) {
-        log.trace("closeAsync(commit=%b, completeWithNullIfNotOpen=%b) before lock", commit, completeWithNullIfNotOpen);
+        logTrace(String.format(
+                "closeAsync(commit=%b, completeWithNullIfNotOpen=%b) before lock", commit, completeWithNullIfNotOpen));
         CompletionStage<Void> stage = executeWithLock(lock, () -> {
-            log.trace("closeAsync lock acquired");
+            logTrace("closeAsync lock acquired");
             CompletionStage<Void> resultStage = null;
             if (completeWithNullIfNotOpen && !isOpen()) {
-                log.trace("closeAsync will complete with null");
+                logTrace("closeAsync will complete with null");
                 resultStage = completedWithNull();
             } else if (state == State.COMMITTED) {
-                log.trace("closeAsync state=%s", state);
+                logTrace(String.format("closeAsync state=%s", state));
                 resultStage = failedFuture(
                         new ClientException(commit ? CANT_COMMIT_COMMITTED_MSG : CANT_ROLLBACK_COMMITTED_MSG));
             } else if (state == State.ROLLED_BACK) {
-                log.trace("closeAsync state=%s", state);
+                logTrace(String.format("closeAsync state=%s", state));
                 resultStage = failedFuture(
                         new ClientException(commit ? CANT_COMMIT_ROLLED_BACK_MSG : CANT_ROLLBACK_ROLLED_BACK_MSG));
             } else {
-                log.trace("closeAsync state=%s", state);
+                logTrace(String.format("closeAsync state=%s", state));
                 if (commit) {
                     if (rollbackFuture != null) {
-                        log.trace("closeAsync rollbackFuture not null");
+                        logTrace("closeAsync rollbackFuture not null");
                         resultStage = failedFuture(new ClientException(CANT_COMMIT_ROLLING_BACK_MSG));
                     } else if (commitFuture != null) {
-                        log.trace("closeAsync commitFuture not null");
+                        logTrace("closeAsync commitFuture not null");
                         resultStage = commitFuture;
                     } else {
-                        log.trace("closeAsync initializing commitFuture");
+                        logTrace("closeAsync initializing commitFuture");
                         commitFuture = new CompletableFuture<>();
                     }
                 } else {
                     if (commitFuture != null) {
-                        log.trace("closeAsync commitFuture not null");
+                        logTrace("closeAsync commitFuture not null");
                         resultStage = failedFuture(new ClientException(CANT_ROLLBACK_COMMITTING_MSG));
                     } else if (rollbackFuture != null) {
-                        log.trace("closeAsync rollbackFuture not null");
+                        logTrace("closeAsync rollbackFuture not null");
                         resultStage = rollbackFuture;
                     } else {
-                        log.trace("closeAsync initializing rollbackFuture");
+                        logTrace("closeAsync initializing rollbackFuture");
                         rollbackFuture = new CompletableFuture<>();
                     }
                 }
             }
             return resultStage;
         });
-        log.trace("closeAsync lock released");
+        logTrace("closeAsync lock released");
 
         if (stage == null) {
-            log.trace("closeAsync stage is null");
+            logTrace("closeAsync stage is null");
             CompletableFuture<Void> targetFuture;
             Function<Throwable, CompletionStage<Void>> targetAction;
             if (commit) {
@@ -337,7 +347,118 @@ public class UnmanagedTransaction {
             stage = targetFuture;
         }
 
-        log.trace("closeAsync finished");
+        logTrace("closeAsync finished");
         return stage;
+    }
+
+    private void executeWithLock(Lock lock, Runnable runnable) {
+        logTrace(String.format("[%d] Before lock acquisition", lock.hashCode()));
+        try {
+            lock.lock();
+        } catch (Throwable t) {
+            log.error(
+                    String.format(
+                            "[%s][%d][%d] lock aquisition failed",
+                            Thread.currentThread().getName(), hashCode(), lock.hashCode()),
+                    t);
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else {
+                throw new RuntimeException(t);
+            }
+        }
+        logTrace(String.format("[%d] After lock acquisition", lock.hashCode()));
+
+        try {
+            logTrace(String.format("[%d] Before logic run", lock.hashCode()));
+            runnable.run();
+            logTrace(String.format("[%d] After logic run", lock.hashCode()));
+        } catch (Throwable t) {
+            log.error(
+                    String.format(
+                            "[%s][%d][%d] logic run failed",
+                            Thread.currentThread().getName(), hashCode(), lock.hashCode()),
+                    t);
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else {
+                throw new RuntimeException(t);
+            }
+        } finally {
+            logTrace(String.format("[%d] Before lock release", lock.hashCode()));
+            try {
+                lock.unlock();
+            } catch (Throwable t) {
+                log.error(
+                        String.format(
+                                "[%s][%d][%d] lock release failed",
+                                Thread.currentThread().getName(), hashCode(), lock.hashCode()),
+                        t);
+                if (t instanceof RuntimeException) {
+                    throw (RuntimeException) t;
+                } else {
+                    throw new RuntimeException(t);
+                }
+            }
+            logTrace(String.format("[%d] After lock release", lock.hashCode()));
+        }
+    }
+
+    private <T> T executeWithLock(Lock lock, Supplier<T> supplier) {
+        logTrace(String.format("[%d] Before lock acquisition", lock.hashCode()));
+        try {
+            lock.lock();
+        } catch (Throwable t) {
+            log.error(
+                    String.format(
+                            "[%s][%d][%d] lock aquisition failed",
+                            Thread.currentThread().getName(), hashCode(), lock.hashCode()),
+                    t);
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else {
+                throw new RuntimeException(t);
+            }
+        }
+        logTrace(String.format("[%d] After lock acquisition", lock.hashCode()));
+
+        try {
+            logTrace(String.format("[%d] Before logic run", lock.hashCode()));
+            T result = supplier.get();
+            logTrace(String.format("[%d] After logic run", lock.hashCode()));
+            return result;
+        } catch (Throwable t) {
+            log.error(
+                    String.format(
+                            "[%s][%d][%d] logic run failed",
+                            Thread.currentThread().getName(), hashCode(), lock.hashCode()),
+                    t);
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else {
+                throw new RuntimeException(t);
+            }
+        } finally {
+            logTrace(String.format("[%d] Before lock release", lock.hashCode()));
+            try {
+                lock.unlock();
+            } catch (Throwable t) {
+                log.error(
+                        String.format(
+                                "[%s][%d][%d] lock release failed",
+                                Thread.currentThread().getName(), hashCode(), lock.hashCode()),
+                        t);
+                if (t instanceof RuntimeException) {
+                    throw (RuntimeException) t;
+                } else {
+                    throw new RuntimeException(t);
+                }
+            }
+            logTrace(String.format("[%d] After lock release", lock.hashCode()));
+        }
+    }
+
+    private void logTrace(String message) {
+        log.trace("[%s][%d] %s", Thread.currentThread().getName(), hashCode(), message);
     }
 }
