@@ -52,9 +52,9 @@ public class InternalGqlStatusObject implements GqlStatusObject {
                     Map.entry("OPERATION", Values.value("")),
                     Map.entry("OPERATION_CODE", Values.value("0"))));
 
-    private final String gqlStatus;
-    private final String statusDescription;
-    private final Map<String, Value> diagnosticRecord;
+    protected final String gqlStatus;
+    protected final String statusDescription;
+    protected final Map<String, Value> diagnosticRecord;
 
     public InternalGqlStatusObject(String gqlStatus, String statusDescription, Map<String, Value> diagnosticRecord) {
         this.gqlStatus = Objects.requireNonNull(gqlStatus);

@@ -17,17 +17,14 @@
 package org.neo4j.driver.internal.summary;
 
 import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import org.neo4j.driver.NotificationCategory;
 import org.neo4j.driver.NotificationClassification;
 import org.neo4j.driver.NotificationSeverity;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Notification;
 
-public class InternalNotification extends InternalGqlStatusObject implements Notification {
+public class InternalNotification implements Notification {
     public static Optional<NotificationCategory> valueOf(String value) {
         return Arrays.stream(NotificationClassification.values())
                 .filter(type -> type.toString().equals(value))
@@ -50,52 +47,44 @@ public class InternalNotification extends InternalGqlStatusObject implements Not
     private final String description;
     private final NotificationSeverity severityLevel;
     private final String rawSeverityLevel;
-    private final NotificationClassification classification;
-    private final String rawClassification;
+    private final NotificationCategory category;
+    private final String rawCategory;
     private final InputPosition position;
 
     public InternalNotification(
-            String gqlStatus,
-            String statusDescription,
-            Map<String, Value> diagnosticRecord,
             String code,
             String title,
             String description,
             NotificationSeverity severityLevel,
             String rawSeverityLevel,
-            NotificationClassification classification,
-            String rawClassification,
+            NotificationCategory category,
+            String rawCategory,
             InputPosition position) {
-        super(gqlStatus, statusDescription, diagnosticRecord);
-        this.code = Objects.requireNonNull(code);
+        this.code = code;
         this.title = title;
         this.description = description;
         this.severityLevel = severityLevel;
         this.rawSeverityLevel = rawSeverityLevel;
-        this.classification = classification;
-        this.rawClassification = rawClassification;
+        this.category = category;
+        this.rawCategory = rawCategory;
         this.position = position;
     }
 
-    @SuppressWarnings({"deprecation", "RedundantSuppression"})
     @Override
     public String code() {
         return code;
     }
 
-    @SuppressWarnings({"deprecation", "RedundantSuppression"})
     @Override
     public String title() {
         return title;
     }
 
-    @SuppressWarnings({"deprecation", "RedundantSuppression"})
     @Override
     public String description() {
         return description;
     }
 
-    @SuppressWarnings({"deprecation", "RedundantSuppression"})
     @Override
     public InputPosition position() {
         return position;
@@ -112,61 +101,20 @@ public class InternalNotification extends InternalGqlStatusObject implements Not
     }
 
     @Override
-    public Optional<NotificationClassification> classification() {
-        return Optional.ofNullable(classification);
-    }
-
-    @Override
-    public Optional<String> rawClassification() {
-        return Optional.ofNullable(rawClassification);
-    }
-
-    @Override
     public Optional<NotificationCategory> category() {
-        return Optional.ofNullable(classification);
+        return Optional.ofNullable(category);
     }
 
     @Override
     public Optional<String> rawCategory() {
-        return Optional.ofNullable(rawClassification);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        var that = (InternalNotification) o;
-        return Objects.equals(code, that.code)
-                && Objects.equals(title, that.title)
-                && Objects.equals(description, that.description)
-                && Objects.equals(severityLevel, that.severityLevel)
-                && Objects.equals(rawSeverityLevel, that.rawSeverityLevel)
-                && classification == that.classification
-                && Objects.equals(rawClassification, that.rawClassification)
-                && Objects.equals(position, that.position);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(
-                super.hashCode(),
-                code,
-                title,
-                description,
-                severityLevel,
-                rawSeverityLevel,
-                classification,
-                rawClassification,
-                position);
+        return Optional.ofNullable(rawCategory);
     }
 
     @Override
     public String toString() {
         var info = "code=" + code + ", title=" + title + ", description=" + description + ", severityLevel="
-                + severityLevel + ", rawSeverityLevel=" + rawSeverityLevel + ", classification=" + classification
-                + ", rawClassification="
-                + rawClassification;
+                + severityLevel + ", rawSeverityLevel=" + rawSeverityLevel + ", category=" + category + ", rawCategory="
+                + rawCategory;
         return position == null ? info : info + ", position={" + position + "}";
     }
 }

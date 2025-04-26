@@ -23,7 +23,7 @@ import org.neo4j.driver.util.Preview;
 /**
  * The GQL-status object as defined by the GQL standard.
  * @since 5.22.0
- * @see Notification Notification subtype of the GQL-status object
+ * @see GqlNotification Notification subtype of the GQL-status object
  */
 @Preview(name = "GQL-status object")
 public interface GqlStatusObject {
