@@ -51,7 +51,7 @@ import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.summary.InternalInputPosition;
-import org.neo4j.driver.summary.Notification;
+import org.neo4j.driver.summary.GqlNotification;
 import org.neo4j.driver.summary.ResultSummary;
 
 class MetadataExtractorTest {
@@ -243,9 +243,13 @@ class MetadataExtractorTest {
 
         var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, true, null);
 
+        assertEquals(2, summary.gqlStatusObjects().size());
         assertEquals(2, summary.notifications().size());
+        var gqlStatusObjectsIterator = summary.gqlStatusObjects().iterator();
         var firstNotification = summary.notifications().get(0);
+        var firstGqlStatusObject = (GqlNotification) gqlStatusObjectsIterator.next();
         var secondNotification = summary.notifications().get(1);
+        var secondGqlStatusObject = (GqlNotification) gqlStatusObjectsIterator.next();
 
         assertEquals("Almost bad thing", firstNotification.description());
         assertEquals("Neo.DummyNotification", firstNotification.code());
@@ -257,6 +261,18 @@ class MetadataExtractorTest {
                 NotificationCategory.DEPRECATION, firstNotification.category().get());
         assertEquals("DEPRECATION", firstNotification.rawCategory().get());
         assertEquals(new InternalInputPosition(42, 4242, 424242), firstNotification.position());
+
+        assertEquals("Almost bad thing", firstGqlStatusObject.statusDescription());
+        assertEquals(
+                NotificationSeverity.WARNING, firstGqlStatusObject.severity().get());
+        assertEquals("WARNING", firstGqlStatusObject.rawSeverity().get());
+        assertEquals(
+                NotificationCategory.DEPRECATION,
+                firstGqlStatusObject.classification().get());
+        assertEquals("DEPRECATION", firstGqlStatusObject.rawClassification().get());
+        assertEquals(
+                new InternalInputPosition(42, 4242, 424242),
+                firstGqlStatusObject.position().get());
         assertEquals(
                 Map.of(
                         "OPERATION",
@@ -274,29 +290,28 @@ class MetadataExtractorTest {
                                 "offset", 42,
                                 "line", 4242,
                                 "column", 424242)),
-                firstNotification.diagnosticRecord());
+                firstGqlStatusObject.diagnosticRecord());
 
         assertEquals("Almost good thing", secondNotification.description());
         assertEquals("Neo.GoodNotification", secondNotification.code());
         assertEquals("Good", secondNotification.title());
         assertFalse(secondNotification.severityLevel().isPresent());
         assertEquals("INFO", secondNotification.rawSeverityLevel().get());
-        assertTrue(secondNotification.inputPosition().isEmpty());
         assertNull(secondNotification.position());
+
+        assertEquals("Almost good thing", secondGqlStatusObject.statusDescription());
+        assertFalse(secondGqlStatusObject.severity().isPresent());
+        assertEquals("INFO", secondGqlStatusObject.rawSeverity().get());
+        assertFalse(secondGqlStatusObject.classification().isPresent());
+        assertFalse(secondGqlStatusObject.rawClassification().isPresent());
+        assertTrue(secondGqlStatusObject.position().isEmpty());
         assertEquals(
                 Map.of(
                         "OPERATION", Values.value(""),
                         "OPERATION_CODE", Values.value("0"),
                         "CURRENT_SCHEMA", Values.value("/"),
                         "_severity", Values.value("INFO")),
-                secondNotification.diagnosticRecord());
-
-        assertEquals(2, summary.gqlStatusObjects().size());
-        var gqlStatusObjectsIterator = summary.gqlStatusObjects().iterator();
-        var firstGqlStatusObject = (Notification) gqlStatusObjectsIterator.next();
-        var secondGqlStatusObject = (Notification) gqlStatusObjectsIterator.next();
-        assertEquals(firstNotification, firstGqlStatusObject);
-        assertEquals(secondNotification, secondGqlStatusObject);
+                secondGqlStatusObject.diagnosticRecord());
     }
 
     @Test
@@ -339,23 +354,24 @@ class MetadataExtractorTest {
         var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
 
         assertEquals(2, summary.gqlStatusObjects().size());
+        assertEquals(1, summary.notifications().size());
         var gqlStatusObjectsIterator = summary.gqlStatusObjects().iterator();
-        var firstGqlStatusObject = (Notification) gqlStatusObjectsIterator.next();
+        var firstGqlStatusObject = (GqlNotification) gqlStatusObjectsIterator.next();
+        var firstNotification = summary.notifications().get(0);
         var secondGqlStatusObject = gqlStatusObjectsIterator.next();
 
         assertEquals("gql_status", firstGqlStatusObject.gqlStatus());
         assertEquals("status_description", firstGqlStatusObject.statusDescription());
-        assertEquals("notification_description", firstGqlStatusObject.description());
-        assertEquals("neo4j_code", firstGqlStatusObject.code());
-        assertEquals("title", firstGqlStatusObject.title());
         assertEquals(
-                NotificationSeverity.WARNING,
-                firstGqlStatusObject.severityLevel().get());
-        assertEquals("WARNING", firstGqlStatusObject.rawSeverityLevel().get());
+                NotificationSeverity.WARNING, firstGqlStatusObject.severity().get());
+        assertEquals("WARNING", firstGqlStatusObject.rawSeverity().get());
         assertEquals(
-                NotificationCategory.SECURITY, firstGqlStatusObject.category().get());
-        assertEquals("SECURITY", firstGqlStatusObject.rawCategory().get());
-        assertEquals(new InternalInputPosition(42, 4242, 424242), firstGqlStatusObject.position());
+                NotificationCategory.SECURITY,
+                firstGqlStatusObject.classification().get());
+        assertEquals("SECURITY", firstGqlStatusObject.rawClassification().get());
+        assertEquals(
+                new InternalInputPosition(42, 4242, 424242),
+                firstGqlStatusObject.position().get());
         assertEquals(
                 Map.of(
                         "OPERATION",
@@ -375,7 +391,17 @@ class MetadataExtractorTest {
                                 "column", 424242)),
                 firstGqlStatusObject.diagnosticRecord());
 
-        assertFalse(secondGqlStatusObject instanceof Notification);
+        assertEquals("notification_description", firstNotification.description());
+        assertEquals("neo4j_code", firstNotification.code());
+        assertEquals("title", firstNotification.title());
+        assertEquals(
+                NotificationSeverity.WARNING, firstNotification.severityLevel().get());
+        assertEquals("WARNING", firstNotification.rawSeverityLevel().get());
+        assertEquals(NotificationCategory.SECURITY, firstNotification.category().get());
+        assertEquals("SECURITY", firstNotification.rawCategory().get());
+        assertEquals(new InternalInputPosition(42, 4242, 424242), firstNotification.position());
+
+        assertFalse(secondGqlStatusObject instanceof GqlNotification);
         assertEquals("gql_status", secondGqlStatusObject.gqlStatus());
         assertEquals("status_description", secondGqlStatusObject.statusDescription());
         assertEquals(
@@ -386,9 +412,6 @@ class MetadataExtractorTest {
                         "_severity", Values.value("WARNING"),
                         "_classification", Values.value("SECURITY")),
                 secondGqlStatusObject.diagnosticRecord());
-
-        assertEquals(1, summary.notifications().size());
-        assertEquals(firstGqlStatusObject, summary.notifications().get(0));
     }
 
     @Test
