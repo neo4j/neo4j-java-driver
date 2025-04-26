@@ -645,4 +645,28 @@
         <method>java.lang.Object as(java.lang.Class)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/summary/Notification</className>
+        <differenceType>4001</differenceType>
+        <to>org/neo4j/driver/summary/GqlStatusObject</to>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/Notification</className>
+        <differenceType>7002</differenceType>
+        <method>java.util.Optional inputPosition()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/Notification</className>
+        <differenceType>7002</differenceType>
+        <method>java.util.Optional classification()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/Notification</className>
+        <differenceType>7002</differenceType>
+        <method>java.util.Optional rawClassification()</method>
+    </difference>
+
 </differences>

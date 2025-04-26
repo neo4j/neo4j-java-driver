@@ -85,13 +85,9 @@ public interface ResultSummary {
      * in a client.
      * <p>
      * Unlike failures or errors, notifications do not affect the execution of a query.
-     * <p>
-     * Since {@link Notification} is a subtype of {@link GqlStatusObject}, the list of notifications is a subset of all
-     * GQL-status objects that are of {@link Notification} type. However, the order might be different.
      *
      * @return a list of notifications produced while executing the query. The list will be empty if no
      * notifications produced while executing the query.
-     * @see #gqlStatusObjects()
      */
     List<Notification> notifications();
 
