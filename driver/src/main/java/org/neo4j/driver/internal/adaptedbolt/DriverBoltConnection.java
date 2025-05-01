@@ -16,79 +16,28 @@
  */
 package org.neo4j.driver.internal.adaptedbolt;
 
-import java.time.Duration;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
-import org.neo4j.bolt.connection.AccessMode;
 import org.neo4j.bolt.connection.AuthInfo;
-import org.neo4j.bolt.connection.BoltConnectionState;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.BoltServerAddress;
-import org.neo4j.bolt.connection.DatabaseName;
-import org.neo4j.bolt.connection.NotificationConfig;
-import org.neo4j.bolt.connection.TelemetryApi;
-import org.neo4j.bolt.connection.TransactionType;
-import org.neo4j.driver.Value;
+import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.driver.internal.value.BoltValueFactory;
 
 public interface DriverBoltConnection {
-    <T> CompletionStage<T> onLoop(Supplier<T> supplier);
+    default CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, Message messages) {
+        return writeAndFlush(handler, List.of(messages));
+    }
 
-    CompletionStage<DriverBoltConnection> route(
-            DatabaseName databaseName, String impersonatedUser, Set<String> bookmarks);
+    CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, List<Message> messages);
 
-    CompletionStage<DriverBoltConnection> beginTransaction(
-            DatabaseName databaseName,
-            AccessMode accessMode,
-            String impersonatedUser,
-            Set<String> bookmarks,
-            TransactionType transactionType,
-            Duration txTimeout,
-            Map<String, Value> txMetadata,
-            String txType,
-            NotificationConfig notificationConfig);
-
-    CompletionStage<DriverBoltConnection> runInAutoCommitTransaction(
-            DatabaseName databaseName,
-            AccessMode accessMode,
-            String impersonatedUser,
-            Set<String> bookmarks,
-            String query,
-            Map<String, Value> parameters,
-            Duration txTimeout,
-            Map<String, Value> txMetadata,
-            NotificationConfig notificationConfig);
-
-    CompletionStage<DriverBoltConnection> run(String query, Map<String, Value> parameters);
-
-    CompletionStage<DriverBoltConnection> pull(long qid, long request);
-
-    CompletionStage<DriverBoltConnection> discard(long qid, long number);
-
-    CompletionStage<DriverBoltConnection> commit();
-
-    CompletionStage<DriverBoltConnection> rollback();
-
-    CompletionStage<DriverBoltConnection> reset();
-
-    CompletionStage<DriverBoltConnection> logoff();
-
-    CompletionStage<DriverBoltConnection> logon(Map<String, Value> authMap);
-
-    CompletionStage<DriverBoltConnection> telemetry(TelemetryApi telemetryApi);
-
-    CompletionStage<DriverBoltConnection> clear();
-
-    CompletionStage<Void> flush(DriverResponseHandler handler);
+    CompletionStage<Void> write(List<Message> messages);
 
     CompletionStage<Void> forceClose(String reason);
 
     CompletionStage<Void> close();
 
     // ----- MUTABLE DATA -----
-
-    BoltConnectionState state();
 
     CompletionStage<AuthInfo> authData();
 
@@ -103,4 +52,8 @@ public interface DriverBoltConnection {
     boolean telemetrySupported();
 
     boolean serverSideRoutingEnabled();
+
+    // ----- EXTRAS -----
+
+    BoltValueFactory valueFactory();
 }

@@ -20,6 +20,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.completionExceptionCause;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,6 +46,9 @@ import org.neo4j.bolt.connection.NotificationConfig;
 import org.neo4j.bolt.connection.SecurityPlan;
 import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.bolt.connection.exception.MinVersionAcquisitionException;
+import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.bolt.connection.message.Messages;
+import org.neo4j.bolt.connection.message.RunMessage;
 import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
@@ -168,22 +172,16 @@ public class NetworkSession {
                             null,
                             this::handleDatabaseName,
                             null);
-                    var cursorStage = apiTelemetryWork
-                            .pipelineTelemetryIfEnabled(connection)
-                            .thenCompose(conn -> conn.runInAutoCommitTransaction(
-                                    connectionContext.databaseNameFuture.getNow(DatabaseNameUtil.defaultDatabase()),
-                                    asBoltAccessMode(mode),
-                                    connectionContext.impersonatedUser,
-                                    determineBookmarks(true).stream()
-                                            .map(Bookmark::value)
-                                            .collect(Collectors.toSet()),
-                                    query.text(),
-                                    parameters,
-                                    config.timeout(),
-                                    config.metadata(),
-                                    notificationConfig))
-                            .thenCompose(conn -> conn.pull(-1, fetchSize))
-                            .thenCompose(conn -> conn.flush(resultCursor))
+                    var cursorStage = CompletableFuture.completedStage(null)
+                            .thenCompose(ignored -> {
+                                var messages = new ArrayList<Message>(3);
+                                apiTelemetryWork
+                                        .getTelemetryMessageIfEnabled(connection)
+                                        .ifPresent(messages::add);
+                                messages.add(newRunMessage(connection, query, parameters, config));
+                                messages.add(Messages.pull(-1, fetchSize));
+                                return connection.writeAndFlush(resultCursor, messages);
+                            })
                             .thenCompose(ignored -> resultCursor.resultCursor())
                             .handle((resultCursorImpl, throwable) -> {
                                 var error = completionExceptionCause(throwable);
@@ -222,21 +220,15 @@ public class NetworkSession {
                     var runFailed = new AtomicBoolean(false);
                     var responseHandler = new RunRxResponseHandler(
                             logging, connection, query, this::handleNewBookmark, runFailed, this::handleDatabaseName);
-                    var cursorStage = apiTelemetryWork
-                            .pipelineTelemetryIfEnabled(connection)
-                            .thenCompose(conn -> conn.runInAutoCommitTransaction(
-                                    connectionContext.databaseNameFuture.getNow(DatabaseNameUtil.defaultDatabase()),
-                                    asBoltAccessMode(mode),
-                                    connectionContext.impersonatedUser,
-                                    determineBookmarks(true).stream()
-                                            .map(Bookmark::value)
-                                            .collect(Collectors.toSet()),
-                                    query.text(),
-                                    parameters,
-                                    config.timeout(),
-                                    config.metadata(),
-                                    notificationConfig))
-                            .thenCompose(conn -> conn.flush(responseHandler))
+                    var cursorStage = CompletableFuture.completedStage(null)
+                            .thenCompose(ignored -> {
+                                var messages = new ArrayList<Message>(2);
+                                apiTelemetryWork
+                                        .getTelemetryMessageIfEnabled(connection)
+                                        .ifPresent(messages::add);
+                                messages.add(newRunMessage(connection, query, parameters, config));
+                                return connection.writeAndFlush(responseHandler, messages);
+                            })
                             .thenCompose(ignored -> responseHandler.cursorFuture)
                             .handle((resultCursor, throwable) -> {
                                 var error = completionExceptionCause(throwable);
@@ -338,18 +330,19 @@ public class NetworkSession {
                     if (connection != null && connection.isOpen()) {
                         var future = new CompletableFuture<Void>();
                         return connection
-                                .reset()
-                                .thenCompose(conn -> conn.flush(new DriverResponseHandler() {
-                                    @Override
-                                    public void onError(Throwable throwable) {
-                                        future.completeExceptionally(throwable);
-                                    }
+                                .writeAndFlush(
+                                        new DriverResponseHandler() {
+                                            @Override
+                                            public void onError(Throwable throwable) {
+                                                future.completeExceptionally(throwable);
+                                            }
 
-                                    @Override
-                                    public void onComplete() {
-                                        future.complete(null);
-                                    }
-                                }))
+                                            @Override
+                                            public void onComplete() {
+                                                future.complete(null);
+                                            }
+                                        },
+                                        Messages.reset())
                                 .thenCompose(ignored -> future);
                     } else {
                         return completedWithNull();
@@ -639,6 +632,24 @@ public class NetworkSession {
         }
     }
 
+    private RunMessage newRunMessage(
+            DriverBoltConnection connection, Query query, Map<String, Value> parameters, TransactionConfig config) {
+        return Messages.run(
+                connectionContext
+                        .databaseNameFuture
+                        .getNow(DatabaseNameUtil.defaultDatabase())
+                        .databaseName()
+                        .orElse(null),
+                asBoltAccessMode(mode),
+                connectionContext.impersonatedUser,
+                determineBookmarks(true).stream().map(Bookmark::value).collect(Collectors.toSet()),
+                query.text(),
+                connection.valueFactory().toBoltMap(parameters),
+                config.timeout(),
+                connection.valueFactory().toBoltMap(config.metadata()),
+                notificationConfig);
+    }
+
     private static BoltProtocolVersion minBoltVersion(NetworkSessionConnectionContext connectionContext) {
         BoltProtocolVersion minBoltVersion = null;
         if (connectionContext.overrideAuthToken() != null) {
@@ -767,8 +778,8 @@ public class NetworkSession {
                 if (error != null) {
                     runFailed.set(true);
                 }
-                cursorFuture.complete(new RxResultCursorImpl(
-                        connection, NOOP_LOCK, query, runSummary, error, bookmarkConsumer, true, logging));
+                cursorFuture.complete(
+                        new RxResultCursorImpl(connection, query, runSummary, error, bookmarkConsumer, true, logging));
             } else {
                 var message = ignoredCount > 0
                         ? "Run exchange contains ignored messages."

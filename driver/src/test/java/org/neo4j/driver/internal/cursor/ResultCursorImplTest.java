@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
@@ -39,6 +40,8 @@ import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.bolt.connection.message.Messages;
 import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
@@ -78,12 +81,12 @@ class ResultCursorImplTest {
     @Test
     void shouldNextAsync() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
-        given(connection.pull(0, fetchSize)).willReturn(CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            handler.onRecord(new Value[0]);
-            return CompletableFuture.completedStage(null);
-        });
+        given(connection.writeAndFlush(any(), any(Message.class)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArgument(0);
+                    handler.onRecord(new Value[0]);
+                    return CompletableFuture.completedStage(null);
+                });
 
         var record = cursor.nextAsync().toCompletableFuture().join();
 
@@ -92,7 +95,6 @@ class ResultCursorImplTest {
 
     @Test
     void shouldFailNextAsyncOnError() {
-        given(connection.pull(0, fetchSize)).willReturn(CompletableFuture.completedStage(connection));
         var error = new Neo4jException("code", "message");
         cursor.onError(error);
         cursor.onComplete();
@@ -106,9 +108,8 @@ class ResultCursorImplTest {
     @Test
     void shouldFailNextAsyncOnFlushError() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
-        given(connection.pull(0, fetchSize)).willReturn(CompletableFuture.completedStage(connection));
         var error = new RuntimeException("message");
-        given(connection.flush(any()))
+        given(connection.writeAndFlush(any(), any(Message.class)))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> CompletableFuture.failedStage(error));
 
         var future = cursor.nextAsync().toCompletableFuture();
@@ -132,15 +133,15 @@ class ResultCursorImplTest {
     void shouldFailSingleAsync() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.pull(0, fetchSize)).willReturn(CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            handler.onRecord(new Value[0]);
-            var pullSummary = mock(PullSummary.class);
-            given(pullSummary.hasMore()).willReturn(true);
-            handler.onPullSummary(pullSummary);
-            return CompletableFuture.completedStage(null);
-        });
+        given(connection.writeAndFlush(any(), any(Message.class)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArgument(0);
+                    handler.onRecord(new Value[0]);
+                    var pullSummary = mock(PullSummary.class);
+                    given(pullSummary.hasMore()).willReturn(true);
+                    handler.onPullSummary(pullSummary);
+                    return CompletableFuture.completedStage(null);
+                });
 
         var future = cursor.singleAsync().toCompletableFuture();
 
@@ -152,14 +153,14 @@ class ResultCursorImplTest {
     void shouldFailSingleAsyncOnError() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.pull(0, fetchSize)).willReturn(CompletableFuture.completedStage(connection));
         var error = new Neo4jException("code", "message");
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            handler.onError(error);
-            handler.onComplete();
-            return CompletableFuture.completedStage(null);
-        });
+        given(connection.writeAndFlush(any(), any(Message.class)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArgument(0);
+                    handler.onError(error);
+                    handler.onComplete();
+                    return CompletableFuture.completedStage(null);
+                });
 
         var future = cursor.singleAsync().toCompletableFuture();
 
@@ -171,9 +172,8 @@ class ResultCursorImplTest {
     void shouldFailSingleAsyncOnFlushError() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.pull(0, fetchSize)).willReturn(CompletableFuture.completedStage(connection));
         var error = new RuntimeException("message");
-        given(connection.flush(any()))
+        given(connection.writeAndFlush(any(), any(Message.class)))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> CompletableFuture.failedStage(error));
 
         var future = cursor.singleAsync().toCompletableFuture();
@@ -186,57 +186,55 @@ class ResultCursorImplTest {
     void shouldFetchMore() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.pull(0, fetchSize)).willReturn(CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            for (var i = 0; i < fetchSize; i++) {
-                handler.onRecord(new Value[0]);
-            }
-            var pullSummary = mock(PullSummary.class);
-            given(pullSummary.hasMore()).willReturn(true);
-            handler.onPullSummary(pullSummary);
-            return CompletableFuture.completedStage(null);
-        });
+        given(connection.writeAndFlush(any(), any(Message.class)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArgument(0);
+                    for (var i = 0; i < fetchSize; i++) {
+                        handler.onRecord(new Value[0]);
+                    }
+                    var pullSummary = mock(PullSummary.class);
+                    given(pullSummary.hasMore()).willReturn(true);
+                    handler.onPullSummary(pullSummary);
+                    return CompletableFuture.completedStage(null);
+                });
         for (var i = 0; i < fetchSize; i++) {
             cursor.nextAsync().toCompletableFuture().join();
         }
 
         assertNotNull(cursor.nextAsync().toCompletableFuture().join());
 
-        then(connection).should(times(2)).pull(0, fetchSize);
-        then(connection).should(times(2)).flush(any());
+        then(connection).should(times(2)).writeAndFlush(any(), eq(Messages.pull(0, fetchSize)));
     }
 
     @Test
     void shouldListAsync() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.pull(0, -1)).willReturn(CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            handler.onRecord(new Value[0]);
-            var pullSummary = mock(PullSummary.class);
-            handler.onPullSummary(pullSummary);
-            return CompletableFuture.completedStage(null);
-        });
+        given(connection.writeAndFlush(any(), any(Message.class)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArgument(0);
+                    handler.onRecord(new Value[0]);
+                    var pullSummary = mock(PullSummary.class);
+                    handler.onPullSummary(pullSummary);
+                    return CompletableFuture.completedStage(null);
+                });
 
         assertEquals(1, cursor.listAsync().toCompletableFuture().join().size());
-        then(connection).should().pull(0, -1);
-        then(connection).should().flush(any());
+        then(connection).should().writeAndFlush(any(), eq(Messages.pull(0, -1)));
     }
 
     @Test
     void shouldFailListAsyncOnError() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.pull(0, -1)).willReturn(CompletableFuture.completedStage(connection));
         var error = new Neo4jException("code", "message");
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            handler.onError(error);
-            handler.onComplete();
-            return CompletableFuture.completedStage(null);
-        });
+        given(connection.writeAndFlush(any(), any(Message.class)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArgument(0);
+                    handler.onError(error);
+                    handler.onComplete();
+                    return CompletableFuture.completedStage(null);
+                });
 
         var future = cursor.listAsync().toCompletableFuture();
 
@@ -248,9 +246,8 @@ class ResultCursorImplTest {
     void shouldFailListAsyncOnFlushError() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.pull(0, -1)).willReturn(CompletableFuture.completedStage(connection));
         var error = new RuntimeException("message");
-        given(connection.flush(any()))
+        given(connection.writeAndFlush(any(), any(Message.class)))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> CompletableFuture.failedStage(error));
 
         var future = cursor.listAsync().toCompletableFuture();
@@ -263,14 +260,14 @@ class ResultCursorImplTest {
     void shouldFailPeekAsyncOnError() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.pull(0, fetchSize)).willReturn(CompletableFuture.completedStage(connection));
         var error = new Neo4jException("code", "message");
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            handler.onError(error);
-            handler.onComplete();
-            return CompletableFuture.completedStage(null);
-        });
+        given(connection.writeAndFlush(any(), any(Message.class)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArgument(0);
+                    handler.onError(error);
+                    handler.onComplete();
+                    return CompletableFuture.completedStage(null);
+                });
 
         var future = cursor.peekAsync().toCompletableFuture();
 
@@ -282,9 +279,8 @@ class ResultCursorImplTest {
     void shouldFailListPeekOnFlushError() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.pull(0, fetchSize)).willReturn(CompletableFuture.completedStage(connection));
         var error = new RuntimeException("message");
-        given(connection.flush(any()))
+        given(connection.writeAndFlush(any(), any(Message.class)))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> CompletableFuture.failedStage(error));
 
         var future = cursor.peekAsync().toCompletableFuture();
@@ -297,14 +293,14 @@ class ResultCursorImplTest {
     void shouldFailConsumeAsyncOnError() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.discard(0, -1)).willReturn(CompletableFuture.completedStage(connection));
         var error = new Neo4jException("code", "message");
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            handler.onError(error);
-            handler.onComplete();
-            return CompletableFuture.completedStage(null);
-        });
+        given(connection.writeAndFlush(any(), any(Message.class)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArgument(0);
+                    handler.onError(error);
+                    handler.onComplete();
+                    return CompletableFuture.completedStage(null);
+                });
 
         var future = cursor.consumeAsync().toCompletableFuture();
 
@@ -316,9 +312,8 @@ class ResultCursorImplTest {
     void shouldFailConsumeAsyncOnFlushError() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.discard(0, -1)).willReturn(CompletableFuture.completedStage(connection));
         var error = new RuntimeException("message");
-        given(connection.flush(any()))
+        given(connection.writeAndFlush(any(), any(Message.class)))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> CompletableFuture.failedStage(error));
 
         var future = cursor.consumeAsync().toCompletableFuture();

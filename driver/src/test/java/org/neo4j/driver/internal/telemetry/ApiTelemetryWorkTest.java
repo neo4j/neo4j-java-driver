@@ -17,15 +17,16 @@
 package org.neo4j.driver.internal.telemetry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
-import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.neo4j.bolt.connection.TelemetryApi;
+import org.neo4j.bolt.connection.message.TelemetryMessage;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 
 class ApiTelemetryWorkTest {
@@ -36,14 +37,12 @@ class ApiTelemetryWorkTest {
         var apiTelemetryWork = new ApiTelemetryWork(telemetryApi);
         apiTelemetryWork.setEnabled(true);
         var boltConnection = Mockito.mock(DriverBoltConnection.class);
-        var boltConnectionStage = CompletableFuture.completedFuture(boltConnection);
         given(boltConnection.telemetrySupported()).willReturn(true);
-        given(boltConnection.telemetry(telemetryApi)).willReturn(boltConnectionStage);
 
-        var stage = apiTelemetryWork.pipelineTelemetryIfEnabled(boltConnection);
+        var message = apiTelemetryWork.getTelemetryMessageIfEnabled(boltConnection);
 
-        assertEquals(boltConnectionStage, stage);
-        then(boltConnection).should().telemetry(telemetryApi);
+        assertNotNull(message);
+        assertEquals(telemetryApi, message.map(TelemetryMessage::api).orElse(null));
     }
 
     @ParameterizedTest
@@ -54,10 +53,9 @@ class ApiTelemetryWorkTest {
         apiTelemetryWork.setEnabled(true);
         var boltConnection = Mockito.mock(DriverBoltConnection.class);
 
-        var future = apiTelemetryWork.pipelineTelemetryIfEnabled(boltConnection).toCompletableFuture();
+        var message = apiTelemetryWork.getTelemetryMessageIfEnabled(boltConnection);
 
-        assertTrue(future.isDone());
-        assertEquals(boltConnection, future.join());
+        assertTrue(message.isEmpty());
         then(boltConnection).should().telemetrySupported();
         then(boltConnection).shouldHaveNoMoreInteractions();
     }
@@ -69,10 +67,9 @@ class ApiTelemetryWorkTest {
         var apiTelemetryWork = new ApiTelemetryWork(telemetryApi);
         var boltConnection = Mockito.mock(DriverBoltConnection.class);
 
-        var future = apiTelemetryWork.pipelineTelemetryIfEnabled(boltConnection).toCompletableFuture();
+        var message = apiTelemetryWork.getTelemetryMessageIfEnabled(boltConnection);
 
-        assertTrue(future.isDone());
-        assertEquals(boltConnection, future.join());
+        assertTrue(message.isEmpty());
         then(boltConnection).shouldHaveNoInteractions();
     }
 
@@ -83,10 +80,9 @@ class ApiTelemetryWorkTest {
         var boltConnection = Mockito.mock(DriverBoltConnection.class);
         given(boltConnection.telemetrySupported()).willReturn(true);
 
-        var future = apiTelemetryWork.pipelineTelemetryIfEnabled(boltConnection).toCompletableFuture();
+        var message = apiTelemetryWork.getTelemetryMessageIfEnabled(boltConnection);
 
-        assertTrue(future.isDone());
-        assertEquals(boltConnection, future.join());
+        assertTrue(message.isEmpty());
         then(boltConnection).shouldHaveNoInteractions();
     }
 }

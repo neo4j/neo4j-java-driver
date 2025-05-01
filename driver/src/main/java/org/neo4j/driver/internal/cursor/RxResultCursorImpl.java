@@ -26,11 +26,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.locks.Lock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
+import org.neo4j.bolt.connection.message.Messages;
 import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
@@ -88,7 +87,6 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
     };
     private final Logger log;
     private final DriverBoltConnection boltConnection;
-    private final Lock boltConnectionLock;
     private final Query query;
     private final RunSummary runSummary;
     private final Throwable runError;
@@ -118,7 +116,6 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
 
     public RxResultCursorImpl(
             DriverBoltConnection boltConnection,
-            Lock boltConnectionLock,
             Query query,
             RunSummary runSummary,
             Throwable runError,
@@ -126,7 +123,6 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
             boolean closeOnSummary,
             Logging logging) {
         this.boltConnection = Objects.requireNonNull(boltConnection);
-        this.boltConnectionLock = Objects.requireNonNull(boltConnectionLock);
         this.legacyNotifications = new BoltProtocolVersion(5, 5).compareTo(boltConnection.protocolVersion()) > 0;
         this.query = query;
         this.runSummary = runError == null ? runSummary : EMPTY_RUN_SUMMARY;
@@ -192,20 +188,15 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
                     case READY -> {
                         var request = appendDemand(n);
                         state = State.STREAMING;
-                        runnable = () -> boltConnection.onLoop(() -> {
-                            boltConnectionLock.lock();
-                            return boltConnection
-                                    .pull(runSummary.queryId(), request)
-                                    .thenCompose(conn -> conn.flush(this))
-                                    .whenComplete((ignored, throwable) -> {
-                                        boltConnectionLock.unlock();
-                                        throwable = Futures.completionExceptionCause(throwable);
-                                        if (throwable != null) {
-                                            handleError(throwable);
-                                            onComplete();
-                                        }
-                                    });
-                        });
+                        runnable = () -> boltConnection
+                                .writeAndFlush(this, Messages.pull(runSummary.queryId(), request))
+                                .whenComplete((ignored, throwable) -> {
+                                    throwable = Futures.completionExceptionCause(throwable);
+                                    if (throwable != null) {
+                                        handleError(throwable);
+                                        onComplete();
+                                    }
+                                });
                     }
                     case STREAMING -> appendDemand(n);
                     case FAILED, DISCARDING, SUCCEEDED -> {}
@@ -272,42 +263,35 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
             }
         }
         var resetFuture = new CompletableFuture<Void>();
-        boltConnection.onLoop(() -> {
-            boltConnectionLock.lock();
-            return boltConnection
-                    .reset()
-                    .thenCompose(conn -> conn.flush(new DriverResponseHandler() {
-                        Throwable throwable = null;
+        boltConnection
+                .writeAndFlush(
+                        new DriverResponseHandler() {
+                            Throwable throwable = null;
 
-                        @Override
-                        public void onError(Throwable throwable) {
-                            this.throwable = Futures.completionExceptionCause(throwable);
-                        }
-
-                        @Override
-                        public void onComplete() {
-                            if (throwable != null) {
-                                resetFuture.completeExceptionally(throwable);
-                            } else {
-                                resetFuture.complete(null);
+                            @Override
+                            public void onError(Throwable throwable) {
+                                this.throwable = Futures.completionExceptionCause(throwable);
                             }
-                        }
-                    }))
-                    .whenComplete((ignored, throwable) -> {
-                        boltConnectionLock.unlock();
-                        throwable = Futures.completionExceptionCause(throwable);
-                        if (throwable != null) {
-                            resetFuture.completeExceptionally(throwable);
-                        }
-                    });
-        });
+
+                            @Override
+                            public void onComplete() {
+                                if (throwable != null) {
+                                    resetFuture.completeExceptionally(throwable);
+                                } else {
+                                    resetFuture.complete(null);
+                                }
+                            }
+                        },
+                        Messages.reset())
+                .whenComplete((ignored, throwable) -> {
+                    throwable = Futures.completionExceptionCause(throwable);
+                    if (throwable != null) {
+                        resetFuture.completeExceptionally(throwable);
+                    }
+                });
 
         return resetFuture
-                .thenCompose(ignored -> boltConnection.onLoop(() -> {
-                    boltConnectionLock.lock();
-                    return boltConnection.close().whenComplete((result, error) -> boltConnectionLock.unlock());
-                }))
-                .thenCompose(Function.identity())
+                .thenCompose(ignored -> boltConnection.close())
                 .whenComplete((ignored, throwable) -> completeSummaryFuture(null, null))
                 .exceptionally(throwable -> null);
     }
@@ -420,20 +404,15 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
 
     private synchronized Runnable setupDiscardRunnable() {
         state = State.DISCARDING;
-        return () -> boltConnection.onLoop(() -> {
-            boltConnectionLock.lock();
-            return boltConnection
-                    .discard(runSummary.queryId(), -1)
-                    .thenCompose(conn -> conn.flush(this))
-                    .whenComplete((ignored, throwable) -> {
-                        boltConnectionLock.unlock();
-                        throwable = Futures.completionExceptionCause(throwable);
-                        if (throwable != null) {
-                            handleError(throwable);
-                            onComplete();
-                        }
-                    });
-        });
+        return () -> boltConnection
+                .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1))
+                .whenComplete((ignored, throwable) -> {
+                    throwable = Futures.completionExceptionCause(throwable);
+                    if (throwable != null) {
+                        handleError(throwable);
+                        onComplete();
+                    }
+                });
     }
 
     private synchronized Runnable setupCompletionRunnableWithPullSummary() {
@@ -444,38 +423,28 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
             if (discardPending) {
                 discardPending = false;
                 state = State.DISCARDING;
-                runnable = () -> boltConnection.onLoop(() -> {
-                    boltConnectionLock.lock();
-                    return boltConnection
-                            .discard(runSummary.queryId(), -1)
-                            .thenCompose(conn -> conn.flush(this))
+                runnable = () -> boltConnection
+                        .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1))
+                        .whenComplete((ignored, flushThrowable) -> {
+                            var error = Futures.completionExceptionCause(flushThrowable);
+                            if (error != null) {
+                                handleError(error);
+                                onComplete();
+                            }
+                        });
+            } else {
+                var demand = getDemand();
+                if (demand != 0) {
+                    state = State.STREAMING;
+                    runnable = () -> boltConnection
+                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), demand > 0 ? demand : -1))
                             .whenComplete((ignored, flushThrowable) -> {
-                                boltConnectionLock.unlock();
                                 var error = Futures.completionExceptionCause(flushThrowable);
                                 if (error != null) {
                                     handleError(error);
                                     onComplete();
                                 }
                             });
-                });
-            } else {
-                var demand = getDemand();
-                if (demand != 0) {
-                    state = State.STREAMING;
-                    runnable = () -> boltConnection.onLoop(() -> {
-                        boltConnectionLock.lock();
-                        return boltConnection
-                                .pull(runSummary.queryId(), demand > 0 ? demand : -1)
-                                .thenCompose(conn -> conn.flush(this))
-                                .whenComplete((ignored, flushThrowable) -> {
-                                    boltConnectionLock.unlock();
-                                    var error = Futures.completionExceptionCause(flushThrowable);
-                                    if (error != null) {
-                                        handleError(error);
-                                        onComplete();
-                                    }
-                                });
-                    });
                 } else {
                     state = State.READY;
                 }
@@ -546,12 +515,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
     private void closeBoltConnection(Runnable runnable) {
         var closeStage = CompletableFuture.<Void>completedStage(null);
         if (closeOnSummary) {
-            closeStage = closeStage
-                    .thenCompose(ignored -> boltConnection.onLoop(() -> {
-                        boltConnectionLock.lock();
-                        return boltConnection.close().whenComplete((result, error) -> boltConnectionLock.unlock());
-                    }))
-                    .thenCompose(Function.identity());
+            closeStage = closeStage.thenCompose(ignored -> boltConnection.close());
         }
         closeStage.whenComplete((ignored, closeThrowable) -> {
             if (log.isTraceEnabled() && closeThrowable != null) {

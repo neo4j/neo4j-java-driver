@@ -19,9 +19,9 @@ package org.neo4j.driver.testutil;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.atLeastOnce;
@@ -54,14 +54,21 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.message.BeginMessage;
+import org.neo4j.bolt.connection.message.CommitMessage;
+import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.bolt.connection.message.PullMessage;
+import org.neo4j.bolt.connection.message.RollbackMessage;
+import org.neo4j.bolt.connection.message.RunMessage;
 import org.neo4j.bolt.connection.summary.CommitSummary;
 import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.AccessMode;
@@ -81,6 +88,7 @@ import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
+import org.neo4j.driver.internal.value.BoltValueFactory;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -229,53 +237,86 @@ public final class TestUtil {
                 mock());
     }
 
-    public static void setupConnectionAnswers(
-            DriverBoltConnection connection, List<Consumer<DriverResponseHandler>> handlerConsumers) {
-        given(connection.flush(any())).willAnswer(new Answer<CompletionStage<Void>>() {
-            private int index;
+    public static void setupConnectionAnswers(DriverBoltConnection connection, List<MessageHandler> messageHandlers) {
+        for (var messageHandler : messageHandlers) {
+            given(connection.writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(messages -> {
+                        if (messages == null
+                                || messages.size()
+                                        != messageHandler.messageTypes().size()) {
+                            return false;
+                        }
+                        return IntStream.range(0, messages.size()).allMatch(i -> messageHandler
+                                .messageTypes()
+                                .get(i)
+                                .isAssignableFrom(messages.get(i).getClass()));
+                    })))
+                    .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                        var handler = (DriverResponseHandler) invocation.getArguments()[0];
+                        messageHandler.handle(handler);
+                        return CompletableFuture.completedFuture(null);
+                    });
+        }
+    }
 
-            @Override
-            public CompletionStage<Void> answer(InvocationOnMock invocation) {
-                var handler = (DriverResponseHandler) invocation.getArguments()[0];
-                var consumer = handlerConsumers.get(index++);
-                consumer.accept(handler);
-                return CompletableFuture.completedFuture(null);
-            }
-        });
+    public interface MessageHandler {
+        List<Class<? extends Message>> messageTypes();
+
+        void handle(DriverResponseHandler handler);
     }
 
     public static void verifyAutocommitRunRx(DriverBoltConnection connection, String query) {
-        then(connection)
-                .should()
-                .runInAutoCommitTransaction(any(), any(), any(), any(), eq(query), any(), any(), any(), any());
-        then(connection).should().flush(any());
+        then(connection).should().writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(argument -> {
+            var runMessage = (RunMessage) argument.get(0);
+            return runMessage.query().equals(query);
+        }));
+    }
+
+    public static void verifyRun(DriverBoltConnection connection, String query) {
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
+        then(connection).should(atLeastOnce()).writeAndFlush(any(), captor.capture());
+        var messages = captor.getValue();
+        assertInstanceOf(RunMessage.class, messages.get(0));
+        assertEquals(query, ((RunMessage) messages.get(0)).query());
     }
 
     public static void verifyRunAndPull(DriverBoltConnection connection, String query) {
-        then(connection).should().run(eq(query), any());
-        then(connection).should().pull(anyLong(), anyLong());
-        then(connection).should(atLeastOnce()).flush(any());
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
+        then(connection).should(atLeastOnce()).writeAndFlush(any(), captor.capture());
+        var messages = captor.getAllValues().get(1);
+        assertInstanceOf(RunMessage.class, messages.get(0));
+        assertEquals(query, ((RunMessage) messages.get(0)).query());
+        assertInstanceOf(PullMessage.class, messages.get(1));
     }
 
     public static void verifyAutocommitRunAndPull(DriverBoltConnection connection, String query) {
-        then(connection)
-                .should()
-                .runInAutoCommitTransaction(any(), any(), any(), any(), eq(query), any(), any(), any(), any());
-        then(connection).should().pull(anyLong(), anyLong());
-        then(connection).should().flush(any());
+        then(connection).should().writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(argument -> {
+            var runMessage = (RunMessage) argument.get(0);
+            var pullMessage = (PullMessage) argument.get(1);
+            return runMessage.query().equals(query) && pullMessage != null;
+        }));
     }
 
     public static void verifyCommitTx(DriverBoltConnection connection, VerificationMode mode) {
-        verify(connection, mode).commit();
-        verify(connection, mode).close();
+        verify(connection, mode)
+                .writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(
+                                messages -> messages.size() == 1 && messages.get(0) instanceof CommitMessage));
     }
 
     public static void verifyCommitTx(DriverBoltConnection connection) {
         verifyCommitTx(connection, times(1));
+        verify(connection, atLeastOnce()).close();
     }
 
     public static void verifyRollbackTx(DriverBoltConnection connection, VerificationMode mode) {
-        verify(connection, mode).rollback();
+        verify(connection, mode)
+                .writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(
+                                messages -> messages.size() == 1 && messages.get(0) instanceof RollbackMessage));
     }
 
     public static void verifyRollbackTx(DriverBoltConnection connection) {
@@ -284,16 +325,29 @@ public final class TestUtil {
     }
 
     public static void setupFailingRun(DriverBoltConnection connection, Throwable error) {
-        given(connection.run(any(), any())).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
-        given(connection.pull(anyLong(), anyLong())).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            handler.onError(error);
-            handler.onComplete();
-            return CompletableFuture.completedStage(null);
-        });
+        given(connection.writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(messages -> messages.size() == 2
+                                && messages.get(0) instanceof RunMessage
+                                && messages.get(1) instanceof PullMessage)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArgument(0);
+                    handler.onError(error);
+                    handler.onComplete();
+                    return CompletableFuture.completedStage(null);
+                });
+    }
+
+    public static void verifyBegin(DriverBoltConnection connection) {
+        verifyBegin(connection, atLeastOnce());
+    }
+
+    public static void verifyBegin(DriverBoltConnection connection, VerificationMode mode) {
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
+        then(connection).should(atLeastOnce()).writeAndFlush(any(), captor.capture());
+        var messages = captor.getAllValues().get(0);
+        assertInstanceOf(BeginMessage.class, messages.get(0));
     }
 
     public static void setupFailingCommit(DriverBoltConnection connection) {
@@ -301,23 +355,22 @@ public final class TestUtil {
     }
 
     public static void setupFailingCommit(DriverBoltConnection connection, int times) {
-        given(connection.commit()).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer(new Answer<CompletionStage<Void>>() {
-            int invoked;
+        given(connection.writeAndFlush(any(), any(CommitMessage.class)))
+                .willAnswer(new Answer<CompletionStage<Void>>() {
+                    int invoked;
 
-            @Override
-            public CompletionStage<Void> answer(InvocationOnMock invocation) {
-                var handler = (DriverResponseHandler) invocation.getArgument(0);
-                if (invoked++ < times) {
-                    handler.onError(new ServiceUnavailableException(""));
-                } else {
-                    handler.onCommitSummary(mock(CommitSummary.class));
-                }
-                handler.onComplete();
-                return CompletableFuture.completedStage(null);
-            }
-        });
+                    @Override
+                    public CompletionStage<Void> answer(InvocationOnMock invocation) {
+                        var handler = (DriverResponseHandler) invocation.getArgument(0);
+                        if (invoked++ < times) {
+                            handler.onError(new ServiceUnavailableException(""));
+                        } else {
+                            handler.onCommitSummary(mock(CommitSummary.class));
+                        }
+                        handler.onComplete();
+                        return CompletableFuture.completedStage(null);
+                    }
+                });
     }
 
     public static void setupFailingRollback(DriverBoltConnection connection) {
@@ -325,60 +378,66 @@ public final class TestUtil {
     }
 
     public static void setupFailingRollback(DriverBoltConnection connection, int times) {
-        given(connection.rollback()).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer(new Answer<CompletionStage<Void>>() {
-            int invoked;
+        given(connection.writeAndFlush(any(), any(RollbackMessage.class)))
+                .willAnswer(new Answer<CompletionStage<Void>>() {
+                    int invoked;
 
-            @Override
-            public CompletionStage<Void> answer(InvocationOnMock invocation) {
-                var handler = (DriverResponseHandler) invocation.getArgument(0);
-                if (invoked++ < times) {
-                    handler.onError(new ServiceUnavailableException(""));
-                } else {
-                    handler.onCommitSummary(mock(CommitSummary.class));
-                }
-                handler.onComplete();
-                return CompletableFuture.completedStage(null);
-            }
-        });
+                    @Override
+                    public CompletionStage<Void> answer(InvocationOnMock invocation) {
+                        var handler = (DriverResponseHandler) invocation.getArgument(0);
+                        if (invoked++ < times) {
+                            handler.onError(new ServiceUnavailableException(""));
+                        } else {
+                            handler.onCommitSummary(mock(CommitSummary.class));
+                        }
+                        handler.onComplete();
+                        return CompletableFuture.completedStage(null);
+                    }
+                });
     }
 
     public static void setupSuccessfulRunAndPull(DriverBoltConnection connection) {
-        given(connection.run(any(), any())).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
-        given(connection.pull(anyLong(), anyLong())).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            var runSummary = mock(RunSummary.class);
-            given(runSummary.keys()).willReturn(Collections.emptyList());
-            handler.onRunSummary(runSummary);
-            var pullSummary = mock(PullSummary.class);
-            given(pullSummary.metadata()).willReturn(Collections.emptyMap());
-            handler.onPullSummary(pullSummary);
-            handler.onComplete();
-            return CompletableFuture.completedStage(null);
-        });
+        given(connection.writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(messages -> messages.size() == 2
+                                && messages.get(0) instanceof RunMessage
+                                && messages.get(1) instanceof PullMessage)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArgument(0);
+                    var runSummary = mock(RunSummary.class);
+                    given(runSummary.keys()).willReturn(Collections.emptyList());
+                    handler.onRunSummary(runSummary);
+                    var pullSummary = mock(PullSummary.class);
+                    given(pullSummary.metadata()).willReturn(Collections.emptyMap());
+                    handler.onPullSummary(pullSummary);
+                    handler.onComplete();
+                    return CompletableFuture.completedStage(null);
+                });
     }
 
     public static void setupSuccessfulAutocommitRunAndPull(DriverBoltConnection connection) {
-        given(connection.runInAutoCommitTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                        invocation -> CompletableFuture.completedStage(connection));
-        given(connection.pull(anyLong(), anyLong())).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            var runSummary = mock(RunSummary.class);
-            given(runSummary.keys()).willReturn(Collections.emptyList());
-            handler.onRunSummary(runSummary);
-            var pullSummary = mock(PullSummary.class);
-            given(pullSummary.metadata()).willReturn(Collections.emptyMap());
-            handler.onPullSummary(pullSummary);
-            handler.onComplete();
-            return CompletableFuture.completedStage(null);
-        });
+        given(connection.writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(argument -> {
+                    if (argument.size() == 1) {
+                        return argument.get(0) instanceof RunMessage;
+                    } else if (argument.size() == 2) {
+                        return argument.get(0) instanceof RunMessage && argument.get(1) instanceof PullMessage;
+                    } else {
+                        return false;
+                    }
+                })))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArgument(0);
+                    var runSummary = mock(RunSummary.class);
+                    given(runSummary.keys()).willReturn(Collections.emptyList());
+                    handler.onRunSummary(runSummary);
+                    if (((List<?>) invocation.getArgument(1)).size() == 2) {
+                        var pullSummary = mock(PullSummary.class);
+                        given(pullSummary.metadata()).willReturn(Collections.emptyMap());
+                        handler.onPullSummary(pullSummary);
+                    }
+                    handler.onComplete();
+                    return CompletableFuture.completedStage(null);
+                });
     }
 
     public static DriverBoltConnection connectionMock() {
@@ -389,6 +448,7 @@ public final class TestUtil {
         var connection = mock(DriverBoltConnection.class);
         when(connection.serverAddress()).thenReturn(BoltServerAddress.LOCAL_DEFAULT);
         when(connection.protocolVersion()).thenReturn(protocolVersion);
+        given(connection.valueFactory()).willReturn(mock(BoltValueFactory.class));
         return connection;
     }
 

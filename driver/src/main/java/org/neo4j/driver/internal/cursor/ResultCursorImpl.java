@@ -29,6 +29,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
+import org.neo4j.bolt.connection.message.Messages;
 import org.neo4j.bolt.connection.summary.BeginSummary;
 import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.bolt.connection.summary.TelemetrySummary;
@@ -150,8 +151,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                         var future = summaryFuture;
                         state = State.DISCARDING;
                         boltConnection
-                                .discard(runSummary.queryId(), -1)
-                                .thenCompose(conn -> conn.flush(this))
+                                .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1))
                                 .whenComplete((ignored, throwable) -> {
                                     var error = Futures.completionExceptionCause(throwable);
                                     CompletableFuture<ResultSummary> summaryFuture;
@@ -230,8 +230,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                     state = State.STREAMING;
                     updateRecordState(RecordState.NO_RECORD);
                     boltConnection
-                            .pull(runSummary.queryId(), fetchSize)
-                            .thenCompose(conn -> conn.flush(this))
+                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize))
                             .whenComplete((ignored, throwable) -> {
                                 var error = Futures.completionExceptionCause(throwable);
                                 CompletableFuture<Record> recordFuture;
@@ -295,8 +294,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                     state = State.STREAMING;
                     updateRecordState(RecordState.NO_RECORD);
                     boltConnection
-                            .pull(runSummary.queryId(), fetchSize)
-                            .thenCompose(conn -> conn.flush(this))
+                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize))
                             .whenComplete((ignored, throwable) -> {
                                 var error = Futures.completionExceptionCause(throwable);
                                 if (error != null) {
@@ -376,8 +374,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                         state = State.STREAMING;
                         updateRecordState(RecordState.NO_RECORD);
                         boltConnection
-                                .pull(runSummary.queryId(), fetchSize)
-                                .thenCompose(conn -> conn.flush(this))
+                                .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize))
                                 .whenComplete((ignored, throwable) -> {
                                     var error = Futures.completionExceptionCause(throwable);
                                     if (error != null) {
@@ -505,8 +502,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                 state = State.STREAMING;
                 updateRecordState(RecordState.NO_RECORD);
                 boltConnection
-                        .pull(runSummary.queryId(), -1)
-                        .thenCompose(conn -> conn.flush(this))
+                        .writeAndFlush(this, Messages.pull(runSummary.queryId(), -1))
                         .whenComplete((ignored, throwable) -> {
                             var error = Futures.completionExceptionCause(throwable);
                             CompletableFuture<List<Record>> recordsFuture;
@@ -767,8 +763,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                     state = State.STREAMING;
                     updateRecordState(RecordState.NO_RECORD);
                     boltConnection
-                            .pull(runSummary.queryId(), fetchSize)
-                            .thenCompose(conn -> conn.flush(this))
+                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize))
                             .whenComplete((ignored, throwable) -> {
                                 var error = Futures.completionExceptionCause(throwable);
                                 if (error != null) {
@@ -788,8 +783,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                     state = State.STREAMING;
                     updateRecordState(RecordState.NO_RECORD);
                     boltConnection
-                            .pull(runSummary.queryId(), fetchSize)
-                            .thenCompose(conn -> conn.flush(this))
+                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize))
                             .whenComplete((ignored, throwable) -> {
                                 var error = Futures.completionExceptionCause(throwable);
                                 if (error != null) {
@@ -818,8 +812,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                             state = State.STREAMING;
                             updateRecordState(RecordState.NO_RECORD);
                             boltConnection
-                                    .pull(runSummary.queryId(), -1)
-                                    .thenCompose(conn -> conn.flush(this))
+                                    .writeAndFlush(this, Messages.pull(runSummary.queryId(), -1))
                                     .whenComplete((ignored, throwable) -> {
                                         var error = Futures.completionExceptionCause(throwable);
                                         if (error != null) {
@@ -838,8 +831,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                             // consume is pending, discard all
                             state = State.DISCARDING;
                             boltConnection
-                                    .discard(runSummary.queryId(), -1)
-                                    .thenCompose(conn -> conn.flush(this))
+                                    .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1))
                                     .whenComplete((ignored, throwable) -> {
                                         var error = Futures.completionExceptionCause(throwable);
                                         CompletableFuture<ResultSummary> summaryFuture;
@@ -1205,8 +1197,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                     state = State.STREAMING;
                     updateRecordState(RecordState.NO_RECORD);
                     boltConnection
-                            .pull(runSummary.queryId(), -1)
-                            .thenCompose(conn -> conn.flush(this))
+                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), -1))
                             .whenComplete((ignored, throwable) -> {
                                 var error = Futures.completionExceptionCause(throwable);
                                 CompletableFuture<ResultSummary> summaryFuture;

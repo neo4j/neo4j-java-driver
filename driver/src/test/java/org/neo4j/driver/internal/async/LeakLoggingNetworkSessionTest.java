@@ -21,7 +21,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -35,11 +34,14 @@ import static org.neo4j.driver.testutil.TestUtil.setupConnectionAnswers;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.bolt.connection.TelemetryApi;
+import org.neo4j.bolt.connection.message.BeginMessage;
+import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.bolt.connection.message.PullMessage;
+import org.neo4j.bolt.connection.message.RunMessage;
 import org.neo4j.bolt.connection.summary.BeginSummary;
 import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.AuthTokenManagers;
@@ -52,6 +54,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
@@ -65,13 +68,18 @@ class LeakLoggingNetworkSessionTest {
         var log = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(log);
         var connection = TestUtil.connectionMock();
-        given(connection.runInAutoCommitTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.pull(anyLong(), anyLong())).willReturn(completedFuture(connection));
-        setupConnectionAnswers(connection, List.of(handler -> {
-            handler.onRunSummary(mock(RunSummary.class));
-            handler.onPullSummary(mock(PullSummary.class));
-            handler.onComplete();
+        setupConnectionAnswers(connection, List.of(new TestUtil.MessageHandler() {
+            @Override
+            public List<Class<? extends Message>> messageTypes() {
+                return List.of(RunMessage.class, PullMessage.class);
+            }
+
+            @Override
+            public void handle(DriverResponseHandler handler) {
+                handler.onRunSummary(mock(RunSummary.class));
+                handler.onPullSummary(mock(PullSummary.class));
+                handler.onComplete();
+            }
         }));
         given(connection.close()).willReturn(completedFuture(null));
         var session = newSession(logging, connection);
@@ -94,15 +102,17 @@ class LeakLoggingNetworkSessionTest {
         var log = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(log);
         var connection = TestUtil.connectionMock();
-        given(connection.onLoop(any())).willAnswer(invocationOnMock -> {
-            Supplier<?> supplier = invocationOnMock.getArgument(0);
-            return CompletableFuture.completedStage(supplier.get());
-        });
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        setupConnectionAnswers(connection, List.of(handler -> {
-            handler.onBeginSummary(mock(BeginSummary.class));
-            handler.onComplete();
+        setupConnectionAnswers(connection, List.of(new TestUtil.MessageHandler() {
+            @Override
+            public List<Class<? extends Message>> messageTypes() {
+                return List.of(BeginMessage.class);
+            }
+
+            @Override
+            public void handle(DriverResponseHandler handler) {
+                handler.onBeginSummary(mock(BeginSummary.class));
+                handler.onComplete();
+            }
         }));
         var session = newSession(logging, connection);
         // begin transaction to make session obtain a connection

@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
@@ -39,13 +38,13 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.stubbing.Answer;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.message.Message;
 import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Record;
@@ -138,22 +137,18 @@ class InternalRxResultTest {
     void shouldObtainRecordsAndSummary() {
         // Given
         var boltConnection = mock(DriverBoltConnection.class);
-        given(boltConnection.onLoop(any())).willAnswer(invocationOnMock -> {
-            Supplier<?> supplier = invocationOnMock.getArgument(0);
-            return CompletableFuture.completedStage(supplier.get());
-        });
-        given(boltConnection.pull(anyLong(), anyLong())).willReturn(CompletableFuture.completedFuture(boltConnection));
         given(boltConnection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
         given(boltConnection.protocolVersion()).willReturn(new BoltProtocolVersion(5, 1));
-        given(boltConnection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArguments()[0];
-            handler.onRecord(values(1, 1, 1));
-            handler.onRecord(values(2, 2, 2));
-            handler.onRecord(values(3, 3, 3));
-            handler.onPullSummary(mock());
-            handler.onComplete();
-            return CompletableFuture.completedFuture(null);
-        });
+        given(boltConnection.writeAndFlush(any(), any(Message.class)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArguments()[0];
+                    handler.onRecord(values(1, 1, 1));
+                    handler.onRecord(values(2, 2, 2));
+                    handler.onRecord(values(3, 3, 3));
+                    handler.onPullSummary(mock());
+                    handler.onComplete();
+                    return CompletableFuture.completedFuture(null);
+                });
         var runSummary = mock(RunSummary.class);
         given(runSummary.keys()).willReturn(List.of("key1", "key2", "key3"));
         Record record1 = new InternalRecord(asList("key1", "key2", "key3"), values(1, 1, 1));
@@ -175,22 +170,18 @@ class InternalRxResultTest {
     void shouldCancelStreamingButObtainSummary() {
         // Given
         var boltConnection = mock(DriverBoltConnection.class);
-        given(boltConnection.onLoop(any())).willAnswer(invocationOnMock -> {
-            Supplier<?> supplier = invocationOnMock.getArgument(0);
-            return CompletableFuture.completedStage(supplier.get());
-        });
-        given(boltConnection.pull(anyLong(), anyLong())).willReturn(CompletableFuture.completedFuture(boltConnection));
         given(boltConnection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
         given(boltConnection.protocolVersion()).willReturn(new BoltProtocolVersion(5, 1));
-        given(boltConnection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArguments()[0];
-            handler.onRecord(values(1, 1, 1));
-            handler.onRecord(values(2, 2, 2));
-            handler.onRecord(values(3, 3, 3));
-            handler.onPullSummary(mock());
-            handler.onComplete();
-            return CompletableFuture.completedFuture(null);
-        });
+        given(boltConnection.writeAndFlush(any(), any(Message.class)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArguments()[0];
+                    handler.onRecord(values(1, 1, 1));
+                    handler.onRecord(values(2, 2, 2));
+                    handler.onRecord(values(3, 3, 3));
+                    handler.onPullSummary(mock());
+                    handler.onComplete();
+                    return CompletableFuture.completedFuture(null);
+                });
         var runSummary = mock(RunSummary.class);
         given(runSummary.keys()).willReturn(List.of("key1", "key2", "key3"));
         Record record1 = new InternalRecord(asList("key1", "key2", "key3"), values(1, 1, 1));
@@ -223,20 +214,16 @@ class InternalRxResultTest {
     void shouldErrorIfFailedToStream() {
         // Given
         var boltConnection = mock(DriverBoltConnection.class);
-        given(boltConnection.onLoop(any())).willAnswer(invocationOnMock -> {
-            Supplier<?> supplier = invocationOnMock.getArgument(0);
-            return CompletableFuture.completedStage(supplier.get());
-        });
-        given(boltConnection.pull(anyLong(), anyLong())).willReturn(CompletableFuture.completedFuture(boltConnection));
         given(boltConnection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
         given(boltConnection.protocolVersion()).willReturn(new BoltProtocolVersion(5, 1));
         Throwable error = new RuntimeException("Hi");
-        given(boltConnection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArguments()[0];
-            handler.onError(error);
-            handler.onComplete();
-            return CompletableFuture.completedFuture(null);
-        });
+        given(boltConnection.writeAndFlush(any(), any(Message.class)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArguments()[0];
+                    handler.onError(error);
+                    handler.onComplete();
+                    return CompletableFuture.completedFuture(null);
+                });
         RxResult rxResult = newRxResult(boltConnection);
 
         // When & Then
@@ -270,7 +257,7 @@ class InternalRxResultTest {
 
     private InternalRxResult newRxResult(DriverBoltConnection boltConnection, RunSummary runSummary) {
         RxResultCursor cursor = new RxResultCursorImpl(
-                boltConnection, mock(), mock(), runSummary, null, databaseBookmark -> {}, false, Logging.none());
+                boltConnection, mock(), runSummary, null, databaseBookmark -> {}, false, Logging.none());
         return newRxResult(cursor);
     }
 
