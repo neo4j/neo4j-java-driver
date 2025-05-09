@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.testutil.TestUtil.connectionMock;
 import static org.neo4j.driver.testutil.TestUtil.newSession;
+import static org.neo4j.driver.testutil.TestUtil.setupConnectionAnswers;
 import static org.neo4j.driver.testutil.TestUtil.setupFailingCommit;
 import static org.neo4j.driver.testutil.TestUtil.setupFailingRollback;
 import static org.neo4j.driver.testutil.TestUtil.setupFailingRun;
@@ -36,21 +37,21 @@ import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
 import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.stubbing.Answer;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
+import org.neo4j.bolt.connection.message.BeginMessage;
+import org.neo4j.bolt.connection.message.CommitMessage;
+import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.bolt.connection.message.RollbackMessage;
 import org.neo4j.bolt.connection.summary.BeginSummary;
-import org.neo4j.bolt.connection.summary.CommitSummary;
-import org.neo4j.bolt.connection.summary.RollbackSummary;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
@@ -59,6 +60,7 @@ import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.value.IntegerValue;
+import org.neo4j.driver.testutil.TestUtil;
 
 class InternalTransactionTest {
     private DriverBoltConnection connection;
@@ -69,22 +71,20 @@ class InternalTransactionTest {
     void setUp() {
         connection = connectionMock(new BoltProtocolVersion(4, 0));
         var connectionProvider = mock(DriverBoltConnectionProvider.class);
-        given(connection.onLoop(any())).willAnswer(invocationOnMock -> {
-            Supplier<?> supplier = invocationOnMock.getArgument(0);
-            return CompletableFuture.completedStage(supplier.get());
-        });
         given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .willReturn(CompletableFuture.completedFuture(connection));
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            if (handler != null) {
+        setupConnectionAnswers(connection, List.of(new TestUtil.MessageHandler() {
+            @Override
+            public List<Class<? extends Message>> messageTypes() {
+                return List.of(BeginMessage.class);
+            }
+
+            @Override
+            public void handle(DriverResponseHandler handler) {
                 handler.onBeginSummary(mock(BeginSummary.class));
                 handler.onComplete();
             }
-            return CompletableFuture.completedFuture(null);
-        });
+        }));
         var session = new InternalSession(newSession(connectionProvider, Collections.emptySet()));
         tx = session.beginTransaction();
     }
@@ -111,13 +111,18 @@ class InternalTransactionTest {
 
     @Test
     void shouldCommit() {
-        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            handler.onCommitSummary(mock(CommitSummary.class));
-            handler.onComplete();
-            return CompletableFuture.completedStage(null);
-        });
+        setupConnectionAnswers(connection, List.of(new TestUtil.MessageHandler() {
+            @Override
+            public List<Class<? extends Message>> messageTypes() {
+                return List.of(CommitMessage.class);
+            }
+
+            @Override
+            public void handle(DriverResponseHandler handler) {
+                handler.onCommitSummary(mock());
+                handler.onComplete();
+            }
+        }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
 
         tx.commit();
@@ -129,13 +134,18 @@ class InternalTransactionTest {
 
     @Test
     void shouldRollbackByDefault() {
-        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            handler.onRollbackSummary(mock(RollbackSummary.class));
-            handler.onComplete();
-            return CompletableFuture.completedStage(null);
-        });
+        setupConnectionAnswers(connection, List.of(new TestUtil.MessageHandler() {
+            @Override
+            public List<Class<? extends Message>> messageTypes() {
+                return List.of(RollbackMessage.class);
+            }
+
+            @Override
+            public void handle(DriverResponseHandler handler) {
+                handler.onRollbackSummary(mock());
+                handler.onComplete();
+            }
+        }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
 
         tx.close();
@@ -146,13 +156,18 @@ class InternalTransactionTest {
 
     @Test
     void shouldRollback() {
-        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArgument(0);
-            handler.onRollbackSummary(mock(RollbackSummary.class));
-            handler.onComplete();
-            return CompletableFuture.completedStage(null);
-        });
+        setupConnectionAnswers(connection, List.of(new TestUtil.MessageHandler() {
+            @Override
+            public List<Class<? extends Message>> messageTypes() {
+                return List.of(RollbackMessage.class);
+            }
+
+            @Override
+            public void handle(DriverResponseHandler handler) {
+                handler.onRollbackSummary(mock());
+                handler.onComplete();
+            }
+        }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
 
         tx.rollback();

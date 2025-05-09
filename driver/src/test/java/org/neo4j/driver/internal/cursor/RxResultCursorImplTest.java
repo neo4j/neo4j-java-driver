@@ -68,8 +68,7 @@ class RxResultCursorImplTest {
         // given
         var runError = mock(Throwable.class);
         given(connection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
-        var cursor = new RxResultCursorImpl(
-                connection, mock(), query, null, runError, bookmarkConsumer, false, Logging.none());
+        var cursor = new RxResultCursorImpl(connection, query, null, runError, bookmarkConsumer, false, Logging.none());
         if (getRunError) {
             assertEquals(runError, cursor.getRunError());
         }
@@ -90,8 +89,7 @@ class RxResultCursorImplTest {
         // given
         var runError = mock(Throwable.class);
         given(connection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
-        var cursor = new RxResultCursorImpl(
-                connection, mock(), query, null, runError, bookmarkConsumer, false, Logging.none());
+        var cursor = new RxResultCursorImpl(connection, query, null, runError, bookmarkConsumer, false, Logging.none());
         if (getRunError) {
             assertEquals(runError, cursor.getRunError());
         }
@@ -109,8 +107,8 @@ class RxResultCursorImplTest {
         // given
         var keys = List.of("a", "b");
         given(runSummary.keys()).willReturn(keys);
-        var cursor = new RxResultCursorImpl(
-                connection, mock(), query, runSummary, null, bookmarkConsumer, false, Logging.none());
+        var cursor =
+                new RxResultCursorImpl(connection, query, runSummary, null, bookmarkConsumer, false, Logging.none());
 
         // when & then
         assertEquals(keys, cursor.keys());

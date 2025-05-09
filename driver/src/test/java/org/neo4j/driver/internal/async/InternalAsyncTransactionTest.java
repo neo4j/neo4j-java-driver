@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
@@ -43,7 +42,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +50,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.stubbing.Answer;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.DatabaseName;
+import org.neo4j.bolt.connection.message.BeginMessage;
+import org.neo4j.bolt.connection.message.CommitMessage;
+import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.bolt.connection.message.PullMessage;
+import org.neo4j.bolt.connection.message.RollbackMessage;
+import org.neo4j.bolt.connection.message.RunMessage;
 import org.neo4j.bolt.connection.summary.BeginSummary;
 import org.neo4j.bolt.connection.summary.CommitSummary;
 import org.neo4j.bolt.connection.summary.RollbackSummary;
@@ -64,8 +68,10 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
 import org.neo4j.driver.internal.value.IntegerValue;
+import org.neo4j.driver.testutil.TestUtil;
 
 class InternalAsyncTransactionTest {
     private DriverBoltConnection connection;
@@ -74,10 +80,6 @@ class InternalAsyncTransactionTest {
     @BeforeEach
     void setUp() {
         connection = connectionMock(new BoltProtocolVersion(4, 0));
-        given(connection.onLoop(any())).willAnswer(invocationOnMock -> {
-            Supplier<?> supplier = invocationOnMock.getArgument(0);
-            return CompletableFuture.completedStage(supplier.get());
-        });
         var connectionProvider = mock(DriverBoltConnectionProvider.class);
         given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
@@ -104,23 +106,33 @@ class InternalAsyncTransactionTest {
     @ParameterizedTest
     @MethodSource("allSessionRunMethods")
     void shouldFlushOnRun(Function<AsyncTransaction, CompletionStage<ResultCursor>> runReturnOne) {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.run(any(), any())).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
-        given(connection.pull(anyLong(), anyLong())).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onRunSummary(mock(RunSummary.class));
-                            handler.onPullSummary(mock(PullSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(RunMessage.class, PullMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onRunSummary(mock(RunSummary.class));
+                                handler.onPullSummary(mock(PullSummary.class));
+                                handler.onComplete();
+                            }
                         }));
         var tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
 
@@ -132,20 +144,32 @@ class InternalAsyncTransactionTest {
 
     @Test
     void shouldCommit() {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.commit()).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onCommitSummary(mock(CommitSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(CommitMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onCommitSummary(mock(CommitSummary.class));
+                                handler.onComplete();
+                            }
                         }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
@@ -159,20 +183,32 @@ class InternalAsyncTransactionTest {
 
     @Test
     void shouldRollback() {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.rollback()).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onRollbackSummary(mock(RollbackSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(RollbackMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onRollbackSummary(mock(RollbackSummary.class));
+                                handler.onComplete();
+                            }
                         }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
@@ -185,20 +221,32 @@ class InternalAsyncTransactionTest {
 
     @Test
     void shouldReleaseConnectionWhenFailedToCommit() {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.commit()).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onError(new ServiceUnavailableException(""));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(CommitMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onError(new ServiceUnavailableException(""));
+                                handler.onComplete();
+                            }
                         }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());
@@ -210,20 +258,32 @@ class InternalAsyncTransactionTest {
 
     @Test
     void shouldReleaseConnectionWhenFailedToRollback() {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.rollback()).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onError(new ServiceUnavailableException(""));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(RollbackMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onError(new ServiceUnavailableException(""));
+                                handler.onComplete();
+                            }
                         }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var tx = (InternalAsyncTransaction) await(session.beginTransactionAsync());

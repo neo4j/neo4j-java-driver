@@ -16,24 +16,14 @@
  */
 package org.neo4j.driver.internal.adaptedbolt;
 
-import java.time.Duration;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
-import org.neo4j.bolt.connection.AccessMode;
 import org.neo4j.bolt.connection.AuthInfo;
-import org.neo4j.bolt.connection.AuthTokens;
 import org.neo4j.bolt.connection.BoltConnection;
-import org.neo4j.bolt.connection.BoltConnectionState;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.BoltServerAddress;
-import org.neo4j.bolt.connection.DatabaseName;
-import org.neo4j.bolt.connection.NotificationConfig;
-import org.neo4j.bolt.connection.TelemetryApi;
-import org.neo4j.bolt.connection.TransactionType;
-import org.neo4j.driver.Value;
+import org.neo4j.bolt.connection.message.Message;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 
 final class AdaptingDriverBoltConnection implements DriverBoltConnection {
@@ -49,141 +39,15 @@ final class AdaptingDriverBoltConnection implements DriverBoltConnection {
     }
 
     @Override
-    public <T> CompletionStage<T> onLoop(Supplier<T> supplier) {
-        return connection.onLoop(supplier);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> route(
-            DatabaseName databaseName, String impersonatedUser, Set<String> bookmarks) {
+    public CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, List<Message> messages) {
         return connection
-                .route(databaseName, impersonatedUser, bookmarks)
-                .exceptionally(errorMapper::mapAndTrow)
-                .thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> beginTransaction(
-            DatabaseName databaseName,
-            AccessMode accessMode,
-            String impersonatedUser,
-            Set<String> bookmarks,
-            TransactionType transactionType,
-            Duration txTimeout,
-            Map<String, Value> txMetadata,
-            String txType,
-            NotificationConfig notificationConfig) {
-        return connection
-                .beginTransaction(
-                        databaseName,
-                        accessMode,
-                        impersonatedUser,
-                        bookmarks,
-                        transactionType,
-                        txTimeout,
-                        boltValueFactory.toBoltMap(txMetadata),
-                        txType,
-                        notificationConfig)
-                .exceptionally(errorMapper::mapAndTrow)
-                .thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> runInAutoCommitTransaction(
-            DatabaseName databaseName,
-            AccessMode accessMode,
-            String impersonatedUser,
-            Set<String> bookmarks,
-            String query,
-            Map<String, Value> parameters,
-            Duration txTimeout,
-            Map<String, Value> txMetadata,
-            NotificationConfig notificationConfig) {
-        return connection
-                .runInAutoCommitTransaction(
-                        databaseName,
-                        accessMode,
-                        impersonatedUser,
-                        bookmarks,
-                        query,
-                        boltValueFactory.toBoltMap(parameters),
-                        txTimeout,
-                        boltValueFactory.toBoltMap(txMetadata),
-                        notificationConfig)
-                .exceptionally(errorMapper::mapAndTrow)
-                .thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> run(String query, Map<String, Value> parameters) {
-        return connection
-                .run(query, boltValueFactory.toBoltMap(parameters))
-                .exceptionally(errorMapper::mapAndTrow)
-                .thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> pull(long qid, long request) {
-        return connection
-                .pull(qid, request)
-                .exceptionally(errorMapper::mapAndTrow)
-                .thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> discard(long qid, long number) {
-        return connection
-                .discard(qid, number)
-                .exceptionally(errorMapper::mapAndTrow)
-                .thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> commit() {
-        return connection.commit().exceptionally(errorMapper::mapAndTrow).thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> rollback() {
-        return connection.rollback().exceptionally(errorMapper::mapAndTrow).thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> reset() {
-        return connection.reset().exceptionally(errorMapper::mapAndTrow).thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> logoff() {
-        return connection.logoff().exceptionally(errorMapper::mapAndTrow).thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> logon(Map<String, Value> authMap) {
-        return connection
-                .logon(AuthTokens.custom(boltValueFactory.toBoltMap(authMap)))
-                .exceptionally(errorMapper::mapAndTrow)
-                .thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> telemetry(TelemetryApi telemetryApi) {
-        return connection
-                .telemetry(telemetryApi)
-                .exceptionally(errorMapper::mapAndTrow)
-                .thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> clear() {
-        return connection.clear().exceptionally(errorMapper::mapAndTrow).thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<Void> flush(DriverResponseHandler handler) {
-        return connection
-                .flush(new AdaptingDriverResponseHandler(handler, errorMapper, boltValueFactory))
+                .writeAndFlush(new AdaptingDriverResponseHandler(handler, errorMapper, boltValueFactory), messages)
                 .exceptionally(errorMapper::mapAndTrow);
+    }
+
+    @Override
+    public CompletionStage<Void> write(List<Message> messages) {
+        return connection.write(messages).exceptionally(errorMapper::mapAndTrow);
     }
 
     @Override
@@ -194,11 +58,6 @@ final class AdaptingDriverBoltConnection implements DriverBoltConnection {
     @Override
     public CompletionStage<Void> close() {
         return connection.close().exceptionally(errorMapper::mapAndTrow);
-    }
-
-    @Override
-    public BoltConnectionState state() {
-        return connection.state();
     }
 
     @Override
@@ -229,5 +88,10 @@ final class AdaptingDriverBoltConnection implements DriverBoltConnection {
     @Override
     public boolean serverSideRoutingEnabled() {
         return connection.serverSideRoutingEnabled();
+    }
+
+    @Override
+    public BoltValueFactory valueFactory() {
+        return boltValueFactory;
     }
 }

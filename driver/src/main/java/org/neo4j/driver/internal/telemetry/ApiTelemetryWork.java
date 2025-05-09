@@ -17,10 +17,11 @@
 package org.neo4j.driver.internal.telemetry;
 
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.bolt.connection.TelemetryApi;
+import org.neo4j.bolt.connection.message.Messages;
+import org.neo4j.bolt.connection.message.TelemetryMessage;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 
 public record ApiTelemetryWork(TelemetryApi telemetryApi, AtomicBoolean enabled, AtomicBoolean acknowledged) {
@@ -36,12 +37,10 @@ public record ApiTelemetryWork(TelemetryApi telemetryApi, AtomicBoolean enabled,
         this.acknowledged.set(true);
     }
 
-    public CompletionStage<DriverBoltConnection> pipelineTelemetryIfEnabled(DriverBoltConnection connection) {
-        if (enabled.get() && connection.telemetrySupported() && !(acknowledged.get())) {
-            return connection.telemetry(telemetryApi);
-        } else {
-            return CompletableFuture.completedStage(connection);
-        }
+    public Optional<TelemetryMessage> getTelemetryMessageIfEnabled(DriverBoltConnection connection) {
+        return (enabled.get() && connection.telemetrySupported() && !(acknowledged.get()))
+                ? Optional.of(Messages.telemetry(telemetryApi))
+                : Optional.empty();
     }
 
     // for testing

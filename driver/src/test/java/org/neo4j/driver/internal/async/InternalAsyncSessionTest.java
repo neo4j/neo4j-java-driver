@@ -44,6 +44,7 @@ import static org.neo4j.driver.testutil.TestUtil.newSession;
 import static org.neo4j.driver.testutil.TestUtil.setupConnectionAnswers;
 import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulAutocommitRunAndPull;
 import static org.neo4j.driver.testutil.TestUtil.verifyAutocommitRunAndPull;
+import static org.neo4j.driver.testutil.TestUtil.verifyBegin;
 import static org.neo4j.driver.testutil.TestUtil.verifyCommitTx;
 import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
 
@@ -57,15 +58,19 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.Answer;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.DatabaseName;
+import org.neo4j.bolt.connection.message.BeginMessage;
+import org.neo4j.bolt.connection.message.CommitMessage;
+import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.bolt.connection.message.RollbackMessage;
 import org.neo4j.bolt.connection.summary.BeginSummary;
 import org.neo4j.bolt.connection.summary.RollbackSummary;
 import org.neo4j.driver.AccessMode;
@@ -87,6 +92,7 @@ import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.value.IntegerValue;
+import org.neo4j.driver.testutil.TestUtil;
 
 class InternalAsyncSessionTest {
     private DriverBoltConnection connection;
@@ -97,10 +103,6 @@ class InternalAsyncSessionTest {
     @BeforeEach
     void setUp() {
         connection = connectionMock(new BoltProtocolVersion(4, 0));
-        given(connection.onLoop(any())).willAnswer(invocationOnMock -> {
-            Supplier<?> supplier = invocationOnMock.getArgument(0);
-            return CompletableFuture.completedStage(supplier.get());
-        });
         given(connection.close()).willReturn(completedFuture(null));
         connectionProvider = mock(DriverBoltConnectionProvider.class);
         given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
@@ -157,41 +159,59 @@ class InternalAsyncSessionTest {
     @ParameterizedTest
     @MethodSource("allBeginTxMethods")
     void shouldDelegateBeginTx(Function<AsyncSession, CompletionStage<AsyncTransaction>> beginTx) {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        setupConnectionAnswers(connection, List.of(handler -> {
-            handler.onBeginSummary(mock(BeginSummary.class));
-            handler.onComplete();
+        setupConnectionAnswers(connection, List.of(new TestUtil.MessageHandler() {
+            @Override
+            public List<Class<? extends Message>> messageTypes() {
+                return List.of(BeginMessage.class);
+            }
+
+            @Override
+            public void handle(DriverResponseHandler handler) {
+                handler.onBeginSummary(mock(BeginSummary.class));
+                handler.onComplete();
+            }
         }));
 
         var tx = await(beginTx.apply(asyncSession));
 
-        verify(connection).beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
-        verify(connection).flush(any());
+        verifyBegin(connection);
         assertNotNull(tx);
     }
 
     @ParameterizedTest
     @MethodSource("allRunTxMethods")
     void txRunShouldBeginAndCommitTx(Function<AsyncSession, CompletionStage<String>> runTx) {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.commit()).willReturn(completedFuture(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onCommitSummary(Optional::empty);
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(CommitMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onCommitSummary(Optional::empty);
+                                handler.onComplete();
+                            }
                         }));
 
         var string = await(runTx.apply(asyncSession));
 
-        verify(connection).beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verifyBegin(connection);
         verifyCommitTx(connection);
         verify(connection).close();
         assertThat(string, equalTo("a"));
@@ -292,19 +312,32 @@ class InternalAsyncSessionTest {
 
     @SuppressWarnings("deprecation")
     private void testTxRollbackWhenThrows(AccessMode transactionMode) {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onRollbackSummary(mock(RollbackSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(RollbackMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onRollbackSummary(mock(RollbackSummary.class));
+                                handler.onComplete();
+                            }
                         }));
         final RuntimeException error = new IllegalStateException("Oh!");
         AsyncTransactionWork<CompletionStage<Void>> work = tx -> {
@@ -315,39 +348,51 @@ class InternalAsyncSessionTest {
         assertEquals(error, e);
 
         verify(connectionProvider).connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-        verify(connection).beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verifyBegin(connection);
         verifyRollbackTx(connection);
     }
 
     private void testTxIsRetriedUntilSuccessWhenFunctionThrows(AccessMode mode) {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
-        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
         var failures = 12;
-        var failureHandlerStream = IntStream.range(0, failures)
-                .mapToObj(ignored -> Stream.<Consumer<DriverResponseHandler>>of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
-                        },
-                        handler -> {
-                            handler.onRollbackSummary(mock(RollbackSummary.class));
-                            handler.onComplete();
-                        }))
-                .flatMap(Function.identity());
-        var retries = failures + 1;
-        var successHandlers = Stream.<Consumer<DriverResponseHandler>>of(
-                handler -> {
-                    handler.onBeginSummary(mock(BeginSummary.class));
-                    handler.onComplete();
+        var handlers = List.of(
+                new TestUtil.MessageHandler() {
+                    @Override
+                    public List<Class<? extends Message>> messageTypes() {
+                        return List.of(BeginMessage.class);
+                    }
+
+                    @Override
+                    public void handle(DriverResponseHandler handler) {
+                        handler.onBeginSummary(mock(BeginSummary.class));
+                        handler.onComplete();
+                    }
                 },
-                handler -> {
-                    handler.onCommitSummary(Optional::empty);
-                    handler.onComplete();
+                new TestUtil.MessageHandler() {
+                    @Override
+                    public List<Class<? extends Message>> messageTypes() {
+                        return List.of(RollbackMessage.class);
+                    }
+
+                    @Override
+                    public void handle(DriverResponseHandler handler) {
+                        handler.onRollbackSummary(mock(RollbackSummary.class));
+                        handler.onComplete();
+                    }
+                },
+                new TestUtil.MessageHandler() {
+                    @Override
+                    public List<Class<? extends Message>> messageTypes() {
+                        return List.of(CommitMessage.class);
+                    }
+
+                    @Override
+                    public void handle(DriverResponseHandler handler) {
+                        handler.onCommitSummary(Optional::empty);
+                        handler.onComplete();
+                    }
                 });
-        var allHandlers = Stream.concat(failureHandlerStream, successHandlers).toList();
-        setupConnectionAnswers(connection, allHandlers);
+        var retries = failures + 1;
+        setupConnectionAnswers(connection, handlers);
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);
@@ -358,38 +403,45 @@ class InternalAsyncSessionTest {
 
         assertEquals(42, answer);
         verifyInvocationCount(work, failures + 1);
-        verify(connection).commit();
         verifyRollbackTx(connection, times(failures));
+        verifyCommitTx(connection);
     }
 
     private void testTxIsRetriedUntilSuccessWhenCommitThrows(AccessMode mode) {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
         var failures = 13;
-        var failureHandlerStream = IntStream.range(0, failures)
-                .mapToObj(ignored -> Stream.<Consumer<DriverResponseHandler>>of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
-                        },
-                        handler -> {
-                            handler.onError(new ServiceUnavailableException(""));
-                            handler.onComplete();
-                        }))
-                .flatMap(Function.identity());
-        var retries = failures + 1;
-        var successHandlers = Stream.<Consumer<DriverResponseHandler>>of(
-                handler -> {
-                    handler.onBeginSummary(mock(BeginSummary.class));
-                    handler.onComplete();
+        var handlers = List.of(
+                new TestUtil.MessageHandler() {
+                    @Override
+                    public List<Class<? extends Message>> messageTypes() {
+                        return List.of(BeginMessage.class);
+                    }
+
+                    @Override
+                    public void handle(DriverResponseHandler handler) {
+                        handler.onBeginSummary(mock(BeginSummary.class));
+                        handler.onComplete();
+                    }
                 },
-                handler -> {
-                    handler.onCommitSummary(Optional::empty);
-                    handler.onComplete();
+                new TestUtil.MessageHandler() {
+                    int expectedFailures = failures;
+
+                    @Override
+                    public List<Class<? extends Message>> messageTypes() {
+                        return List.of(CommitMessage.class);
+                    }
+
+                    @Override
+                    public void handle(DriverResponseHandler handler) {
+                        if (expectedFailures-- > 0) {
+                            handler.onError(new ServiceUnavailableException(""));
+                        } else {
+                            handler.onCommitSummary(Optional::empty);
+                        }
+                        handler.onComplete();
+                    }
                 });
-        var allHandlers = Stream.concat(failureHandlerStream, successHandlers).toList();
-        setupConnectionAnswers(connection, allHandlers);
+        var retries = failures + 1;
+        setupConnectionAnswers(connection, handlers);
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);
@@ -404,23 +456,34 @@ class InternalAsyncSessionTest {
     }
 
     private void testTxIsRetriedUntilFailureWhenFunctionThrows(AccessMode mode) {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
         var failures = 14;
-        var failureHandlerStream = IntStream.range(0, failures)
-                .mapToObj(ignored -> Stream.<Consumer<DriverResponseHandler>>of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
-                        },
-                        handler -> {
-                            handler.onRollbackSummary(mock(RollbackSummary.class));
-                            handler.onComplete();
-                        }))
-                .flatMap(Function.identity());
+        var handlers = List.of(
+                new TestUtil.MessageHandler() {
+                    @Override
+                    public List<Class<? extends Message>> messageTypes() {
+                        return List.of(BeginMessage.class);
+                    }
+
+                    @Override
+                    public void handle(DriverResponseHandler handler) {
+                        handler.onBeginSummary(mock(BeginSummary.class));
+                        handler.onComplete();
+                    }
+                },
+                new TestUtil.MessageHandler() {
+                    @Override
+                    public List<Class<? extends Message>> messageTypes() {
+                        return List.of(RollbackMessage.class);
+                    }
+
+                    @Override
+                    public void handle(DriverResponseHandler handler) {
+                        handler.onRollbackSummary(mock(RollbackSummary.class));
+                        handler.onComplete();
+                    }
+                });
         var retries = failures - 1;
-        setupConnectionAnswers(connection, failureHandlerStream.toList());
+        setupConnectionAnswers(connection, handlers);
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);
@@ -433,28 +496,44 @@ class InternalAsyncSessionTest {
         assertThat(e, instanceOf(SessionExpiredException.class));
         assertEquals("Oh!", e.getMessage());
         verifyInvocationCount(work, failures);
-        verify(connection, never()).commit();
+        then(connection)
+                .should(never())
+                .writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(
+                                messages -> messages.size() == 1 && messages.get(0) instanceof CommitMessage));
         verifyRollbackTx(connection, times(failures));
     }
 
     private void testTxIsRetriedUntilFailureWhenCommitFails(AccessMode mode) {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.commit()).willReturn(CompletableFuture.completedStage(connection));
         var failures = 17;
-        var failureHandlerStream = IntStream.range(0, failures)
-                .mapToObj(ignored -> Stream.<Consumer<DriverResponseHandler>>of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
-                        },
-                        handler -> {
-                            handler.onError(new ServiceUnavailableException(""));
-                            handler.onComplete();
-                        }))
-                .flatMap(Function.identity());
+        var handlers = List.of(
+                new TestUtil.MessageHandler() {
+                    @Override
+                    public List<Class<? extends Message>> messageTypes() {
+                        return List.of(BeginMessage.class);
+                    }
+
+                    @Override
+                    public void handle(DriverResponseHandler handler) {
+                        handler.onBeginSummary(mock(BeginSummary.class));
+                        handler.onComplete();
+                    }
+                },
+                new TestUtil.MessageHandler() {
+                    @Override
+                    public List<Class<? extends Message>> messageTypes() {
+                        return List.of(CommitMessage.class);
+                    }
+
+                    @Override
+                    public void handle(DriverResponseHandler handler) {
+                        handler.onError(new ServiceUnavailableException(""));
+                        handler.onComplete();
+                    }
+                });
         var retries = failures - 1;
-        setupConnectionAnswers(connection, failureHandlerStream.toList());
+        setupConnectionAnswers(connection, handlers);
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);

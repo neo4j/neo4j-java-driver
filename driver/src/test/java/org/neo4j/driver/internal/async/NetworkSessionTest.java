@@ -18,16 +18,15 @@ package org.neo4j.driver.internal.async;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -45,8 +44,12 @@ import static org.neo4j.driver.testutil.TestUtil.setupConnectionAnswers;
 import static org.neo4j.driver.testutil.TestUtil.setupSuccessfulAutocommitRunAndPull;
 import static org.neo4j.driver.testutil.TestUtil.verifyAutocommitRunAndPull;
 import static org.neo4j.driver.testutil.TestUtil.verifyAutocommitRunRx;
+import static org.neo4j.driver.testutil.TestUtil.verifyBegin;
+import static org.neo4j.driver.testutil.TestUtil.verifyCommitTx;
 import static org.neo4j.driver.testutil.TestUtil.verifyRollbackTx;
+import static org.neo4j.driver.testutil.TestUtil.verifyRunAndPull;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -54,21 +57,31 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.DatabaseName;
 import org.neo4j.bolt.connection.TelemetryApi;
+import org.neo4j.bolt.connection.message.BeginMessage;
+import org.neo4j.bolt.connection.message.CommitMessage;
+import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.bolt.connection.message.Messages;
+import org.neo4j.bolt.connection.message.PullMessage;
+import org.neo4j.bolt.connection.message.ResetMessage;
+import org.neo4j.bolt.connection.message.RollbackMessage;
+import org.neo4j.bolt.connection.message.RunMessage;
+import org.neo4j.bolt.connection.message.TelemetryMessage;
 import org.neo4j.bolt.connection.summary.BeginSummary;
 import org.neo4j.bolt.connection.summary.ResetSummary;
 import org.neo4j.bolt.connection.summary.RollbackSummary;
 import org.neo4j.bolt.connection.summary.RunSummary;
+import org.neo4j.bolt.connection.summary.TelemetrySummary;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
@@ -80,6 +93,8 @@ import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
+import org.neo4j.driver.internal.value.BoltValueFactory;
+import org.neo4j.driver.testutil.TestUtil;
 
 class NetworkSessionTest {
     private DriverBoltConnection connection;
@@ -89,11 +104,8 @@ class NetworkSessionTest {
     @BeforeEach
     void setUp() {
         connection = connectionMock(new BoltProtocolVersion(5, 4));
-        given(connection.onLoop(any())).willAnswer(invocationOnMock -> {
-            Supplier<?> supplier = invocationOnMock.getArgument(0);
-            return CompletableFuture.completedStage(supplier.get());
-        });
         given(connection.close()).willReturn(completedFuture(null));
+        given(connection.valueFactory()).willReturn(mock(BoltValueFactory.class));
         connectionProvider = mock(DriverBoltConnectionProvider.class);
         given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
@@ -135,23 +147,32 @@ class NetworkSessionTest {
     @Test
     void shouldBeAbleToOpenTxAfterPreviousIsClosed() {
         // Given
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.rollback()).willReturn(CompletableFuture.completedStage(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onRollbackSummary(mock(RollbackSummary.class));
-                            handler.onComplete();
-                        },
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(RollbackMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onRollbackSummary(mock(RollbackSummary.class));
+                                handler.onComplete();
+                            }
                         }));
         await(beginTransaction(session).closeAsync());
 
@@ -176,23 +197,37 @@ class NetworkSessionTest {
     @Test
     void shouldBeAbleToUseSessionAgainWhenTransactionIsClosed() {
         // Given
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.rollback()).willReturn(CompletableFuture.completedFuture(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onRollbackSummary(mock(RollbackSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(RollbackMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onRollbackSummary(mock(RollbackSummary.class));
+                                handler.onComplete();
+                            }
                         }));
         await(beginTransaction(session).closeAsync());
         Mockito.reset(connection);
         setupSuccessfulAutocommitRunAndPull(connection);
+        given(connection.valueFactory()).willReturn(mock(BoltValueFactory.class));
         given(connection.protocolVersion()).willReturn(new BoltProtocolVersion(5, 5));
         given(connection.close()).willReturn(CompletableFuture.completedFuture(null));
         var query = "RETURN 1";
@@ -206,19 +241,32 @@ class NetworkSessionTest {
 
     @Test
     void shouldNotCloseAlreadyClosedSession() {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.rollback()).willReturn(CompletableFuture.completedFuture(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onRollbackSummary(mock(RollbackSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(RollbackMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onRollbackSummary(mock(RollbackSummary.class));
+                                handler.onComplete();
+                            }
                         }));
         beginTransaction(session);
 
@@ -289,19 +337,32 @@ class NetworkSessionTest {
     @Test
     void updatesBookmarkWhenTxIsClosed() {
         var bookmarkAfterCommit = InternalBookmark.parse("TheBookmark");
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.commit()).willReturn(CompletableFuture.completedFuture(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onCommitSummary(() -> Optional.of(bookmarkAfterCommit.value()));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(CommitMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onCommitSummary(() -> Optional.of(bookmarkAfterCommit.value()));
+                                handler.onComplete();
+                            }
                         }));
 
         var tx = beginTransaction(session);
@@ -315,39 +376,53 @@ class NetworkSessionTest {
 
     @Test
     void releasesConnectionWhenTxIsClosed() {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.run(any(), any())).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
-        given(connection.pull(anyLong(), anyLong())).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
-                invocation -> CompletableFuture.completedStage(connection));
-        given(connection.rollback()).willReturn(CompletableFuture.completedFuture(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onRunSummary(mock(RunSummary.class));
-                            handler.onPullSummary(mock(PullSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(RunMessage.class, PullMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onRunSummary(mock(RunSummary.class));
+                                handler.onPullSummary(mock(PullSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onRollbackSummary(mock(RollbackSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(RollbackMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onRollbackSummary(mock(RollbackSummary.class));
+                                handler.onComplete();
+                            }
                         }));
         var tx = beginTransaction(session);
         verify(connectionProvider).connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-        then(connection).should().flush(any());
+        verifyBegin(connection);
         var query = "RETURN 42";
         await(tx.runAsync(new Query(query)));
 
-        then(connection).should().run(eq(query), any());
-        then(connection).should().pull(anyLong(), anyLong());
-        then(connection).should(times(2)).flush(any());
-
+        verifyRunAndPull(connection, query);
         await(tx.closeAsync());
         verify(connection).close();
     }
@@ -360,8 +435,12 @@ class NetworkSessionTest {
 
         var tx = beginTransaction(session);
         assertNotNull(tx);
-        then(connection).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
-        then(connection).should().flush(any());
+        then(connection)
+                .should()
+                .writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(
+                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage));
     }
 
     @Test
@@ -371,27 +450,35 @@ class NetworkSessionTest {
 
         var session = newSession(connectionProvider);
 
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.commit()).willReturn(CompletableFuture.completedFuture(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onCommitSummary(() -> Optional.of(bookmark1.value()));
-                            handler.onComplete();
-                        },
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
-                        },
-                        handler -> {
-                            handler.onCommitSummary(() -> Optional.of(bookmark2.value()));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            int num;
+
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(CommitMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onCommitSummary(
+                                        () -> Optional.of(num++ == 0 ? bookmark1.value() : bookmark2.value()));
+                                handler.onComplete();
+                            }
                         }));
 
         var tx1 = beginTransaction(session);
@@ -399,10 +486,8 @@ class NetworkSessionTest {
         assertEquals(Collections.singleton(bookmark1), session.lastBookmarks());
 
         var tx2 = beginTransaction(session);
-        then(connection)
-                .should(times(2))
-                .beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
-        then(connection).should(times(3)).flush(any());
+        verifyBegin(connection, times(2));
+        verifyCommitTx(connection);
         await(tx2.commitAsync());
 
         assertEquals(Collections.singleton(bookmark2), session.lastBookmarks());
@@ -494,7 +579,10 @@ class NetworkSessionTest {
     void shouldRunAfterBeginTxFailureOnBookmark() {
         var error = new RuntimeException("Hi");
         var connection1 = connectionMock(new BoltProtocolVersion(5, 0));
-        given(connection1.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        given(connection1.writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(
+                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage)))
                 .willReturn(CompletableFuture.failedStage(error));
         given(connection1.close()).willReturn(CompletableFuture.completedStage(null));
         var connection2 = connectionMock(new BoltProtocolVersion(5, 0));
@@ -531,7 +619,7 @@ class NetworkSessionTest {
 
         verify(connectionProvider, times(2))
                 .connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-        then(connection1).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verifyBegin(connection1);
         verifyAutocommitRunAndPull(connection2, "RETURN 2");
     }
 
@@ -539,22 +627,24 @@ class NetworkSessionTest {
     void shouldBeginTxAfterBeginTxFailureOnBookmark() {
         var error = new RuntimeException("Hi");
         var connection1 = connectionMock(new BoltProtocolVersion(5, 0));
-        given(connection1.onLoop(any())).willAnswer(invocationOnMock -> {
-            Supplier<?> supplier = invocationOnMock.getArgument(0);
-            return CompletableFuture.completedStage(supplier.get());
-        });
-        given(connection1.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        given(connection1.writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(
+                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage)))
                 .willReturn(CompletableFuture.failedStage(error));
+        given(connection1.close()).willReturn(CompletableFuture.completedStage(null));
         var connection2 = connectionMock(new BoltProtocolVersion(5, 0));
-        given(connection2.onLoop(any())).willAnswer(invocationOnMock -> {
-            Supplier<?> supplier = invocationOnMock.getArgument(0);
-            return CompletableFuture.completedStage(supplier.get());
-        });
-        given(connection2.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(CompletableFuture.completedStage(connection2));
-        setupConnectionAnswers(connection2, List.of(handler -> {
-            handler.onBeginSummary(mock(BeginSummary.class));
-            handler.onComplete();
+        setupConnectionAnswers(connection2, List.of(new TestUtil.MessageHandler() {
+            @Override
+            public List<Class<? extends Message>> messageTypes() {
+                return List.of(BeginMessage.class);
+            }
+
+            @Override
+            public void handle(DriverResponseHandler handler) {
+                handler.onBeginSummary(mock(BeginSummary.class));
+                handler.onComplete();
+            }
         }));
 
         Mockito.reset(connectionProvider);
@@ -586,8 +676,8 @@ class NetworkSessionTest {
 
         verify(connectionProvider, times(2))
                 .connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-        then(connection1).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
-        then(connection2).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verifyBegin(connection1);
+        verifyBegin(connection2);
     }
 
     @Test
@@ -613,33 +703,51 @@ class NetworkSessionTest {
 
         verify(connectionProvider, times(2))
                 .connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-        then(connection).should().beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        then(connection)
+                .should()
+                .writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(
+                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage));
     }
 
     @Test
     void shouldMarkTransactionAsTerminatedAndThenResetConnectionOnReset() {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.reset()).willReturn(CompletableFuture.completedStage(connection));
         setupConnectionAnswers(
                 connection,
                 List.of(
-                        handler -> {
-                            handler.onBeginSummary(mock(BeginSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(BeginMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onBeginSummary(mock(BeginSummary.class));
+                                handler.onComplete();
+                            }
                         },
-                        handler -> {
-                            handler.onResetSummary(mock(ResetSummary.class));
-                            handler.onComplete();
+                        new TestUtil.MessageHandler() {
+                            @Override
+                            public List<Class<? extends Message>> messageTypes() {
+                                return List.of(ResetMessage.class);
+                            }
+
+                            @Override
+                            public void handle(DriverResponseHandler handler) {
+                                handler.onResetSummary(mock(ResetSummary.class));
+                                handler.onComplete();
+                            }
                         }));
         var tx = beginTransaction(session);
 
         assertTrue(tx.isOpen());
-        verify(connection, never()).reset();
+        then(connection).should(never()).writeAndFlush(any(), any(ResetMessage.class));
 
         await(session.resetAsync());
 
-        verify(connection).reset();
+        then(connection).should().writeAndFlush(any(), eq(List.of(Messages.reset())));
     }
 
     @ParameterizedTest
@@ -648,7 +756,26 @@ class NetworkSessionTest {
         // given
         var session = newSession(connectionProvider, WRITE, new FixedRetryLogic(0), Set.of(), telemetryDisabled);
         given(connection.telemetrySupported()).willReturn(true);
-        given(connection.telemetry(any())).willReturn(CompletableFuture.completedStage(connection));
+        setupConnectionAnswers(connection, List.of(new TestUtil.MessageHandler() {
+            @Override
+            public List<Class<? extends Message>> messageTypes() {
+                var messageTypes = new ArrayList<Class<? extends Message>>();
+                if (!telemetryDisabled) {
+                    messageTypes.add(TelemetryMessage.class);
+                }
+                messageTypes.add(BeginMessage.class);
+                return messageTypes;
+            }
+
+            @Override
+            public void handle(DriverResponseHandler handler) {
+                if (!telemetryDisabled) {
+                    handler.onTelemetrySummary(mock(TelemetrySummary.class));
+                }
+                handler.onBeginSummary(mock(BeginSummary.class));
+                handler.onComplete();
+            }
+        }));
         setupSuccessfulBegin(connection);
 
         // when
@@ -656,9 +783,17 @@ class NetworkSessionTest {
 
         // then
         if (telemetryDisabled) {
-            then(connection).should(never()).telemetry(any());
+            then(connection)
+                    .should(never())
+                    .writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(messages -> messages.stream()
+                            .anyMatch(msg -> msg instanceof TelemetryMessage)));
         } else {
-            then(connection).should().telemetry(eq(TelemetryApi.UNMANAGED_TRANSACTION));
+            then(connection)
+                    .should()
+                    .writeAndFlush(
+                            any(),
+                            ArgumentMatchers.<List<Message>>argThat(messages ->
+                                    messages.contains(Messages.telemetry(TelemetryApi.UNMANAGED_TRANSACTION))));
         }
     }
 
@@ -667,31 +802,62 @@ class NetworkSessionTest {
     void shouldSendTelemetryIfEnabledOnRun(boolean telemetryDisabled) {
         // given
         var query = "RETURN 1";
+        setupConnectionAnswers(connection, List.of(new TestUtil.MessageHandler() {
+            @Override
+            public List<Class<? extends Message>> messageTypes() {
+                var messageTypes = new ArrayList<Class<? extends Message>>();
+                if (!telemetryDisabled) {
+                    messageTypes.add(TelemetryMessage.class);
+                }
+                messageTypes.add(RunMessage.class);
+                messageTypes.add(PullMessage.class);
+                return messageTypes;
+            }
+
+            @Override
+            public void handle(DriverResponseHandler handler) {
+                if (!telemetryDisabled) {
+                    handler.onTelemetrySummary(mock(TelemetrySummary.class));
+                }
+                handler.onRunSummary(mock(RunSummary.class));
+                handler.onPullSummary(mock(PullSummary.class));
+                handler.onComplete();
+            }
+        }));
         setupSuccessfulAutocommitRunAndPull(connection);
         var session = newSession(connectionProvider, WRITE, new FixedRetryLogic(0), Set.of(), telemetryDisabled);
         given(connection.telemetrySupported()).willReturn(true);
-        given(connection.telemetry(any())).willReturn(CompletableFuture.completedStage(connection));
 
         // when
         run(session, query);
 
         // then
         if (telemetryDisabled) {
-            then(connection).should(never()).telemetry(any());
+            then(connection)
+                    .should(never())
+                    .writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(messages -> messages.stream()
+                            .anyMatch(msg -> msg instanceof TelemetryMessage)));
         } else {
-            then(connection).should().telemetry(eq(TelemetryApi.AUTO_COMMIT_TRANSACTION));
+            then(connection)
+                    .should()
+                    .writeAndFlush(
+                            any(),
+                            ArgumentMatchers.<List<Message>>argThat(messages ->
+                                    messages.contains(Messages.telemetry(TelemetryApi.AUTO_COMMIT_TRANSACTION))));
         }
     }
 
     private void setupSuccessfulBegin(DriverBoltConnection connection) {
-        given(connection.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(completedFuture(connection));
-        given(connection.flush(any())).willAnswer((Answer<CompletionStage<Void>>) invocation -> {
-            var handler = (DriverResponseHandler) invocation.getArguments()[0];
-            handler.onBeginSummary(mock(BeginSummary.class));
-            handler.onComplete();
-            return completedFuture(null);
-        });
+        given(connection.writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(
+                                argument -> argument.size() == 1 && argument.get(0) instanceof BeginMessage)))
+                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+                    var handler = (DriverResponseHandler) invocation.getArguments()[0];
+                    handler.onBeginSummary(mock(BeginSummary.class));
+                    handler.onComplete();
+                    return completedFuture(null);
+                });
     }
 
     private static void run(NetworkSession session, String query) {

@@ -16,12 +16,14 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.bolt.connection.message.Messages;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
@@ -46,25 +48,21 @@ final class TerminationAwareBoltConnection extends DelegatingBoltConnection {
         this.throwableConsumer = Objects.requireNonNull(throwableConsumer);
     }
 
-    public CompletionStage<DriverBoltConnection> clearAndReset() {
-        var future = new CompletableFuture<DriverBoltConnection>();
+    public CompletionStage<Void> reset() {
+        var future = new CompletableFuture<Void>();
         var thisVal = this;
-        delegate.onLoop(() -> executor.execute(ignored -> clearAndResetBolt(future)))
-                .thenCompose(Function.identity())
-                .whenComplete((ignored, throwable) -> {
-                    if (throwable != null) {
-                        throwableConsumer.accept(throwable);
-                        future.completeExceptionally(throwable);
-                    }
-                });
+        executor.execute(ignored -> resetBolt(future)).whenComplete((ignored, throwable) -> {
+            if (throwable != null) {
+                throwableConsumer.accept(throwable);
+                future.completeExceptionally(throwable);
+            }
+        });
         return future;
     }
 
-    private CompletionStage<Void> clearAndResetBolt(CompletableFuture<DriverBoltConnection> future) {
-        var thisVal = this;
-        return delegate.clear()
-                .thenCompose(DriverBoltConnection::reset)
-                .thenCompose(conn -> conn.flush(new DriverResponseHandler() {
+    private CompletionStage<Void> resetBolt(CompletableFuture<Void> future) {
+        return delegate.writeAndFlush(
+                new DriverResponseHandler() {
                     Throwable throwable = null;
 
                     @Override
@@ -79,52 +77,54 @@ final class TerminationAwareBoltConnection extends DelegatingBoltConnection {
                         if (throwable != null) {
                             future.completeExceptionally(throwable);
                         } else {
-                            future.complete(thisVal);
+                            future.complete(null);
                         }
                     }
-                }));
+                },
+                List.of(Messages.reset()));
     }
 
     @Override
-    public CompletionStage<Void> flush(DriverResponseHandler handler) {
-        return delegate.onLoop(() -> executor.execute(causeOfTermination -> flushBolt(causeOfTermination, handler)))
-                .thenCompose(Function.identity());
+    public CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, List<Message> messages) {
+        return executor.execute(causeOfTermination -> flushBolt(causeOfTermination, handler, messages));
     }
 
-    private CompletionStage<Void> flushBolt(Throwable causeOfTermination, DriverResponseHandler handler) {
+    private CompletionStage<Void> flushBolt(
+            Throwable causeOfTermination, DriverResponseHandler handler, List<Message> messages) {
         if (causeOfTermination == null) {
             log.trace("This connection is active, will flush");
             var terminationAwareResponseHandler =
                     new TerminationAwareResponseHandler(logging, handler, executor, throwableConsumer);
-            return delegate.flush(terminationAwareResponseHandler).handle((ignored, flushThrowable) -> {
-                flushThrowable = Futures.completionExceptionCause(flushThrowable);
-                if (flushThrowable != null) {
-                    if (log.isTraceEnabled()) {
-                        log.error("The flush has failed", flushThrowable);
-                    }
-                    var flushThrowableRef = flushThrowable;
-                    flushThrowable = executor.execute(existingThrowable -> {
-                        if (existingThrowable != null) {
-                            log.trace("The flush has failed, but there is an existing %s", existingThrowable);
-                            return existingThrowable;
+            return delegate.writeAndFlush(terminationAwareResponseHandler, messages)
+                    .handle((ignored, flushThrowable) -> {
+                        flushThrowable = Futures.completionExceptionCause(flushThrowable);
+                        if (flushThrowable != null) {
+                            if (log.isTraceEnabled()) {
+                                log.error("The flush has failed", flushThrowable);
+                            }
+                            var flushThrowableRef = flushThrowable;
+                            flushThrowable = executor.execute(existingThrowable -> {
+                                if (existingThrowable != null) {
+                                    log.trace("The flush has failed, but there is an existing %s", existingThrowable);
+                                    return existingThrowable;
+                                } else {
+                                    throwableConsumer.accept(flushThrowableRef);
+                                    return flushThrowableRef;
+                                }
+                            });
+                            // rethrow
+                            if (flushThrowable instanceof RuntimeException runtimeException) {
+                                throw runtimeException;
+                            } else {
+                                throw new CompletionException(flushThrowable);
+                            }
                         } else {
-                            throwableConsumer.accept(flushThrowableRef);
-                            return flushThrowableRef;
+                            return ignored;
                         }
                     });
-                    // rethrow
-                    if (flushThrowable instanceof RuntimeException runtimeException) {
-                        throw runtimeException;
-                    } else {
-                        throw new CompletionException(flushThrowable);
-                    }
-                } else {
-                    return ignored;
-                }
-            });
         } else {
             // there is an existing error
-            return delegate.clear().thenCompose(ignored -> CompletableFuture.failedStage(causeOfTermination));
+            return CompletableFuture.failedStage(causeOfTermination);
         }
     }
 }

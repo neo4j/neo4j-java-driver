@@ -16,24 +16,16 @@
  */
 package org.neo4j.driver.internal.async;
 
-import java.time.Duration;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
-import org.neo4j.bolt.connection.AccessMode;
 import org.neo4j.bolt.connection.AuthInfo;
-import org.neo4j.bolt.connection.BoltConnectionState;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.BoltServerAddress;
-import org.neo4j.bolt.connection.DatabaseName;
-import org.neo4j.bolt.connection.NotificationConfig;
-import org.neo4j.bolt.connection.TelemetryApi;
-import org.neo4j.bolt.connection.TransactionType;
-import org.neo4j.driver.Value;
+import org.neo4j.bolt.connection.message.Message;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
+import org.neo4j.driver.internal.value.BoltValueFactory;
 
 public abstract class DelegatingBoltConnection implements DriverBoltConnection {
     protected final DriverBoltConnection delegate;
@@ -43,117 +35,13 @@ public abstract class DelegatingBoltConnection implements DriverBoltConnection {
     }
 
     @Override
-    public <T> CompletionStage<T> onLoop(Supplier<T> supplier) {
-        return delegate.onLoop(supplier);
+    public CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, List<Message> messages) {
+        return delegate.writeAndFlush(handler, messages);
     }
 
     @Override
-    public CompletionStage<DriverBoltConnection> route(
-            DatabaseName databaseName, String impersonatedUser, Set<String> bookmarks) {
-        return delegate.route(databaseName, impersonatedUser, bookmarks).thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> beginTransaction(
-            DatabaseName databaseName,
-            AccessMode accessMode,
-            String impersonatedUser,
-            Set<String> bookmarks,
-            TransactionType transactionType,
-            Duration txTimeout,
-            Map<String, Value> txMetadata,
-            String txType,
-            NotificationConfig notificationConfig) {
-        return delegate.beginTransaction(
-                        databaseName,
-                        accessMode,
-                        impersonatedUser,
-                        bookmarks,
-                        transactionType,
-                        txTimeout,
-                        txMetadata,
-                        txType,
-                        notificationConfig)
-                .thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> runInAutoCommitTransaction(
-            DatabaseName databaseName,
-            AccessMode accessMode,
-            String impersonatedUser,
-            Set<String> bookmarks,
-            String query,
-            Map<String, Value> parameters,
-            Duration txTimeout,
-            Map<String, Value> txMetadata,
-            NotificationConfig notificationConfig) {
-        return delegate.runInAutoCommitTransaction(
-                        databaseName,
-                        accessMode,
-                        impersonatedUser,
-                        bookmarks,
-                        query,
-                        parameters,
-                        txTimeout,
-                        txMetadata,
-                        notificationConfig)
-                .thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> run(String query, Map<String, Value> parameters) {
-        return delegate.run(query, parameters).thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> pull(long qid, long request) {
-        return delegate.pull(qid, request).thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> discard(long qid, long number) {
-        return delegate.discard(qid, number).thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> commit() {
-        return delegate.commit().thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> rollback() {
-        return delegate.rollback().thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> reset() {
-        return delegate.reset().thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> logoff() {
-        return delegate.logoff().thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> logon(Map<String, Value> authMap) {
-        return delegate.logon(authMap).thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> telemetry(TelemetryApi telemetryApi) {
-        return delegate.telemetry(telemetryApi).thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<DriverBoltConnection> clear() {
-        return delegate.clear().thenApply(ignored -> this);
-    }
-
-    @Override
-    public CompletionStage<Void> flush(DriverResponseHandler handler) {
-        return delegate.flush(handler);
+    public CompletionStage<Void> write(List<Message> messages) {
+        return delegate.write(messages);
     }
 
     @Override
@@ -164,11 +52,6 @@ public abstract class DelegatingBoltConnection implements DriverBoltConnection {
     @Override
     public CompletionStage<Void> close() {
         return delegate.close();
-    }
-
-    @Override
-    public BoltConnectionState state() {
-        return delegate.state();
     }
 
     @Override
@@ -199,5 +82,10 @@ public abstract class DelegatingBoltConnection implements DriverBoltConnection {
     @Override
     public boolean serverSideRoutingEnabled() {
         return delegate.serverSideRoutingEnabled();
+    }
+
+    @Override
+    public BoltValueFactory valueFactory() {
+        return delegate.valueFactory();
     }
 }
