@@ -42,27 +42,27 @@ final class AdaptingDriverBoltConnection implements DriverBoltConnection {
     public CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, List<Message> messages) {
         return connection
                 .writeAndFlush(new AdaptingDriverResponseHandler(handler, errorMapper, boltValueFactory), messages)
-                .exceptionally(errorMapper::mapAndTrow);
+                .exceptionally(errorMapper::mapAndThrow);
     }
 
     @Override
     public CompletionStage<Void> write(List<Message> messages) {
-        return connection.write(messages).exceptionally(errorMapper::mapAndTrow);
+        return connection.write(messages).exceptionally(errorMapper::mapAndThrow);
     }
 
     @Override
     public CompletionStage<Void> forceClose(String reason) {
-        return connection.forceClose(reason).exceptionally(errorMapper::mapAndTrow);
+        return connection.forceClose(reason).exceptionally(errorMapper::mapAndThrow);
     }
 
     @Override
     public CompletionStage<Void> close() {
-        return connection.close().exceptionally(errorMapper::mapAndTrow);
+        return connection.close().exceptionally(errorMapper::mapAndThrow);
     }
 
     @Override
     public CompletionStage<AuthInfo> authData() {
-        return connection.authInfo().exceptionally(errorMapper::mapAndTrow);
+        return connection.authInfo().exceptionally(errorMapper::mapAndThrow);
     }
 
     @Override
