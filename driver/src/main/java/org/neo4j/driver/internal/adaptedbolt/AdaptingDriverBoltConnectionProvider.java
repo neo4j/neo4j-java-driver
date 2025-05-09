@@ -97,7 +97,7 @@ public class AdaptingDriverBoltConnectionProvider implements DriverBoltConnectio
                         notificationConfig,
                         databaseNameConsumer,
                         additionalParameters)
-                .exceptionally(errorMapper::mapAndTrow)
+                .exceptionally(errorMapper::mapAndThrow)
                 .thenApply(boltConnection -> new AdaptingDriverBoltConnection(
                         boltConnection,
                         routed ? new RoutedErrorMapper(boltConnection.serverAddress(), mode) : errorMapper,
@@ -114,7 +114,7 @@ public class AdaptingDriverBoltConnectionProvider implements DriverBoltConnectio
                         connectTimeoutMillis,
                         securityPlan,
                         AuthTokens.custom(boltValueFactory.toBoltMap(authMap)))
-                .exceptionally(errorMapper::mapAndTrow);
+                .exceptionally(errorMapper::mapAndThrow);
     }
 
     @Override
@@ -127,7 +127,7 @@ public class AdaptingDriverBoltConnectionProvider implements DriverBoltConnectio
                         connectTimeoutMillis,
                         securityPlan,
                         AuthTokens.custom(boltValueFactory.toBoltMap(authMap)))
-                .exceptionally(errorMapper::mapAndTrow);
+                .exceptionally(errorMapper::mapAndThrow);
     }
 
     @Override
@@ -140,11 +140,11 @@ public class AdaptingDriverBoltConnectionProvider implements DriverBoltConnectio
                         connectTimeoutMillis,
                         securityPlan,
                         AuthTokens.custom(boltValueFactory.toBoltMap(authMap)))
-                .exceptionally(errorMapper::mapAndTrow);
+                .exceptionally(errorMapper::mapAndThrow);
     }
 
     @Override
     public CompletionStage<Void> close() {
-        return delegate.close().exceptionally(errorMapper::mapAndTrow);
+        return delegate.close().exceptionally(errorMapper::mapAndThrow);
     }
 }

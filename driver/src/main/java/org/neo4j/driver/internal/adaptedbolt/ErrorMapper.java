@@ -62,7 +62,7 @@ public class ErrorMapper {
 
     protected ErrorMapper() {}
 
-    <T> T mapAndTrow(Throwable throwable) {
+    <T> T mapAndThrow(Throwable throwable) {
         throwable = map(throwable);
         if (throwable instanceof RuntimeException runtimeException) {
             throw runtimeException;
