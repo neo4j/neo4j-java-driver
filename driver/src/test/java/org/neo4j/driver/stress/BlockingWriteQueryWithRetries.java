@@ -37,7 +37,7 @@ public class BlockingWriteQueryWithRetries<C extends AbstractContext> extends Ab
                     session.writeTransaction(tx -> tx.run("CREATE ()").consume());
             assertEquals(1, resultSummary.counters().nodesCreated());
             context.nodeCreated();
-            context.setBookmark(session.lastBookmark());
+            context.setBookmark(session.lastBookmarks());
         } catch (RuntimeException error) {
             stressTest.handleWriteFailure(error, context);
             throw error;

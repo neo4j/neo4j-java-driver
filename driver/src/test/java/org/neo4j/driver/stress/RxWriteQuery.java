@@ -23,7 +23,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactivestreams.ReactiveSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -36,14 +36,14 @@ public class RxWriteQuery<C extends AbstractContext> extends AbstractRxQuery<C> 
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         var queryFinished = new CompletableFuture<Void>();
         Flux.usingWhen(
                         Mono.fromSupplier(() -> newSession(AccessMode.WRITE, context)),
-                        session -> Flux.from(session.run("CREATE ()").consume())
-                                .doOnComplete(() -> context.setBookmark(session.lastBookmark())),
-                        RxSession::close)
+                        session -> Mono.fromDirect(session.run("CREATE ()"))
+                                .flatMap(reactiveResult -> Mono.fromDirect(reactiveResult.consume()))
+                                .doOnSuccess(ignored -> context.setBookmark(session.lastBookmarks())),
+                        ReactiveSession::close)
                 .subscribe(
                         summary -> {
                             assertEquals(1, summary.counters().nodesCreated());

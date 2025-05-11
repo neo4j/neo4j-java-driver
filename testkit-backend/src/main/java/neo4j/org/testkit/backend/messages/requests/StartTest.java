@@ -200,15 +200,6 @@ public class StartTest implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        var testkitResponse = createSkipResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON)
-                .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())
-                        ? RunSubTests.builder().build()
-                        : RunTest.builder().build());
-        return Mono.just(testkitResponse);
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         var testkitResponse = createSkipResponse(REACTIVE_SKIP_PATTERN_TO_REASON)
                 .orElseGet(() -> StartSubTest.decidePerSubTestReactive(data.getTestName())

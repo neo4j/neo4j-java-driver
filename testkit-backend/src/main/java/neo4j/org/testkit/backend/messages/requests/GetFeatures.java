@@ -113,11 +113,6 @@ public class GetFeatures implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return Mono.just(createResponse(COMMON_FEATURES));
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return Mono.just(createResponse(COMMON_FEATURES));
     }

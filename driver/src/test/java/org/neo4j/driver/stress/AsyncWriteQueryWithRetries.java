@@ -60,9 +60,8 @@ public class AsyncWriteQueryWithRetries<C extends AbstractContext> extends Abstr
         return null;
     }
 
-    @SuppressWarnings("deprecation")
     private void finalizeSession(AsyncSession session, C context) {
-        context.setBookmark(session.lastBookmark());
+        context.setBookmark(session.lastBookmarks());
         session.closeAsync();
     }
 }

@@ -34,9 +34,6 @@ import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
-import neo4j.org.testkit.backend.holder.RxResultHolder;
-import neo4j.org.testkit.backend.holder.RxSessionHolder;
-import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
@@ -65,17 +62,14 @@ public class TestkitState {
 
     private final Map<String, SessionHolder> sessionIdToSessionHolder = new HashMap<>();
     private final Map<String, AsyncSessionHolder> sessionIdToAsyncSessionHolder = new HashMap<>();
-    private final Map<String, RxSessionHolder> sessionIdToRxSessionHolder = new HashMap<>();
     private final Map<String, ReactiveSessionHolder> sessionIdToReactiveSessionHolder = new HashMap<>();
     private final Map<String, ReactiveSessionStreamsHolder> sessionIdToReactiveSessionStreamsHolder = new HashMap<>();
     private final Map<String, ResultHolder> resultIdToResultHolder = new HashMap<>();
     private final Map<String, ResultCursorHolder> resultIdToResultCursorHolder = new HashMap<>();
-    private final Map<String, RxResultHolder> resultIdToRxResultHolder = new HashMap<>();
     private final Map<String, ReactiveResultHolder> resultIdToReactiveResultHolder = new HashMap<>();
     private final Map<String, ReactiveResultStreamsHolder> resultIdToReactiveResultStreamsHolder = new HashMap<>();
     private final Map<String, TransactionHolder> transactionIdToTransactionHolder = new HashMap<>();
     private final Map<String, AsyncTransactionHolder> transactionIdToAsyncTransactionHolder = new HashMap<>();
-    private final Map<String, RxTransactionHolder> transactionIdToRxTransactionHolder = new HashMap<>();
     private final Map<String, ReactiveTransactionHolder> transactionIdToReactiveTransactionHolder = new HashMap<>();
     private final Map<String, ReactiveTransactionStreamsHolder> transactionIdToReactiveTransactionStreamsHolder =
             new HashMap<>();
@@ -128,14 +122,6 @@ public class TestkitState {
         return getAsync(id, sessionIdToAsyncSessionHolder, SESSION_NOT_FOUND_MESSAGE);
     }
 
-    public String addRxSessionHolder(RxSessionHolder sessionHolder) {
-        return add(sessionHolder, sessionIdToRxSessionHolder);
-    }
-
-    public Mono<RxSessionHolder> getRxSessionHolder(String id) {
-        return getRx(id, sessionIdToRxSessionHolder, SESSION_NOT_FOUND_MESSAGE);
-    }
-
     public String addReactiveSessionHolder(ReactiveSessionHolder sessionHolder) {
         return add(sessionHolder, sessionIdToReactiveSessionHolder);
     }
@@ -168,14 +154,6 @@ public class TestkitState {
         return getAsync(id, transactionIdToAsyncTransactionHolder, TRANSACTION_NOT_FOUND_MESSAGE);
     }
 
-    public String addRxTransactionHolder(RxTransactionHolder transactionHolder) {
-        return add(transactionHolder, transactionIdToRxTransactionHolder);
-    }
-
-    public Mono<RxTransactionHolder> getRxTransactionHolder(String id) {
-        return getRx(id, transactionIdToRxTransactionHolder, TRANSACTION_NOT_FOUND_MESSAGE);
-    }
-
     public String addReactiveTransactionHolder(ReactiveTransactionHolder transactionHolder) {
         return add(transactionHolder, transactionIdToReactiveTransactionHolder);
     }
@@ -206,14 +184,6 @@ public class TestkitState {
 
     public CompletionStage<ResultCursorHolder> getAsyncResultHolder(String id) {
         return getAsync(id, resultIdToResultCursorHolder, RESULT_NOT_FOUND_MESSAGE);
-    }
-
-    public String addRxResultHolder(RxResultHolder resultHolder) {
-        return add(resultHolder, resultIdToRxResultHolder);
-    }
-
-    public Mono<RxResultHolder> getRxResultHolder(String id) {
-        return getRx(id, resultIdToRxResultHolder, RESULT_NOT_FOUND_MESSAGE);
     }
 
     public String addReactiveResultHolder(ReactiveResultHolder resultHolder) {

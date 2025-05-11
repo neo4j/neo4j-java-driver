@@ -30,7 +30,6 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
-import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.responses.RetryableDone;
@@ -39,7 +38,6 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.reactive.ReactiveTransactionCallback;
-import org.neo4j.driver.reactive.RxTransactionWork;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
@@ -74,25 +72,6 @@ public class SessionWriteTransaction
                     return session.writeTransactionAsync(workWrapper, buildTxConfig());
                 })
                 .thenApply(nothing -> retryableDone());
-    }
-
-    @Override
-    @SuppressWarnings({"deprecation", "DuplicatedCode"})
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return testkitState
-                .getRxSessionHolder(data.getSessionId())
-                .flatMap(sessionHolder -> {
-                    RxTransactionWork<Publisher<Void>> workWrapper = tx -> {
-                        var txId = testkitState.addRxTransactionHolder(new RxTransactionHolder(sessionHolder, tx));
-                        testkitState.getResponseWriter().accept(retryableTry(txId));
-                        var tryResult = new CompletableFuture<Void>();
-                        sessionHolder.setTxWorkFuture(tryResult);
-                        return Mono.fromCompletionStage(tryResult);
-                    };
-
-                    return Mono.fromDirect(sessionHolder.getSession().writeTransaction(workWrapper, buildTxConfig()));
-                })
-                .then(Mono.just(retryableDone()));
     }
 
     @Override

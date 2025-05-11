@@ -23,7 +23,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactivestreams.ReactiveSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -36,18 +36,17 @@ public class RxWriteQueryWithRetries<C extends AbstractContext> extends Abstract
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         var queryFinished = new CompletableFuture<Void>();
 
         var createdNodesNum = new AtomicInteger();
         Flux.usingWhen(
-                        Mono.fromSupplier(driver::rxSession),
-                        session -> session.writeTransaction(
-                                tx -> tx.run("CREATE ()").consume()),
+                        Mono.fromSupplier(() -> driver.session(ReactiveSession.class)),
+                        session -> session.executeWrite(tx -> Mono.fromDirect(tx.run("CREATE ()"))
+                                .flatMap(reactiveResult -> Mono.fromDirect(reactiveResult.consume()))),
                         session -> Mono.empty(),
                         (session, error) -> session.close(),
-                        RxSession::close)
+                        ReactiveSession::close)
                 .subscribe(
                         resultSummary -> createdNodesNum.addAndGet(
                                 resultSummary.counters().nodesCreated()),

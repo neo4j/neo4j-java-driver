@@ -42,12 +42,6 @@ public interface TestkitCallbackResult extends TestkitRequest {
     }
 
     @Override
-    default Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        testkitState.getCallbackIdToFuture().get(getCallbackId()).complete(this);
-        return Mono.empty();
-    }
-
-    @Override
     default Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         testkitState.getCallbackIdToFuture().get(getCallbackId()).complete(this);
         return Mono.empty();

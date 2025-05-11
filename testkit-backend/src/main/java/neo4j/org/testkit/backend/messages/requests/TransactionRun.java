@@ -30,7 +30,6 @@ import neo4j.org.testkit.backend.holder.ReactiveResultHolder;
 import neo4j.org.testkit.backend.holder.ReactiveResultStreamsHolder;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
-import neo4j.org.testkit.backend.holder.RxResultHolder;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -61,19 +60,6 @@ public class TransactionRun implements TestkitRequest {
                             testkitState.addAsyncResultHolder(new ResultCursorHolder(transactionHolder, resultCursor));
                     return createResponse(resultId, resultCursor.keys());
                 }));
-    }
-
-    @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return testkitState.getRxTransactionHolder(data.getTxId()).flatMap(transactionHolder -> {
-            var result = transactionHolder
-                    .getTransaction()
-                    .run(data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap());
-            var resultId = testkitState.addRxResultHolder(new RxResultHolder(transactionHolder, result));
-            // The keys() method causes RUN message exchange.
-            // However, it does not currently report errors.
-            return Mono.fromDirect(result.keys()).map(keys -> createResponse(resultId, keys));
-        });
     }
 
     @Override

@@ -46,11 +46,9 @@ import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.internal.reactive.InternalRxSession;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 
 public class InternalDriver implements Driver {
@@ -99,7 +97,7 @@ public class InternalDriver implements Driver {
         return queryBookmarkManager;
     }
 
-    @SuppressWarnings({"unchecked", "deprecation"})
+    @SuppressWarnings("unchecked")
     @Override
     public <T extends BaseSession> T session(
             Class<T> sessionClass, SessionConfig sessionConfig, AuthToken sessionAuthToken) {
@@ -116,8 +114,6 @@ public class InternalDriver implements Driver {
         } else if (org.neo4j.driver.reactivestreams.ReactiveSession.class.isAssignableFrom(sessionClass)) {
             session = (T) new org.neo4j.driver.internal.reactivestreams.InternalReactiveSession(
                     newSession(sessionConfig, notificationConfig, sessionAuthToken));
-        } else if (RxSession.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalRxSession(newSession(sessionConfig, notificationConfig, sessionAuthToken));
         } else {
             throw new IllegalArgumentException(
                     String.format("Unsupported session type '%s'", sessionClass.getCanonicalName()));

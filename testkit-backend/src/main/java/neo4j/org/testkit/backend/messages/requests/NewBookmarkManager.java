@@ -48,11 +48,6 @@ public class NewBookmarkManager implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return Mono.just(createBookmarkManagerAndResponse(testkitState));
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return Mono.just(createBookmarkManagerAndResponse(testkitState));
     }

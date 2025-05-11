@@ -23,7 +23,6 @@ import neo4j.org.testkit.backend.RxBufferedSubscriber;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.ReactiveResultHolder;
 import neo4j.org.testkit.backend.holder.ReactiveResultStreamsHolder;
-import neo4j.org.testkit.backend.holder.RxResultHolder;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -49,23 +48,6 @@ public abstract class AbstractResultNext implements TestkitRequest {
                 .thenCompose(
                         resultCursorHolder -> resultCursorHolder.getResult().nextAsync())
                 .thenApply(this::createResponseNullSafe);
-    }
-
-    @Override
-    @SuppressWarnings("DuplicatedCode")
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return testkitState.getRxResultHolder(getResultId()).flatMap(resultHolder -> {
-            var subscriber = resultHolder.getSubscriber().orElseGet(() -> {
-                var subscriberInstance = new RxBufferedSubscriber<Record>(getFetchSize(resultHolder));
-                resultHolder.setSubscriber(subscriberInstance);
-                resultHolder.getResult().records().subscribe(subscriberInstance);
-                return subscriberInstance;
-            });
-            return subscriber
-                    .next()
-                    .map(this::createResponse)
-                    .defaultIfEmpty(NullRecord.builder().build());
-        });
     }
 
     @Override
@@ -107,19 +89,6 @@ public abstract class AbstractResultNext implements TestkitRequest {
 
     private neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponseNullSafe(Record record) {
         return record != null ? createResponse(record) : NullRecord.builder().build();
-    }
-
-    private long getFetchSize(RxResultHolder resultHolder) {
-        long fetchSize = resultHolder
-                .getSessionHolder()
-                .getConfig()
-                .fetchSize()
-                .orElse(resultHolder
-                        .getSessionHolder()
-                        .getDriverHolder()
-                        .config()
-                        .fetchSize());
-        return fetchSize == -1 ? Long.MAX_VALUE : fetchSize;
     }
 
     private long getFetchSize(ReactiveResultHolder resultHolder) {

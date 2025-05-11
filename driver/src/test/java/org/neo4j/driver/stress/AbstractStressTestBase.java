@@ -81,12 +81,15 @@ import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.reactivestreams.ReactiveResult;
+import org.neo4j.driver.reactivestreams.ReactiveSession;
+import org.neo4j.driver.reactivestreams.ReactiveTransactionContext;
 import org.neo4j.driver.testutil.DaemonThreadFactory;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Point;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 abstract class AbstractStressTestBase<C extends AbstractContext> {
     private static final int THREAD_COUNT = Integer.getInteger("threadCount", 8);
@@ -546,55 +549,55 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         System.out.println("Reading nodes with async API took: " + NANOSECONDS.toMillis(end - start) + "ms");
     }
 
-    @SuppressWarnings("deprecation")
-    private Bookmark createNodesRx(int batchCount, InternalDriver driver) {
+    private Set<Bookmark> createNodesRx(int batchCount, InternalDriver driver) {
         var start = System.nanoTime();
 
-        var session = driver.rxSession();
+        var session = driver.session(ReactiveSession.class);
 
         Flux.concat(Flux.range(0, batchCount)
-                        .map(batchIndex -> session.writeTransaction(tx ->
+                        .map(batchIndex -> session.executeWrite(tx ->
                                 createNodesInTxRx(tx, batchIndex, AbstractStressTestBase.BIG_DATA_TEST_BATCH_SIZE))))
                 .blockLast(); // throw any error if happened
 
         var end = System.nanoTime();
         System.out.println("Node creation with reactive API took: " + NANOSECONDS.toMillis(end - start) + "ms");
 
-        return session.lastBookmark();
+        return session.lastBookmarks();
     }
 
-    @SuppressWarnings("deprecation")
     private Publisher<Void> createNodesInTxRx(
-            RxTransaction tx, int batchIndex, @SuppressWarnings("SameParameterValue") int batchSize) {
+            ReactiveTransactionContext tx, int batchIndex, @SuppressWarnings("SameParameterValue") int batchSize) {
         return Flux.concat(Flux.range(0, batchSize)
                 .map(index -> batchIndex * batchSize + index)
                 .map(nodeIndex -> {
                     var query = createNodeInTxQuery(nodeIndex);
-                    return Flux.from(tx.run(query).consume()).then(); // As long as there is no error
+                    return Mono.fromDirect(tx.run(query))
+                            .flatMap(reactiveResult -> Mono.fromDirect(reactiveResult.consume()))
+                            .then(); // As long as there is no error
                 }));
     }
 
-    @SuppressWarnings("deprecation")
-    private void readNodesRx(InternalDriver driver, Bookmark bookmark) {
+    private void readNodesRx(InternalDriver driver, Set<Bookmark> bookmarks) {
         var start = System.nanoTime();
 
-        var session = driver.rxSession(builder().withBookmarks(bookmark).build());
+        var session = driver.session(
+                ReactiveSession.class, builder().withBookmarks(bookmarks).build());
         var nodesSeen = new AtomicInteger();
 
-        var readQuery = session.readTransaction(
-                tx -> Flux.from(tx.run("MATCH (n:Node) RETURN n").records())
-                        .doOnNext(record -> {
-                            var node = record.get(0).asNode();
-                            nodesSeen.incrementAndGet();
+        var readQuery = session.executeRead(tx -> Mono.fromDirect(tx.run("MATCH (n:Node) RETURN n"))
+                .flatMapMany(ReactiveResult::records)
+                .doOnNext(record -> {
+                    var node = record.get(0).asNode();
+                    nodesSeen.incrementAndGet();
 
-                            var labels = Iterables.asList(node.labels());
-                            assertEquals(2, labels.size());
-                            assertTrue(labels.contains("Test"));
-                            assertTrue(labels.contains("Node"));
+                    var labels = Iterables.asList(node.labels());
+                    assertEquals(2, labels.size());
+                    assertTrue(labels.contains("Test"));
+                    assertTrue(labels.contains("Node"));
 
-                            verifyNodeProperties(node);
-                        })
-                        .then());
+                    verifyNodeProperties(node);
+                })
+                .then());
 
         Flux.from(readQuery).blockLast();
 

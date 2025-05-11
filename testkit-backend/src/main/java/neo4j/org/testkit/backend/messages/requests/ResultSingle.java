@@ -47,11 +47,6 @@ public class ResultSingle implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        throw new UnsupportedOperationException("Single method is not supported by reactive API");
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         throw new UnsupportedOperationException("Single method is not supported by reactive API");
     }

@@ -31,7 +31,6 @@ import neo4j.org.testkit.backend.holder.AsyncSessionHolder;
 import neo4j.org.testkit.backend.holder.DriverHolder;
 import neo4j.org.testkit.backend.holder.ReactiveSessionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveSessionStreamsHolder;
-import neo4j.org.testkit.backend.holder.RxSessionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -43,7 +42,6 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.reactive.ReactiveSession;
-import org.neo4j.driver.reactive.RxSession;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -60,12 +58,6 @@ public class NewSession implements TestkitRequest {
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
         return CompletableFuture.completedFuture(createSessionStateAndResponse(
                 testkitState, this::createAsyncSessionState, testkitState::addAsyncSessionHolder));
-    }
-
-    @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return Mono.just(createSessionStateAndResponse(
-                testkitState, this::createRxSessionState, testkitState::addRxSessionHolder));
     }
 
     @Override
@@ -143,15 +135,6 @@ public class NewSession implements TestkitRequest {
         return new AsyncSessionHolder(
                 driverHolder,
                 driverHolder.driver().session(AsyncSession.class, sessionConfig, userSwitchAuthToken),
-                sessionConfig);
-    }
-
-    @SuppressWarnings({"deprecation", "resource"})
-    private RxSessionHolder createRxSessionState(
-            DriverHolder driverHolder, SessionConfig sessionConfig, AuthToken userSwitchAuthToken) {
-        return new RxSessionHolder(
-                driverHolder,
-                driverHolder.driver().session(RxSession.class, sessionConfig, userSwitchAuthToken),
                 sessionConfig);
     }
 

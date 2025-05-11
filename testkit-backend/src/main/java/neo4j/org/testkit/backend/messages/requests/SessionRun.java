@@ -30,7 +30,6 @@ import neo4j.org.testkit.backend.holder.ReactiveResultHolder;
 import neo4j.org.testkit.backend.holder.ReactiveResultStreamsHolder;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
-import neo4j.org.testkit.backend.holder.RxResultHolder;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -63,23 +62,6 @@ public class SessionRun extends AbstractTestkitRequestWithTransactionConfig<Sess
                 var id = testkitState.addAsyncResultHolder(new ResultCursorHolder(sessionHolder, resultCursor));
                 return createResponse(id, resultCursor.keys());
             });
-        });
-    }
-
-    @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return testkitState.getRxSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
-            var session = sessionHolder.getSession();
-            var query = Optional.ofNullable(data.params)
-                    .map(params -> new Query(data.cypher, data.params))
-                    .orElseGet(() -> new Query(data.cypher));
-
-            var result = session.run(query, buildTxConfig());
-            var id = testkitState.addRxResultHolder(new RxResultHolder(sessionHolder, result));
-
-            // The keys() method causes RUN message exchange.
-            // However, it does not currently report errors.
-            return Mono.fromDirect(result.keys()).map(keys -> createResponse(id, keys));
         });
     }
 

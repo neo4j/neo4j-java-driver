@@ -20,7 +20,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactivestreams.ReactiveResult;
+import org.neo4j.driver.reactivestreams.ReactiveSession;
 import org.neo4j.driver.summary.ResultSummary;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -32,13 +33,12 @@ public class RxReadQueryWithRetries<C extends AbstractContext> extends AbstractR
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         var queryFinished = new CompletableFuture<Void>();
         Flux.usingWhen(
                         Mono.fromSupplier(() -> newSession(AccessMode.READ, context)),
                         this::processAndGetSummary,
-                        RxSession::close)
+                        ReactiveSession::close)
                 .subscribe(
                         summary -> {
                             queryFinished.complete(null);
@@ -51,13 +51,14 @@ public class RxReadQueryWithRetries<C extends AbstractContext> extends AbstractR
         return queryFinished;
     }
 
-    @SuppressWarnings("deprecation")
-    private Publisher<ResultSummary> processAndGetSummary(RxSession session) {
-        return session.readTransaction(tx -> {
-            var result = tx.run("MATCH (n) RETURN n LIMIT 1");
-            var records = Flux.from(result.records()).singleOrEmpty().map(record -> record.get(0)
-                    .asNode());
-            var summaryMono = Mono.from(result.consume()).single();
+    private Publisher<ResultSummary> processAndGetSummary(ReactiveSession session) {
+        return session.executeRead(tx -> {
+            var result = Mono.fromDirect(tx.run("MATCH (n) RETURN n LIMIT 1"));
+            var records = result.flatMapMany(ReactiveResult::records)
+                    .singleOrEmpty()
+                    .map(record -> record.get(0).asNode());
+            var summaryMono = result.flatMap(reactiveResult -> Mono.fromDirect(reactiveResult.consume()))
+                    .single();
             return records.then(summaryMono);
         });
     }

@@ -20,7 +20,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactivestreams.ReactiveResult;
+import org.neo4j.driver.reactivestreams.ReactiveSession;
 import org.neo4j.driver.summary.ResultSummary;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -38,7 +39,7 @@ public class RxReadQuery<C extends AbstractContext> extends AbstractRxQuery<C> {
         Flux.usingWhen(
                         Mono.fromSupplier(() -> newSession(AccessMode.READ, context)),
                         this::processAndGetSummary,
-                        RxSession::close)
+                        ReactiveSession::close)
                 .subscribe(
                         summary -> {
                             context.readCompleted();
@@ -51,12 +52,13 @@ public class RxReadQuery<C extends AbstractContext> extends AbstractRxQuery<C> {
         return queryFinished;
     }
 
-    @SuppressWarnings("deprecation")
-    private Publisher<ResultSummary> processAndGetSummary(RxSession session) {
-        var result = session.run("MATCH (n) RETURN n LIMIT 1");
-        var records = Flux.from(result.records()).singleOrEmpty().map(record -> record.get(0)
-                .asNode());
-        var summaryMono = Mono.from(result.consume()).single();
+    private Publisher<ResultSummary> processAndGetSummary(ReactiveSession session) {
+        var result = Mono.fromDirect(session.run("MATCH (n) RETURN n LIMIT 1"));
+        var records = result.flatMapMany(ReactiveResult::records)
+                .singleOrEmpty()
+                .map(record -> record.get(0).asNode());
+        var summaryMono = result.flatMap(reactiveResult -> Mono.fromDirect(reactiveResult.consume()))
+                .single();
         return records.then(summaryMono);
     }
 }

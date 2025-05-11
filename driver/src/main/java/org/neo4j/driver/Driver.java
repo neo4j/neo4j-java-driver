@@ -21,7 +21,6 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.reactive.ReactiveSession;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 import org.neo4j.driver.util.Experimental;
 
@@ -118,8 +117,6 @@ public interface Driver extends AutoCloseable {
      *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
      *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams
      * API</li>
-     *     <li>{@link org.neo4j.driver.reactive.RxSession} - deprecated reactive session using Reactive Streams
-     * API, superseded by {@link org.neo4j.driver.reactivestreams.ReactiveSession}</li>
      * </ul>
      * <p>
      * Sample usage:
@@ -154,8 +151,6 @@ public interface Driver extends AutoCloseable {
      *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
      *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams
      * API</li>
-     *     <li>{@link org.neo4j.driver.reactive.RxSession} - deprecated reactive session using Reactive Streams
-     * API, superseded by {@link org.neo4j.driver.reactivestreams.ReactiveSession}</li>
      * </ul>
      * <p>
      * Sample usage:
@@ -187,8 +182,6 @@ public interface Driver extends AutoCloseable {
      *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
      *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams
      * API</li>
-     *     <li>{@link org.neo4j.driver.reactive.RxSession} - deprecated reactive session using Reactive Streams
-     * API, superseded by {@link org.neo4j.driver.reactivestreams.ReactiveSession}</li>
      * </ul>
      * <p>
      * Sample usage:
@@ -225,8 +218,6 @@ public interface Driver extends AutoCloseable {
      *     <li>{@link org.neo4j.driver.reactive.ReactiveSession} - reactive session using Flow API</li>
      *     <li>{@link org.neo4j.driver.reactivestreams.ReactiveSession} - reactive session using Reactive Streams
      * API</li>
-     *     <li>{@link org.neo4j.driver.reactive.RxSession} - deprecated reactive session using Reactive Streams
-     * API, superseded by {@link org.neo4j.driver.reactivestreams.ReactiveSession}</li>
      * </ul>
      * <p>
      * Sample usage:
@@ -248,37 +239,8 @@ public interface Driver extends AutoCloseable {
     <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig, AuthToken sessionAuthToken);
 
     /**
-     * Create a new general purpose {@link RxSession} with default {@link SessionConfig session configuration}. The {@link RxSession} provides a reactive way to
-     * run queries and process results.
-     * <p>
-     * Alias to {@link #rxSession(SessionConfig)}}.
-     *
-     * @return a new {@link RxSession} object.
-     * @deprecated superseded by {@link #session(Class)}
-     */
-    @Deprecated
-    default RxSession rxSession() {
-        return session(RxSession.class);
-    }
-
-    /**
-     * Create a new {@link RxSession} with a specified {@link SessionConfig session configuration}. Use {@link SessionConfig#forDatabase(String)} to obtain a
-     * general purpose session configuration for the specified database. The {@link RxSession} provides a reactive way to run queries and process results.
-     *
-     * @param sessionConfig used to customize the session.
-     * @return a new {@link RxSession} object.
-     * @deprecated superseded by {@link #session(Class, SessionConfig)}
-     */
-    @Deprecated
-    default RxSession rxSession(SessionConfig sessionConfig) {
-        return session(RxSession.class, sessionConfig);
-    }
-
-    /**
      * Create a new general purpose {@link ReactiveSession} with default {@link SessionConfig session configuration}. The {@link ReactiveSession} provides a
      * reactive way to run queries and process results.
-     * <p>
-     * Alias to {@link #rxSession(SessionConfig)}}.
      *
      * @return a new {@link ReactiveSession} object.
      * @deprecated superseded by {@link #session(Class)}

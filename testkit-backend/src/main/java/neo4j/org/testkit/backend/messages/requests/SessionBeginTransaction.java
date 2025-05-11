@@ -25,7 +25,6 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
-import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
@@ -50,18 +49,6 @@ public class SessionBeginTransaction
             return session.beginTransactionAsync(buildTxConfig())
                     .thenApply(tx -> transaction(
                             testkitState.addAsyncTransactionHolder(new AsyncTransactionHolder(sessionHolder, tx))));
-        });
-    }
-
-    @Override
-    @SuppressWarnings({"deprecation", "RedundantSuppression"})
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return testkitState.getRxSessionHolder(data.getSessionId()).flatMap(sessionHolder -> {
-            var session = sessionHolder.getSession();
-
-            return Mono.fromDirect(session.beginTransaction(buildTxConfig()))
-                    .map(tx -> transaction(
-                            testkitState.addRxTransactionHolder(new RxTransactionHolder(sessionHolder, tx))));
         });
     }
 

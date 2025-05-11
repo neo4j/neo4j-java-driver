@@ -41,11 +41,6 @@ public class CheckDriverIsEncrypted implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return processReactive(testkitState);
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return Mono.just(createResponse(testkitState));
     }

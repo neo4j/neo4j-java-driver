@@ -53,8 +53,6 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
             BackendMode backendMode, Logging logging, ResponseQueueHanlder responseQueueHanlder) {
         switch (backendMode) {
             case ASYNC -> processorImpl = TestkitRequest::processAsync;
-            case REACTIVE_LEGACY -> processorImpl =
-                    (request, state) -> request.processRx(state).toFuture();
             case REACTIVE -> processorImpl =
                     (request, state) -> request.processReactive(state).toFuture();
             default -> processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
@@ -201,7 +199,6 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     public enum BackendMode {
         SYNC,
         ASYNC,
-        REACTIVE_LEGACY,
         REACTIVE
     }
 }

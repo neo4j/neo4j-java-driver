@@ -104,11 +104,6 @@ public class ExecuteQuery implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        throw new UnsupportedOperationException("Operation not supported");
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         throw new UnsupportedOperationException("Operation not supported");
     }
