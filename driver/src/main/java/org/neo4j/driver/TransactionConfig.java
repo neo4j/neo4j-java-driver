@@ -72,6 +72,7 @@ public final class TransactionConfig implements Serializable {
     /**
      * The transaction metadata.
      */
+    @SuppressWarnings("serial")
     private final Map<String, Object> metadata;
 
     // Values are not serializable, hence, we keep a transient volatile map of them around

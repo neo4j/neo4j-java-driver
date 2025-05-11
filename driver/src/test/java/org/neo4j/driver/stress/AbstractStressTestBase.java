@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.Values.point;
 
+import java.io.Serial;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.net.URI;
@@ -690,7 +691,12 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     private record ResourcesInfo(long openFileDescriptorCount, Set<String> acquiredLoggerNames) {}
 
     private static class LoggerNameTrackingLogging implements Logging {
+        @Serial
+        private static final long serialVersionUID = -1100018645191686024L;
+
         private final Logging consoleLogging = Logging.console(Level.FINE);
+
+        @SuppressWarnings("serial")
         private final Set<String> acquiredLoggerNames = ConcurrentHashMap.newKeySet();
 
         @Override

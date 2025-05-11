@@ -18,6 +18,8 @@ package org.neo4j.driver.internal;
 
 import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serial;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,13 +37,18 @@ import org.neo4j.driver.BookmarkManager;
  */
 public final class Neo4jBookmarkManager implements BookmarkManager {
     @Serial
-    private static final long serialVersionUID = 6615186840717102303L;
+    private static final long serialVersionUID = -737795053416084953L;
 
-    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+    transient ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
-    private final Set<Bookmark> bookmarks;
-    private final Consumer<Set<Bookmark>> updateListener;
-    private final Supplier<Set<Bookmark>> bookmarksSupplier;
+    @SuppressWarnings("serial")
+    final Set<Bookmark> bookmarks;
+
+    @SuppressWarnings("serial")
+    final Consumer<Set<Bookmark>> updateListener;
+
+    @SuppressWarnings("serial")
+    final Supplier<Set<Bookmark>> bookmarksSupplier;
 
     public Neo4jBookmarkManager(
             Set<Bookmark> initialBookmarks,
@@ -72,5 +79,11 @@ public final class Neo4jBookmarkManager implements BookmarkManager {
             bookmarks.addAll(bookmarksSupplier.get());
         }
         return Collections.unmodifiableSet(bookmarks);
+    }
+
+    @Serial
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        rwLock = new ReentrantReadWriteLock();
     }
 }

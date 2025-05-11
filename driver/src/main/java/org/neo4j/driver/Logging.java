@@ -18,6 +18,7 @@ package org.neo4j.driver;
 
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
+import java.io.Serializable;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
@@ -82,7 +83,7 @@ import org.neo4j.driver.internal.logging.Slf4jLogging;
  * @see Logger
  * @see Config.ConfigBuilder#withLogging(Logging)
  */
-public interface Logging {
+public interface Logging extends Serializable {
     /**
      * Obtain a {@link Logger} instance by class, its name will be the fully qualified name of the class.
      *

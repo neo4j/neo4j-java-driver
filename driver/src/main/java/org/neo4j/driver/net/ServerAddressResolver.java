@@ -16,6 +16,7 @@
  */
 package org.neo4j.driver.net;
 
+import java.io.Serializable;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -23,7 +24,7 @@ import java.util.Set;
  * A resolver function used by the routing driver to resolve the initial address used to create the driver.
  */
 @FunctionalInterface
-public interface ServerAddressResolver {
+public interface ServerAddressResolver extends Serializable {
     /**
      * Resolve the given address to a set of other addresses.
      * It is highly recommended to shuffle the addresses returned to prevent the driver from

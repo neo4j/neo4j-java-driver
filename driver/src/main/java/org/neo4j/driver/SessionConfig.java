@@ -45,6 +45,7 @@ public final class SessionConfig implements Serializable {
     /**
      * The initial bookmarks.
      */
+    @SuppressWarnings("serial")
     private final Iterable<Bookmark> bookmarks;
     /**
      * The default type of access.

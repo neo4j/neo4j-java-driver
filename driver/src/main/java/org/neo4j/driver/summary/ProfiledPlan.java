@@ -25,37 +25,51 @@ import java.util.List;
  */
 public interface ProfiledPlan extends Plan {
     /**
+     * Returns the number of times this part of the plan touched the underlying data stores.
+     *
      * @return the number of times this part of the plan touched the underlying data stores
      */
     long dbHits();
 
     /**
+     * Returns the number of records this part of the plan produced.
+     *
      * @return the number of records this part of the plan produced
      */
     long records();
 
     /**
-     * @return if the number page cache hits and misses and the ratio was recorded.
+     * Returns whether the number page cache hits and misses and the ratio was recorded.
+     *
+     * @return if the number page cache hits and misses and the ratio was recorded
      */
     boolean hasPageCacheStats();
 
     /**
-     * @return number of page cache hits caused by executing the associated execution step
+     * Returns the number of page cache hits caused by executing the associated execution step.
+     *
+     * @return the number of page cache hits caused by executing the associated execution step
      */
     long pageCacheHits();
 
     /**
-     * @return number of page cache misses caused by executing the associated execution step
+     * Returns the number of page cache misses caused by executing the associated execution step.
+     *
+     * @return the number of page cache misses caused by executing the associated execution step
      */
     long pageCacheMisses();
 
     /**
+     * Returns the ratio of page cache hits to total number of lookups or 0 if no data is available.
+     *
      * @return the ratio of page cache hits to total number of lookups or 0 if no data is available
      */
     double pageCacheHitRatio();
 
     /**
-     * @return amount of time spent in the associated execution step.
+     * Returns the amount of time spent in the associated execution step.
+     *
+     * @return the amount of time spent in the associated execution step
      */
     long time();
 
