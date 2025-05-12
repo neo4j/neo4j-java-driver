@@ -64,6 +64,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.async.AsyncSession;
@@ -77,7 +78,6 @@ import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Futures;
@@ -524,7 +524,7 @@ class AsyncSessionIT {
     @DisabledOnNeo4jWith(BOLT_V3)
     @SuppressWarnings("resource")
     void shouldRunAfterBeginTxFailureOnBookmark() {
-        var illegalBookmark = InternalBookmark.parse("Illegal Bookmark");
+        var illegalBookmark = Bookmark.from("Illegal Bookmark");
         session = neo4j.driver()
                 .session(
                         AsyncSession.class,
@@ -540,7 +540,7 @@ class AsyncSessionIT {
     @Test
     @SuppressWarnings("resource")
     void shouldNotBeginTxAfterBeginTxFailureOnBookmark() {
-        var illegalBookmark = InternalBookmark.parse("Illegal Bookmark");
+        var illegalBookmark = Bookmark.from("Illegal Bookmark");
         session = neo4j.driver()
                 .session(
                         AsyncSession.class,
@@ -553,7 +553,7 @@ class AsyncSessionIT {
     @EnabledOnNeo4jWith(BOLT_V3)
     @SuppressWarnings("resource")
     void shouldNotRunAfterBeginTxFailureOnBookmark() {
-        var illegalBookmark = InternalBookmark.parse("Illegal Bookmark");
+        var illegalBookmark = Bookmark.from("Illegal Bookmark");
         session = neo4j.driver()
                 .session(
                         AsyncSession.class,

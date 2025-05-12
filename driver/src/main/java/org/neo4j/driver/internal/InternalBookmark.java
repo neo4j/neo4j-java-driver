@@ -18,120 +18,14 @@ package org.neo4j.driver.internal;
 
 import static java.util.Objects.requireNonNull;
 
-import java.io.Serial;
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.internal.util.Iterables;
 
-public final class InternalBookmark implements Bookmark, Serializable {
-    @Serial
-    private static final long serialVersionUID = 8196096018245038950L;
-
-    private static final InternalBookmark EMPTY = new InternalBookmark(Collections.emptySet());
-
-    @SuppressWarnings("serial")
-    private final Set<String> values;
-
-    private InternalBookmark(Set<String> values) {
-        requireNonNull(values);
-        this.values = values;
-    }
-
-    public static Bookmark empty() {
-        return EMPTY;
-    }
-
-    @SuppressWarnings("deprecation")
-    public static Bookmark from(Iterable<Bookmark> bookmarks) {
-        if (bookmarks == null) {
-            return empty();
+public record InternalBookmark(String value) implements Bookmark, Serializable {
+    public InternalBookmark {
+        requireNonNull(value);
+        if (value.isEmpty()) {
+            throw new IllegalArgumentException("The value must not be empty");
         }
-
-        var size = Iterables.count(bookmarks);
-        if (size == 0) {
-            return empty();
-        } else if (size == 1) {
-            return from(bookmarks.iterator().next());
-        }
-
-        Set<String> newValues = new HashSet<>();
-        for (var value : bookmarks) {
-            if (value == null) {
-                continue; // skip any null bookmark value
-            }
-            newValues.addAll(value.values());
-        }
-        return new InternalBookmark(newValues);
-    }
-
-    private static Bookmark from(Bookmark bookmark) {
-        if (bookmark == null) {
-            return empty();
-        }
-        // it is safe to return the given bookmark as bookmarks values can not be modified once it is created.
-        return bookmark;
-    }
-
-    /**
-     * Used to extract bookmark from metadata from server.
-     */
-    public static Bookmark parse(String value) {
-        if (value == null) {
-            return empty();
-        }
-        return new InternalBookmark(Collections.singleton(value));
-    }
-
-    /**
-     * Used to reconstruct bookmark from values.
-     */
-    public static Bookmark parse(Set<String> values) {
-        if (values == null) {
-            return empty();
-        }
-        return new InternalBookmark(values);
-    }
-
-    @Override
-    @Deprecated
-    public boolean isEmpty() {
-        return values.isEmpty();
-    }
-
-    @Override
-    public String value() {
-        return values.isEmpty() ? null : values.iterator().next();
-    }
-
-    @Override
-    @Deprecated
-    public Set<String> values() {
-        return Collections.unmodifiableSet(values);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        var bookmark = (InternalBookmark) o;
-        return Objects.equals(values, bookmark.values);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(values);
-    }
-
-    @Override
-    public String toString() {
-        return "Bookmark{values=" + values + "}";
     }
 }

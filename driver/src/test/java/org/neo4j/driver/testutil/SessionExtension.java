@@ -16,11 +16,8 @@
  */
 package org.neo4j.driver.testutil;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -111,22 +108,8 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public Bookmark lastBookmark() {
-        return realSession.lastBookmark();
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
     public Set<Bookmark> lastBookmarks() {
-        var bookmark = lastBookmark();
-        if (bookmark == null || bookmark.isEmpty()) {
-            return Collections.emptySet();
-        } else if (bookmark.values().size() == 1) {
-            return Collections.singleton(bookmark);
-        } else {
-            return bookmark.values().stream().map(Bookmark::from).collect(Collectors.toCollection(HashSet::new));
-        }
+        return realSession.lastBookmarks();
     }
 
     @Override

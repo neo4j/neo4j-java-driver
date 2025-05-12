@@ -83,10 +83,10 @@ import org.neo4j.bolt.connection.summary.RollbackSummary;
 import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.bolt.connection.summary.TelemetrySummary;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
@@ -336,7 +336,7 @@ class NetworkSessionTest {
 
     @Test
     void updatesBookmarkWhenTxIsClosed() {
-        var bookmarkAfterCommit = InternalBookmark.parse("TheBookmark");
+        var bookmarkAfterCommit = Bookmark.from("TheBookmark");
         setupConnectionAnswers(
                 connection,
                 List.of(
@@ -429,7 +429,7 @@ class NetworkSessionTest {
 
     @Test
     void bookmarkIsPropagatedFromSession() {
-        var bookmarks = Collections.singleton(InternalBookmark.parse("Bookmarks"));
+        var bookmarks = Collections.singleton(Bookmark.from("Bookmarks"));
         var session = newSession(connectionProvider, bookmarks);
         setupSuccessfulBegin(connection);
 
@@ -445,8 +445,8 @@ class NetworkSessionTest {
 
     @Test
     void bookmarkIsPropagatedBetweenTransactions() {
-        var bookmark1 = InternalBookmark.parse("Bookmark1");
-        var bookmark2 = InternalBookmark.parse("Bookmark2");
+        var bookmark1 = Bookmark.from("Bookmark1");
+        var bookmark2 = Bookmark.from("Bookmark2");
 
         var session = newSession(connectionProvider);
 
@@ -521,7 +521,7 @@ class NetworkSessionTest {
 
     @Test
     void testPassingNoBookmarkShouldRetainBookmark() {
-        var bookmarks = Collections.singleton(InternalBookmark.parse("X"));
+        var bookmarks = Collections.singleton(Bookmark.from("X"));
         var session = newSession(connectionProvider, bookmarks);
         setupSuccessfulBegin(connection);
         beginTransaction(session);
@@ -607,7 +607,7 @@ class NetworkSessionTest {
                     return completedFuture(connection2);
                 });
 
-        var bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx42"));
+        var bookmarks = Collections.singleton(Bookmark.from("neo4j:bookmark:v1:tx42"));
         var session = newSession(connectionProvider, bookmarks);
 
         var e = assertThrows(Exception.class, () -> beginTransaction(session));
@@ -666,7 +666,7 @@ class NetworkSessionTest {
                     return completedFuture(connection2);
                 });
 
-        var bookmarks = Collections.singleton(InternalBookmark.parse("neo4j:bookmark:v1:tx42"));
+        var bookmarks = Collections.singleton(Bookmark.from("neo4j:bookmark:v1:tx42"));
         var session = newSession(connectionProvider, bookmarks);
 
         var e = assertThrows(Exception.class, () -> beginTransaction(session));

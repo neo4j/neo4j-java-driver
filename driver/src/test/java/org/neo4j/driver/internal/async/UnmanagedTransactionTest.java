@@ -83,7 +83,6 @@ import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.FailableCursor;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
@@ -334,7 +333,7 @@ class UnmanagedTransactionTest {
                 mock(),
                 Logging.none());
 
-        var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
+        var bookmarks = Collections.singleton(Bookmark.from("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
         var e = assertThrows(RuntimeException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null, true)));
@@ -372,7 +371,7 @@ class UnmanagedTransactionTest {
                 mock(),
                 Logging.none());
 
-        var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
+        var bookmarks = Collections.singleton(Bookmark.from("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
         await(tx.beginAsync(bookmarks, txConfig, null, true));
@@ -575,7 +574,7 @@ class UnmanagedTransactionTest {
                 apiTelemetryWork,
                 mock(),
                 Logging.none());
-        var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
+        var bookmarks = Collections.singleton(Bookmark.from("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
         var actualException = assertThrows(
@@ -613,7 +612,7 @@ class UnmanagedTransactionTest {
                 apiTelemetryWork,
                 mock(),
                 Logging.none());
-        var bookmarks = Collections.singleton(InternalBookmark.parse("SomeBookmark"));
+        var bookmarks = Collections.singleton(Bookmark.from("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
         var actualException = assertThrows(

@@ -101,16 +101,8 @@ public class SessionFactoryImpl implements SessionFactory {
         if (bookmarks != null) {
             for (var bookmark : bookmarks) {
                 if (bookmark != null) {
-                    @SuppressWarnings("deprecation")
-                    var values = bookmark.values();
-                    var size = values.size();
-                    if (size == 1) {
-                        set.add(bookmark);
-                    } else if (size > 1) {
-                        for (var value : values) {
-                            set.add(Bookmark.from(value));
-                        }
-                    }
+                    var values = bookmark.value();
+                    set.add(bookmark);
                 }
             }
         }

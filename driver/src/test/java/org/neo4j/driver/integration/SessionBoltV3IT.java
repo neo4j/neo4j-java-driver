@@ -165,61 +165,59 @@ class SessionBoltV3IT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldUseBookmarksForAutoCommitTransactions() {
         @SuppressWarnings("resource")
         var session = driver.session();
-        var initialBookmark = session.lastBookmark();
+        var initialBookmarks = session.lastBookmarks();
 
         session.run("CREATE ()").consume();
-        var bookmark1 = session.lastBookmark();
-        assertNotNull(bookmark1);
-        assertNotEquals(initialBookmark, bookmark1);
+        var bookmarks1 = session.lastBookmarks();
+        assertNotNull(bookmarks1);
+        assertNotEquals(initialBookmarks, bookmarks1);
 
         session.run("CREATE ()").consume();
-        var bookmark2 = session.lastBookmark();
-        assertNotNull(bookmark2);
-        assertNotEquals(initialBookmark, bookmark2);
-        assertNotEquals(bookmark1, bookmark2);
+        var bookmarks2 = session.lastBookmarks();
+        assertNotNull(bookmarks2);
+        assertNotEquals(initialBookmarks, bookmarks2);
+        assertNotEquals(bookmarks1, bookmarks2);
 
         session.run("CREATE ()").consume();
-        var bookmark3 = session.lastBookmark();
-        assertNotNull(bookmark3);
-        assertNotEquals(initialBookmark, bookmark3);
-        assertNotEquals(bookmark1, bookmark3);
-        assertNotEquals(bookmark2, bookmark3);
+        var bookmarks3 = session.lastBookmarks();
+        assertNotNull(bookmarks3);
+        assertNotEquals(initialBookmarks, bookmarks3);
+        assertNotEquals(bookmarks1, bookmarks3);
+        assertNotEquals(bookmarks2, bookmarks3);
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldUseBookmarksForAutoCommitAndUnmanagedTransactions() {
         @SuppressWarnings("resource")
         var session = driver.session();
-        var initialBookmark = session.lastBookmark();
+        var initialBookmarks = session.lastBookmarks();
 
         try (var tx = session.beginTransaction()) {
             tx.run("CREATE ()");
             tx.commit();
         }
-        var bookmark1 = session.lastBookmark();
-        assertNotNull(bookmark1);
-        assertNotEquals(initialBookmark, bookmark1);
+        var bookmarks1 = session.lastBookmarks();
+        assertNotNull(bookmarks1);
+        assertNotEquals(initialBookmarks, bookmarks1);
 
         session.run("CREATE ()").consume();
-        var bookmark2 = session.lastBookmark();
-        assertNotNull(bookmark2);
-        assertNotEquals(initialBookmark, bookmark2);
-        assertNotEquals(bookmark1, bookmark2);
+        var bookmarks2 = session.lastBookmarks();
+        assertNotNull(bookmarks2);
+        assertNotEquals(initialBookmarks, bookmarks2);
+        assertNotEquals(bookmarks1, bookmarks2);
 
         try (var tx = session.beginTransaction()) {
             tx.run("CREATE ()");
             tx.commit();
         }
-        var bookmark3 = session.lastBookmark();
-        assertNotNull(bookmark3);
-        assertNotEquals(initialBookmark, bookmark3);
-        assertNotEquals(bookmark1, bookmark3);
-        assertNotEquals(bookmark2, bookmark3);
+        var bookmarks3 = session.lastBookmarks();
+        assertNotNull(bookmarks3);
+        assertNotEquals(initialBookmarks, bookmarks3);
+        assertNotEquals(bookmarks1, bookmarks3);
+        assertNotEquals(bookmarks2, bookmarks3);
     }
 
     @Test
@@ -227,25 +225,25 @@ class SessionBoltV3IT {
     void shouldUseBookmarksForAutoCommitTransactionsAndTransactionFunctions() {
         @SuppressWarnings("resource")
         var session = driver.session();
-        var initialBookmark = session.lastBookmark();
+        var initialBookmarks = session.lastBookmarks();
 
         session.writeTransaction(tx -> tx.run("CREATE ()").consume());
-        var bookmark1 = session.lastBookmark();
-        assertNotNull(bookmark1);
-        assertNotEquals(initialBookmark, bookmark1);
+        var bookmarks1 = session.lastBookmarks();
+        assertNotNull(bookmarks1);
+        assertNotEquals(initialBookmarks, bookmarks1);
 
         session.run("CREATE ()").consume();
-        var bookmark2 = session.lastBookmark();
-        assertNotNull(bookmark2);
-        assertNotEquals(initialBookmark, bookmark2);
-        assertNotEquals(bookmark1, bookmark2);
+        var bookmarks2 = session.lastBookmarks();
+        assertNotNull(bookmarks2);
+        assertNotEquals(initialBookmarks, bookmarks2);
+        assertNotEquals(bookmarks1, bookmarks2);
 
         session.writeTransaction(tx -> tx.run("CREATE ()").consume());
-        var bookmark3 = session.lastBookmark();
-        assertNotNull(bookmark3);
-        assertNotEquals(initialBookmark, bookmark3);
-        assertNotEquals(bookmark1, bookmark3);
-        assertNotEquals(bookmark2, bookmark3);
+        var bookmarks3 = session.lastBookmarks();
+        assertNotNull(bookmarks3);
+        assertNotEquals(initialBookmarks, bookmarks3);
+        assertNotEquals(bookmarks1, bookmarks3);
+        assertNotEquals(bookmarks2, bookmarks3);
     }
 
     //    @Test

@@ -36,10 +36,10 @@ import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.NotificationClassification;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.reactive.ReactiveSession;
 import reactor.core.publisher.Mono;
@@ -84,8 +84,7 @@ public class NewSession implements TestkitRequest {
                 .ifPresent(builder::withDefaultAccessMode);
 
         Optional.ofNullable(data.bookmarks)
-                .map(bookmarks ->
-                        bookmarks.stream().map(InternalBookmark::parse).collect(Collectors.toList()))
+                .map(bookmarks -> bookmarks.stream().map(Bookmark::from).collect(Collectors.toList()))
                 .ifPresent(builder::withBookmarks);
 
         Optional.ofNullable(data.database).ifPresent(builder::withDatabase);

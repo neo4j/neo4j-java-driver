@@ -26,15 +26,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.SessionConfig.defaultConfig;
-import static org.neo4j.driver.internal.InternalBookmark.parse;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -126,8 +126,8 @@ class SessionConfigTest {
 
     @Test
     void shouldAcceptBookmarks() {
-        var one = parse("one");
-        var two = parse("two");
+        var one = Bookmark.from("one");
+        var two = Bookmark.from("two");
         var config = builder().withBookmarks(one, two).build();
         assertEquals(Arrays.asList(one, two), config.bookmarks());
 
@@ -137,8 +137,8 @@ class SessionConfigTest {
 
     @Test
     void shouldAcceptNullInBookmarks() {
-        var one = parse("one");
-        var two = parse("two");
+        var one = Bookmark.from("one");
+        var two = Bookmark.from("two");
         var config = builder().withBookmarks(one, two, null).build();
         assertEquals(Arrays.asList(one, two, null), config.bookmarks());
 
@@ -148,26 +148,26 @@ class SessionConfigTest {
 
     @Test
     void shouldSaveBookmarksCopyFromArray() {
-        var bookmark1 = parse("one");
-        var bookmark2 = parse("two");
+        var bookmark1 = Bookmark.from("one");
+        var bookmark2 = Bookmark.from("two");
         var bookmarks = new Bookmark[] {bookmark1, bookmark2};
         var config = builder().withBookmarks(bookmarks).build();
         assertEquals(List.of(bookmark1, bookmark2), config.bookmarks());
 
-        bookmarks[0] = parse("three");
+        bookmarks[0] = Bookmark.from("three");
 
         assertEquals(List.of(bookmark1, bookmark2), config.bookmarks());
     }
 
     @Test
     void shouldSaveBookmarksCopyFromIterable() {
-        var bookmark1 = parse("one");
-        var bookmark2 = parse("two");
+        var bookmark1 = Bookmark.from("one");
+        var bookmark2 = Bookmark.from("two");
         var bookmarks = new ArrayList<>(List.of(bookmark1, bookmark2));
         var config = builder().withBookmarks(bookmarks).build();
         assertEquals(List.of(bookmark1, bookmark2), config.bookmarks());
 
-        bookmarks.add(parse("three"));
+        bookmarks.add(Bookmark.from("three"));
 
         assertEquals(List.of(bookmark1, bookmark2), config.bookmarks());
     }
@@ -196,12 +196,14 @@ class SessionConfigTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldSerialize() throws Exception {
+        var bookmarks = Set.of(
+                Bookmark.from("bookmarkA"),
+                Bookmark.from("bookmarkB"),
+                Bookmark.from("bookmarkC"),
+                Bookmark.from("bookmarkD"));
         var config = SessionConfig.builder()
-                .withBookmarks(
-                        Bookmark.from(new HashSet<>(Arrays.asList("bookmarkA", "bookmarkB"))),
-                        Bookmark.from(new HashSet<>(Arrays.asList("bookmarkC", "bookmarkD"))))
+                .withBookmarks(bookmarks)
                 .withDefaultAccessMode(AccessMode.WRITE)
                 .withFetchSize(54321L)
                 .withDatabase("testing")
@@ -215,11 +217,9 @@ class SessionConfigTest {
 
         assertNotNull(verify.bookmarks());
 
-        List<Set<String>> bookmarks = new ArrayList<>();
-        verify.bookmarks().forEach(b -> bookmarks.add(b.values()));
-        assertEquals(2, bookmarks.size());
-        assertTrue(bookmarks.get(0).containsAll(Arrays.asList("bookmarkA", "bookmarkB")));
-        assertTrue(bookmarks.get(1).containsAll(Arrays.asList("bookmarkC", "bookmarkD")));
+        assertEquals(
+                bookmarks,
+                StreamSupport.stream(verify.bookmarks().spliterator(), false).collect(Collectors.toUnmodifiableSet()));
 
         assertEquals(config.defaultAccessMode(), verify.defaultAccessMode());
         assertEquals(config.fetchSize(), verify.fetchSize());

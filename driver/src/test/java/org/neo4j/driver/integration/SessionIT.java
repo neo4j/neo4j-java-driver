@@ -41,9 +41,6 @@ import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkContainsSingleValue;
-import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkIsEmpty;
-import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkIsNotEmpty;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
@@ -299,14 +296,14 @@ class SessionIT {
     void readTxCommittedWithoutTxSuccess() {
         try (var driver = newDriverWithoutRetries();
                 var session = driver.session()) {
-            assertBookmarkIsEmpty(session.lastBookmark());
+            assertTrue(session.lastBookmarks().isEmpty());
 
             long answer = session.readTransaction(
                     tx -> tx.run("RETURN 42").single().get(0).asLong());
             assertEquals(42, answer);
 
             // bookmark should be not-null after commit
-            assertBookmarkContainsSingleValue(session.lastBookmark());
+            assertEquals(1, session.lastBookmarks().size());
         }
     }
 
@@ -334,7 +331,7 @@ class SessionIT {
     void readTxRolledBackWithTxFailure() {
         try (var driver = newDriverWithoutRetries();
                 var session = driver.session()) {
-            assertBookmarkIsEmpty(session.lastBookmark());
+            assertTrue(session.lastBookmarks().isEmpty());
 
             long answer = session.readTransaction(tx -> {
                 var result = tx.run("RETURN 42");
@@ -345,7 +342,7 @@ class SessionIT {
             assertEquals(42, answer);
 
             // bookmark should remain null after rollback
-            assertBookmarkIsEmpty(session.lastBookmark());
+            assertTrue(session.lastBookmarks().isEmpty());
         }
     }
 
@@ -375,7 +372,7 @@ class SessionIT {
     void readTxRolledBackWhenExceptionIsThrown() {
         try (var driver = newDriverWithoutRetries();
                 var session = driver.session()) {
-            assertBookmarkIsEmpty(session.lastBookmark());
+            assertTrue(session.lastBookmarks().isEmpty());
 
             assertThrows(
                     IllegalStateException.class,
@@ -388,7 +385,7 @@ class SessionIT {
                     }));
 
             // bookmark should remain null after rollback
-            assertBookmarkIsEmpty(session.lastBookmark());
+            assertTrue(session.lastBookmarks().isEmpty());
         }
     }
 
@@ -453,7 +450,7 @@ class SessionIT {
     void readTxCommittedWhenCommitAndThrowsException() {
         try (var driver = newDriverWithoutRetries();
                 var session = driver.session()) {
-            assertBookmarkIsEmpty(session.lastBookmark());
+            assertTrue(session.lastBookmarks().isEmpty());
 
             assertThrows(
                     IllegalStateException.class,
@@ -464,7 +461,7 @@ class SessionIT {
                     }));
 
             // We successfully committed
-            assertBookmarkIsNotEmpty(session.lastBookmark());
+            assertFalse(session.lastBookmarks().isEmpty());
         }
     }
 
@@ -494,7 +491,7 @@ class SessionIT {
     void readRolledBackWhenRollbackAndThrowsException() {
         try (var driver = newDriverWithoutRetries();
                 var session = driver.session()) {
-            assertBookmarkIsEmpty(session.lastBookmark());
+            assertTrue(session.lastBookmarks().isEmpty());
 
             assertThrows(
                     IllegalStateException.class,
@@ -505,7 +502,7 @@ class SessionIT {
                     }));
 
             // bookmark should remain null after rollback
-            assertBookmarkIsEmpty(session.lastBookmark());
+            assertTrue(session.lastBookmarks().isEmpty());
         }
     }
 

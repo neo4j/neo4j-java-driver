@@ -309,17 +309,6 @@ public interface Session extends BaseSession, Resource, QueryRunner {
     Result run(Query query, TransactionConfig config);
 
     /**
-     * Return the last bookmark of this session.
-     * <p>
-     * When no new bookmark is received, the initial bookmarks are returned as a composite {@link Bookmark} containing all initial bookmarks. This may happen
-     * when no work has been done using the session. If no initial bookmarks have been provided, an empty {@link Bookmark} is returned.
-     *
-     * @return the last bookmark.
-     */
-    @Deprecated
-    Bookmark lastBookmark();
-
-    /**
      * Return a set of last bookmarks.
      * <p>
      * When no new bookmark is received, the initial bookmarks are returned. This may happen when no work has been done using the session. Multivalued {@link
