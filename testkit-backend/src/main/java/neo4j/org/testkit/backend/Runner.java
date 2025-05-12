@@ -69,8 +69,6 @@ public class Runner {
         var modeArg = args.length > 0 ? args[0] : null;
         if ("async".equals(modeArg)) {
             backendMode = TestkitRequestProcessorHandler.BackendMode.ASYNC;
-        } else if ("reactive-legacy".equals(modeArg)) {
-            backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE_LEGACY;
         } else if ("reactive".equals(modeArg)) {
             backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE;
         } else if ("reactive-streams".equals(modeArg)) {

@@ -54,15 +54,6 @@ public class ResultConsume implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return testkitState
-                .getRxResultHolder(data.getResultId())
-                .flatMap(
-                        resultHolder -> Mono.fromDirect(resultHolder.getResult().consume()))
-                .map(this::createResponse);
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState
                 .getReactiveResultHolder(data.getResultId())

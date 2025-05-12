@@ -32,14 +32,13 @@ public class AsyncWriteQueryInTx<C extends AbstractContext> extends AbstractAsyn
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         var session = newSession(AccessMode.WRITE, context);
 
         var txCommitted = session.beginTransactionAsync()
                 .thenCompose(tx -> tx.runAsync("CREATE ()").thenCompose(cursor -> cursor.consumeAsync()
                         .thenCompose(summary -> tx.commitAsync().thenApply(ignore -> {
-                            context.setBookmark(session.lastBookmark());
+                            context.setBookmark(session.lastBookmarks());
                             return summary;
                         }))));
 

@@ -88,10 +88,13 @@ import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.reactivestreams.ReactiveResult;
+import org.neo4j.driver.reactivestreams.ReactiveSession;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.neo4j.driver.testutil.TestUtil;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @ParallelizableIT
@@ -1086,14 +1089,14 @@ class SessionIT {
 
     @Test
     @DisabledOnNeo4jWith(BOLT_V4)
-    @SuppressWarnings({"deprecation", "resource"})
+    @SuppressWarnings("resource")
     void shouldErrorWhenTryingToUseRxAPIWithoutBoltV4() {
         // Given
-        var session = neo4j.driver().rxSession();
-        var result = session.run("RETURN 1");
+        var session = neo4j.driver().session(ReactiveSession.class);
+        var result = Mono.fromDirect(session.run("RETURN 1"));
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
-        StepVerifier.create(result.records())
+        StepVerifier.create(result.flatMapMany(ReactiveResult::records))
                 .expectErrorSatisfies(error -> {
                     // Then
                     assertThat(error, instanceOf(ClientException.class));

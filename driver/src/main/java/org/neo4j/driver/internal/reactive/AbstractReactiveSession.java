@@ -38,7 +38,6 @@ import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -105,7 +104,6 @@ public abstract class AbstractReactiveSession<S> {
                 tx -> Mono.fromDirect(closeTransaction(tx, false)).subscribe());
     }
 
-    @SuppressWarnings("deprecation")
     protected <T> Publisher<T> runTransaction(
             AccessMode mode, Function<S, ? extends Publisher<T>> work, TransactionConfig config) {
         work = work.andThen(publisher -> Flux.from(publisher).handle((value, sink) -> {
@@ -125,18 +123,6 @@ public abstract class AbstractReactiveSession<S> {
                 var message = String.format(
                         "%s is not a valid return value, it should be consumed before producing a return value",
                         org.neo4j.driver.reactive.ReactiveResult.class.getName());
-                sink.error(new ClientException(
-                        GqlStatusError.UNKNOWN.getStatus(),
-                        GqlStatusError.UNKNOWN.getStatusDescription(message),
-                        "N/A",
-                        message,
-                        GqlStatusError.DIAGNOSTIC_RECORD,
-                        null));
-                return;
-            } else if (value instanceof RxResult) {
-                var message = String.format(
-                        "%s is not a valid return value, it should be consumed before producing a return value",
-                        RxResult.class.getName());
                 sink.error(new ClientException(
                         GqlStatusError.UNKNOWN.getStatus(),
                         GqlStatusError.UNKNOWN.getStatusDescription(message),

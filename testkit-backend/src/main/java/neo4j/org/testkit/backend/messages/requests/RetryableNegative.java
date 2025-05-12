@@ -57,20 +57,6 @@ public class RetryableNegative implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return testkitState.getRxSessionHolder(data.getSessionId()).mapNotNull(sessionHolder -> {
-            Throwable throwable;
-            if (!"".equals(data.getErrorId())) {
-                throwable = testkitState.getErrors().get(data.getErrorId());
-            } else {
-                throwable = new FrontendError();
-            }
-            sessionHolder.getTxWorkFuture().completeExceptionally(throwable);
-            return null;
-        });
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState.getReactiveSessionHolder(data.getSessionId()).mapNotNull(sessionHolder -> {
             Throwable throwable;

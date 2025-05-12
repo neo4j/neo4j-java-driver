@@ -645,4 +645,41 @@
         <method>java.lang.Object as(java.lang.Class)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.reactive.RxSession rxSession()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.reactive.RxSession rxSession(org.neo4j.driver.SessionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxQueryRunner</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxResult</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxSession</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxTransaction</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxTransactionWork</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
 </differences>

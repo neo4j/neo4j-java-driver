@@ -71,6 +71,7 @@ import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.neo4j.driver.reactive.ReactiveTransactionCallback;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -185,7 +186,6 @@ public class InternalReactiveSessionTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldRetryOnError() {
         // Given
         var retryCount = 2;
@@ -197,12 +197,12 @@ public class InternalReactiveSessionTest {
                         any(AccessMode.class), any(TransactionConfig.class), any(ApiTelemetryWork.class)))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(retryCount));
-        var rxSession = new InternalRxSession(session);
+        var rxSession = new InternalReactiveSession(session);
 
         // When
-        var strings = rxSession.<String>readTransaction(
-                t -> Flux.just("a").then(Mono.error(new RuntimeException("Errored"))));
-        StepVerifier.create(Flux.from(strings))
+        var strings = rxSession.<String>executeRead(t -> JdkFlowAdapter.publisherToFlowPublisher(
+                Flux.just("a").then(Mono.error(new RuntimeException("Errored")))));
+        StepVerifier.create(JdkFlowAdapter.flowPublisherToFlux(strings))
                 // we lost the "a"s too as the user only see the last failure
                 .expectError(RuntimeException.class)
                 .verify();
@@ -215,7 +215,6 @@ public class InternalReactiveSessionTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldObtainResultIfRetrySucceed() {
         // Given
         var retryCount = 2;
@@ -228,19 +227,22 @@ public class InternalReactiveSessionTest {
                         any(AccessMode.class), any(TransactionConfig.class), any(ApiTelemetryWork.class)))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(retryCount));
-        var rxSession = new InternalRxSession(session);
+        var rxSession = new InternalReactiveSession(session);
 
         // When
         var count = new AtomicInteger();
-        var strings = rxSession.readTransaction(t -> {
+        var strings = rxSession.executeRead(t -> {
             // we fail for the first few retries, and then success on the last run.
             if (count.getAndIncrement() == retryCount) {
-                return Flux.just("a");
+                return JdkFlowAdapter.publisherToFlowPublisher(Flux.just("a"));
             } else {
-                return Flux.just("a").then(Mono.error(new RuntimeException("Errored")));
+                return JdkFlowAdapter.publisherToFlowPublisher(
+                        Flux.just("a").then(Mono.error(new RuntimeException("Errored"))));
             }
         });
-        StepVerifier.create(Flux.from(strings)).expectNext("a").verifyComplete();
+        StepVerifier.create(JdkFlowAdapter.flowPublisherToFlux(strings))
+                .expectNext("a")
+                .verifyComplete();
 
         // Then
         verify(session, times(retryCount + 1))
@@ -251,26 +253,10 @@ public class InternalReactiveSessionTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
-    void shouldDelegateBookmark() {
-        // Given
-        var session = mock(NetworkSession.class);
-        var rxSession = new InternalRxSession(session);
-
-        // When
-        rxSession.lastBookmark();
-
-        // Then
-        verify(session).lastBookmarks();
-        verifyNoMoreInteractions(session);
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
     void shouldDelegateBookmarks() {
         // Given
         var session = mock(NetworkSession.class);
-        var rxSession = new InternalRxSession(session);
+        var rxSession = new InternalReactiveSession(session);
 
         // When
         rxSession.lastBookmarks();
@@ -281,18 +267,17 @@ public class InternalReactiveSessionTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldDelegateClose() {
         // Given
         var session = mock(NetworkSession.class);
         when(session.closeAsync()).thenReturn(completedWithNull());
-        var rxSession = new InternalRxSession(session);
+        var rxSession = new InternalReactiveSession(session);
 
         // When
-        var mono = rxSession.<Void>close();
+        var publisher = rxSession.<Void>close();
 
         // Then
-        StepVerifier.create(mono).verifyComplete();
+        StepVerifier.create(JdkFlowAdapter.flowPublisherToFlux(publisher)).verifyComplete();
         verify(session).closeAsync();
         verifyNoMoreInteractions(session);
     }

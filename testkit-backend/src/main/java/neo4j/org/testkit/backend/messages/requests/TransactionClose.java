@@ -49,16 +49,6 @@ public class TransactionClose implements TestkitRequest {
     }
 
     @Override
-    @SuppressWarnings({"deprecation", "RedundantSuppression"})
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return testkitState
-                .getRxTransactionHolder(data.getTxId())
-                .map(AbstractTransactionHolder::getTransaction)
-                .flatMap(tx -> Mono.fromDirect(tx.close()))
-                .then(Mono.just(createResponse(data.getTxId())));
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState
                 .getReactiveTransactionHolder(data.getTxId())

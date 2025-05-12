@@ -144,12 +144,6 @@ public class StartSubTest implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        var testkitResponse = createResponse(REACTIVE_LEGACY_SKIP_PATTERN_TO_CHECK);
-        return Mono.just(testkitResponse);
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         var testkitResponse = createResponse(REACTIVE_SKIP_PATTERN_TO_CHECK);
         return Mono.just(testkitResponse);

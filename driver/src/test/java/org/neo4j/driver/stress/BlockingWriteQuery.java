@@ -31,14 +31,13 @@ public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlock
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void execute(C context) {
         ResultSummary summary = null;
         Throwable queryError = null;
 
         try (var session = newSession(AccessMode.WRITE, context)) {
             summary = session.run("CREATE ()").consume();
-            context.setBookmark(session.lastBookmark());
+            context.setBookmark(session.lastBookmarks());
         } catch (Throwable error) {
             queryError = error;
             if (!stressTest.handleWriteFailure(error, context)) {

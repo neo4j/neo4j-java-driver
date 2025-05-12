@@ -46,15 +46,6 @@ public class SessionClose implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return testkitState
-                .getRxSessionHolder(data.getSessionId())
-                .flatMap(sessionHolder ->
-                        Mono.fromDirect(sessionHolder.getSession().close()))
-                .then(Mono.just(createResponse()));
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState
                 .getReactiveSessionHolder(data.getSessionId())

@@ -34,11 +34,6 @@ public abstract class AbstractBasicTestkitRequest implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return Mono.just(processAndCreateResponse(testkitState));
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return Mono.just(processAndCreateResponse(testkitState));
     }

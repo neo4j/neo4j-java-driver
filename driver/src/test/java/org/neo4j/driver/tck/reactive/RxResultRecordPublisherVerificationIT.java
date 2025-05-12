@@ -21,13 +21,15 @@ import static org.neo4j.driver.Values.parameters;
 import java.time.Duration;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.reactivestreams.ReactiveResult;
+import org.neo4j.driver.reactivestreams.ReactiveSession;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import reactor.core.publisher.Mono;
 
-@SuppressWarnings("deprecation")
 public class RxResultRecordPublisherVerificationIT extends PublisherVerification<Record> {
     private final Neo4jManager NEO4J = new Neo4jManager();
     private static final long MAX_NUMBER_OF_RECORDS = 30000;
@@ -65,15 +67,15 @@ public class RxResultRecordPublisherVerificationIT extends PublisherVerification
 
     @Override
     public Publisher<Record> createPublisher(long elements) {
-        var session = driver.rxSession();
-        var result = session.run(QUERY, parameters("numberOfRecords", elements));
-        return result.records();
+        var session = driver.session(ReactiveSession.class);
+        var result = Mono.fromDirect(session.run(QUERY, parameters("numberOfRecords", elements)));
+        return result.flatMapMany(ReactiveResult::records);
     }
 
     @Override
     public Publisher<Record> createFailedPublisher() {
-        var session = driver.rxSession();
-        var result = session.run("INVALID");
-        return result.records();
+        var session = driver.session(ReactiveSession.class);
+        var result = Mono.fromDirect(session.run("INVALID"));
+        return result.flatMapMany(ReactiveResult::records);
     }
 }

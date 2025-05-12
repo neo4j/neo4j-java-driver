@@ -47,17 +47,6 @@ public class SessionLastBookmarks implements TestkitRequest {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return testkitState
-                .getRxSessionHolder(data.getSessionId())
-                .map(sessionHolder -> sessionHolder.getSession().lastBookmark().values().stream()
-                        .map(Bookmark::from)
-                        .collect(Collectors.toSet()))
-                .map(this::createResponse);
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState
                 .getReactiveSessionHolder(data.getSessionId())

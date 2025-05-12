@@ -24,8 +24,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.reactivestreams.ReactiveSession;
+import org.neo4j.driver.reactivestreams.ReactiveTransaction;
 import org.neo4j.driver.summary.ResultSummary;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -40,25 +40,25 @@ public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         var queryFinished = new CompletableFuture<Void>();
 
-        Function<RxSession, Publisher<ResultSummary>> sessionToResultSummaryPublisher =
-                (RxSession session) -> Flux.usingWhen(
+        Function<ReactiveSession, Publisher<ResultSummary>> sessionToResultSummaryPublisher =
+                (ReactiveSession session) -> Flux.usingWhen(
                         Mono.from(session.beginTransaction()),
-                        tx -> tx.run("CREATE ()").consume(),
-                        RxTransaction::commit,
+                        tx -> Mono.fromDirect(tx.run("CREATE ()"))
+                                .flatMap(reactiveResult -> Mono.fromDirect(reactiveResult.consume())),
+                        ReactiveTransaction::commit,
                         (tx, error) -> tx.rollback(),
-                        RxTransaction::rollback);
+                        ReactiveTransaction::rollback);
 
         var createdNodesNum = new AtomicInteger();
         Flux.usingWhen(
-                        Mono.fromSupplier(driver::rxSession),
+                        Mono.fromSupplier(() -> driver.session(ReactiveSession.class)),
                         sessionToResultSummaryPublisher,
                         session -> Mono.empty(),
                         (session, error) -> session.close(),
-                        RxSession::close)
+                        ReactiveSession::close)
                 .subscribe(
                         resultSummary -> createdNodesNum.addAndGet(
                                 resultSummary.counters().nodesCreated()),

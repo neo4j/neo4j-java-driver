@@ -47,14 +47,6 @@ public class RetryablePositive implements TestkitRequest {
     }
 
     @Override
-    public Mono<TestkitResponse> processRx(TestkitState testkitState) {
-        return testkitState.getRxSessionHolder(data.getSessionId()).mapNotNull(sessionHolder -> {
-            sessionHolder.getTxWorkFuture().complete(null);
-            return null;
-        });
-    }
-
-    @Override
     public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
         return testkitState.getReactiveSessionHolder(data.getSessionId()).mapNotNull(sessionHolder -> {
             sessionHolder.getTxWorkFuture().complete(null);

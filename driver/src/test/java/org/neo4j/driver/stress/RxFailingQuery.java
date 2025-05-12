@@ -27,7 +27,8 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactivestreams.ReactiveResult;
+import org.neo4j.driver.reactivestreams.ReactiveSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -37,14 +38,13 @@ public class RxFailingQuery<C extends AbstractContext> extends AbstractRxQuery<C
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         var queryFinished = new CompletableFuture<Void>();
         Flux.usingWhen(
                         Mono.fromSupplier(() -> newSession(AccessMode.READ, context)),
-                        session -> session.run("UNWIND [10, 5, 0] AS x RETURN 10 / x")
-                                .records(),
-                        RxSession::close)
+                        session -> Mono.fromDirect(session.run("UNWIND [10, 5, 0] AS x RETURN 10 / x"))
+                                .flatMapMany(ReactiveResult::records),
+                        ReactiveSession::close)
                 .subscribe(
                         record -> assertThat(
                                 record.get(0).asInt(), either(equalTo(1)).or(equalTo(2))),
