@@ -34,7 +34,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransactionWork;
+import org.neo4j.driver.async.AsyncTransactionCallback;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.testutil.DatabaseExtension;
@@ -105,9 +105,8 @@ class SessionMixIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldFailToExecuteBlockingRunInAsyncTransactionFunction() {
-        AsyncTransactionWork<CompletionStage<Void>> completionStageTransactionWork = tx -> {
+        AsyncTransactionCallback<CompletionStage<Void>> completionStageTransactionWork = tx -> {
             if (Futures.isEventLoopThread(Thread.currentThread())) {
                 var e = assertThrows(
                         IllegalStateException.class,
@@ -117,7 +116,7 @@ class SessionMixIT {
             return completedFuture(null);
         };
 
-        var result = asyncSession.readTransactionAsync(completionStageTransactionWork);
+        var result = asyncSession.executeReadAsync(completionStageTransactionWork);
         assertNull(await(result));
     }
 

@@ -30,11 +30,9 @@ public class BlockingWriteQueryWithRetries<C extends AbstractContext> extends Ab
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void execute(C context) {
         try (var session = newSession(AccessMode.WRITE, context)) {
-            var resultSummary =
-                    session.writeTransaction(tx -> tx.run("CREATE ()").consume());
+            var resultSummary = session.executeWrite(tx -> tx.run("CREATE ()").consume());
             assertEquals(1, resultSummary.counters().nodesCreated());
             context.nodeCreated();
             context.setBookmark(session.lastBookmarks());

@@ -72,9 +72,9 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionContext;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.AsyncTransactionContext;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.InternalIsoDuration;
@@ -440,7 +440,6 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return BIG_DATA_TEST_NODE_COUNT / BIG_DATA_TEST_BATCH_SIZE;
     }
 
-    @SuppressWarnings("deprecation")
     private static Set<Bookmark> createNodesBlocking(int batchCount, Driver driver) {
         Set<Bookmark> bookmarks;
 
@@ -448,7 +447,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         try (var session = driver.session()) {
             for (var i = 0; i < batchCount; i++) {
                 var batchIndex = i;
-                session.writeTransaction(
+                session.executeWrite(
                         tx -> createNodesInTx(tx, batchIndex, AbstractStressTestBase.BIG_DATA_TEST_BATCH_SIZE));
             }
             bookmarks = session.lastBookmarks();
@@ -459,11 +458,10 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return bookmarks;
     }
 
-    @SuppressWarnings("deprecation")
     private static void readNodesBlocking(Driver driver, Set<Bookmark> bookmarks) {
         var start = System.nanoTime();
         try (var session = driver.session(builder().withBookmarks(bookmarks).build())) {
-            int nodesProcessed = session.readTransaction(tx -> {
+            int nodesProcessed = session.executeRead(tx -> {
                 var result = tx.run("MATCH (n:Node) RETURN n");
 
                 var nodesSeen = 0;
@@ -487,7 +485,6 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         System.out.println("Reading nodes with blocking API took: " + NANOSECONDS.toMillis(end - start) + "ms");
     }
 
-    @SuppressWarnings("deprecation")
     private static Set<Bookmark> createNodesAsync(int batchCount, Driver driver) throws Throwable {
         var start = System.nanoTime();
 
@@ -496,7 +493,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
         for (var i = 0; i < batchCount; i++) {
             var batchIndex = i;
-            writeTransactions = writeTransactions.thenCompose(ignore -> session.writeTransactionAsync(
+            writeTransactions = writeTransactions.thenCompose(ignore -> session.executeWriteAsync(
                     tx -> createNodesInTxAsync(tx, batchIndex, AbstractStressTestBase.BIG_DATA_TEST_BATCH_SIZE)));
         }
         writeTransactions = writeTransactions
@@ -514,7 +511,6 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return session.lastBookmarks();
     }
 
-    @SuppressWarnings("deprecation")
     private static void readNodesAsync(Driver driver, Set<Bookmark> bookmarks) throws Throwable {
         var start = System.nanoTime();
 
@@ -522,7 +518,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
                 AsyncSession.class, builder().withBookmarks(bookmarks).build());
         var nodesSeen = new AtomicInteger();
 
-        var readQuery = session.readTransactionAsync(tx -> tx.runAsync("MATCH (n:Node) RETURN n")
+        var readQuery = session.executeReadAsync(tx -> tx.runAsync("MATCH (n:Node) RETURN n")
                         .thenCompose(cursor -> cursor.forEachAsync(record -> {
                             var node = record.get(0).asNode();
                             nodesSeen.incrementAndGet();
@@ -608,7 +604,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     private static Void createNodesInTx(
-            Transaction tx, int batchIndex, @SuppressWarnings("SameParameterValue") int batchSize) {
+            TransactionContext tx, int batchIndex, @SuppressWarnings("SameParameterValue") int batchSize) {
         for (var index = 0; index < batchSize; index++) {
             var nodeIndex = batchIndex * batchSize + index;
             createNodeInTx(tx, nodeIndex);
@@ -616,13 +612,13 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         return null;
     }
 
-    private static void createNodeInTx(Transaction tx, int nodeIndex) {
+    private static void createNodeInTx(TransactionContext tx, int nodeIndex) {
         var query = createNodeInTxQuery(nodeIndex);
         tx.run(query).consume();
     }
 
     private static CompletionStage<Throwable> createNodesInTxAsync(
-            AsyncTransaction tx, int batchIndex, @SuppressWarnings("SameParameterValue") int batchSize) {
+            AsyncTransactionContext tx, int batchIndex, @SuppressWarnings("SameParameterValue") int batchSize) {
         @SuppressWarnings("unchecked")
         CompletableFuture<Void>[] queryFutures = IntStream.range(0, batchSize)
                 .map(index -> batchIndex * batchSize + index)
@@ -634,7 +630,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
                 .exceptionally(Function.identity());
     }
 
-    private static CompletableFuture<Void> createNodeInTxAsync(AsyncTransaction tx, int nodeIndex) {
+    private static CompletableFuture<Void> createNodeInTxAsync(AsyncTransactionContext tx, int nodeIndex) {
         var query = createNodeInTxQuery(nodeIndex);
         return tx.runAsync(query)
                 .thenCompose(ResultCursor::consumeAsync)

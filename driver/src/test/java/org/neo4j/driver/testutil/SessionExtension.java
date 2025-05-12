@@ -29,7 +29,6 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.Value;
 
 /**
@@ -74,32 +73,8 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public <T> T readTransaction(TransactionWork<T> work) {
-        return realSession.readTransaction(work);
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public <T> T readTransaction(TransactionWork<T> work, TransactionConfig config) {
-        return realSession.readTransaction(work, config);
-    }
-
-    @Override
     public <T> T executeRead(TransactionCallback<T> callback, TransactionConfig config) {
         return realSession.executeRead(callback, config);
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public <T> T writeTransaction(TransactionWork<T> work) {
-        return realSession.writeTransaction(work);
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public <T> T writeTransaction(TransactionWork<T> work, TransactionConfig config) {
-        return realSession.writeTransaction(work, config);
     }
 
     @Override

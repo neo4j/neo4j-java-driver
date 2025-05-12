@@ -30,12 +30,11 @@ public class BlockingFailingQueryWithRetries<C extends AbstractContext> extends 
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void execute(C context) {
         try (var session = newSession(AccessMode.READ, context)) {
             var e = assertThrows(
                     Exception.class,
-                    () -> session.readTransaction(
+                    () -> session.executeRead(
                             tx -> tx.run("UNWIND [10, 5, 0] AS x RETURN 10 / x").consume()));
             assertThat(e, is(arithmeticError()));
         }

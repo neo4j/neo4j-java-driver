@@ -24,9 +24,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import lombok.Getter;
 import lombok.Setter;
+import neo4j.org.testkit.backend.AsyncTransactionContextAdapter;
 import neo4j.org.testkit.backend.ReactiveTransactionContextAdapter;
 import neo4j.org.testkit.backend.ReactiveTransactionContextStreamsAdapter;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.TransactionContextAdapter;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
 import neo4j.org.testkit.backend.holder.ReactiveTransactionStreamsHolder;
@@ -35,8 +37,8 @@ import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.responses.RetryableDone;
 import neo4j.org.testkit.backend.messages.responses.RetryableTry;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.TransactionWork;
-import org.neo4j.driver.async.AsyncTransactionWork;
+import org.neo4j.driver.TransactionCallback;
+import org.neo4j.driver.async.AsyncTransactionCallback;
 import org.neo4j.driver.reactive.ReactiveTransactionCallback;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
@@ -44,32 +46,31 @@ import reactor.core.publisher.Mono;
 public class SessionWriteTransaction
         extends AbstractTestkitRequestWithTransactionConfig<SessionWriteTransaction.SessionWriteTransactionBody> {
     @Override
-    @SuppressWarnings("deprecation")
     public TestkitResponse process(TestkitState testkitState) {
         var sessionHolder = testkitState.getSessionHolder(data.getSessionId());
         var session = sessionHolder.getSession();
-        session.writeTransaction(handle(testkitState, sessionHolder), buildTxConfig());
+        session.executeWrite(handle(testkitState, sessionHolder), buildTxConfig());
         return retryableDone();
     }
 
     @Override
-    @SuppressWarnings({"deprecation", "DuplicatedCode"})
+    @SuppressWarnings("DuplicatedCode")
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
         return testkitState
                 .getAsyncSessionHolder(data.getSessionId())
                 .thenCompose(sessionHolder -> {
                     var session = sessionHolder.getSession();
 
-                    AsyncTransactionWork<CompletionStage<Void>> workWrapper = tx -> {
-                        var txId =
-                                testkitState.addAsyncTransactionHolder(new AsyncTransactionHolder(sessionHolder, tx));
+                    AsyncTransactionCallback<CompletionStage<Void>> workWrapper = tx -> {
+                        var txId = testkitState.addAsyncTransactionHolder(
+                                new AsyncTransactionHolder(sessionHolder, new AsyncTransactionContextAdapter(tx)));
                         testkitState.getResponseWriter().accept(retryableTry(txId));
                         var tryResult = new CompletableFuture<Void>();
                         sessionHolder.setTxWorkFuture(tryResult);
                         return tryResult;
                     };
 
-                    return session.writeTransactionAsync(workWrapper, buildTxConfig());
+                    return session.executeWriteAsync(workWrapper, buildTxConfig());
                 })
                 .thenApply(nothing -> retryableDone());
     }
@@ -116,10 +117,11 @@ public class SessionWriteTransaction
                 .then(Mono.just(retryableDone()));
     }
 
-    @SuppressWarnings({"deprecation", "DuplicatedCode"})
-    private TransactionWork<Void> handle(TestkitState testkitState, SessionHolder sessionHolder) {
+    @SuppressWarnings("DuplicatedCode")
+    private TransactionCallback<Void> handle(TestkitState testkitState, SessionHolder sessionHolder) {
         return tx -> {
-            var txId = testkitState.addTransactionHolder(new TransactionHolder(sessionHolder, tx));
+            var txId = testkitState.addTransactionHolder(
+                    new TransactionHolder(sessionHolder, new TransactionContextAdapter(tx)));
             testkitState.getResponseWriter().accept(retryableTry(txId));
             var txWorkFuture = new CompletableFuture<Void>();
             sessionHolder.setTxWorkFuture(txWorkFuture);

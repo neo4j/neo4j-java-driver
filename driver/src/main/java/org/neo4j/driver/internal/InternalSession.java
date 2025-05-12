@@ -29,7 +29,6 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -99,32 +98,8 @@ public class InternalSession extends AbstractQueryRunner implements Session {
     }
 
     @Override
-    @Deprecated
-    public <T> T readTransaction(TransactionWork<T> work) {
-        return readTransaction(work, TransactionConfig.empty());
-    }
-
-    @Override
-    @Deprecated
-    public <T> T readTransaction(TransactionWork<T> work, TransactionConfig config) {
-        return transaction(AccessMode.READ, work, config, TelemetryApi.MANAGED_TRANSACTION, true);
-    }
-
-    @Override
     public <T> T executeRead(TransactionCallback<T> callback, TransactionConfig config) {
         return execute(AccessMode.READ, callback, config, TelemetryApi.MANAGED_TRANSACTION, true);
-    }
-
-    @Override
-    @Deprecated
-    public <T> T writeTransaction(TransactionWork<T> work) {
-        return writeTransaction(work, TransactionConfig.empty());
-    }
-
-    @Override
-    @Deprecated
-    public <T> T writeTransaction(TransactionWork<T> work, TransactionConfig config) {
-        return transaction(AccessMode.WRITE, work, config, TelemetryApi.MANAGED_TRANSACTION, true);
     }
 
     @Override
@@ -151,13 +126,12 @@ public class InternalSession extends AbstractQueryRunner implements Session {
             TransactionConfig config,
             TelemetryApi telemetryApi,
             boolean flush) {
-        return transaction(
-                accessMode, tx -> callback.execute(new DelegatingTransactionContext(tx)), config, telemetryApi, flush);
+        return transaction(accessMode, callback, config, telemetryApi, flush);
     }
 
     private <T> T transaction(
             AccessMode mode,
-            @SuppressWarnings("deprecation") TransactionWork<T> work,
+            TransactionCallback<T> work,
             TransactionConfig config,
             TelemetryApi telemetryApi,
             boolean flush) {
@@ -169,7 +143,7 @@ public class InternalSession extends AbstractQueryRunner implements Session {
         return session.retryLogic().retry(() -> {
             try (var tx = beginTransaction(mode, config, apiTelemetryWork, flush)) {
 
-                var result = work.execute(tx);
+                var result = work.execute(new DelegatingTransactionContext(tx));
                 if (result instanceof Result) {
                     var message = String.format(
                             "%s is not a valid return value, it should be consumed before producing a return value",

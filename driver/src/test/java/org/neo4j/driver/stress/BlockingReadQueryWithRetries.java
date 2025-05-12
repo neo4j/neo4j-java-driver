@@ -28,10 +28,9 @@ public class BlockingReadQueryWithRetries<C extends AbstractContext> extends Abs
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void execute(C context) {
         try (var session = newSession(AccessMode.READ, context)) {
-            session.readTransaction(tx -> {
+            session.executeRead(tx -> {
                 var result = tx.run("MATCH (n) RETURN n LIMIT 1");
                 var records = result.list();
                 if (!records.isEmpty()) {

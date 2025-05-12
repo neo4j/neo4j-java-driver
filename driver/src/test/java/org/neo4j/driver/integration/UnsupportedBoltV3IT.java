@@ -57,16 +57,14 @@ class UnsupportedBoltV3IT {
     }
 
     @Test
-    @SuppressWarnings({"deprecation", "resource"})
+    @SuppressWarnings("resource")
     void shouldNotSupportTransactionFunctionsWithTransactionConfig() {
-        assertTxConfigNotSupported(() -> driver.session().readTransaction(tx -> tx.run("RETURN 42"), txConfig));
+        assertTxConfigNotSupported(() -> driver.session().executeRead(tx -> tx.run("RETURN 42"), txConfig));
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldNotSupportAsyncTransactionFunctionsWithTransactionConfig() {
-        assertTxConfigNotSupported(
-                driver.asyncSession().readTransactionAsync(tx -> tx.runAsync("RETURN 42"), txConfig));
+        assertTxConfigNotSupported(driver.asyncSession().executeReadAsync(tx -> tx.runAsync("RETURN 42"), txConfig));
     }
 
     @Test

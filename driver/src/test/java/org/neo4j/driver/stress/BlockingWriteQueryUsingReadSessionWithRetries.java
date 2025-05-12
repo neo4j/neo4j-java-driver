@@ -28,10 +28,9 @@ public class BlockingWriteQueryUsingReadSessionWithRetries<C extends AbstractCon
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void execute(C context) {
         try (var session = newSession(AccessMode.READ, context)) {
-            assertThrows(ClientException.class, () -> session.readTransaction(tx -> tx.run("CREATE ()")));
+            assertThrows(ClientException.class, () -> session.executeRead(tx -> tx.run("CREATE ()")));
         }
     }
 }

@@ -113,31 +113,6 @@ public interface AsyncSession extends BaseSession, AsyncQueryRunner {
     CompletionStage<AsyncTransaction> beginTransactionAsync(TransactionConfig config);
 
     /**
-     * Execute given unit of asynchronous work in a  {@link AccessMode#READ read} asynchronous transaction.
-     * <p>
-     * Transaction will automatically be committed unless given unit of work fails or
-     * {@link AsyncTransaction#commitAsync() async transaction commit} fails.
-     * It will also not be committed if explicitly rolled back via {@link AsyncTransaction#rollbackAsync()}.
-     * <p>
-     * Returned stage and given {@link AsyncTransactionWork} can be completed/executed by an IO thread which should never block.
-     * Otherwise IO operations on this and potentially other network connections might deadlock.
-     * Please do not chain blocking operations like {@link CompletableFuture#get()} on the returned stage and do not use them inside the
-     * {@link AsyncTransactionWork}.
-     * Consider using asynchronous calls throughout the chain or offloading blocking operation to a different {@link Executor}.
-     * This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @param work the {@link AsyncTransactionWork} to be applied to a new read transaction. Operation executed by the
-     * given work must be asynchronous.
-     * @param <T> the return type of the given unit of work.
-     * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
-     * unit of work. Stage can be completed exceptionally if given work or commit fails.
-     * @deprecated superseded by {@link #executeReadAsync(AsyncTransactionCallback)}.
-     */
-    @Deprecated
-    <T> CompletionStage<T> readTransactionAsync(AsyncTransactionWork<CompletionStage<T>> work);
-
-    /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one
      * or more statements to be run.
      * <p>
@@ -156,34 +131,6 @@ public interface AsyncSession extends BaseSession, AsyncQueryRunner {
     default <T> CompletionStage<T> executeReadAsync(AsyncTransactionCallback<CompletionStage<T>> callback) {
         return executeReadAsync(callback, TransactionConfig.empty());
     }
-
-    /**
-     * Execute given unit of asynchronous work in a  {@link AccessMode#READ read} asynchronous transaction with
-     * the specified {@link TransactionConfig configuration}.
-     * <p>
-     * Transaction will automatically be committed unless given unit of work fails or
-     * {@link AsyncTransaction#commitAsync() async transaction commit} fails.
-     * It will also not be committed if explicitly rolled back via {@link AsyncTransaction#rollbackAsync()}.
-     * <p>
-     * Returned stage and given {@link AsyncTransactionWork} can be completed/executed by an IO thread which should never block.
-     * Otherwise IO operations on this and potentially other network connections might deadlock.
-     * Please do not chain blocking operations like {@link CompletableFuture#get()} on the returned stage and do not use them inside the
-     * {@link AsyncTransactionWork}.
-     * Consider using asynchronous calls throughout the chain or offloading blocking operation to a different {@link Executor}.
-     * This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @param work the {@link  AsyncTransactionWork} to be applied to a new read transaction. Operation executed by the
-     * given work must be asynchronous.
-     * @param config configuration for all transactions started to execute the unit of work.
-     * @param <T> the return type of the given unit of work.
-     * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
-     * unit of work. Stage can be completed exceptionally if given work or commit fails.
-     * @deprecated superseded by {@link #executeReadAsync(AsyncTransactionCallback, TransactionConfig)}.
-     */
-    @Deprecated
-    <T> CompletionStage<T> readTransactionAsync(
-            AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one or more statements to be run.
@@ -205,31 +152,6 @@ public interface AsyncSession extends BaseSession, AsyncQueryRunner {
             AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config);
 
     /**
-     * Execute given unit of asynchronous work in a  {@link AccessMode#WRITE write} asynchronous transaction.
-     * <p>
-     * Transaction will automatically be committed unless given unit of work fails or
-     * {@link AsyncTransaction#commitAsync() async transaction commit} fails. It will also not be committed if explicitly
-     * rolled back via {@link AsyncTransaction#rollbackAsync()}.
-     * <p>
-     * Returned stage and given {@link  AsyncTransactionWork} can be completed/executed by an IO thread which should never block.
-     * Otherwise IO operations on this and potentially other network connections might deadlock.
-     * Please do not chain blocking operations like {@link CompletableFuture#get()} on the returned stage and do not use them inside the
-     * {@link AsyncTransactionWork}.
-     * Consider using asynchronous calls throughout the chain or offloading blocking operation to a different {@link Executor}.
-     * This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @param work the {@link AsyncTransactionWork} to be applied to a new write transaction. Operation executed by the
-     * given work must be asynchronous.
-     * @param <T> the return type of the given unit of work.
-     * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
-     * unit of work. Stage can be completed exceptionally if given work or commit fails.
-     * @deprecated superseded by {@link #executeWriteAsync(AsyncTransactionCallback)}.
-     */
-    @Deprecated
-    <T> CompletionStage<T> writeTransactionAsync(AsyncTransactionWork<CompletionStage<T>> work);
-
-    /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for
      * one or more statements to be run.
      * <p>
@@ -248,34 +170,6 @@ public interface AsyncSession extends BaseSession, AsyncQueryRunner {
     default <T> CompletionStage<T> executeWriteAsync(AsyncTransactionCallback<CompletionStage<T>> callback) {
         return executeWriteAsync(callback, TransactionConfig.empty());
     }
-
-    /**
-     * Execute given unit of asynchronous work in a  {@link AccessMode#WRITE write} asynchronous transaction with
-     * the specified {@link TransactionConfig configuration}.
-     * <p>
-     * Transaction will automatically be committed unless given unit of work fails or
-     * {@link AsyncTransaction#commitAsync() async transaction commit} fails. It will also not be committed if explicitly
-     * rolled back via {@link AsyncTransaction#rollbackAsync()}.
-     * <p>
-     * Returned stage and given {@link AsyncTransactionWork} can be completed/executed by an IO thread which should never block.
-     * Otherwise IO operations on this and potentially other network connections might deadlock.
-     * Please do not chain blocking operations like {@link CompletableFuture#get()} on the returned stage and do not use them inside the
-     * {@link AsyncTransactionWork}.
-     * Consider using asynchronous calls throughout the chain or offloading blocking operation to a different {@link Executor}.
-     * This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @param work the {@link AsyncTransactionWork} to be applied to a new write transaction. Operation executed by the
-     * given work must be asynchronous.
-     * @param config configuration for all transactions started to execute the unit of work.
-     * @param <T> the return type of the given unit of work.
-     * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
-     * unit of work. Stage can be completed exceptionally if given work or commit fails.
-     * @deprecated superseded by {@link #executeWriteAsync(AsyncTransactionCallback, TransactionConfig)}.
-     */
-    @Deprecated
-    <T> CompletionStage<T> writeTransactionAsync(
-            AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.

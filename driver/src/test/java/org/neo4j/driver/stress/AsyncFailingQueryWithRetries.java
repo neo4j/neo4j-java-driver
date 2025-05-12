@@ -33,11 +33,10 @@ public class AsyncFailingQueryWithRetries<C extends AbstractContext> extends Abs
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         var session = newSession(AccessMode.READ, context);
 
-        var txStage = session.readTransactionAsync(
+        var txStage = session.executeReadAsync(
                 tx -> tx.runAsync("UNWIND [10, 5, 0] AS x RETURN 10 / x").thenCompose(ResultCursor::listAsync));
 
         CompletionStage<Void> resultsProcessingStage = txStage.handle((records, error) -> {

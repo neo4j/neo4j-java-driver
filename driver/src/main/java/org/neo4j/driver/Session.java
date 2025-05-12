@@ -74,21 +74,6 @@ public interface Session extends BaseSession, Resource, QueryRunner {
     Transaction beginTransaction(TransactionConfig config);
 
     /**
-     * Execute a unit of work in a managed {@link AccessMode#READ read} transaction.
-     * <p>
-     * This transaction will automatically be committed unless an exception is thrown during query execution or by the user code.
-     * <p>
-     * Managed transactions should not be explicitly committed (via {@link Transaction#commit()}).
-     *
-     * @param work the {@link TransactionWork} to be applied to a new read transaction.
-     * @param <T>  the return type of the given unit of work.
-     * @return a result as returned by the given unit of work.
-     * @deprecated superseded by {@link #executeRead(TransactionCallback)}.
-     */
-    @Deprecated
-    <T> T readTransaction(TransactionWork<T> work);
-
-    /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one
      * or more statements to be run.
      * <p>
@@ -106,22 +91,6 @@ public interface Session extends BaseSession, Resource, QueryRunner {
     }
 
     /**
-     * Execute a unit of work in a managed {@link AccessMode#READ read} transaction with the specified {@link TransactionConfig configuration}.
-     * <p>
-     * This transaction will automatically be committed unless an exception is thrown during query execution or by the user code.
-     * <p>
-     * Managed transactions should not be explicitly committed (via {@link Transaction#commit()}).
-     *
-     * @param work   the {@link TransactionWork} to be applied to a new read transaction.
-     * @param config configuration for all transactions started to execute the unit of work.
-     * @param <T>    the return type of the given unit of work.
-     * @return a result as returned by the given unit of work.
-     * @deprecated superseded by {@link #executeRead(TransactionCallback, TransactionConfig)}.
-     */
-    @Deprecated
-    <T> T readTransaction(TransactionWork<T> work, TransactionConfig config);
-
-    /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one
      * or more statements to be run.
      * <p>
@@ -136,21 +105,6 @@ public interface Session extends BaseSession, Resource, QueryRunner {
      * @return a result as returned by the given unit of work.
      */
     <T> T executeRead(TransactionCallback<T> callback, TransactionConfig config);
-
-    /**
-     * Execute a unit of work in a managed {@link AccessMode#WRITE write} transaction.
-     * <p>
-     * This transaction will automatically be committed unless an exception is thrown during query execution or by the user code.
-     * <p>
-     * Managed transactions should not be explicitly committed (via {@link Transaction#commit()}).
-     *
-     * @param work the {@link TransactionWork} to be applied to a new write transaction.
-     * @param <T>  the return type of the given unit of work.
-     * @return a result as returned by the given unit of work.
-     * @deprecated superseded by {@link #executeWrite(TransactionCallback)}.
-     */
-    @Deprecated
-    <T> T writeTransaction(TransactionWork<T> work);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for
@@ -185,22 +139,6 @@ public interface Session extends BaseSession, Resource, QueryRunner {
             return null;
         });
     }
-
-    /**
-     * Execute a unit of work in a managed {@link AccessMode#WRITE write} transaction with the specified {@link TransactionConfig configuration}.
-     * <p>
-     * This transaction will automatically be committed unless an exception is thrown during query execution or by the user code.
-     * <p>
-     * Managed transactions should not be explicitly committed (via {@link Transaction#commit()}).
-     *
-     * @param work   the {@link TransactionWork} to be applied to a new write transaction.
-     * @param config configuration for all transactions started to execute the unit of work.
-     * @param <T>    the return type of the given unit of work.
-     * @return a result as returned by the given unit of work.
-     * @deprecated superseded by {@link #executeWrite(TransactionCallback, TransactionConfig)}.
-     */
-    @Deprecated
-    <T> T writeTransaction(TransactionWork<T> work, TransactionConfig config);
 
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.

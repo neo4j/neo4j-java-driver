@@ -20,7 +20,6 @@ import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyArray;
@@ -69,12 +68,12 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.TransactionWork;
+import org.neo4j.driver.SimpleQueryRunner;
+import org.neo4j.driver.TransactionCallback;
+import org.neo4j.driver.TransactionContext;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ResultConsumedException;
@@ -178,7 +177,6 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void readTxRetriedUntilSuccess() {
         var failures = 6;
         var retries = failures + 1;
@@ -189,23 +187,22 @@ class SessionIT {
 
             var work = newThrowingWorkSpy("MATCH (n) RETURN n.name", failures);
             try (var session = driver.session()) {
-                var record = session.readTransaction(work);
+                var record = session.executeRead(work);
                 assertEquals("Bruce Banner", record.get(0).asString());
             }
 
-            verify(work, times(retries)).execute(any(Transaction.class));
+            verify(work, times(retries)).execute(any(TransactionContext.class));
         }
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void writeTxRetriedUntilSuccess() {
         var failures = 4;
         var retries = failures + 1;
         try (var driver = newDriverWithFixedRetries(retries)) {
             var work = newThrowingWorkSpy("CREATE (p:Person {name: 'Hulk'}) RETURN p", failures);
             try (var session = driver.session()) {
-                var record = session.writeTransaction(work);
+                var record = session.executeWrite(work);
                 assertEquals("Hulk", record.get(0).asNode().get("name").asString());
             }
 
@@ -215,34 +212,32 @@ class SessionIT {
                 assertEquals(1, record.get(0).asInt());
             }
 
-            verify(work, times(retries)).execute(any(Transaction.class));
+            verify(work, times(retries)).execute(any(TransactionContext.class));
         }
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void readTxRetriedUntilFailure() {
         var failures = 3;
         var retries = failures - 1;
         try (var driver = newDriverWithFixedRetries(retries)) {
             var work = newThrowingWorkSpy("MATCH (n) RETURN n.name", failures);
             try (var session = driver.session()) {
-                assertThrows(ServiceUnavailableException.class, () -> session.readTransaction(work));
+                assertThrows(ServiceUnavailableException.class, () -> session.executeRead(work));
             }
 
-            verify(work, times(failures)).execute(any(Transaction.class));
+            verify(work, times(failures)).execute(any(TransactionContext.class));
         }
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void writeTxRetriedUntilFailure() {
         var failures = 8;
         var retries = failures - 1;
         try (var driver = newDriverWithFixedRetries(retries)) {
             var work = newThrowingWorkSpy("CREATE (:Person {name: 'Ronan'})", failures);
             try (var session = driver.session()) {
-                assertThrows(ServiceUnavailableException.class, () -> session.writeTransaction(work));
+                assertThrows(ServiceUnavailableException.class, () -> session.executeWrite(work));
             }
 
             try (var session = driver.session()) {
@@ -250,18 +245,17 @@ class SessionIT {
                 assertEquals(0, result.single().get(0).asInt());
             }
 
-            verify(work, times(failures)).execute(any(Transaction.class));
+            verify(work, times(failures)).execute(any(TransactionContext.class));
         }
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void writeTxRetryErrorsAreCollected() {
         try (var driver = newDriverWithLimitedRetries(5)) {
             var work = newThrowingWorkSpy("CREATE (:Person {name: 'Ronan'})", Integer.MAX_VALUE);
             int suppressedErrors;
             try (var session = driver.session()) {
-                var e = assertThrows(ServiceUnavailableException.class, () -> session.writeTransaction(work));
+                var e = assertThrows(ServiceUnavailableException.class, () -> session.executeWrite(work));
                 assertThat(e.getSuppressed(), not(emptyArray()));
                 suppressedErrors = e.getSuppressed().length;
             }
@@ -271,34 +265,32 @@ class SessionIT {
                 assertEquals(0, result.single().get(0).asInt());
             }
 
-            verify(work, times(suppressedErrors + 1)).execute(any(Transaction.class));
+            verify(work, times(suppressedErrors + 1)).execute(any(TransactionContext.class));
         }
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void readTxRetryErrorsAreCollected() {
         try (var driver = newDriverWithLimitedRetries(4)) {
             var work = newThrowingWorkSpy("MATCH (n) RETURN n.name", Integer.MAX_VALUE);
             int suppressedErrors;
             try (var session = driver.session()) {
-                var e = assertThrows(ServiceUnavailableException.class, () -> session.readTransaction(work));
+                var e = assertThrows(ServiceUnavailableException.class, () -> session.executeRead(work));
                 assertThat(e.getSuppressed(), not(emptyArray()));
                 suppressedErrors = e.getSuppressed().length;
             }
 
-            verify(work, times(suppressedErrors + 1)).execute(any(Transaction.class));
+            verify(work, times(suppressedErrors + 1)).execute(any(TransactionContext.class));
         }
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void readTxCommittedWithoutTxSuccess() {
         try (var driver = newDriverWithoutRetries();
                 var session = driver.session()) {
             assertTrue(session.lastBookmarks().isEmpty());
 
-            long answer = session.readTransaction(
+            long answer = session.executeRead(
                     tx -> tx.run("RETURN 42").single().get(0).asLong());
             assertEquals(42, answer);
 
@@ -308,11 +300,10 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void writeTxCommittedWithoutTxSuccess() {
         try (var driver = newDriverWithoutRetries()) {
             try (var session = driver.session()) {
-                long answer = session.writeTransaction(tx -> tx.run("CREATE (:Person {name: 'Thor Odinson'}) RETURN 42")
+                long answer = session.executeWrite(tx -> tx.run("CREATE (:Person {name: 'Thor Odinson'}) RETURN 42")
                         .single()
                         .get(0)
                         .asLong());
@@ -327,19 +318,18 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void readTxRolledBackWithTxFailure() {
         try (var driver = newDriverWithoutRetries();
                 var session = driver.session()) {
             assertTrue(session.lastBookmarks().isEmpty());
 
-            long answer = session.readTransaction(tx -> {
-                var result = tx.run("RETURN 42");
-                var single = result.single().get(0).asLong();
-                tx.rollback();
-                return single;
-            });
-            assertEquals(42, answer);
+            assertThrows(
+                    IllegalStateException.class,
+                    () -> session.executeRead(tx -> {
+                        var result = tx.run("RETURN 42");
+                        var single = result.single().get(0).asLong();
+                        throw new IllegalStateException();
+                    }));
 
             // bookmark should remain null after rollback
             assertTrue(session.lastBookmarks().isEmpty());
@@ -347,17 +337,15 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void writeTxRolledBackWithTxFailure() {
         try (var driver = newDriverWithoutRetries()) {
             try (var session = driver.session()) {
-                int answer = session.writeTransaction(tx -> {
-                    tx.run("CREATE (:Person {name: 'Natasha Romanoff'})");
-                    tx.rollback();
-                    return 42;
-                });
-
-                assertEquals(42, answer);
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> session.executeWrite(tx -> {
+                            tx.run("CREATE (:Person {name: 'Natasha Romanoff'})");
+                            throw new IllegalStateException();
+                        }));
             }
 
             try (var session = driver.session()) {
@@ -368,7 +356,6 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void readTxRolledBackWhenExceptionIsThrown() {
         try (var driver = newDriverWithoutRetries();
                 var session = driver.session()) {
@@ -376,7 +363,7 @@ class SessionIT {
 
             assertThrows(
                     IllegalStateException.class,
-                    () -> session.readTransaction(tx -> {
+                    () -> session.executeRead(tx -> {
                         var result = tx.run("RETURN 42");
                         if (result.single().get(0).asLong() == 42) {
                             throw new IllegalStateException();
@@ -390,132 +377,13 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void writeTxRolledBackWhenExceptionIsThrown() {
         try (var driver = newDriverWithoutRetries()) {
             try (var session = driver.session()) {
                 assertThrows(
                         IllegalStateException.class,
-                        () -> session.writeTransaction(tx -> {
+                        () -> session.executeWrite(tx -> {
                             tx.run("CREATE (:Person {name: 'Loki Odinson'})");
-                            throw new IllegalStateException();
-                        }));
-            }
-
-            try (var session = driver.session()) {
-                var result = session.run("MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)");
-                assertEquals(0, result.single().get(0).asInt());
-            }
-        }
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    void readTxRolledBackWhenMarkedBothSuccessAndFailure() {
-        try (var driver = newDriverWithoutRetries();
-                var session = driver.session()) {
-            var error = assertThrows(
-                    ClientException.class,
-                    () -> session.readTransaction(tx -> {
-                        var result = tx.run("RETURN 42");
-                        tx.commit();
-                        tx.rollback();
-                        return result.single().get(0).asLong();
-                    }));
-            assertThat(error.getMessage(), startsWith("Can't rollback, transaction has been committed"));
-        }
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    void writeTxFailWhenBothCommitAndRollback() {
-        try (var driver = newDriverWithoutRetries()) {
-            try (var session = driver.session()) {
-                var error = assertThrows(
-                        ClientException.class,
-                        () -> session.writeTransaction(tx -> {
-                            tx.run("CREATE (:Person {name: 'Natasha Romanoff'})");
-                            tx.commit();
-                            tx.rollback();
-                            return 42;
-                        }));
-
-                assertThat(error.getMessage(), startsWith("Can't rollback, transaction has been committed"));
-            }
-        }
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    void readTxCommittedWhenCommitAndThrowsException() {
-        try (var driver = newDriverWithoutRetries();
-                var session = driver.session()) {
-            assertTrue(session.lastBookmarks().isEmpty());
-
-            assertThrows(
-                    IllegalStateException.class,
-                    () -> session.readTransaction(tx -> {
-                        tx.run("RETURN 42");
-                        tx.commit();
-                        throw new IllegalStateException();
-                    }));
-
-            // We successfully committed
-            assertFalse(session.lastBookmarks().isEmpty());
-        }
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    void writeTxCommittedWhenCommitAndThrowsException() {
-        try (var driver = newDriverWithoutRetries()) {
-            try (var session = driver.session()) {
-                assertThrows(
-                        IllegalStateException.class,
-                        () -> session.writeTransaction(tx -> {
-                            tx.run("CREATE (:Person {name: 'Natasha Romanoff'})");
-                            tx.commit();
-                            throw new IllegalStateException();
-                        }));
-            }
-
-            try (var session = driver.session()) {
-                var result = session.run("MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)");
-                assertEquals(1, result.single().get(0).asInt());
-            }
-        }
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    void readRolledBackWhenRollbackAndThrowsException() {
-        try (var driver = newDriverWithoutRetries();
-                var session = driver.session()) {
-            assertTrue(session.lastBookmarks().isEmpty());
-
-            assertThrows(
-                    IllegalStateException.class,
-                    () -> session.readTransaction(tx -> {
-                        tx.run("RETURN 42");
-                        tx.rollback();
-                        throw new IllegalStateException();
-                    }));
-
-            // bookmark should remain null after rollback
-            assertTrue(session.lastBookmarks().isEmpty());
-        }
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    void writeTxRolledBackWhenRollbackAndThrowsException() {
-        try (var driver = newDriverWithoutRetries()) {
-            try (var session = driver.session()) {
-                assertThrows(
-                        IllegalStateException.class,
-                        () -> session.writeTransaction(tx -> {
-                            tx.run("CREATE (:Person {name: 'Natasha Romanoff'})");
-                            tx.rollback();
                             throw new IllegalStateException();
                         }));
             }
@@ -586,7 +454,7 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings({"deprecation", "resource"})
+    @SuppressWarnings("resource")
     void writeTransactionFunctionShouldRetryDeadlocks() throws Exception {
         final var nodeId1 = 42;
         final var nodeId2 = 4242;
@@ -619,7 +487,7 @@ class SessionIT {
 
         Future<Void> result2 = executeInDifferentThread(() -> {
             try (var session = neo4j.driver().session()) {
-                session.writeTransaction(tx -> {
+                session.executeWrite(tx -> {
                     // lock second node
                     updateNodeId(tx, nodeId2, newNodeId2).consume();
 
@@ -666,17 +534,17 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings({"deprecation", "resource"})
+    @SuppressWarnings("resource")
     void shouldExecuteTransactionWorkInCallerThread() {
         var maxFailures = 3;
         var callerThread = Thread.currentThread();
 
         try (var session = neo4j.driver().session()) {
-            var result = session.readTransaction(new TransactionWork<String>() {
+            var result = session.executeRead(new TransactionCallback<String>() {
                 int failures;
 
                 @Override
-                public String execute(Transaction tx) {
+                public String execute(TransactionContext tx) {
                     assertSame(callerThread, Thread.currentThread());
                     if (failures++ < maxFailures) {
                         throw new ServiceUnavailableException("Oh no");
@@ -793,7 +661,7 @@ class SessionIT {
 
         var invocations = new AtomicInteger();
         var e = assertThrows(
-                ClientException.class, () -> driver.session().writeTransaction(tx -> invocations.incrementAndGet()));
+                ClientException.class, () -> driver.session().executeWrite(tx -> invocations.incrementAndGet()));
         assertThat(e, is(connectionAcquisitionTimeoutError(0)));
 
         // work should never be invoked
@@ -951,11 +819,11 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings({"deprecation", "resource"})
+    @SuppressWarnings("resource")
     void shouldAllowReturningNullFromTransactionFunction() {
         try (var session = neo4j.driver().session()) {
-            assertNull(session.readTransaction(tx -> null));
-            assertNull(session.writeTransaction(tx -> null));
+            assertNull(session.executeRead(tx -> null));
+            assertNull(session.executeWrite(tx -> null));
         }
     }
 
@@ -1157,11 +1025,11 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
-    @SuppressWarnings({"deprecation", "resource"})
+    @SuppressWarnings("resource")
     void shouldAllowDatabaseNameUsingTxWithRetries() {
         try (var session = neo4j.driver().session(forDatabase("neo4j"))) {
-            int num = session.readTransaction(
-                    tx -> tx.run("RETURN 1").single().get(0).asInt());
+            int num =
+                    session.executeRead(tx -> tx.run("RETURN 1").single().get(0).asInt());
             assertThat(num, equalTo(1));
         }
     }
@@ -1200,7 +1068,7 @@ class SessionIT {
 
     @Test
     @EnabledOnNeo4jWith(BOLT_V4)
-    @SuppressWarnings({"deprecation", "resource"})
+    @SuppressWarnings("resource")
     void shouldErrorDatabaseNameUsingTxWithRetriesWhenDatabaseIsAbsent() {
         // Given
         var session = neo4j.driver().session(forDatabase("foo"));
@@ -1208,7 +1076,7 @@ class SessionIT {
         // When trying to run the query on a database that does not exist
         var error = assertThrows(
                 ClientException.class,
-                () -> session.readTransaction(tx -> tx.run("RETURN 1").consume()));
+                () -> session.executeRead(tx -> tx.run("RETURN 1").consume()));
         assertThat(error.getMessage(), containsString("Database does not exist. Database name: 'foo'"));
         session.close();
     }
@@ -1228,16 +1096,15 @@ class SessionIT {
         session.close();
     }
 
-    @SuppressWarnings("deprecation")
     static List<Function<Session, Result>> managedTransactionsReturningResult() {
         return List.of(
-                session -> session.writeTransaction(tx -> tx.run("RETURN 1")),
-                session -> session.readTransaction(tx -> tx.run("RETURN 1")),
+                session -> session.executeWrite(tx -> tx.run("RETURN 1")),
+                session -> session.executeRead(tx -> tx.run("RETURN 1")),
                 session -> session.executeWrite(tx -> tx.run("RETURN 1")),
                 session -> session.executeRead(tx -> tx.run("RETURN 1")));
     }
 
-    @SuppressWarnings({"deprecation", "resource"})
+    @SuppressWarnings("resource")
     private void testExecuteReadTx(AccessMode sessionMode) {
         var driver = neo4j.driver();
 
@@ -1250,7 +1117,7 @@ class SessionIT {
         // read previously committed data
         try (var session =
                 driver.session(builder().withDefaultAccessMode(sessionMode).build())) {
-            var names = session.readTransaction(tx -> {
+            var names = session.executeRead(tx -> {
                 var records = tx.run("MATCH (p:Person) RETURN p.name AS name").list();
                 return records.stream()
                         .map(record -> record.get("name").asString())
@@ -1261,17 +1128,16 @@ class SessionIT {
         }
     }
 
-    @SuppressWarnings({"deprecation", "resource"})
+    @SuppressWarnings("resource")
     private void testExecuteWriteTx(AccessMode sessionMode) {
         var driver = neo4j.driver();
 
         // write some test data
         try (var session =
                 driver.session(builder().withDefaultAccessMode(sessionMode).build())) {
-            var material = session.writeTransaction(tx -> {
+            var material = session.executeWrite(tx -> {
                 var result = tx.run("CREATE (s:Shield {material: 'Vibranium'}) RETURN s");
                 var record = result.single();
-                tx.commit();
                 return record.get(0).asNode().get("material").asString();
             });
 
@@ -1285,7 +1151,7 @@ class SessionIT {
         }
     }
 
-    @SuppressWarnings({"deprecation", "resource"})
+    @SuppressWarnings("resource")
     private void testTxRollbackWhenFunctionThrows(AccessMode sessionMode) {
         var driver = neo4j.driver();
 
@@ -1293,11 +1159,10 @@ class SessionIT {
                 driver.session(builder().withDefaultAccessMode(sessionMode).build())) {
             assertThrows(
                     ClientException.class,
-                    () -> session.writeTransaction(tx -> {
+                    () -> session.executeWrite(tx -> {
                         tx.run("CREATE (:Person {name: 'Thanos'})");
                         // trigger division by zero error:
                         tx.run("UNWIND range(0, 1) AS i RETURN 10/i");
-                        tx.commit();
                         return null;
                     }));
         }
@@ -1356,7 +1221,7 @@ class SessionIT {
         }
     }
 
-    private static Result updateNodeId(QueryRunner queryRunner, int currentId, int newId) {
+    private static Result updateNodeId(SimpleQueryRunner queryRunner, int currentId, int newId) {
         return queryRunner.run(
                 "MATCH (n {id: $currentId}) SET n.id = $newId", parameters("currentId", currentId, "newId", newId));
     }
@@ -1403,8 +1268,7 @@ class SessionIT {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private static class ThrowingWork implements TransactionWork<Record> {
+    private static class ThrowingWork implements TransactionCallback<Record> {
         final String query;
         final int failures;
 
@@ -1416,14 +1280,12 @@ class SessionIT {
         }
 
         @Override
-        public Record execute(Transaction tx) {
+        public Record execute(TransactionContext tx) {
             var result = tx.run(query);
             if (invoked++ < failures) {
                 throw new ServiceUnavailableException("");
             }
-            var single = result.single();
-            tx.commit();
-            return single;
+            return result.single();
         }
     }
 }

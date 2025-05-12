@@ -30,12 +30,11 @@ public class BlockingWrongQueryWithRetries<C extends AbstractContext> extends Ab
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void execute(C context) {
         try (var session = newSession(AccessMode.READ, context)) {
             var e = assertThrows(
                     Exception.class,
-                    () -> session.readTransaction(tx -> tx.run("RETURN").consume()));
+                    () -> session.executeRead(tx -> tx.run("RETURN").consume()));
             assertThat(e, is(syntaxError()));
         }
     }

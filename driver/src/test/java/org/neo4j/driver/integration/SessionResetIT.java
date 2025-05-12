@@ -47,9 +47,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SimpleQueryRunner;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransactionTerminatedException;
@@ -222,7 +222,7 @@ class SessionResetIT {
                     usedSessionRef.set(session);
                     latchToWait.await();
 
-                    session.writeTransaction(tx -> {
+                    session.executeWrite(tx -> {
                         invocationsOfWork.incrementAndGet();
                         var result = updateNodeId(tx, nodeId, newNodeId);
                         result.consume();
@@ -351,7 +351,7 @@ class SessionResetIT {
         }
     }
 
-    private static Result updateNodeId(QueryRunner queryRunner, int currentId, int newId) {
+    private static Result updateNodeId(SimpleQueryRunner queryRunner, int currentId, int newId) {
         return queryRunner.run(
                 "MATCH (n {id: $currentId}) SET n.id = $newId", parameters("currentId", currentId, "newId", newId));
     }
