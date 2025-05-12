@@ -221,7 +221,9 @@ public final class Config implements Serializable {
     }
 
     /**
-     * @return the configured connection timeout value in milliseconds.
+     * Returns the configured connection timeout value in milliseconds.
+     *
+     * @return the configured connection timeout value in milliseconds
      */
     public int connectionTimeoutMillis() {
         return connectionTimeoutMillis;
@@ -246,14 +248,18 @@ public final class Config implements Serializable {
     }
 
     /**
-     * @return indicator for encrypted communication.
+     * Returns indicator for encrypted communication.
+     *
+     * @return indicator for encrypted communication
      */
     public boolean encrypted() {
         return securitySettings.encrypted();
     }
 
     /**
-     * @return the strategy to use to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
+     * Returns the strategy to use to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
+     *
+     * @return the strategy to use to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to
      */
     public TrustStrategy trustStrategy() {
         return securitySettings.trustStrategy();
@@ -278,7 +284,9 @@ public final class Config implements Serializable {
     }
 
     /**
-     * @return A config with all default settings
+     * Returns the config with all default settings.
+     *
+     * @return the config with all default settings
      */
     public static Config defaultConfig() {
         return EMPTY;
@@ -358,7 +366,9 @@ public final class Config implements Serializable {
     }
 
     /**
-     * @return if the metrics is enabled or not on this driver.
+     * Returns whether the metrics is enabled or not on this driver.
+     *
+     * @return if the metrics is enabled or not on this driver
      */
     public boolean isMetricsEnabled() {
         return this.metricsAdapter != MetricsAdapter.DEV_NULL;
@@ -374,6 +384,8 @@ public final class Config implements Serializable {
     }
 
     /**
+     * Returns the user_agent configured for this driver.
+     *
      * @return the user_agent configured for this driver
      */
     public String userAgent() {
@@ -915,6 +927,7 @@ public final class Config implements Serializable {
         /**
          * The configured certificate files.
          */
+        @SuppressWarnings("serial")
         private final List<File> certFiles;
         /**
          * The flag indicating if hostname verification is enabled for this trust strategy.

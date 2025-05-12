@@ -17,17 +17,23 @@
 package org.neo4j.driver.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
+import java.io.NotSerializableException;
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.testutil.TestUtil;
 
 class Neo4jBookmarkManagerTest {
     Neo4jBookmarkManager manager;
@@ -100,5 +106,93 @@ class Neo4jBookmarkManagerTest {
         // THEN
         then(bookmarkSupplier).should().get();
         assertEquals(Set.of(initialBookmark, supplierBookmark), bookmarks);
+    }
+
+    @Test
+    void shouldSerialize() throws Exception {
+        var manager = new Neo4jBookmarkManager(Set.of(Bookmark.from("value")), null, null);
+        var deserializedManager = TestUtil.serializeAndReadBack(manager, Neo4jBookmarkManager.class);
+
+        assertEquals(manager.bookmarks, deserializedManager.bookmarks);
+        assertNotNull(deserializedManager.rwLock);
+        assertNull(deserializedManager.updateListener);
+        assertNull(deserializedManager.bookmarksSupplier);
+    }
+
+    @Test
+    void shouldSerializeWithUpdateListener() throws Exception {
+        var manager = new Neo4jBookmarkManager(Set.of(Bookmark.from("value")), new SerializableUpdateListener(), null);
+        var deserializedManager = TestUtil.serializeAndReadBack(manager, Neo4jBookmarkManager.class);
+
+        assertEquals(manager.bookmarks, deserializedManager.bookmarks);
+        assertNotNull(deserializedManager.rwLock);
+        assertNotNull(deserializedManager.updateListener);
+        assertNull(deserializedManager.bookmarksSupplier);
+    }
+
+    @Test
+    void shouldSerializeWithBookmarksSupplier() throws Exception {
+        var manager =
+                new Neo4jBookmarkManager(Set.of(Bookmark.from("value")), null, new SerializableBookmarksSupplier());
+        var deserializedManager = TestUtil.serializeAndReadBack(manager, Neo4jBookmarkManager.class);
+
+        assertEquals(manager.bookmarks, deserializedManager.bookmarks);
+        assertNotNull(deserializedManager.rwLock);
+        assertNull(deserializedManager.updateListener);
+        assertNotNull(deserializedManager.bookmarksSupplier);
+    }
+
+    @Test
+    void shouldSerializeWithUpdateListenerAndBookmarksSupplier() throws Exception {
+        var manager = new Neo4jBookmarkManager(
+                Set.of(Bookmark.from("value")), new SerializableUpdateListener(), new SerializableBookmarksSupplier());
+        var deserializedManager = TestUtil.serializeAndReadBack(manager, Neo4jBookmarkManager.class);
+
+        assertEquals(manager.bookmarks, deserializedManager.bookmarks);
+        assertNotNull(deserializedManager.rwLock);
+        assertNotNull(deserializedManager.updateListener);
+        assertNotNull(deserializedManager.bookmarksSupplier);
+    }
+
+    @Test
+    void shouldNotSerializeWithNonSerializableUpdateListener() {
+        var manager = new Neo4jBookmarkManager(Set.of(Bookmark.from("value")), bookmarks -> {}, null);
+        assertThrows(
+                NotSerializableException.class,
+                () -> TestUtil.serializeAndReadBack(manager, Neo4jBookmarkManager.class));
+    }
+
+    @Test
+    void shouldNotSerializeWithNonSerializableBookmarksSupplier() {
+        var manager = new Neo4jBookmarkManager(Set.of(Bookmark.from("value")), null, () -> null);
+        assertThrows(
+                NotSerializableException.class,
+                () -> TestUtil.serializeAndReadBack(manager, Neo4jBookmarkManager.class));
+    }
+
+    @Test
+    void shouldNotSerializeWithNonSerializableUpdateListenerAndNonSerializableBookmarksSupplier() {
+        var manager = new Neo4jBookmarkManager(Set.of(Bookmark.from("value")), bookmarks -> {}, () -> null);
+        assertThrows(
+                NotSerializableException.class,
+                () -> TestUtil.serializeAndReadBack(manager, Neo4jBookmarkManager.class));
+    }
+
+    private static class SerializableUpdateListener implements Consumer<Set<Bookmark>>, Serializable {
+        @Serial
+        private static final long serialVersionUID = -6678581541881918735L;
+
+        @Override
+        public void accept(Set<Bookmark> bookmarks) {}
+    }
+
+    private static class SerializableBookmarksSupplier implements Supplier<Set<Bookmark>>, Serializable {
+        @Serial
+        private static final long serialVersionUID = -3978173492063939230L;
+
+        @Override
+        public Set<Bookmark> get() {
+            return Set.of();
+        }
     }
 }

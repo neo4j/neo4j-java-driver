@@ -78,6 +78,8 @@ public class Query {
     }
 
     /**
+     * Returns the query text.
+     *
      * @return the query text
      */
     public String text() {
@@ -85,6 +87,8 @@ public class Query {
     }
 
     /**
+     * Returns the parameter map.
+     *
      * @return the parameter map
      */
     public Value parameters() {
@@ -92,6 +96,8 @@ public class Query {
     }
 
     /**
+     * Returns a new Query object with updated text.
+     *
      * @param newText the new query text
      * @return a new Query object with updated text
      */
@@ -100,6 +106,8 @@ public class Query {
     }
 
     /**
+     * Returns a new Query object with updated parameters.
+     *
      * @param newParameters the new parameter map
      * @return a new Query object with updated parameters
      */
@@ -108,6 +116,8 @@ public class Query {
     }
 
     /**
+     * Returns a new Query object with updated parameters.
+     *
      * @param newParameters the new parameter map
      * @return a new Query object with updated parameters
      */

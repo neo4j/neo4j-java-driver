@@ -99,6 +99,8 @@ public final class BookmarkManagerConfig {
          * Provide bookmarks consumer.
          * <p>
          * The consumer will be called outside bookmark manager's synchronisation lock.
+         * <p>
+         * If serialization of {@link BookmarkManager} is required, the instance supplied MUST implement {@link java.io.Serializable}.
          *
          * @param bookmarksConsumer bookmarks consumer
          * @return this builder
@@ -115,6 +117,8 @@ public final class BookmarkManagerConfig {
          * by the bookmark manager.
          * <p>
          * The supplier will be called outside bookmark manager's synchronisation lock.
+         * <p>
+         * If serialization of {@link BookmarkManager} is required, the instance supplied MUST implement {@link java.io.Serializable}.
          *
          * @param bookmarksSupplier the bookmarks supplier
          * @return this builder

@@ -284,7 +284,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
 
     @SuppressWarnings("resource")
     private static Neo4jContainer<?> setupNeo4jContainer(File cert, File key, Map<String, String> config) {
-        var neo4JVersion = Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
+        var neo4JVersion = Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("2025");
 
         var extendedNeo4jImage = new ImageFromDockerfile()
                 .withDockerfileFromBuilder(builder -> builder.from(String.format("neo4j:%s-enterprise", neo4JVersion))

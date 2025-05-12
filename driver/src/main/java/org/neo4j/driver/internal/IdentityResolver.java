@@ -18,12 +18,16 @@ package org.neo4j.driver.internal;
 
 import static java.util.Collections.singleton;
 
+import java.io.Serial;
 import java.util.Set;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 public class IdentityResolver implements ServerAddressResolver {
     public static final IdentityResolver IDENTITY_RESOLVER = new IdentityResolver();
+
+    @Serial
+    private static final long serialVersionUID = -881546487990290715L;
 
     private IdentityResolver() {}
 

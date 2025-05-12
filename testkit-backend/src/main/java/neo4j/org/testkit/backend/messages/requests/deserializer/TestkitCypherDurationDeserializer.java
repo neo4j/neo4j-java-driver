@@ -28,6 +28,7 @@ public class TestkitCypherDurationDeserializer extends StdDeserializer<IsoDurati
     @Serial
     private static final long serialVersionUID = 3128342779161014747L;
 
+    @SuppressWarnings("serial")
     private final TestkitCypherTypeMapper mapper;
 
     public TestkitCypherDurationDeserializer() {
