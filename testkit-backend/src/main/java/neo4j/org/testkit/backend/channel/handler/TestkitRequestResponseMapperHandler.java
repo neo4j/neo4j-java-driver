@@ -25,23 +25,20 @@ import neo4j.org.testkit.backend.ResponseQueueHanlder;
 import neo4j.org.testkit.backend.messages.TestkitModule;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Logging;
 
 public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
-    private final Logger log;
+    private static final System.Logger LOGGER = System.getLogger(TestkitRequestResponseMapperHandler.class.getName());
     private final ObjectMapper objectMapper = newObjectMapper();
     private final ResponseQueueHanlder responseQueueHanlder;
 
-    public TestkitRequestResponseMapperHandler(Logging logging, ResponseQueueHanlder responseQueueHanlder) {
-        log = logging.getLog(getClass());
+    public TestkitRequestResponseMapperHandler(ResponseQueueHanlder responseQueueHanlder) {
         this.responseQueueHanlder = responseQueueHanlder;
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         var testkitMessage = (String) msg;
-        log.debug("Inbound Testkit message '%s'", testkitMessage.trim());
+        LOGGER.log(System.Logger.Level.DEBUG, "Inbound Testkit message ''{0}''", testkitMessage.trim());
         responseQueueHanlder.increaseRequestCountAndDispatchFirstResponse();
         var testkitRequest = objectMapper.readValue(testkitMessage, TestkitRequest.class);
         ctx.fireChannelRead(testkitRequest);
@@ -51,7 +48,7 @@ public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         var testkitResponse = (TestkitResponse) msg;
         var responseStr = objectMapper.writeValueAsString(testkitResponse);
-        log.debug("Outbound Testkit message '%s'", responseStr.trim());
+        LOGGER.log(System.Logger.Level.DEBUG, "Outbound Testkit message ''{0}''", responseStr.trim());
         ctx.writeAndFlush(responseStr, promise);
     }
 

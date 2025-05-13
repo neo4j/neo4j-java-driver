@@ -118,6 +118,7 @@ class DriverFactoryTest {
     @Test
     void shouldCreateDriverMetricsIfMonitoringEnabled() {
         // Given
+        @SuppressWarnings("deprecation")
         var config =
                 Config.builder().withDriverMetrics().withLogging(Logging.none()).build();
         // When
@@ -129,6 +130,7 @@ class DriverFactoryTest {
     @Test
     void shouldCreateMicrometerDriverMetricsIfMonitoringEnabled() {
         // Given
+        @SuppressWarnings("deprecation")
         var config = Config.builder()
                 .withDriverMetrics()
                 .withMetricsAdapter(MetricsAdapter.MICROMETER)

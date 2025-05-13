@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import org.neo4j.driver.Logger;
 
+@SuppressWarnings("deprecation")
 public abstract class ReformattedLogger implements Logger {
     private final Logger delegate;
 

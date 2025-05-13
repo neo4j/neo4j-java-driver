@@ -643,7 +643,6 @@ class SessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldNotRetryOnConnectionAcquisitionTimeout() {
         var maxPoolSize = 3;
         var config = Config.builder()
@@ -779,6 +778,7 @@ class SessionIT {
     @Test
     void shouldAllowLongRunningQueryWithConnectTimeout() throws Exception {
         var connectionTimeoutMs = 3_000;
+        @SuppressWarnings("deprecation")
         var config = Config.builder()
                 .withLogging(DEV_NULL_LOGGING)
                 .withConnectionTimeout(connectionTimeoutMs, TimeUnit.MILLISECONDS)
@@ -1191,6 +1191,7 @@ class SessionIT {
     }
 
     private Driver newDriverWithLimitedRetries(int maxTxRetryTime) {
+        @SuppressWarnings("deprecation")
         var config = Config.builder()
                 .withLogging(DEV_NULL_LOGGING)
                 .withMaxTransactionRetryTime(maxTxRetryTime, TimeUnit.SECONDS)
@@ -1198,6 +1199,7 @@ class SessionIT {
         return GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config);
     }
 
+    @SuppressWarnings("deprecation")
     private static Config noLoggingConfig() {
         return Config.builder().withLogging(DEV_NULL_LOGGING).build();
     }

@@ -94,7 +94,11 @@ public class NetworkSession {
     private final NetworkSessionConnectionContext connectionContext;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
+
+    @SuppressWarnings("deprecation")
     private final Logging logging;
+
+    @SuppressWarnings("deprecation")
     protected final Logger log;
 
     private final long fetchSize;
@@ -122,7 +126,7 @@ public class NetworkSession {
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             long fetchSize,
-            Logging logging,
+            @SuppressWarnings("deprecation") Logging logging,
             BookmarkManager bookmarkManager,
             org.neo4j.driver.NotificationConfig driverNotificationConfig,
             org.neo4j.driver.NotificationConfig notificationConfig,
@@ -723,7 +727,10 @@ public class NetworkSession {
     public static class RunRxResponseHandler implements DriverResponseHandler {
         private static final Lock NOOP_LOCK = new NoopLock();
         final CompletableFuture<RxResultCursor> cursorFuture = new CompletableFuture<>();
+
+        @SuppressWarnings("deprecation")
         private final Logging logging;
+
         private final DriverBoltConnection connection;
         private final Query query;
         private final Consumer<DatabaseBookmark> bookmarkConsumer;
@@ -734,7 +741,7 @@ public class NetworkSession {
         private int ignoredCount;
 
         public RunRxResponseHandler(
-                Logging logging,
+                @SuppressWarnings("deprecation") Logging logging,
                 DriverBoltConnection connection,
                 Query query,
                 Consumer<DatabaseBookmark> bookmarkConsumer,

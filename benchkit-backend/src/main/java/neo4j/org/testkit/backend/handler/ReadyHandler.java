@@ -23,16 +23,13 @@ import io.netty.handler.codec.http.HttpVersion;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Logging;
 
 public class ReadyHandler {
+    private static final System.Logger LOGGER = System.getLogger(ReadyHandler.class.getName());
     private final Driver driver;
-    private final Logger logger;
 
-    public ReadyHandler(Driver driver, Logging logging) {
+    public ReadyHandler(Driver driver) {
         this.driver = driver;
-        this.logger = logging.getLog(getClass());
     }
 
     public CompletionStage<FullHttpResponse> ready(HttpVersion httpVersion) {
@@ -41,7 +38,7 @@ public class ReadyHandler {
                 .handle((ignored, throwable) -> {
                     HttpResponseStatus status;
                     if (throwable != null) {
-                        logger.error("An error occured during workload handling.", throwable);
+                        LOGGER.log(System.Logger.Level.ERROR, "An error occured during workload handling.", throwable);
                         status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
                     } else {
                         status = HttpResponseStatus.NO_CONTENT;

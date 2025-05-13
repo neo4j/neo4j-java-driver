@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see Logging#slf4j()
  */
+@SuppressWarnings("deprecation")
 public class Slf4jLogging implements Logging, Serializable {
     @Serial
     private static final long serialVersionUID = 4120390028025944991L;

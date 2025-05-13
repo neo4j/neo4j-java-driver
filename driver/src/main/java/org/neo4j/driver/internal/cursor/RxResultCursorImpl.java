@@ -85,7 +85,10 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
             return Optional.empty();
         }
     };
+
+    @SuppressWarnings("deprecation")
     private final Logger log;
+
     private final DriverBoltConnection boltConnection;
     private final Query query;
     private final RunSummary runSummary;
@@ -121,7 +124,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
             Throwable runError,
             Consumer<DatabaseBookmark> bookmarkConsumer,
             boolean closeOnSummary,
-            Logging logging) {
+            @SuppressWarnings("deprecation") Logging logging) {
         this.boltConnection = Objects.requireNonNull(boltConnection);
         this.legacyNotifications = new BoltProtocolVersion(5, 5).compareTo(boltConnection.protocolVersion()) > 0;
         this.query = query;

@@ -45,7 +45,10 @@ import org.neo4j.driver.internal.util.Futures;
 class SSLContextManager {
     private final ClientCertificateManager clientCertificateManager;
     private final SecurityPlan.SSLContextSupplier sslContextSupplier;
+
+    @SuppressWarnings("deprecation")
     private final Logger logger;
+
     private CompletableFuture<SSLContext> sslContextFuture;
     private SSLContext sslContext;
     private Throwable throwable;
@@ -53,7 +56,7 @@ class SSLContextManager {
     public SSLContextManager(
             ClientCertificateManager clientCertificateManager,
             SecurityPlan.SSLContextSupplier sslContextSupplier,
-            Logging logging)
+            @SuppressWarnings("deprecation") Logging logging)
             throws NoSuchAlgorithmException, KeyManagementException {
         this.clientCertificateManager = clientCertificateManager;
         this.sslContextSupplier = sslContextSupplier;

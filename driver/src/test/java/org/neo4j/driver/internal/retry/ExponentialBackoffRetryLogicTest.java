@@ -765,7 +765,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesRetryOnClientExceptionWithRetryableCause() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         var logic =
@@ -785,7 +787,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesRetryOnAuthorizationExpiredException() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         var logic =
@@ -805,7 +809,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesRetryOnConnectionReadTimeoutException() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         var logic =
@@ -825,7 +831,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesNotRetryOnRandomClientException() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
         var logic =
@@ -848,7 +856,9 @@ class ExponentialBackoffRetryLogicTest {
     void eachRetryIsLogged() {
         var retries = 9;
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         var logic = new ExponentialBackoffRetryLogic(
@@ -863,7 +873,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesRetryOnClientExceptionWithRetryableCauseAsync() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
@@ -884,7 +896,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesRetryOnAuthorizationExpiredExceptionAsync() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         var logic =
@@ -904,7 +918,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesNotRetryOnRandomClientExceptionAsync() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
 
@@ -929,7 +945,9 @@ class ExponentialBackoffRetryLogicTest {
         var result = "The Result";
         var retries = 9;
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
@@ -947,7 +965,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesRetryOnClientExceptionWithRetryableCauseRx() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
@@ -968,7 +988,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesRetryOnAuthorizationExpiredExceptionRx() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         var logic =
@@ -988,7 +1010,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesRetryOnAsyncResourceCleanupRuntimeExceptionRx() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         var logic =
@@ -1008,7 +1032,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void doesNotRetryOnRandomClientExceptionRx() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
 
@@ -1033,7 +1059,9 @@ class ExponentialBackoffRetryLogicTest {
         var result = "The Result";
         var retries = 9;
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
 
@@ -1050,7 +1078,9 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void nothingIsLoggedOnFatalFailure() {
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
         var logic = new ExponentialBackoffRetryLogic(
@@ -1067,7 +1097,9 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void nothingIsLoggedOnFatalFailureAsync() {
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
         var logic = new ExponentialBackoffRetryLogic(
@@ -1083,7 +1115,9 @@ class ExponentialBackoffRetryLogicTest {
 
     @Test
     void nothingIsLoggedOnFatalFailureRx() {
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(anyString())).thenReturn(logger);
         var logic = new ExponentialBackoffRetryLogic(
@@ -1099,7 +1133,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void correctNumberOfRetiesAreLoggedOnFailure() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         var settings = RetrySettings.DEFAULT;
@@ -1130,7 +1166,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void correctNumberOfRetiesAreLoggedOnFailureAsync() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         var settings = RetrySettings.DEFAULT;
@@ -1163,7 +1201,9 @@ class ExponentialBackoffRetryLogicTest {
     @Test
     void correctNumberOfRetiesAreLoggedOnFailureRx() {
         var clock = mock(Clock.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(logger);
         var settings = RetrySettings.DEFAULT;

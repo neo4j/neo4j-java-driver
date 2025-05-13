@@ -25,12 +25,14 @@ import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 
 final class TerminationAwareResponseHandler extends DelegatingResponseHandler {
+    @SuppressWarnings("deprecation")
     private final Logger log;
+
     private final TerminationAwareStateLockingExecutor executor;
     private final Consumer<Throwable> throwableConsumer;
 
     TerminationAwareResponseHandler(
-            Logging logging,
+            @SuppressWarnings("deprecation") Logging logging,
             DriverResponseHandler delegate,
             TerminationAwareStateLockingExecutor executor,
             Consumer<Throwable> throwableConsumer) {

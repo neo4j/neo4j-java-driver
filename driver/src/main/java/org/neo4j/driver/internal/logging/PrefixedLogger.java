@@ -18,6 +18,7 @@ package org.neo4j.driver.internal.logging;
 
 import org.neo4j.driver.Logger;
 
+@SuppressWarnings("deprecation")
 public class PrefixedLogger extends ReformattedLogger {
     private final String messagePrefix;
 

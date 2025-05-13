@@ -30,10 +30,12 @@ import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
 import org.neo4j.driver.exceptions.SecurityException;
 
 public class ValidatingAuthTokenManager implements AuthTokenManager {
+    @SuppressWarnings("deprecation")
     private final Logger log;
+
     private final AuthTokenManager delegate;
 
-    public ValidatingAuthTokenManager(AuthTokenManager delegate, Logging logging) {
+    public ValidatingAuthTokenManager(AuthTokenManager delegate, @SuppressWarnings("deprecation") Logging logging) {
         requireNonNull(delegate, "delegate must not be null");
         requireNonNull(logging, "logging must not be null");
         this.delegate = delegate;

@@ -27,6 +27,7 @@ import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 
 public class LoggingUtil {
+    @SuppressWarnings("deprecation")
     public static Logging boltLogging(List<String> messages) {
         var logging = mock(Logging.class);
         var accumulatingLogger = mock(Logger.class);

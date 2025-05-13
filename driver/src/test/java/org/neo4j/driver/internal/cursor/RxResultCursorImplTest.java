@@ -68,6 +68,7 @@ class RxResultCursorImplTest {
         // given
         var runError = mock(Throwable.class);
         given(connection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
+        @SuppressWarnings("deprecation")
         var cursor = new RxResultCursorImpl(connection, query, null, runError, bookmarkConsumer, false, Logging.none());
         if (getRunError) {
             assertEquals(runError, cursor.getRunError());
@@ -89,6 +90,7 @@ class RxResultCursorImplTest {
         // given
         var runError = mock(Throwable.class);
         given(connection.serverAddress()).willReturn(new BoltServerAddress("localhost"));
+        @SuppressWarnings("deprecation")
         var cursor = new RxResultCursorImpl(connection, query, null, runError, bookmarkConsumer, false, Logging.none());
         if (getRunError) {
             assertEquals(runError, cursor.getRunError());
@@ -107,6 +109,7 @@ class RxResultCursorImplTest {
         // given
         var keys = List.of("a", "b");
         given(runSummary.keys()).willReturn(keys);
+        @SuppressWarnings("deprecation")
         var cursor =
                 new RxResultCursorImpl(connection, query, runSummary, null, bookmarkConsumer, false, Logging.none());
 

@@ -104,7 +104,9 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             "Can't rollback, transaction has been requested to be committed";
     private static final EnumSet<State> OPEN_STATES = EnumSet.of(State.ACTIVE, State.TERMINATED);
 
+    @SuppressWarnings("deprecation")
     private final Logging logging;
+
     private final TerminationAwareBoltConnection connection;
     private final Consumer<DatabaseBookmark> bookmarkConsumer;
     private final ResultCursorsHolder resultCursors;
@@ -135,7 +137,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             NotificationConfig notificationConfig,
             ApiTelemetryWork apiTelemetryWork,
             Consumer<String> databaseNameConsumer,
-            Logging logging) {
+            @SuppressWarnings("deprecation") Logging logging) {
         this(
                 connection,
                 databaseName,
@@ -161,7 +163,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             NotificationConfig notificationConfig,
             ApiTelemetryWork apiTelemetryWork,
             Consumer<String> databaseNameConsumer,
-            Logging logging) {
+            @SuppressWarnings("deprecation") Logging logging) {
         this.logging = logging;
         this.connection = new TerminationAwareBoltConnection(logging, connection, this, this::markTerminated);
         this.databaseName = databaseName;
@@ -678,7 +680,10 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
 
     private static class RunRxResponseHandler implements DriverResponseHandler {
         final CompletableFuture<RxResultCursor> cursorFuture = new CompletableFuture<>();
+
+        @SuppressWarnings("deprecation")
         private final Logging logging;
+
         private final ApiTelemetryWork apiTelemetryWork;
         private final CompletableFuture<UnmanagedTransaction> beginFuture;
         private final DriverBoltConnection connection;
@@ -688,7 +693,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         private int ignoredCount;
 
         private RunRxResponseHandler(
-                Logging logging,
+                @SuppressWarnings("deprecation") Logging logging,
                 ApiTelemetryWork apiTelemetryWork,
                 CompletableFuture<UnmanagedTransaction> beginFuture,
                 DriverBoltConnection connection,

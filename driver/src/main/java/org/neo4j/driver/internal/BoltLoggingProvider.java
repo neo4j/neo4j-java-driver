@@ -20,9 +20,10 @@ import org.neo4j.bolt.connection.LoggingProvider;
 import org.neo4j.driver.Logging;
 
 public class BoltLoggingProvider implements LoggingProvider {
+    @SuppressWarnings("deprecation")
     private final Logging logging;
 
-    public BoltLoggingProvider(Logging logging) {
+    public BoltLoggingProvider(@SuppressWarnings("deprecation") Logging logging) {
         this.logging = logging;
     }
 

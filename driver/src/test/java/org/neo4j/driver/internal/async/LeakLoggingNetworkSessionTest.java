@@ -64,7 +64,9 @@ import org.neo4j.driver.testutil.TestUtil;
 class LeakLoggingNetworkSessionTest {
     @Test
     void logsNothingDuringFinalizationIfClosed() throws Exception {
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var log = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(log);
         var connection = TestUtil.connectionMock();
@@ -98,7 +100,9 @@ class LeakLoggingNetworkSessionTest {
     @Test
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     void logsMessageWithStacktraceDuringFinalizationIfLeaked(TestInfo testInfo) throws Exception {
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var log = mock(Logger.class);
         when(logging.getLog(any(Class.class))).thenReturn(log);
         var connection = TestUtil.connectionMock();
@@ -143,7 +147,8 @@ class LeakLoggingNetworkSessionTest {
         finalizeMethod.invoke(session);
     }
 
-    private static LeakLoggingNetworkSession newSession(Logging logging, DriverBoltConnection connection) {
+    private static LeakLoggingNetworkSession newSession(
+            @SuppressWarnings("deprecation") Logging logging, DriverBoltConnection connection) {
         return new LeakLoggingNetworkSession(
                 BoltSecurityPlanManager.insecure(),
                 connectionProviderMock(connection),

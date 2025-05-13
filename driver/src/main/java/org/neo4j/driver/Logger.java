@@ -23,7 +23,9 @@ package org.neo4j.driver;
  * message only if the needed logging level is enabled. Driver expects formatting to be done using {@link String#format(String, Object...)} method.
  * Thus, all supplied message templates will contain "%s" as parameter placeholders. This is different from all SLF4J-compatible logging frameworks
  * where parameter placeholder is "{}". Implementations of this interface should adapt placeholders from "%s" to "{}", if required.
+ * @deprecated the logging abstraction has been deprecated in favour of the {@link System.Logger}
  */
+@Deprecated
 public interface Logger {
     /**
      * Logs errors from this driver.

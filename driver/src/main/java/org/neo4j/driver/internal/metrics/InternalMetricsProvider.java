@@ -24,7 +24,7 @@ import org.neo4j.driver.Metrics;
 public final class InternalMetricsProvider implements MetricsProvider {
     private final InternalMetrics metrics;
 
-    public InternalMetricsProvider(Clock clock, Logging logging) {
+    public InternalMetricsProvider(Clock clock, @SuppressWarnings("deprecation") Logging logging) {
         this.metrics = new InternalMetrics(clock, logging);
     }
 

@@ -23,7 +23,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 import java.io.IOException;
@@ -36,8 +35,9 @@ import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.testutil.TestUtil;
 
 class GraphDatabaseTest {
+    @SuppressWarnings("deprecation")
     private static final Config INSECURE_CONFIG =
-            Config.builder().withoutEncryption().withLogging(none()).build();
+            Config.builder().withoutEncryption().withLogging(Logging.none()).build();
 
     @Test
     @SuppressWarnings("resource")
@@ -181,6 +181,7 @@ class GraphDatabaseTest {
     }
 
     private static Config createConfig(boolean encrypted, int timeoutMillis) {
+        @SuppressWarnings("deprecation")
         var configBuilder = Config.builder()
                 .withConnectionTimeout(timeoutMillis, MILLISECONDS)
                 .withLogging(DEV_NULL_LOGGING);

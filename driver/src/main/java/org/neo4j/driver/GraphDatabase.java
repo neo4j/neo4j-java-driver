@@ -361,6 +361,7 @@ public final class GraphDatabase {
         return driverFactory.newInstance(uri, new StaticAuthTokenManager(authToken), clientCertificateManager, config);
     }
 
+    @SuppressWarnings("deprecation")
     private static Driver driver(
             URI uri,
             AuthTokenManager authTokenManager,

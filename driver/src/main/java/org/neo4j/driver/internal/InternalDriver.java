@@ -59,6 +59,8 @@ public class InternalDriver implements Driver {
             BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build());
     private final BoltSecurityPlanManager securityPlanManager;
     private final SessionFactory sessionFactory;
+
+    @SuppressWarnings("deprecation")
     private final Logger log;
 
     private final boolean telemetryDisabled;
@@ -75,7 +77,7 @@ public class InternalDriver implements Driver {
             boolean telemetryDisabled,
             NotificationConfig notificationConfig,
             Supplier<CompletionStage<Void>> shutdownSupplier,
-            Logging logging) {
+            @SuppressWarnings("deprecation") Logging logging) {
         this.securityPlanManager = securityPlanManager;
         this.sessionFactory = sessionFactory;
         this.metricsProvider = metricsProvider;

@@ -53,7 +53,9 @@ class SSLContextManagerTests {
         var clientManager = mock(ClientCertificateManager.class);
         given(clientManager.getClientCertificate()).willReturn(CompletableFuture.completedStage(null));
         var contextSupplier = mock(SecurityPlan.SSLContextSupplier.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         given(logging.getLog(any(Class.class))).willReturn(logger);
         manager = new SSLContextManager(clientManager, contextSupplier, logging);
@@ -85,7 +87,9 @@ class SSLContextManagerTests {
         var contextSupplier = mock(SecurityPlan.SSLContextSupplier.class);
         var keyManagers = new KeyManager[0];
         given(contextSupplier.get(keyManagers)).willReturn(context);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         given(logging.getLog(any(Class.class))).willReturn(logger);
         manager = new ExtendedSSLContextManager(clientManager, contextSupplier, logging, ignored -> new KeyManager[0]);
@@ -110,7 +114,9 @@ class SSLContextManagerTests {
         given(clientManager.getClientCertificate())
                 .willReturn(CompletableFuture.completedStage(certificate), CompletableFuture.completedStage(null));
         var contextSupplier = mock(SecurityPlan.SSLContextSupplier.class);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         given(logging.getLog(any(Class.class))).willReturn(logger);
         Function<InternalClientCertificate, KeyManager[]> keyManagersFunction = mock(Function.class);
@@ -146,7 +152,9 @@ class SSLContextManagerTests {
         var context = mock(SSLContext.class);
         var contextSupplier = mock(SecurityPlan.SSLContextSupplier.class);
         given(contextSupplier.get(any())).willReturn(context);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         given(logging.getLog(any(Class.class))).willReturn(logger);
         Function<InternalClientCertificate, KeyManager[]> keyManagersFunction = mock(Function.class);
@@ -182,7 +190,9 @@ class SSLContextManagerTests {
         var contextSupplier = mock(SecurityPlan.SSLContextSupplier.class);
         var keyManagers = new KeyManager[0];
         given(contextSupplier.get(keyManagers)).willReturn(context);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var logger = mock(Logger.class);
         given(logging.getLog(any(Class.class))).willReturn(logger);
         manager = new SSLContextManager(null, contextSupplier, logging);
@@ -199,7 +209,7 @@ class SSLContextManagerTests {
         public ExtendedSSLContextManager(
                 ClientCertificateManager clientCertificateManager,
                 SecurityPlan.SSLContextSupplier sslContextSupplier,
-                Logging logging,
+                @SuppressWarnings("deprecation") Logging logging,
                 Function<InternalClientCertificate, KeyManager[]> keyManagersFunction)
                 throws NoSuchAlgorithmException, KeyManagementException {
             super(clientCertificateManager, sslContextSupplier, logging);

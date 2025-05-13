@@ -82,6 +82,7 @@ public class DriverFactory {
         return newInstance(uri, authTokenManager, clientCertificateManager, config, null, null, null);
     }
 
+    @SuppressWarnings("deprecation")
     public final Driver newInstance(
             URI uri,
             AuthTokenManager authTokenManager,
@@ -141,6 +142,7 @@ public class DriverFactory {
                 rediscoverySupplier);
     }
 
+    @SuppressWarnings("deprecation")
     protected static MetricsProvider getOrCreateMetricsProvider(Config config, Clock clock) {
         var metricsAdapter = config.metricsAdapter();
         // This can actually only happen when someone mocks the config
@@ -154,6 +156,7 @@ public class DriverFactory {
         };
     }
 
+    @SuppressWarnings("deprecation")
     private InternalDriver createDriver(
             URI uri,
             BoltSecurityPlanManager securityPlanManager,
@@ -263,6 +266,7 @@ public class DriverFactory {
                 connectTimeoutMillis);
     }
 
+    @SuppressWarnings("deprecation")
     protected BoltConnectionProvider createBoltConnectionProvider(
             URI uri,
             Config config,
@@ -397,6 +401,7 @@ public class DriverFactory {
      * <p>
      * <b>This method is protected only for testing</b>
      */
+    @SuppressWarnings("deprecation")
     protected InternalDriver createDriver(
             BoltSecurityPlanManager securityPlanManager,
             SessionFactory sessionFactory,
@@ -442,7 +447,9 @@ public class DriverFactory {
      * <b>This method is protected only for testing</b>
      */
     protected RetryLogic createRetryLogic(
-            long maxTransactionRetryTime, EventExecutorGroup eventExecutorGroup, Logging logging) {
+            long maxTransactionRetryTime,
+            EventExecutorGroup eventExecutorGroup,
+            @SuppressWarnings("deprecation") Logging logging) {
         return new ExponentialBackoffRetryLogic(maxTransactionRetryTime, eventExecutorGroup, createClock(), logging);
     }
 

@@ -24,6 +24,7 @@ import java.util.logging.Level;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.logging.Slf4jLogging;
+import org.neo4j.driver.internal.logging.SystemLogging;
 
 /**
  * Accessor for {@link Logger} instances. Configured once for a driver instance using {@link Config.ConfigBuilder#withLogging(Logging)} builder method.
@@ -82,7 +83,10 @@ import org.neo4j.driver.internal.logging.Slf4jLogging;
  *
  * @see Logger
  * @see Config.ConfigBuilder#withLogging(Logging)
+ * @deprecated the logging abstraction has been deprecated in favour of the {@link System.Logger} that the driver uses
+ * by default
  */
+@Deprecated
 public interface Logging extends Serializable {
     /**
      * Obtain a {@link Logger} instance by class, its name will be the fully qualified name of the class.
@@ -102,6 +106,16 @@ public interface Logging extends Serializable {
      * @return {@link Logger} instance
      */
     Logger getLog(String name);
+
+    /**
+     * Returns logging implementation that uses {@link System.Logger}.
+     *
+     * @return logging implementation
+     * @since 6.0.0
+     */
+    static Logging systemLogging() {
+        return SystemLogging.INSTANCE;
+    }
 
     /**
      * Create logging implementation that uses SLF4J.

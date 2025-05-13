@@ -30,7 +30,9 @@ public class DriverFactoryWithFixedRetryLogic extends DriverFactory {
 
     @Override
     protected RetryLogic createRetryLogic(
-            long maxTransactionRetryTime, EventExecutorGroup eventExecutorGroup, Logging logging) {
+            long maxTransactionRetryTime,
+            EventExecutorGroup eventExecutorGroup,
+            @SuppressWarnings("deprecation") Logging logging) {
         return new FixedRetryLogic(retryCount);
     }
 }

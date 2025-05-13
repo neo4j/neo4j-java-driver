@@ -33,16 +33,12 @@ import org.neo4j.driver.GraphDatabase;
 public class Runner {
     public static void main(String[] args) throws InterruptedException {
         var config = Config.load();
-        var driver = GraphDatabase.driver(
-                config.uri(),
-                config.authToken(),
-                org.neo4j.driver.Config.builder().withLogging(config.logging()).build());
+        var driver = GraphDatabase.driver(config.uri(), config.authToken());
 
         EventLoopGroup group = new NioEventLoopGroup();
-        var logging = config.logging();
         var executor = Executors.newCachedThreadPool();
-        var workloadHandler = new WorkloadHandler(driver, executor, logging);
-        var readyHandler = new ReadyHandler(driver, logging);
+        var workloadHandler = new WorkloadHandler(driver, executor);
+        var readyHandler = new ReadyHandler(driver);
         try {
             var bootstrap = new ServerBootstrap();
             bootstrap
@@ -55,7 +51,7 @@ public class Runner {
                             var pipeline = channel.pipeline();
                             pipeline.addLast("codec", new HttpServerCodec());
                             pipeline.addLast("aggregator", new HttpObjectAggregator(512 * 1024));
-                            pipeline.addLast(new HttpRequestHandler(workloadHandler, readyHandler, logging));
+                            pipeline.addLast(new HttpRequestHandler(workloadHandler, readyHandler));
                         }
                     });
             var server = bootstrap.bind().sync();
