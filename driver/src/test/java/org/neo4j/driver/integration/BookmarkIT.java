@@ -16,19 +16,19 @@
  */
 package org.neo4j.driver.integration;
 
+import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.SessionConfig.builder;
-import static org.neo4j.driver.internal.InternalBookmark.parse;
-import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkContainsSingleValue;
-import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkIsEmpty;
-import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarksContainsSingleUniqueValues;
+import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkContainsValue;
 
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.neo4j.driver.testutil.SessionExtension;
+import org.testcontainers.shaded.com.google.common.collect.Streams;
 
 @ParallelizableIT
 class BookmarkIT {
@@ -54,37 +55,34 @@ class BookmarkIT {
 
     @Test
     @DisabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
-    @SuppressWarnings("deprecation")
     void shouldReceiveBookmarkOnSuccessfulCommit() {
         // Given
-        assertBookmarkIsEmpty(session.lastBookmark());
+        assertTrue(session.lastBookmarks().isEmpty());
 
         // When
         createNodeInTx(session);
 
         // Then
-        assertBookmarkContainsSingleValue(session.lastBookmark(), startsWith("neo4j:bookmark:v1:tx"));
+        assertEquals(1, session.lastBookmarks().size());
+        assertBookmarkContainsValue(session.lastBookmarks().iterator().next(), startsWith("neo4j:bookmark:v1:tx"));
     }
 
     @Test
     @EnabledOnNeo4jWith(Neo4jFeature.BOLT_V4)
-    @SuppressWarnings("deprecation")
     void shouldReceiveNewBookmarkOnSuccessfulCommit() {
         // Given
-        var initialBookmark = session.lastBookmark();
-        assertBookmarkIsEmpty(initialBookmark);
+        assertTrue(session.lastBookmarks().isEmpty());
 
         // When
         createNodeInTx(session);
 
         // Then
-        assertBookmarkContainsSingleValue(session.lastBookmark());
-        assertNotEquals(initialBookmark, session.lastBookmark());
+        assertEquals(1, session.lastBookmarks().size());
     }
 
     @Test
     void shouldThrowForInvalidBookmark() {
-        var invalidBookmark = parse("hi, this is an invalid bookmark");
+        var invalidBookmark = Bookmark.from("hi, this is an invalid bookmark");
 
         try (var session =
                 driver.session(builder().withBookmarks(invalidBookmark).build())) {
@@ -93,103 +91,100 @@ class BookmarkIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void bookmarkRemainsAfterRolledBackTx() {
-        assertBookmarkIsEmpty(session.lastBookmark());
+        assertTrue(session.lastBookmarks().isEmpty());
 
         createNodeInTx(session);
 
-        var bookmark = session.lastBookmark();
-        assertBookmarkContainsSingleValue(bookmark);
+        var bookmarks = session.lastBookmarks();
+        assertFalse(bookmarks.isEmpty());
 
         try (var tx = session.beginTransaction()) {
             tx.run("CREATE (a:Person)");
             tx.rollback();
         }
 
-        assertEquals(bookmark, session.lastBookmark());
+        assertEquals(bookmarks, session.lastBookmarks());
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void bookmarkRemainsAfterTxFailure() {
-        assertBookmarkIsEmpty(session.lastBookmark());
+        assertTrue(session.lastBookmarks().isEmpty());
 
         createNodeInTx(session);
 
-        var bookmark = session.lastBookmark();
-        assertBookmarkContainsSingleValue(bookmark);
+        var bookmarks = session.lastBookmarks();
+        assertFalse(bookmarks.isEmpty());
 
         var tx = session.beginTransaction();
 
         assertThrows(ClientException.class, () -> tx.run("RETURN"));
-        assertEquals(bookmark, session.lastBookmark());
+        assertEquals(bookmarks, session.lastBookmarks());
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void bookmarkRemainsAfterSuccessfulSessionRun() {
-        assertBookmarkIsEmpty(session.lastBookmark());
+        assertTrue(session.lastBookmarks().isEmpty());
 
         createNodeInTx(session);
 
-        var bookmark = session.lastBookmark();
-        assertBookmarkContainsSingleValue(bookmark);
+        var bookmarks = session.lastBookmarks();
+        assertFalse(bookmarks.isEmpty());
 
         session.run("RETURN 1").consume();
 
-        assertEquals(bookmark, session.lastBookmark());
+        assertEquals(bookmarks, session.lastBookmarks());
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void bookmarkRemainsAfterFailedSessionRun() {
-        assertBookmarkIsEmpty(session.lastBookmark());
+        assertTrue(session.lastBookmarks().isEmpty());
 
         createNodeInTx(session);
 
-        var bookmark = session.lastBookmark();
-        assertBookmarkContainsSingleValue(bookmark);
+        var bookmarks = session.lastBookmarks();
+        assertFalse(bookmarks.isEmpty());
 
         assertThrows(ClientException.class, () -> session.run("RETURN").consume());
-        assertEquals(bookmark, session.lastBookmark());
+        assertEquals(bookmarks, session.lastBookmarks());
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void bookmarkIsUpdatedOnEveryCommittedTx() {
-        assertBookmarkIsEmpty(session.lastBookmark());
+        assertTrue(session.lastBookmarks().isEmpty());
 
         createNodeInTx(session);
-        var bookmark1 = session.lastBookmark();
-        assertBookmarkContainsSingleValue(bookmark1);
+        var bookmarks1 = session.lastBookmarks();
+        assertEquals(1, bookmarks1.size());
 
         createNodeInTx(session);
-        var bookmark2 = session.lastBookmark();
-        assertBookmarkContainsSingleValue(bookmark2);
+        var bookmarks2 = session.lastBookmarks();
+        assertEquals(1, bookmarks2.size());
 
         createNodeInTx(session);
-        var bookmark3 = session.lastBookmark();
-        assertBookmarkContainsSingleValue(bookmark3);
+        var bookmarks3 = session.lastBookmarks();
+        assertEquals(1, bookmarks3.size());
 
-        assertBookmarksContainsSingleUniqueValues(bookmark1, bookmark2, bookmark3);
+        var uniqueNumber = Streams.concat(bookmarks1.stream(), bookmarks2.stream(), bookmarks3.stream())
+                .map(Bookmark::value)
+                .collect(Collectors.toSet())
+                .size();
+        assertEquals(3, uniqueNumber);
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void createSessionWithInitialBookmark() {
-        var bookmark = parse("TheBookmark");
+        var bookmark = Bookmark.from("TheBookmark");
         try (var session = driver.session(builder().withBookmarks(bookmark).build())) {
-            assertEquals(bookmark, session.lastBookmark());
+            assertEquals(bookmark, session.lastBookmarks().iterator().next());
         }
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void createSessionWithAccessModeAndInitialBookmark() {
-        var bookmark = parse("TheBookmark");
+        var bookmark = Bookmark.from("TheBookmark");
         try (var session = driver.session(builder().withBookmarks(bookmark).build())) {
-            assertEquals(bookmark, session.lastBookmark());
+            assertEquals(bookmark, session.lastBookmarks().iterator().next());
         }
     }
 

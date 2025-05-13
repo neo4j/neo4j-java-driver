@@ -36,7 +36,6 @@ import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.GqlStatusError;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -120,12 +119,6 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     public <T> CompletionStage<T> executeWriteAsync(
             AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config) {
         return writeTransactionAsync(tx -> callback.execute(new DelegatingAsyncTransactionContext(tx)), config);
-    }
-
-    @Override
-    @Deprecated
-    public Bookmark lastBookmark() {
-        return InternalBookmark.from(session.lastBookmarks());
     }
 
     @Override

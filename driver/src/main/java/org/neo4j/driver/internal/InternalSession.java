@@ -133,12 +133,6 @@ public class InternalSession extends AbstractQueryRunner implements Session {
     }
 
     @Override
-    @Deprecated
-    public Bookmark lastBookmark() {
-        return InternalBookmark.from(session.lastBookmarks());
-    }
-
-    @Override
     public Set<Bookmark> lastBookmarks() {
         return session.lastBookmarks();
     }

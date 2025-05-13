@@ -155,8 +155,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     @Test
     void asyncApiBigDataTest() throws Throwable {
-        var bookmark = createNodesAsync(bigDataTestBatchCount(), driver);
-        readNodesAsync(driver, bookmark);
+        var bookmarks = createNodesAsync(bigDataTestBatchCount(), driver);
+        readNodesAsync(driver, bookmarks);
     }
 
     @Test
@@ -441,8 +441,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     @SuppressWarnings("deprecation")
-    private static Bookmark createNodesBlocking(int batchCount, Driver driver) {
-        Bookmark bookmark;
+    private static Set<Bookmark> createNodesBlocking(int batchCount, Driver driver) {
+        Set<Bookmark> bookmarks;
 
         var start = System.nanoTime();
         try (var session = driver.session()) {
@@ -451,18 +451,18 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
                 session.writeTransaction(
                         tx -> createNodesInTx(tx, batchIndex, AbstractStressTestBase.BIG_DATA_TEST_BATCH_SIZE));
             }
-            bookmark = session.lastBookmark();
+            bookmarks = session.lastBookmarks();
         }
         var end = System.nanoTime();
         System.out.println("Node creation with blocking API took: " + NANOSECONDS.toMillis(end - start) + "ms");
 
-        return bookmark;
+        return bookmarks;
     }
 
     @SuppressWarnings("deprecation")
-    private static void readNodesBlocking(Driver driver, Bookmark bookmark) {
+    private static void readNodesBlocking(Driver driver, Set<Bookmark> bookmarks) {
         var start = System.nanoTime();
-        try (var session = driver.session(builder().withBookmarks(bookmark).build())) {
+        try (var session = driver.session(builder().withBookmarks(bookmarks).build())) {
             int nodesProcessed = session.readTransaction(tx -> {
                 var result = tx.run("MATCH (n:Node) RETURN n");
 
@@ -488,7 +488,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     }
 
     @SuppressWarnings("deprecation")
-    private static Bookmark createNodesAsync(int batchCount, Driver driver) throws Throwable {
+    private static Set<Bookmark> createNodesAsync(int batchCount, Driver driver) throws Throwable {
         var start = System.nanoTime();
 
         var session = driver.session(AsyncSession.class);
@@ -511,15 +511,15 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
         var end = System.nanoTime();
         System.out.println("Node creation with async API took: " + NANOSECONDS.toMillis(end - start) + "ms");
 
-        return session.lastBookmark();
+        return session.lastBookmarks();
     }
 
     @SuppressWarnings("deprecation")
-    private static void readNodesAsync(Driver driver, Bookmark bookmark) throws Throwable {
+    private static void readNodesAsync(Driver driver, Set<Bookmark> bookmarks) throws Throwable {
         var start = System.nanoTime();
 
         var session = driver.session(
-                AsyncSession.class, builder().withBookmarks(bookmark).build());
+                AsyncSession.class, builder().withBookmarks(bookmarks).build());
         var nodesSeen = new AtomicInteger();
 
         var readQuery = session.readTransactionAsync(tx -> tx.runAsync("MATCH (n:Node) RETURN n")

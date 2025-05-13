@@ -74,6 +74,7 @@ import org.neo4j.bolt.connection.message.RollbackMessage;
 import org.neo4j.bolt.connection.summary.BeginSummary;
 import org.neo4j.bolt.connection.summary.RollbackSummary;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
@@ -84,7 +85,6 @@ import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
@@ -275,7 +275,7 @@ class InternalAsyncSessionTest {
 
     @Test
     void shouldReturnBookmark() {
-        session = newSession(connectionProvider, Collections.singleton(InternalBookmark.parse("Bookmark1")));
+        session = newSession(connectionProvider, Collections.singleton(Bookmark.from("Bookmark1")));
         asyncSession = new InternalAsyncSession(session);
 
         assertThat(asyncSession.lastBookmarks(), equalTo(session.lastBookmarks()));

@@ -16,8 +16,6 @@
  */
 package org.neo4j.driver;
 
-import java.util.Collections;
-import java.util.Set;
 import org.neo4j.driver.internal.InternalBookmark;
 
 /**
@@ -40,38 +38,12 @@ public interface Bookmark {
     String value();
 
     /**
-     * Returns a read-only set of bookmark strings that this bookmark instance identifies.
-     *
-     * @return a read-only set of bookmark strings that this bookmark instance identifies.
-     */
-    @Deprecated
-    Set<String> values();
-
-    /**
      * Reconstruct bookmark from bookmark string value.
      *
      * @param value value obtained from a previous bookmark.
      * @return A bookmark.
      */
     static Bookmark from(String value) {
-        return InternalBookmark.parse(Collections.singleton(value));
+        return new InternalBookmark(value);
     }
-
-    /**
-     * Reconstruct bookmark from bookmarks string values.
-     *
-     * @param values values obtained from a previous bookmark.
-     * @return A bookmark.
-     */
-    @Deprecated
-    static Bookmark from(Set<String> values) {
-        return InternalBookmark.parse(values);
-    }
-
-    /**
-     * Return true if the bookmark is empty.
-     * @return true if the bookmark is empty.
-     */
-    @Deprecated
-    boolean isEmpty();
 }
