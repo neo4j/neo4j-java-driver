@@ -81,7 +81,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionCallback;
-import org.neo4j.driver.async.AsyncTransactionWork;
+import org.neo4j.driver.async.AsyncTransactionContext;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
@@ -136,13 +136,12 @@ class InternalAsyncSessionTest {
                 session -> session.beginTransactionAsync(TransactionConfig.empty()));
     }
 
-    @SuppressWarnings("deprecation")
     private static Stream<Function<AsyncSession, CompletionStage<String>>> allRunTxMethods() {
         return Stream.of(
-                session -> session.readTransactionAsync(tx -> completedFuture("a")),
-                session -> session.writeTransactionAsync(tx -> completedFuture("a")),
-                session -> session.readTransactionAsync(tx -> completedFuture("a"), empty()),
-                session -> session.writeTransactionAsync(tx -> completedFuture("a"), empty()));
+                session -> session.executeReadAsync(tx -> completedFuture("a")),
+                session -> session.executeWriteAsync(tx -> completedFuture("a")),
+                session -> session.executeReadAsync(tx -> completedFuture("a"), empty()),
+                session -> session.executeWriteAsync(tx -> completedFuture("a"), empty()));
     }
 
     @ParameterizedTest
@@ -340,7 +339,7 @@ class InternalAsyncSessionTest {
                             }
                         }));
         final RuntimeException error = new IllegalStateException("Oh!");
-        AsyncTransactionWork<CompletionStage<Void>> work = tx -> {
+        AsyncTransactionCallback<CompletionStage<Void>> work = tx -> {
             throw error;
         };
 
@@ -548,25 +547,23 @@ class InternalAsyncSessionTest {
         verifyCommitTx(connection, times(failures));
     }
 
-    @SuppressWarnings("deprecation")
     private static <T> T executeTransaction(
-            AsyncSession session, AccessMode mode, AsyncTransactionWork<CompletionStage<T>> work) {
+            AsyncSession session, AccessMode mode, AsyncTransactionCallback<CompletionStage<T>> work) {
         if (mode == READ) {
-            return await(session.readTransactionAsync(work));
+            return await(session.executeReadAsync(work));
         } else if (mode == WRITE) {
-            return await(session.writeTransactionAsync(work));
+            return await(session.executeWriteAsync(work));
         } else {
             throw new IllegalArgumentException("Unknown mode " + mode);
         }
     }
 
     @SuppressWarnings("deprecation")
-    private static void verifyInvocationCount(AsyncTransactionWork<?> workSpy, int expectedInvocationCount) {
-        verify(workSpy, times(expectedInvocationCount)).execute(any(AsyncTransaction.class));
+    private static void verifyInvocationCount(AsyncTransactionCallback<?> workSpy, int expectedInvocationCount) {
+        verify(workSpy, times(expectedInvocationCount)).execute(any(AsyncTransactionContext.class));
     }
 
-    @SuppressWarnings("deprecation")
-    private static class TxWork implements AsyncTransactionWork<CompletionStage<Integer>> {
+    private static class TxWork implements AsyncTransactionCallback<CompletionStage<Integer>> {
         final int result;
         final int timesToThrow;
         final Supplier<RuntimeException> errorSupplier;
@@ -590,7 +587,7 @@ class InternalAsyncSessionTest {
         }
 
         @Override
-        public CompletionStage<Integer> execute(AsyncTransaction tx) {
+        public CompletionStage<Integer> execute(AsyncTransactionContext tx) {
             if (timesToThrow > 0 && invoked++ < timesToThrow) {
                 throw errorSupplier.get();
             }

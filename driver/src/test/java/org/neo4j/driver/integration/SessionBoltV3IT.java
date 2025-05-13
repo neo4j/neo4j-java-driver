@@ -227,7 +227,7 @@ class SessionBoltV3IT {
         var session = driver.session();
         var initialBookmarks = session.lastBookmarks();
 
-        session.writeTransaction(tx -> tx.run("CREATE ()").consume());
+        session.executeWrite(tx -> tx.run("CREATE ()").consume());
         var bookmarks1 = session.lastBookmarks();
         assertNotNull(bookmarks1);
         assertNotEquals(initialBookmarks, bookmarks1);
@@ -238,7 +238,7 @@ class SessionBoltV3IT {
         assertNotEquals(initialBookmarks, bookmarks2);
         assertNotEquals(bookmarks1, bookmarks2);
 
-        session.writeTransaction(tx -> tx.run("CREATE ()").consume());
+        session.executeWrite(tx -> tx.run("CREATE ()").consume());
         var bookmarks3 = session.lastBookmarks();
         assertNotNull(bookmarks3);
         assertNotEquals(initialBookmarks, bookmarks3);
@@ -284,7 +284,6 @@ class SessionBoltV3IT {
     //        }
     //    }
 
-    @SuppressWarnings("deprecation")
     private static void testTransactionMetadataWithAsyncTransactionFunctions(boolean read) {
         var asyncSession = driver.asyncSession();
         Map<String, Object> metadata = new HashMap<>();
@@ -295,9 +294,9 @@ class SessionBoltV3IT {
         var config = TransactionConfig.builder().withMetadata(metadata).build();
 
         var singleFuture = read
-                ? asyncSession.readTransactionAsync(
+                ? asyncSession.executeReadAsync(
                         tx -> tx.runAsync(showTxMetadata).thenCompose(ResultCursor::singleAsync), config)
-                : asyncSession.writeTransactionAsync(
+                : asyncSession.executeWriteAsync(
                         tx -> tx.runAsync(showTxMetadata).thenCompose(ResultCursor::singleAsync), config);
 
         var metadataFuture =
@@ -306,7 +305,6 @@ class SessionBoltV3IT {
         assertEquals(metadata, await(metadataFuture));
     }
 
-    @SuppressWarnings("deprecation")
     private static void testTransactionMetadataWithTransactionFunctions(boolean read) {
         @SuppressWarnings("resource")
         var session = driver.session();
@@ -318,8 +316,8 @@ class SessionBoltV3IT {
         var config = TransactionConfig.builder().withMetadata(metadata).build();
 
         var single = read
-                ? session.readTransaction(tx -> tx.run(showTxMetadata).single(), config)
-                : session.writeTransaction(tx -> tx.run(showTxMetadata).single(), config);
+                ? session.executeRead(tx -> tx.run(showTxMetadata).single(), config)
+                : session.executeWrite(tx -> tx.run(showTxMetadata).single(), config);
 
         var receivedMetadata = single.get("metaData").asMap();
 

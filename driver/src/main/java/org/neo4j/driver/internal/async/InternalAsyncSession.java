@@ -32,7 +32,6 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionCallback;
-import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.GqlStatusError;
@@ -84,41 +83,15 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     @Override
-    @Deprecated
-    public <T> CompletionStage<T> readTransactionAsync(AsyncTransactionWork<CompletionStage<T>> work) {
-        return readTransactionAsync(work, TransactionConfig.empty());
-    }
-
-    @Override
-    @Deprecated
-    public <T> CompletionStage<T> readTransactionAsync(
-            AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config) {
-        return transactionAsync(AccessMode.READ, work, config);
-    }
-
-    @Override
     public <T> CompletionStage<T> executeReadAsync(
             AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config) {
-        return readTransactionAsync(tx -> callback.execute(new DelegatingAsyncTransactionContext(tx)), config);
-    }
-
-    @Override
-    @Deprecated
-    public <T> CompletionStage<T> writeTransactionAsync(AsyncTransactionWork<CompletionStage<T>> work) {
-        return writeTransactionAsync(work, TransactionConfig.empty());
-    }
-
-    @Override
-    @Deprecated
-    public <T> CompletionStage<T> writeTransactionAsync(
-            AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config) {
-        return transactionAsync(AccessMode.WRITE, work, config);
+        return transactionAsync(AccessMode.READ, callback, config);
     }
 
     @Override
     public <T> CompletionStage<T> executeWriteAsync(
             AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config) {
-        return writeTransactionAsync(tx -> callback.execute(new DelegatingAsyncTransactionContext(tx)), config);
+        return transactionAsync(AccessMode.WRITE, callback, config);
     }
 
     @Override
@@ -127,9 +100,7 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     private <T> CompletionStage<T> transactionAsync(
-            AccessMode mode,
-            @SuppressWarnings("deprecation") AsyncTransactionWork<CompletionStage<T>> work,
-            TransactionConfig config) {
+            AccessMode mode, AsyncTransactionCallback<CompletionStage<T>> work, TransactionConfig config) {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.MANAGED_TRANSACTION);
         return session.retryLogic().retryAsync(() -> {
             var resultFuture = new CompletableFuture<T>();
@@ -151,7 +122,7 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     private <T> void executeWork(
             CompletableFuture<T> resultFuture,
             UnmanagedTransaction tx,
-            @SuppressWarnings("deprecation") AsyncTransactionWork<CompletionStage<T>> work) {
+            AsyncTransactionCallback<CompletionStage<T>> work) {
         var workFuture = safeExecuteWork(tx, work);
         workFuture.whenComplete((result, completionError) -> {
             var error = Futures.completionExceptionCause(completionError);
@@ -176,12 +147,12 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     private <T> CompletionStage<T> safeExecuteWork(
-            UnmanagedTransaction tx, @SuppressWarnings("deprecation") AsyncTransactionWork<CompletionStage<T>> work) {
+            UnmanagedTransaction tx, AsyncTransactionCallback<CompletionStage<T>> work) {
         // given work might fail in both async and sync way
         // async failure will result in a failed future being returned
         // sync failure will result in an exception being thrown
         try {
-            var result = work.execute(new InternalAsyncTransaction(tx));
+            var result = work.execute(new DelegatingAsyncTransactionContext(new InternalAsyncTransaction(tx)));
 
             // protect from given transaction function returning null
             return result == null ? completedWithNull() : result;

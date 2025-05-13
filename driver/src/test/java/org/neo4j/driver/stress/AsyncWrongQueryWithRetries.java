@@ -37,14 +37,13 @@ public class AsyncWrongQueryWithRetries<C extends AbstractContext> extends Abstr
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public CompletionStage<Void> execute(C context) {
         var session = newSession(AccessMode.READ, context);
 
         var recordRef = new AtomicReference<Record>();
         var throwableRef = new AtomicReference<Throwable>();
 
-        var txStage = session.readTransactionAsync(tx -> tx.runAsync("RETURN Wrong")
+        var txStage = session.executeReadAsync(tx -> tx.runAsync("RETURN Wrong")
                 .thenCompose(cursor -> cursor.nextAsync().thenCompose(record -> {
                     recordRef.set(record);
                     return cursor.consumeAsync();

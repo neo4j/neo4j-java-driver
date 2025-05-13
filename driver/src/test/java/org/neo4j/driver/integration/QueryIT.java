@@ -169,7 +169,7 @@ class QueryIT {
     void shouldBeAbleToLogSemanticWrongExceptions() {
         try {
             // When I run a query with the old syntax
-            session.writeTransaction(
+            session.executeWrite(
                     tx -> tx.run("MATCH (n:Element) WHERE n.name = {param} RETURN n", parameters("param", "Luke"))
                             .list());
         } catch (Exception ex) {

@@ -712,4 +712,62 @@
         <method>org.neo4j.driver.Bookmark lastBookmark()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7002</differenceType>
+        <method>java.lang.Object readTransaction(org.neo4j.driver.TransactionWork)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7002</differenceType>
+        <method>java.lang.Object readTransaction(org.neo4j.driver.TransactionWork, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7002</differenceType>
+        <method>java.lang.Object writeTransaction(org.neo4j.driver.TransactionWork)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7002</differenceType>
+        <method>java.lang.Object writeTransaction(org.neo4j.driver.TransactionWork, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7002</differenceType>
+        <method>java.util.concurrent.CompletionStage readTransactionAsync(org.neo4j.driver.async.AsyncTransactionWork)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7002</differenceType>
+        <method>java.util.concurrent.CompletionStage readTransactionAsync(org.neo4j.driver.async.AsyncTransactionWork, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7002</differenceType>
+        <method>java.util.concurrent.CompletionStage writeTransactionAsync(org.neo4j.driver.async.AsyncTransactionWork)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7002</differenceType>
+        <method>java.util.concurrent.CompletionStage writeTransactionAsync(org.neo4j.driver.async.AsyncTransactionWork, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/TransactionWork</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncTransactionWork</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
 </differences>

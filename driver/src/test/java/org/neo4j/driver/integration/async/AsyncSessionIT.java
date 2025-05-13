@@ -68,8 +68,8 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.AsyncTransactionWork;
+import org.neo4j.driver.async.AsyncTransactionCallback;
+import org.neo4j.driver.async.AsyncTransactionContext;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
@@ -306,10 +306,9 @@ class AsyncSessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldRunAsyncTransactionWithoutRetries() {
         var work = new InvocationTrackingWork("CREATE (:Apa) RETURN 42");
-        var txStage = session.writeTransactionAsync(work);
+        var txStage = session.executeWriteAsync(work);
 
         var record = await(txStage);
         assertNotNull(record);
@@ -320,7 +319,6 @@ class AsyncSessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldRunAsyncTransactionWithRetriesOnAsyncFailures() {
         var work = new InvocationTrackingWork("CREATE (:Node) RETURN 24")
                 .withAsyncFailures(
@@ -328,7 +326,7 @@ class AsyncSessionIT {
                         new SessionExpiredException("Ah!"),
                         new TransientException("Code", "Message"));
 
-        var txStage = session.writeTransactionAsync(work);
+        var txStage = session.executeWriteAsync(work);
 
         var record = await(txStage);
         assertNotNull(record);
@@ -339,14 +337,13 @@ class AsyncSessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldRunAsyncTransactionWithRetriesOnSyncFailures() {
         var work = new InvocationTrackingWork("CREATE (:Test) RETURN 12")
                 .withSyncFailures(
                         new TransientException("Oh!", "Deadlock!"),
                         new ServiceUnavailableException("Oh! Network Failure"));
 
-        var txStage = session.writeTransactionAsync(work);
+        var txStage = session.executeWriteAsync(work);
 
         var record = await(txStage);
         assertNotNull(record);
@@ -357,10 +354,9 @@ class AsyncSessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldRunAsyncTransactionThatCanNotBeRetried() {
         var work = new InvocationTrackingWork("UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x");
-        var txStage = session.writeTransactionAsync(work);
+        var txStage = session.executeWriteAsync(work);
 
         var e = assertThrows(ClientException.class, () -> await(txStage));
         assertNoCircularReferences(e);
@@ -369,14 +365,13 @@ class AsyncSessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldRunAsyncTransactionThatCanNotBeRetriedAfterATransientFailure() {
         // first throw TransientException directly from work, retry can happen afterwards
         // then return a future failed with DatabaseException, retry can't happen afterwards
         var work = new InvocationTrackingWork("CREATE (:Person) RETURN 1")
                 .withSyncFailures(new TransientException("Oh!", "Deadlock!"))
                 .withAsyncFailures(new DatabaseException("Oh!", "OutOfMemory!"));
-        var txStage = session.writeTransactionAsync(work);
+        var txStage = session.executeWriteAsync(work);
 
         var e = assertThrows(DatabaseException.class, () -> await(txStage));
 
@@ -563,15 +558,14 @@ class AsyncSessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldExecuteReadTransactionUntilSuccessWhenWorkThrows() {
         var maxFailures = 1;
 
-        var result = session.readTransactionAsync(new AsyncTransactionWork<CompletionStage<Integer>>() {
+        var result = session.executeReadAsync(new AsyncTransactionCallback<CompletionStage<Integer>>() {
             final AtomicInteger failures = new AtomicInteger();
 
             @Override
-            public CompletionStage<Integer> execute(AsyncTransaction tx) {
+            public CompletionStage<Integer> execute(AsyncTransactionContext tx) {
                 if (failures.getAndIncrement() < maxFailures) {
                     throw new SessionExpiredException("Oh!");
                 }
@@ -585,15 +579,14 @@ class AsyncSessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldExecuteWriteTransactionUntilSuccessWhenWorkThrows() {
         var maxFailures = 2;
 
-        var result = session.writeTransactionAsync(new AsyncTransactionWork<CompletionStage<Integer>>() {
+        var result = session.executeWriteAsync(new AsyncTransactionCallback<CompletionStage<Integer>>() {
             final AtomicInteger failures = new AtomicInteger();
 
             @Override
-            public CompletionStage<Integer> execute(AsyncTransaction tx) {
+            public CompletionStage<Integer> execute(AsyncTransactionContext tx) {
                 if (failures.getAndIncrement() < maxFailures) {
                     throw new ServiceUnavailableException("Oh!");
                 }
@@ -608,15 +601,14 @@ class AsyncSessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldExecuteReadTransactionUntilSuccessWhenWorkFails() {
         var maxFailures = 3;
 
-        var result = session.readTransactionAsync(new AsyncTransactionWork<CompletionStage<Integer>>() {
+        var result = session.executeReadAsync(new AsyncTransactionCallback<CompletionStage<Integer>>() {
             final AtomicInteger failures = new AtomicInteger();
 
             @Override
-            public CompletionStage<Integer> execute(AsyncTransaction tx) {
+            public CompletionStage<Integer> execute(AsyncTransactionContext tx) {
                 return tx.runAsync("RETURN 42")
                         .thenCompose(ResultCursor::singleAsync)
                         .thenApply(record -> record.get(0).asInt())
@@ -633,15 +625,14 @@ class AsyncSessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldExecuteWriteTransactionUntilSuccessWhenWorkFails() {
         var maxFailures = 2;
 
-        var result = session.writeTransactionAsync(new AsyncTransactionWork<CompletionStage<String>>() {
+        var result = session.executeWriteAsync(new AsyncTransactionCallback<CompletionStage<String>>() {
             final AtomicInteger failures = new AtomicInteger();
 
             @Override
-            public CompletionStage<String> execute(AsyncTransaction tx) {
+            public CompletionStage<String> execute(AsyncTransactionContext tx) {
                 return tx.runAsync("CREATE (:MyNode) RETURN 'Hello'")
                         .thenCompose(ResultCursor::singleAsync)
                         .thenApply(record -> record.get(0).asString())
@@ -741,12 +732,11 @@ class AsyncSessionIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldAllowReturningNullFromAsyncTransactionFunction() {
-        var readResult = session.readTransactionAsync(tx -> null);
+        var readResult = session.executeReadAsync(tx -> null);
         assertNull(await(readResult));
 
-        var writeResult = session.writeTransactionAsync(tx -> null);
+        var writeResult = session.executeWriteAsync(tx -> null);
         assertNull(await(writeResult));
     }
 
@@ -760,11 +750,10 @@ class AsyncSessionIT {
         await(session.closeAsync());
     }
 
-    @SuppressWarnings("deprecation")
     static List<Function<AsyncSession, CompletionStage<ResultCursor>>> managedTransactionsReturningResultCursorStage() {
         return List.of(
-                session -> session.writeTransactionAsync(tx -> tx.runAsync("RETURN 1")),
-                session -> session.readTransactionAsync(tx -> tx.runAsync("RETURN 1")),
+                session -> session.executeWriteAsync(tx -> tx.runAsync("RETURN 1")),
+                session -> session.executeReadAsync(tx -> tx.runAsync("RETURN 1")),
                 session -> session.executeWriteAsync(tx -> tx.runAsync("RETURN 1")),
                 session -> session.executeReadAsync(tx -> tx.runAsync("RETURN 1")));
     }
@@ -856,8 +845,7 @@ class AsyncSessionIT {
         assertThrows(ResultConsumedException.class, () -> await(cursor.nextAsync()));
     }
 
-    @SuppressWarnings("deprecation")
-    private static class InvocationTrackingWork implements AsyncTransactionWork<CompletionStage<Record>> {
+    private static class InvocationTrackingWork implements AsyncTransactionCallback<CompletionStage<Record>> {
         final String query;
         final AtomicInteger invocationCount;
 
@@ -884,7 +872,7 @@ class AsyncSessionIT {
         }
 
         @Override
-        public CompletionStage<Record> execute(AsyncTransaction tx) {
+        public CompletionStage<Record> execute(AsyncTransactionContext tx) {
             invocationCount.incrementAndGet();
 
             if (syncFailures.hasNext()) {
