@@ -26,6 +26,7 @@ import lombok.AllArgsConstructor;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherDateTime;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherTime;
 import org.neo4j.driver.types.IsoDuration;
+import org.neo4j.driver.types.Vector;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class GenUtils {
@@ -87,6 +88,7 @@ public final class GenUtils {
             case "CypherTime" -> CypherTime.class;
             case "CypherDate" -> LocalDate.class;
             case "CypherDuration" -> IsoDuration.class;
+            case "CypherVector" -> Vector.class;
             default -> null;
         };
     }

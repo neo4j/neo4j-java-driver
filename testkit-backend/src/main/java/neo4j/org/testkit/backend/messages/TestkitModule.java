@@ -24,6 +24,7 @@ import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherDat
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherDateTimeDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherDurationDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherTimeDeserializer;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherVectorDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitListDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherDateTime;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherTime;
@@ -40,6 +41,7 @@ import neo4j.org.testkit.backend.messages.responses.serializer.TestkitRecordSeri
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitRelationshipValueSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitTimeValueSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitValueSerializer;
+import neo4j.org.testkit.backend.messages.responses.serializer.TestkitVectorSerializer;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.DateTimeValue;
@@ -53,7 +55,9 @@ import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.TimeValue;
+import org.neo4j.driver.internal.value.VectorValue;
 import org.neo4j.driver.types.IsoDuration;
+import org.neo4j.driver.types.Vector;
 
 public class TestkitModule extends SimpleModule {
     @Serial
@@ -66,6 +70,7 @@ public class TestkitModule extends SimpleModule {
         this.addDeserializer(CypherTime.class, new TestkitCypherTimeDeserializer());
         this.addDeserializer(IsoDuration.class, new TestkitCypherDurationDeserializer());
         this.addDeserializer(LocalDate.class, new TestkitCypherDateDeserializer());
+        this.addDeserializer(Vector.class, new TestkitCypherVectorDeserializer());
 
         this.addSerializer(Value.class, new TestkitValueSerializer());
         this.addSerializer(NodeValue.class, new TestkitNodeValueSerializer());
@@ -80,5 +85,6 @@ public class TestkitModule extends SimpleModule {
         this.addSerializer(MapValue.class, new TestkitMapValueSerializer());
         this.addSerializer(PathValue.class, new TestkitPathValueSerializer());
         this.addSerializer(RelationshipValue.class, new TestkitRelationshipValueSerializer());
+        this.addSerializer(VectorValue.class, new TestkitVectorSerializer());
     }
 }

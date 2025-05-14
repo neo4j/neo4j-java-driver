@@ -42,9 +42,15 @@ import java.util.stream.Stream;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.InternalByteVector;
+import org.neo4j.driver.internal.InternalDoubleVector;
+import org.neo4j.driver.internal.InternalFloatVector;
+import org.neo4j.driver.internal.InternalIntVector;
 import org.neo4j.driver.internal.InternalIsoDuration;
+import org.neo4j.driver.internal.InternalLongVector;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
+import org.neo4j.driver.internal.InternalShortVector;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.BytesValue;
 import org.neo4j.driver.internal.value.DateTimeValue;
@@ -60,6 +66,7 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
+import org.neo4j.driver.internal.value.VectorValue;
 import org.neo4j.driver.mapping.Property;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.IsoDuration;
@@ -69,6 +76,7 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.TypeSystem;
+import org.neo4j.driver.types.Vector;
 import org.neo4j.driver.util.Preview;
 
 /**
@@ -169,6 +177,9 @@ public final class Values {
         }
         if (value instanceof Point) {
             return value((Point) value);
+        }
+        if (value instanceof Vector vector) {
+            return value(vector);
         }
 
         if (value instanceof List<?>) {
@@ -469,10 +480,11 @@ public final class Values {
         for (var recordComponent : recordComponents) {
             var propertyAnnotation = recordComponent.getAnnotation(Property.class);
             var property = propertyAnnotation != null ? propertyAnnotation.value() : recordComponent.getName();
+            var isVector = recordComponent.getAnnotation(org.neo4j.driver.mapping.Vector.class) != null;
             Value value;
             try {
                 var objectValue = recordComponent.getAccessor().invoke(record);
-                value = (objectValue != null) ? value(objectValue) : null;
+                value = (objectValue != null) ? isVector ? vector(objectValue) : value(objectValue) : null;
             } catch (Throwable throwable) {
                 var message = "Failed to map '%s' property to value during mapping '%s' to map value"
                         .formatted(property, record.getClass().getCanonicalName());
@@ -995,5 +1007,100 @@ public final class Values {
      */
     public static <T> Function<Value, List<T>> ofList(final Function<Value, T> innerMap) {
         return value -> value.asList(innerMap);
+    }
+
+    /**
+     * Returns Neo4j Vector that holds a sequence of {@code byte} values.
+     *
+     * @param elements the vector elements
+     * @return the vector value
+     * @since 6.0.0
+     */
+    @Preview(name = "Neo4j Vector")
+    public static Value vector(byte[] elements) {
+        return value(new InternalByteVector(elements));
+    }
+
+    /**
+     * Returns Neo4j Vector that holds a sequence of {@code short} values.
+     *
+     * @param elements the vector elements
+     * @return the vector value
+     * @since 6.0.0
+     */
+    @Preview(name = "Neo4j Vector")
+    public static Value vector(short[] elements) {
+        return value(new InternalShortVector(elements));
+    }
+
+    /**
+     * Returns Neo4j Vector that holds a sequence of {@code int} values.
+     *
+     * @param elements the vector elements
+     * @return the vector value
+     * @since 6.0.0
+     */
+    @Preview(name = "Neo4j Vector")
+    public static Value vector(int[] elements) {
+        return value(new InternalIntVector(elements));
+    }
+
+    /**
+     * Returns Neo4j Vector that holds a sequence of {@code long} values.
+     *
+     * @param elements the vector elements
+     * @return the vector value
+     * @since 6.0.0
+     */
+    @Preview(name = "Neo4j Vector")
+    public static Value vector(long[] elements) {
+        return value(new InternalLongVector(elements));
+    }
+
+    /**
+     * Returns Neo4j Vector that holds a sequence of {@code float} values.
+     *
+     * @param elements the vector elements
+     * @return the vector value
+     * @since 6.0.0
+     */
+    @Preview(name = "Neo4j Vector")
+    public static Value vector(float[] elements) {
+        return value(new InternalFloatVector(elements));
+    }
+
+    /**
+     * Returns Neo4j Vector that holds a sequence of {@code double} values.
+     *
+     * @param elements the vector elements
+     * @return the vector value
+     * @since 6.0.0
+     */
+    @Preview(name = "Neo4j Vector")
+    public static Value vector(double[] elements) {
+        return value(new InternalDoubleVector(elements));
+    }
+
+    private static Value value(Vector vector) {
+        return new VectorValue(vector);
+    }
+
+    private static Value vector(Object array) {
+        if (array instanceof byte[] elements) {
+            return value(Values.vector(elements));
+        } else if (array instanceof short[] elements) {
+            return value(Values.vector(elements));
+        } else if (array instanceof int[] elements) {
+            return value(Values.vector(elements));
+        } else if (array instanceof long[] elements) {
+            return value(Values.vector(elements));
+        } else if (array instanceof float[] elements) {
+            return value(Values.vector(elements));
+        } else if (array instanceof double[] elements) {
+            return value(Values.vector(elements));
+        } else {
+            throw new IllegalArgumentException(
+                    "Unsupported vector element type: " + array.getClass().getName());
+        }
     }
 }

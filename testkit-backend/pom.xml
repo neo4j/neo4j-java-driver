@@ -19,6 +19,7 @@
     <properties>
         <rootDir>${project.basedir}/..</rootDir>
         <maven.compiler.xlint.extras>,-processing</maven.compiler.xlint.extras>
+        <maven.compiler.release>21</maven.compiler.release>
     </properties>
 
     <dependencies>

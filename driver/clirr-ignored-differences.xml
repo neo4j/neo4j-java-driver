@@ -818,4 +818,10 @@
         <method>org.neo4j.driver.Logging systemLogging()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/types/TypeSystem</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.types.Type VECTOR()</method>
+    </difference>
+
 </differences>
