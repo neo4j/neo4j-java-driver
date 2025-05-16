@@ -770,4 +770,34 @@
         <differenceType>8001</differenceType>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.async.AsyncSession asyncSession()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.async.AsyncSession asyncSession(org.neo4j.driver.SessionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.types.TypeSystem defaultTypeSystem()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.reactive.ReactiveSession reactiveSession()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.reactive.ReactiveSession reactiveSession(org.neo4j.driver.SessionConfig)</method>
+    </difference>
+
 </differences>
