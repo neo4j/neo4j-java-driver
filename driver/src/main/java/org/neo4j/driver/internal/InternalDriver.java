@@ -47,9 +47,7 @@ import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
-import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.types.TypeSystem;
 
 public class InternalDriver implements Driver {
     private static final Set<String> INVALID_TOKEN_CODES = Set.of(
@@ -149,12 +147,6 @@ public class InternalDriver implements Driver {
             return sessionFactory.close().thenCompose(ignored -> shutdownSupplier.get());
         }
         return completedWithNull();
-    }
-
-    @Deprecated
-    @Override
-    public final TypeSystem defaultTypeSystem() {
-        return InternalTypeSystem.TYPE_SYSTEM;
     }
 
     @Override

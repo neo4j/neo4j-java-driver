@@ -17,12 +17,8 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
-import org.neo4j.driver.reactive.ReactiveSession;
-import org.neo4j.driver.types.TypeSystem;
-import org.neo4j.driver.util.Experimental;
 
 /**
  * Accessor for a specific Neo4j graph database.
@@ -132,7 +128,6 @@ public interface Driver extends AutoCloseable {
      * @throws IllegalArgumentException for unsupported session types
      * @since 5.2
      */
-    @SuppressWarnings("deprecation")
     default <T extends BaseSession> T session(Class<T> sessionClass) {
         return session(sessionClass, SessionConfig.defaultConfig());
     }
@@ -167,7 +162,6 @@ public interface Driver extends AutoCloseable {
      * @throws IllegalArgumentException for unsupported session types
      * @since 5.8
      */
-    @SuppressWarnings("deprecation")
     default <T extends BaseSession> T session(Class<T> sessionClass, AuthToken sessionAuthToken) {
         return session(sessionClass, SessionConfig.defaultConfig(), sessionAuthToken);
     }
@@ -198,7 +192,6 @@ public interface Driver extends AutoCloseable {
      * @throws IllegalArgumentException for unsupported session types
      * @since 5.2
      */
-    @SuppressWarnings("deprecation")
     default <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig) {
         return session(sessionClass, sessionConfig, null);
     }
@@ -235,62 +228,7 @@ public interface Driver extends AutoCloseable {
      * @throws IllegalArgumentException for unsupported session types
      * @since 5.8
      */
-    @SuppressWarnings("deprecation")
     <T extends BaseSession> T session(Class<T> sessionClass, SessionConfig sessionConfig, AuthToken sessionAuthToken);
-
-    /**
-     * Create a new general purpose {@link ReactiveSession} with default {@link SessionConfig session configuration}. The {@link ReactiveSession} provides a
-     * reactive way to run queries and process results.
-     *
-     * @return a new {@link ReactiveSession} object.
-     * @deprecated superseded by {@link #session(Class)}
-     */
-    @Deprecated
-    default ReactiveSession reactiveSession() {
-        return session(ReactiveSession.class);
-    }
-
-    /**
-     * Create a new {@link ReactiveSession} with a specified {@link SessionConfig session configuration}. Use {@link SessionConfig#forDatabase(String)} to
-     * obtain a general purpose session configuration for the specified database. The {@link ReactiveSession} provides a reactive way to run queries and process
-     * results.
-     *
-     * @param sessionConfig used to customize the session.
-     * @return a new {@link ReactiveSession} object.
-     * @deprecated superseded by {@link #session(Class, SessionConfig)}
-     */
-    @Deprecated
-    default ReactiveSession reactiveSession(SessionConfig sessionConfig) {
-        return session(ReactiveSession.class, sessionConfig);
-    }
-
-    /**
-     * Create a new general purpose {@link AsyncSession} with default {@link SessionConfig session configuration}. The {@link AsyncSession} provides an
-     * asynchronous way to run queries and process results.
-     * <p>
-     * Alias to {@link #asyncSession(SessionConfig)}}.
-     *
-     * @return a new {@link AsyncSession} object.
-     * @deprecated superseded by {@link #session(Class)}
-     */
-    @Deprecated
-    default AsyncSession asyncSession() {
-        return session(AsyncSession.class);
-    }
-
-    /**
-     * Create a new {@link AsyncSession} with a specified {@link SessionConfig session configuration}.
-     * Use {@link SessionConfig#forDatabase(String)} to obtain a general purpose session configuration for the specified database.
-     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
-     *
-     * @param sessionConfig used to customize the session.
-     * @return a new {@link AsyncSession} object.
-     * @deprecated superseded by {@link #session(Class, SessionConfig)}
-     */
-    @Deprecated
-    default AsyncSession asyncSession(SessionConfig sessionConfig) {
-        return session(AsyncSession.class, sessionConfig);
-    }
 
     /**
      * Close all the resources assigned to this driver, including open connections and IO threads.
@@ -333,18 +271,6 @@ public interface Driver extends AutoCloseable {
      * @return true if the metrics reporting is enabled.
      */
     boolean isMetricsEnabled();
-
-    /**
-     * This will return the type system supported by the driver.
-     * The types supported on a particular server a session is connected against might not contain all of the types defined here.
-     *
-     * @return type system used by this query runner for classifying values
-     * @deprecated superseded by {@link TypeSystem#getDefault()}
-     */
-    @Experimental
-    @Deprecated
-    @SuppressWarnings("SameReturnValue")
-    TypeSystem defaultTypeSystem();
 
     /**
      * This verifies if the driver can connect to a remote server or a cluster
