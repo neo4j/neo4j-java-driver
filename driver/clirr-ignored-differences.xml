@@ -800,4 +800,10 @@
         <method>org.neo4j.driver.reactive.ReactiveSession reactiveSession(org.neo4j.driver.SessionConfig)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Config$TrustStrategy</className>
+        <differenceType>7002</differenceType>
+        <method>java.io.File certFile()</method>
+    </difference>
+
 </differences>
