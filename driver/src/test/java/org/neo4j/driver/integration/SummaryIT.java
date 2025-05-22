@@ -229,7 +229,6 @@ class SummaryIT {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     void shouldContainNotifications() {
         // When
         var summary =
@@ -243,7 +242,6 @@ class SummaryIT {
         assertThat(notification.code(), notNullValue());
         assertThat(notification.title(), notNullValue());
         assertThat(notification.description(), notNullValue());
-        assertThat(notification.severity(), notNullValue());
         assertThat(notification.severityLevel(), notNullValue());
         assertThat(notification.rawSeverityLevel(), notNullValue());
         assertThat(notification.position(), notNullValue());

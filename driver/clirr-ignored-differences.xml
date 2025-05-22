@@ -806,4 +806,10 @@
         <method>java.io.File certFile()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/summary/Notification</className>
+        <differenceType>7002</differenceType>
+        <method>java.lang.String severity()</method>
+    </difference>
+
 </differences>

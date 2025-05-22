@@ -66,7 +66,6 @@ public class SummaryUtil {
                         .title(s.title())
                         .description(s.description())
                         .position(toInputPosition(s.position()))
-                        .severity(s.severity())
                         .severityLevel(s.severityLevel()
                                 .map(InternalNotificationSeverity.class::cast)
                                 .map(InternalNotificationSeverity::type)
