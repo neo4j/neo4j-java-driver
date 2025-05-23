@@ -16,22 +16,15 @@
  */
 package org.neo4j.driver.internal.boltlistener;
 
-import java.util.Map;
+import java.net.URI;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import org.neo4j.bolt.connection.AccessMode;
 import org.neo4j.bolt.connection.AuthToken;
 import org.neo4j.bolt.connection.BoltAgent;
 import org.neo4j.bolt.connection.BoltConnection;
 import org.neo4j.bolt.connection.BoltConnectionProvider;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
-import org.neo4j.bolt.connection.BoltServerAddress;
-import org.neo4j.bolt.connection.DatabaseName;
 import org.neo4j.bolt.connection.NotificationConfig;
-import org.neo4j.bolt.connection.RoutingContext;
 import org.neo4j.bolt.connection.SecurityPlan;
 
 final class ListeningBoltConnectionProvider implements BoltConnectionProvider {
@@ -46,81 +39,30 @@ final class ListeningBoltConnectionProvider implements BoltConnectionProvider {
 
     @Override
     public CompletionStage<BoltConnection> connect(
-            BoltServerAddress address,
-            RoutingContext routingContext,
+            URI uri,
+            String routingContextAddress,
             BoltAgent boltAgent,
             String userAgent,
             int connectTimeoutMillis,
             SecurityPlan securityPlan,
-            DatabaseName databaseName,
-            Supplier<CompletionStage<AuthToken>> authTokenStageSupplier,
-            AccessMode mode,
-            Set<String> bookmarks,
-            String impersonatedUser,
+            AuthToken authToken,
             BoltProtocolVersion minVersion,
-            NotificationConfig notificationConfig,
-            Consumer<DatabaseName> databaseNameConsumer,
-            Map<String, Object> additionalParameters) {
+            NotificationConfig notificationConfig) {
         return delegate.connect(
-                        address,
-                        routingContext,
+                        uri,
+                        routingContextAddress,
                         boltAgent,
                         userAgent,
                         connectTimeoutMillis,
                         securityPlan,
-                        databaseName,
-                        authTokenStageSupplier,
-                        mode,
-                        bookmarks,
-                        impersonatedUser,
+                        authToken,
                         minVersion,
-                        notificationConfig,
-                        databaseNameConsumer,
-                        additionalParameters)
+                        notificationConfig)
                 .thenApply(boltConnection -> {
                     boltConnection = new ListeningBoltConnection(boltConnection, boltConnectionListener);
                     boltConnectionListener.onOpen(boltConnection);
                     return boltConnection;
                 });
-    }
-
-    @Override
-    public CompletionStage<Void> verifyConnectivity(
-            BoltServerAddress address,
-            RoutingContext routingContext,
-            BoltAgent boltAgent,
-            String userAgent,
-            int connectTimeoutMillis,
-            SecurityPlan securityPlan,
-            AuthToken authToken) {
-        return delegate.verifyConnectivity(
-                address, routingContext, boltAgent, userAgent, connectTimeoutMillis, securityPlan, authToken);
-    }
-
-    @Override
-    public CompletionStage<Boolean> supportsMultiDb(
-            BoltServerAddress address,
-            RoutingContext routingContext,
-            BoltAgent boltAgent,
-            String userAgent,
-            int connectTimeoutMillis,
-            SecurityPlan securityPlan,
-            AuthToken authToken) {
-        return delegate.supportsMultiDb(
-                address, routingContext, boltAgent, userAgent, connectTimeoutMillis, securityPlan, authToken);
-    }
-
-    @Override
-    public CompletionStage<Boolean> supportsSessionAuth(
-            BoltServerAddress address,
-            RoutingContext routingContext,
-            BoltAgent boltAgent,
-            String userAgent,
-            int connectTimeoutMillis,
-            SecurityPlan securityPlan,
-            AuthToken authToken) {
-        return delegate.supportsSessionAuth(
-                address, routingContext, boltAgent, userAgent, connectTimeoutMillis, securityPlan, authToken);
     }
 
     @Override

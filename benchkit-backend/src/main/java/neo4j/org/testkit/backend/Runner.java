@@ -19,7 +19,8 @@ package neo4j.org.testkit.backend;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
@@ -35,7 +36,7 @@ public class Runner {
         var config = Config.load();
         var driver = GraphDatabase.driver(config.uri(), config.authToken());
 
-        EventLoopGroup group = new NioEventLoopGroup();
+        EventLoopGroup group = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
         var executor = Executors.newCachedThreadPool();
         var workloadHandler = new WorkloadHandler(driver, executor);
         var readyHandler = new ReadyHandler(driver);

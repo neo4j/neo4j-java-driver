@@ -31,3 +31,5 @@ testkit-backend/bin/
 testkit/CAs/
 testkit/CustomCAs/
 bolt-connection
+.flattened-pom.xml
+

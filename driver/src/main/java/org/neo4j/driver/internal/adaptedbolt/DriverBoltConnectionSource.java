@@ -14,21 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.adaptedbolt;
 
 import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.bolt.connection.RoutedBoltConnectionParameters;
 
-public interface SessionFactory {
-    NetworkSession newInstance(SessionConfig sessionConfig, AuthToken overrideAuthToken, boolean telemetryDisabled);
+public interface DriverBoltConnectionSource {
+    CompletionStage<DriverBoltConnection> getConnection(RoutedBoltConnectionParameters parameters);
 
     CompletionStage<Void> verifyConnectivity();
-
-    CompletionStage<Void> close();
 
     CompletionStage<Boolean> supportsMultiDb();
 
     CompletionStage<Boolean> supportsSessionAuth();
+
+    CompletionStage<Void> close();
 }

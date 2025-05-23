@@ -29,7 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.connection.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.bolt.connection.DatabaseName.defaultDatabase;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -81,12 +81,11 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.NoOpBookmarkManager;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
-import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 import org.reactivestreams.Publisher;
@@ -183,29 +182,29 @@ public final class TestUtil {
         }
     }
 
-    public static NetworkSession newSession(DriverBoltConnectionProvider connectionProvider, Set<Bookmark> bookmarks) {
+    public static NetworkSession newSession(DriverBoltConnectionSource connectionProvider, Set<Bookmark> bookmarks) {
         return newSession(connectionProvider, WRITE, bookmarks);
     }
 
     private static NetworkSession newSession(
-            DriverBoltConnectionProvider connectionProvider, AccessMode mode, Set<Bookmark> bookmarks) {
+            DriverBoltConnectionSource connectionProvider, AccessMode mode, Set<Bookmark> bookmarks) {
         return newSession(connectionProvider, mode, new FixedRetryLogic(0), bookmarks);
     }
 
-    public static NetworkSession newSession(DriverBoltConnectionProvider connectionProvider, AccessMode mode) {
+    public static NetworkSession newSession(DriverBoltConnectionSource connectionProvider, AccessMode mode) {
         return newSession(connectionProvider, mode, Collections.emptySet());
     }
 
-    public static NetworkSession newSession(DriverBoltConnectionProvider connectionProvider, RetryLogic logic) {
+    public static NetworkSession newSession(DriverBoltConnectionSource connectionProvider, RetryLogic logic) {
         return newSession(connectionProvider, WRITE, logic, Collections.emptySet());
     }
 
-    public static NetworkSession newSession(DriverBoltConnectionProvider connectionProvider) {
+    public static NetworkSession newSession(DriverBoltConnectionSource connectionProvider) {
         return newSession(connectionProvider, WRITE, Collections.emptySet());
     }
 
     public static NetworkSession newSession(
-            DriverBoltConnectionProvider connectionProvider,
+            DriverBoltConnectionSource connectionProvider,
             AccessMode mode,
             RetryLogic retryLogic,
             Set<Bookmark> bookmarks) {
@@ -213,13 +212,12 @@ public final class TestUtil {
     }
 
     public static NetworkSession newSession(
-            DriverBoltConnectionProvider connectionProvider,
+            DriverBoltConnectionSource connectionProvider,
             AccessMode mode,
             RetryLogic retryLogic,
             Set<Bookmark> bookmarks,
             boolean telemetryDisabled) {
         return new NetworkSession(
-                BoltSecurityPlanManager.insecure(),
                 connectionProvider,
                 retryLogic,
                 defaultDatabase(),
@@ -229,7 +227,6 @@ public final class TestUtil {
                 -1,
                 DEV_NULL_LOGGING,
                 NoOpBookmarkManager.INSTANCE,
-                Config.defaultConfig().notificationConfig(),
                 Config.defaultConfig().notificationConfig(),
                 null,
                 telemetryDisabled,

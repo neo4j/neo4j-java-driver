@@ -146,32 +146,6 @@
                         </execution>
                         <execution>
                             <!-- Use reactive backend to test reactive driver. -->
-                            <id>run-testkit-reactive-legacy</id>
-                            <phase>integration-test</phase>
-                            <goals>
-                                <!-- Testkit is expected to exit automatically. -->
-                                <goal>start</goal>
-                            </goals>
-                            <configuration>
-                                <images>
-                                    <image>
-                                        <alias>tklnchr</alias>
-                                        <run>
-                                            <containerNamePattern>${testkit.reactive.legacy.name.pattern}</containerNamePattern>
-                                            <env>
-                                                <TESTKIT_CHECKOUT_PATH>${project.build.directory}/testkit-reactive-legacy</TESTKIT_CHECKOUT_PATH>
-                                                <TEST_BACKEND_SERVER>reactive-legacy</TEST_BACKEND_SERVER>
-                                            </env>
-                                            <log>
-                                                <prefix xml:space="preserve">${testkit.reactive.legacy.name.pattern}> </prefix>
-                                            </log>
-                                        </run>
-                                    </image>
-                                </images>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <!-- Use reactive backend to test reactive driver. -->
                             <id>run-testkit-reactive</id>
                             <phase>integration-test</phase>
                             <goals>
@@ -187,6 +161,11 @@
                                             <env>
                                                 <TESTKIT_CHECKOUT_PATH>${project.build.directory}/testkit-reactive</TESTKIT_CHECKOUT_PATH>
                                                 <TEST_BACKEND_SERVER>reactive</TEST_BACKEND_SERVER>
+                                                <!-- Excludes 3.5 -->
+                                                <TESTKIT_ARGS>--configs 4.0-enterprise-neo4j 4.1-enterprise-neo4j 4.2-community-bolt 4.2-community-neo4j
+                                                    4.2-enterprise-bolt 4.2-enterprise-neo4j 4.2-enterprise-cluster-neo4j 4.3-community-bolt 4.3-community-neo4j
+                                                    4.3-enterprise-bolt 4.3-enterprise-neo4j 4.3-enterprise-cluster-neo4j ${testkit.args}
+                                                </TESTKIT_ARGS>
                                             </env>
                                             <log>
                                                 <prefix xml:space="preserve">${testkit.reactive.name.pattern}> </prefix>

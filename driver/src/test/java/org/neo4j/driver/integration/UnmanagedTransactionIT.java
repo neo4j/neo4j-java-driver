@@ -32,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.bolt.connection.TelemetryApi;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionConfig;
@@ -57,8 +56,7 @@ class UnmanagedTransactionIT {
     @BeforeEach
     @SuppressWarnings("resource")
     void setUp() {
-        session = ((InternalDriver) neo4j.driver())
-                .newSession(SessionConfig.defaultConfig(), NotificationConfig.defaultConfig(), null);
+        session = ((InternalDriver) neo4j.driver()).newSession(SessionConfig.defaultConfig(), null);
     }
 
     @AfterEach

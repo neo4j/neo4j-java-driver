@@ -26,25 +26,27 @@
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
     <surefire.and.failsafe.version>3.5.3</surefire.and.failsafe.version>
+    <surefire.jpms.args/>
     <failsafe.parallelizable.jpms.args/>
+    <failsafe.sequential.jpms.args/>
     <!-- Skip deployment by default for everything in this project. -->
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <!-- Versions -->
-    <neo4j-bolt-connection-bom.version>3.0.0</neo4j-bolt-connection-bom.version>
+    <neo4j-bolt-connection-bom.version>4.0.0</neo4j-bolt-connection-bom.version>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.121.Final</netty-bom.version>
+    <netty-bom.version>4.2.2.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2023.0.17</reactor-bom.version>
-    <slf4j-api.version>2.0.17</slf4j-api.version>
+    <reactor-bom.version>2025.0.0-M4</reactor-bom.version>
+    <slf4j-api.version>2.1.0-alpha1</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
-    <mockito-core.version>5.17.0</mockito-core.version>
-    <junit.version>5.12.2</junit.version>
+    <mockito-core.version>5.18.0</mockito-core.version>
+    <junit.version>5.13.1</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.11.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
@@ -52,21 +54,22 @@
     <commons-compress.version>1.27.1</commons-compress.version>
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
     <commons-codec.version>1.18.0</commons-codec.version>
-    <bouncycastle-jdk18on.version>1.80</bouncycastle-jdk18on.version>
+    <bouncycastle-jdk18on.version>1.81</bouncycastle-jdk18on.version>
     <logback-classic.version>1.5.18</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
     <jackson.version>2.19.0</jackson.version>
     <lombok.version>1.18.38</lombok.version>
     <svm.version>24.2.1</svm.version>
-    <micrometer.version>1.14.6</micrometer.version>
-    <blockhound.version>1.0.11.RELEASE</blockhound.version>
-    <testcontainers.version>1.21.0</testcontainers.version>
+    <micrometer.version>1.15.1</micrometer.version>
+    <blockhound.version>1.0.13.RELEASE</blockhound.version>
+    <testcontainers.version>1.21.1</testcontainers.version>
     <build-resources.version>2024-12.1</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
 
   <modules>
+    <module>bom</module>
     <module>driver</module>
     <module>bundle</module>
     <module>driver-it</module>
@@ -102,13 +105,6 @@
   <dependencyManagement>
     <dependencies>
       <!-- Compile dependencies -->
-      <dependency>
-        <groupId>org.neo4j.bolt</groupId>
-        <artifactId>neo4j-bolt-connection-bom</artifactId>
-        <version>${neo4j-bolt-connection-bom.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
       <dependency>
         <groupId>org.reactivestreams</groupId>
         <artifactId>reactive-streams</artifactId>
@@ -164,10 +160,11 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter</artifactId>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
         <version>${junit.version}</version>
-        <scope>test</scope>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.testng</groupId>
@@ -315,6 +312,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${surefire.and.failsafe.version}</version>
           <configuration>
+            <argLine>${surefire.jpms.args}</argLine>
             <trimStackTrace>false</trimStackTrace>
             <classpathDependencyExcludes>
               <classpathDependencyExclude>org.graalvm.nativeimage:svm</classpathDependencyExclude>
@@ -355,7 +353,7 @@
                 <goal>verify</goal>
               </goals>
               <configuration>
-                <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
+                <argLine>-Dfile.encoding=${project.build.sourceEncoding} ${failsafe.sequential.jpms.args}</argLine>
                 <trimStackTrace>false</trimStackTrace>
                 <forkCount>1</forkCount>
                 <reuseForks>true</reuseForks>
@@ -636,6 +634,11 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>versions-maven-plugin</artifactId>
           <version>2.15.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>flatten-maven-plugin</artifactId>
+          <version>1.7.0</version>
         </plugin>
       </plugins>
     </pluginManagement>

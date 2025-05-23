@@ -37,4 +37,8 @@ module org.neo4j.driver {
     requires static org.slf4j;
     requires static java.management;
     requires static reactor.blockhound;
+
+    uses org.neo4j.driver.internal.shaded.bolt.connection.BoltConnectionProviderFactory;
+    provides org.neo4j.driver.internal.shaded.bolt.connection.BoltConnectionProviderFactory with
+            org.neo4j.driver.internal.shaded.bolt.connection.netty.NettyBoltConnectionProviderFactory;
 }

@@ -18,13 +18,14 @@ package org.neo4j.driver.internal.retry;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import io.netty.util.concurrent.EventExecutorGroup;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -53,24 +54,25 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
     final long initialRetryDelayMs;
     final double multiplier;
     final double jitterFactor;
-    private final EventExecutorGroup eventExecutorGroup;
     private final Clock clock;
     private final SleepTask sleepTask;
 
     @SuppressWarnings("deprecation")
     private final Logger log;
 
+    private final ScheduledExecutorService executor;
+
     public ExponentialBackoffRetryLogic(
             long maxTransactionRetryTime,
-            EventExecutorGroup eventExecutorGroup,
+            ScheduledExecutorService executor,
             Clock clock,
             @SuppressWarnings("deprecation") Logging logging) {
-        this(maxTransactionRetryTime, eventExecutorGroup, clock, logging, Thread::sleep);
+        this(maxTransactionRetryTime, executor, clock, logging, Thread::sleep);
     }
 
     protected ExponentialBackoffRetryLogic(
             long maxTransactionRetryTime,
-            EventExecutorGroup eventExecutorGroup,
+            ScheduledExecutorService executor,
             Clock clock,
             @SuppressWarnings("deprecation") Logging logging,
             SleepTask sleepTask) {
@@ -79,7 +81,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
                 INITIAL_RETRY_DELAY_MS,
                 RETRY_DELAY_MULTIPLIER,
                 RETRY_DELAY_JITTER_FACTOR,
-                eventExecutorGroup,
+                executor,
                 clock,
                 logging,
                 sleepTask);
@@ -90,7 +92,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
             long initialRetryDelayMs,
             double multiplier,
             double jitterFactor,
-            EventExecutorGroup eventExecutorGroup,
+            ScheduledExecutorService executor,
             Clock clock,
             @SuppressWarnings("deprecation") Logging logging,
             SleepTask sleepTask) {
@@ -98,7 +100,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
         this.initialRetryDelayMs = initialRetryDelayMs;
         this.multiplier = multiplier;
         this.jitterFactor = jitterFactor;
-        this.eventExecutorGroup = eventExecutorGroup;
+        this.executor = Objects.requireNonNull(executor);
         this.clock = clock;
         this.sleepTask = sleepTask;
         this.log = logging.getLog(getClass());
@@ -203,16 +205,13 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
                     nextDelayMs = (long) (nextDelayMs * multiplier);
                     errors = recordError(error, errors);
 
-                    // retry on netty event loop thread
-                    var eventExecutor = eventExecutorGroup.next();
                     var context = Context.of(
                             "errors", errors,
                             "startTime", startTime,
                             "nextDelayMs", nextDelayMs);
                     return Mono.just(context)
                             .delayElement(
-                                    Duration.ofMillis(delayWithJitterMs),
-                                    Schedulers.fromExecutorService(eventExecutor));
+                                    Duration.ofMillis(delayWithJitterMs), Schedulers.fromExecutorService(executor));
                 }
             }
             addSuppressed(throwable, errors);
@@ -223,10 +222,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
     }
 
     private <T> void executeWorkInEventLoop(CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work) {
-        // this is the very first time we execute given work
-        var eventExecutor = eventExecutorGroup.next();
-
-        eventExecutor.execute(() -> executeWork(resultFuture, work, -1, initialRetryDelayMs, null));
+        executor.execute(() -> executeWork(resultFuture, work, -1, initialRetryDelayMs, null));
     }
 
     private <T> void retryWorkInEventLoop(
@@ -236,13 +232,11 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
             long startTime,
             long delayMs,
             List<Throwable> errors) {
-        // work has failed before, we need to schedule retry with the given delay
-        var eventExecutor = eventExecutorGroup.next();
 
         var delayWithJitterMs = computeDelayWithJitter(delayMs);
         log.warn("Async transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", error);
 
-        eventExecutor.schedule(
+        executor.schedule(
                 () -> {
                     var newRetryDelayMs = (long) (delayMs * multiplier);
                     executeWork(resultFuture, work, startTime, newRetryDelayMs, errors);

@@ -16,7 +16,7 @@
  */
 package org.neo4j.driver.internal.util;
 
-import io.netty.util.concurrent.EventExecutorGroup;
+import java.util.concurrent.ScheduledExecutorService;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -31,7 +31,7 @@ public class DriverFactoryWithFixedRetryLogic extends DriverFactory {
     @Override
     protected RetryLogic createRetryLogic(
             long maxTransactionRetryTime,
-            EventExecutorGroup eventExecutorGroup,
+            ScheduledExecutorService executor,
             @SuppressWarnings("deprecation") Logging logging) {
         return new FixedRetryLogic(retryCount);
     }

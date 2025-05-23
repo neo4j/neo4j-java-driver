@@ -80,7 +80,6 @@ import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
@@ -1181,13 +1180,7 @@ class SessionIT {
 
     private Driver newDriverWithFixedRetries(int maxRetriesCount) {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic(maxRetriesCount);
-        return driverFactory.newInstance(
-                neo4j.uri(),
-                neo4j.authTokenManager(),
-                noLoggingConfig(),
-                BoltSecurityPlanManager.insecure(),
-                null,
-                null);
+        return driverFactory.newInstance(neo4j.uri(), neo4j.authTokenManager(), null, noLoggingConfig());
     }
 
     private Driver newDriverWithLimitedRetries(int maxTxRetryTime) {

@@ -56,7 +56,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -66,7 +65,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
-import org.neo4j.bolt.connection.DatabaseName;
+import org.neo4j.bolt.connection.RoutedBoltConnectionParameters;
 import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.bolt.connection.message.BeginMessage;
 import org.neo4j.bolt.connection.message.CommitMessage;
@@ -88,7 +87,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
-import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
@@ -98,7 +97,7 @@ import org.neo4j.driver.testutil.TestUtil;
 
 class NetworkSessionTest {
     private DriverBoltConnection connection;
-    private DriverBoltConnectionProvider connectionProvider;
+    private DriverBoltConnectionSource connectionProvider;
     private NetworkSession session;
 
     @BeforeEach
@@ -106,13 +105,11 @@ class NetworkSessionTest {
         connection = connectionMock(new BoltProtocolVersion(5, 4));
         given(connection.close()).willReturn(completedFuture(null));
         given(connection.valueFactory()).willReturn(mock(BoltValueFactory.class));
-        connectionProvider = mock(DriverBoltConnectionProvider.class);
-        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        connectionProvider = mock(DriverBoltConnectionSource.class);
+        given(connectionProvider.getConnection(any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
-                    var database = (DatabaseName) invocation.getArguments()[1];
-                    @SuppressWarnings("unchecked")
-                    var databaseConsumer = (Consumer<DatabaseName>) invocation.getArguments()[8];
-                    databaseConsumer.accept(database);
+                    var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
+                    parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection);
                 });
         session = newSession(connectionProvider);
@@ -293,7 +290,7 @@ class NetworkSessionTest {
 
         run(session, query);
 
-        verify(connectionProvider).connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(connectionProvider).getConnection(any());
     }
 
     @Test
@@ -311,8 +308,7 @@ class NetworkSessionTest {
     void resetDoesNothingWhenNoTransactionAndNoConnection() {
         await(session.resetAsync());
 
-        verify(connectionProvider, never())
-                .connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(connectionProvider, never()).getConnection(any());
     }
 
     @Test
@@ -321,8 +317,7 @@ class NetworkSessionTest {
 
         close(session);
 
-        verify(connectionProvider, never())
-                .connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(connectionProvider, never()).getConnection(any());
     }
 
     @Test
@@ -331,7 +326,7 @@ class NetworkSessionTest {
         var tx = beginTransaction(session);
 
         assertNotNull(tx);
-        verify(connectionProvider).connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(connectionProvider).getConnection(any());
     }
 
     @Test
@@ -417,7 +412,7 @@ class NetworkSessionTest {
                             }
                         }));
         var tx = beginTransaction(session);
-        verify(connectionProvider).connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(connectionProvider).getConnection(any());
         verifyBegin(connection);
         var query = "RETURN 42";
         await(tx.runAsync(new Query(query)));
@@ -508,15 +503,14 @@ class NetworkSessionTest {
     private void accessModeUsedToAcquireConnections(AccessMode mode) {
         var session2 = newSession(connectionProvider, mode);
         beginTransaction(session2);
-        var argument = ArgumentCaptor.forClass(org.neo4j.bolt.connection.AccessMode.class);
-        verify(connectionProvider)
-                .connect(any(), any(), any(), argument.capture(), any(), any(), any(), any(), any(), any());
+        var argument = ArgumentCaptor.forClass(RoutedBoltConnectionParameters.class);
+        verify(connectionProvider).getConnection(argument.capture());
         assertEquals(
                 switch (mode) {
                     case READ -> org.neo4j.bolt.connection.AccessMode.READ;
                     case WRITE -> org.neo4j.bolt.connection.AccessMode.WRITE;
                 },
-                argument.getValue());
+                argument.getValue().accessMode());
     }
 
     @Test
@@ -537,8 +531,7 @@ class NetworkSessionTest {
     void shouldDoNothingWhenClosingWithoutAcquiredConnection() {
         var error = new RuntimeException("Hi");
         Mockito.reset(connectionProvider);
-        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(failedFuture(error));
+        given(connectionProvider.getConnection(any())).willReturn(failedFuture(error));
 
         var e = assertThrows(Exception.class, () -> run(session, "RETURN 1"));
         assertEquals(error, e);
@@ -550,14 +543,11 @@ class NetworkSessionTest {
     void shouldRunAfterRunFailure() {
         var error = new RuntimeException("Hi");
         Mockito.reset(connectionProvider);
-        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        given(connectionProvider.getConnection(any()))
                 .willReturn(failedFuture(error))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
-                    var databaseName = (DatabaseName) invocation.getArguments()[1];
-                    @SuppressWarnings("unchecked")
-                    var databaseNameConsumer =
-                            (Consumer<DatabaseName>) invocation.getArguments()[8];
-                    databaseNameConsumer.accept(databaseName);
+                    var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
+                    parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection);
                 });
 
@@ -570,8 +560,7 @@ class NetworkSessionTest {
 
         run(session, query);
 
-        verify(connectionProvider, times(2))
-                .connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(connectionProvider, times(2)).getConnection(any());
         verifyAutocommitRunAndPull(connection, query);
     }
 
@@ -589,21 +578,15 @@ class NetworkSessionTest {
         given(connection2.close()).willReturn(CompletableFuture.completedStage(null));
 
         Mockito.reset(connectionProvider);
-        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        given(connectionProvider.getConnection(any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
-                    var databaseName = (DatabaseName) invocation.getArguments()[1];
-                    @SuppressWarnings("unchecked")
-                    var databaseNameConsumer =
-                            (Consumer<DatabaseName>) invocation.getArguments()[8];
-                    databaseNameConsumer.accept(databaseName);
+                    var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
+                    parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection1);
                 })
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
-                    var databaseName = (DatabaseName) invocation.getArguments()[1];
-                    @SuppressWarnings("unchecked")
-                    var databaseNameConsumer =
-                            (Consumer<DatabaseName>) invocation.getArguments()[8];
-                    databaseNameConsumer.accept(databaseName);
+                    var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
+                    parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection2);
                 });
 
@@ -617,8 +600,7 @@ class NetworkSessionTest {
 
         run(session, query);
 
-        verify(connectionProvider, times(2))
-                .connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(connectionProvider, times(2)).getConnection(any());
         verifyBegin(connection1);
         verifyAutocommitRunAndPull(connection2, "RETURN 2");
     }
@@ -648,21 +630,15 @@ class NetworkSessionTest {
         }));
 
         Mockito.reset(connectionProvider);
-        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        given(connectionProvider.getConnection(any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
-                    var databaseName = (DatabaseName) invocation.getArguments()[1];
-                    @SuppressWarnings("unchecked")
-                    var databaseNameConsumer =
-                            (Consumer<DatabaseName>) invocation.getArguments()[8];
-                    databaseNameConsumer.accept(databaseName);
+                    var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
+                    parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection1);
                 })
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
-                    var databaseName = (DatabaseName) invocation.getArguments()[1];
-                    @SuppressWarnings("unchecked")
-                    var databaseNameConsumer =
-                            (Consumer<DatabaseName>) invocation.getArguments()[8];
-                    databaseNameConsumer.accept(databaseName);
+                    var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
+                    parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection2);
                 });
 
@@ -674,8 +650,7 @@ class NetworkSessionTest {
 
         beginTransaction(session);
 
-        verify(connectionProvider, times(2))
-                .connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(connectionProvider, times(2)).getConnection(any());
         verifyBegin(connection1);
         verifyBegin(connection2);
     }
@@ -684,14 +659,11 @@ class NetworkSessionTest {
     void shouldBeginTxAfterRunFailureToAcquireConnection() {
         var error = new RuntimeException("Hi");
         Mockito.reset(connectionProvider);
-        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        given(connectionProvider.getConnection(any()))
                 .willReturn(failedFuture(error))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
-                    var databaseName = (DatabaseName) invocation.getArguments()[1];
-                    @SuppressWarnings("unchecked")
-                    var databaseNameConsumer =
-                            (Consumer<DatabaseName>) invocation.getArguments()[8];
-                    databaseNameConsumer.accept(databaseName);
+                    var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
+                    parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection);
                 });
         setupSuccessfulBegin(connection);
@@ -701,8 +673,7 @@ class NetworkSessionTest {
 
         beginTransaction(session);
 
-        verify(connectionProvider, times(2))
-                .connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(connectionProvider, times(2)).getConnection(any());
         then(connection)
                 .should()
                 .writeAndFlush(

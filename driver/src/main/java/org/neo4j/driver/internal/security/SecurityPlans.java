@@ -28,7 +28,6 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.RevocationCheckingStrategy;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.GqlStatusError;
-import org.neo4j.driver.internal.Scheme;
 import org.neo4j.driver.internal.SecuritySettings;
 
 public class SecurityPlans {
@@ -37,7 +36,6 @@ public class SecurityPlans {
             String uriScheme,
             ClientCertificateManager clientCertificateManager,
             @SuppressWarnings("deprecation") Logging logging) {
-        Scheme.validateScheme(uriScheme);
         try {
             if (isSecurityScheme(uriScheme)) {
                 assertSecuritySettingsNotUserConfigured(settings, uriScheme);

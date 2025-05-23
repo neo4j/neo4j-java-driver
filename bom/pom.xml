@@ -1,0 +1,84 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.neo4j.driver</groupId>
+    <artifactId>neo4j-java-driver-parent</artifactId>
+    <version>6.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>neo4j-java-driver-bom</artifactId>
+
+  <packaging>pom</packaging>
+  <name>Neo4j Java Driver (BOM)</name>
+  <description>The BOM for the Neo4j Java Driver</description>
+  <url>https://github.com/neo4j/neo4j-java-driver</url>
+
+  <properties>
+    <maven.deploy.skip>false</maven.deploy.skip>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.neo4j.driver</groupId>
+        <artifactId>neo4j-java-driver</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j.driver</groupId>
+        <artifactId>neo4j-java-driver-all</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j.bolt</groupId>
+        <artifactId>neo4j-bolt-connection-bom</artifactId>
+        <version>${neo4j-bolt-connection-bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>flatten</id>
+            <goals>
+              <goal>flatten</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <updatePomFile>true</updatePomFile>
+              <flattenMode>bom</flattenMode>
+              <pomElements>
+                <properties>remove</properties>
+                <dependencyManagement>extended_interpolate</dependencyManagement>
+              </pomElements>
+            </configuration>
+          </execution>
+          <execution>
+            <id>flatten-clean</id>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+            <phase>clean</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/neo4j-java-driver.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j-java-driver.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j-java-driver</url>
+  </scm>
+
+</project>
