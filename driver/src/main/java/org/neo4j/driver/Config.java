@@ -965,17 +965,6 @@ public final class Config implements Serializable {
         }
 
         /**
-         * Return the configured certificate file.
-         *
-         * @return configured certificate or {@code null} if trust strategy does not require a certificate.
-         * @deprecated superseded by {@link TrustStrategy#certFiles()}
-         */
-        @Deprecated
-        public File certFile() {
-            return certFiles.isEmpty() ? null : certFiles.get(0);
-        }
-
-        /**
          * Return the configured certificate files.
          *
          * @return configured certificate files or empty list if trust strategy does not require certificates.
