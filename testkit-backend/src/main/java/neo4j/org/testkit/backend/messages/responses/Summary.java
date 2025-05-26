@@ -121,8 +121,6 @@ public class Summary implements TestkitResponse {
 
         private InputPosition position;
 
-        private String severity;
-
         private String severityLevel;
 
         private String rawSeverityLevel;

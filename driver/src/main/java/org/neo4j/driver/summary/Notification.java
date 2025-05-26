@@ -73,17 +73,6 @@ public interface Notification extends GqlStatusObject {
     }
 
     /**
-     * The severity level of the notification.
-     *
-     * @deprecated superseded by {@link #severityLevel()} and {@link #rawSeverityLevel()}
-     * @return the severity level of the notification
-     */
-    @Deprecated
-    default String severity() {
-        return rawSeverityLevel().orElse("N/A");
-    }
-
-    /**
      * Returns the severity level of the notification derived from the diagnostic record.
      *
      * @return the severity level of the notification

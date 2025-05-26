@@ -250,7 +250,6 @@ class MetadataExtractorTest {
         assertEquals("Almost bad thing", firstNotification.description());
         assertEquals("Neo.DummyNotification", firstNotification.code());
         assertEquals("A title", firstNotification.title());
-        assertEquals("WARNING", firstNotification.severity());
         assertEquals(
                 NotificationSeverity.WARNING, firstNotification.severityLevel().get());
         assertEquals("WARNING", firstNotification.rawSeverityLevel().get());
@@ -280,7 +279,8 @@ class MetadataExtractorTest {
         assertEquals("Almost good thing", secondNotification.description());
         assertEquals("Neo.GoodNotification", secondNotification.code());
         assertEquals("Good", secondNotification.title());
-        assertEquals("INFO", secondNotification.severity());
+        assertFalse(secondNotification.severityLevel().isPresent());
+        assertEquals("INFO", secondNotification.rawSeverityLevel().get());
         assertTrue(secondNotification.inputPosition().isEmpty());
         assertNull(secondNotification.position());
         assertEquals(
@@ -348,7 +348,6 @@ class MetadataExtractorTest {
         assertEquals("notification_description", firstGqlStatusObject.description());
         assertEquals("neo4j_code", firstGqlStatusObject.code());
         assertEquals("title", firstGqlStatusObject.title());
-        assertEquals("WARNING", firstGqlStatusObject.severity());
         assertEquals(
                 NotificationSeverity.WARNING,
                 firstGqlStatusObject.severityLevel().get());
