@@ -22,20 +22,14 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import java.util.logging.Level;
 import neo4j.org.testkit.backend.channel.handler.TestkitMessageInboundHandler;
 import neo4j.org.testkit.backend.channel.handler.TestkitMessageOutboundHandler;
 import neo4j.org.testkit.backend.channel.handler.TestkitRequestProcessorHandler;
 import neo4j.org.testkit.backend.channel.handler.TestkitRequestResponseMapperHandler;
-import org.neo4j.driver.Logging;
 
 public class Runner {
     public static void main(String[] args) throws InterruptedException {
         var backendMode = getBackendMode(args);
-        var levelString = System.getenv("TESTKIT_BACKEND_LOGGING_LEVEL");
-        var logging = levelString == null || levelString.isEmpty()
-                ? Logging.none()
-                : Logging.console(Level.parse(levelString));
 
         EventLoopGroup group = new NioEventLoopGroup();
         try {
@@ -50,11 +44,9 @@ public class Runner {
                             var responseQueueHanlder = new ResponseQueueHanlder(channel::writeAndFlush);
                             channel.pipeline().addLast(new TestkitMessageInboundHandler());
                             channel.pipeline().addLast(new TestkitMessageOutboundHandler());
+                            channel.pipeline().addLast(new TestkitRequestResponseMapperHandler(responseQueueHanlder));
                             channel.pipeline()
-                                    .addLast(new TestkitRequestResponseMapperHandler(logging, responseQueueHanlder));
-                            channel.pipeline()
-                                    .addLast(new TestkitRequestProcessorHandler(
-                                            backendMode, logging, responseQueueHanlder));
+                                    .addLast(new TestkitRequestProcessorHandler(backendMode, responseQueueHanlder));
                         }
                     });
             var server = bootstrap.bind().sync();

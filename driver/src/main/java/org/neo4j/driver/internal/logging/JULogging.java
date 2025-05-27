@@ -28,6 +28,7 @@ import org.neo4j.driver.Logging;
  *
  * @see Logging#javaUtilLogging(Level)
  */
+@SuppressWarnings("deprecation")
 public class JULogging implements Logging, Serializable {
     @Serial
     private static final long serialVersionUID = -1145576859241657833L;

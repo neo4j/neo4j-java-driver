@@ -20,9 +20,10 @@ import java.util.ResourceBundle;
 import org.neo4j.driver.Logger;
 
 public class BoltLogger implements System.Logger {
+    @SuppressWarnings("deprecation")
     private final Logger logger;
 
-    public BoltLogger(Logger logger) {
+    public BoltLogger(@SuppressWarnings("deprecation") Logger logger) {
         this.logger = logger;
     }
 

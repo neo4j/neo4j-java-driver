@@ -21,6 +21,7 @@ import java.io.Serializable;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 
+@SuppressWarnings("deprecation")
 public class DevNullLogging implements Logging, Serializable {
     @Serial
     private static final long serialVersionUID = -2632752338512373821L;

@@ -81,6 +81,7 @@ public class ReactiveStreamsSessionIT {
     @SuppressWarnings("BusyWait")
     void shouldReleaseResultsOnSubscriptionCancellation(boolean request) throws InterruptedException {
         var messages = Collections.synchronizedList(new ArrayList<String>());
+        @SuppressWarnings("deprecation")
         var config = Config.builder()
                 .withDriverMetrics()
                 .withLogging(LoggingUtil.boltLogging(messages))

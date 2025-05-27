@@ -215,10 +215,12 @@ class PrefixedLoggerTest {
         verify(delegate).trace("Output Hello World!");
     }
 
+    @SuppressWarnings("deprecation")
     private static Logger newLoggerMock() {
         return newLoggerMock(false, false);
     }
 
+    @SuppressWarnings("deprecation")
     private static Logger newLoggerMock(boolean debugEnabled, boolean traceEnabled) {
         var logger = mock(Logger.class);
         when(logger.isDebugEnabled()).thenReturn(debugEnabled);

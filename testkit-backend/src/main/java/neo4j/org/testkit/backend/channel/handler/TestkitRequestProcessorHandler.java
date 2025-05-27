@@ -35,7 +35,6 @@ import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.GqlError;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.RetryableException;
@@ -49,15 +48,14 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     private final ResponseQueueHanlder responseQueueHanlder;
     private Channel channel;
 
-    public TestkitRequestProcessorHandler(
-            BackendMode backendMode, Logging logging, ResponseQueueHanlder responseQueueHanlder) {
+    public TestkitRequestProcessorHandler(BackendMode backendMode, ResponseQueueHanlder responseQueueHanlder) {
         switch (backendMode) {
             case ASYNC -> processorImpl = TestkitRequest::processAsync;
             case REACTIVE -> processorImpl =
                     (request, state) -> request.processReactive(state).toFuture();
             default -> processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
         }
-        testkitState = new TestkitState(this::writeAndFlush, logging);
+        testkitState = new TestkitState(this::writeAndFlush);
         this.responseQueueHanlder = responseQueueHanlder;
     }
 

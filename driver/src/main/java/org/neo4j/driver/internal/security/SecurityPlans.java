@@ -36,7 +36,7 @@ public class SecurityPlans {
             SecuritySettings settings,
             String uriScheme,
             ClientCertificateManager clientCertificateManager,
-            Logging logging) {
+            @SuppressWarnings("deprecation") Logging logging) {
         Scheme.validateScheme(uriScheme);
         try {
             if (isSecurityScheme(uriScheme)) {
@@ -91,7 +91,9 @@ public class SecurityPlans {
     }
 
     private static SecurityPlan createSecurityPlanFromScheme(
-            String scheme, ClientCertificateManager clientCertificateManager, Logging logging)
+            String scheme,
+            ClientCertificateManager clientCertificateManager,
+            @SuppressWarnings("deprecation") Logging logging)
             throws GeneralSecurityException, IOException {
         if (isHighTrustScheme(scheme)) {
             return SecurityPlanImpl.forSystemCASignedCertificates(
@@ -110,7 +112,7 @@ public class SecurityPlans {
             boolean encrypted,
             Config.TrustStrategy trustStrategy,
             ClientCertificateManager clientCertificateManager,
-            Logging logging)
+            @SuppressWarnings("deprecation") Logging logging)
             throws GeneralSecurityException, IOException {
         if (encrypted) {
             var hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();

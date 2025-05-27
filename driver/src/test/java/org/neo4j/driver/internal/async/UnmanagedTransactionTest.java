@@ -321,6 +321,7 @@ class UnmanagedTransactionTest {
         }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -359,6 +360,7 @@ class UnmanagedTransactionTest {
         }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -384,6 +386,7 @@ class UnmanagedTransactionTest {
         var connection = connectionMock();
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -412,6 +415,7 @@ class UnmanagedTransactionTest {
 
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var resultCursorsHolder = mockResultCursorWith(terminationCause);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -439,6 +443,7 @@ class UnmanagedTransactionTest {
         var terminationCause = new ClientException("Custom exception");
         var resultCursorsHolder = mockResultCursorWith(new ClientException("Cursor error"));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -468,6 +473,7 @@ class UnmanagedTransactionTest {
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var terminationCause = new ClientException("Custom exception");
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -493,6 +499,7 @@ class UnmanagedTransactionTest {
         var connection = connectionMock();
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -528,6 +535,7 @@ class UnmanagedTransactionTest {
         }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -563,6 +571,7 @@ class UnmanagedTransactionTest {
         }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -601,6 +610,7 @@ class UnmanagedTransactionTest {
         }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -659,6 +669,7 @@ class UnmanagedTransactionTest {
                         }));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -737,6 +748,7 @@ class UnmanagedTransactionTest {
         setupConnectionAnswers(connection, List.of(messageHandler));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -812,6 +824,7 @@ class UnmanagedTransactionTest {
         setupConnectionAnswers(connection, List.of(messageHandler));
         given(connection.close()).willReturn(CompletableFuture.completedStage(null));
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),
@@ -1076,6 +1089,7 @@ class UnmanagedTransactionTest {
 
     private static UnmanagedTransaction beginTx(DriverBoltConnection connection, Set<Bookmark> initialBookmarks) {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
+        @SuppressWarnings("deprecation")
         var tx = new UnmanagedTransaction(
                 connection,
                 DatabaseNameUtil.defaultDatabase(),

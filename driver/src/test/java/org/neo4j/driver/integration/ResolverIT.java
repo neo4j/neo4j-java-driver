@@ -22,11 +22,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.Logging.none;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
 
@@ -36,9 +36,10 @@ class ResolverIT {
         var resolver = mock(ServerAddressResolver.class);
         when(resolver.resolve(any(ServerAddress.class))).thenThrow(new RuntimeException("Resolution failure!"));
 
+        @SuppressWarnings("deprecation")
         var config = Config.builder()
                 .withoutEncryption()
-                .withLogging(none())
+                .withLogging(Logging.none())
                 .withResolver(resolver)
                 .build();
         @SuppressWarnings("resource")

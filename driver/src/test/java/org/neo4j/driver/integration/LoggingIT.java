@@ -37,6 +37,7 @@ class LoggingIT {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
+    @SuppressWarnings("deprecation")
     @Test
     void logShouldRecordDebugAndTraceInfo() {
         // Given

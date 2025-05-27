@@ -37,6 +37,7 @@ import org.neo4j.driver.Logging;
  *
  * @see Logging#console(Level)
  */
+@SuppressWarnings("deprecation")
 public class ConsoleLogging implements Logging, Serializable {
     @Serial
     private static final long serialVersionUID = 9205935204074879150L;

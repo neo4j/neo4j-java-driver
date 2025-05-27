@@ -106,6 +106,7 @@ class CredentialsIT {
     }
 
     private void testDriverFailureOnWrongCredentials(String uri) {
+        @SuppressWarnings("deprecation")
         var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
         var authToken = AuthTokens.basic("neo4j", "wrongSecret");
 

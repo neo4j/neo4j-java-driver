@@ -31,13 +31,17 @@ import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 
 final class TerminationAwareBoltConnection extends DelegatingBoltConnection {
+    @SuppressWarnings("deprecation")
     private final Logging logging;
+
+    @SuppressWarnings("deprecation")
     private final Logger log;
+
     private final TerminationAwareStateLockingExecutor executor;
     private final Consumer<Throwable> throwableConsumer;
 
     public TerminationAwareBoltConnection(
-            Logging logging,
+            @SuppressWarnings("deprecation") Logging logging,
             DriverBoltConnection delegate,
             TerminationAwareStateLockingExecutor executor,
             Consumer<Throwable> throwableConsumer) {

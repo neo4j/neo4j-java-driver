@@ -18,6 +18,7 @@ package org.neo4j.driver.internal.logging;
 
 import org.neo4j.driver.Logger;
 
+@SuppressWarnings("deprecation")
 public class DevNullLogger implements Logger {
     public static final Logger DEV_NULL_LOGGER = new DevNullLogger();
 

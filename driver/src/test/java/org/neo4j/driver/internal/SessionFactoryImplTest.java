@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.util.FixedRetryLogic;
 class SessionFactoryImplTest {
     @Test
     void createsNetworkSessions() {
+        @SuppressWarnings("deprecation")
         var config = Config.builder().withLogging(DEV_NULL_LOGGING).build();
         var factory = newSessionFactory(config);
 
@@ -55,6 +56,7 @@ class SessionFactoryImplTest {
 
     @Test
     void createsLeakLoggingNetworkSessions() {
+        @SuppressWarnings("deprecation")
         var config = Config.builder()
                 .withLogging(DEV_NULL_LOGGING)
                 .withLeakedSessionsLogging()

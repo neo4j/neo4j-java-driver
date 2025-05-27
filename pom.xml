@@ -41,7 +41,7 @@
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
     <reactor-bom.version>2023.0.17</reactor-bom.version>
-    <slf4j-api.version>1.7.36</slf4j-api.version>
+    <slf4j-api.version>2.0.17</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
     <mockito-core.version>5.17.0</mockito-core.version>
     <junit.version>5.12.2</junit.version>
@@ -53,7 +53,8 @@
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
     <commons-codec.version>1.18.0</commons-codec.version>
     <bouncycastle-jdk18on.version>1.80</bouncycastle-jdk18on.version>
-    <logback-classic.version>1.2.13</logback-classic.version>
+    <logback-classic.version>1.5.18</logback-classic.version>
+    <log4j.version>2.24.3</log4j.version>
     <jackson.version>2.19.0</jackson.version>
     <lombok.version>1.18.38</lombok.version>
     <svm.version>24.2.1</svm.version>
@@ -68,6 +69,7 @@
   <modules>
     <module>driver</module>
     <module>bundle</module>
+    <module>driver-it</module>
     <module>examples</module>
     <module>testkit-backend</module>
     <module>testkit-tests</module>
@@ -130,8 +132,10 @@
       <!-- Optional dependencies -->
       <dependency>
         <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
+        <artifactId>slf4j-bom</artifactId>
         <version>${slf4j-api.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>io.micrometer</groupId>

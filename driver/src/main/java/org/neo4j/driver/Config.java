@@ -17,7 +17,6 @@
 package org.neo4j.driver;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.DriverInfoUtil.driverVersion;
 
 import io.netty.channel.EventLoop;
@@ -32,7 +31,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
@@ -83,6 +81,7 @@ public final class Config implements Serializable {
     /**
      * User defined logging
      */
+    @SuppressWarnings("deprecation")
     private final Logging logging;
 
     /**
@@ -187,7 +186,10 @@ public final class Config implements Serializable {
      * Logging provider
      *
      * @return the Logging provider to use
+     * @deprecated the logging abstraction has been deprecated in favour of the {@link System.Logger} that the driver uses
+     * by default
      */
+    @Deprecated
     public Logging logging() {
         return logging;
     }
@@ -408,7 +410,9 @@ public final class Config implements Serializable {
      * Used to build new config instances
      */
     public static final class ConfigBuilder {
-        private Logging logging = DEV_NULL_LOGGING;
+        @SuppressWarnings("deprecation")
+        private Logging logging = Logging.systemLogging();
+
         private boolean logLeakedSessions;
         private int maxConnectionPoolSize = 100;
         private long idleTimeBeforeConnectionTest = -1;
@@ -432,7 +436,7 @@ public final class Config implements Serializable {
         private ConfigBuilder() {}
 
         /**
-         * Provide a logging implementation for the driver to use. Java logging framework {@link java.util.logging} with {@link Level#INFO} is used by default.
+         * Provide a logging implementation for the driver to use. {@link Logging#systemLogging()} is used by default.
          * Callers are expected to either implement {@link Logging} interface or provide one of the existing implementations available from static factory
          * methods in the {@link Logging} interface.
          * <p>
@@ -441,7 +445,10 @@ public final class Config implements Serializable {
          * @param logging the logging instance to use
          * @return this builder
          * @see Logging
+         * @deprecated the logging abstraction has been deprecated in favour of the {@link System.Logger} that the driver uses
+         * by default
          */
+        @Deprecated
         public ConfigBuilder withLogging(Logging logging) {
             this.logging = logging;
             return this;

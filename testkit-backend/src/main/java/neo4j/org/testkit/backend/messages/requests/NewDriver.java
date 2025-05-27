@@ -67,6 +67,7 @@ import reactor.core.publisher.Mono;
 public class NewDriver implements TestkitRequest {
     private NewDriverBody data;
 
+    @SuppressWarnings("deprecation")
     @Override
     public TestkitResponse process(TestkitState testkitState) {
         var id = testkitState.newId();
@@ -121,7 +122,6 @@ public class NewDriver implements TestkitRequest {
                                 certificateData.getPassword()))
                         .map(ClientCertificateManagers::rotating))
                 .orElse(null);
-        configBuilder.withLogging(testkitState.getLogging());
         org.neo4j.driver.Driver driver;
         var config = configBuilder.build();
         try {
@@ -226,6 +226,7 @@ public class NewDriver implements TestkitRequest {
             TestkitState testkitState,
             String driverId) {
         var securitySettings = securitySettingsBuilder.build();
+        @SuppressWarnings("deprecation")
         var securityPlan = SecurityPlans.createSecurityPlan(
                 securitySettings, uri.getScheme(), clientCertificateManager, config.logging());
         return new DriverFactoryWithDomainNameResolver(domainNameResolver, testkitState, driverId)

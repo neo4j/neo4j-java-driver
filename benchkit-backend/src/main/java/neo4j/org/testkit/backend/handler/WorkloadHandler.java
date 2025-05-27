@@ -33,8 +33,6 @@ import java.util.stream.Stream;
 import neo4j.org.testkit.backend.request.WorkloadRequest;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Logging;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.RoutingControl;
 import org.neo4j.driver.Session;
@@ -43,14 +41,13 @@ import org.neo4j.driver.SimpleQueryRunner;
 import org.neo4j.driver.TransactionCallback;
 
 public class WorkloadHandler {
+    private static final System.Logger LOGGER = System.getLogger(WorkloadHandler.class.getName());
     private final Driver driver;
     private final Executor executor;
-    private final Logger logger;
 
-    public WorkloadHandler(Driver driver, Executor executor, Logging logging) {
+    public WorkloadHandler(Driver driver, Executor executor) {
         this.driver = Objects.requireNonNull(driver);
         this.executor = Objects.requireNonNull(executor);
-        this.logger = logging.getLog(getClass());
     }
 
     public CompletionStage<FullHttpResponse> handle(HttpVersion httpVersion, WorkloadRequest workloadRequest) {
@@ -67,7 +64,7 @@ public class WorkloadHandler {
                 .handle((ignored, throwable) -> {
                     HttpResponseStatus status;
                     if (throwable != null) {
-                        logger.error("An error occured during workload handling.", throwable);
+                        LOGGER.log(System.Logger.Level.ERROR, "An error occured during workload handling.", throwable);
                         status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
                     } else {
                         status = HttpResponseStatus.NO_CONTENT;

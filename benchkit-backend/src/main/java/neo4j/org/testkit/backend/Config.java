@@ -17,12 +17,10 @@
 package neo4j.org.testkit.backend;
 
 import java.net.URI;
-import java.util.logging.Level;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Logging;
 
-public record Config(int port, URI uri, AuthToken authToken, Logging logging) {
+public record Config(int port, URI uri, AuthToken authToken) {
     static Config load() {
         var env = System.getenv();
         var port = Integer.parseInt(env.getOrDefault("TEST_BACKEND_PORT", "9000"));
@@ -31,12 +29,9 @@ public record Config(int port, URI uri, AuthToken authToken, Logging logging) {
         var neo4jScheme = env.getOrDefault("TEST_NEO4J_SCHEME", "neo4j");
         var neo4jUser = env.getOrDefault("TEST_NEO4J_USER", "neo4j");
         var neo4jPassword = env.getOrDefault("TEST_NEO4J_PASS", "password");
-        var level = env.get("TEST_BACKEND_LOGGING_LEVEL");
-        var logging = level == null || level.isEmpty() ? Logging.none() : Logging.console(Level.parse(level));
         return new Config(
                 port,
                 URI.create(String.format("%s://%s:%d", neo4jScheme, neo4jHost, neo4jPort)),
-                AuthTokens.basic(neo4jUser, neo4jPassword),
-                logging);
+                AuthTokens.basic(neo4jUser, neo4jPassword));
     }
 }

@@ -42,7 +42,6 @@ import org.neo4j.bolt.connection.routed.impl.cluster.RoutingTableRegistry;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.ClientCertificateManager;
-import org.neo4j.driver.Logging;
 import reactor.core.publisher.Mono;
 
 public class TestkitState {
@@ -74,7 +73,7 @@ public class TestkitState {
     private final Map<String, ReactiveTransactionStreamsHolder> transactionIdToReactiveTransactionStreamsHolder =
             new HashMap<>();
     private final Map<String, BookmarkManager> bookmarkManagerIdToBookmarkManager = new HashMap<>();
-    private final Logging logging;
+
     private final Map<String, AuthTokenManager> authProviderIdToAuthProvider = new HashMap<>();
     private final Map<String, ClientCertificateManager> managerIdToClientCertificateManager = new HashMap<>();
 
@@ -89,9 +88,8 @@ public class TestkitState {
     @Getter
     private final Map<String, CompletableFuture<TestkitCallbackResult>> callbackIdToFuture = new HashMap<>();
 
-    public TestkitState(Consumer<TestkitResponse> responseWriter, Logging logging) {
+    public TestkitState(Consumer<TestkitResponse> responseWriter) {
         this.responseWriter = responseWriter;
-        this.logging = logging;
     }
 
     public String newId() {
@@ -214,10 +212,6 @@ public class TestkitState {
         if (bookmarkManagerIdToBookmarkManager.remove(id) == null) {
             throw new RuntimeException(BOOKMARK_MANAGER_NOT_FOUND_MESSAGE);
         }
-    }
-
-    public Logging getLogging() {
-        return logging;
     }
 
     public void addAuthProvider(String id, AuthTokenManager authProvider) {

@@ -48,12 +48,16 @@ public class SessionFactoryImpl implements SessionFactory {
     private final BoltSecurityPlanManager securityPlanManager;
     private final DriverBoltConnectionProvider connectionProvider;
     private final RetryLogic retryLogic;
+
+    @SuppressWarnings("deprecation")
     private final Logging logging;
+
     private final boolean leakedSessionsLoggingEnabled;
     private final long defaultFetchSize;
     private final AuthTokenManager authTokenManager;
     private final HomeDatabaseCache homeDatabaseCache;
 
+    @SuppressWarnings("deprecation")
     SessionFactoryImpl(
             BoltSecurityPlanManager securityPlanManager,
             DriverBoltConnectionProvider connectionProvider,
@@ -167,7 +171,7 @@ public class SessionFactoryImpl implements SessionFactory {
             Set<Bookmark> bookmarks,
             long fetchSize,
             String impersonatedUser,
-            Logging logging,
+            @SuppressWarnings("deprecation") Logging logging,
             BookmarkManager bookmarkManager,
             NotificationConfig driverNotificationConfig,
             NotificationConfig notificationConfig,

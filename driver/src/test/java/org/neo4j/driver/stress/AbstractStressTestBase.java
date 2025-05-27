@@ -202,6 +202,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
     abstract Config.ConfigBuilder config(Config.ConfigBuilder builder);
 
     Config config() {
+        @SuppressWarnings("deprecation")
         var builder = Config.builder()
                 .withLogging(logging)
                 .withMaxConnectionPoolSize(100)
@@ -689,6 +690,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext> {
 
     private record ResourcesInfo(long openFileDescriptorCount, Set<String> acquiredLoggerNames) {}
 
+    @SuppressWarnings("deprecation")
     private static class LoggerNameTrackingLogging implements Logging {
         @Serial
         private static final long serialVersionUID = -1100018645191686024L;

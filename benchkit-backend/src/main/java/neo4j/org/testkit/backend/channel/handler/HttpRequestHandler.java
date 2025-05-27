@@ -37,19 +37,16 @@ import java.util.concurrent.CompletionStage;
 import neo4j.org.testkit.backend.handler.ReadyHandler;
 import neo4j.org.testkit.backend.handler.WorkloadHandler;
 import neo4j.org.testkit.backend.request.WorkloadRequest;
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Logging;
 
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+    private static final System.Logger LOGGER = System.getLogger(WorkloadHandler.class.getName());
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final WorkloadHandler workloadHandler;
     private final ReadyHandler readyHandler;
-    private final Logger logger;
 
-    public HttpRequestHandler(WorkloadHandler workloadHandler, ReadyHandler readyHandler, Logging logging) {
+    public HttpRequestHandler(WorkloadHandler workloadHandler, ReadyHandler readyHandler) {
         this.workloadHandler = Objects.requireNonNull(workloadHandler);
         this.readyHandler = Objects.requireNonNull(readyHandler);
-        this.logger = logging.getLog(getClass());
     }
 
     @Override
@@ -73,7 +70,8 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         } else if ("/ready".equals(request.uri()) && HttpMethod.GET.equals(request.method())) {
             responseStage = readyHandler.ready(request.protocolVersion());
         } else {
-            logger.warn("Unknown request %s with %s method.", request.uri(), request.method());
+            LOGGER.log(
+                    System.Logger.Level.WARNING, "Unknown request %s with %s method.", request.uri(), request.method());
             responseStage = CompletableFuture.completedFuture(
                     new DefaultFullHttpResponse(request.protocolVersion(), HttpResponseStatus.INTERNAL_SERVER_ERROR));
         }
@@ -90,7 +88,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        logger.error("An unexpected error occured.", cause);
+        LOGGER.log(System.Logger.Level.ERROR, "An unexpected error occured.", cause);
         ctx.close();
     }
 }

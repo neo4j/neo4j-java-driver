@@ -42,6 +42,7 @@ class ValidatingAuthTokenManagerTest {
         // given
         var delegateManager = mock(AuthTokenManager.class);
         given(delegateManager.getToken()).willReturn(completedFuture(null));
+        @SuppressWarnings("deprecation")
         var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
 
         // when
@@ -59,6 +60,7 @@ class ValidatingAuthTokenManagerTest {
         var delegateManager = mock(AuthTokenManager.class);
         var exception = mock(RuntimeException.class);
         given(delegateManager.getToken()).willThrow(exception);
+        @SuppressWarnings("deprecation")
         var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
 
         // when
@@ -75,6 +77,7 @@ class ValidatingAuthTokenManagerTest {
         // given
         var delegateManager = mock(AuthTokenManager.class);
         given(delegateManager.getToken()).willReturn(null);
+        @SuppressWarnings("deprecation")
         var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
 
         // when
@@ -92,6 +95,7 @@ class ValidatingAuthTokenManagerTest {
         var delegateManager = mock(AuthTokenManager.class);
         var token = AuthTokens.none();
         given(delegateManager.getToken()).willReturn(completedFuture(token));
+        @SuppressWarnings("deprecation")
         var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
 
         // when
@@ -105,6 +109,7 @@ class ValidatingAuthTokenManagerTest {
     void shouldRejectNullAuthTokenOnHandleSecurityException() {
         // given
         var delegateManager = mock(AuthTokenManager.class);
+        @SuppressWarnings("deprecation")
         var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
 
         // when & then
@@ -117,6 +122,7 @@ class ValidatingAuthTokenManagerTest {
     void shouldRejectNullExceptionOnHandleSecurityException() {
         // given
         var delegateManager = mock(AuthTokenManager.class);
+        @SuppressWarnings("deprecation")
         var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
 
         // when & then
@@ -128,6 +134,7 @@ class ValidatingAuthTokenManagerTest {
     void shouldPassOriginalTokenAndExceptionOnHandleSecurityException() {
         // given
         var delegateManager = mock(AuthTokenManager.class);
+        @SuppressWarnings("deprecation")
         var manager = new ValidatingAuthTokenManager(delegateManager, Logging.none());
         var token = AuthTokens.none();
         var exception = mock(SecurityException.class);
@@ -147,7 +154,9 @@ class ValidatingAuthTokenManagerTest {
         var securityException = mock(SecurityException.class);
         var exception = mock(RuntimeException.class);
         willThrow(exception).given(delegateManager).handleSecurityException(token, securityException);
+        @SuppressWarnings("deprecation")
         var logging = mock(Logging.class);
+        @SuppressWarnings("deprecation")
         var log = mock(Logger.class);
         given(logging.getLog(ValidatingAuthTokenManager.class)).willReturn(log);
         var manager = new ValidatingAuthTokenManager(delegateManager, logging);

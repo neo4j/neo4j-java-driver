@@ -47,7 +47,7 @@ public class LeakLoggingNetworkSession extends NetworkSession {
             Set<Bookmark> bookmarks,
             String impersonatedUser,
             long fetchSize,
-            Logging logging,
+            @SuppressWarnings("deprecation") Logging logging,
             BookmarkManager bookmarkManager,
             NotificationConfig driverNotificationConfig,
             NotificationConfig notificationConfig,

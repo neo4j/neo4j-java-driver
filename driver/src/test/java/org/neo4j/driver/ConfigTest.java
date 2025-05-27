@@ -407,6 +407,7 @@ class ConfigTest {
 
     @Nested
     class SerializationTest {
+        @SuppressWarnings("deprecation")
         @Test
         void shouldSerialize() throws Exception {
             var config = Config.builder()
@@ -438,7 +439,7 @@ class ConfigTest {
             assertEquals(config.connectionAcquisitionTimeoutMillis(), verify.connectionAcquisitionTimeoutMillis());
             assertEquals(config.idleTimeBeforeConnectionTest(), verify.idleTimeBeforeConnectionTest());
             assertEquals(config.maxConnectionLifetimeMillis(), verify.maxConnectionLifetimeMillis());
-            assertSame(DevNullLogging.DEV_NULL_LOGGING, verify.logging());
+            assertEquals(Logging.systemLogging().getClass(), verify.logging().getClass());
             assertEquals(config.maxTransactionRetryTimeMillis(), verify.maxTransactionRetryTimeMillis());
             assertEquals(config.fetchSize(), verify.fetchSize());
             assertEquals(config.eventLoopThreads(), verify.eventLoopThreads());
@@ -469,11 +470,13 @@ class ConfigTest {
 
         @Test
         void shouldSerializeSerializableLogging() throws IOException, ClassNotFoundException {
+            @SuppressWarnings("deprecation")
             var config = Config.builder()
                     .withLogging(Logging.javaUtilLogging(Level.ALL))
                     .build();
 
             var verify = TestUtil.serializeAndReadBack(config, Config.class);
+            @SuppressWarnings("deprecation")
             var logging = verify.logging();
             assertInstanceOf(JULogging.class, logging);
 
@@ -492,7 +495,8 @@ class ConfigTest {
 
         @ParameterizedTest
         @ValueSource(classes = {DevNullLogging.class, JULogging.class, ConsoleLogging.class, Slf4jLogging.class})
-        void officialLoggingProvidersShouldBeSerializable(Class<? extends Logging> loggingClass) {
+        void officialLoggingProvidersShouldBeSerializable(
+                @SuppressWarnings("deprecation") Class<? extends Logging> loggingClass) {
             assertTrue(Serializable.class.isAssignableFrom(loggingClass));
         }
     }

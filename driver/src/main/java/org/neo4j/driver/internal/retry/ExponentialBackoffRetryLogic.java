@@ -56,10 +56,15 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
     private final EventExecutorGroup eventExecutorGroup;
     private final Clock clock;
     private final SleepTask sleepTask;
+
+    @SuppressWarnings("deprecation")
     private final Logger log;
 
     public ExponentialBackoffRetryLogic(
-            long maxTransactionRetryTime, EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging) {
+            long maxTransactionRetryTime,
+            EventExecutorGroup eventExecutorGroup,
+            Clock clock,
+            @SuppressWarnings("deprecation") Logging logging) {
         this(maxTransactionRetryTime, eventExecutorGroup, clock, logging, Thread::sleep);
     }
 
@@ -67,7 +72,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
             long maxTransactionRetryTime,
             EventExecutorGroup eventExecutorGroup,
             Clock clock,
-            Logging logging,
+            @SuppressWarnings("deprecation") Logging logging,
             SleepTask sleepTask) {
         this(
                 maxTransactionRetryTime,
@@ -87,7 +92,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic {
             double jitterFactor,
             EventExecutorGroup eventExecutorGroup,
             Clock clock,
-            Logging logging,
+            @SuppressWarnings("deprecation") Logging logging,
             SleepTask sleepTask) {
         this.maxRetryTimeMs = maxRetryTimeMs;
         this.initialRetryDelayMs = initialRetryDelayMs;

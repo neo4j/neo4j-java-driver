@@ -36,9 +36,11 @@ import org.neo4j.driver.Metrics;
 final class InternalMetrics implements Metrics, MetricsListener {
     private final Map<String, ConnectionPoolMetrics> connectionPoolMetrics;
     private final Clock clock;
+
+    @SuppressWarnings("deprecation")
     private final Logger log;
 
-    InternalMetrics(Clock clock, Logging logging) {
+    InternalMetrics(Clock clock, @SuppressWarnings("deprecation") Logging logging) {
         Objects.requireNonNull(clock);
         this.connectionPoolMetrics = new ConcurrentHashMap<>();
         this.clock = clock;

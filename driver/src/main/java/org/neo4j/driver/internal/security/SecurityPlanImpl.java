@@ -41,7 +41,7 @@ public class SecurityPlanImpl implements SecurityPlan {
             boolean requiresHostnameVerification,
             RevocationCheckingStrategy revocationCheckingStrategy,
             ClientCertificateManager clientCertificateManager,
-            Logging logging)
+            @SuppressWarnings("deprecation") Logging logging)
             throws NoSuchAlgorithmException, KeyManagementException {
         return new SecurityPlanImpl(
                 SSLContexts::forAnyCertificate,
@@ -56,7 +56,7 @@ public class SecurityPlanImpl implements SecurityPlan {
             boolean requiresHostnameVerification,
             RevocationCheckingStrategy revocationCheckingStrategy,
             ClientCertificateManager clientCertificateManager,
-            Logging logging)
+            @SuppressWarnings("deprecation") Logging logging)
             throws GeneralSecurityException, IOException {
         var trustManagerFactory = TrustManagerFactories.forCertificates(certFiles, map(revocationCheckingStrategy));
         return new SecurityPlanImpl(
@@ -71,7 +71,7 @@ public class SecurityPlanImpl implements SecurityPlan {
             boolean requiresHostnameVerification,
             RevocationCheckingStrategy revocationCheckingStrategy,
             ClientCertificateManager clientCertificateManager,
-            Logging logging)
+            @SuppressWarnings("deprecation") Logging logging)
             throws GeneralSecurityException, IOException {
         var trustManagerFactory = TrustManagerFactories.forSystemCertificates(map(revocationCheckingStrategy));
         return new SecurityPlanImpl(
@@ -97,7 +97,7 @@ public class SecurityPlanImpl implements SecurityPlan {
             boolean requiresHostnameVerification,
             RevocationCheckingStrategy revocationCheckingStrategy,
             ClientCertificateManager clientCertificateManager,
-            Logging logging)
+            @SuppressWarnings("deprecation") Logging logging)
             throws NoSuchAlgorithmException, KeyManagementException {
         this.requiresEncryption = true;
         this.requiresHostnameVerification = requiresHostnameVerification;

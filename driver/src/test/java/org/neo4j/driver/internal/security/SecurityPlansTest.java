@@ -54,6 +54,7 @@ class SecurityPlansTest {
     void testEncryptionSchemeEnablesEncryption(String scheme) {
         var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
+        @SuppressWarnings("deprecation")
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertTrue(securityPlan.requiresEncryption());
@@ -64,6 +65,7 @@ class SecurityPlansTest {
     void testSystemCertCompatibleConfiguration(String scheme) {
         var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
+        @SuppressWarnings("deprecation")
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertTrue(securityPlan.requiresEncryption());
@@ -76,6 +78,7 @@ class SecurityPlansTest {
     void testSelfSignedCertConfigDisablesHostnameVerification(String scheme) {
         var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
+        @SuppressWarnings("deprecation")
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertTrue(securityPlan.requiresEncryption());
@@ -88,6 +91,7 @@ class SecurityPlansTest {
         var securitySettings =
                 new SecuritySettings.SecuritySettingsBuilder().withEncryption().build();
 
+        @SuppressWarnings("deprecation")
         var ex = assertThrows(
                 ClientException.class,
                 () -> SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none()));
@@ -104,6 +108,7 @@ class SecurityPlansTest {
                 .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
                 .build();
 
+        @SuppressWarnings("deprecation")
         var ex = assertThrows(
                 ClientException.class,
                 () -> SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none()));
@@ -121,6 +126,7 @@ class SecurityPlansTest {
                 .withEncryption()
                 .build();
 
+        @SuppressWarnings("deprecation")
         var ex = assertThrows(
                 ClientException.class,
                 () -> SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none()));
@@ -135,6 +141,7 @@ class SecurityPlansTest {
     void testNoEncryption(String scheme) {
         var securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
+        @SuppressWarnings("deprecation")
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertFalse(securityPlan.requiresEncryption());
@@ -146,6 +153,7 @@ class SecurityPlansTest {
         var securitySettings =
                 new SecuritySettings.SecuritySettingsBuilder().withEncryption().build();
 
+        @SuppressWarnings("deprecation")
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertTrue(securityPlan.requiresEncryption());
@@ -159,6 +167,7 @@ class SecurityPlansTest {
                 .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
                 .build();
 
+        @SuppressWarnings("deprecation")
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertTrue(securityPlan.requiresEncryption());
@@ -173,6 +182,7 @@ class SecurityPlansTest {
                 .withEncryption()
                 .build();
 
+        @SuppressWarnings("deprecation")
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertEquals(STRICT, securityPlan.revocationCheckingStrategy());
@@ -187,6 +197,7 @@ class SecurityPlansTest {
                 .withEncryption()
                 .build();
 
+        @SuppressWarnings("deprecation")
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertEquals(VERIFY_IF_PRESENT, securityPlan.revocationCheckingStrategy());
@@ -200,6 +211,7 @@ class SecurityPlansTest {
                 .withEncryption()
                 .build();
 
+        @SuppressWarnings("deprecation")
         var securityPlan = SecurityPlans.createSecurityPlan(securitySettings, scheme, null, Logging.none());
 
         assertEquals(NO_CHECKS, securityPlan.revocationCheckingStrategy());

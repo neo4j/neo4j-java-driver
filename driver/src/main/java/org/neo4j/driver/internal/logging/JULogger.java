@@ -19,6 +19,7 @@ package org.neo4j.driver.internal.logging;
 import java.util.logging.Level;
 import org.neo4j.driver.Logger;
 
+@SuppressWarnings("deprecation")
 public class JULogger implements Logger {
     private final java.util.logging.Logger delegate;
     private final boolean debugEnabled;

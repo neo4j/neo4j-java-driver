@@ -19,6 +19,7 @@ package org.neo4j.driver.internal.logging;
 import java.util.Objects;
 import org.neo4j.driver.Logger;
 
+@SuppressWarnings("deprecation")
 class Slf4jLogger implements Logger {
     private final org.slf4j.Logger delegate;
 
