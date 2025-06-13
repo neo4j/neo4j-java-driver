@@ -36,7 +36,6 @@ module org.neo4j.driver {
     requires org.neo4j.bolt.connection.pooled;
     requires org.neo4j.bolt.connection.routed;
     requires reactor.core;
-    requires io.netty.common;
     requires transitive java.logging;
     requires transitive org.reactivestreams;
     requires static micrometer.core;

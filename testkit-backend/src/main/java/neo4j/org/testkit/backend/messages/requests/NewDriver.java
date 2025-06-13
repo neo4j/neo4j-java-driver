@@ -56,7 +56,6 @@ import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.internal.InternalServerAddress;
 import org.neo4j.driver.internal.SecuritySettings;
-import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.security.SecurityPlans;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.net.ServerAddressResolver;
@@ -234,7 +233,7 @@ public class NewDriver implements TestkitRequest {
         var securityPlan = SecurityPlans.createSecurityPlan(
                 securitySettings, uri.getScheme(), clientCertificateManager, config.logging());
         return new DriverFactoryWithDomainNameResolver(domainNameResolver, testkitState, driverId)
-                .newInstance(uri, authTokenManager, config, BoltSecurityPlanManager.from(securityPlan), null, null);
+                .newInstance(uri, authTokenManager, clientCertificateManager, config, securityPlan, null, null);
     }
 
     private Optional<TestkitResponse> handleExceptionAsErrorResponse(TestkitState testkitState, RuntimeException e) {

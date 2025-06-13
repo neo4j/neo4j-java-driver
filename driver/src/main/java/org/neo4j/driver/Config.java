@@ -20,7 +20,6 @@ import static java.lang.String.format;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.DriverInfoUtil.driverVersion;
 
-import io.netty.channel.EventLoop;
 import java.io.File;
 import java.io.Serial;
 import java.io.Serializable;
@@ -349,7 +348,7 @@ public final class Config implements Serializable {
     }
 
     /**
-     * Returns the number of {@link EventLoop} threads.
+     * Returns the number of EventLoop threads.
      *
      * @return the number of threads
      */

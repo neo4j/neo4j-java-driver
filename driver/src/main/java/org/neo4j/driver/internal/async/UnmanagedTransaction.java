@@ -214,7 +214,16 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                                 });
                         return beginFuture.thenApply(ignored -> this);
                     } else {
-                        return connection.write(messages).thenApply(ignored -> this);
+                        return connection
+                                .write(messages)
+                                .thenApply(ignored -> this)
+                                .whenComplete((ignored, throwable) -> {
+                                    if (throwable != null) {
+                                        beginFuture.completeExceptionally(throwable);
+                                    } else {
+                                        beginFuture.complete(this);
+                                    }
+                                });
                     }
                 });
     }

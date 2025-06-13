@@ -19,7 +19,8 @@ package neo4j.org.testkit.backend;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.util.logging.Level;
@@ -37,7 +38,7 @@ public class Runner {
                 ? Logging.none()
                 : Logging.console(Level.parse(levelString));
 
-        EventLoopGroup group = new NioEventLoopGroup();
+        EventLoopGroup group = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
         try {
             var bootstrap = new ServerBootstrap();
             bootstrap

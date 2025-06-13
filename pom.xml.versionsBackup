@@ -42,11 +42,11 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2023.0.19</reactor-bom.version>
+    <reactor-bom.version>2023.0.17</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
     <mockito-core.version>5.18.0</mockito-core.version>
-    <junit.version>5.13.1</junit.version>
+    <junit.version>5.12.2</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.11.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>

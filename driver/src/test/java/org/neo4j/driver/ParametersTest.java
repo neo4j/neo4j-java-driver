@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.connection.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.bolt.connection.DatabaseName.defaultDatabase;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
@@ -39,10 +39,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.InternalSession;
-import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 
 class ParametersTest {
     static Stream<Arguments> addressesToParse() {
@@ -100,10 +99,9 @@ class ParametersTest {
     }
 
     private Session mockedSession() {
-        var provider = mock(DriverBoltConnectionProvider.class);
+        var provider = mock(DriverBoltConnectionSource.class);
         var retryLogic = mock(RetryLogic.class);
         var session = new NetworkSession(
-                BoltSecurityPlanManager.insecure(),
                 provider,
                 retryLogic,
                 defaultDatabase(),
@@ -113,7 +111,6 @@ class ParametersTest {
                 -1,
                 DEV_NULL_LOGGING,
                 mock(BookmarkManager.class),
-                Config.defaultConfig().notificationConfig(),
                 Config.defaultConfig().notificationConfig(),
                 null,
                 false,
