@@ -22,7 +22,6 @@ import static org.neo4j.driver.internal.util.Futures.completionExceptionCause;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -39,11 +38,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.neo4j.bolt.connection.AuthTokens;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.DatabaseName;
-import org.neo4j.bolt.connection.DatabaseNameUtil;
 import org.neo4j.bolt.connection.NotificationConfig;
-import org.neo4j.bolt.connection.SecurityPlan;
+import org.neo4j.bolt.connection.RoutedBoltConnectionParameters;
 import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.bolt.connection.exception.MinVersionAcquisitionException;
 import org.neo4j.bolt.connection.message.Message;
@@ -72,7 +71,7 @@ import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.NotificationConfigMapper;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
-import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.cursor.DisposableResultCursorImpl;
 import org.neo4j.driver.internal.cursor.ResultCursorImpl;
@@ -82,15 +81,13 @@ import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCacheKey;
 import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.internal.value.BoltValueFactory;
 
 public class NetworkSession {
-    private static final String HOME_DATABASE_KEY = "homeDatabase";
-    private final BoltSecurityPlanManager securityPlanManager;
-    private final DriverBoltConnectionProvider boltConnectionProvider;
+    private final DriverBoltConnectionSource boltConnectionProvider;
     private final NetworkSessionConnectionContext connectionContext;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
@@ -110,7 +107,6 @@ public class NetworkSession {
     private final BookmarkManager bookmarkManager;
     private volatile Set<Bookmark> lastUsedBookmarks = Collections.emptySet();
     private volatile Set<Bookmark> lastReceivedBookmarks;
-    private final NotificationConfig driverNotificationConfig;
     private final NotificationConfig notificationConfig;
     private final boolean telemetryDisabled;
     private final AuthTokenManager authTokenManager;
@@ -118,8 +114,7 @@ public class NetworkSession {
     private final HomeDatabaseCacheKey homeDatabaseKey;
 
     public NetworkSession(
-            BoltSecurityPlanManager securityPlanManager,
-            DriverBoltConnectionProvider boltConnectionProvider,
+            DriverBoltConnectionSource boltConnectionProvider,
             RetryLogic retryLogic,
             DatabaseName databaseName,
             AccessMode mode,
@@ -128,7 +123,6 @@ public class NetworkSession {
             long fetchSize,
             @SuppressWarnings("deprecation") Logging logging,
             BookmarkManager bookmarkManager,
-            org.neo4j.driver.NotificationConfig driverNotificationConfig,
             org.neo4j.driver.NotificationConfig notificationConfig,
             AuthToken overrideAuthToken,
             boolean telemetryDisabled,
@@ -136,7 +130,6 @@ public class NetworkSession {
             HomeDatabaseCache homeDatabaseCache) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
-        this.securityPlanManager = Objects.requireNonNull(securityPlanManager);
         this.boltConnectionProvider = Objects.requireNonNull(boltConnectionProvider);
         this.mode = mode;
         this.retryLogic = retryLogic;
@@ -151,7 +144,6 @@ public class NetworkSession {
         this.connectionContext = new NetworkSessionConnectionContext(
                 databaseNameFuture, determineBookmarks(false), impersonatedUser, overrideAuthToken);
         this.fetchSize = fetchSize;
-        this.driverNotificationConfig = NotificationConfigMapper.map(driverNotificationConfig);
         this.notificationConfig = NotificationConfigMapper.map(notificationConfig);
         this.telemetryDisabled = telemetryDisabled;
         this.authTokenManager = authTokenManager;
@@ -293,7 +285,7 @@ public class NetworkSession {
                 .thenCompose(connection -> {
                     var tx = new UnmanagedTransaction(
                             connection,
-                            connectionContext.databaseNameFuture.getNow(DatabaseNameUtil.defaultDatabase()),
+                            connectionContext.databaseNameFuture.getNow(DatabaseName.defaultDatabase()),
                             asBoltAccessMode(mode),
                             connectionContext.impersonatedUser,
                             this::handleNewBookmark,
@@ -416,7 +408,7 @@ public class NetworkSession {
     }
 
     private void handleDatabaseName(String name) {
-        connectionContext.databaseNameFuture.complete(DatabaseNameUtil.database(name));
+        connectionContext.databaseNameFuture.complete(DatabaseName.database(name));
         homeDatabaseCache.put(homeDatabaseKey, name);
     }
 
@@ -424,12 +416,11 @@ public class NetworkSession {
         var overrideAuthToken = connectionContext.overrideAuthToken();
         var authTokenManager = overrideAuthToken != null ? NoopAuthTokenManager.INSTANCE : this.authTokenManager;
         var newConnectionStage = pulledResultCursorStage(connectionStage)
-                .thenCompose(ignored -> securityPlanManager.plan())
-                .thenCompose(securityPlan -> acquireConnection(securityPlan, mode)
-                        .thenApply(connection -> (DriverBoltConnection)
-                                new BoltConnectionWithAuthTokenManager(connection, authTokenManager))
-                        .thenApply(BoltConnectionWithCloseTracking::new)
-                        .exceptionally(this::mapAcquisitionError));
+                .thenCompose(ignored -> acquireAdaptedConnection(mode))
+                .thenApply(connection ->
+                        (DriverBoltConnection) new BoltConnectionWithAuthTokenManager(connection, authTokenManager))
+                .thenApply(BoltConnectionWithCloseTracking::new)
+                .exceptionally(this::mapAcquisitionError);
         connectionStage = newConnectionStage.exceptionally(error -> null);
         return newConnectionStage;
     }
@@ -467,67 +458,40 @@ public class NetworkSession {
         }
     }
 
-    private CompletionStage<DriverBoltConnection> acquireConnection(SecurityPlan securityPlan, AccessMode mode) {
+    private CompletionStage<DriverBoltConnection> acquireAdaptedConnection(AccessMode mode) {
         var databaseName = connectionContext.databaseNameFuture().getNow(null);
         var impersonatedUser = connectionContext.impersonatedUser();
         var minVersion = minBoltVersion(connectionContext);
-        var overrideAuthToken = connectionContext.overrideAuthToken();
-        var tokenStageSupplier = tokenStageSupplier(overrideAuthToken, authTokenManager);
+        var overrideAuthToken = connectionContext.overrideAuthToken() != null
+                ? AuthTokens.custom(BoltValueFactory.getInstance()
+                        .toBoltMap(((InternalAuthToken) connectionContext.overrideAuthToken()).toMap()))
+                : null;
         var accessMode = asBoltAccessMode(mode);
         var bookmarks = connectionContext.rediscoveryBookmarks().stream()
                 .map(Bookmark::value)
                 .collect(Collectors.toSet());
-        var additionalParameters = new HashMap<String, Object>();
-        if (databaseName == null) {
-            homeDatabaseCache.get(homeDatabaseKey).ifPresent(name -> additionalParameters.put(HOME_DATABASE_KEY, name));
-        }
-
-        Consumer<DatabaseName> databaseNameConsumer = (name) -> {
+        Consumer<DatabaseName> databaseNameListener = (name) -> {
             if (name != null) {
                 if (databaseName == null) {
                     name.databaseName().ifPresent(n -> homeDatabaseCache.put(homeDatabaseKey, n));
                 }
             } else {
-                name = DatabaseNameUtil.defaultDatabase();
+                name = DatabaseName.defaultDatabase();
             }
             connectionContext.databaseNameFuture().complete(name);
         };
-
-        return boltConnectionProvider
-                .connect(
-                        securityPlan,
-                        databaseName,
-                        tokenStageSupplier,
-                        accessMode,
-                        bookmarks,
-                        impersonatedUser,
-                        minVersion,
-                        driverNotificationConfig,
-                        databaseNameConsumer,
-                        additionalParameters)
-                .thenCompose(boltConnection -> {
-                    if (additionalParameters.containsKey(HOME_DATABASE_KEY)
-                            && !boltConnection.serverSideRoutingEnabled()
-                            && !connectionContext.databaseNameFuture.isDone()) {
-                        // home database was requested with hint, but the returned connection does not have SSR enabled
-                        additionalParameters.remove(HOME_DATABASE_KEY);
-                        return boltConnection
-                                .close()
-                                .thenCompose(ignored -> boltConnectionProvider.connect(
-                                        securityPlan,
-                                        null,
-                                        tokenStageSupplier,
-                                        accessMode,
-                                        bookmarks,
-                                        impersonatedUser,
-                                        minVersion,
-                                        driverNotificationConfig,
-                                        databaseNameConsumer,
-                                        additionalParameters));
-                    } else {
-                        return CompletableFuture.completedStage(boltConnection);
-                    }
-                });
+        var homeDatabaseHint = homeDatabaseCache.get(homeDatabaseKey).orElse(null);
+        var parameters = RoutedBoltConnectionParameters.builder()
+                .withAuthToken(overrideAuthToken)
+                .withMinVersion(minVersion)
+                .withAccessMode(accessMode)
+                .withDatabaseName(databaseName)
+                .withDatabaseNameListener(databaseNameListener)
+                .withHomeDatabaseHint(homeDatabaseHint)
+                .withBookmarks(bookmarks)
+                .withImpersonatedUser(impersonatedUser)
+                .build();
+        return boltConnectionProvider.getConnection(parameters);
     }
 
     private CompletionStage<Void> pulledResultCursorStage(
@@ -641,7 +605,7 @@ public class NetworkSession {
         return Messages.run(
                 connectionContext
                         .databaseNameFuture
-                        .getNow(DatabaseNameUtil.defaultDatabase())
+                        .getNow(DatabaseName.defaultDatabase())
                         .databaseName()
                         .orElse(null),
                 asBoltAccessMode(mode),

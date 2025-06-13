@@ -32,11 +32,9 @@ module org.neo4j.driver {
     exports org.neo4j.driver.mapping;
 
     requires org.neo4j.bolt.connection;
-    requires org.neo4j.bolt.connection.netty;
     requires org.neo4j.bolt.connection.pooled;
     requires org.neo4j.bolt.connection.routed;
     requires reactor.core;
-    requires io.netty.common;
     requires transitive java.logging;
     requires transitive org.reactivestreams;
     requires static micrometer.core;
@@ -44,4 +42,6 @@ module org.neo4j.driver {
     requires static org.slf4j;
     requires static java.management;
     requires static reactor.blockhound;
+
+    uses org.neo4j.bolt.connection.BoltConnectionProviderFactory;
 }

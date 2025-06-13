@@ -135,8 +135,6 @@ class InternalDriverTest {
                 sessionFactory,
                 DevNullMetricsProvider.INSTANCE,
                 true,
-                Config.defaultConfig().notificationConfig(),
-                () -> CompletableFuture.completedStage(null),
                 DEV_NULL_LOGGING);
     }
 
@@ -155,12 +153,6 @@ class InternalDriverTest {
 
         var metricsProvider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
         return new InternalDriver(
-                BoltSecurityPlanManager.insecure(),
-                sessionFactory,
-                metricsProvider,
-                true,
-                Config.defaultConfig().notificationConfig(),
-                () -> CompletableFuture.completedStage(null),
-                DEV_NULL_LOGGING);
+                BoltSecurityPlanManager.insecure(), sessionFactory, metricsProvider, true, DEV_NULL_LOGGING);
     }
 }

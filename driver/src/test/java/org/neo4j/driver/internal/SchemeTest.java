@@ -17,35 +17,12 @@
 package org.neo4j.driver.internal;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class SchemeTest {
-
-    @ParameterizedTest
-    @ValueSource(strings = {"neo4j", "neo4j+s", "neo4j+ssc", "bolt", "bolt+s", "bolt+ssc"})
-    void shouldAcceptValidSchemes(String input) {
-        Scheme.validateScheme(input);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"bob", "grey", "", " ", "blah"})
-    void shouldRejectInvalidSchemes(String input) {
-        var ex = assertThrows(IllegalArgumentException.class, () -> Scheme.validateScheme(input));
-        assertTrue(ex.getMessage().contains("Invalid address format " + input));
-    }
-
-    @ParameterizedTest
-    @NullSource
-    void shouldRejectNullScheme(String input) {
-        var ex = assertThrows(IllegalArgumentException.class, () -> Scheme.validateScheme(input));
-        assertTrue(ex.getMessage().contains("Scheme must not be null"));
-    }
-
     @ParameterizedTest
     @ValueSource(strings = {"neo4j+s", "bolt+s"})
     void shouldAcceptValidHighTrustSchemes(String scheme) {

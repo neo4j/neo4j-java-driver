@@ -24,6 +24,7 @@ import org.neo4j.bolt.connection.BoltServerAddress;
 import org.neo4j.bolt.connection.exception.BoltFailureException;
 import org.neo4j.bolt.connection.exception.BoltServiceUnavailableException;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.GqlStatusError;
 
@@ -37,8 +38,8 @@ class RoutedErrorMapper extends ErrorMapper {
     }
 
     @Override
-    protected Throwable mapBoltFailureException(BoltFailureException boltFailureException) {
-        Throwable result;
+    protected Neo4jException mapBoltFailureException(BoltFailureException boltFailureException) {
+        Neo4jException result;
         if ("Neo.ClientError.Cluster.NotALeader".equals(boltFailureException.code())
                 || "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase".equals(boltFailureException.code())) {
             result = switch (accessMode) {

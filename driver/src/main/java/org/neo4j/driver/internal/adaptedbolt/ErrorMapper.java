@@ -75,7 +75,9 @@ public class ErrorMapper {
         throwable = Futures.completionExceptionCause(throwable);
         var result = throwable;
         try {
-            if (throwable instanceof BoltFailureException boltFailureException) {
+            if (throwable instanceof BoltFailureExceptionWithNeo4jException boltFailureExceptionWithNeo4jException) {
+                return boltFailureExceptionWithNeo4jException.neo4jException();
+            } else if (throwable instanceof BoltFailureException boltFailureException) {
                 result = mapBoltFailureException(boltFailureException);
             } else if (throwable instanceof BoltGqlErrorException boltGqlErrorException) {
                 result = mapGqlCause(boltGqlErrorException);
@@ -115,7 +117,7 @@ public class ErrorMapper {
         return result;
     }
 
-    protected Throwable mapBoltFailureException(BoltFailureException boltFailureException) {
+    protected Neo4jException mapBoltFailureException(BoltFailureException boltFailureException) {
         var code = boltFailureException.code();
         var nested = boltFailureException.gqlCause().map(this::mapGqlCause).orElse(null);
         return switch (extractErrorClass(code)) {

@@ -18,24 +18,3 @@ Full license texts are found in LICENSES.txt.
 Third-party licenses
 --------------------
 
-Apache Software License, Version 2.0
-  Jackson-annotations
-  Jackson-core
-  jackson-databind
-  Neo4j Bolt Connection (Bolt Provider reference impl)
-  Neo4j Bolt Connection (Pooled Source impl)
-  Neo4j Bolt Connection (Provider SPI)
-  Neo4j Bolt Connection (Routed Source impl)
-  Netty/Buffer
-  Netty/Codec/Base
-  Netty/Common
-  Netty/Handler
-  Netty/Resolver
-  Netty/TomcatNative [OpenSSL - Classes]
-  Netty/Transport
-  Netty/Transport/Native/Unix/Common
-  Non-Blocking Reactive Foundation for the JVM
-
-MIT No Attribution License
-  reactive-streams
-

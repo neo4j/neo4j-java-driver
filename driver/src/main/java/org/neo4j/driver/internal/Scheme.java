@@ -26,21 +26,6 @@ public class Scheme {
     public static final String NEO4J_HIGH_TRUST_URI_SCHEME = "neo4j+s";
     public static final String NEO4J_LOW_TRUST_URI_SCHEME = "neo4j+ssc";
 
-    public static void validateScheme(String scheme) {
-        if (scheme == null) {
-            throw new IllegalArgumentException("Scheme must not be null");
-        }
-        switch (scheme) {
-            case BOLT_URI_SCHEME,
-                    BOLT_LOW_TRUST_URI_SCHEME,
-                    BOLT_HIGH_TRUST_URI_SCHEME,
-                    NEO4J_URI_SCHEME,
-                    NEO4J_LOW_TRUST_URI_SCHEME,
-                    NEO4J_HIGH_TRUST_URI_SCHEME -> {}
-            default -> throw new IllegalArgumentException("Invalid address format " + scheme);
-        }
-    }
-
     public static boolean isHighTrustScheme(String scheme) {
         return scheme.equals(BOLT_HIGH_TRUST_URI_SCHEME) || scheme.equals(NEO4J_HIGH_TRUST_URI_SCHEME);
     }
