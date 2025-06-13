@@ -57,7 +57,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
-import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.testutil.TestUtil;
@@ -70,9 +70,8 @@ class InternalTransactionTest {
     @SuppressWarnings("resource")
     void setUp() {
         connection = connectionMock(new BoltProtocolVersion(4, 0));
-        var connectionProvider = mock(DriverBoltConnectionProvider.class);
-        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(CompletableFuture.completedFuture(connection));
+        var connectionProvider = mock(DriverBoltConnectionSource.class);
+        given(connectionProvider.getConnection(any())).willReturn(CompletableFuture.completedFuture(connection));
         setupConnectionAnswers(connection, List.of(new TestUtil.MessageHandler() {
             @Override
             public List<Class<? extends Message>> messageTypes() {

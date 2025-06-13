@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.connection.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.bolt.connection.DatabaseName.defaultDatabase;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.testutil.TestUtil.setupConnectionAnswers;
 
@@ -53,10 +53,9 @@ import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
-import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
-import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.testutil.TestUtil;
@@ -145,7 +144,6 @@ class LeakLoggingNetworkSessionTest {
 
     private static LeakLoggingNetworkSession newSession(Logging logging, DriverBoltConnection connection) {
         return new LeakLoggingNetworkSession(
-                BoltSecurityPlanManager.insecure(),
                 connectionProviderMock(connection),
                 new FixedRetryLogic(0),
                 defaultDatabase(),
@@ -156,17 +154,15 @@ class LeakLoggingNetworkSessionTest {
                 logging,
                 mock(BookmarkManager.class),
                 NotificationConfig.defaultConfig(),
-                NotificationConfig.defaultConfig(),
                 null,
                 true,
                 AuthTokenManagers.basic(AuthTokens::none),
                 mock());
     }
 
-    private static DriverBoltConnectionProvider connectionProviderMock(DriverBoltConnection connection) {
-        var provider = mock(DriverBoltConnectionProvider.class);
-        when(provider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(CompletableFuture.completedFuture(connection));
+    private static DriverBoltConnectionSource connectionProviderMock(DriverBoltConnection connection) {
+        var provider = mock(DriverBoltConnectionSource.class);
+        when(provider.getConnection(any())).thenReturn(CompletableFuture.completedFuture(connection));
         return provider;
     }
 }

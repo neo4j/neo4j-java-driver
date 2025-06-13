@@ -19,42 +19,46 @@ package org.neo4j.driver.internal;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.IdentityResolver.IDENTITY_RESOLVER;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.local.LocalAddress;
-import io.netty.util.concurrent.EventExecutorGroup;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.neo4j.bolt.connection.BoltAgent;
 import org.neo4j.bolt.connection.BoltConnectionProvider;
+import org.neo4j.bolt.connection.BoltConnectionSource;
 import org.neo4j.bolt.connection.BoltServerAddress;
 import org.neo4j.bolt.connection.DefaultDomainNameResolver;
 import org.neo4j.bolt.connection.DomainNameResolver;
 import org.neo4j.bolt.connection.LoggingProvider;
 import org.neo4j.bolt.connection.MetricsListener;
-import org.neo4j.bolt.connection.RoutingContext;
-import org.neo4j.bolt.connection.netty.BootstrapFactory;
-import org.neo4j.bolt.connection.netty.NettyBoltConnectionProvider;
-import org.neo4j.bolt.connection.pooled.PooledBoltConnectionProvider;
+import org.neo4j.bolt.connection.NotificationConfig;
+import org.neo4j.bolt.connection.RoutedBoltConnectionParameters;
+import org.neo4j.bolt.connection.netty.NettyBoltConnectionProviderFactory;
+import org.neo4j.bolt.connection.pooled.PooledBoltConnectionSource;
+import org.neo4j.bolt.connection.pooled.SecurityPlanSupplier;
+import org.neo4j.bolt.connection.routed.BoltConnectionSourceFactory;
 import org.neo4j.bolt.connection.routed.Rediscovery;
-import org.neo4j.bolt.connection.routed.RoutedBoltConnectionProvider;
+import org.neo4j.bolt.connection.routed.RoutedBoltConnectionSource;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.MetricsAdapter;
-import org.neo4j.driver.internal.adaptedbolt.AdaptingDriverBoltConnectionProvider;
-import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
+import org.neo4j.driver.internal.adaptedbolt.AdaptingDriverBoltConnectionSource;
+import org.neo4j.driver.internal.adaptedbolt.BoltAuthTokenManager;
+import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.ErrorMapper;
+import org.neo4j.driver.internal.adaptedbolt.SingleRoutedBoltConnectionSource;
 import org.neo4j.driver.internal.boltlistener.BoltConnectionListener;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
@@ -88,7 +92,7 @@ public class DriverFactory {
             ClientCertificateManager clientCertificateManager,
             Config config,
             SecurityPlan securityPlan,
-            EventLoopGroup eventLoopGroup,
+            ScheduledExecutorService eventLoopGroup,
             Supplier<Rediscovery> rediscoverySupplier) {
         if (securityPlan == null) {
             var settings = new SecuritySettings(config.encrypted(), config.trustStrategy());
@@ -99,45 +103,28 @@ public class DriverFactory {
         return newInstance(uri, authTokenManager, config, securityPlanManager, eventLoopGroup, rediscoverySupplier);
     }
 
-    @SuppressWarnings("deprecation")
     public final Driver newInstance(
             URI uri,
             AuthTokenManager authTokenManager,
             Config config,
             BoltSecurityPlanManager securityPlanManager,
-            EventLoopGroup eventLoopGroup,
+            ScheduledExecutorService eventLoopGroup,
             Supplier<Rediscovery> rediscoverySupplier) {
         requireNonNull(authTokenManager, "authTokenProvider must not be null");
 
-        Bootstrap bootstrap;
-        boolean ownsEventLoopGroup;
-        if (eventLoopGroup == null) {
-            bootstrap = createBootstrap(config.eventLoopThreads());
-            ownsEventLoopGroup = true;
-        } else {
-            bootstrap = createBootstrap(eventLoopGroup);
-            ownsEventLoopGroup = false;
-        }
-
-        var address = new InternalServerAddress(uri);
-        var routingSettings = new RoutingSettings(config.routingTablePurgeDelayMillis(), new RoutingContext(uri));
-
-        EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
-        var retryLogic = createRetryLogic(config.maxTransactionRetryTimeMillis(), eventExecutorGroup, config.logging());
+        var retryExecutor = eventLoopGroup != null ? eventLoopGroup : Executors.newSingleThreadScheduledExecutor();
+        var retryLogic = createRetryLogic(config.maxTransactionRetryTimeMillis(), retryExecutor, config.logging());
 
         var metricsProvider = getOrCreateMetricsProvider(config, createClock());
 
         return createDriver(
                 uri,
                 securityPlanManager,
-                address,
-                bootstrap.group(),
-                routingSettings,
+                eventLoopGroup,
                 retryLogic,
                 metricsProvider,
                 config,
                 authTokenManager,
-                ownsEventLoopGroup,
                 rediscoverySupplier);
     }
 
@@ -157,32 +144,29 @@ public class DriverFactory {
     private InternalDriver createDriver(
             URI uri,
             BoltSecurityPlanManager securityPlanManager,
-            ServerAddress address,
-            EventLoopGroup eventLoopGroup,
-            RoutingSettings routingSettings,
+            ScheduledExecutorService eventLoopGroup,
             RetryLogic retryLogic,
             MetricsProvider metricsProvider,
             Config config,
             AuthTokenManager authTokenManager,
-            boolean ownsEventLoopGroup,
             Supplier<Rediscovery> rediscoverySupplier) {
-        DriverBoltConnectionProvider boltConnectionProvider = null;
+        DriverBoltConnectionSource boltConnectionProvider = null;
         try {
-            var homeDatabaseCache =
-                    HomeDatabaseCache.newInstance(uri.getScheme().startsWith("neo4j"));
+            var homeDatabaseCache = HomeDatabaseCache.newInstance(Scheme.isRoutingScheme(uri.getScheme()));
+            var valueFactory = BoltValueFactory.getInstance();
             boltConnectionProvider = createDriverBoltConnectionProvider(
                     uri,
                     config,
                     eventLoopGroup,
-                    routingSettings,
                     rediscoverySupplier,
                     homeDatabaseCache,
-                    new BoltServerAddress(address.host(), address.port()),
-                    new RoutingContext(uri),
                     DriverInfoUtil.boltAgent(),
                     config.userAgent(),
                     config.connectionTimeoutMillis(),
-                    metricsProvider.metricsListener());
+                    metricsProvider.metricsListener(),
+                    authTokenManager,
+                    securityPlanManager::plan,
+                    NotificationConfigMapper.map(config.notificationConfig()));
             var sessionFactory = createSessionFactory(
                     securityPlanManager,
                     boltConnectionProvider,
@@ -190,22 +174,9 @@ public class DriverFactory {
                     config,
                     authTokenManager,
                     homeDatabaseCache);
-            Supplier<CompletionStage<Void>> shutdownSupplier = ownsEventLoopGroup
-                    ? () -> {
-                        var closeFuture = new CompletableFuture<Void>();
-                        eventLoopGroup
-                                .shutdownGracefully(200, 15_000, TimeUnit.MILLISECONDS)
-                                .addListener(future -> closeFuture.complete(null));
-                        return closeFuture;
-                    }
-                    : () -> CompletableFuture.completedStage(null);
-            var driver = createDriver(securityPlanManager, sessionFactory, metricsProvider, shutdownSupplier, config);
+            var driver = createDriver(securityPlanManager, sessionFactory, metricsProvider, config);
             var log = config.logging().getLog(getClass());
-            if (uri.getScheme().startsWith("bolt")) {
-                log.info("Direct driver instance %s created for server address %s", driver.hashCode(), address);
-            } else {
-                log.info("Routing driver instance %s created for server address %s", driver.hashCode(), address);
-            }
+            log.info("Driver instance %s created for server uri '%s'", driver.hashCode(), uri);
             return driver;
         } catch (Throwable driverError) {
             if (boltConnectionProvider != null) {
@@ -223,172 +194,187 @@ public class DriverFactory {
                         .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private DriverBoltConnectionProvider createDriverBoltConnectionProvider(
+    private DriverBoltConnectionSource createDriverBoltConnectionProvider(
             URI uri,
             Config config,
-            EventLoopGroup eventLoopGroup,
-            RoutingSettings routingSettings,
+            ScheduledExecutorService eventLoopGroup,
             Supplier<Rediscovery> rediscoverySupplier,
             BoltConnectionListener boltConnectionListener,
-            BoltServerAddress address,
-            RoutingContext routingContext,
-            BoltAgent boltAgent,
-            String userAgent,
-            int connectTimeoutMillis,
-            MetricsListener metricsListener) {
-        var clock = createClock();
-        var boltConnectionProvider = createBoltConnectionProvider(
-                uri,
-                config,
-                eventLoopGroup,
-                routingSettings,
-                rediscoverySupplier,
-                boltConnectionListener,
-                address,
-                routingContext,
-                boltAgent,
-                userAgent,
-                connectTimeoutMillis,
-                metricsListener,
-                clock);
-        return new AdaptingDriverBoltConnectionProvider(
-                boltConnectionProvider,
-                ErrorMapper.getInstance(),
-                BoltValueFactory.getInstance(),
-                uri.getScheme().startsWith("neo4j"),
-                address,
-                routingContext,
-                boltAgent,
-                userAgent,
-                connectTimeoutMillis);
-    }
-
-    protected BoltConnectionProvider createBoltConnectionProvider(
-            URI uri,
-            Config config,
-            EventLoopGroup eventLoopGroup,
-            RoutingSettings routingSettings,
-            Supplier<Rediscovery> rediscoverySupplier,
-            BoltConnectionListener boltConnectionListener,
-            BoltServerAddress address,
-            RoutingContext routingContext,
             BoltAgent boltAgent,
             String userAgent,
             int connectTimeoutMillis,
             MetricsListener metricsListener,
-            Clock clock) {
-        BoltConnectionProvider boltConnectionProvider;
+            AuthTokenManager authTokenManager,
+            SecurityPlanSupplier securityPlanSupplier,
+            NotificationConfig notificationConfig) {
+        var clock = createClock();
+        var boltValueFactory = BoltValueFactory.getInstance();
+        var errorMapper = ErrorMapper.getInstance();
+        var boltAuthTokenManager = new BoltAuthTokenManager(authTokenManager, boltValueFactory, errorMapper);
+        var boltConnectionProvider = createBoltConnectionSource(
+                uri,
+                config,
+                eventLoopGroup,
+                rediscoverySupplier,
+                boltConnectionListener,
+                boltAgent,
+                userAgent,
+                connectTimeoutMillis,
+                metricsListener,
+                clock,
+                boltAuthTokenManager,
+                securityPlanSupplier,
+                notificationConfig);
+        return new AdaptingDriverBoltConnectionSource(
+                boltConnectionProvider, errorMapper, boltValueFactory, Scheme.isRoutingScheme(uri.getScheme()));
+    }
+
+    protected BoltConnectionSource<RoutedBoltConnectionParameters> createBoltConnectionSource(
+            URI uri,
+            Config config,
+            ScheduledExecutorService eventLoopGroup,
+            Supplier<Rediscovery> rediscoverySupplier,
+            BoltConnectionListener boltConnectionListener,
+            BoltAgent boltAgent,
+            String userAgent,
+            int connectTimeoutMillis,
+            MetricsListener metricsListener,
+            Clock clock,
+            org.neo4j.bolt.connection.pooled.AuthTokenManager authTokenManager,
+            SecurityPlanSupplier securityPlanSupplier,
+            NotificationConfig notificationConfig) {
+        BoltConnectionSource<RoutedBoltConnectionParameters> boltConnectionSource;
         var loggingProvider = new BoltLoggingProvider(config.logging());
-        Function<BoltServerAddress, BoltConnectionProvider> pooledBoltConnectionProviderSupplier =
-                selectedAddress -> createPooledBoltConnectionProvider(
-                        config,
-                        eventLoopGroup,
-                        clock,
-                        loggingProvider,
-                        boltConnectionListener,
-                        selectedAddress,
-                        routingContext,
-                        boltAgent,
-                        userAgent,
-                        connectTimeoutMillis,
-                        metricsListener);
-        if (uri.getScheme().startsWith("neo4j")) {
-            boltConnectionProvider = createRoutedBoltConnectionProvider(
+
+        switch (uri.getScheme()) {
+            case Scheme.BOLT_URI_SCHEME, Scheme.BOLT_LOW_TRUST_URI_SCHEME, Scheme.BOLT_HIGH_TRUST_URI_SCHEME -> {
+                if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
+                    throw new IllegalArgumentException(NO_ROUTING_CONTEXT_ERROR_MESSAGE + "'" + uri + "'");
+                }
+            }
+        }
+        var routingContextAddress = "%s:%d".formatted(uri.getHost(), uri.getPort() != -1 ? uri.getPort() : 7687);
+
+        var pooledSourceSupplierFactory = createPooledBoltConnectionSource(
+                config,
+                eventLoopGroup,
+                clock,
+                loggingProvider,
+                boltConnectionListener,
+                routingContextAddress,
+                boltAgent,
+                userAgent,
+                connectTimeoutMillis,
+                metricsListener,
+                authTokenManager,
+                securityPlanSupplier,
+                notificationConfig);
+        if (Scheme.isRoutingScheme(uri.getScheme())) {
+            boltConnectionSource = createRoutedBoltConnectionProvider(
                     config,
-                    pooledBoltConnectionProviderSupplier,
-                    routingSettings,
+                    pooledSourceSupplierFactory,
+                    config.routingTablePurgeDelayMillis(),
                     rediscoverySupplier,
                     clock,
                     loggingProvider,
-                    address,
-                    routingContext,
+                    uri,
                     boltAgent,
                     userAgent,
                     connectTimeoutMillis,
                     metricsListener);
         } else {
-            assertNoRoutingContext(uri, routingSettings);
-            boltConnectionProvider = pooledBoltConnectionProviderSupplier.apply(address);
+            boltConnectionSource = new SingleRoutedBoltConnectionSource(pooledSourceSupplierFactory.create(uri, null));
         }
-        return boltConnectionProvider;
+        return boltConnectionSource;
     }
 
-    private BoltConnectionProvider createRoutedBoltConnectionProvider(
+    private RoutedBoltConnectionSource createRoutedBoltConnectionProvider(
             Config config,
-            Function<BoltServerAddress, BoltConnectionProvider> pooledBoltConnectionProviderFunction,
-            RoutingSettings routingSettings,
+            BoltConnectionSourceFactory boltConnectionSourceFactory,
+            long routingTablePurgeDelayMs,
             Supplier<Rediscovery> rediscoverySupplier,
             Clock clock,
             LoggingProvider loggingProvider,
-            BoltServerAddress address,
-            RoutingContext routingContext,
+            URI uri,
             BoltAgent boltAgent,
             String userAgent,
             int connectTimeoutMillis,
             MetricsListener metricsListener) {
         var boltServerAddressResolver = createBoltServerAddressResolver(config);
         var rediscovery = rediscoverySupplier != null ? rediscoverySupplier.get() : null;
-        return new RoutedBoltConnectionProvider(
-                pooledBoltConnectionProviderFunction,
+        return new RoutedBoltConnectionSource(
+                boltConnectionSourceFactory,
                 boltServerAddressResolver,
                 getDomainNameResolver(),
-                routingSettings.routingTablePurgeDelayMs(),
+                routingTablePurgeDelayMs,
                 rediscovery,
                 clock,
                 loggingProvider,
-                address,
-                routingContext,
-                boltAgent,
-                userAgent,
-                connectTimeoutMillis,
-                metricsListener);
+                uri,
+                List.of(AuthTokenManagerExecutionException.class));
     }
 
-    private BoltConnectionProvider createPooledBoltConnectionProvider(
+    private BoltConnectionSourceFactory createPooledBoltConnectionSource(
             Config config,
-            EventLoopGroup eventLoopGroup,
+            ScheduledExecutorService eventLoopGroup,
             Clock clock,
             LoggingProvider loggingProvider,
             BoltConnectionListener boltConnectionListener,
-            BoltServerAddress address,
-            RoutingContext routingContext,
+            String routingContextAddress,
             BoltAgent boltAgent,
             String userAgent,
             int connectTimeoutMillis,
-            MetricsListener metricsListener) {
-        var nettyBoltConnectionProvider = createNettyBoltConnectionProvider(eventLoopGroup, clock, loggingProvider);
-        nettyBoltConnectionProvider = BoltConnectionListener.listeningBoltConnectionProvider(
-                nettyBoltConnectionProvider, boltConnectionListener);
-        return new PooledBoltConnectionProvider(
-                nettyBoltConnectionProvider,
-                config.maxConnectionPoolSize(),
-                config.connectionAcquisitionTimeoutMillis(),
-                config.maxConnectionLifetimeMillis(),
-                config.idleTimeBeforeConnectionTest(),
-                clock,
-                loggingProvider,
-                metricsListener,
-                address,
-                routingContext,
-                boltAgent,
-                userAgent,
-                connectTimeoutMillis);
+            MetricsListener metricsListener,
+            org.neo4j.bolt.connection.pooled.AuthTokenManager authTokenManager,
+            SecurityPlanSupplier securityPlanSupplier,
+            NotificationConfig notificationConfig) {
+        return (uri, expectedVerificationHostname) -> {
+            var boltConnectionProvider =
+                    createBoltConnectionProvider(eventLoopGroup, clock, loggingProvider, config.eventLoopThreads());
+            var listeningBoltConnectionProvider = BoltConnectionListener.listeningBoltConnectionProvider(
+                    boltConnectionProvider, boltConnectionListener);
+            return new PooledBoltConnectionSource(
+                    loggingProvider,
+                    clock,
+                    uri,
+                    listeningBoltConnectionProvider,
+                    authTokenManager,
+                    createSecurityPlanSupplierWithHostname(securityPlanSupplier, expectedVerificationHostname),
+                    config.maxConnectionPoolSize(),
+                    config.connectionAcquisitionTimeoutMillis(),
+                    config.maxConnectionLifetimeMillis(),
+                    config.idleTimeBeforeConnectionTest(),
+                    metricsListener,
+                    routingContextAddress,
+                    boltAgent,
+                    userAgent,
+                    connectTimeoutMillis,
+                    notificationConfig);
+        };
     }
 
-    private BoltConnectionProvider createNettyBoltConnectionProvider(
-            EventLoopGroup eventLoopGroup, Clock clock, LoggingProvider loggingProvider) {
-        return new NettyBoltConnectionProvider(
-                eventLoopGroup,
-                clock,
-                getDomainNameResolver(),
-                localAddress(),
-                loggingProvider,
-                BoltValueFactory.getInstance(),
-                null);
+    protected BoltConnectionProvider createBoltConnectionProvider(
+            ScheduledExecutorService eventLoopGroup,
+            Clock clock,
+            LoggingProvider loggingProvider,
+            int eventLoopThreads) {
+        var additionalConfig = new HashMap<String, Object>();
+        additionalConfig.put("clock", clock);
+        if (eventLoopGroup != null) {
+            additionalConfig.put("eventLoopGroup", eventLoopGroup);
+        } else if (eventLoopThreads > 0) {
+            additionalConfig.put("eventLoopThreads", eventLoopThreads);
+        }
+        var localAddress = localAddress();
+        if (localAddress != null) {
+            additionalConfig.put("localAddress", localAddress);
+        }
+        return new NettyBoltConnectionProviderFactory()
+                .create(loggingProvider, BoltValueFactory.getInstance(), null, additionalConfig);
     }
 
     @SuppressWarnings("SameReturnValue")
-    protected LocalAddress localAddress() {
+    protected SocketAddress localAddress() {
         return null;
     }
 
@@ -401,16 +387,9 @@ public class DriverFactory {
             BoltSecurityPlanManager securityPlanManager,
             SessionFactory sessionFactory,
             MetricsProvider metricsProvider,
-            Supplier<CompletionStage<Void>> shutdownSupplier,
             Config config) {
         return new InternalDriver(
-                securityPlanManager,
-                sessionFactory,
-                metricsProvider,
-                config.isTelemetryDisabled(),
-                config.notificationConfig(),
-                shutdownSupplier,
-                config.logging());
+                securityPlanManager, sessionFactory, metricsProvider, config.isTelemetryDisabled(), config.logging());
     }
 
     /**
@@ -427,7 +406,7 @@ public class DriverFactory {
      */
     protected SessionFactory createSessionFactory(
             BoltSecurityPlanManager securityPlanManager,
-            DriverBoltConnectionProvider connectionProvider,
+            DriverBoltConnectionSource connectionProvider,
             RetryLogic retryLogic,
             Config config,
             AuthTokenManager authTokenManager,
@@ -442,26 +421,8 @@ public class DriverFactory {
      * <b>This method is protected only for testing</b>
      */
     protected RetryLogic createRetryLogic(
-            long maxTransactionRetryTime, EventExecutorGroup eventExecutorGroup, Logging logging) {
-        return new ExponentialBackoffRetryLogic(maxTransactionRetryTime, eventExecutorGroup, createClock(), logging);
-    }
-
-    /**
-     * Creates new {@link Bootstrap}.
-     * <p>
-     * <b>This method is protected only for testing</b>
-     */
-    protected Bootstrap createBootstrap(int size) {
-        return BootstrapFactory.newBootstrap(size);
-    }
-
-    /**
-     * Creates new {@link Bootstrap}.
-     * <p>
-     * <b>This method is protected only for testing</b>
-     */
-    protected Bootstrap createBootstrap(EventLoopGroup eventLoopGroup) {
-        return BootstrapFactory.newBootstrap(eventLoopGroup);
+            long maxTransactionRetryTime, ScheduledExecutorService executor, Logging logging) {
+        return new ExponentialBackoffRetryLogic(maxTransactionRetryTime, executor, createClock(), logging);
     }
 
     /**
@@ -475,10 +436,17 @@ public class DriverFactory {
         return DefaultDomainNameResolver.getInstance();
     }
 
-    private static void assertNoRoutingContext(URI uri, RoutingSettings routingSettings) {
-        var routingContext = routingSettings.routingContext();
-        if (routingContext.isDefined()) {
-            throw new IllegalArgumentException(NO_ROUTING_CONTEXT_ERROR_MESSAGE + "'" + uri + "'");
-        }
+    private static SecurityPlanSupplier createSecurityPlanSupplierWithHostname(
+            SecurityPlanSupplier securityPlanSupplier, String expectedVerificationHostname) {
+        return expectedVerificationHostname != null
+                ? () -> securityPlanSupplier.getPlan().thenApply(securityPlan -> {
+                    if (securityPlan != null && securityPlan.expectedHostname() == null) {
+                        return org.neo4j.bolt.connection.SecurityPlans.encrypted(
+                                securityPlan.sslContext(), securityPlan.verifyHostname(), expectedVerificationHostname);
+                    } else {
+                        return securityPlan;
+                    }
+                })
+                : securityPlanSupplier;
     }
 }

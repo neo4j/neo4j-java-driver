@@ -4,12 +4,12 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
-  Neo4j Bolt Connection (Netty reference impl)
-  Neo4j Bolt Connection (Pooled provider impl)
+  Neo4j Bolt Connection (Bolt Provider reference impl)
+  Neo4j Bolt Connection (Pooled Source impl)
   Neo4j Bolt Connection (Provider SPI)
-  Neo4j Bolt Connection (Routed provider impl)
+  Neo4j Bolt Connection (Routed Source impl)
   Netty/Buffer
-  Netty/Codec
+  Netty/Codec/Base
   Netty/Common
   Netty/Handler
   Netty/Resolver

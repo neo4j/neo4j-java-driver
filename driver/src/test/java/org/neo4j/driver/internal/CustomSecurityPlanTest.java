@@ -24,8 +24,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 import javax.net.ssl.SSLContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -60,10 +58,7 @@ class CustomSecurityPlanTest {
 
         assertFalse(driverFactory.capturedSecurityPlans.isEmpty());
         assertTrue(driverFactory.capturedSecurityPlans.stream()
-                .allMatch(capturePlan -> capturePlan.requiresEncryption()
-                        && capturePlan.requiresClientAuth()
-                        && capturePlan.sslContext() == sslContext
-                        && capturePlan.requiresHostnameVerification()));
+                .allMatch(capturePlan -> capturePlan.sslContext() == sslContext && capturePlan.verifyHostname()));
     }
 
     private static class SecurityPlanCapturingDriverFactory extends DriverFactory {
@@ -74,11 +69,10 @@ class CustomSecurityPlanTest {
                 BoltSecurityPlanManager securityPlanManager,
                 SessionFactory sessionFactory,
                 MetricsProvider metricsProvider,
-                Supplier<CompletionStage<Void>> shutdownSupplier,
                 Config config) {
             capturedSecurityPlans.add(
                     securityPlanManager.plan().toCompletableFuture().join());
-            return super.createDriver(securityPlanManager, sessionFactory, metricsProvider, shutdownSupplier, config);
+            return super.createDriver(securityPlanManager, sessionFactory, metricsProvider, config);
         }
     }
 }
