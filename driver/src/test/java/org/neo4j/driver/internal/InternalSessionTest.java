@@ -40,6 +40,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionContext;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 
@@ -50,7 +51,7 @@ public class InternalSessionTest {
     @BeforeEach
     void beforeEach() {
         networkSession = mock(NetworkSession.class);
-        session = new InternalSession(networkSession);
+        session = new InternalSession(networkSession, NoopObservationProvider.getInstance());
     }
 
     @ParameterizedTest
@@ -98,12 +99,12 @@ public class InternalSessionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         ArgumentMatcher<ApiTelemetryWork> apiMatcher =
                 argument -> apiTelemetryWork.telemetryApi().equals(argument.telemetryApi());
-        given(networkSession.beginTransactionAsync(eq(config), eq(type), argThat(apiMatcher)))
+        given(networkSession.beginTransactionAsync(eq(config), eq(type), argThat(apiMatcher), any()))
                 .willReturn(completedFuture(mock(UnmanagedTransaction.class)));
 
         internalSession.beginTransaction(config, type);
 
-        then(networkSession).should().beginTransactionAsync(eq(config), eq(type), argThat(apiMatcher));
+        then(networkSession).should().beginTransactionAsync(eq(config), eq(type), argThat(apiMatcher), any());
     }
 
     static List<ExecuteVariation> executeVariations() {

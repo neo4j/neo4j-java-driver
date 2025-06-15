@@ -23,6 +23,7 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
+import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -41,13 +43,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.observation.NoopObservation;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.testutil.DatabaseExtension;
+import org.neo4j.driver.testutil.LoggingUtil;
 import org.neo4j.driver.testutil.ParallelizableIT;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -82,7 +87,30 @@ class ReactiveSessionIT {
     @SuppressWarnings("BusyWait")
     void shouldReleaseResultsOnSubscriptionCancellation(boolean request) throws InterruptedException {
         var messages = Collections.synchronizedList(new ArrayList<String>());
-        var config = Config.builder().withDriverMetrics().build();
+        var inUse = new AtomicInteger();
+        var observationProvider = new NoopObservationProvider() {
+            @Override
+            public Observation pooledConnectionInUse(String id, URI uri) {
+                return new NoopObservation() {
+                    @Override
+                    public Observation start() {
+                        inUse.incrementAndGet();
+                        return super.start();
+                    }
+
+                    @Override
+                    public void stop() {
+                        inUse.decrementAndGet();
+                        super.stop();
+                    }
+                };
+            }
+        };
+        @SuppressWarnings("deprecation")
+        var config = Config.builder()
+                .withLogging(LoggingUtil.boltLogging(messages))
+                .withObservationProvider(observationProvider)
+                .build();
         try (var driver = neo4j.customDriver(config)) {
             // verify the database is available as runs may not report errors due to the subscription cancellation
             driver.verifyConnectivity();
@@ -130,18 +158,15 @@ class ReactiveSessionIT {
             var timeout = Instant.now().plus(5, ChronoUnit.MINUTES);
             var totalInUseConnections = -1;
             while (Instant.now().isBefore(timeout)) {
-                totalInUseConnections = driver.metrics().connectionPoolMetrics().stream()
-                        .map(ConnectionPoolMetrics::inUse)
-                        .mapToInt(Integer::intValue)
-                        .sum();
+                totalInUseConnections = inUse.get();
                 if (totalInUseConnections == 0) {
                     return;
                 }
                 Thread.sleep(100);
             }
             fail(String.format(
-                    "not all connections have been released\n%d are still in use\nlatest metrics: %s\nmessage log: \n%s",
-                    totalInUseConnections, driver.metrics().connectionPoolMetrics(), String.join("\n", messages)));
+                    "not all connections have been released\n%d are still in use\nmessage log: \n%s",
+                    totalInUseConnections, String.join("\n", messages)));
         }
     }
 

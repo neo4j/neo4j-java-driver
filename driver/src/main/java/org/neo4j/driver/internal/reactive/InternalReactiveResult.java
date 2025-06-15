@@ -16,15 +16,18 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.observeStreams;
 import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
 import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 import static reactor.core.publisher.FluxSink.OverflowStrategy.IGNORE;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Flow.Publisher;
 import java.util.function.BiConsumer;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.summary.ResultSummary;
@@ -34,9 +37,11 @@ import reactor.core.publisher.Mono;
 
 public class InternalReactiveResult implements ReactiveResult {
     private final RxResultCursor cursor;
+    private final DriverObservationProvider observationProvider;
 
-    public InternalReactiveResult(RxResultCursor cursor) {
+    public InternalReactiveResult(RxResultCursor cursor, DriverObservationProvider observationProvider) {
         this.cursor = cursor;
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     @Override
@@ -46,30 +51,35 @@ public class InternalReactiveResult implements ReactiveResult {
 
     @Override
     public Publisher<Record> records() {
-        return publisherToFlowPublisher(Flux.create(
-                sink -> {
-                    if (cursor.isDone()) {
-                        sink.error(newResultConsumedError());
-                    } else {
-                        cursor.installRecordConsumer(createRecordConsumer(sink));
-                        sink.onCancel(cursor::cancel);
-                        sink.onRequest(cursor::request);
-                    }
-                },
-                IGNORE));
+        var recordsObservation = observationProvider.resultRecords(ReactiveResult.class);
+        return publisherToFlowPublisher(observeStreams(
+                recordsObservation,
+                Flux.create(
+                        sink -> {
+                            if (cursor.isDone()) {
+                                sink.error(newResultConsumedError());
+                            } else {
+                                cursor.installRecordConsumer(createRecordConsumer(sink), recordsObservation);
+                                sink.onCancel(cursor::cancel);
+                                sink.onRequest(cursor::request);
+                            }
+                        },
+                        IGNORE)));
     }
 
     @Override
     public Publisher<ResultSummary> consume() {
+        var consumeObservation = observationProvider.resultConsume(ReactiveResult.class);
         return publisherToFlowPublisher(
-                Mono.create(sink -> cursor.summaryAsync().whenComplete((summary, summaryCompletionError) -> {
-                    var error = Futures.completionExceptionCause(summaryCompletionError);
-                    if (summary != null) {
-                        sink.success(summary);
-                    } else {
-                        sink.error(error);
-                    }
-                })));
+                observeStreams(consumeObservation, Mono.create(sink -> cursor.summaryAsync(consumeObservation)
+                        .whenComplete((summary, summaryCompletionError) -> {
+                            var error = Futures.completionExceptionCause(summaryCompletionError);
+                            if (summary != null) {
+                                sink.success(summary);
+                            } else {
+                                sink.error(error);
+                            }
+                        }))));
     }
 
     @Override

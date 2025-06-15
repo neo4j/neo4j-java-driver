@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
@@ -66,13 +65,10 @@ class CustomSecurityPlanTest {
 
         @Override
         protected InternalDriver createDriver(
-                BoltSecurityPlanManager securityPlanManager,
-                SessionFactory sessionFactory,
-                MetricsProvider metricsProvider,
-                Config config) {
+                BoltSecurityPlanManager securityPlanManager, SessionFactory sessionFactory, Config config) {
             capturedSecurityPlans.add(
                     securityPlanManager.plan().toCompletableFuture().join());
-            return super.createDriver(securityPlanManager, sessionFactory, metricsProvider, config);
+            return super.createDriver(securityPlanManager, sessionFactory, config);
         }
     }
 }

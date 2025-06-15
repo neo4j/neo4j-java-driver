@@ -17,9 +17,7 @@
 package org.neo4j.driver.internal;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,7 +30,6 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Clock;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,16 +40,12 @@ import org.neo4j.driver.AuthTokenManagers;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
-import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
-import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
-import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
@@ -104,43 +97,6 @@ class DriverFactoryTest {
             assertNotNull(driver);
             verify(sessionFactory, never()).verifyConnectivity();
         }
-    }
-
-    @Test
-    void shouldNotCreateDriverMetrics() {
-        // Given
-        var config = Config.builder().withoutDriverMetrics().build();
-        // When
-        var provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
-        // Then
-        assertThat(provider, is(equalTo(DevNullMetricsProvider.INSTANCE)));
-    }
-
-    @Test
-    void shouldCreateDriverMetricsIfMonitoringEnabled() {
-        // Given
-        @SuppressWarnings("deprecation")
-        var config =
-                Config.builder().withDriverMetrics().withLogging(Logging.none()).build();
-        // When
-        var provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
-        // Then
-        assertThat(provider instanceof InternalMetricsProvider, is(true));
-    }
-
-    @Test
-    void shouldCreateMicrometerDriverMetricsIfMonitoringEnabled() {
-        // Given
-        @SuppressWarnings("deprecation")
-        var config = Config.builder()
-                .withDriverMetrics()
-                .withMetricsAdapter(MetricsAdapter.MICROMETER)
-                .withLogging(Logging.none())
-                .build();
-        // When
-        var provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
-        // Then
-        assertThat(provider instanceof MicrometerMetricsProvider, is(true));
     }
 
     @ParameterizedTest
@@ -205,9 +161,16 @@ class DriverFactoryTest {
                 RetryLogic retryLogic,
                 Config config,
                 AuthTokenManager authTokenManager,
-                HomeDatabaseCache homeDatabaseCache) {
+                HomeDatabaseCache homeDatabaseCache,
+                DriverObservationProvider observationProvider) {
             var sessionFactory = super.createSessionFactory(
-                    securityPlanManager, connectionProvider, retryLogic, config, authTokenManager, homeDatabaseCache);
+                    securityPlanManager,
+                    connectionProvider,
+                    retryLogic,
+                    config,
+                    authTokenManager,
+                    homeDatabaseCache,
+                    observationProvider);
             capturedSessionFactory = sessionFactory;
             return sessionFactory;
         }
@@ -227,7 +190,8 @@ class DriverFactoryTest {
                 RetryLogic retryLogic,
                 Config config,
                 AuthTokenManager authTokenManager,
-                HomeDatabaseCache homeDatabaseCache) {
+                HomeDatabaseCache homeDatabaseCache,
+                DriverObservationProvider observationProvider) {
             return sessionFactory;
         }
     }

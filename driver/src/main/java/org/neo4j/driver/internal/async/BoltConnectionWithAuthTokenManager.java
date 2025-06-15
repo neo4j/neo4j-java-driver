@@ -25,6 +25,7 @@ import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.SecurityRetryableException;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 
@@ -37,8 +38,10 @@ final class BoltConnectionWithAuthTokenManager extends DelegatingBoltConnection 
     }
 
     @Override
-    public CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, List<Message> messages) {
-        return delegate.writeAndFlush(new ErrorMappingResponseHandler(handler, this::mapSecurityError), messages);
+    public CompletionStage<Void> writeAndFlush(
+            DriverResponseHandler handler, List<Message> messages, Observation parentObservation) {
+        return delegate.writeAndFlush(
+                new ErrorMappingResponseHandler(handler, this::mapSecurityError), messages, parentObservation);
     }
 
     private Throwable mapSecurityError(Throwable throwable) {

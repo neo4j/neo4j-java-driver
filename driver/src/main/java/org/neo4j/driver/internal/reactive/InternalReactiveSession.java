@@ -16,10 +16,12 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.observeStreams;
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Flow.Publisher;
 import org.neo4j.bolt.connection.TelemetryApi;
@@ -29,6 +31,8 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.reactive.ReactiveSession;
@@ -37,28 +41,36 @@ import org.neo4j.driver.reactive.ReactiveTransactionCallback;
 
 public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTransaction>
         implements ReactiveSession, BaseReactiveQueryRunner {
-    public InternalReactiveSession(NetworkSession session) {
+    private final DriverObservationProvider observationProvider;
+
+    public InternalReactiveSession(NetworkSession session, DriverObservationProvider observationProvider) {
         super(session);
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     @Override
     protected ReactiveTransaction createTransaction(UnmanagedTransaction unmanagedTransaction) {
-        return new InternalReactiveTransaction(unmanagedTransaction);
+        return new InternalReactiveTransaction(unmanagedTransaction, observationProvider);
     }
 
     @Override
-    protected org.reactivestreams.Publisher<Void> closeTransaction(ReactiveTransaction transaction, boolean commit) {
-        return ((InternalReactiveTransaction) transaction).close(commit);
+    protected org.reactivestreams.Publisher<Void> closeTransaction(
+            ReactiveTransaction transaction, boolean commit, Observation parentObservation) {
+        return ((InternalReactiveTransaction) transaction).close(commit, parentObservation);
     }
 
     @Override
     public Publisher<ReactiveTransaction> beginTransaction(TransactionConfig config) {
-        return beginTransaction(config, null, new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION));
+        var beginObservation = observationProvider.beginTransaction(ReactiveTransaction.class);
+        return publisherToFlowPublisher(observeStreams(
+                beginObservation,
+                beginTransaction(
+                        config, null, new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION), beginObservation)));
     }
 
-    public Publisher<ReactiveTransaction> beginTransaction(
-            TransactionConfig config, String txType, ApiTelemetryWork apiTelemetryWork) {
-        return publisherToFlowPublisher(doBeginTransaction(config, txType, apiTelemetryWork));
+    public org.reactivestreams.Publisher<ReactiveTransaction> beginTransaction(
+            TransactionConfig config, String txType, ApiTelemetryWork apiTelemetryWork, Observation parentObservation) {
+        return doBeginTransaction(config, txType, apiTelemetryWork, parentObservation);
     }
 
     @Override
@@ -67,7 +79,9 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
         return publisherToFlowPublisher(runTransaction(
                 AccessMode.READ,
                 tx -> flowPublisherToFlux(callback.execute(new DelegatingReactiveTransactionContext(tx))),
-                config));
+                config,
+                ReactiveSession.class,
+                observationProvider));
     }
 
     @Override
@@ -76,7 +90,9 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
         return publisherToFlowPublisher(runTransaction(
                 AccessMode.WRITE,
                 tx -> flowPublisherToFlux(callback.execute(new DelegatingReactiveTransactionContext(tx))),
-                config));
+                config,
+                ReactiveSession.class,
+                observationProvider));
     }
 
     @Override
@@ -86,7 +102,10 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
 
     @Override
     public Publisher<ReactiveResult> run(Query query, TransactionConfig config) {
-        return publisherToFlowPublisher(run(query, config, InternalReactiveResult::new));
+        var runObservation = observationProvider.sessionRun(ReactiveSession.class, query.text(), query.parameters());
+        return publisherToFlowPublisher(observeStreams(
+                runObservation,
+                run(query, config, result -> new InternalReactiveResult(result, observationProvider), runObservation)));
     }
 
     @Override
@@ -96,6 +115,7 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
 
     @Override
     public <T> Publisher<T> close() {
-        return publisherToFlowPublisher(doClose());
+        var closeObservation = observationProvider.sessionClose(ReactiveSession.class);
+        return publisherToFlowPublisher(observeStreams(closeObservation, doClose(closeObservation)));
     }
 }

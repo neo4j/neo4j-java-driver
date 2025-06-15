@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.cursor;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.observeAsyncStarted;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
 import java.util.ArrayDeque;
@@ -50,6 +51,9 @@ import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.DiscardSummary;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.NoopObservation;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
@@ -77,6 +81,8 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
     private final ApiTelemetryWork apiTelemetryWork;
     private final CompletableFuture<Void> consumedFuture = new CompletableFuture<>();
     private final Consumer<String> databaseNameConsumer;
+    private final DriverObservationProvider observationProvider;
+    private final Class<?> resultType;
     private RunSummary runSummary;
     private State state;
 
@@ -90,6 +96,8 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
     private ResultSummary summary;
     private Throwable error;
     private boolean errorExposed;
+    private Observation pendingObservation;
+    private boolean observeBoltOnly;
 
     private enum State {
         READY,
@@ -107,7 +115,9 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
             boolean closeOnSummary,
             CompletableFuture<UnmanagedTransaction> beginFuture,
             Consumer<String> databaseNameConsumer,
-            ApiTelemetryWork apiTelemetryWork) {
+            ApiTelemetryWork apiTelemetryWork,
+            DriverObservationProvider observationProvider,
+            Class<?> resultType) {
         this.boltConnection = Objects.requireNonNull(boltConnection);
         this.legacyNotifications = new BoltProtocolVersion(5, 5).compareTo(boltConnection.protocolVersion()) > 0;
         updateRecordState(RecordState.REQUESTED);
@@ -119,6 +129,8 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
         this.beginFuture = beginFuture;
         this.apiTelemetryWork = apiTelemetryWork;
         this.databaseNameConsumer = Objects.requireNonNull(databaseNameConsumer);
+        this.observationProvider = Objects.requireNonNull(observationProvider);
+        this.resultType = Objects.requireNonNull(resultType);
     }
 
     public CompletionStage<ResultCursorImpl> resultCursor() {
@@ -130,9 +142,12 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
         return runSummary.keys();
     }
 
-    @SuppressWarnings("DuplicatedCode")
     @Override
     public synchronized CompletionStage<ResultSummary> consumeAsync() {
+        return consumeAsync(null);
+    }
+
+    private synchronized CompletionStage<ResultSummary> consumeAsync(Observation parentObservation) {
         if (apiCallInProgress) {
             var message = "API calls to result cursor must be sequential.";
             return CompletableFuture.failedStage(new ClientException(
@@ -146,12 +161,23 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
         CompletionStage<ResultSummary> summaryFt =
                 switch (state) {
                     case READY -> {
+                        Observation consumeObservation;
+                        Observation boltObservation;
+                        if (parentObservation != null) {
+                            consumeObservation = NoopObservation.getInstance();
+                            boltObservation = parentObservation;
+                        } else {
+                            consumeObservation = observationProvider
+                                    .resultConsume(resultType)
+                                    .start();
+                            boltObservation = consumeObservation;
+                        }
                         apiCallInProgress = true;
                         summaryFuture = new CompletableFuture<>();
                         var future = summaryFuture;
                         state = State.DISCARDING;
                         boltConnection
-                                .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1))
+                                .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1), boltObservation)
                                 .whenComplete((ignored, throwable) -> {
                                     var error = Futures.completionExceptionCause(throwable);
                                     CompletableFuture<ResultSummary> summaryFuture;
@@ -166,9 +192,16 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                                         summaryFuture.completeExceptionally(error);
                                     }
                                 });
-                        yield future;
+                        yield observeAsyncStarted(consumeObservation, () -> future);
                     }
                     case STREAMING -> {
+                        if (parentObservation != null) {
+                            pendingObservation = parentObservation;
+                            observeBoltOnly = true;
+                        } else {
+                            pendingObservation = observationProvider.resultConsume(resultType);
+                            observeBoltOnly = false;
+                        }
                         apiCallInProgress = true;
                         summaryFuture = new CompletableFuture<>();
                         yield summaryFuture;
@@ -224,13 +257,15 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
             // buffer is empty
             return switch (state) {
                 case READY -> {
+                    var nextObservation =
+                            observationProvider.resultNext(resultType).start();
                     apiCallInProgress = true;
                     recordFuture = new CompletableFuture<>();
                     var result = recordFuture;
                     state = State.STREAMING;
                     updateRecordState(RecordState.NO_RECORD);
                     boltConnection
-                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize))
+                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize), nextObservation)
                             .whenComplete((ignored, throwable) -> {
                                 var error = Futures.completionExceptionCause(throwable);
                                 CompletableFuture<Record> recordFuture;
@@ -245,9 +280,11 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                                     recordFuture.completeExceptionally(error);
                                 }
                             });
-                    yield result;
+                    yield observeAsyncStarted(nextObservation, () -> result);
                 }
                 case STREAMING -> {
+                    pendingObservation = observationProvider.resultNext(resultType);
+                    observeBoltOnly = false;
                     apiCallInProgress = true;
                     recordFuture = new CompletableFuture<>();
                     yield recordFuture;
@@ -288,13 +325,15 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
             // buffer is empty
             return switch (state) {
                 case READY -> {
+                    var peekObservation =
+                            observationProvider.resultPeek(resultType).start();
                     apiCallInProgress = true;
                     peekFuture = new CompletableFuture<>();
                     var future = peekFuture;
                     state = State.STREAMING;
                     updateRecordState(RecordState.NO_RECORD);
                     boltConnection
-                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize))
+                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize), peekObservation)
                             .whenComplete((ignored, throwable) -> {
                                 var error = Futures.completionExceptionCause(throwable);
                                 if (error != null) {
@@ -309,9 +348,11 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                                     recordFuture.completeExceptionally(error);
                                 }
                             });
-                    yield future;
+                    yield observeAsyncStarted(peekObservation, () -> future);
                 }
                 case STREAMING -> {
+                    pendingObservation = observationProvider.resultPeek(resultType);
+                    observeBoltOnly = false;
                     apiCallInProgress = true;
                     peekFuture = new CompletableFuture<>();
                     yield peekFuture;
@@ -355,6 +396,8 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
             return switch (state) {
                 case READY -> {
                     if (records.isEmpty()) {
+                        var singleObservation =
+                                observationProvider.resultSingle(resultType).start();
                         apiCallInProgress = true;
                         recordFuture = new CompletableFuture<>();
                         secondRecordFuture = new CompletableFuture<>();
@@ -374,7 +417,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                         state = State.STREAMING;
                         updateRecordState(RecordState.NO_RECORD);
                         boltConnection
-                                .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize))
+                                .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize), singleObservation)
                                 .whenComplete((ignored, throwable) -> {
                                     var error = Futures.completionExceptionCause(throwable);
                                     if (error != null) {
@@ -393,7 +436,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                                         secondRecordFuture.completeExceptionally(error);
                                     }
                                 });
-                        yield singleFuture;
+                        yield observeAsyncStarted(singleObservation, () -> singleFuture);
                     } else {
                         // records is not empty and the state is READY, meaning the result is not exhausted
                         yield CompletableFuture.failedStage(
@@ -402,6 +445,8 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                     }
                 }
                 case STREAMING -> {
+                    pendingObservation = observationProvider.resultSingle(resultType);
+                    observeBoltOnly = false;
                     apiCallInProgress = true;
                     if (records.isEmpty()) {
                         recordFuture = new CompletableFuture<>();
@@ -496,13 +541,14 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
         }
         return switch (state) {
             case READY -> {
+                var listObservation = observationProvider.resultList(resultType).start();
                 apiCallInProgress = true;
                 recordsFuture = new CompletableFuture<>();
                 var future = recordsFuture;
                 state = State.STREAMING;
                 updateRecordState(RecordState.NO_RECORD);
                 boltConnection
-                        .writeAndFlush(this, Messages.pull(runSummary.queryId(), -1))
+                        .writeAndFlush(this, Messages.pull(runSummary.queryId(), -1), listObservation)
                         .whenComplete((ignored, throwable) -> {
                             var error = Futures.completionExceptionCause(throwable);
                             CompletableFuture<List<Record>> recordsFuture;
@@ -517,9 +563,11 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                                 recordsFuture.completeExceptionally(error);
                             }
                         });
-                yield future;
+                yield observeAsyncStarted(listObservation, () -> future);
             }
             case STREAMING -> {
+                pendingObservation = observationProvider.resultList(resultType);
+                observeBoltOnly = false;
                 apiCallInProgress = true;
                 recordsFuture = new CompletableFuture<>();
                 yield recordsFuture;
@@ -601,6 +649,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
             peekFuture = this.peekFuture;
             this.peekFuture = null;
             if (peekFuture != null) {
+                clearPendingObservation();
                 apiCallInProgress = false;
                 records.add(record);
             } else {
@@ -610,11 +659,13 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                 secondRecordFuture = this.secondRecordFuture;
                 if (recordFuture == null) {
                     if (secondRecordFuture != null) {
+                        clearPendingObservation();
                         apiCallInProgress = false;
                         this.secondRecordFuture = null;
                     }
                     records.add(record);
                 } else {
+                    clearPendingObservation();
                     if (secondRecordFuture == null) {
                         apiCallInProgress = false;
                     }
@@ -760,10 +811,11 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
             synchronized (this) {
                 if (this.peekFuture != null) {
                     // peek is pending, keep streaming
+                    var observation = getAndClearPendingObservation(this.peekFuture);
                     state = State.STREAMING;
                     updateRecordState(RecordState.NO_RECORD);
                     boltConnection
-                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize))
+                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize), observation)
                             .whenComplete((ignored, throwable) -> {
                                 var error = Futures.completionExceptionCause(throwable);
                                 if (error != null) {
@@ -780,10 +832,11 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                             });
                 } else if (this.recordFuture != null) {
                     // next is pending, keep streaming
+                    var observation = getAndClearPendingObservation(this.recordFuture);
                     state = State.STREAMING;
                     updateRecordState(RecordState.NO_RECORD);
                     boltConnection
-                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize))
+                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), fetchSize), observation)
                             .whenComplete((ignored, throwable) -> {
                                 var error = Futures.completionExceptionCause(throwable);
                                 if (error != null) {
@@ -809,10 +862,11 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                     } else {
                         if (this.recordsFuture != null) {
                             // list is pending, stream all
+                            var observation = getAndClearPendingObservation(this.recordsFuture);
                             state = State.STREAMING;
                             updateRecordState(RecordState.NO_RECORD);
                             boltConnection
-                                    .writeAndFlush(this, Messages.pull(runSummary.queryId(), -1))
+                                    .writeAndFlush(this, Messages.pull(runSummary.queryId(), -1), observation)
                                     .whenComplete((ignored, throwable) -> {
                                         var error = Futures.completionExceptionCause(throwable);
                                         if (error != null) {
@@ -829,9 +883,10 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                                     });
                         } else if (this.summaryFuture != null) {
                             // consume is pending, discard all
+                            var observation = getAndClearPendingObservation(this.summaryFuture);
                             state = State.DISCARDING;
                             boltConnection
-                                    .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1))
+                                    .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1), observation)
                                     .whenComplete((ignored, throwable) -> {
                                         var error = Futures.completionExceptionCause(throwable);
                                         CompletableFuture<ResultSummary> summaryFuture;
@@ -1172,13 +1227,13 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
     }
 
     @Override
-    public synchronized CompletionStage<Throwable> discardAllFailureAsync() {
-        return consumeAsync().handle((summary, error) -> error);
+    public synchronized CompletionStage<Throwable> discardAllFailureAsync(Observation parentObservation) {
+        return consumeAsync(parentObservation).handle((summary, error) -> error);
     }
 
     @SuppressWarnings("DuplicatedCode")
     @Override
-    public CompletionStage<Throwable> pullAllFailureAsync() {
+    public CompletionStage<Throwable> pullAllFailureAsync(Observation parentObservation) {
         synchronized (this) {
             if (apiCallInProgress) {
                 var message = "API calls to result cursor must be sequential.";
@@ -1197,7 +1252,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                     state = State.STREAMING;
                     updateRecordState(RecordState.NO_RECORD);
                     boltConnection
-                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), -1))
+                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), -1), parentObservation)
                             .whenComplete((ignored, throwable) -> {
                                 var error = Futures.completionExceptionCause(throwable);
                                 CompletableFuture<ResultSummary> summaryFuture;
@@ -1246,5 +1301,29 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
             }
         }
         return CompletableFuture.completedStage(value);
+    }
+
+    private synchronized void clearPendingObservation() {
+        pendingObservation = null;
+    }
+
+    private synchronized Observation getAndClearPendingObservation(CompletionStage<?> observable) {
+        if (pendingObservation == null) {
+            return NoopObservation.getInstance();
+        } else {
+            var observation = pendingObservation;
+            pendingObservation = null;
+            if (!observeBoltOnly) {
+                observation.start();
+                observable.whenComplete((ignored, throwable) -> {
+                    if (throwable != null) {
+                        observation.error(Futures.completionExceptionCause(throwable));
+                    }
+                    observation.stop();
+                });
+            }
+            observeBoltOnly = false;
+            return observation;
+        }
     }
 }

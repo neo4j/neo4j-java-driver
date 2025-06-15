@@ -59,6 +59,7 @@ import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.security.SecurityPlans;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.net.ServerAddressResolver;
+import org.neo4j.driver.observation.metrics.MetricsObservationProvider;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -110,7 +111,7 @@ public class NewDriver implements TestkitRequest {
                 .ifPresent(configBuilder::withDisabledNotificationClassifications);
         Optional.ofNullable(data.maxConnectionLifetimeMs)
                 .ifPresent(timeout -> configBuilder.withMaxConnectionLifetime(timeout, TimeUnit.MILLISECONDS));
-        configBuilder.withDriverMetrics();
+        var metrics = MetricsObservationProvider.newInstance(configBuilder).metrics();
         var clientCertificateManager = Optional.ofNullable(data.getClientCertificateProviderId())
                 .map(testkitState::getClientCertificateManager)
                 .or(() -> Optional.ofNullable(data.getClientCertificate())
@@ -136,7 +137,7 @@ public class NewDriver implements TestkitRequest {
         } catch (RuntimeException e) {
             return handleExceptionAsErrorResponse(testkitState, e).orElseThrow(() -> e);
         }
-        testkitState.addDriverHolder(id, new DriverHolder(driver, config));
+        testkitState.addDriverHolder(id, new DriverHolder(driver, config, metrics));
         return Driver.builder().data(Driver.DriverBody.builder().id(id).build()).build();
     }
 

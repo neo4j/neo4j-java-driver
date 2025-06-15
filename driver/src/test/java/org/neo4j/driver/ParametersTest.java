@@ -42,6 +42,7 @@ import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.InternalSession;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 
 class ParametersTest {
@@ -117,7 +118,8 @@ class ParametersTest {
                 null,
                 false,
                 mock(AuthTokenManager.class),
-                mock());
-        return new InternalSession(session);
+                mock(),
+                NoopObservationProvider.getInstance());
+        return new InternalSession(session, NoopObservationProvider.getInstance());
     }
 }

@@ -28,6 +28,7 @@ import java.util.function.Function;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.FailableCursor;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.summary.ResultSummary;
 
 public class DisposableResultCursorImpl implements ResultCursor, FailableCursor {
@@ -96,14 +97,14 @@ public class DisposableResultCursorImpl implements ResultCursor, FailableCursor 
     }
 
     @Override
-    public CompletionStage<Throwable> discardAllFailureAsync() {
+    public CompletionStage<Throwable> discardAllFailureAsync(Observation parentObservation) {
         isDisposed = true;
-        return delegate.discardAllFailureAsync();
+        return delegate.discardAllFailureAsync(parentObservation);
     }
 
     @Override
-    public CompletionStage<Throwable> pullAllFailureAsync() {
-        return delegate.pullAllFailureAsync();
+    public CompletionStage<Throwable> pullAllFailureAsync(Observation parentObservation) {
+        return delegate.pullAllFailureAsync(parentObservation);
     }
 
     @Override

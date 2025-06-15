@@ -31,6 +31,7 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -51,7 +52,8 @@ public class LeakLoggingNetworkSession extends NetworkSession {
             AuthToken overrideAuthToken,
             boolean telemetryDisabled,
             AuthTokenManager authTokenManager,
-            HomeDatabaseCache homeDatabaseCache) {
+            HomeDatabaseCache homeDatabaseCache,
+            DriverObservationProvider observationProvider) {
         super(
                 connectionProvider,
                 retryLogic,
@@ -66,7 +68,8 @@ public class LeakLoggingNetworkSession extends NetworkSession {
                 overrideAuthToken,
                 telemetryDisabled,
                 authTokenManager,
-                homeDatabaseCache);
+                homeDatabaseCache,
+                observationProvider);
         this.stackTrace = captureStackTrace();
     }
 

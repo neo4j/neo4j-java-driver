@@ -36,13 +36,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.FailableCursor;
+import org.neo4j.driver.internal.observation.NoopObservation;
 
 class ResultCursorsHolderTest {
     @Test
     void shouldReturnNoErrorWhenNoCursorStages() {
         var holder = new ResultCursorsHolder();
 
-        var error = await(holder.retrieveNotConsumedError());
+        var error = await(holder.retrieveNotConsumedError(NoopObservation.getInstance()));
         assertNull(error);
     }
 
@@ -62,7 +63,7 @@ class ResultCursorsHolderTest {
         holder.add(cursorWithoutError());
         holder.add(cursorWithoutError());
 
-        var error = await(holder.retrieveNotConsumedError());
+        var error = await(holder.retrieveNotConsumedError(NoopObservation.getInstance()));
         assertNull(error);
     }
 
@@ -75,7 +76,7 @@ class ResultCursorsHolderTest {
         holder.add(cursorWithoutError());
         holder.add(failedFuture(new IOException("Failed to do IO")));
 
-        var error = await(holder.retrieveNotConsumedError());
+        var error = await(holder.retrieveNotConsumedError(NoopObservation.getInstance()));
         assertNull(error);
     }
 
@@ -89,7 +90,7 @@ class ResultCursorsHolderTest {
         holder.add(cursorWithError(error));
         holder.add(cursorWithoutError());
 
-        var retrievedError = await(holder.retrieveNotConsumedError());
+        var retrievedError = await(holder.retrieveNotConsumedError(NoopObservation.getInstance()));
         assertEquals(error, retrievedError);
     }
 
@@ -105,7 +106,7 @@ class ResultCursorsHolderTest {
         holder.add(cursorWithError(error2));
         holder.add(cursorWithError(error3));
 
-        assertEquals(error1, await(holder.retrieveNotConsumedError()));
+        assertEquals(error1, await(holder.retrieveNotConsumedError(NoopObservation.getInstance())));
     }
 
     @Test
@@ -118,7 +119,8 @@ class ResultCursorsHolderTest {
         holder.add(cursorWithError(error1));
         holder.add(cursorWithFailureFuture(error2Future));
 
-        var failureFuture = holder.retrieveNotConsumedError().toCompletableFuture();
+        var failureFuture =
+                holder.retrieveNotConsumedError(NoopObservation.getInstance()).toCompletableFuture();
         assertFalse(failureFuture.isDone());
 
         error2Future.complete(null);
@@ -138,22 +140,25 @@ class ResultCursorsHolderTest {
                     holder.add(CompletableFuture.completedFuture(cursor));
                     if (i % 2 == 0) {
                         consume.complete(null);
-                        given(cursor.discardAllFailureAsync())
+                        given(cursor.discardAllFailureAsync(NoopObservation.getInstance()))
                                 .willReturn(CompletableFuture.failedFuture(new RuntimeException()));
                     } else {
-                        given(cursor.discardAllFailureAsync()).willReturn(CompletableFuture.completedStage(null));
+                        given(cursor.discardAllFailureAsync(NoopObservation.getInstance()))
+                                .willReturn(CompletableFuture.completedStage(null));
                     }
                     return cursor;
                 })
                 .toList();
 
-        holder.retrieveNotConsumedError().toCompletableFuture().join();
+        holder.retrieveNotConsumedError(NoopObservation.getInstance())
+                .toCompletableFuture()
+                .join();
 
         for (var i = 0; i < list.size(); i++) {
             var cursor = list.get(i);
             then(cursor).should().consumed();
             if (i % 2 == 1) {
-                then(cursor).should().discardAllFailureAsync();
+                then(cursor).should().discardAllFailureAsync(NoopObservation.getInstance());
             }
             then(cursor).shouldHaveNoMoreInteractions();
         }
@@ -170,7 +175,7 @@ class ResultCursorsHolderTest {
     private static CompletionStage<FailableCursor> cursorWithFailureFuture(CompletableFuture<Throwable> future) {
         var cursor = mock(FailableCursor.class);
         when(cursor.consumed()).thenReturn(new CompletableFuture<>());
-        when(cursor.discardAllFailureAsync()).thenReturn(future);
+        when(cursor.discardAllFailureAsync(NoopObservation.getInstance())).thenReturn(future);
         return completedFuture(cursor);
     }
 }

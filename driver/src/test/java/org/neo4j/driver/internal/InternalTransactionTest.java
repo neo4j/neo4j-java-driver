@@ -58,6 +58,7 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.testutil.TestUtil;
 
@@ -70,7 +71,7 @@ class InternalTransactionTest {
     void setUp() {
         connection = connectionMock(new BoltProtocolVersion(4, 0));
         var connectionProvider = mock(DriverBoltConnectionSource.class);
-        given(connectionProvider.getConnection(any())).willReturn(CompletableFuture.completedFuture(connection));
+        given(connectionProvider.getConnection(any(), any())).willReturn(CompletableFuture.completedFuture(connection));
         setupConnectionAnswers(connection, List.of(new TestUtil.MessageHandler() {
             @Override
             public List<Class<? extends Message>> messageTypes() {
@@ -83,7 +84,8 @@ class InternalTransactionTest {
                 handler.onComplete();
             }
         }));
-        var session = new InternalSession(newSession(connectionProvider, Collections.emptySet()));
+        var session = new InternalSession(
+                newSession(connectionProvider, Collections.emptySet()), NoopObservationProvider.getInstance());
         tx = session.beginTransaction();
     }
 

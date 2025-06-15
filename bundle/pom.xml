@@ -20,7 +20,7 @@
   <properties>
     <moduleName>org.neo4j.driver</moduleName>
     <rootDir>${project.basedir}/..</rootDir>
-    <maven.compiler.xlint.extras>,-try</maven.compiler.xlint.extras>
+    <maven.compiler.xlint.extras>,-try,-module</maven.compiler.xlint.extras>
     <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
 
@@ -93,7 +93,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>3.2.0</version>
         <executions>
           <execution>
             <id>copy-appCtx</id>

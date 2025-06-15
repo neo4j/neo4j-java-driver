@@ -40,7 +40,6 @@ import org.neo4j.bolt.connection.BoltServerAddress;
 import org.neo4j.bolt.connection.DefaultDomainNameResolver;
 import org.neo4j.bolt.connection.DomainNameResolver;
 import org.neo4j.bolt.connection.LoggingProvider;
-import org.neo4j.bolt.connection.MetricsListener;
 import org.neo4j.bolt.connection.NotificationConfig;
 import org.neo4j.bolt.connection.RoutedBoltConnectionParameters;
 import org.neo4j.bolt.connection.pooled.PooledBoltConnectionSource;
@@ -53,20 +52,18 @@ import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
 import org.neo4j.driver.internal.adaptedbolt.AdaptingDriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.BoltAuthTokenManager;
 import org.neo4j.driver.internal.adaptedbolt.BoltConnectionProviderFactoryLoader;
+import org.neo4j.driver.internal.adaptedbolt.BoltObservationProvider;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.ErrorMapper;
 import org.neo4j.driver.internal.adaptedbolt.SingleRoutedBoltConnectionSource;
 import org.neo4j.driver.internal.boltlistener.BoltConnectionListener;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
-import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
-import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
@@ -132,14 +129,11 @@ public class DriverFactory {
         @SuppressWarnings("deprecation")
         var retryLogic = createRetryLogic(config.maxTransactionRetryTimeMillis(), retryExecutor, config.logging());
 
-        var metricsProvider = getOrCreateMetricsProvider(config, createClock());
-
         return createDriver(
                 uri,
                 securityPlanManager,
                 eventLoopGroup,
                 retryLogic,
-                metricsProvider,
                 config,
                 authTokenManager,
                 rediscoverySupplier,
@@ -158,26 +152,11 @@ public class DriverFactory {
     }
 
     @SuppressWarnings("deprecation")
-    protected static MetricsProvider getOrCreateMetricsProvider(Config config, Clock clock) {
-        var metricsAdapter = config.metricsAdapter();
-        // This can actually only happen when someone mocks the config
-        if (metricsAdapter == null) {
-            metricsAdapter = config.isMetricsEnabled() ? MetricsAdapter.DEFAULT : MetricsAdapter.DEV_NULL;
-        }
-        return switch (metricsAdapter) {
-            case DEV_NULL -> DevNullMetricsProvider.INSTANCE;
-            case DEFAULT -> new InternalMetricsProvider(clock, config.logging());
-            case MICROMETER -> MicrometerMetricsProvider.forGlobalRegistry();
-        };
-    }
-
-    @SuppressWarnings("deprecation")
     private InternalDriver createDriver(
             URI uri,
             BoltSecurityPlanManager securityPlanManager,
             ScheduledExecutorService eventLoopGroup,
             RetryLogic retryLogic,
-            MetricsProvider metricsProvider,
             Config config,
             AuthTokenManager authTokenManager,
             Supplier<Rediscovery> rediscoverySupplier,
@@ -186,6 +165,8 @@ public class DriverFactory {
         try {
             var homeDatabaseCache = HomeDatabaseCache.newInstance(Scheme.isRoutingScheme(uri.getScheme()));
             var valueFactory = BoltValueFactory.getInstance();
+            var observationProvider = (DriverObservationProvider)
+                    config.observationProvider().orElseGet(NoopObservationProvider::getInstance);
             boltConnectionProvider = createDriverBoltConnectionProvider(
                     uri,
                     config,
@@ -195,7 +176,7 @@ public class DriverFactory {
                     DriverInfoUtil.boltAgent(),
                     config.userAgent(),
                     config.connectionTimeoutMillis(),
-                    metricsProvider.metricsListener(),
+                    observationProvider,
                     authTokenManager,
                     securityPlanManager::plan,
                     NotificationConfigMapper.map(config.notificationConfig()),
@@ -206,8 +187,9 @@ public class DriverFactory {
                     retryLogic,
                     config,
                     authTokenManager,
-                    homeDatabaseCache);
-            var driver = createDriver(securityPlanManager, sessionFactory, metricsProvider, config);
+                    homeDatabaseCache,
+                    observationProvider);
+            var driver = createDriver(securityPlanManager, sessionFactory, config);
             var log = config.logging().getLog(getClass());
             log.info("Driver instance %s created for server uri '%s'", driver.hashCode(), uri);
             return driver;
@@ -236,7 +218,7 @@ public class DriverFactory {
             BoltAgent boltAgent,
             String userAgent,
             int connectTimeoutMillis,
-            MetricsListener metricsListener,
+            DriverObservationProvider observationProvider,
             AuthTokenManager authTokenManager,
             SecurityPlanSupplier securityPlanSupplier,
             NotificationConfig notificationConfig,
@@ -254,14 +236,18 @@ public class DriverFactory {
                 boltAgent,
                 userAgent,
                 connectTimeoutMillis,
-                metricsListener,
+                new BoltObservationProvider(observationProvider),
                 clock,
                 boltAuthTokenManager,
                 securityPlanSupplier,
                 notificationConfig,
                 boltConnectionProviderFactory);
         return new AdaptingDriverBoltConnectionSource(
-                boltConnectionProvider, errorMapper, boltValueFactory, Scheme.isRoutingScheme(uri.getScheme()));
+                boltConnectionProvider,
+                errorMapper,
+                boltValueFactory,
+                Scheme.isRoutingScheme(uri.getScheme()),
+                observationProvider);
     }
 
     @SuppressWarnings("deprecation")
@@ -274,7 +260,7 @@ public class DriverFactory {
             BoltAgent boltAgent,
             String userAgent,
             int connectTimeoutMillis,
-            MetricsListener metricsListener,
+            BoltObservationProvider observationProvider,
             Clock clock,
             org.neo4j.bolt.connection.pooled.AuthTokenManager authTokenManager,
             SecurityPlanSupplier securityPlanSupplier,
@@ -302,7 +288,7 @@ public class DriverFactory {
                 boltAgent,
                 userAgent,
                 connectTimeoutMillis,
-                metricsListener,
+                observationProvider,
                 authTokenManager,
                 securityPlanSupplier,
                 notificationConfig,
@@ -319,7 +305,7 @@ public class DriverFactory {
                     boltAgent,
                     userAgent,
                     connectTimeoutMillis,
-                    metricsListener);
+                    observationProvider);
         } else {
             boltConnectionSource = new SingleRoutedBoltConnectionSource(pooledSourceSupplierFactory.create(uri, null));
         }
@@ -337,7 +323,7 @@ public class DriverFactory {
             BoltAgent boltAgent,
             String userAgent,
             int connectTimeoutMillis,
-            MetricsListener metricsListener) {
+            BoltObservationProvider observationProvider) {
         var boltServerAddressResolver = createBoltServerAddressResolver(config);
         var rediscovery = rediscoverySupplier != null ? rediscoverySupplier.get() : null;
         return new RoutedBoltConnectionSource(
@@ -349,7 +335,8 @@ public class DriverFactory {
                 clock,
                 loggingProvider,
                 uri,
-                List.of(AuthTokenManagerExecutionException.class));
+                List.of(AuthTokenManagerExecutionException.class),
+                observationProvider);
     }
 
     private BoltConnectionSourceFactory createPooledBoltConnectionSource(
@@ -362,7 +349,7 @@ public class DriverFactory {
             BoltAgent boltAgent,
             String userAgent,
             int connectTimeoutMillis,
-            MetricsListener metricsListener,
+            BoltObservationProvider observationProvider,
             org.neo4j.bolt.connection.pooled.AuthTokenManager authTokenManager,
             SecurityPlanSupplier securityPlanSupplier,
             NotificationConfig notificationConfig,
@@ -374,6 +361,7 @@ public class DriverFactory {
                     clock,
                     loggingProvider,
                     config.eventLoopThreads(),
+                    observationProvider,
                     boltConnectionProviderFactory);
             var listeningBoltConnectionProvider = BoltConnectionListener.listeningBoltConnectionProvider(
                     boltConnectionProvider, boltConnectionListener);
@@ -388,7 +376,7 @@ public class DriverFactory {
                     config.connectionAcquisitionTimeoutMillis(),
                     config.maxConnectionLifetimeMillis(),
                     config.idleTimeBeforeConnectionTest(),
-                    metricsListener,
+                    observationProvider,
                     routingContextAddress,
                     boltAgent,
                     userAgent,
@@ -403,6 +391,7 @@ public class DriverFactory {
             Clock clock,
             LoggingProvider loggingProvider,
             int eventLoopThreads,
+            BoltObservationProvider observationProvider,
             BoltConnectionProviderFactory boltConnectionProviderFactory) {
         var additionalConfig = new HashMap<String, Object>();
         additionalConfig.put("clock", clock);
@@ -416,7 +405,7 @@ public class DriverFactory {
             additionalConfig.put("localAddress", localAddress);
         }
         return boltConnectionProviderFactory.create(
-                loggingProvider, BoltValueFactory.getInstance(), null, additionalConfig);
+                loggingProvider, BoltValueFactory.getInstance(), observationProvider, additionalConfig);
     }
 
     @SuppressWarnings("SameReturnValue")
@@ -431,12 +420,14 @@ public class DriverFactory {
      */
     @SuppressWarnings("deprecation")
     protected InternalDriver createDriver(
-            BoltSecurityPlanManager securityPlanManager,
-            SessionFactory sessionFactory,
-            MetricsProvider metricsProvider,
-            Config config) {
+            BoltSecurityPlanManager securityPlanManager, SessionFactory sessionFactory, Config config) {
         return new InternalDriver(
-                securityPlanManager, sessionFactory, metricsProvider, config.isTelemetryDisabled(), config.logging());
+                securityPlanManager,
+                sessionFactory,
+                config.isTelemetryDisabled(),
+                config.logging(),
+                (DriverObservationProvider)
+                        config.observationProvider().orElseGet(NoopObservationProvider::getInstance));
     }
 
     /**
@@ -457,9 +448,16 @@ public class DriverFactory {
             RetryLogic retryLogic,
             Config config,
             AuthTokenManager authTokenManager,
-            HomeDatabaseCache homeDatabaseCache) {
+            HomeDatabaseCache homeDatabaseCache,
+            DriverObservationProvider observationProvider) {
         return new SessionFactoryImpl(
-                securityPlanManager, connectionProvider, retryLogic, config, authTokenManager, homeDatabaseCache);
+                securityPlanManager,
+                connectionProvider,
+                retryLogic,
+                config,
+                authTokenManager,
+                homeDatabaseCache,
+                observationProvider);
     }
 
     /**

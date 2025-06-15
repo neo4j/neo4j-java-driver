@@ -17,7 +17,6 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 
 /**
@@ -255,22 +254,6 @@ public interface Driver extends AutoCloseable {
      * @return a {@link CompletionStage completion stage} that represents the asynchronous close.
      */
     CompletionStage<Void> closeAsync();
-
-    /**
-     * Returns the driver metrics if metrics reporting is enabled via {@link Config.ConfigBuilder#withDriverMetrics()}.
-     * Otherwise, a {@link ClientException} will be thrown.
-     *
-     * @return the driver metrics if enabled.
-     * @throws ClientException if the driver metrics reporting is not enabled.
-     */
-    Metrics metrics();
-
-    /**
-     * Returns true if the driver metrics reporting is enabled via {@link Config.ConfigBuilder#withDriverMetrics()}, otherwise false.
-     *
-     * @return true if the metrics reporting is enabled.
-     */
-    boolean isMetricsEnabled();
 
     /**
      * This verifies if the driver can connect to a remote server or a cluster

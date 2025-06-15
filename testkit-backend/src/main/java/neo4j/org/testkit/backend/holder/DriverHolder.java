@@ -18,5 +18,6 @@ package neo4j.org.testkit.backend.holder;
 
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.observation.metrics.Metrics;
 
-public record DriverHolder(Driver driver, Config config) {}
+public record DriverHolder(Driver driver, Config config, Metrics metrics) {}

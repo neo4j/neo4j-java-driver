@@ -68,6 +68,7 @@ import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.testutil.TestUtil;
 
@@ -79,14 +80,14 @@ class InternalAsyncTransactionTest {
     void setUp() {
         connection = connectionMock(new BoltProtocolVersion(4, 0));
         var connectionProvider = mock(DriverBoltConnectionSource.class);
-        given(connectionProvider.getConnection(any()))
+        given(connectionProvider.getConnection(any(), any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
                     var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
                     parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection);
                 });
         var networkSession = newSession(connectionProvider);
-        session = new InternalAsyncSession(networkSession);
+        session = new InternalAsyncSession(networkSession, NoopObservationProvider.getInstance());
     }
 
     private static Stream<Function<AsyncTransaction, CompletionStage<ResultCursor>>> allSessionRunMethods() {
@@ -294,7 +295,7 @@ class InternalAsyncTransactionTest {
         var utx = mock(UnmanagedTransaction.class);
         var expected = false;
         given(utx.isOpen()).willReturn(expected);
-        var tx = new InternalAsyncTransaction(utx);
+        var tx = new InternalAsyncTransaction(utx, NoopObservationProvider.getInstance(), null);
 
         // WHEN
         boolean actual = tx.isOpenAsync().toCompletableFuture().get();

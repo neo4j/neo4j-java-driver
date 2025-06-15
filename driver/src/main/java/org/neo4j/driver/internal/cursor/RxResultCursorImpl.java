@@ -47,6 +47,8 @@ import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.DiscardSummary;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
+import org.neo4j.driver.internal.observation.NoopObservation;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.summary.GqlStatusObject;
@@ -108,6 +110,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
     private PullSummary pullSummary;
     private DiscardSummary discardSummary;
     private Throwable error;
+    private Observation recordsObservation;
 
     private enum State {
         READY,
@@ -159,7 +162,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
     }
 
     @Override
-    public void installRecordConsumer(BiConsumer<Record, Throwable> recordConsumer) {
+    public void installRecordConsumer(BiConsumer<Record, Throwable> recordConsumer, Observation observation) {
         Objects.requireNonNull(recordConsumer);
         if (summaryExposed) {
             throw newResultConsumedError();
@@ -168,6 +171,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
         synchronized (this) {
             if (this.recordConsumer == null) {
                 this.recordConsumer = safeRecordConsumer(recordConsumer);
+                this.recordsObservation = Objects.requireNonNull(observation);
                 log.trace("[%d] Record consumer installed", hashCode());
                 if (runError != null) {
                     handleError(runError);
@@ -192,7 +196,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
                         var request = appendDemand(n);
                         state = State.STREAMING;
                         runnable = () -> boltConnection
-                                .writeAndFlush(this, Messages.pull(runSummary.queryId(), request))
+                                .writeAndFlush(this, Messages.pull(runSummary.queryId(), request), recordsObservation)
                                 .whenComplete((ignored, throwable) -> {
                                     throwable = Futures.completionExceptionCause(throwable);
                                     if (throwable != null) {
@@ -217,7 +221,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
         synchronized (this) {
             log.trace("[%d] Cancellation requested in %s state", hashCode(), state);
             switch (state) {
-                case READY -> runnable = setupDiscardRunnable();
+                case READY -> runnable = setupDiscardRunnable(recordsObservation);
                 case STREAMING -> discardPending = true;
                 case DISCARDING, FAILED, SUCCEEDED -> {}
             }
@@ -226,7 +230,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
     }
 
     @Override
-    public CompletionStage<ResultSummary> summaryAsync() {
+    public CompletionStage<ResultSummary> summaryAsync(Observation observation) {
         var runnable = NOOP_RUNNABLE;
         synchronized (this) {
             log.trace("[%d] Summary requested in %s state", hashCode(), state);
@@ -241,7 +245,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
                         handleError(runError);
                         runnable = this::onComplete;
                     } else {
-                        runnable = setupDiscardRunnable();
+                        runnable = setupDiscardRunnable(observation);
                     }
                 }
                 case STREAMING -> discardPending = true;
@@ -285,7 +289,8 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
                                 }
                             }
                         },
-                        Messages.reset())
+                        Messages.reset(),
+                        NoopObservation.getInstance())
                 .whenComplete((ignored, throwable) -> {
                     throwable = Futures.completionExceptionCause(throwable);
                     if (throwable != null) {
@@ -354,17 +359,17 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
     }
 
     @Override
-    public synchronized CompletionStage<Throwable> discardAllFailureAsync() {
+    public synchronized CompletionStage<Throwable> discardAllFailureAsync(Observation parentObservation) {
         log.trace("[%d] Discard all requested", hashCode());
         var summaryExposed = this.summaryExposed;
         var runErrorExposed = this.runErrorExposed;
-        return summaryAsync()
+        return summaryAsync(parentObservation)
                 .thenApply(ignored -> (Throwable) null)
                 .exceptionally(throwable -> runErrorExposed || summaryExposed ? null : throwable);
     }
 
     @Override
-    public synchronized CompletionStage<Throwable> pullAllFailureAsync() {
+    public synchronized CompletionStage<Throwable> pullAllFailureAsync(Observation parentObservation) {
         log.trace("[%d] Pull all failure requested", hashCode());
         var unfinishedState =
                 switch (state) {
@@ -376,7 +381,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
                     new TransactionNestingException(
                             "You cannot run another query or begin a new transaction in the same session before you've fully consumed the previous run result."));
         }
-        return discardAllFailureAsync();
+        return discardAllFailureAsync(parentObservation);
     }
 
     private synchronized long appendDemand(long n) {
@@ -405,10 +410,10 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
         log.trace("[%d] Decremented demand, outstanding is %d", hashCode(), outstandingDemand);
     }
 
-    private synchronized Runnable setupDiscardRunnable() {
+    private synchronized Runnable setupDiscardRunnable(Observation observation) {
         state = State.DISCARDING;
         return () -> boltConnection
-                .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1))
+                .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1), observation)
                 .whenComplete((ignored, throwable) -> {
                     throwable = Futures.completionExceptionCause(throwable);
                     if (throwable != null) {
@@ -427,7 +432,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
                 discardPending = false;
                 state = State.DISCARDING;
                 runnable = () -> boltConnection
-                        .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1))
+                        .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1), NoopObservation.getInstance())
                         .whenComplete((ignored, flushThrowable) -> {
                             var error = Futures.completionExceptionCause(flushThrowable);
                             if (error != null) {
@@ -440,7 +445,10 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
                 if (demand != 0) {
                     state = State.STREAMING;
                     runnable = () -> boltConnection
-                            .writeAndFlush(this, Messages.pull(runSummary.queryId(), demand > 0 ? demand : -1))
+                            .writeAndFlush(
+                                    this,
+                                    Messages.pull(runSummary.queryId(), demand > 0 ? demand : -1),
+                                    recordsObservation)
                             .whenComplete((ignored, flushThrowable) -> {
                                 var error = Futures.completionExceptionCause(flushThrowable);
                                 if (error != null) {

@@ -25,6 +25,7 @@ import org.neo4j.bolt.connection.BoltServerAddress;
 import org.neo4j.bolt.connection.message.Message;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 
 public abstract class DelegatingBoltConnection implements DriverBoltConnection {
@@ -35,8 +36,9 @@ public abstract class DelegatingBoltConnection implements DriverBoltConnection {
     }
 
     @Override
-    public CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, List<Message> messages) {
-        return delegate.writeAndFlush(handler, messages);
+    public CompletionStage<Void> writeAndFlush(
+            DriverResponseHandler handler, List<Message> messages, Observation parentObservation) {
+        return delegate.writeAndFlush(handler, messages, parentObservation);
     }
 
     @Override

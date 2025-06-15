@@ -28,6 +28,7 @@ import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.util.Futures;
 
 final class TerminationAwareBoltConnection extends DelegatingBoltConnection {
@@ -52,10 +53,10 @@ final class TerminationAwareBoltConnection extends DelegatingBoltConnection {
         this.throwableConsumer = Objects.requireNonNull(throwableConsumer);
     }
 
-    public CompletionStage<Void> reset() {
+    public CompletionStage<Void> reset(Observation parentObservation) {
         var future = new CompletableFuture<Void>();
         var thisVal = this;
-        executor.execute(ignored -> resetBolt(future)).whenComplete((ignored, throwable) -> {
+        executor.execute(ignored -> resetBolt(future, parentObservation)).whenComplete((ignored, throwable) -> {
             if (throwable != null) {
                 throwableConsumer.accept(throwable);
                 future.completeExceptionally(throwable);
@@ -64,7 +65,7 @@ final class TerminationAwareBoltConnection extends DelegatingBoltConnection {
         return future;
     }
 
-    private CompletionStage<Void> resetBolt(CompletableFuture<Void> future) {
+    private CompletionStage<Void> resetBolt(CompletableFuture<Void> future, Observation parentObservation) {
         return delegate.writeAndFlush(
                 new DriverResponseHandler() {
                     Throwable throwable = null;
@@ -85,21 +86,27 @@ final class TerminationAwareBoltConnection extends DelegatingBoltConnection {
                         }
                     }
                 },
-                List.of(Messages.reset()));
+                List.of(Messages.reset()),
+                parentObservation);
     }
 
     @Override
-    public CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, List<Message> messages) {
-        return executor.execute(causeOfTermination -> flushBolt(causeOfTermination, handler, messages));
+    public CompletionStage<Void> writeAndFlush(
+            DriverResponseHandler handler, List<Message> messages, Observation parentObservation) {
+        return executor.execute(
+                causeOfTermination -> flushBolt(causeOfTermination, handler, messages, parentObservation));
     }
 
     private CompletionStage<Void> flushBolt(
-            Throwable causeOfTermination, DriverResponseHandler handler, List<Message> messages) {
+            Throwable causeOfTermination,
+            DriverResponseHandler handler,
+            List<Message> messages,
+            Observation parentObservation) {
         if (causeOfTermination == null) {
             log.trace("This connection is active, will flush");
             var terminationAwareResponseHandler =
                     new TerminationAwareResponseHandler(logging, handler, executor, throwableConsumer);
-            return delegate.writeAndFlush(terminationAwareResponseHandler, messages)
+            return delegate.writeAndFlush(terminationAwareResponseHandler, messages, parentObservation)
                     .handle((ignored, flushThrowable) -> {
                         flushThrowable = Futures.completionExceptionCause(flushThrowable);
                         if (flushThrowable != null) {

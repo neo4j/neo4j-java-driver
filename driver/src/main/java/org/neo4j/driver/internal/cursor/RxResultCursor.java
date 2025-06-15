@@ -21,15 +21,16 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.FailableCursor;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.summary.ResultSummary;
 import org.reactivestreams.Subscription;
 
 public interface RxResultCursor extends Subscription, FailableCursor {
     List<String> keys();
 
-    void installRecordConsumer(BiConsumer<Record, Throwable> recordConsumer);
+    void installRecordConsumer(BiConsumer<Record, Throwable> recordConsumer, Observation observation);
 
-    CompletionStage<ResultSummary> summaryAsync();
+    CompletionStage<ResultSummary> summaryAsync(Observation observation);
 
     boolean isDone();
 

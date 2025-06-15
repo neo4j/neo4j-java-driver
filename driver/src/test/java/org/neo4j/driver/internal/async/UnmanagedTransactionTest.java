@@ -77,6 +77,7 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
@@ -86,6 +87,8 @@ import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
+import org.neo4j.driver.internal.observation.NoopObservation;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.testutil.TestUtil;
 
@@ -125,7 +128,7 @@ class UnmanagedTransactionTest {
         var tx = beginTx(connection);
 
         // When
-        await(tx.runAsync(new Query("RETURN 1")));
+        await(tx.runAsync(new Query("RETURN 1"), NoopObservation.getInstance(), ResultCursor.class));
 
         // Then
         verifyRunAndPull(connection, "RETURN 1");
@@ -165,7 +168,7 @@ class UnmanagedTransactionTest {
         var tx = beginTx(connection);
 
         // When
-        await(tx.runRx(new Query("RETURN 1")));
+        await(tx.runRx(new Query("RETURN 1"), NoopObservation.getInstance()));
 
         // Then
         verifyBegin(connection);
@@ -207,7 +210,7 @@ class UnmanagedTransactionTest {
         var tx = beginTx(connection);
 
         // When
-        await(tx.closeAsync());
+        await(tx.closeAsync(NoopObservation.getInstance()));
 
         // Then
         verifyBegin(connection);
@@ -298,7 +301,7 @@ class UnmanagedTransactionTest {
         var tx = beginTx(connection);
 
         tx.markTerminated(null);
-        await(tx.closeAsync());
+        await(tx.closeAsync(NoopObservation.getInstance()));
 
         assertFalse(tx.isOpen());
     }
@@ -332,12 +335,15 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
 
         var bookmarks = Collections.singleton(Bookmark.from("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
-        var e = assertThrows(RuntimeException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null, true)));
+        var e = assertThrows(
+                RuntimeException.class,
+                () -> await(tx.beginAsync(bookmarks, txConfig, null, true, NoopObservation.getInstance())));
 
         assertEquals(error, e);
         verify(connection).close();
@@ -371,12 +377,13 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
 
         var bookmarks = Collections.singleton(Bookmark.from("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
-        await(tx.beginAsync(bookmarks, txConfig, null, true));
+        await(tx.beginAsync(bookmarks, txConfig, null, true, NoopObservation.getInstance()));
 
         verify(connection, never()).close();
     }
@@ -397,11 +404,12 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
 
         tx.markTerminated(null);
 
-        assertThrows(TransactionTerminatedException.class, () -> await(tx.commitAsync()));
+        assertThrows(TransactionTerminatedException.class, () -> await(tx.commitAsync(NoopObservation.getInstance())));
 
         assertFalse(tx.isOpen());
         verify(connection).close();
@@ -427,11 +435,12 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
 
         tx.markTerminated(terminationCause);
 
-        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync(NoopObservation.getInstance())));
         assertNoCircularReferences(e);
         assertEquals(terminationCause, e);
     }
@@ -455,11 +464,12 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
 
         tx.markTerminated(terminationCause);
 
-        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync(NoopObservation.getInstance())));
         assertNoCircularReferences(e);
         assertEquals(1, e.getSuppressed().length);
 
@@ -484,11 +494,13 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
 
         tx.markTerminated(terminationCause);
 
-        var e = assertThrows(TransactionTerminatedException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(
+                TransactionTerminatedException.class, () -> await(tx.commitAsync(NoopObservation.getInstance())));
         assertNoCircularReferences(e);
 
         assertEquals(terminationCause, e.getCause());
@@ -510,10 +522,11 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
 
         tx.markTerminated(null);
-        await(tx.rollbackAsync());
+        await(tx.rollbackAsync(NoopObservation.getInstance()));
 
         verify(connection).close();
     }
@@ -546,9 +559,10 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
 
-        await(tx.closeAsync());
+        await(tx.closeAsync(NoopObservation.getInstance()));
 
         verify(connection).close();
     }
@@ -582,12 +596,14 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
         var bookmarks = Collections.singleton(Bookmark.from("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
         var actualException = assertThrows(
-                AuthorizationExpiredException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null, true)));
+                AuthorizationExpiredException.class,
+                () -> await(tx.beginAsync(bookmarks, txConfig, null, true, NoopObservation.getInstance())));
 
         assertSame(exception, actualException);
         verify(connection).close();
@@ -621,12 +637,14 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
         var bookmarks = Collections.singleton(Bookmark.from("SomeBookmark"));
         var txConfig = TransactionConfig.empty();
 
         var actualException = assertThrows(
-                ConnectionReadTimeoutException.class, () -> await(tx.beginAsync(bookmarks, txConfig, null, true)));
+                ConnectionReadTimeoutException.class,
+                () -> await(tx.beginAsync(bookmarks, txConfig, null, true, NoopObservation.getInstance())));
 
         assertSame(ConnectionReadTimeoutException.INSTANCE, actualException);
         verify(connection).close();
@@ -680,7 +698,8 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
 
         var initialStage = mapTransactionAction(initialAction, tx).get();
         var similarStage = mapTransactionAction(similarAction, tx).get();
@@ -759,7 +778,8 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
 
         var originalActionStage = mapTransactionAction(initialAction, tx).get();
         var conflictingActionStage = mapTransactionAction(conflictingAction, tx).get();
@@ -835,10 +855,13 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
+                Logging.none(),
+                NoopObservationProvider.getInstance());
 
         var originalActionStage = mapTransactionAction(originalAction, tx).get();
-        var closeStage = commitOnClose != null ? tx.closeAsync(commitOnClose) : tx.closeAsync();
+        var closeStage = commitOnClose != null
+                ? tx.closeAsync(commitOnClose, NoopObservation.getInstance())
+                : tx.closeAsync(NoopObservation.getInstance());
 
         assertTrue(originalActionStage.toCompletableFuture().isDone());
         assertFalse(originalActionStage.toCompletableFuture().isCompletedExceptionally());
@@ -887,7 +910,7 @@ class UnmanagedTransactionTest {
         await(tx.terminateAsync());
 
         // Then
-        then(connection).should().writeAndFlush(any(), eq(List.of(Messages.reset())));
+        then(connection).should().writeAndFlush(any(), eq(List.of(Messages.reset())), any());
     }
 
     @Test
@@ -977,7 +1000,9 @@ class UnmanagedTransactionTest {
 
         // When
         try {
-            tx.runAsync(new Query("RETURN 1")).toCompletableFuture().get();
+            tx.runAsync(new Query("RETURN 1"), NoopObservation.getInstance(), ResultCursor.class)
+                    .toCompletableFuture()
+                    .get();
         } catch (ExecutionException e) {
             actualException = e.getCause();
         }
@@ -1037,43 +1062,45 @@ class UnmanagedTransactionTest {
     }
 
     static List<Arguments> transactionClosingTestParams() {
-        Function<UnmanagedTransaction, CompletionStage<?>> asyncRun = tx -> tx.runAsync(new Query("query"));
-        Function<UnmanagedTransaction, CompletionStage<?>> reactiveRun = tx -> tx.runRx(new Query("query"));
+        Function<UnmanagedTransaction, CompletionStage<?>> asyncRun =
+                tx -> tx.runAsync(new Query("query"), NoopObservation.getInstance(), ResultCursor.class);
+        Function<UnmanagedTransaction, CompletionStage<?>> reactiveRun =
+                tx -> tx.runRx(new Query("query"), NoopObservation.getInstance());
         return List.of(
                 Arguments.of(Named.of(
                         "commit and run async",
                         new TransactionClosingTestParams(
-                                UnmanagedTransaction::commitAsync,
+                                tx -> tx.commitAsync(NoopObservation.getInstance()),
                                 asyncRun,
                                 "Cannot run more queries in this transaction, it is being committed"))),
                 Arguments.of(Named.of(
                         "commit and run reactive",
                         new TransactionClosingTestParams(
-                                UnmanagedTransaction::commitAsync,
+                                tx -> tx.commitAsync(NoopObservation.getInstance()),
                                 reactiveRun,
                                 "Cannot run more queries in this transaction, it is being committed"))),
                 Arguments.of(Named.of(
                         "rollback and run async",
                         new TransactionClosingTestParams(
-                                UnmanagedTransaction::rollbackAsync,
+                                tx -> tx.rollbackAsync(NoopObservation.getInstance()),
                                 asyncRun,
                                 "Cannot run more queries in this transaction, it is being rolled back"))),
                 Arguments.of(Named.of(
                         "rollback and run reactive",
                         new TransactionClosingTestParams(
-                                UnmanagedTransaction::rollbackAsync,
+                                tx -> tx.rollbackAsync(NoopObservation.getInstance()),
                                 reactiveRun,
                                 "Cannot run more queries in this transaction, it is being rolled back"))),
                 Arguments.of(Named.of(
                         "close and run async",
                         new TransactionClosingTestParams(
-                                UnmanagedTransaction::closeAsync,
+                                tx -> tx.closeAsync(NoopObservation.getInstance()),
                                 asyncRun,
                                 "Cannot run more queries in this transaction, it is being rolled back"))),
                 Arguments.of(Named.of(
                         "close and run reactive",
                         new TransactionClosingTestParams(
-                                UnmanagedTransaction::closeAsync,
+                                tx -> tx.closeAsync(NoopObservation.getInstance()),
                                 reactiveRun,
                                 "Cannot run more queries in this transaction, it is being rolled back"))));
     }
@@ -1100,15 +1127,17 @@ class UnmanagedTransactionTest {
                 null,
                 apiTelemetryWork,
                 mock(),
-                Logging.none());
-        return await(tx.beginAsync(initialBookmarks, TransactionConfig.empty(), null, true));
+                Logging.none(),
+                NoopObservationProvider.getInstance());
+        return await(
+                tx.beginAsync(initialBookmarks, TransactionConfig.empty(), null, true, NoopObservation.getInstance()));
     }
 
     private ResultCursorsHolder mockResultCursorWith(ClientException clientException) {
         var resultCursorsHolder = new ResultCursorsHolder();
         var cursor = mock(FailableCursor.class);
         given(cursor.consumed()).willReturn(new CompletableFuture<>());
-        doReturn(completedFuture(clientException)).when(cursor).discardAllFailureAsync();
+        doReturn(completedFuture(clientException)).when(cursor).discardAllFailureAsync(any());
         resultCursorsHolder.add(completedFuture(cursor));
         return resultCursorsHolder;
     }
@@ -1116,16 +1145,16 @@ class UnmanagedTransactionTest {
     private Supplier<CompletionStage<Void>> mapTransactionAction(String actionName, UnmanagedTransaction tx) {
         Supplier<CompletionStage<Void>> action;
         if ("commit".equals(actionName)) {
-            action = tx::commitAsync;
+            action = () -> tx.commitAsync(NoopObservation.getInstance());
         } else if ("rollback".equals(actionName)) {
-            action = tx::rollbackAsync;
+            action = () -> tx.rollbackAsync(NoopObservation.getInstance());
         } else if ("terminate".equals(actionName)) {
             action = () -> {
                 tx.markTerminated(mock(Throwable.class));
                 return completedFuture(null);
             };
         } else if ("close".equals(actionName)) {
-            action = tx::closeAsync;
+            action = () -> tx.closeAsync(NoopObservation.getInstance());
         } else {
             throw new RuntimeException(String.format("Unknown completing action type '%s'", actionName));
         }
