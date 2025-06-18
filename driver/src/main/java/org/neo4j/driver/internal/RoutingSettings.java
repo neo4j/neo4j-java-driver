@@ -18,8 +18,6 @@ package org.neo4j.driver.internal;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import org.neo4j.bolt.connection.RoutingContext;
-
-public record RoutingSettings(long routingTablePurgeDelayMs, RoutingContext routingContext) {
+public record RoutingSettings(long routingTablePurgeDelayMs) {
     public static final long STALE_ROUTING_TABLE_PURGE_DELAY_MS = SECONDS.toMillis(30);
 }

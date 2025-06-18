@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
@@ -39,17 +39,11 @@ class SessionFactoryImplTest {
         var factory = newSessionFactory(config);
 
         var readSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.READ).build(),
-                Config.defaultConfig().notificationConfig(),
-                null,
-                true);
+                builder().withDefaultAccessMode(AccessMode.READ).build(), null, true);
         assertThat(readSession, instanceOf(NetworkSession.class));
 
         var writeSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.WRITE).build(),
-                Config.defaultConfig().notificationConfig(),
-                null,
-                true);
+                builder().withDefaultAccessMode(AccessMode.WRITE).build(), null, true);
         assertThat(writeSession, instanceOf(NetworkSession.class));
     }
 
@@ -62,24 +56,18 @@ class SessionFactoryImplTest {
         var factory = newSessionFactory(config);
 
         var readSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.READ).build(),
-                Config.defaultConfig().notificationConfig(),
-                null,
-                true);
+                builder().withDefaultAccessMode(AccessMode.READ).build(), null, true);
         assertThat(readSession, instanceOf(LeakLoggingNetworkSession.class));
 
         var writeSession = factory.newInstance(
-                builder().withDefaultAccessMode(AccessMode.WRITE).build(),
-                Config.defaultConfig().notificationConfig(),
-                null,
-                true);
+                builder().withDefaultAccessMode(AccessMode.WRITE).build(), null, true);
         assertThat(writeSession, instanceOf(LeakLoggingNetworkSession.class));
     }
 
     private static SessionFactory newSessionFactory(Config config) {
         return new SessionFactoryImpl(
                 BoltSecurityPlanManager.insecure(),
-                mock(DriverBoltConnectionProvider.class),
+                mock(DriverBoltConnectionSource.class),
                 new FixedRetryLogic(0),
                 config,
                 mock(AuthTokenManager.class),

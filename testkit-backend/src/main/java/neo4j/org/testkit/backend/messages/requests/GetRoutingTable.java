@@ -27,7 +27,7 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RoutingTable;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.bolt.connection.BoltServerAddress;
-import org.neo4j.bolt.connection.DatabaseNameUtil;
+import org.neo4j.bolt.connection.DatabaseName;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -49,7 +49,7 @@ public class GetRoutingTable implements TestkitRequest {
                     data.getDriverId()));
         }
 
-        var databaseName = DatabaseNameUtil.database(data.getDatabase());
+        var databaseName = DatabaseName.database(data.getDatabase());
         var routingTableHandler = routingTableRegistry
                 .getRoutingTableHandler(databaseName)
                 .orElseThrow(() -> new IllegalStateException(String.format(

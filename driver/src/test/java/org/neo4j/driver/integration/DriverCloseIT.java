@@ -100,7 +100,7 @@ class DriverCloseIT {
                     CompletableFuture.runAsync(driver::close);
                     return result.list();
                 }));
-        assertEquals("Connection provider is closed.", exception.getMessage());
+        assertEquals("Connection source is closed.", exception.getMessage());
     }
 
     private static Driver createDriver() {

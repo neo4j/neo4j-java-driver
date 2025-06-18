@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +48,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.stubbing.Answer;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
-import org.neo4j.bolt.connection.DatabaseName;
+import org.neo4j.bolt.connection.RoutedBoltConnectionParameters;
 import org.neo4j.bolt.connection.message.BeginMessage;
 import org.neo4j.bolt.connection.message.CommitMessage;
 import org.neo4j.bolt.connection.message.Message;
@@ -67,7 +66,7 @@ import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
-import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -80,13 +79,11 @@ class InternalAsyncTransactionTest {
     @BeforeEach
     void setUp() {
         connection = connectionMock(new BoltProtocolVersion(4, 0));
-        var connectionProvider = mock(DriverBoltConnectionProvider.class);
-        given(connectionProvider.connect(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        var connectionProvider = mock(DriverBoltConnectionSource.class);
+        given(connectionProvider.getConnection(any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
-                    var database = (DatabaseName) invocation.getArguments()[1];
-                    @SuppressWarnings("unchecked")
-                    var databaseConsumer = (Consumer<DatabaseName>) invocation.getArguments()[8];
-                    databaseConsumer.accept(database);
+                    var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
+                    parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection);
                 });
         var networkSession = newSession(connectionProvider);

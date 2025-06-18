@@ -28,14 +28,12 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Config.defaultConfig;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
-import io.netty.bootstrap.Bootstrap;
 import java.net.URI;
 import java.time.Clock;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.bolt.connection.netty.BootstrapFactory;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
@@ -43,7 +41,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionProvider;
+import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
@@ -70,8 +68,7 @@ class DriverFactoryTest {
 
         var capturedFactory = factory.capturedSessionFactory;
         assertThat(
-                capturedFactory.newInstance(
-                        SessionConfig.defaultConfig(), Config.defaultConfig().notificationConfig(), null, true),
+                capturedFactory.newInstance(SessionConfig.defaultConfig(), null, true),
                 instanceOf(NetworkSession.class));
     }
 
@@ -86,8 +83,7 @@ class DriverFactoryTest {
 
         var capturedFactory = factory.capturedSessionFactory;
         assertThat(
-                capturedFactory.newInstance(
-                        SessionConfig.defaultConfig(), Config.defaultConfig().notificationConfig(), null, true),
+                capturedFactory.newInstance(SessionConfig.defaultConfig(), null, true),
                 instanceOf(LeakLoggingNetworkSession.class));
     }
 
@@ -155,7 +151,7 @@ class DriverFactoryTest {
         @Override
         protected SessionFactory createSessionFactory(
                 BoltSecurityPlanManager securityPlanManager,
-                DriverBoltConnectionProvider connectionProvider,
+                DriverBoltConnectionSource connectionProvider,
                 RetryLogic retryLogic,
                 Config config,
                 AuthTokenManager authTokenManager,
@@ -175,14 +171,9 @@ class DriverFactoryTest {
         }
 
         @Override
-        protected Bootstrap createBootstrap(int ignored) {
-            return BootstrapFactory.newBootstrap(1);
-        }
-
-        @Override
         protected SessionFactory createSessionFactory(
                 BoltSecurityPlanManager securityPlanManager,
-                DriverBoltConnectionProvider connectionProvider,
+                DriverBoltConnectionSource connectionProvider,
                 RetryLogic retryLogic,
                 Config config,
                 AuthTokenManager authTokenManager,

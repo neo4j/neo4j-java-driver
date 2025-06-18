@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import org.neo4j.bolt.connection.netty.EventLoopThread;
 
 public final class Futures {
     private static final CompletableFuture<?> COMPLETED_WITH_NULL = completedFuture(null);
@@ -160,7 +159,7 @@ public final class Futures {
      * @return {@code true} when given thread belongs to the event loop, {@code false} otherwise.
      */
     public static boolean isEventLoopThread(Thread thread) {
-        return thread instanceof EventLoopThread;
+        return thread.getClass().getName().equals("org.neo4j.bolt.connection.netty.EventLoopThread");
     }
 
     private static void safeRun(Runnable runnable) {

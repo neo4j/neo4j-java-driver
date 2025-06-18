@@ -20,7 +20,9 @@
     <rootDir>${project.basedir}/..</rootDir>
     <api.classes.directory>${basedir}/target/classes-without-jpms</api.classes.directory>
     <maven.compiler.xlint.extras>,-try</maven.compiler.xlint.extras>
-    <failsafe.parallelizable.jpms.args>--add-opens org.neo4j.driver/org.neo4j.driver.internal.util=ALL-UNNAMED --add-opens org.neo4j.driver/org.neo4j.driver.internal.async=ALL-UNNAMED</failsafe.parallelizable.jpms.args>
+    <surefire.jpms.args>--add-reads org.neo4j.driver=io.netty.common --add-reads org.neo4j.driver=org.bouncycastle.provider --add-reads org.neo4j.driver=org.bouncycastle.pkix</surefire.jpms.args>
+    <failsafe.parallelizable.jpms.args>--add-opens org.neo4j.driver/org.neo4j.driver.internal.util=ALL-UNNAMED --add-opens org.neo4j.driver/org.neo4j.driver.internal.async=ALL-UNNAMED --add-reads org.neo4j.driver=io.netty.common  --add-reads org.neo4j.driver=org.bouncycastle.provider --add-reads org.neo4j.driver=org.bouncycastle.pkix</failsafe.parallelizable.jpms.args>
+    <failsafe.sequential.jpms.args>--add-reads org.neo4j.driver=org.bouncycastle.provider --add-reads org.neo4j.driver=org.bouncycastle.pkix</failsafe.sequential.jpms.args>
     <blockhound.tag>blockHoundTest</blockhound.tag>
     <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
@@ -264,6 +266,28 @@
             <groupId>org.apache.maven.surefire</groupId>
             <artifactId>surefire-junit-platform</artifactId>
             <version>${surefire.and.failsafe.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-engine</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-launcher</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+              </exclusion>
+            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.maven.surefire</groupId>

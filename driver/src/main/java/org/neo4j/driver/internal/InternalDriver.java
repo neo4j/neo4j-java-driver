@@ -22,7 +22,6 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.BaseSession;
@@ -34,7 +33,6 @@ import org.neo4j.driver.ExecutableQuery;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Session;
@@ -69,24 +67,18 @@ public class InternalDriver implements Driver {
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final MetricsProvider metricsProvider;
-    private final NotificationConfig notificationConfig;
-    private final Supplier<CompletionStage<Void>> shutdownSupplier;
 
     InternalDriver(
             BoltSecurityPlanManager securityPlanManager,
             SessionFactory sessionFactory,
             MetricsProvider metricsProvider,
             boolean telemetryDisabled,
-            NotificationConfig notificationConfig,
-            Supplier<CompletionStage<Void>> shutdownSupplier,
             Logging logging) {
         this.securityPlanManager = securityPlanManager;
         this.sessionFactory = sessionFactory;
         this.metricsProvider = metricsProvider;
         this.log = logging.getLog(getClass());
         this.telemetryDisabled = telemetryDisabled;
-        this.notificationConfig = notificationConfig;
-        this.shutdownSupplier = shutdownSupplier;
     }
 
     @Override
@@ -107,17 +99,17 @@ public class InternalDriver implements Driver {
         requireNonNull(sessionClass, "sessionConfig must not be null");
         T session;
         if (Session.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalSession(newSession(sessionConfig, notificationConfig, sessionAuthToken));
+            session = (T) new InternalSession(newSession(sessionConfig, sessionAuthToken));
         } else if (AsyncSession.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalAsyncSession(newSession(sessionConfig, notificationConfig, sessionAuthToken));
+            session = (T) new InternalAsyncSession(newSession(sessionConfig, sessionAuthToken));
         } else if (org.neo4j.driver.reactive.ReactiveSession.class.isAssignableFrom(sessionClass)) {
             session = (T) new org.neo4j.driver.internal.reactive.InternalReactiveSession(
-                    newSession(sessionConfig, notificationConfig, sessionAuthToken));
+                    newSession(sessionConfig, sessionAuthToken));
         } else if (org.neo4j.driver.reactivestreams.ReactiveSession.class.isAssignableFrom(sessionClass)) {
             session = (T) new org.neo4j.driver.internal.reactivestreams.InternalReactiveSession(
-                    newSession(sessionConfig, notificationConfig, sessionAuthToken));
+                    newSession(sessionConfig, sessionAuthToken));
         } else if (RxSession.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalRxSession(newSession(sessionConfig, notificationConfig, sessionAuthToken));
+            session = (T) new InternalRxSession(newSession(sessionConfig, sessionAuthToken));
         } else {
             throw new IllegalArgumentException(
                     String.format("Unsupported session type '%s'", sessionClass.getCanonicalName()));
@@ -150,7 +142,7 @@ public class InternalDriver implements Driver {
     public CompletionStage<Void> closeAsync() {
         if (closed.compareAndSet(false, true)) {
             log.info("Closing driver instance %s", hashCode());
-            return sessionFactory.close().thenCompose(ignored -> shutdownSupplier.get());
+            return sessionFactory.close();
         }
         return completedWithNull();
     }
@@ -223,10 +215,9 @@ public class InternalDriver implements Driver {
         return new IllegalStateException("This driver instance has already been closed");
     }
 
-    public NetworkSession newSession(
-            SessionConfig config, NotificationConfig notificationConfig, AuthToken overrideAuthToken) {
+    public NetworkSession newSession(SessionConfig config, AuthToken overrideAuthToken) {
         assertOpen();
-        var session = sessionFactory.newInstance(config, notificationConfig, overrideAuthToken, telemetryDisabled);
+        var session = sessionFactory.newInstance(config, overrideAuthToken, telemetryDisabled);
         if (closed.get()) {
             // session does not immediately acquire connection, it is fine to just throw
             throw driverCloseException();

@@ -59,7 +59,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.connection.AccessMode;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
-import org.neo4j.bolt.connection.DatabaseNameUtil;
+import org.neo4j.bolt.connection.DatabaseName;
 import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.bolt.connection.message.BeginMessage;
 import org.neo4j.bolt.connection.message.CommitMessage;
@@ -324,7 +324,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -362,7 +362,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -387,7 +387,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -415,7 +415,7 @@ class UnmanagedTransactionTest {
         var resultCursorsHolder = mockResultCursorWith(terminationCause);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -442,7 +442,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -471,7 +471,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -496,7 +496,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -531,7 +531,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -566,7 +566,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -604,7 +604,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -662,7 +662,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -740,7 +740,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -815,7 +815,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
@@ -1079,7 +1079,7 @@ class UnmanagedTransactionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
         var tx = new UnmanagedTransaction(
                 connection,
-                DatabaseNameUtil.defaultDatabase(),
+                DatabaseName.defaultDatabase(),
                 AccessMode.WRITE,
                 null,
                 (ignored) -> {},
