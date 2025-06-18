@@ -16,17 +16,17 @@
  */
 package org.neo4j.driver;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.AuthTokens.basic;
 import static org.neo4j.driver.AuthTokens.custom;
-import static org.neo4j.driver.Values.values;
+import static org.testng.internal.collections.Ints.asList;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.value.ListValue;
@@ -79,7 +79,7 @@ class AuthTokensTest {
         var basic = (InternalAuthToken) custom("foo", "bar", "baz", "my_scheme", parameters);
 
         Map<String, Value> expectedParameters = new HashMap<>();
-        expectedParameters.put("list", new ListValue(values(1, 2, 3)));
+        expectedParameters.put("list", new ListValue(Values.value(1, 2, 3).asList(Function.identity())));
         var map = basic.toMap();
 
         assertThat(map.size(), equalTo(5));

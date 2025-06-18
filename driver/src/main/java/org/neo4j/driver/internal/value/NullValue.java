@@ -56,6 +56,11 @@ public final class NullValue extends ValueAdapter {
         return InternalTypeSystem.TYPE_SYSTEM.NULL();
     }
 
+    @Override
+    public org.neo4j.bolt.connection.values.Type boltValueType() {
+        return org.neo4j.bolt.connection.values.Type.NULL;
+    }
+
     @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     @Override
     public boolean equals(Object obj) {
@@ -70,10 +75,5 @@ public final class NullValue extends ValueAdapter {
     @Override
     public String toString() {
         return "NULL";
-    }
-
-    @Override
-    public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.NULL);
     }
 }

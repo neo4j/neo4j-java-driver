@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
@@ -52,7 +53,7 @@ class InternalProfiledPlanTest {
     void shouldHandlePlanWithChildren() {
         // GIVEN
         var planMap = createPlanMap();
-        planMap.put("children", new ListValue(new MapValue(createPlanMap()), new MapValue(createPlanMap())));
+        planMap.put("children", new ListValue(List.of(new MapValue(createPlanMap()), new MapValue(createPlanMap()))));
         Value value = new MapValue(planMap);
 
         // WHEN
@@ -73,7 +74,7 @@ class InternalProfiledPlanTest {
         map.put("pageCacheMisses", new IntegerValue(3456));
         map.put("pageCacheHitRatio", new FloatValue(0.123));
         map.put("time", new IntegerValue(999));
-        map.put("identifiers", new ListValue(new StringValue("n1"), new StringValue("n2")));
+        map.put("identifiers", new ListValue(List.of(new StringValue("n1"), new StringValue("n2"))));
         Map<String, Value> args = new HashMap<>();
         args.put("version", new StringValue("CYPHER 1337"));
         map.put("args", new MapValue(args));

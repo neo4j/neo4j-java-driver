@@ -34,6 +34,11 @@ public class FloatValue extends NumberValueAdapter<Double> {
     }
 
     @Override
+    public org.neo4j.bolt.connection.values.Type boltValueType() {
+        return org.neo4j.bolt.connection.values.Type.FLOAT;
+    }
+
+    @Override
     public Double asNumber() {
         return val;
     }
@@ -118,10 +123,5 @@ public class FloatValue extends NumberValueAdapter<Double> {
     @Override
     public String toString() {
         return Double.toString(val);
-    }
-
-    @Override
-    public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.FLOAT);
     }
 }

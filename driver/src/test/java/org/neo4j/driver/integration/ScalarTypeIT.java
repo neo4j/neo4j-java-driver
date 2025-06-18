@@ -18,11 +18,12 @@ package org.neo4j.driver.integration;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.neo4j.driver.Values.parameters;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -53,9 +54,11 @@ class ScalarTypeIT {
                 Arguments.of("RETURN 'hello' as v", Values.value("hello")),
                 Arguments.of("RETURN true as v", Values.value(true)),
                 Arguments.of("RETURN false as v", Values.value(false)),
-                Arguments.of("RETURN [1,2,3] as v", new ListValue(Values.value(1), Values.value(2), Values.value(3))),
-                Arguments.of("RETURN ['hello'] as v", new ListValue(Values.value("hello"))),
-                Arguments.of("RETURN [] as v", new ListValue()),
+                Arguments.of(
+                        "RETURN [1,2,3] as v",
+                        new ListValue(List.of(Values.value(1), Values.value(2), Values.value(3)))),
+                Arguments.of("RETURN ['hello'] as v", new ListValue(List.of(Values.value("hello")))),
+                Arguments.of("RETURN [] as v", new ListValue(List.of())),
                 Arguments.of("RETURN {k:'hello'} as v", parameters("k", Values.value("hello"))),
                 Arguments.of("RETURN {} as v", new MapValue(Collections.emptyMap())));
     }
@@ -96,7 +99,7 @@ class ScalarTypeIT {
     @MethodSource("collectionItems")
     void shouldEchoVeryLongList(Value collectionItem) {
         // Given
-        var input = IntStream.range(0, 1000).mapToObj(i -> collectionItem).toArray(Value[]::new);
+        var input = IntStream.range(0, 1000).mapToObj(i -> collectionItem).toList();
         var listValue = new ListValue(input);
 
         // When & Then
@@ -155,14 +158,14 @@ class ScalarTypeIT {
                 Arguments.of(Values.value(NullValue.NULL, NullValue.NULL)),
                 Arguments.of(Values.value(Values.values(
                         NullValue.NULL, true, "-17∂ßå®", 1.7976931348623157E+308d, -9223372036854775808d))),
-                Arguments.of(new ListValue(parameters("a", 1, "b", true, "c", 1.1, "d", "˚C", "e", null))));
+                Arguments.of(new ListValue(List.of(parameters("a", 1, "b", true, "c", 1.1, "d", "˚C", "e", null)))));
     }
 
     @ParameterizedTest
     @MethodSource("listToTest")
     void shouldEchoList(Value input) {
         // When & Then
-        assertTrue(input instanceof ListValue);
+        assertInstanceOf(ListValue.class, input);
         verifyCanEncodeAndDecode(input);
     }
 
@@ -171,7 +174,7 @@ class ScalarTypeIT {
         var input = Values.value(toValueStream(listToTest()));
 
         // When & Then
-        assertTrue(input instanceof ListValue);
+        assertInstanceOf(ListValue.class, input);
         verifyCanEncodeAndDecode(input);
     }
 
@@ -188,7 +191,7 @@ class ScalarTypeIT {
     @ParameterizedTest
     @MethodSource("mapToTest")
     void shouldEchoMap(Value input) {
-        assertTrue(input instanceof MapValue);
+        assertInstanceOf(MapValue.class, input);
         // When & Then
         verifyCanEncodeAndDecode(input);
     }
@@ -205,7 +208,7 @@ class ScalarTypeIT {
     private Stream<Value> toValueStream(Stream<Arguments> arguments) {
         return arguments.map(arg -> {
             var obj = arg.get()[0];
-            assertTrue(obj instanceof Value);
+            assertInstanceOf(Value.class, obj);
             return (Value) obj;
         });
     }

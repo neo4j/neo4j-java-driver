@@ -92,9 +92,6 @@ public class StartTest implements TestkitRequest {
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^stub\\.summary\\.test_summary\\.TestSummaryBasicInfoDiscard\\.test_times$",
                 "Driver sets summary's resultAvailableAfter to -1 on discard");
-        skipMessage = "Driver expects serverAgent string starting with Neo4j only";
-        COMMON_SKIP_PATTERN_TO_REASON.put(
-                "^stub\\.versions\\.test_versions\\.TestProtocolVersions\\.test_server_agent$", skipMessage);
 
         SYNC_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
         skipMessage =

@@ -57,6 +57,11 @@ public class UnsupportedDateTimeValue extends ValueAdapter {
     }
 
     @Override
+    public org.neo4j.bolt.connection.values.Type boltValueType() {
+        return org.neo4j.bolt.connection.values.Type.DATE_TIME;
+    }
+
+    @Override
     public boolean equals(Object obj) {
         return this == obj;
     }
@@ -85,10 +90,5 @@ public class UnsupportedDateTimeValue extends ValueAdapter {
             newException = new DateTimeException(exception.getMessage(), exception);
         }
         return newException;
-    }
-
-    @Override
-    public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.DATE_TIME);
     }
 }

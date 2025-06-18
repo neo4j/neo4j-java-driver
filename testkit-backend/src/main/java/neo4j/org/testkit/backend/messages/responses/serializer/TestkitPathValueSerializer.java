@@ -43,11 +43,11 @@ public class TestkitPathValueSerializer extends StdSerializer<PathValue> {
             var path = pathValue.asPath();
             var nodes = StreamSupport.stream(path.nodes().spliterator(), false)
                     .map(NodeValue::new)
-                    .toArray(NodeValue[]::new);
+                    .toList();
             gen.writeObjectField("nodes", new ListValue(nodes));
             var relationships = StreamSupport.stream(path.relationships().spliterator(), false)
                     .map(RelationshipValue::new)
-                    .toArray(RelationshipValue[]::new);
+                    .toList();
             gen.writeObjectField("relationships", new ListValue(relationships));
         });
     }

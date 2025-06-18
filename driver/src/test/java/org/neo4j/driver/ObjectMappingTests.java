@@ -131,12 +131,10 @@ class ObjectMappingTests {
                         "map", properties -> Values.value(properties).as(ValueHolder.class))),
                 Arguments.of(Named.<Function<Map<String, Value>, ValueHolder>>of("record", properties -> {
                     var keys = new ArrayList<String>();
-                    var values = new Value[properties.size()];
-                    var i = 0;
+                    var values = new ArrayList<Value>();
                     for (var entry : properties.entrySet()) {
                         keys.add(entry.getKey());
-                        values[i] = entry.getValue();
-                        i++;
+                        values.add(entry.getValue());
                     }
                     return new InternalRecord(keys, values).as(ValueHolder.class);
                 })));
