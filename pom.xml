@@ -46,7 +46,7 @@
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
     <mockito-core.version>5.18.0</mockito-core.version>
-    <junit.version>5.13.1</junit.version>
+    <junit.version>5.13.2</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.11.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
@@ -56,12 +56,12 @@
     <commons-codec.version>1.18.0</commons-codec.version>
     <bouncycastle-jdk18on.version>1.81</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
-    <jackson.version>2.19.0</jackson.version>
+    <jackson.version>2.19.1</jackson.version>
     <lombok.version>1.18.38</lombok.version>
     <svm.version>24.2.1</svm.version>
     <micrometer.version>1.15.1</micrometer.version>
     <blockhound.version>1.0.13.RELEASE</blockhound.version>
-    <testcontainers.version>1.21.1</testcontainers.version>
+    <testcontainers.version>1.21.2</testcontainers.version>
     <build-resources.version>2024-12.1</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
