@@ -37,7 +37,7 @@ import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
 
 public class BasicResponseHandler implements DriverResponseHandler {
     private final CompletableFuture<Summaries> summariesFuture = new CompletableFuture<>();
-    private final List<Value[]> valuesList = new ArrayList<>();
+    private final List<List<Value>> valuesList = new ArrayList<>();
 
     private BeginSummary beginSummary;
     private RunSummary runSummary;
@@ -83,7 +83,7 @@ public class BasicResponseHandler implements DriverResponseHandler {
     }
 
     @Override
-    public void onRecord(Value[] fields) {
+    public void onRecord(List<Value> fields) {
         valuesList.add(fields);
     }
 
@@ -162,7 +162,7 @@ public class BasicResponseHandler implements DriverResponseHandler {
     public record Summaries(
             BeginSummary beginSummary,
             RunSummary runSummary,
-            List<Value[]> valuesList,
+            List<List<Value>> valuesList,
             PullSummary pullSummary,
             DiscardSummary discardSummary,
             CommitSummary commitSummary,

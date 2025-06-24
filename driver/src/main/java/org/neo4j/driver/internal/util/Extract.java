@@ -26,7 +26,6 @@ import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -52,25 +51,17 @@ public final class Extract {
         throw new UnsupportedOperationException();
     }
 
-    public static List<Value> list(Value[] values) {
-        return switch (values.length) {
-            case 0 -> emptyList();
-            case 1 -> singletonList(values[0]);
-            default -> List.of(values);
-        };
-    }
-
-    public static <T> List<T> list(Value[] data, Function<Value, T> mapFunction) {
-        var size = data.length;
+    public static <T> List<T> list(List<? extends Value> data, Function<Value, T> mapFunction) {
+        var size = data.size();
         switch (size) {
             case 0 -> {
                 return emptyList();
             }
             case 1 -> {
-                return singletonList(mapFunction.apply(data[0]));
+                return singletonList(mapFunction.apply(data.get(0)));
             }
             default -> {
-                return Arrays.stream(data).map(mapFunction).toList();
+                return data.stream().map(mapFunction).toList();
             }
         }
     }

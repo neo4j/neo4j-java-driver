@@ -16,7 +16,6 @@
  */
 package org.neo4j.driver.internal;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -24,7 +23,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,6 +32,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
@@ -43,32 +42,8 @@ import org.neo4j.driver.internal.util.Iterables;
 
 class ExtractTest {
     @Test
-    void extractEmptyArrayShouldNotBeModifiable() {
-        var list = Extract.list(new Value[] {});
-
-        assertThat(list, empty());
-        assertThrows(UnsupportedOperationException.class, () -> list.add(null));
-    }
-
-    @Test
-    void extractSingletonShouldNotBeModifiable() {
-        var list = Extract.list(new Value[] {value(42)});
-
-        assertThat(list, equalTo(singletonList(value(42))));
-        assertThrows(UnsupportedOperationException.class, () -> list.add(null));
-    }
-
-    @Test
-    void extractMultipleShouldNotBeModifiable() {
-        var list = Extract.list(new Value[] {value(42), value(43)});
-
-        assertThat(list, equalTo(asList(value(42), value(43))));
-        assertThrows(UnsupportedOperationException.class, () -> list.add(null));
-    }
-
-    @Test
     void testMapOverList() {
-        var mapped = Extract.list(new Value[] {value(42), value(43)}, Value::asInt);
+        var mapped = Extract.list(List.of(value(42), value(43)), Value::asInt);
 
         assertThat(mapped, equalTo(Arrays.asList(42, 43)));
     }
@@ -124,7 +99,7 @@ class ExtractTest {
     @Test
     void testFields() {
         // GIVEN
-        var record = new InternalRecord(singletonList("k1"), new Value[] {value(42)});
+        var record = new InternalRecord(singletonList("k1"), List.of(value(42)));
         // WHEN
         var fields = Extract.fields(record, Value::asInt);
 

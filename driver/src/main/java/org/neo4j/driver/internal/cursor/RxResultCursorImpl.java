@@ -331,7 +331,7 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
     }
 
     @Override
-    public void onRecord(Value[] fields) {
+    public void onRecord(List<Value> fields) {
         log.trace("[%d] onRecord", hashCode());
         synchronized (this) {
             updateRecordState(RecordState.HAD_RECORD);

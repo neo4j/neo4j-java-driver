@@ -350,7 +350,7 @@ class InternalResultTest {
         given(runSummary.keys()).willReturn(asList("k1", "k2"));
         resultCursor.onRunSummary(runSummary);
         for (var i = 1; i <= numberOfRecords; i++) {
-            resultCursor.onRecord(new Value[] {value("v1-" + i), value("v2-" + i)});
+            resultCursor.onRecord(List.of(value("v1-" + i), value("v2-" + i)));
         }
         resultCursor.onPullSummary(new PullSummary() {
             @Override

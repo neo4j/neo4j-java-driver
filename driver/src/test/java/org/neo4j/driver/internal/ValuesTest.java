@@ -59,6 +59,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -80,41 +81,73 @@ class ValuesTest {
     @Test
     @SuppressWarnings("RedundantArrayCreation")
     void shouldConvertPrimitiveArrays() {
-        assertThat(value(new short[] {1, 2, 3}), equalTo(new ListValue(values(1, 2, 3))));
 
-        assertThat(value(new int[] {1, 2, 3}), equalTo(new ListValue(values(1, 2, 3))));
+        assertThat(
+                value(new short[] {1, 2, 3}),
+                equalTo(new ListValue(Values.value(1, 2, 3).asList(Function.identity()))));
 
-        assertThat(value(new long[] {1, 2, 3}), equalTo(new ListValue(values(1, 2, 3))));
+        assertThat(
+                value(new int[] {1, 2, 3}),
+                equalTo(new ListValue(Values.value(1, 2, 3).asList(Function.identity()))));
 
-        assertThat(value(new float[] {1.1f, 2.2f, 3.3f}), equalTo(new ListValue(values(1.1f, 2.2f, 3.3f))));
+        assertThat(
+                value(new long[] {1, 2, 3}),
+                equalTo(new ListValue(Values.value(1, 2, 3).asList(Function.identity()))));
 
-        assertThat(value(new double[] {1.1, 2.2, 3.3}), equalTo(new ListValue(values(1.1, 2.2, 3.3))));
+        assertThat(
+                value(new float[] {1.1f, 2.2f, 3.3f}),
+                equalTo(new ListValue(Values.value(1.1f, 2.2f, 3.3f).asList(Function.identity()))));
 
-        assertThat(value(new boolean[] {true, false, true}), equalTo(new ListValue(values(true, false, true))));
+        assertThat(
+                value(new double[] {1.1, 2.2, 3.3}),
+                equalTo(new ListValue(Values.value(1.1, 2.2, 3.3).asList(Function.identity()))));
 
-        assertThat(value(new char[] {'a', 'b', 'c'}), equalTo(new ListValue(values('a', 'b', 'c'))));
+        assertThat(
+                value(new boolean[] {true, false, true}),
+                equalTo(new ListValue(Values.value(true, false, true).asList(Function.identity()))));
 
-        assertThat(value(new String[] {"a", "b", "c"}), equalTo(new ListValue(values("a", "b", "c"))));
+        assertThat(
+                value(new char[] {'a', 'b', 'c'}),
+                equalTo(new ListValue(Values.value('a', 'b', 'c').asList(Function.identity()))));
+
+        assertThat(
+                value(new String[] {"a", "b", "c"}),
+                equalTo(new ListValue(Values.value("a", "b", "c").asList(Function.identity()))));
     }
 
     @Test
     void shouldConvertPrimitiveArraysFromObject() {
-        assertThat(value((Object) new short[] {1, 2, 3}), equalTo(new ListValue(values(1, 2, 3))));
-
-        assertThat(value((Object) new int[] {1, 2, 3}), equalTo(new ListValue(values(1, 2, 3))));
-
-        assertThat(value((Object) new long[] {1, 2, 3}), equalTo(new ListValue(values(1, 2, 3))));
-
-        assertThat(value((Object) new float[] {1.1f, 2.2f, 3.3f}), equalTo(new ListValue(values(1.1f, 2.2f, 3.3f))));
-
-        assertThat(value((Object) new double[] {1.1, 2.2, 3.3}), equalTo(new ListValue(values(1.1, 2.2, 3.3))));
+        assertThat(
+                value((Object) new short[] {1, 2, 3}),
+                equalTo(new ListValue(Values.value(1, 2, 3).asList(Function.identity()))));
 
         assertThat(
-                value((Object) new boolean[] {true, false, true}), equalTo(new ListValue(values(true, false, true))));
+                value((Object) new int[] {1, 2, 3}),
+                equalTo(new ListValue(Values.value(1, 2, 3).asList(Function.identity()))));
 
-        assertThat(value((Object) new char[] {'a', 'b', 'c'}), equalTo(new ListValue(values('a', 'b', 'c'))));
+        assertThat(
+                value((Object) new long[] {1, 2, 3}),
+                equalTo(new ListValue(Values.value(1, 2, 3).asList(Function.identity()))));
 
-        assertThat(value((Object) new String[] {"a", "b", "c"}), equalTo(new ListValue(values("a", "b", "c"))));
+        assertThat(
+                value((Object) new float[] {1.1f, 2.2f, 3.3f}),
+                equalTo(new ListValue(Values.value(1.1f, 2.2f, 3.3f).asList(Function.identity()))));
+
+        assertThat(
+                value((Object) new double[] {1.1, 2.2, 3.3}),
+                equalTo(new ListValue(Values.value(1.1, 2.2, 3.3).asList(Function.identity()))));
+
+        assertThat(
+                value((Object) new boolean[] {true, false, true}),
+                equalTo(new ListValue(Values.value(true, false, true).asList(Function.identity()))));
+
+        assertThat(
+                value((Object) new char[] {'a', 'b', 'c'}),
+                equalTo(new ListValue(Values.value('a', 'b', 'c').asList(Function.identity()))));
+
+        assertThat(
+                value((Object) new String[] {"a", "b", "c"}),
+                equalTo(new ListValue(Values.value("a", "b", "c").asList(Function.identity()))));
     }
 
     @Test
@@ -153,9 +186,9 @@ class ValuesTest {
     void shouldMapDriverComplexTypesToListOfJavaPrimitiveTypes() {
         // Given
         Map<String, Value> map = new HashMap<>();
-        map.put("Cat", new ListValue(values("meow", "miaow")));
-        map.put("Dog", new ListValue(values("wow")));
-        map.put("Wrong", new ListValue(values(-1)));
+        map.put("Cat", new ListValue(Values.value("meow", "miaow").asList(Function.identity())));
+        map.put("Dog", new ListValue(List.of(Values.value("wow"))));
+        map.put("Wrong", new ListValue(List.of(Values.value(-1))));
         var mapValue = new MapValue(map);
 
         // When
@@ -184,7 +217,7 @@ class ValuesTest {
         var values = new MapValue(map);
 
         // When
-        var result = values.asMap(Values.ofToString());
+        var result = values.asMap(ofToString());
 
         // Then
         assertThat(result.size(), equalTo(2));

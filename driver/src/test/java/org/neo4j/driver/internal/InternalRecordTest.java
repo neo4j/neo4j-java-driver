@@ -124,7 +124,7 @@ class InternalRecordTest {
     void mapExtractionShouldPreserveIterationOrder() {
         // GIVEN
         var keys = Arrays.asList("k2", "k1");
-        var record = new InternalRecord(keys, new Value[] {value(0), value(1)});
+        var record = new InternalRecord(keys, List.of(value(0), value(1)));
         Function<Value, Integer> addOne = value -> value.asInt() + 1;
 
         // WHEN
@@ -148,7 +148,7 @@ class InternalRecordTest {
     void shouldHaveMethodToGetKeys() {
         // GIVEN
         var keys = Arrays.asList("k2", "k1");
-        var record = new InternalRecord(keys, new Value[] {value(0), value(1)});
+        var record = new InternalRecord(keys, List.of(value(0), value(1)));
 
         // WHEN
         var appendedKeys = record.keys();
@@ -161,7 +161,7 @@ class InternalRecordTest {
     void emptyKeysShouldGiveEmptyList() {
         // GIVEN
         List<String> keys = Collections.emptyList();
-        var record = new InternalRecord(keys, new Value[] {});
+        var record = new InternalRecord(keys, List.of());
 
         // WHEN
         var appendedKeys = record.keys();
@@ -174,32 +174,32 @@ class InternalRecordTest {
     void shouldHaveMethodToGetValues() {
         // GIVEN
         var keys = Arrays.asList("k2", "k1");
-        var values = new Value[] {value(0), value(1)};
+        var values = List.of(value(0), value(1));
         var record = new InternalRecord(keys, values);
 
         // WHEN
         var appendedValues = record.values();
 
         // THEN
-        assertThat(appendedValues, equalTo(Arrays.asList(values)));
+        assertThat(appendedValues, equalTo(values));
     }
 
     @Test
     void emptyValuesShouldGiveEmptyList() {
         // GIVEN
         List<String> keys = Collections.emptyList();
-        var values = new Value[] {};
+        var values = List.<Value>of();
         var record = new InternalRecord(keys, values);
 
         // WHEN
         var appendedValues = record.values();
 
         // THEN
-        assertThat(appendedValues, equalTo(Arrays.asList(values)));
+        assertThat(appendedValues, equalTo(values));
     }
 
     private InternalRecord createRecord() {
         var keys = Arrays.asList("k1", "k2");
-        return new InternalRecord(keys, new Value[] {value(0), value(1)});
+        return new InternalRecord(keys, List.of(value(0), value(1)));
     }
 }

@@ -16,6 +16,7 @@
  */
 package org.neo4j.driver.internal.adaptedbolt;
 
+import java.util.List;
 import org.neo4j.bolt.connection.summary.BeginSummary;
 import org.neo4j.bolt.connection.summary.CommitSummary;
 import org.neo4j.bolt.connection.summary.LogoffSummary;
@@ -41,7 +42,7 @@ public interface DriverResponseHandler {
         // ignored
     }
 
-    default void onRecord(Value[] fields) {
+    default void onRecord(List<Value> fields) {
         // ignored
     }
 

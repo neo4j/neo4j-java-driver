@@ -130,6 +130,17 @@ public class MapValue extends ValueAdapter {
     }
 
     @Override
+    public org.neo4j.bolt.connection.values.Type boltValueType() {
+        return org.neo4j.bolt.connection.values.Type.MAP;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Map<String, org.neo4j.bolt.connection.values.Value> asBoltMap() {
+        return (Map<String, org.neo4j.bolt.connection.values.Value>) (Map<?, ?>) val;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -145,10 +156,5 @@ public class MapValue extends ValueAdapter {
     @Override
     public int hashCode() {
         return val.hashCode();
-    }
-
-    @Override
-    public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.MAP);
     }
 }

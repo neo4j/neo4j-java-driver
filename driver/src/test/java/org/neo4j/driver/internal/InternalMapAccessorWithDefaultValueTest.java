@@ -71,9 +71,9 @@ class InternalMapAccessorWithDefaultValueTest {
 
         // List
         assertThat(
-                record.get("ListValue", new ListValue()),
-                equalTo(new ListValue(new IntegerValue(1), new IntegerValue(2))));
-        assertThat(record.get(wrongKey, new ListValue()), equalTo(new ListValue()));
+                record.get("ListValue", new ListValue(List.of())),
+                equalTo(new ListValue(List.of(new IntegerValue(1), new IntegerValue(2)))));
+        assertThat(record.get(wrongKey, new ListValue(List.of())), equalTo(new ListValue(List.of())));
 
         // Map
         Value defaultMapValue = new MapValue(new HashMap<>());
@@ -304,19 +304,18 @@ class InternalMapAccessorWithDefaultValueTest {
                 "NodeValue",
                 "RelValue",
                 "float");
-        var values = new Value[] {
-            NullValue.NULL,
-            BooleanValue.TRUE,
-            new StringValue("hello world"),
-            new IntegerValue(11),
-            new FloatValue(2.2),
-            new ListValue(new IntegerValue(1), new IntegerValue(2)),
-            new MapValue(map),
-            new PathValue(path),
-            new NodeValue(node),
-            new RelationshipValue(rel),
-            Values.value(0.1F)
-        };
+        var values = List.of(
+                NullValue.NULL,
+                BooleanValue.TRUE,
+                new StringValue("hello world"),
+                new IntegerValue(11),
+                new FloatValue(2.2),
+                new ListValue(List.of(new IntegerValue(1), new IntegerValue(2))),
+                new MapValue(map),
+                new PathValue(path),
+                new NodeValue(node),
+                new RelationshipValue(rel),
+                Values.value(0.1F));
         return new InternalRecord(keys, values);
     }
 }

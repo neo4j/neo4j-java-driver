@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -84,7 +85,7 @@ class ResultCursorImplTest {
         given(connection.writeAndFlush(any(), any(Message.class)))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
                     var handler = (DriverResponseHandler) invocation.getArgument(0);
-                    handler.onRecord(new Value[0]);
+                    handler.onRecord(List.of());
                     return CompletableFuture.completedStage(null);
                 });
 
@@ -121,7 +122,7 @@ class ResultCursorImplTest {
     @Test
     void shouldSingleAsync() {
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        cursor.onRecord(new Value[0]);
+        cursor.onRecord(List.of());
         cursor.onPullSummary(mock(PullSummary.class));
 
         var record = cursor.singleAsync().toCompletableFuture().join();
@@ -136,7 +137,7 @@ class ResultCursorImplTest {
         given(connection.writeAndFlush(any(), any(Message.class)))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
                     var handler = (DriverResponseHandler) invocation.getArgument(0);
-                    handler.onRecord(new Value[0]);
+                    handler.onRecord(List.of());
                     var pullSummary = mock(PullSummary.class);
                     given(pullSummary.hasMore()).willReturn(true);
                     handler.onPullSummary(pullSummary);
@@ -190,7 +191,7 @@ class ResultCursorImplTest {
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
                     var handler = (DriverResponseHandler) invocation.getArgument(0);
                     for (var i = 0; i < fetchSize; i++) {
-                        handler.onRecord(new Value[0]);
+                        handler.onRecord(List.of());
                     }
                     var pullSummary = mock(PullSummary.class);
                     given(pullSummary.hasMore()).willReturn(true);
@@ -213,7 +214,7 @@ class ResultCursorImplTest {
         given(connection.writeAndFlush(any(), any(Message.class)))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
                     var handler = (DriverResponseHandler) invocation.getArgument(0);
-                    handler.onRecord(new Value[0]);
+                    handler.onRecord(List.of());
                     var pullSummary = mock(PullSummary.class);
                     handler.onPullSummary(pullSummary);
                     return CompletableFuture.completedStage(null);

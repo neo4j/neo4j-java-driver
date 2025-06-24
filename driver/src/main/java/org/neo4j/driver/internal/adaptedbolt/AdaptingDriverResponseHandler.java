@@ -16,7 +16,7 @@
  */
 package org.neo4j.driver.internal.adaptedbolt;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.neo4j.bolt.connection.ResponseHandler;
@@ -32,7 +32,6 @@ import org.neo4j.bolt.connection.summary.RouteSummary;
 import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.bolt.connection.summary.TelemetrySummary;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.value.BoltValue;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 
 final class AdaptingDriverResponseHandler implements ResponseHandler {
@@ -63,11 +62,8 @@ final class AdaptingDriverResponseHandler implements ResponseHandler {
     }
 
     @Override
-    public void onRecord(org.neo4j.bolt.connection.values.Value[] fields) {
-        var mappedFields = Arrays.stream(fields)
-                .map(field -> ((BoltValue) field).asDriverValue())
-                .toArray(Value[]::new);
-        delegate.onRecord(mappedFields);
+    public void onRecord(List<org.neo4j.bolt.connection.values.Value> fields) {
+        delegate.onRecord(boltValueFactory.toDriverList(fields));
     }
 
     @Override
