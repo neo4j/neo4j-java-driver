@@ -36,8 +36,8 @@ public class NodeValue extends EntityValueAdapter<Node> {
     }
 
     @Override
-    public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.NODE);
+    public org.neo4j.bolt.connection.values.Type boltValueType() {
+        return org.neo4j.bolt.connection.values.Type.NODE;
     }
 
     @Override

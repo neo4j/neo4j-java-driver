@@ -60,7 +60,6 @@ import org.neo4j.bolt.connection.summary.CommitSummary;
 import org.neo4j.bolt.connection.summary.RollbackSummary;
 import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -95,8 +94,7 @@ class InternalAsyncTransactionTest {
                 tx -> tx.runAsync("RETURN 1"),
                 tx -> tx.runAsync("RETURN $x", parameters("x", 1)),
                 tx -> tx.runAsync("RETURN $x", singletonMap("x", 1)),
-                tx -> tx.runAsync(
-                        "RETURN $x", new InternalRecord(singletonList("x"), new Value[] {new IntegerValue(1)})),
+                tx -> tx.runAsync("RETURN $x", new InternalRecord(singletonList("x"), List.of(new IntegerValue(1)))),
                 tx -> tx.runAsync(new Query("RETURN $x", parameters("x", 1))));
     }
 

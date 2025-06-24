@@ -27,7 +27,6 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.connection.values.Node;
@@ -52,22 +51,22 @@ public class BoltValueFactory implements ValueFactory {
 
     @Override
     public Value value(Object value) {
-        return ((InternalValue) Values.value(value)).asBoltValue();
+        return ((InternalValue) Values.value(value));
     }
 
     @Override
     public Value value(boolean value) {
-        return ((InternalValue) Values.value(value)).asBoltValue();
+        return ((InternalValue) Values.value(value));
     }
 
     @Override
     public Value value(long value) {
-        return ((InternalValue) Values.value(value)).asBoltValue();
+        return ((InternalValue) Values.value(value));
     }
 
     @Override
     public Value value(double value) {
-        return ((InternalValue) Values.value(value)).asBoltValue();
+        return ((InternalValue) Values.value(value));
     }
 
     @Override
@@ -75,7 +74,7 @@ public class BoltValueFactory implements ValueFactory {
         if (values == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(values)).asBoltValue();
+        return ((InternalValue) Values.value(values));
     }
 
     @Override
@@ -83,23 +82,25 @@ public class BoltValueFactory implements ValueFactory {
         if (value == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(value)).asBoltValue();
+        return ((InternalValue) Values.value(value));
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Value value(Map<String, Value> stringToValue) {
         if (stringToValue == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(stringToValue)).asBoltValue();
+        return new MapValue((Map<String, org.neo4j.driver.Value>) (Map<?, ?>) stringToValue);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Value value(Value[] values) {
+    public Value value(List<Value> values) {
         if (values == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(values)).asBoltValue();
+        return new ListValue((List<org.neo4j.driver.Value>) (List<?>) values);
     }
 
     @Override
@@ -107,7 +108,7 @@ public class BoltValueFactory implements ValueFactory {
         if (node == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(node)).asBoltValue();
+        return (InternalValue) ((InternalNode) node).asValue();
     }
 
     @Override
@@ -115,7 +116,7 @@ public class BoltValueFactory implements ValueFactory {
         if (relationship == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(relationship)).asBoltValue();
+        return (InternalValue) ((InternalRelationship) relationship).asValue();
     }
 
     @Override
@@ -123,7 +124,7 @@ public class BoltValueFactory implements ValueFactory {
         if (path == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(path)).asBoltValue();
+        return (InternalValue) ((InternalPath) path).asValue();
     }
 
     @Override
@@ -131,7 +132,7 @@ public class BoltValueFactory implements ValueFactory {
         if (localDate == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(localDate)).asBoltValue();
+        return ((InternalValue) Values.value(localDate));
     }
 
     @Override
@@ -139,7 +140,7 @@ public class BoltValueFactory implements ValueFactory {
         if (offsetTime == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(offsetTime)).asBoltValue();
+        return ((InternalValue) Values.value(offsetTime));
     }
 
     @Override
@@ -147,7 +148,7 @@ public class BoltValueFactory implements ValueFactory {
         if (localTime == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(localTime)).asBoltValue();
+        return ((InternalValue) Values.value(localTime));
     }
 
     @Override
@@ -155,7 +156,7 @@ public class BoltValueFactory implements ValueFactory {
         if (localDateTime == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(localDateTime)).asBoltValue();
+        return ((InternalValue) Values.value(localDateTime));
     }
 
     @Override
@@ -163,7 +164,7 @@ public class BoltValueFactory implements ValueFactory {
         if (offsetDateTime == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(offsetDateTime)).asBoltValue();
+        return ((InternalValue) Values.value(offsetDateTime));
     }
 
     @Override
@@ -171,7 +172,7 @@ public class BoltValueFactory implements ValueFactory {
         if (zonedDateTime == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(zonedDateTime)).asBoltValue();
+        return ((InternalValue) Values.value(zonedDateTime));
     }
 
     @Override
@@ -179,7 +180,7 @@ public class BoltValueFactory implements ValueFactory {
         if (period == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(period)).asBoltValue();
+        return ((InternalValue) Values.value(period));
     }
 
     @Override
@@ -187,7 +188,7 @@ public class BoltValueFactory implements ValueFactory {
         if (duration == null) {
             return value((Object) null);
         }
-        return ((InternalValue) Values.value(duration)).asBoltValue();
+        return ((InternalValue) Values.value(duration));
     }
 
     @Override
@@ -230,39 +231,36 @@ public class BoltValueFactory implements ValueFactory {
 
     @Override
     public Value isoDuration(long months, long days, long seconds, int nanoseconds) {
-        return ((InternalValue) Values.isoDuration(months, days, seconds, nanoseconds)).asBoltValue();
+        return ((InternalValue) Values.isoDuration(months, days, seconds, nanoseconds));
     }
 
     @Override
     public Value point(int srid, double x, double y) {
-        return ((InternalValue) Values.point(srid, x, y)).asBoltValue();
+        return ((InternalValue) Values.point(srid, x, y));
     }
 
     @Override
     public Value point(int srid, double x, double y, double z) {
-        return ((InternalValue) Values.point(srid, x, y, z)).asBoltValue();
+        return ((InternalValue) Values.point(srid, x, y, z));
     }
 
     @Override
     public Value unsupportedDateTimeValue(DateTimeException e) {
-        return new UnsupportedDateTimeValue(e).asBoltValue();
+        return new UnsupportedDateTimeValue(e);
     }
 
+    @SuppressWarnings("unchecked")
     public Map<String, Value> toBoltMap(Map<String, org.neo4j.driver.Value> map) {
-        var result = new HashMap<String, Value>(map.size());
-        for (var entry : map.entrySet()) {
-            var boltValue = ((InternalValue) entry.getValue()).asBoltValue();
-            result.put(entry.getKey(), boltValue);
-        }
-        return Collections.unmodifiableMap(result);
+        return Collections.unmodifiableMap((Map<String, Value>) (Map<?, ?>) map);
     }
 
+    @SuppressWarnings("unchecked")
     public Map<String, org.neo4j.driver.Value> toDriverMap(Map<String, Value> map) {
-        var result = new HashMap<String, org.neo4j.driver.Value>(map.size());
-        for (var entry : map.entrySet()) {
-            var boltValue = ((BoltValue) entry.getValue()).asDriverValue();
-            result.put(entry.getKey(), boltValue);
-        }
-        return Collections.unmodifiableMap(result);
+        return Collections.unmodifiableMap((Map<String, org.neo4j.driver.Value>) (Map<?, ?>) map);
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<org.neo4j.driver.Value> toDriverList(List<Value> list) {
+        return (List<org.neo4j.driver.Value>) (List<?>) list;
     }
 }

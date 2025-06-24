@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.neo4j.driver.exceptions.ClientException;
@@ -44,7 +45,6 @@ import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
-import org.neo4j.driver.internal.value.BoltValue;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.BytesValue;
 import org.neo4j.driver.internal.value.DateTimeValue;
@@ -110,9 +110,6 @@ public final class Values {
             return NullValue.NULL;
         }
 
-        if (value instanceof BoltValue boltValue) {
-            return boltValue.asDriverValue();
-        }
         if (value instanceof AsValue) {
             return ((AsValue) value).asValue();
         }
@@ -252,10 +249,7 @@ public final class Values {
      * @return the value
      */
     public static Value value(Value... input) {
-        var size = input.length;
-        var values = new Value[size];
-        System.arraycopy(input, 0, values, 0, size);
-        return new ListValue(values);
+        return new ListValue(List.of(input));
     }
 
     /**
@@ -273,7 +267,9 @@ public final class Values {
      * @return the value
      */
     public static Value value(String... input) {
-        var values = Arrays.stream(input).map(StringValue::new).toArray(StringValue[]::new);
+        var values = Arrays.stream(input)
+                .map(StringValue::new)
+                .collect(Collectors.toCollection(() -> new ArrayList<>(input.length)));
         return new ListValue(values);
     }
 
@@ -283,8 +279,9 @@ public final class Values {
      * @return the value
      */
     public static Value value(boolean... input) {
-        var values =
-                IntStream.range(0, input.length).mapToObj(i -> value(input[i])).toArray(Value[]::new);
+        var values = IntStream.range(0, input.length)
+                .mapToObj(i -> value(input[i]))
+                .collect(Collectors.toCollection(() -> new ArrayList<>(input.length)));
         return new ListValue(values);
     }
 
@@ -294,8 +291,9 @@ public final class Values {
      * @return the value
      */
     public static Value value(char... input) {
-        var values =
-                IntStream.range(0, input.length).mapToObj(i -> value(input[i])).toArray(Value[]::new);
+        var values = IntStream.range(0, input.length)
+                .mapToObj(i -> value(input[i]))
+                .collect(Collectors.toCollection(() -> new ArrayList<>(input.length)));
         return new ListValue(values);
     }
 
@@ -305,7 +303,9 @@ public final class Values {
      * @return the value
      */
     public static Value value(long... input) {
-        var values = Arrays.stream(input).mapToObj(Values::value).toArray(Value[]::new);
+        var values = Arrays.stream(input)
+                .mapToObj(Values::value)
+                .collect(Collectors.toCollection(() -> new ArrayList<>(input.length)));
         return new ListValue(values);
     }
 
@@ -315,8 +315,9 @@ public final class Values {
      * @return the value
      */
     public static Value value(short... input) {
-        var values =
-                IntStream.range(0, input.length).mapToObj(i -> value(input[i])).toArray(Value[]::new);
+        var values = IntStream.range(0, input.length)
+                .mapToObj(i -> value(input[i]))
+                .collect(Collectors.toCollection(() -> new ArrayList<>(input.length)));
         return new ListValue(values);
     }
     /**
@@ -325,7 +326,9 @@ public final class Values {
      * @return the value
      */
     public static Value value(int... input) {
-        var values = Arrays.stream(input).mapToObj(Values::value).toArray(Value[]::new);
+        var values = Arrays.stream(input)
+                .mapToObj(Values::value)
+                .collect(Collectors.toCollection(() -> new ArrayList<>(input.length)));
         return new ListValue(values);
     }
     /**
@@ -334,7 +337,9 @@ public final class Values {
      * @return the value
      */
     public static Value value(double... input) {
-        var values = Arrays.stream(input).mapToObj(Values::value).toArray(Value[]::new);
+        var values = Arrays.stream(input)
+                .mapToObj(Values::value)
+                .collect(Collectors.toCollection(() -> new ArrayList<>(input.length)));
         return new ListValue(values);
     }
 
@@ -344,8 +349,9 @@ public final class Values {
      * @return the value
      */
     public static Value value(float... input) {
-        var values =
-                IntStream.range(0, input.length).mapToObj(i -> value(input[i])).toArray(Value[]::new);
+        var values = IntStream.range(0, input.length)
+                .mapToObj(i -> value(input[i]))
+                .collect(Collectors.toCollection(() -> new ArrayList<>(input.length)));
         return new ListValue(values);
     }
 
@@ -355,11 +361,8 @@ public final class Values {
      * @return the value
      */
     public static Value value(List<Object> vals) {
-        var values = new Value[vals.size()];
-        var i = 0;
-        for (var val : vals) {
-            values[i++] = value(val);
-        }
+        var values =
+                vals.stream().map(Values::value).collect(Collectors.toCollection(() -> new ArrayList<>(vals.size())));
         return new ListValue(values);
     }
 
@@ -382,7 +385,7 @@ public final class Values {
         while (val.hasNext()) {
             values.add(value(val.next()));
         }
-        return new ListValue(values.toArray(new Value[0]));
+        return new ListValue(values);
     }
 
     /**
@@ -391,7 +394,7 @@ public final class Values {
      * @return the value
      */
     public static Value value(Stream<Object> stream) {
-        var values = stream.map(Values::value).toArray(Value[]::new);
+        var values = stream.map(Values::value).collect(Collectors.toList());
         return new ListValue(values);
     }
 

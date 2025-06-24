@@ -34,6 +34,11 @@ public class IntegerValue extends NumberValueAdapter<Long> {
     }
 
     @Override
+    public org.neo4j.bolt.connection.values.Type boltValueType() {
+        return org.neo4j.bolt.connection.values.Type.INTEGER;
+    }
+
+    @Override
     public Long asNumber() {
         return val;
     }
@@ -121,10 +126,5 @@ public class IntegerValue extends NumberValueAdapter<Long> {
     @Override
     public int hashCode() {
         return (int) (val ^ (val >>> 32));
-    }
-
-    @Override
-    public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.INTEGER);
     }
 }

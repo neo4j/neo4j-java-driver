@@ -52,7 +52,7 @@ public class TestkitNodeValueSerializer extends StdSerializer<NodeValue> {
 
             var labels = StreamSupport.stream(node.labels().spliterator(), false)
                     .map(StringValue::new)
-                    .toArray(StringValue[]::new);
+                    .toList();
 
             gen.writeObjectField("labels", new ListValue(labels));
             gen.writeObjectField("props", new MapValue(node.asMap(Function.identity())));

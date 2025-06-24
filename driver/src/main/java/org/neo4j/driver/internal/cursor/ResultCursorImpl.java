@@ -591,7 +591,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
     }
 
     @Override
-    public void onRecord(Value[] fields) {
+    public void onRecord(List<Value> fields) {
         var record = new InternalRecord(runSummary.keys(), fields);
         CompletableFuture<Record> peekFuture;
         CompletableFuture<Record> recordFuture = null;

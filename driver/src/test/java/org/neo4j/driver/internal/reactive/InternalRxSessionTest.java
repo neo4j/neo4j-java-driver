@@ -35,6 +35,7 @@ import static org.neo4j.driver.TransactionConfig.empty;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
+import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -46,7 +47,6 @@ import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -72,7 +72,7 @@ class InternalRxSessionTest {
                 rxSession -> rxSession.run("RETURN $x", parameters("x", 1)),
                 rxSession -> rxSession.run("RETURN $x", singletonMap("x", 1)),
                 rxSession -> rxSession.run(
-                        "RETURN $x", new InternalRecord(singletonList("x"), new Value[] {new IntegerValue(1)})),
+                        "RETURN $x", new InternalRecord(singletonList("x"), List.of(new IntegerValue(1)))),
                 rxSession -> rxSession.run(new Query("RETURN $x", parameters("x", 1))),
                 rxSession -> rxSession.run(new Query("RETURN $x", parameters("x", 1)), empty()),
                 rxSession -> rxSession.run("RETURN $x", singletonMap("x", 1), empty()),

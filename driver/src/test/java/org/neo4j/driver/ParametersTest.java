@@ -32,6 +32,7 @@ import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -91,7 +92,7 @@ class ParametersTest {
     @SuppressWarnings("resource")
     void shouldNotBePossibleToUseInvalidParametersViaRecord(Object obj, String expectedMsg) {
         assumeTrue(obj instanceof Value);
-        Record record = new InternalRecord(singletonList("a"), new Value[] {(Value) obj});
+        Record record = new InternalRecord(singletonList("a"), List.of((Value) obj));
         var session = mockedSession();
 
         var e = assertThrows(ClientException.class, () -> session.run("RETURN {a}", record));

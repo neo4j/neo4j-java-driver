@@ -41,6 +41,11 @@ public abstract class BooleanValue extends ValueAdapter {
     }
 
     @Override
+    public org.neo4j.bolt.connection.values.Type boltValueType() {
+        return org.neo4j.bolt.connection.values.Type.BOOLEAN;
+    }
+
+    @Override
     public int hashCode() {
         var value = asBoolean() ? Boolean.TRUE : Boolean.FALSE;
         return value.hashCode();
@@ -84,11 +89,6 @@ public abstract class BooleanValue extends ValueAdapter {
         public String toString() {
             return "TRUE";
         }
-
-        @Override
-        public BoltValue asBoltValue() {
-            return new BoltValue(this, org.neo4j.bolt.connection.values.Type.BOOLEAN);
-        }
     }
 
     private static class FalseValue extends BooleanValue {
@@ -127,11 +127,6 @@ public abstract class BooleanValue extends ValueAdapter {
         @Override
         public String toString() {
             return "FALSE";
-        }
-
-        @Override
-        public BoltValue asBoltValue() {
-            return new BoltValue(this, org.neo4j.bolt.connection.values.Type.BOOLEAN);
         }
     }
 }

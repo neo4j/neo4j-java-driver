@@ -158,6 +158,6 @@ class ListValueTest {
     }
 
     private ListValue listValue(Value... values) {
-        return new ListValue(values);
+        return new ListValue(Arrays.asList(values));
     }
 }

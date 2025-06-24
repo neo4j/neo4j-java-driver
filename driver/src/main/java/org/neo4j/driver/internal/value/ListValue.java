@@ -20,7 +20,6 @@ import static org.neo4j.driver.Values.ofObject;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
@@ -33,9 +32,9 @@ import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.types.Type;
 
 public class ListValue extends ValueAdapter {
-    private final Value[] values;
+    private final List<? extends Value> values;
 
-    public ListValue(Value... values) {
+    public ListValue(List<? extends Value> values) {
         if (values == null) {
             throw new IllegalArgumentException("Cannot construct ListValue from null");
         }
@@ -44,7 +43,7 @@ public class ListValue extends ValueAdapter {
 
     @Override
     public boolean isEmpty() {
-        return values.length == 0;
+        return values.isEmpty();
     }
 
     @Override
@@ -68,11 +67,11 @@ public class ListValue extends ValueAdapter {
             return targetClass.cast(asList());
         } else if (targetClass.isArray()) {
             var componentType = targetClass.componentType();
-            var array = Array.newInstance(componentType, values.length);
-            for (var i = 0; i < values.length; i++) {
+            var array = Array.newInstance(componentType, values.size());
+            for (var i = 0; i < values.size(); i++) {
                 Object value;
                 try {
-                    value = values[i].as(componentType);
+                    value = values.get(i).as(componentType);
                 } catch (Throwable throwable) {
                     throw new ValueException(
                             "Failed to map LIST value to %s - an error occured while mapping the element at index %d"
@@ -103,31 +102,27 @@ public class ListValue extends ValueAdapter {
 
     @Override
     public int size() {
-        return values.length;
+        return values.size();
     }
 
     @Override
     public Value get(int index) {
-        return index >= 0 && index < values.length ? values[index] : Values.NULL;
+        return index >= 0 && index < values.size() ? values.get(index) : Values.NULL;
     }
 
     @Override
     public <T> Iterable<T> values(final Function<Value, T> mapFunction) {
+        var iterator = values.iterator();
         return () -> new Iterator<>() {
-            private int cursor = 0;
-
             @Override
             public boolean hasNext() {
-                return cursor < values.length;
+                return iterator.hasNext();
             }
 
             @Override
             public T next() {
-                return mapFunction.apply(values[cursor++]);
+                return mapFunction.apply(iterator.next());
             }
-
-            @Override
-            public void remove() {}
         };
     }
 
@@ -137,8 +132,19 @@ public class ListValue extends ValueAdapter {
     }
 
     @Override
+    public org.neo4j.bolt.connection.values.Type boltValueType() {
+        return org.neo4j.bolt.connection.values.Type.LIST;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Iterable<org.neo4j.bolt.connection.values.Value> boltValues() {
+        return (Iterable<org.neo4j.bolt.connection.values.Value>) (Iterable<?>) values;
+    }
+
+    @Override
     public String toString() {
-        return Arrays.toString(values);
+        return values.toString();
     }
 
     @Override
@@ -151,16 +157,11 @@ public class ListValue extends ValueAdapter {
         }
 
         var otherValues = (ListValue) o;
-        return Arrays.equals(values, otherValues.values);
+        return values.equals(otherValues.values);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(values);
-    }
-
-    @Override
-    public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.LIST);
+        return values.hashCode();
     }
 }

@@ -31,7 +31,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.Values.values;
 
 import java.util.Arrays;
 import java.util.List;
@@ -48,6 +47,7 @@ import org.neo4j.bolt.connection.message.Message;
 import org.neo4j.bolt.connection.summary.RunSummary;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
@@ -142,18 +142,21 @@ class InternalRxResultTest {
         given(boltConnection.writeAndFlush(any(), any(Message.class)))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
                     var handler = (DriverResponseHandler) invocation.getArguments()[0];
-                    handler.onRecord(values(1, 1, 1));
-                    handler.onRecord(values(2, 2, 2));
-                    handler.onRecord(values(3, 3, 3));
+                    handler.onRecord(List.of(Values.value(1), Values.value(1), Values.value(1)));
+                    handler.onRecord(List.of(Values.value(2), Values.value(2), Values.value(2)));
+                    handler.onRecord(List.of(Values.value(3), Values.value(3), Values.value(3)));
                     handler.onPullSummary(mock());
                     handler.onComplete();
                     return CompletableFuture.completedFuture(null);
                 });
         var runSummary = mock(RunSummary.class);
         given(runSummary.keys()).willReturn(List.of("key1", "key2", "key3"));
-        Record record1 = new InternalRecord(asList("key1", "key2", "key3"), values(1, 1, 1));
-        Record record2 = new InternalRecord(asList("key1", "key2", "key3"), values(2, 2, 2));
-        Record record3 = new InternalRecord(asList("key1", "key2", "key3"), values(3, 3, 3));
+        Record record1 = new InternalRecord(
+                asList("key1", "key2", "key3"), List.of(Values.value(1), Values.value(1), Values.value(1)));
+        Record record2 = new InternalRecord(
+                asList("key1", "key2", "key3"), List.of(Values.value(2), Values.value(2), Values.value(2)));
+        Record record3 = new InternalRecord(
+                asList("key1", "key2", "key3"), List.of(Values.value(3), Values.value(3), Values.value(3)));
 
         RxResult rxResult = newRxResult(boltConnection, runSummary);
 
@@ -175,16 +178,17 @@ class InternalRxResultTest {
         given(boltConnection.writeAndFlush(any(), any(Message.class)))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
                     var handler = (DriverResponseHandler) invocation.getArguments()[0];
-                    handler.onRecord(values(1, 1, 1));
-                    handler.onRecord(values(2, 2, 2));
-                    handler.onRecord(values(3, 3, 3));
+                    handler.onRecord(List.of(Values.value(1), Values.value(1), Values.value(1)));
+                    handler.onRecord(List.of(Values.value(2), Values.value(2), Values.value(2)));
+                    handler.onRecord(List.of(Values.value(3), Values.value(3), Values.value(3)));
                     handler.onPullSummary(mock());
                     handler.onComplete();
                     return CompletableFuture.completedFuture(null);
                 });
         var runSummary = mock(RunSummary.class);
         given(runSummary.keys()).willReturn(List.of("key1", "key2", "key3"));
-        Record record1 = new InternalRecord(asList("key1", "key2", "key3"), values(1, 1, 1));
+        Record record1 = new InternalRecord(
+                asList("key1", "key2", "key3"), List.of(Values.value(1), Values.value(1), Values.value(1)));
 
         RxResult rxResult = newRxResult(boltConnection, runSummary);
 

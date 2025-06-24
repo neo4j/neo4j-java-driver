@@ -75,7 +75,6 @@ import org.neo4j.bolt.connection.summary.RollbackSummary;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionCallback;
@@ -120,7 +119,7 @@ class InternalAsyncSessionTest {
                 session -> session.runAsync("RETURN $x", parameters("x", 1)),
                 session -> session.runAsync("RETURN $x", singletonMap("x", 1)),
                 session -> session.runAsync(
-                        "RETURN $x", new InternalRecord(singletonList("x"), new Value[] {new IntegerValue(1)})),
+                        "RETURN $x", new InternalRecord(singletonList("x"), List.of(new IntegerValue(1)))),
                 session -> session.runAsync(new Query("RETURN $x", parameters("x", 1))),
                 session -> session.runAsync(new Query("RETURN $x", parameters("x", 1)), empty()),
                 session -> session.runAsync("RETURN $x", singletonMap("x", 1), empty()),
