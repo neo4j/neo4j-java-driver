@@ -21,7 +21,6 @@ import static org.neo4j.driver.Values.ofObject;
 import static org.neo4j.driver.Values.ofValue;
 import static org.neo4j.driver.internal.util.Format.formatPairs;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -39,15 +38,15 @@ import org.neo4j.driver.util.Pair;
 
 public class InternalRecord extends InternalMapAccessorWithDefaultValue implements Record {
     private final QueryKeys queryKeys;
-    private final Value[] values;
+    private final List<Value> values;
     private int hashCode = 0;
 
-    public InternalRecord(List<String> keys, Value[] values) {
+    public InternalRecord(List<String> keys, List<Value> values) {
         this.queryKeys = new QueryKeys(keys);
         this.values = values;
     }
 
-    public InternalRecord(QueryKeys queryKeys, Value[] values) {
+    public InternalRecord(QueryKeys queryKeys, List<Value> values) {
         this.queryKeys = queryKeys;
         this.values = values;
     }
@@ -59,7 +58,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
 
     @Override
     public List<Value> values() {
-        return Arrays.asList(values);
+        return values;
     }
 
     @Override
@@ -94,18 +93,18 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
         if (fieldIndex == -1) {
             return Values.NULL;
         } else {
-            return values[fieldIndex];
+            return values.get(fieldIndex);
         }
     }
 
     @Override
     public Value get(int index) {
-        return index >= 0 && index < values.length ? values[index] : Values.NULL;
+        return index >= 0 && index < values.size() ? values.get(index) : Values.NULL;
     }
 
     @Override
     public int size() {
-        return values.length;
+        return values.size();
     }
 
     @Override
@@ -161,7 +160,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
     @Override
     public int hashCode() {
         if (hashCode == 0) {
-            hashCode = 31 * queryKeys.hashCode() + Arrays.hashCode(values);
+            hashCode = 31 * queryKeys.hashCode() + values.hashCode();
         }
         return hashCode;
     }

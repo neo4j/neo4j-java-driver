@@ -16,6 +16,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.List;
 import java.util.Objects;
 import org.neo4j.bolt.connection.summary.BeginSummary;
 import org.neo4j.bolt.connection.summary.CommitSummary;
@@ -54,7 +55,7 @@ abstract class DelegatingResponseHandler implements DriverResponseHandler {
     }
 
     @Override
-    public void onRecord(Value[] fields) {
+    public void onRecord(List<Value> fields) {
         delegate.onRecord(fields);
     }
 

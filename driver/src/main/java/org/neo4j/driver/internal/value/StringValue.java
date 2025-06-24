@@ -78,6 +78,11 @@ public class StringValue extends ValueAdapter {
     }
 
     @Override
+    public org.neo4j.bolt.connection.values.Type boltValueType() {
+        return org.neo4j.bolt.connection.values.Type.STRING;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -92,10 +97,5 @@ public class StringValue extends ValueAdapter {
     @Override
     public int hashCode() {
         return val.hashCode();
-    }
-
-    @Override
-    public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.STRING);
     }
 }

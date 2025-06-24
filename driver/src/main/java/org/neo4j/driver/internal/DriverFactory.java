@@ -176,7 +176,16 @@ public class DriverFactory {
                     homeDatabaseCache);
             var driver = createDriver(securityPlanManager, sessionFactory, metricsProvider, config);
             var log = config.logging().getLog(getClass());
-            log.info("Driver instance %s created for server uri '%s'", driver.hashCode(), uri);
+            var host = uri.getHost();
+            var port = uri.getPort();
+            if (port == -1) {
+                port = 7687;
+            }
+            if (uri.getScheme().startsWith("bolt")) {
+                log.info("Direct driver instance %s created for server address %s:%d", driver.hashCode(), host, port);
+            } else {
+                log.info("Routing driver instance %s created for server address %s:%d", driver.hashCode(), host, port);
+            }
             return driver;
         } catch (Throwable driverError) {
             if (boltConnectionProvider != null) {

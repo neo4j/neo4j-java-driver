@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.parameters;
 
+import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
@@ -82,7 +82,7 @@ class InternalRxTransactionTest {
                 rxSession -> rxSession.run("RETURN $x", parameters("x", 1)),
                 rxSession -> rxSession.run("RETURN $x", singletonMap("x", 1)),
                 rxSession -> rxSession.run(
-                        "RETURN $x", new InternalRecord(singletonList("x"), new Value[] {new IntegerValue(1)})),
+                        "RETURN $x", new InternalRecord(singletonList("x"), List.of(new IntegerValue(1)))),
                 rxSession -> rxSession.run(new Query("RETURN $x", parameters("x", 1))));
     }
 

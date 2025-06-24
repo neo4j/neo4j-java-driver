@@ -65,6 +65,11 @@ public class BytesValue extends ValueAdapter {
     }
 
     @Override
+    public org.neo4j.bolt.connection.values.Type boltValueType() {
+        return org.neo4j.bolt.connection.values.Type.BYTES;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -92,10 +97,5 @@ public class BytesValue extends ValueAdapter {
             s.append(Integer.toHexString(b));
         }
         return s.toString();
-    }
-
-    @Override
-    public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.BYTES);
     }
 }

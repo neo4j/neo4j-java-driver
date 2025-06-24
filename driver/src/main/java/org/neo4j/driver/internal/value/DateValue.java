@@ -37,8 +37,8 @@ public class DateValue extends ObjectValueAdapter<LocalDate> {
     }
 
     @Override
-    public BoltValue asBoltValue() {
-        return new BoltValue(this, org.neo4j.bolt.connection.values.Type.DATE);
+    public org.neo4j.bolt.connection.values.Type boltValueType() {
+        return org.neo4j.bolt.connection.values.Type.DATE;
     }
 
     @Override

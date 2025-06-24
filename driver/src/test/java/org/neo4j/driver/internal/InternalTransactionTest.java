@@ -55,7 +55,6 @@ import org.neo4j.bolt.connection.summary.BeginSummary;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
@@ -93,7 +92,7 @@ class InternalTransactionTest {
                 tx -> tx.run("RETURN 1"),
                 tx -> tx.run("RETURN $x", parameters("x", 1)),
                 tx -> tx.run("RETURN $x", singletonMap("x", 1)),
-                tx -> tx.run("RETURN $x", new InternalRecord(singletonList("x"), new Value[] {new IntegerValue(1)})),
+                tx -> tx.run("RETURN $x", new InternalRecord(singletonList("x"), List.of(new IntegerValue(1)))),
                 tx -> tx.run(new Query("RETURN $x", parameters("x", 1))));
     }
 
