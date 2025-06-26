@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -112,7 +113,7 @@ public class DriverFactory {
             Supplier<Rediscovery> rediscoverySupplier) {
         requireNonNull(authTokenManager, "authTokenProvider must not be null");
 
-        var retryExecutor = eventLoopGroup != null ? eventLoopGroup : Executors.newSingleThreadScheduledExecutor();
+        var retryExecutor = eventLoopGroup != null ? eventLoopGroup : retryScheduledExecutorService();
         var retryLogic = createRetryLogic(config.maxTransactionRetryTimeMillis(), retryExecutor, config.logging());
 
         var metricsProvider = getOrCreateMetricsProvider(config, createClock());
@@ -126,6 +127,16 @@ public class DriverFactory {
                 config,
                 authTokenManager,
                 rediscoverySupplier);
+    }
+
+    private static ScheduledExecutorService retryScheduledExecutorService() {
+        var nextId = new AtomicInteger(1);
+        return Executors.newSingleThreadScheduledExecutor(runnable -> {
+            var thread = new Thread(runnable);
+            thread.setName("neo4jdriverretry-" + nextId.getAndIncrement());
+            thread.setDaemon(true);
+            return thread;
+        });
     }
 
     protected static MetricsProvider getOrCreateMetricsProvider(Config config, Clock clock) {
