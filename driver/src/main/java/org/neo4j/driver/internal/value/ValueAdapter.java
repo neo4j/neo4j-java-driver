@@ -29,6 +29,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import org.neo4j.bolt.connection.values.Vector;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.value.NotMultiValued;
 import org.neo4j.driver.exceptions.value.Uncoercible;
@@ -337,6 +338,11 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     @Override
     public <T> Iterable<T> values(Function<Value, T> mapFunction) {
         throw new NotMultiValued(type().name() + " is not iterable");
+    }
+
+    @Override
+    public Vector asBoltVector() {
+        throw new Uncoercible(type().name(), "Vector");
     }
 
     @Override

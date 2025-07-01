@@ -21,6 +21,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -38,7 +39,6 @@ import static org.neo4j.driver.Values.ofString;
 import static org.neo4j.driver.Values.ofToString;
 import static org.neo4j.driver.Values.point;
 import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.Values.values;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
@@ -53,11 +53,13 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -74,8 +76,15 @@ import org.neo4j.driver.internal.value.LocalDateTimeValue;
 import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.TimeValue;
+import org.neo4j.driver.mapping.Vector;
+import org.neo4j.driver.types.ByteVector;
+import org.neo4j.driver.types.DoubleVector;
+import org.neo4j.driver.types.FloatVector;
+import org.neo4j.driver.types.IntVector;
 import org.neo4j.driver.types.IsoDuration;
+import org.neo4j.driver.types.LongVector;
 import org.neo4j.driver.types.Point;
+import org.neo4j.driver.types.ShortVector;
 
 class ValuesTest {
     @Test
@@ -579,6 +588,18 @@ class ValuesTest {
         var javaDuration = Duration.of(1000, ChronoUnit.MINUTES);
         var point2d = new InternalPoint2D(0, 0, 0);
         var point3d = new InternalPoint3D(0, 0, 0, 0);
+        var byteVector = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        var byteVectorObject = Values.vector(byteVector).as(ByteVector.class);
+        var shortVector = new short[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        var shortVectorObject = Values.vector(shortVector).as(ShortVector.class);
+        var intVector = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        var intVectorObject = Values.vector(intVector).as(IntVector.class);
+        var longVector = new long[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        var longVectorObject = Values.vector(longVector).as(LongVector.class);
+        var floatVector = new float[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        var floatVectorObject = Values.vector(floatVector).as(FloatVector.class);
+        var doubleVector = new double[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        var doubleVectorObject = Values.vector(doubleVector).as(DoubleVector.class);
         var valueHolder = new ValueHolder(
                 string,
                 null,
@@ -595,17 +616,29 @@ class ValuesTest {
                 period,
                 javaDuration,
                 point2d,
-                point3d);
+                point3d,
+                byteVector,
+                byteVectorObject,
+                shortVector,
+                shortVectorObject,
+                intVector,
+                intVectorObject,
+                longVector,
+                longVectorObject,
+                floatVector,
+                floatVectorObject,
+                doubleVector,
+                doubleVectorObject);
 
         // when
         var mapValue = Values.value(valueHolder);
 
         // then
-        assertEquals(15, mapValue.size());
+        assertEquals(27, mapValue.size());
         assertEquals(string, mapValue.get("string").as(String.class));
         assertFalse(mapValue.containsKey("nullValue"));
         assertEquals(listWithString, mapValue.get("listWithString").as(List.class));
-        assertEquals(bytes, mapValue.get("bytes").as(byte[].class));
+        assertArrayEquals(bytes, mapValue.get("bytes").as(byte[].class));
         assertEquals(bool, mapValue.get("bool").as(boolean.class));
         assertEquals(boltInteger, mapValue.get("boltInteger").as(long.class));
         assertEquals(boltFloat, mapValue.get("boltFloat").as(double.class));
@@ -618,6 +651,36 @@ class ValuesTest {
         assertEquals(javaDuration, mapValue.get("javaDuration").as(Duration.class));
         assertEquals(point2d, mapValue.get("point2d").as(Point.class));
         assertEquals(point3d, mapValue.get("point3d").as(Point.class));
+        assertArrayEquals(
+                byteVector, mapValue.get("byteVector").as(ByteVector.class).toArray());
+        assertArrayEquals(
+                byteVector,
+                mapValue.get("byteVectorObject").as(ByteVector.class).toArray());
+        assertArrayEquals(
+                shortVector, mapValue.get("shortVector").as(ShortVector.class).toArray());
+        assertArrayEquals(
+                shortVector,
+                mapValue.get("shortVectorObject").as(ShortVector.class).toArray());
+        assertArrayEquals(
+                intVector, mapValue.get("intVector").as(IntVector.class).toArray());
+        assertArrayEquals(
+                intVector, mapValue.get("intVectorObject").as(IntVector.class).toArray());
+        assertArrayEquals(
+                longVector, mapValue.get("longVector").as(LongVector.class).toArray());
+        assertArrayEquals(
+                longVector,
+                mapValue.get("longVectorObject").as(LongVector.class).toArray());
+        assertArrayEquals(
+                floatVector, mapValue.get("floatVector").as(FloatVector.class).toArray());
+        assertArrayEquals(
+                floatVector,
+                mapValue.get("floatVectorObject").as(FloatVector.class).toArray());
+        assertArrayEquals(
+                doubleVector,
+                mapValue.get("doubleVector").as(DoubleVector.class).toArray());
+        assertArrayEquals(
+                doubleVector,
+                mapValue.get("doubleVectorObject").as(DoubleVector.class).toArray());
         assertEquals(valueHolder, mapValue.as(ValueHolder.class));
     }
 
@@ -637,5 +700,84 @@ class ValuesTest {
             Period period,
             Duration javaDuration,
             Point point2d,
-            Point point3d) {}
+            Point point3d,
+            @Vector byte[] byteVector,
+            ByteVector byteVectorObject,
+            @Vector short[] shortVector,
+            ShortVector shortVectorObject,
+            @Vector int[] intVector,
+            IntVector intVectorObject,
+            @Vector long[] longVector,
+            LongVector longVectorObject,
+            @Vector float[] floatVector,
+            FloatVector floatVectorObject,
+            @Vector double[] doubleVector,
+            DoubleVector doubleVectorObject) {
+        @Override
+        public boolean equals(Object o) {
+            if (o == null || getClass() != o.getClass()) return false;
+            ValueHolder that = (ValueHolder) o;
+            return bool == that.bool
+                    && boltInteger == that.boltInteger
+                    && Double.compare(boltFloat, that.boltFloat) == 0
+                    && Objects.deepEquals(bytes, that.bytes)
+                    && Objects.equals(string, that.string)
+                    && Objects.equals(period, that.period)
+                    && Objects.equals(point2d, that.point2d)
+                    && Objects.equals(point3d, that.point3d)
+                    && Objects.equals(date, that.date)
+                    && Objects.equals(time, that.time)
+                    && Objects.deepEquals(intVector, that.intVector)
+                    && Objects.equals(nullValue, that.nullValue)
+                    && Objects.deepEquals(byteVector, that.byteVector)
+                    && Objects.deepEquals(longVector, that.longVector)
+                    && Objects.deepEquals(shortVector, that.shortVector)
+                    && Objects.deepEquals(floatVector, that.floatVector)
+                    && Objects.equals(duration, that.duration)
+                    && Objects.equals(javaDuration, that.javaDuration)
+                    && Objects.deepEquals(doubleVector, that.doubleVector)
+                    && Objects.equals(dateTime, that.dateTime)
+                    && Objects.equals(intVectorObject, that.intVectorObject)
+                    && Objects.equals(listWithString, that.listWithString)
+                    && Objects.equals(localDateTime, that.localDateTime)
+                    && Objects.equals(byteVectorObject, that.byteVectorObject)
+                    && Objects.equals(longVectorObject, that.longVectorObject)
+                    && Objects.equals(shortVectorObject, that.shortVectorObject)
+                    && Objects.equals(floatVectorObject, that.floatVectorObject)
+                    && Objects.equals(doubleVectorObject, that.doubleVectorObject);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(
+                    string,
+                    nullValue,
+                    listWithString,
+                    Arrays.hashCode(bytes),
+                    bool,
+                    boltInteger,
+                    boltFloat,
+                    date,
+                    time,
+                    dateTime,
+                    localDateTime,
+                    duration,
+                    period,
+                    javaDuration,
+                    point2d,
+                    point3d,
+                    Arrays.hashCode(byteVector),
+                    byteVectorObject,
+                    Arrays.hashCode(shortVector),
+                    shortVectorObject,
+                    Arrays.hashCode(intVector),
+                    intVectorObject,
+                    Arrays.hashCode(longVector),
+                    longVectorObject,
+                    Arrays.hashCode(floatVector),
+                    floatVectorObject,
+                    Arrays.hashCode(doubleVector),
+                    doubleVectorObject);
+        }
+    }
 }

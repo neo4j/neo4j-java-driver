@@ -1,6 +1,6 @@
 FROM debian:bullseye-slim
 
-ENV JAVA_HOME=/usr/lib/jvm/openjdk-17 \
+ENV JAVA_HOME=/usr/lib/jvm/openjdk-21 \
     PYTHON=python3
 
 RUN apt-get update && apt-get install -y \
@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # https://hub.docker.com/_/eclipse-temurin
-COPY --from=eclipse-temurin:17-jdk /opt/java/openjdk $JAVA_HOME
+COPY --from=eclipse-temurin:21-jdk /opt/java/openjdk $JAVA_HOME
 
 COPY --from=maven:3.9.2-eclipse-temurin-17 /usr/share/maven /opt/apache-maven
 

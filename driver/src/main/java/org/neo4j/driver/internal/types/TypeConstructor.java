@@ -56,7 +56,8 @@ public enum TypeConstructor {
     LOCAL_DATE_TIME,
     DATE_TIME,
     DURATION,
-    NULL;
+    NULL,
+    VECTOR;
 
     private static TypeConstructor typeConstructorOf(Value value) {
         return ((InternalValue) value).typeConstructor();

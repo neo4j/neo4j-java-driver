@@ -36,6 +36,7 @@ import static org.neo4j.driver.internal.types.TypeConstructor.POINT;
 import static org.neo4j.driver.internal.types.TypeConstructor.RELATIONSHIP;
 import static org.neo4j.driver.internal.types.TypeConstructor.STRING;
 import static org.neo4j.driver.internal.types.TypeConstructor.TIME;
+import static org.neo4j.driver.internal.types.TypeConstructor.VECTOR;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.types.Type;
@@ -70,6 +71,7 @@ public class InternalTypeSystem implements TypeSystem {
     private final TypeRepresentation dateTimeType = constructType(DATE_TIME);
     private final TypeRepresentation durationType = constructType(DURATION);
     private final TypeRepresentation nullType = constructType(NULL);
+    private final TypeRepresentation vectorType = constructType(VECTOR);
 
     private InternalTypeSystem() {}
 
@@ -171,6 +173,11 @@ public class InternalTypeSystem implements TypeSystem {
     @Override
     public Type NULL() {
         return nullType;
+    }
+
+    @Override
+    public Type VECTOR() {
+        return vectorType;
     }
 
     private TypeRepresentation constructType(TypeConstructor tyCon) {

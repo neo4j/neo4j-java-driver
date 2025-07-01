@@ -245,6 +245,27 @@ public class BoltValueFactory implements ValueFactory {
     }
 
     @Override
+    public Value vector(Class<?> elementType, Object elements) {
+        Value value;
+        if (elements.getClass().equals(byte[].class)) {
+            value = ((InternalValue) Values.vector((byte[]) elements));
+        } else if (elements.getClass().equals(short[].class)) {
+            value = ((InternalValue) Values.vector((short[]) elements));
+        } else if (elements.getClass().equals(int[].class)) {
+            value = ((InternalValue) Values.vector((int[]) elements));
+        } else if (elements.getClass().equals(long[].class)) {
+            value = ((InternalValue) Values.vector((long[]) elements));
+        } else if (elements.getClass().equals(float[].class)) {
+            value = ((InternalValue) Values.vector((float[]) elements));
+        } else if (elements.getClass().equals(double[].class)) {
+            value = ((InternalValue) Values.vector((double[]) elements));
+        } else {
+            throw new AssertionError("Unsupported type: " + elements.getClass());
+        }
+        return value;
+    }
+
+    @Override
     public Value unsupportedDateTimeValue(DateTimeException e) {
         return new UnsupportedDateTimeValue(e);
     }
