@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import org.neo4j.bolt.connection.values.IsoDuration;
 import org.neo4j.bolt.connection.values.Point;
+import org.neo4j.bolt.connection.values.Vector;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.AsValue;
@@ -82,5 +83,10 @@ public interface InternalValue extends Value, AsValue, org.neo4j.bolt.connection
     @Override
     default Map<String, org.neo4j.bolt.connection.values.Value> asBoltMap() {
         return asMap(value -> (org.neo4j.bolt.connection.values.Value) value);
+    }
+
+    @Override
+    default Vector asBoltVector() {
+        throw new UnsupportedOperationException("Vector is not supported");
     }
 }

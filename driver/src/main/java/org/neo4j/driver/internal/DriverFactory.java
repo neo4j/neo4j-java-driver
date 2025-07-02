@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import org.neo4j.bolt.connection.BoltAgent;
 import org.neo4j.bolt.connection.BoltConnectionProvider;
 import org.neo4j.bolt.connection.BoltConnectionSource;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.BoltServerAddress;
 import org.neo4j.bolt.connection.DefaultDomainNameResolver;
 import org.neo4j.bolt.connection.DomainNameResolver;
@@ -389,6 +390,7 @@ public class DriverFactory {
         if (localAddress != null) {
             additionalConfig.put("localAddress", localAddress);
         }
+        additionalConfig.put("maxVersion", new BoltProtocolVersion(5, 8));
         return new NettyBoltConnectionProviderFactory()
                 .create(loggingProvider, BoltValueFactory.getInstance(), null, additionalConfig);
     }
