@@ -245,6 +245,11 @@ public class BoltValueFactory implements ValueFactory {
     }
 
     @Override
+    public Value vector(Class<?> elementType, Object elements) {
+        throw new UnsupportedOperationException("Vector is not supported");
+    }
+
+    @Override
     public Value unsupportedDateTimeValue(DateTimeException e) {
         return new UnsupportedDateTimeValue(e);
     }
