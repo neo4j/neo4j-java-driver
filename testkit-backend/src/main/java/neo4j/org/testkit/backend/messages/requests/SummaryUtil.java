@@ -24,8 +24,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import neo4j.org.testkit.backend.messages.responses.Summary;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
+import org.neo4j.driver.summary.GqlNotification;
 import org.neo4j.driver.summary.InputPosition;
-import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.QueryType;
@@ -82,15 +82,16 @@ public class SummaryUtil {
                             .gqlStatus(gqlStatusObject.gqlStatus())
                             .statusDescription(gqlStatusObject.statusDescription())
                             .diagnosticRecord(gqlStatusObject.diagnosticRecord());
-                    if (gqlStatusObject instanceof Notification notification) {
-                        builder = builder.position(toInputPosition(notification.position()))
+                    if (gqlStatusObject instanceof GqlNotification notification) {
+                        builder = builder.position(
+                                        toInputPosition(notification.position().orElse(null)))
                                 .severity(notification
-                                        .severityLevel()
+                                        .severity()
                                         .map(InternalNotificationSeverity.class::cast)
                                         .map(InternalNotificationSeverity::type)
                                         .map(InternalNotificationSeverity.Type::toString)
                                         .orElse("UNKNOWN"))
-                                .rawSeverity(notification.rawSeverityLevel().orElse(null))
+                                .rawSeverity(notification.rawSeverity().orElse(null))
                                 .classification(notification
                                         .classification()
                                         .map(Objects::toString)
