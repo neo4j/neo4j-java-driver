@@ -18,6 +18,8 @@ package org.neo4j.driver.internal.util;
 
 import static java.util.Collections.unmodifiableSet;
 import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.filtering;
+import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.teeing;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toUnmodifiableList;
@@ -30,6 +32,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeSet;
@@ -45,6 +48,7 @@ import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.summary.InternalDatabaseInfo;
+import org.neo4j.driver.internal.summary.InternalGqlNotification;
 import org.neo4j.driver.internal.summary.InternalGqlStatusObject;
 import org.neo4j.driver.internal.summary.InternalInputPosition;
 import org.neo4j.driver.internal.summary.InternalNotification;
@@ -104,29 +108,38 @@ public class MetadataExtractor {
         Set<GqlStatusObject> gqlStatusObjects;
         List<Notification> notifications;
         if (legacyNotifications) {
-            var gqlStatusObjectsAndNotifications = extractGqlStatusObjectsFromNotifications(metadata)
+            var gqlStatusObjectsAndNotifications = generateGqlStatusObjectsAndExtractNotifications(metadata)
                     .collect(teeing(
-                            collectingAndThen(
-                                    toCollection(
-                                            () -> (Set<GqlStatusObject>) new TreeSet<>(GQL_STATUS_OBJECT_COMPARATOR)),
-                                    set -> {
-                                        if (gqlStatusObject != null) {
-                                            set.add(gqlStatusObject);
-                                        }
-                                        return unmodifiableSet(set);
-                                    }),
-                            toUnmodifiableList(),
+                            mapping(
+                                    GqlStatusObjectAndNotification::gqlStatusObject,
+                                    collectingAndThen(
+                                            toCollection(() ->
+                                                    (Set<GqlStatusObject>) new TreeSet<>(GQL_STATUS_OBJECT_COMPARATOR)),
+                                            set -> {
+                                                if (gqlStatusObject != null) {
+                                                    set.add(gqlStatusObject);
+                                                }
+                                                return unmodifiableSet(set);
+                                            })),
+                            mapping(GqlStatusObjectAndNotification::notification, toUnmodifiableList()),
                             GqlStatusObjectsAndNotifications::new));
             gqlStatusObjects = gqlStatusObjectsAndNotifications.gqlStatusObjects();
             notifications = gqlStatusObjectsAndNotifications.notifications();
         } else {
-            gqlStatusObjects = extractGqlStatusObjects(metadata)
-                    .collect(collectingAndThen(
-                            toCollection(() -> (Set<GqlStatusObject>) new LinkedHashSet<GqlStatusObject>()),
-                            Collections::unmodifiableSet));
-            notifications = gqlStatusObjects.stream()
-                    .flatMap(status -> status instanceof Notification ? Stream.of((Notification) status) : null)
-                    .toList();
+            var gqlStatusObjectsAndNotifications = extractGqlStatusObjectsAndGenerateNotifications(metadata)
+                    .collect(teeing(
+                            mapping(
+                                    GqlStatusObjectAndNotification::gqlStatusObject,
+                                    collectingAndThen(
+                                            toCollection(
+                                                    () -> (Set<GqlStatusObject>) new LinkedHashSet<GqlStatusObject>()),
+                                            Collections::unmodifiableSet)),
+                            mapping(
+                                    GqlStatusObjectAndNotification::notification,
+                                    filtering(Objects::nonNull, toUnmodifiableList())),
+                            GqlStatusObjectsAndNotifications::new));
+            gqlStatusObjects = gqlStatusObjectsAndNotifications.gqlStatusObjects();
+            notifications = gqlStatusObjectsAndNotifications.notifications();
         }
         return new InternalResultSummary(
                 query,
@@ -200,7 +213,8 @@ public class MetadataExtractor {
         return null;
     }
 
-    private static Stream<Notification> extractGqlStatusObjectsFromNotifications(Map<String, Value> metadata) {
+    private static Stream<GqlStatusObjectAndNotification> generateGqlStatusObjectsAndExtractNotifications(
+            Map<String, Value> metadata) {
         var notificationsValue = metadata.get("notifications");
         if (notificationsValue != null && TypeSystem.getDefault().LIST().isTypeOf(notificationsValue)) {
             var iterable = notificationsValue.values(value -> {
@@ -259,36 +273,37 @@ public class MetadataExtractor {
                                     Values.value(position.column()))));
                 }
 
-                return new InternalNotification(
+                var gqlNotification = new InternalGqlNotification(
                         gqlStatusCode,
                         gqlStatusDescription,
                         Collections.unmodifiableMap(diagnosticRecord),
-                        code,
-                        title,
-                        description,
+                        position,
                         severityLevel,
                         rawSeverityLevel,
                         (NotificationClassification) category,
-                        rawCategory,
-                        position);
+                        rawCategory);
+                var notification = new InternalNotification(
+                        code, title, description, severityLevel, rawSeverityLevel, category, rawCategory, position);
+                return new GqlStatusObjectAndNotification(gqlNotification, notification);
             });
-            return StreamSupport.stream(iterable.spliterator(), false).map(Notification.class::cast);
-        } else {
-            return Stream.empty();
-        }
-    }
-
-    private static Stream<GqlStatusObject> extractGqlStatusObjects(Map<String, Value> metadata) {
-        var statuses = metadata.get("statuses");
-        if (statuses != null && TypeSystem.getDefault().LIST().isTypeOf(statuses)) {
-            var iterable = statuses.values(MetadataExtractor::extractGqlStatusObject);
             return StreamSupport.stream(iterable.spliterator(), false);
         } else {
             return Stream.empty();
         }
     }
 
-    private static GqlStatusObject extractGqlStatusObject(Value value) {
+    private static Stream<GqlStatusObjectAndNotification> extractGqlStatusObjectsAndGenerateNotifications(
+            Map<String, Value> metadata) {
+        var statuses = metadata.get("statuses");
+        if (statuses != null && TypeSystem.getDefault().LIST().isTypeOf(statuses)) {
+            var iterable = statuses.values(MetadataExtractor::extractGqlStatusObjectAndGenerateNotification);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        } else {
+            return Stream.empty();
+        }
+    }
+
+    private static GqlStatusObjectAndNotification extractGqlStatusObjectAndGenerateNotification(Value value) {
         var status = value.get("gql_status").asString();
         var description = value.get("status_description").asString();
         Map<String, Value> diagnosticRecord;
@@ -322,7 +337,8 @@ public class MetadataExtractor {
         var neo4jCode = value.get("neo4j_code").asString(null);
 
         if (neo4jCode == null || neo4jCode.trim().isEmpty()) {
-            return new InternalGqlStatusObject(status, description, diagnosticRecord);
+            var gqlStatusObject = new InternalGqlStatusObject(status, description, diagnosticRecord);
+            return new GqlStatusObjectAndNotification(gqlStatusObject, null);
         } else {
             var title = value.get("title").asString();
             var notificationDescription =
@@ -354,10 +370,16 @@ public class MetadataExtractor {
             var classification = (NotificationClassification)
                     InternalNotification.valueOf(rawClassification).orElse(null);
 
-            return new InternalNotification(
+            var gqlNotification = new InternalGqlNotification(
                     status,
                     description,
                     diagnosticRecord,
+                    position,
+                    severity,
+                    rawSeverity,
+                    classification,
+                    rawClassification);
+            var notification = new InternalNotification(
                     neo4jCode,
                     title,
                     notificationDescription,
@@ -366,6 +388,7 @@ public class MetadataExtractor {
                     classification,
                     rawClassification,
                     position);
+            return new GqlStatusObjectAndNotification(gqlNotification, notification);
         }
     }
 
@@ -388,4 +411,6 @@ public class MetadataExtractor {
 
     private record GqlStatusObjectsAndNotifications(
             Set<GqlStatusObject> gqlStatusObjects, List<Notification> notifications) {}
+
+    private record GqlStatusObjectAndNotification(GqlStatusObject gqlStatusObject, Notification notification) {}
 }
