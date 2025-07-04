@@ -16,6 +16,7 @@
  */
 package org.neo4j.driver;
 
+import java.lang.reflect.AccessibleObject;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -724,8 +725,14 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
      *     <li>Maximum matching properties.</li>
      *     <li>Minimum mismatching properties.</li>
      * </ol>
-     * The constructor search is done in the order defined by the {@link Class#getDeclaredConstructors} and is
-     * finished either when a full match is found with no mismatches or once all constructors have been visited.
+     * The constructor search is done in the order defined by the {@link Class#getDeclaredConstructors}.
+     * <p>
+     * Only constructors that are accessible or can be made accessible using {@link AccessibleObject#trySetAccessible()}
+     * are included in the search. If multiple constructors have the same number of matching and mismatching
+     * properties, the first constructor that is accessible by default is selected.
+     * <p>
+     * The search finishes as soon as a constructor that is accessible by default and matches all properties is found.
+     * Otherwise, it finishes once all constructors have been visited.
      * <p>
      * At least 1 property match must be present for mapping to work.
      * <p>

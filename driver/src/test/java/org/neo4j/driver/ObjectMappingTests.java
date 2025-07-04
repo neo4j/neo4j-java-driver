@@ -18,6 +18,7 @@ package org.neo4j.driver;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.driver.exceptions.value.ValueException;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPoint2D;
@@ -188,5 +190,120 @@ class ObjectMappingTests {
                 @Property("string") String string, @Property("bytes") byte[] bytes, @Property("bool") boolean bool) {
             this(string, bytes, bool, Long.MIN_VALUE);
         }
+    }
+
+    @Test
+    void shouldWorkWithLocalRecord() {
+        // given
+        var string = "string";
+        var bool = false;
+
+        var properties =
+                Map.ofEntries(Map.entry("string", Values.value(string)), Map.entry("bool", Values.value(bool)));
+
+        record LocalRecord(String string, boolean bool) {}
+
+        // when
+        var valueHolder = Values.value(properties).as(LocalRecord.class);
+
+        // then
+        assertEquals(string, valueHolder.string());
+        assertEquals(bool, valueHolder.bool());
+    }
+
+    @Test
+    void shouldAcceptLocalRecordAsValue() {
+        // given
+        var string = "string";
+        var bool = false;
+        record LocalRecord(String string, boolean bool) {}
+        var recordValue = new LocalRecord(string, bool);
+
+        // when
+        var value = Values.value(recordValue);
+
+        // then
+        assertEquals(string, value.get("string").asString());
+        assertEquals(bool, value.get("bool").asBoolean());
+    }
+
+    @Test
+    void shouldWorkWithPrivateRecord() {
+        // given
+        var string = "string";
+        var bool = false;
+
+        var properties =
+                Map.ofEntries(Map.entry("string", Values.value(string)), Map.entry("bool", Values.value(bool)));
+
+        // when
+        var valueHolder = Values.value(properties).as(PrivateRecord.class);
+
+        // then
+        assertEquals(string, valueHolder.string());
+        assertEquals(bool, valueHolder.bool());
+    }
+
+    @Test
+    void shouldAcceptPrivateRecordAsValue() {
+        // given
+        var string = "string";
+        var bool = false;
+        var recordValue = new PrivateRecord(string, bool);
+
+        // when
+        var value = Values.value(recordValue);
+
+        // then
+        assertEquals(string, value.get("string").asString());
+        assertEquals(bool, value.get("bool").asBoolean());
+    }
+
+    private record PrivateRecord(String string, boolean bool) {}
+
+    @Test
+    void shouldSelectAccessibleOnIdenticalMatch() {
+        // given
+        var string = "string";
+        var bool = false;
+        var number = 0;
+
+        var properties = Map.ofEntries(
+                Map.entry("string", Values.value(string)),
+                Map.entry("bool", Values.value(bool)),
+                Map.entry("number", Values.value(number)));
+
+        // when
+        var valueHolder = Values.value(properties).as(IdenticalMatch.class);
+
+        // then
+        assertEquals(string, valueHolder.string);
+        assertEquals(number, valueHolder.number);
+    }
+
+    public static class IdenticalMatch {
+        String string;
+        boolean bool;
+        long number;
+
+        private IdenticalMatch(@Property("string") String string, @Property("bool") boolean bool) {
+            this.string = string;
+            this.bool = bool;
+        }
+
+        public IdenticalMatch(@Property("string") String string, @Property("number") int number) {
+            this.string = string;
+            this.number = number;
+        }
+    }
+
+    @Test
+    void shouldFindNoMatch() {
+        // given
+        var properties = Map.ofEntries(Map.entry("value", Values.value("value")));
+
+        // when & then
+        var exception = assertThrows(
+                ValueException.class, () -> Values.value(properties).as(ValueHolder.class));
     }
 }
