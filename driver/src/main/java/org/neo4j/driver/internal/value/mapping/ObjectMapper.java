@@ -45,6 +45,6 @@ class ObjectMapper<T> implements MapAccessorMapper<T> {
                 .findConstructor(mapAccessor, targetClass)
                 .map(OBJECT_INSTANTIATOR::instantiate)
                 .orElseThrow(() -> new ValueException(
-                        "No suitable constructor has been found for '%s'".formatted(targetClass.getCanonicalName())));
+                        "No suitable constructor has been found for '%s'".formatted(targetClass.getName())));
     }
 }

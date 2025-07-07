@@ -20,31 +20,44 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.neo4j.driver.Values;
+import java.util.Set;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.mapping.Property;
 import org.neo4j.driver.types.MapAccessor;
+import org.neo4j.driver.types.Type;
+import org.neo4j.driver.types.TypeSystem;
 
 class ConstructorFinder {
+    private static final TypeSystem TS = TypeSystem.getDefault();
+
+    private static final Set<Type> ENTITY_TYPES = Set.of(TS.NODE(), TS.RELATIONSHIP());
+
     @SuppressWarnings("unchecked")
     public <T> Optional<ObjectMetadata<T>> findConstructor(MapAccessor mapAccessor, Class<T> targetClass) {
         PropertiesMatch<T> bestPropertiesMatch = null;
         var constructors = targetClass.getDeclaredConstructors();
         var propertyNamesSize = mapAccessor.size();
         for (var constructor : constructors) {
-            var accessible = false;
-            try {
-                accessible = constructor.canAccess(null);
-            } catch (Throwable e) {
-                // ignored
-            }
-            if (!accessible) {
-                continue;
-            }
             var matchNumbers = matchPropertyNames(mapAccessor, constructor);
             if (bestPropertiesMatch == null
                     || (matchNumbers.match() >= bestPropertiesMatch.match()
                             && matchNumbers.mismatch() < bestPropertiesMatch.mismatch())) {
+                // no match yet or better match
+                if (matchNumbers.isAccessible()) {
+                    bestPropertiesMatch = (PropertiesMatch<T>) matchNumbers;
+                    if (bestPropertiesMatch.match() == propertyNamesSize && bestPropertiesMatch.mismatch() == 0) {
+                        break;
+                    }
+                } else if (constructor.trySetAccessible()) {
+                    bestPropertiesMatch = (PropertiesMatch<T>) matchNumbers;
+                    // no break as an accessible may be available
+                }
+            } else if (matchNumbers.match() == bestPropertiesMatch.match()
+                    && matchNumbers.mismatch() == bestPropertiesMatch.mismatch()
+                    && matchNumbers.isAccessible()
+                    && !bestPropertiesMatch.isAccessible()) {
+                // identical match, but the new one is accessible
                 bestPropertiesMatch = (PropertiesMatch<T>) matchNumbers;
                 if (bestPropertiesMatch.match() == propertyNamesSize && bestPropertiesMatch.mismatch() == 0) {
                     break;
@@ -66,19 +79,37 @@ class ConstructorFinder {
         for (var parameter : parameters) {
             var propertyNameAnnotation = parameter.getAnnotation(Property.class);
             var propertyName = propertyNameAnnotation != null ? propertyNameAnnotation.value() : parameter.getName();
-            var value = mapAccessor.get(propertyName);
-            if (value != null) {
+            if (contains(mapAccessor, propertyName)) {
                 match++;
             } else {
                 mismatch++;
             }
             arguments.add(new Argument(
-                    propertyName,
-                    parameter.getParameterizedType(),
-                    value != null ? (InternalValue) value : (InternalValue) Values.NULL));
+                    propertyName, parameter.getParameterizedType(), (InternalValue) mapAccessor.get(propertyName)));
         }
-        return new PropertiesMatch<>(match, mismatch, constructor, arguments);
+        return new PropertiesMatch<>(match, mismatch, constructor, arguments, isAccessible(constructor));
     }
 
-    private record PropertiesMatch<T>(int match, int mismatch, Constructor<T> constructor, List<Argument> arguments) {}
+    private boolean contains(MapAccessor mapAccessor, String propertyName) {
+        if (mapAccessor instanceof Value value) {
+            if (ENTITY_TYPES.contains(value.type())) {
+                return value.asEntity().containsKey(propertyName);
+            } else {
+                return mapAccessor.containsKey(propertyName);
+            }
+        } else {
+            return mapAccessor.containsKey(propertyName);
+        }
+    }
+
+    private boolean isAccessible(Constructor<?> constructor) {
+        try {
+            return constructor.canAccess(null);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private record PropertiesMatch<T>(
+            int match, int mismatch, Constructor<T> constructor, List<Argument> arguments, boolean isAccessible) {}
 }

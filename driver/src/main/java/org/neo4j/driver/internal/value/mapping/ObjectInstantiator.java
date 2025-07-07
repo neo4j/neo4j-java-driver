@@ -23,7 +23,7 @@ class ObjectInstantiator {
 
     <T> T instantiate(ObjectMetadata<T> metadata) {
         var constructor = metadata.constructor();
-        var targetTypeName = constructor.getDeclaringClass().getCanonicalName();
+        var targetTypeName = constructor.getDeclaringClass().getName();
         var initargs = initargs(targetTypeName, metadata.arguments());
         try {
             return constructor.newInstance(initargs);
