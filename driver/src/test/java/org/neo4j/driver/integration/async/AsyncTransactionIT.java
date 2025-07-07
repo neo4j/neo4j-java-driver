@@ -337,6 +337,7 @@ class AsyncTransactionIT {
         assertEquals(Arrays.asList("1", "2", "3", "5"), cursor.keys());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldExposeResultSummaryForSimpleQuery() {
         var query = "CREATE (p1:Person {name: $name1})-[:KNOWS]->(p2:Person {name: $name2}) RETURN p1, p2";
@@ -360,6 +361,7 @@ class AsyncTransactionIT {
         assertThat(summary, containsResultAvailableAfterAndResultConsumedAfter());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldExposeResultSummaryForExplainQuery() {
         var query = "EXPLAIN MATCH (n) RETURN n";
@@ -383,6 +385,7 @@ class AsyncTransactionIT {
         assertThat(summary, containsResultAvailableAfterAndResultConsumedAfter());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldExposeResultSummaryForProfileQuery() {
         var query = "PROFILE MERGE (n {name: $name}) " + "ON CREATE SET n.created = timestamp() "

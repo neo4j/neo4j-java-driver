@@ -29,12 +29,13 @@ import org.neo4j.driver.NotificationClassification;
 class InternalNotificationTest {
     @ParameterizedTest
     @MethodSource("shouldMapArgs")
-    void shouldMap(String value, NotificationCategory expectedNotificationCategory) {
+    void shouldMap(String value, @SuppressWarnings("deprecation") NotificationCategory expectedNotificationCategory) {
         var notificationCategory = InternalNotification.valueOf(value).orElse(null);
 
         assertEquals(expectedNotificationCategory, notificationCategory);
     }
 
+    @SuppressWarnings("deprecation")
     static Stream<Arguments> shouldMapArgs() {
         return Arrays.stream(NotificationClassification.values())
                 .map(notificationClassification -> switch (notificationClassification) {

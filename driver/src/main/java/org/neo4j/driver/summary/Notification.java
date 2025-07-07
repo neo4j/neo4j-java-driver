@@ -26,7 +26,9 @@ import org.neo4j.driver.util.Immutable;
  * <p>
  * A notification can be visualized in a client pinpointing problems or other information about the query.
  * @since 1.0
+ * @deprecated superseded by {@link GqlNotification}.
  */
+@Deprecated
 @Immutable
 public interface Notification {
     /**

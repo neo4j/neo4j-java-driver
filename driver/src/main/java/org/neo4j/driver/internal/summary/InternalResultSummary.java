@@ -38,7 +38,10 @@ public class InternalResultSummary implements ResultSummary {
     private final SummaryCounters counters;
     private final Plan plan;
     private final ProfiledPlan profile;
+
+    @SuppressWarnings("deprecation")
     private final List<Notification> notifications;
+
     private final Set<GqlStatusObject> gqlStatusObjects;
     private final long resultAvailableAfter;
     private final long resultConsumedAfter;
@@ -52,7 +55,7 @@ public class InternalResultSummary implements ResultSummary {
             SummaryCounters counters,
             Plan plan,
             ProfiledPlan profile,
-            List<Notification> notifications,
+            @SuppressWarnings("deprecation") List<Notification> notifications,
             Set<GqlStatusObject> gqlStatusObjects,
             long resultAvailableAfter,
             long resultConsumedAfter) {
@@ -104,6 +107,7 @@ public class InternalResultSummary implements ResultSummary {
         return profile;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public List<Notification> notifications() {
         return notifications;

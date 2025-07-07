@@ -106,6 +106,7 @@ public class MetadataExtractor {
                 connection.serverAgent(), connection.serverAddress(), connection.protocolVersion());
         var dbInfo = extractDatabaseInfo(metadata);
         Set<GqlStatusObject> gqlStatusObjects;
+        @SuppressWarnings("deprecation")
         List<Notification> notifications;
         if (legacyNotifications) {
             var gqlStatusObjectsAndNotifications = generateGqlStatusObjectsAndExtractNotifications(metadata)
@@ -409,8 +410,10 @@ public class MetadataExtractor {
         return -1;
     }
 
+    @SuppressWarnings("deprecation")
     private record GqlStatusObjectsAndNotifications(
             Set<GqlStatusObject> gqlStatusObjects, List<Notification> notifications) {}
 
+    @SuppressWarnings("deprecation")
     private record GqlStatusObjectAndNotification(GqlStatusObject gqlStatusObject, Notification notification) {}
 }

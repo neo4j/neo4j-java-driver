@@ -16,14 +16,12 @@
  */
 package org.neo4j.driver;
 
-import org.neo4j.driver.util.Preview;
-
 /**
  * Notification classification.
  *
  * @since 5.22.0
  */
-@Preview(name = "GQL-status object")
+@SuppressWarnings("deprecation")
 public enum NotificationClassification implements NotificationCategory {
     /**
      * A hint category.
@@ -94,6 +92,7 @@ public enum NotificationClassification implements NotificationCategory {
      * <p>
      * Please note that this category was added to a later server version. Therefore, a compatible server version is
      * required to use it.
+     *
      * @since 5.24.0
      */
     SCHEMA
