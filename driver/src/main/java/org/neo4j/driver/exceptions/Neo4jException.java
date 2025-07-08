@@ -246,7 +246,8 @@ public class Neo4jException extends RuntimeException {
     }
 
     /**
-     * Returns whether there is an error with the given GQLSTATUS in this GQL error chain.
+     * Returns whether there is an error with the given GQLSTATUS in this GQL error chain, beginning the search from
+     * this exception.
      *
      * @param gqlStatus the GQLSTATUS
      * @return {@literal true} if yes or {@literal false} otherwise
