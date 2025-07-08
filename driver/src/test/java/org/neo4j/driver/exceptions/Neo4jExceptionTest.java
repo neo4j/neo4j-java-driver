@@ -87,12 +87,12 @@ class Neo4jExceptionTest {
 
     @ParameterizedTest
     @MethodSource("gqlErrorsArgs")
-    void shouldFindFirstByGqlStatus(Neo4jException exception, int statusIndex, boolean shouldBeFound) {
+    void shouldFindByGqlStatus(Neo4jException exception, int statusIndex, boolean shouldBeFound) {
         // given
         var status = "status" + statusIndex;
 
         // when
-        var exceptionWithStatus = exception.findFirstByGqlStatus(status);
+        var exceptionWithStatus = exception.findByGqlStatus(status);
 
         // then
         if (shouldBeFound) {
