@@ -235,6 +235,7 @@ class SummaryIT {
                 session.run("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n").consume();
 
         // Then
+        @SuppressWarnings("deprecation")
         var notifications = summary.notifications();
         assertNotNull(notifications);
         assertThat(notifications.size(), equalTo(1));
@@ -247,6 +248,7 @@ class SummaryIT {
         assertThat(notification.position(), notNullValue());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldContainNoNotifications() {
         // When

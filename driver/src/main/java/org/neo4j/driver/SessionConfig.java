@@ -31,7 +31,6 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.InternalNotificationConfig;
 import org.neo4j.driver.reactive.ReactiveSession;
-import org.neo4j.driver.util.Preview;
 
 /**
  * The session configurations used to configure a session.
@@ -70,6 +69,7 @@ public final class SessionConfig implements Serializable {
     /**
      * The notification config.
      */
+    @SuppressWarnings("deprecation")
     private final NotificationConfig notificationConfig;
 
     private SessionConfig(Builder builder) {
@@ -171,7 +171,10 @@ public final class SessionConfig implements Serializable {
      * Returns notification config.
      * @return the notification config
      * @since 5.7
+     * @deprecated superseded by {@link SessionConfig#minimumNotificationSeverity()} and
+     * {@link SessionConfig#disabledNotificationClassifications()}.
      */
+    @Deprecated
     public NotificationConfig notificationConfig() {
         return notificationConfig;
     }
@@ -182,7 +185,6 @@ public final class SessionConfig implements Serializable {
      * @return an {@link Optional} of minimum {@link NotificationSeverity} or an empty {@link Optional} if it is not set
      * @since 5.22.0
      */
-    @Preview(name = "GQL-status object")
     public Optional<NotificationSeverity> minimumNotificationSeverity() {
         return Optional.ofNullable(((InternalNotificationConfig) notificationConfig).minimumSeverity());
     }
@@ -192,7 +194,6 @@ public final class SessionConfig implements Serializable {
      * @return the {@link Set} of disabled {@link NotificationClassification}
      * @since 5.22.0
      */
-    @Preview(name = "GQL-status object")
     public Set<NotificationClassification> disabledNotificationClassifications() {
         var disabledCategories = ((InternalNotificationConfig) notificationConfig).disabledCategories();
         return disabledCategories != null
@@ -247,6 +248,7 @@ public final class SessionConfig implements Serializable {
         private String impersonatedUser = null;
         private BookmarkManager bookmarkManager;
 
+        @SuppressWarnings("deprecation")
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
 
         private Builder() {}
@@ -428,7 +430,11 @@ public final class SessionConfig implements Serializable {
          * @param notificationConfig the notification config
          * @return this builder
          * @since 5.7
+         * @deprecated superseded by {@link SessionConfig.Builder#withMinimumNotificationSeverity(NotificationSeverity)} and
+         * {@link SessionConfig.Builder#withDisabledNotificationClassifications(Set)}.
          */
+        @SuppressWarnings("DeprecatedIsStillUsed")
+        @Deprecated
         public Builder withNotificationConfig(NotificationConfig notificationConfig) {
             this.notificationConfig = Objects.requireNonNull(notificationConfig, "notificationConfig must not be null");
             return this;
@@ -441,7 +447,7 @@ public final class SessionConfig implements Serializable {
          * @return this builder
          * @since 5.22.0
          */
-        @Preview(name = "GQL-status object")
+        @SuppressWarnings("deprecation")
         public Builder withMinimumNotificationSeverity(NotificationSeverity minimumNotificationSeverity) {
             if (minimumNotificationSeverity == null) {
                 notificationConfig = NotificationConfig.disableAllConfig();
@@ -458,7 +464,7 @@ public final class SessionConfig implements Serializable {
          * @return this builder
          * @since 5.22.0
          */
-        @Preview(name = "GQL-status object")
+        @SuppressWarnings("deprecation")
         public Builder withDisabledNotificationClassifications(
                 Set<NotificationClassification> disabledNotificationClassifications) {
             var disabledCategories = disabledNotificationClassifications == null

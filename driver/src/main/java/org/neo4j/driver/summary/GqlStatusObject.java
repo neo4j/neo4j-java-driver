@@ -19,29 +19,31 @@ package org.neo4j.driver.summary;
 import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.summary.InternalGqlStatusObject;
-import org.neo4j.driver.util.Preview;
 
 /**
  * The GQL-status object as defined by the GQL standard.
- * @since 5.22.0
+ *
  * @see GqlNotification Notification subtype of the GQL-status object
+ * @since 5.22.0
  */
-@Preview(name = "GQL-status object")
 public sealed interface GqlStatusObject permits GqlNotification, InternalGqlStatusObject {
     /**
      * Returns the GQLSTATUS as defined by the GQL standard.
+     *
      * @return the GQLSTATUS value
      */
     String gqlStatus();
 
     /**
      * The GQLSTATUS description.
+     *
      * @return the GQLSTATUS description
      */
     String statusDescription();
 
     /**
      * Returns the diagnostic record.
+     *
      * @return the diagnostic record
      */
     Map<String, Value> diagnosticRecord();

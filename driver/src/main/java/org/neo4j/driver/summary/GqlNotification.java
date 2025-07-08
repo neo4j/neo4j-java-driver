@@ -20,14 +20,13 @@ import java.util.Optional;
 import org.neo4j.driver.NotificationClassification;
 import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.internal.summary.InternalGqlNotification;
-import org.neo4j.driver.util.Preview;
 
 /**
  * A notification subtype of the {@link GqlStatusObject}.
- * @since 5.28.8
+ *
  * @see GqlStatusObject
+ * @since 5.28.8
  */
-@Preview(name = "GQL-status object")
 public sealed interface GqlNotification extends GqlStatusObject permits InternalGqlNotification {
 
     /**
@@ -58,6 +57,7 @@ public sealed interface GqlNotification extends GqlStatusObject permits Internal
 
     /**
      * Returns {@link NotificationClassification} derived from the diagnostic record.
+     *
      * @return an {@link Optional} of {@link NotificationClassification} or an empty {@link Optional} when the
      * classification is either absent or unrecognised
      * @see #diagnosticRecord()
@@ -67,6 +67,7 @@ public sealed interface GqlNotification extends GqlStatusObject permits Internal
     /**
      * Returns notification classification from the diagnostic record as a {@link String} value retrieved directly from
      * the diagnostic record.
+     *
      * @return an {@link Optional} of notification classification or an empty {@link Optional} when it is absent
      * @see #diagnosticRecord()
      */

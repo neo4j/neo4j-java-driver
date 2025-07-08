@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.util.Immutable;
-import org.neo4j.driver.util.Preview;
 
 /**
  * The result summary of running a query. The result summary interface can be used to investigate
@@ -98,7 +97,9 @@ public interface ResultSummary {
      *
      * @return a list of notifications produced while executing the query. The list will be empty if no
      * notifications produced while executing the query.
+     * @deprecated superseded by {@link ResultSummary#gqlStatusObjects()}.
      */
+    @Deprecated
     List<Notification> notifications();
 
     /**
@@ -107,7 +108,6 @@ public interface ResultSummary {
      * @return the sequenced set of GQL-status objects
      * @since 5.22.0
      */
-    @Preview(name = "GQL-status object")
     Set<GqlStatusObject> gqlStatusObjects();
 
     /**

@@ -211,6 +211,7 @@ public final class TestUtil {
         return newSession(connectionProvider, mode, retryLogic, bookmarks, true);
     }
 
+    @SuppressWarnings("deprecation")
     public static NetworkSession newSession(
             DriverBoltConnectionSource connectionProvider,
             AccessMode mode,

@@ -22,6 +22,7 @@ import org.neo4j.bolt.connection.NotificationConfig;
 import org.neo4j.bolt.connection.NotificationSeverity;
 import org.neo4j.driver.NotificationCategory;
 
+@SuppressWarnings("deprecation")
 public class NotificationConfigMapper {
     public static NotificationConfig map(org.neo4j.driver.NotificationConfig config) {
         var original = (InternalNotificationConfig) config;

@@ -73,6 +73,7 @@ public class SessionFactoryImpl implements SessionFactory {
         this.homeDatabaseCache = Objects.requireNonNull(homeDatabaseCache);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public NetworkSession newInstance(
             SessionConfig sessionConfig, AuthToken overrideAuthToken, boolean telemetryDisabled) {
@@ -149,7 +150,7 @@ public class SessionFactoryImpl implements SessionFactory {
             String impersonatedUser,
             @SuppressWarnings("deprecation") Logging logging,
             BookmarkManager bookmarkManager,
-            NotificationConfig notificationConfig,
+            @SuppressWarnings("deprecation") NotificationConfig notificationConfig,
             AuthToken authToken,
             boolean telemetryDisabled,
             AuthTokenManager authTokenManager,

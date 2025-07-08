@@ -29,7 +29,7 @@ public record GqlNotificationConfig(
         return new GqlNotificationConfig(null, null);
     }
 
-    public static GqlNotificationConfig from(NotificationConfig notificationConfig) {
+    public static GqlNotificationConfig from(@SuppressWarnings("deprecation") NotificationConfig notificationConfig) {
         Objects.requireNonNull(notificationConfig);
         var config = (InternalNotificationConfig) notificationConfig;
         var disabledClassifications = config.disabledCategories() != null

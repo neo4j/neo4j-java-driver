@@ -102,6 +102,7 @@ class ParametersTest {
     private Session mockedSession() {
         var provider = mock(DriverBoltConnectionSource.class);
         var retryLogic = mock(RetryLogic.class);
+        @SuppressWarnings("deprecation")
         var session = new NetworkSession(
                 provider,
                 retryLogic,

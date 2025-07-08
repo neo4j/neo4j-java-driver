@@ -24,6 +24,7 @@ import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Notification;
 
+@SuppressWarnings("deprecation")
 public class InternalNotification implements Notification {
     public static Optional<NotificationCategory> valueOf(String value) {
         return Arrays.stream(NotificationClassification.values())

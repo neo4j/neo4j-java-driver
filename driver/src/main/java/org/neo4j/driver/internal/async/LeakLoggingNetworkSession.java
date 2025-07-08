@@ -47,7 +47,7 @@ public class LeakLoggingNetworkSession extends NetworkSession {
             long fetchSize,
             @SuppressWarnings("deprecation") Logging logging,
             BookmarkManager bookmarkManager,
-            NotificationConfig notificationConfig,
+            @SuppressWarnings("deprecation") NotificationConfig notificationConfig,
             AuthToken overrideAuthToken,
             boolean telemetryDisabled,
             AuthTokenManager authTokenManager,

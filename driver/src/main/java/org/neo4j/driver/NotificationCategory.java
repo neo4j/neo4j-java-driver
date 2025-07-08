@@ -22,7 +22,9 @@ import java.io.Serializable;
  * Notification category.
  *
  * @since 5.7
+ * @deprecated superseded by {@link NotificationClassification}.
  */
+@Deprecated
 public sealed interface NotificationCategory extends Serializable permits NotificationClassification {
     /**
      * A hint category.

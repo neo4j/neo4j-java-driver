@@ -21,7 +21,6 @@ import static org.neo4j.driver.internal.InternalNotificationSeverity.Type;
 import java.io.Serializable;
 import org.neo4j.driver.Config.ConfigBuilder;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Notification severity level.
@@ -44,6 +43,5 @@ public sealed interface NotificationSeverity extends Serializable, Comparable<No
      * @see ConfigBuilder#withMinimumNotificationSeverity(NotificationSeverity)
      * @see SessionConfig.Builder#withMinimumNotificationSeverity(NotificationSeverity)
      */
-    @Preview(name = "GQL-status object")
     NotificationSeverity OFF = new InternalNotificationSeverity(Type.OFF, Integer.MAX_VALUE);
 }

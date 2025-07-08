@@ -195,6 +195,7 @@ class SessionConfigTest {
         assertEquals(config1, config2);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldSerialize() throws Exception {
         var bookmarks = Set.of(

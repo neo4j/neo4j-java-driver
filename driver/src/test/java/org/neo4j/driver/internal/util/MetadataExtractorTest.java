@@ -414,6 +414,7 @@ class MetadataExtractorTest {
                 secondGqlStatusObject.diagnosticRecord());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldBuildResultSummaryWithoutNotifications() {
         var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), false, null);

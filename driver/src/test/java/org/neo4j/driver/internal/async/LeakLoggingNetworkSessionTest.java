@@ -146,6 +146,7 @@ class LeakLoggingNetworkSessionTest {
         finalizeMethod.invoke(session);
     }
 
+    @SuppressWarnings("deprecation")
     private static LeakLoggingNetworkSession newSession(
             @SuppressWarnings("deprecation") Logging logging, DriverBoltConnection connection) {
         return new LeakLoggingNetworkSession(

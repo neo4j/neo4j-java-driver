@@ -234,6 +234,7 @@ class AsyncSessionIT {
         assertEquals(Arrays.asList("1", "2", "3", "5"), cursor.keys());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldExposeResultSummaryForSimpleQuery() {
         var query = "CREATE (:Node {id: $id, name: $name})";
@@ -256,6 +257,7 @@ class AsyncSessionIT {
         assertThat(summary, containsResultAvailableAfterAndResultConsumedAfter());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldExposeResultSummaryForExplainQuery() {
         var query = "EXPLAIN CREATE (),() WITH * MATCH (n)-->(m) CREATE (n)-[:HI {id: 'id'}]->(m) RETURN n, m";
@@ -281,6 +283,7 @@ class AsyncSessionIT {
         assertThat(summary, containsResultAvailableAfterAndResultConsumedAfter());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldExposeResultSummaryForProfileQuery() {
         var query = "PROFILE CREATE (:Node)-[:KNOWS]->(:Node) WITH * MATCH (n) RETURN n";

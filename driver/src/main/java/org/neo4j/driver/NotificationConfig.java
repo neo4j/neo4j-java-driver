@@ -18,6 +18,7 @@ package org.neo4j.driver;
 
 import java.io.Serializable;
 import java.util.Set;
+import org.neo4j.driver.Config.ConfigBuilder;
 import org.neo4j.driver.internal.InternalNotificationConfig;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.summary.ResultSummary;
@@ -37,8 +38,13 @@ import org.neo4j.driver.summary.ResultSummary;
  *
  * @since 5.7
  * @see ResultSummary#notifications()
- * @see org.neo4j.driver.summary.Notification
+ * @deprecated superseded by e org.neo4j.driver.summary.Notification
+ * {@link ConfigBuilder#withMinimumNotificationSeverity(NotificationSeverity)},
+ * {@link ConfigBuilder#withDisabledNotificationClassifications(Set)},
+ * {@link SessionConfig.Builder#withMinimumNotificationSeverity(NotificationSeverity)} and
+ * {@link SessionConfig.Builder#withDisabledNotificationClassifications(Set)}.
  */
+@Deprecated
 public sealed interface NotificationConfig extends Serializable permits InternalNotificationConfig {
     /**
      * Returns a default notification configuration.

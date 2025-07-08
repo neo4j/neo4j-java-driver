@@ -123,7 +123,7 @@ public class NetworkSession {
             long fetchSize,
             @SuppressWarnings("deprecation") Logging logging,
             BookmarkManager bookmarkManager,
-            org.neo4j.driver.NotificationConfig notificationConfig,
+            @SuppressWarnings("deprecation") org.neo4j.driver.NotificationConfig notificationConfig,
             AuthToken overrideAuthToken,
             boolean telemetryDisabled,
             AuthTokenManager authTokenManager,
