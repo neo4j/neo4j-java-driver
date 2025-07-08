@@ -254,19 +254,20 @@ public class Neo4jException extends RuntimeException {
      */
     @Preview(name = "GQL-error")
     public boolean containsGqlStatus(String gqlStatus) {
-        return findByGqlStatus(this, gqlStatus) != null;
+        return findFirstByGqlStatus(this, gqlStatus) != null;
     }
 
     /**
-     * Finds a {@link Neo4jException} that has the given GQLSTATUS in this GQL error chain.
+     * Finds a first {@link Neo4jException} that has the given GQLSTATUS in this GQL error chain, beginning the search
+     * from this exception.
      *
      * @param gqlStatus the GQLSTATUS
      * @return an {@link Optional} of {@link Neo4jException} or {@link Optional#empty()} otherwise
      * @since 5.28.8
      */
     @Preview(name = "GQL-error")
-    public Optional<Neo4jException> findByGqlStatus(String gqlStatus) {
-        return Optional.ofNullable(findByGqlStatus(this, gqlStatus));
+    public Optional<Neo4jException> findFirstByGqlStatus(String gqlStatus) {
+        return Optional.ofNullable(findFirstByGqlStatus(this, gqlStatus));
     }
 
     @SuppressWarnings("DuplicatedCode")
@@ -279,7 +280,7 @@ public class Neo4jException extends RuntimeException {
         }
     }
 
-    private static Neo4jException findByGqlStatus(Neo4jException neo4jException, String gqlStatus) {
+    private static Neo4jException findFirstByGqlStatus(Neo4jException neo4jException, String gqlStatus) {
         Objects.requireNonNull(gqlStatus);
         Neo4jException result = null;
         var gqlError = neo4jException;
