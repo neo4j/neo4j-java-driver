@@ -20,7 +20,6 @@ import java.io.Serial;
 import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.GqlStatusError;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Failed to authenticate the driver to the server due to bad credentials provided.
@@ -59,7 +58,6 @@ public class AuthenticationException extends SecurityException {
      * @param cause the cause
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public AuthenticationException(
             String gqlStatus,
             String statusDescription,

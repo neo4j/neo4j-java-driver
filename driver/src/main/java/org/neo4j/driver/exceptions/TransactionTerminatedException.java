@@ -20,7 +20,6 @@ import java.io.Serial;
 import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.GqlStatusError;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Indicates that the transaction has been terminated.
@@ -98,7 +97,6 @@ public class TransactionTerminatedException extends ClientException {
      * @param cause the cause
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public TransactionTerminatedException(
             String gqlStatus,
             String statusDescription,
