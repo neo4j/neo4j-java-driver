@@ -20,7 +20,6 @@ import java.io.Serial;
 import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.GqlStatusError;
-import org.neo4j.driver.util.Preview;
 
 /**
  * The authorization info maintained on the server has expired. The client should reconnect.
@@ -63,7 +62,6 @@ public class AuthorizationExpiredException extends SecurityException implements 
      * @param cause the cause
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public AuthorizationExpiredException(
             String gqlStatus,
             String statusDescription,

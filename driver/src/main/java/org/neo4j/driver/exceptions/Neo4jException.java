@@ -23,7 +23,6 @@ import java.util.Optional;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.types.TypeSystem;
-import org.neo4j.driver.util.Preview;
 
 /**
  * This is the base class for Neo4j exceptions.
@@ -131,7 +130,6 @@ public class Neo4jException extends RuntimeException {
      * @param cause             the cause
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public Neo4jException(
             String gqlStatus,
             String statusDescription,
@@ -176,7 +174,6 @@ public class Neo4jException extends RuntimeException {
      * @return the GQLSTATUS value
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public String gqlStatus() {
         return gqlStatus;
     }
@@ -187,7 +184,6 @@ public class Neo4jException extends RuntimeException {
      * @return the GQLSTATUS description
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public String statusDescription() {
         return statusDescription;
     }
@@ -198,7 +194,6 @@ public class Neo4jException extends RuntimeException {
      * @return the GQL diagnostic record
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public Map<String, Value> diagnosticRecord() {
         return diagnosticRecord;
     }
@@ -213,7 +208,6 @@ public class Neo4jException extends RuntimeException {
      * @see #rawClassification()
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public Optional<GqlStatusErrorClassification> classification() {
         return Optional.ofNullable(classification);
     }
@@ -229,7 +223,6 @@ public class Neo4jException extends RuntimeException {
      * @see #diagnosticRecord()
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public Optional<String> rawClassification() {
         return Optional.ofNullable(rawClassification);
     }
@@ -240,7 +233,6 @@ public class Neo4jException extends RuntimeException {
      * @return an {@link Optional} of GQL error cause
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public Optional<Neo4jException> gqlCause() {
         return Optional.ofNullable(findFirstGqlCause(this));
     }
@@ -253,7 +245,6 @@ public class Neo4jException extends RuntimeException {
      * @return {@literal true} if yes or {@literal false} otherwise
      * @since 5.28.8
      */
-    @Preview(name = "GQL-error")
     public boolean containsGqlStatus(String gqlStatus) {
         return findByGqlStatus(this, gqlStatus) != null;
     }
@@ -266,7 +257,6 @@ public class Neo4jException extends RuntimeException {
      * @return an {@link Optional} of {@link Neo4jException} or {@link Optional#empty()} otherwise
      * @since 5.28.8
      */
-    @Preview(name = "GQL-error")
     public Optional<Neo4jException> findByGqlStatus(String gqlStatus) {
         return Optional.ofNullable(findByGqlStatus(this, gqlStatus));
     }

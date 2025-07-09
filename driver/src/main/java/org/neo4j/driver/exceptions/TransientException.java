@@ -20,7 +20,6 @@ import java.io.Serial;
 import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.GqlStatusError;
-import org.neo4j.driver.util.Preview;
 
 /**
  * A <em>TransientException</em> signals a temporary fault that may be worked around by retrying. The error code provided can be used to determine further
@@ -58,7 +57,6 @@ public class TransientException extends Neo4jException implements RetryableExcep
      * @param cause the cause
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public TransientException(
             String gqlStatus,
             String statusDescription,

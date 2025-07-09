@@ -20,7 +20,6 @@ import java.io.Serial;
 import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.GqlStatusError;
-import org.neo4j.driver.util.Preview;
 
 /**
  * This error indicate a fatal problem to obtain routing tables such as the routing table for a specified database does not exist.
@@ -73,7 +72,6 @@ public class FatalDiscoveryException extends ClientException {
      * @param cause the cause
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public FatalDiscoveryException(
             String gqlStatus,
             String statusDescription,

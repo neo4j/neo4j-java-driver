@@ -20,7 +20,6 @@ import java.io.Serial;
 import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.GqlStatusError;
-import org.neo4j.driver.util.Preview;
 
 /**
  * A <em>DatabaseException</em> indicates that there is a problem within the underlying database.
@@ -57,7 +56,6 @@ public class DatabaseException extends Neo4jException {
      * @param cause the cause
      * @since 5.26.0
      */
-    @Preview(name = "GQL-error")
     public DatabaseException(
             String gqlStatus,
             String statusDescription,
