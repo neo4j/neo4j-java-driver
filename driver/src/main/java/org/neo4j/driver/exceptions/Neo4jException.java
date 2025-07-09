@@ -40,27 +40,32 @@ public class Neo4jException extends RuntimeException {
     private final String code;
     /**
      * The GQLSTATUS as defined by the GQL standard.
+     *
      * @since 5.26.0
      */
     private final String gqlStatus;
     /**
      * The GQLSTATUS description.
+     *
      * @since 5.26.0
      */
     private final String statusDescription;
     /**
      * The diagnostic record.
+     *
      * @since 5.26.0
      */
     @SuppressWarnings("serial")
     private final Map<String, Value> diagnosticRecord;
     /**
      * The GQLSTATUS error classification.
+     *
      * @since 5.26.0
      */
     private final GqlStatusErrorClassification classification;
     /**
      * The GQLSTATUS error classification as raw String.
+     *
      * @since 5.26.0
      */
     private final String rawClassification;
@@ -117,12 +122,13 @@ public class Neo4jException extends RuntimeException {
 
     /**
      * Creates a new instance.
-     * @param gqlStatus the GQLSTATUS as defined by the GQL standard
+     *
+     * @param gqlStatus         the GQLSTATUS as defined by the GQL standard
      * @param statusDescription the status description
-     * @param code the code
-     * @param message the message
-     * @param diagnosticRecord the diagnostic record
-     * @param cause the cause
+     * @param code              the code
+     * @param message           the message
+     * @param diagnosticRecord  the diagnostic record
+     * @param cause             the cause
      * @since 5.26.0
      */
     @Preview(name = "GQL-error")
@@ -236,19 +242,56 @@ public class Neo4jException extends RuntimeException {
      */
     @Preview(name = "GQL-error")
     public Optional<Neo4jException> gqlCause() {
-        return findFirstGqlCause(this, Neo4jException.class);
+        return Optional.ofNullable(findFirstGqlCause(this));
+    }
+
+    /**
+     * Returns whether there is an error with the given GQLSTATUS in this GQL error chain, beginning the search from
+     * this exception.
+     *
+     * @param gqlStatus the GQLSTATUS
+     * @return {@literal true} if yes or {@literal false} otherwise
+     * @since 5.28.8
+     */
+    @Preview(name = "GQL-error")
+    public boolean containsGqlStatus(String gqlStatus) {
+        return findByGqlStatus(this, gqlStatus) != null;
+    }
+
+    /**
+     * Finds the first {@link Neo4jException} that has the given GQLSTATUS in this GQL error chain, beginning the search
+     * from this exception.
+     *
+     * @param gqlStatus the GQLSTATUS
+     * @return an {@link Optional} of {@link Neo4jException} or {@link Optional#empty()} otherwise
+     * @since 5.28.8
+     */
+    @Preview(name = "GQL-error")
+    public Optional<Neo4jException> findByGqlStatus(String gqlStatus) {
+        return Optional.ofNullable(findByGqlStatus(this, gqlStatus));
     }
 
     @SuppressWarnings("DuplicatedCode")
-    private static <T extends Throwable> Optional<T> findFirstGqlCause(Throwable throwable, Class<T> targetCls) {
+    private static Neo4jException findFirstGqlCause(Throwable throwable) {
         var cause = throwable.getCause();
-        if (cause == null) {
-            return Optional.empty();
-        }
-        if (targetCls.isAssignableFrom(cause.getClass())) {
-            return Optional.of(targetCls.cast(cause));
+        if (cause instanceof Neo4jException neo4jException) {
+            return neo4jException;
         } else {
-            return Optional.empty();
+            return null;
         }
+    }
+
+    private static Neo4jException findByGqlStatus(Neo4jException neo4jException, String gqlStatus) {
+        Objects.requireNonNull(gqlStatus);
+        Neo4jException result = null;
+        var gqlError = neo4jException;
+        while (gqlError != null) {
+            if (gqlError.gqlStatus().equals(gqlStatus)) {
+                result = gqlError;
+                break;
+            }
+            gqlError = findFirstGqlCause(gqlError);
+        }
+        return result;
     }
 }
