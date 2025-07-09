@@ -259,7 +259,7 @@ public class Neo4jException extends RuntimeException {
     }
 
     /**
-     * Finds a first {@link Neo4jException} that has the given GQLSTATUS in this GQL error chain, beginning the search
+     * Finds the first {@link Neo4jException} that has the given GQLSTATUS in this GQL error chain, beginning the search
      * from this exception.
      *
      * @param gqlStatus the GQLSTATUS
