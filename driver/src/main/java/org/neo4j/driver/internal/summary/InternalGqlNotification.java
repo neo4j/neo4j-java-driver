@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.summary;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.neo4j.driver.NotificationClassification;
 import org.neo4j.driver.NotificationSeverity;
@@ -31,6 +32,11 @@ public final class InternalGqlNotification extends InternalGqlStatusObject imple
     private final NotificationClassification classification;
     private final String rawClassification;
 
+    // private Neo4j use only
+    private final String code;
+    private final String title;
+    private final String description;
+
     public InternalGqlNotification(
             String gqlStatus,
             String statusDescription,
@@ -39,13 +45,19 @@ public final class InternalGqlNotification extends InternalGqlStatusObject imple
             NotificationSeverity severityLevel,
             String rawSeverityLevel,
             NotificationClassification classification,
-            String rawClassification) {
+            String rawClassification,
+            String code,
+            String title,
+            String description) {
         super(gqlStatus, statusDescription, diagnosticRecord);
         this.position = position;
         this.severityLevel = severityLevel;
         this.rawSeverityLevel = rawSeverityLevel;
         this.classification = classification;
         this.rawClassification = rawClassification;
+        this.code = code;
+        this.title = title;
+        this.description = description;
     }
 
     @Override
@@ -74,10 +86,46 @@ public final class InternalGqlNotification extends InternalGqlStatusObject imple
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        var that = (InternalGqlNotification) o;
+        return Objects.equals(gqlStatus, that.gqlStatus)
+                && Objects.equals(statusDescription, that.statusDescription)
+                && Objects.equals(diagnosticRecord, that.diagnosticRecord)
+                && Objects.equals(code, that.code)
+                && Objects.equals(title, that.title)
+                && Objects.equals(description, that.description);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(gqlStatus, statusDescription, diagnosticRecord, code, title, description);
+    }
+
+    @Override
     public String toString() {
         return "InternalGqlNotification{" + "gqlStatus='"
                 + gqlStatus + '\'' + ", statusDescription='"
                 + statusDescription + '\'' + ", diagnosticRecord="
-                + diagnosticRecord + '}';
+                + diagnosticRecord + '\'' + ", code='"
+                + code + '\'' + ", title='"
+                + title + '\'' + ", description='"
+                + description + '}';
+    }
+
+    // private Neo4j use only
+    public String code() {
+        return code;
+    }
+
+    // private Neo4j use only
+    public String title() {
+        return title;
+    }
+
+    // private Neo4j use only
+    public String description() {
+        return description;
     }
 }
