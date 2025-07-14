@@ -282,7 +282,10 @@ public class MetadataExtractor {
                         severityLevel,
                         rawSeverityLevel,
                         (NotificationClassification) category,
-                        rawCategory);
+                        rawCategory,
+                        code,
+                        title,
+                        description);
                 var notification = new InternalNotification(
                         code, title, description, severityLevel, rawSeverityLevel, category, rawCategory, position);
                 return new GqlStatusObjectAndNotification(gqlNotification, notification);
@@ -379,7 +382,10 @@ public class MetadataExtractor {
                     severity,
                     rawSeverity,
                     classification,
-                    rawClassification);
+                    rawClassification,
+                    neo4jCode,
+                    title,
+                    notificationDescription);
             var notification = new InternalNotification(
                     neo4jCode,
                     title,
