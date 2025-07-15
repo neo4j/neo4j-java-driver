@@ -706,7 +706,7 @@ public final class Config implements Serializable {
         /**
          * Specify the maximum time managed transactions are allowed to retry.
          * <p>
-         * Managed transactions are available via methods like {@link Session#executeRead(TransactionCallback)}, {@link Session#executeWrite(TransactionCallback, TransactionConfig)} and some other variations available under similar naming.
+         * Managed transactions are available via methods like {@link Session#executeRead(TransactionCallback)}, {@link Session#executeWrite(TransactionCallback, TransactionConfig)}, {@link ExecutableQuery}, and other variations available under similar namings.
          * <p>
          * Default value is 30 seconds.
          *
