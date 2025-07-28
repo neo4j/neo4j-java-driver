@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver;
+package org.neo4j.driver.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -38,6 +38,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.value.ValueException;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.InternalNode;
@@ -51,7 +53,7 @@ import org.neo4j.driver.mapping.Property;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.Point;
 
-class ObjectMappingTests {
+final class ObjectMappingIT {
     @ParameterizedTest
     @MethodSource("shouldMapValueArgs")
     void shouldMapValue(Function<Map<String, Value>, ValueHolder> valueFunction) {

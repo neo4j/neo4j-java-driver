@@ -19,6 +19,7 @@ package org.neo4j.driver;
 import static org.neo4j.driver.internal.util.Extract.assertParameter;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
+import java.lang.reflect.AccessibleObject;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -247,6 +248,7 @@ public final class Values {
 
     /**
      * Returns an array of values from object vararg.
+     *
      * @param input the object value(s)
      * @return the array of values
      */
@@ -256,6 +258,7 @@ public final class Values {
 
     /**
      * Returns a value from value vararg.
+     *
      * @param input the value(s)
      * @return the value
      */
@@ -265,6 +268,7 @@ public final class Values {
 
     /**
      * Returns a value from byte vararg.
+     *
      * @param input the byte value(s)
      * @return the value
      */
@@ -274,6 +278,7 @@ public final class Values {
 
     /**
      * Returns a value from string vararg.
+     *
      * @param input the string value(s)
      * @return the value
      */
@@ -286,6 +291,7 @@ public final class Values {
 
     /**
      * Returns a value from boolean vararg.
+     *
      * @param input the boolean value(s)
      * @return the value
      */
@@ -298,6 +304,7 @@ public final class Values {
 
     /**
      * Returns a value from char vararg.
+     *
      * @param input the char value(s)
      * @return the value
      */
@@ -310,6 +317,7 @@ public final class Values {
 
     /**
      * Returns a value from long vararg.
+     *
      * @param input the long value(s)
      * @return the value
      */
@@ -322,6 +330,7 @@ public final class Values {
 
     /**
      * Returns a value from short vararg.
+     *
      * @param input the short value(s)
      * @return the value
      */
@@ -331,8 +340,10 @@ public final class Values {
                 .collect(Collectors.toCollection(() -> new ArrayList<>(input.length)));
         return new ListValue(values);
     }
+
     /**
      * Returns a value from int vararg.
+     *
      * @param input the int value(s)
      * @return the value
      */
@@ -342,8 +353,10 @@ public final class Values {
                 .collect(Collectors.toCollection(() -> new ArrayList<>(input.length)));
         return new ListValue(values);
     }
+
     /**
      * Returns a value from double vararg.
+     *
      * @param input the double value(s)
      * @return the value
      */
@@ -356,6 +369,7 @@ public final class Values {
 
     /**
      * Returns a value from float vararg.
+     *
      * @param input the float value(s)
      * @return the value
      */
@@ -368,6 +382,7 @@ public final class Values {
 
     /**
      * Returns a value from list of objects.
+     *
      * @param vals the list of objects
      * @return the value
      */
@@ -379,6 +394,7 @@ public final class Values {
 
     /**
      * Returns a value from iterable of objects.
+     *
      * @param val the iterable of objects
      * @return the value
      */
@@ -388,6 +404,7 @@ public final class Values {
 
     /**
      * Returns a value from iterator of objects.
+     *
      * @param val the iterator of objects
      * @return the value
      */
@@ -401,6 +418,7 @@ public final class Values {
 
     /**
      * Returns a value from stream of objects.
+     *
      * @param stream the stream of objects
      * @return the value
      */
@@ -463,14 +481,17 @@ public final class Values {
      * limitations on how those are supported by the database. Please read the Neo4j Cypher Manual for more up-to-date
      * details. For example, at the time of writing, it is not possible to store maps as properties
      * (see the following <a href="https://neo4j.com/docs/cypher-manual/current/values-and-types/property-structural-constructed/#constructed-types">page</a>).
+     * <p>
+     * If accessors for record components are not accessible, the driver will try to make them accessible using
+     * {@link AccessibleObject#trySetAccessible()} and will emit an error if this does not succeed.
      *
      * @param record the record to map
      * @return the map value
+     * @throws ClientException when mapping fails
      * @see TypeSystem#MAP()
      * @see java.lang.Record
      * @see java.lang.reflect.RecordComponent
      * @see Property
-     * @throws ClientException when mapping fails
      * @since 5.28.5
      */
     @Preview(name = "Object mapping")
@@ -483,11 +504,16 @@ public final class Values {
             var isVector = recordComponent.getAnnotation(org.neo4j.driver.mapping.Vector.class) != null;
             Value value;
             try {
-                var objectValue = recordComponent.getAccessor().invoke(record);
+                var accessor = recordComponent.getAccessor();
+                if (!accessor.canAccess(record) && !accessor.trySetAccessible()) {
+                    throw new IllegalStateException(
+                            "Failed to make record component '%s' accessible".formatted(recordComponent.getName()));
+                }
+                var objectValue = accessor.invoke(record);
                 value = (objectValue != null) ? isVector ? vector(objectValue) : value(objectValue) : null;
             } catch (Throwable throwable) {
                 var message = "Failed to map '%s' property to value during mapping '%s' to map value"
-                        .formatted(property, record.getClass().getCanonicalName());
+                        .formatted(property, record.getClass().getName());
                 throw new ClientException(
                         GqlStatusError.UNKNOWN.getStatus(),
                         GqlStatusError.UNKNOWN.getStatusDescription(message),
@@ -505,6 +531,7 @@ public final class Values {
 
     /**
      * Returns a value from char.
+     *
      * @param val the char value
      * @return the value
      */
@@ -514,6 +541,7 @@ public final class Values {
 
     /**
      * Returns a value from string.
+     *
      * @param val the string value
      * @return the value
      */
@@ -523,6 +551,7 @@ public final class Values {
 
     /**
      * Returns a value from long.
+     *
      * @param val the long value
      * @return the value
      */
@@ -532,6 +561,7 @@ public final class Values {
 
     /**
      * Returns a value from int.
+     *
      * @param val the int value
      * @return the value
      */
@@ -541,6 +571,7 @@ public final class Values {
 
     /**
      * Returns a value from double.
+     *
      * @param val the double value
      * @return the value
      */
@@ -550,6 +581,7 @@ public final class Values {
 
     /**
      * Returns a value from boolean.
+     *
      * @param val the boolean value
      * @return the value
      */
@@ -559,6 +591,7 @@ public final class Values {
 
     /**
      * Returns a value from string to object map.
+     *
      * @param val the string to object map
      * @return the value
      */
@@ -572,6 +605,7 @@ public final class Values {
 
     /**
      * Returns a value from local date.
+     *
      * @param localDate the local date value
      * @return the value
      */
@@ -581,6 +615,7 @@ public final class Values {
 
     /**
      * Returns a value from offset time.
+     *
      * @param offsetTime the offset time value
      * @return the value
      */
@@ -590,6 +625,7 @@ public final class Values {
 
     /**
      * Returns a value from local time.
+     *
      * @param localTime the local time value
      * @return the value
      */
@@ -599,6 +635,7 @@ public final class Values {
 
     /**
      * Returns a value from local date time.
+     *
      * @param localDateTime the local date time value
      * @return the value
      */
@@ -608,6 +645,7 @@ public final class Values {
 
     /**
      * Returns a value from offset date time.
+     *
      * @param offsetDateTime the offset date time value
      * @return the value
      */
@@ -617,6 +655,7 @@ public final class Values {
 
     /**
      * Returns a value from zoned date time.
+     *
      * @param zonedDateTime the zoned date time value
      * @return the value
      */
@@ -626,6 +665,7 @@ public final class Values {
 
     /**
      * Returns a value from period.
+     *
      * @param period the period value
      * @return the value
      */
@@ -635,6 +675,7 @@ public final class Values {
 
     /**
      * Returns a value from duration.
+     *
      * @param duration the duration value
      * @return the value
      */
@@ -644,9 +685,10 @@ public final class Values {
 
     /**
      * Returns a value from month, day, seconds and nanoseconds values.
-     * @param months the month value
-     * @param days the day value
-     * @param seconds the seconds value
+     *
+     * @param months      the month value
+     * @param days        the day value
+     * @param seconds     the seconds value
      * @param nanoseconds the nanoseconds value
      * @return the value
      */
@@ -656,6 +698,7 @@ public final class Values {
 
     /**
      * Returns a value from ISO duration.
+     *
      * @param duration the ISO duration value
      * @return the value
      */
@@ -665,9 +708,10 @@ public final class Values {
 
     /**
      * Returns a value from SRID, x and y values.
+     *
      * @param srid the SRID value
-     * @param x the x value
-     * @param y the y value
+     * @param x    the x value
+     * @param y    the y value
      * @return the value
      */
     public static Value point(int srid, double x, double y) {
@@ -676,6 +720,7 @@ public final class Values {
 
     /**
      * Returns a value from point.
+     *
      * @param point the point value
      * @return the value
      */
@@ -685,10 +730,11 @@ public final class Values {
 
     /**
      * Returns a value from SRID, x ,y and z values.
+     *
      * @param srid the SRID value
-     * @param x the x value
-     * @param y the y value
-     * @param z the z value
+     * @param x    the x value
+     * @param y    the y value
+     * @param z    the z value
      * @return the value
      */
     public static Value point(int srid, double x, double y, double z) {
@@ -854,7 +900,7 @@ public final class Values {
      * the provided converter.
      *
      * @param valueConverter converter to use for the values of the map
-     * @param <T> the type of values in the returned map
+     * @param <T>            the type of values in the returned map
      * @return a function that returns {@link Value#asMap(Function)} of a {@link Value}
      */
     public static <T> Function<Value, Map<String, T>> ofMap(final Function<Value, T> valueConverter) {
@@ -873,8 +919,8 @@ public final class Values {
     /**
      * Converts values to {@link Long entity id}.
      *
-     * @deprecated superseded by {@link #ofEntityElementId()}.
      * @return a function that returns the id an entity {@link Value}
+     * @deprecated superseded by {@link #ofEntityElementId()}.
      */
     @Deprecated
     public static Function<Value, Long> ofEntityId() {
@@ -1002,7 +1048,7 @@ public final class Values {
      * Converts values to {@link List} of {@code T}.
      *
      * @param innerMap converter for the values inside the list
-     * @param <T> the type of values inside the list
+     * @param <T>      the type of values inside the list
      * @return a function that returns {@link Value#asList(Function)} of a {@link Value}
      */
     public static <T> Function<Value, List<T>> ofList(final Function<Value, T> innerMap) {
