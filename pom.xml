@@ -42,24 +42,24 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2025.0.0-M4</reactor-bom.version>
+    <reactor-bom.version>2025.0.0-M6</reactor-bom.version>
     <slf4j-api.version>2.1.0-alpha1</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
     <mockito-core.version>5.18.0</mockito-core.version>
-    <junit.version>5.13.3</junit.version>
+    <junit.version>6.0.0-M2</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.11.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <!-- supply a newer version than the one supplied by the jarchivelib 1.2.0 -->
-    <commons-compress.version>1.27.1</commons-compress.version>
+    <commons-compress.version>1.28.0</commons-compress.version>
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
-    <commons-codec.version>1.18.0</commons-codec.version>
+    <commons-codec.version>1.19.0</commons-codec.version>
     <bouncycastle-jdk18on.version>1.81</bouncycastle-jdk18on.version>
     <logback-classic.version>1.5.18</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
-    <jackson.version>2.19.1</jackson.version>
+    <jackson.version>2.20.0-rc1</jackson.version>
     <lombok.version>1.18.38</lombok.version>
-    <svm.version>24.2.1</svm.version>
+    <svm.version>24.2.2</svm.version>
     <micrometer.version>1.15.2</micrometer.version>
     <micrometer-docs-generator.version>1.0.4</micrometer-docs-generator.version>
     <blockhound.version>1.0.13.RELEASE</blockhound.version>
