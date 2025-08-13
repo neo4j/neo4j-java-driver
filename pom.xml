@@ -29,6 +29,7 @@
     <surefire.jpms.args/>
     <failsafe.parallelizable.jpms.args/>
     <failsafe.sequential.jpms.args/>
+    <javadoc.failOnWarnings>true</javadoc.failOnWarnings>
     <!-- Skip deployment by default for everything in this project. -->
     <maven.deploy.skip>true</maven.deploy.skip>
 
@@ -604,7 +605,7 @@
                 <goal>jar</goal>
               </goals>
               <configuration>
-                <failOnWarnings>true</failOnWarnings>
+                <failOnWarnings>${javadoc.failOnWarnings}</failOnWarnings>
               </configuration>
             </execution>
             <execution>
