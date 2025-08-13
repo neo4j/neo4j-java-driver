@@ -19,6 +19,7 @@ package org.neo4j.driver.internal.reactive;
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
 
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.observation.Observation;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
@@ -29,23 +30,23 @@ public abstract class AbstractReactiveTransaction {
         this.tx = tx;
     }
 
-    protected <T> Publisher<T> doCommit() {
-        return createEmptyPublisher(tx::commitAsync);
+    protected <T> Publisher<T> doCommit(Observation parentObservation) {
+        return createEmptyPublisher(() -> tx.commitAsync(parentObservation));
     }
 
-    protected <T> Publisher<T> doRollback() {
-        return createEmptyPublisher(tx::rollbackAsync);
+    protected <T> Publisher<T> doRollback(Observation parentObservation) {
+        return createEmptyPublisher(() -> tx.rollbackAsync(parentObservation));
     }
 
-    protected Publisher<Void> doClose() {
-        return close(false);
+    protected Publisher<Void> doClose(Observation parentObservation) {
+        return close(false, parentObservation);
     }
 
     protected Publisher<Boolean> doIsOpen() {
         return Mono.just(tx.isOpen());
     }
 
-    public Publisher<Void> close(boolean commit) {
-        return createEmptyPublisher(() -> tx.closeAsync(commit));
+    public Publisher<Void> close(boolean commit, Observation parentObservation) {
+        return createEmptyPublisher(() -> tx.closeAsync(commit, parentObservation));
     }
 }

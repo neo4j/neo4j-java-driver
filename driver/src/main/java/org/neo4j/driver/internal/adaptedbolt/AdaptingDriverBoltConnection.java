@@ -16,37 +16,65 @@
  */
 package org.neo4j.driver.internal.adaptedbolt;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.bolt.connection.AuthInfo;
 import org.neo4j.bolt.connection.BoltConnection;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.BoltServerAddress;
 import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.Observation;
+import org.neo4j.driver.internal.observation.util.ObservationUtil;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 
 final class AdaptingDriverBoltConnection implements DriverBoltConnection {
     private final BoltConnection connection;
     private final ErrorMapper errorMapper;
     private final BoltValueFactory boltValueFactory;
+    private final List<String> messageNames = new ArrayList<>();
+    private final DriverObservationProvider observationProvider;
 
     AdaptingDriverBoltConnection(
-            BoltConnection connection, ErrorMapper errorMapper, BoltValueFactory boltValueFactory) {
+            BoltConnection connection,
+            ErrorMapper errorMapper,
+            BoltValueFactory boltValueFactory,
+            DriverObservationProvider observationProvider) {
         this.connection = Objects.requireNonNull(connection);
         this.errorMapper = Objects.requireNonNull(errorMapper);
         this.boltValueFactory = Objects.requireNonNull(boltValueFactory);
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     @Override
-    public CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, List<Message> messages) {
+    public CompletionStage<Void> writeAndFlush(
+            DriverResponseHandler handler, List<Message> messages, Observation parentObservation) {
+        var handleObservation = ObservationUtil.scoped(observationProvider, parentObservation, () -> observationProvider
+                .boltHandle(appendAndClearMessages(messages))
+                .start());
         return connection
-                .writeAndFlush(new AdaptingDriverResponseHandler(handler, errorMapper, boltValueFactory), messages)
-                .exceptionally(errorMapper::mapAndThrow);
+                .writeAndFlush(
+                        new AdaptingDriverResponseHandler(handler, errorMapper, boltValueFactory, handleObservation),
+                        messages,
+                        new BoltObservation(handleObservation))
+                .exceptionally(throwable -> {
+                    var mappedThrowable = errorMapper.map(throwable);
+                    handleObservation.error(mappedThrowable);
+                    handleObservation.stop();
+                    if (mappedThrowable instanceof RuntimeException runtimeException) {
+                        throw runtimeException;
+                    } else {
+                        throw new CompletionException(mappedThrowable);
+                    }
+                });
     }
 
     @Override
     public CompletionStage<Void> write(List<Message> messages) {
+        appendMessages(messages);
         return connection.write(messages).exceptionally(errorMapper::mapAndThrow);
     }
 
@@ -93,5 +121,16 @@ final class AdaptingDriverBoltConnection implements DriverBoltConnection {
     @Override
     public BoltValueFactory valueFactory() {
         return boltValueFactory;
+    }
+
+    private synchronized List<String> appendAndClearMessages(List<Message> messages) {
+        appendMessages(messages);
+        var messageNames = List.copyOf(this.messageNames);
+        this.messageNames.clear();
+        return messageNames;
+    }
+
+    private synchronized void appendMessages(List<Message> messages) {
+        messages.forEach(message -> messageNames.add(message.name()));
     }
 }

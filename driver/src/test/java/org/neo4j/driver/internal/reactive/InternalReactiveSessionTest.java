@@ -61,6 +61,8 @@ import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
+import org.neo4j.driver.internal.observation.NoopObservation;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
@@ -102,16 +104,16 @@ public class InternalReactiveSessionTest {
         RxResultCursor cursor = mock(RxResultCursorImpl.class);
 
         // Run succeeded with a cursor
-        when(session.runRx(any(Query.class), any(TransactionConfig.class), any()))
+        when(session.runRx(any(Query.class), any(TransactionConfig.class), any(), any()))
                 .thenReturn(completedFuture(cursor));
-        var rxSession = new InternalReactiveSession(session);
+        var rxSession = new InternalReactiveSession(session, NoopObservationProvider.getInstance());
 
         // When
         var result = flowPublisherToFlux(runReturnOne.apply(rxSession));
         result.subscribe();
 
         // Then
-        verify(session).runRx(any(Query.class), any(TransactionConfig.class), any());
+        verify(session).runRx(any(Query.class), any(TransactionConfig.class), any(), any());
         StepVerifier.create(result).expectNextCount(1).verifyComplete();
     }
 
@@ -123,18 +125,18 @@ public class InternalReactiveSessionTest {
         var session = mock(NetworkSession.class);
 
         // Run failed with error
-        when(session.runRx(any(Query.class), any(TransactionConfig.class), any()))
+        when(session.runRx(any(Query.class), any(TransactionConfig.class), any(), any()))
                 .thenReturn(failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
-        var rxSession = new InternalReactiveSession(session);
+        var rxSession = new InternalReactiveSession(session, NoopObservationProvider.getInstance());
 
         // When
         var result = flowPublisherToFlux(runReturnOne.apply(rxSession));
 
         // Then
         StepVerifier.create(result).expectErrorMatches(t -> error == t).verify();
-        verify(session).runRx(any(Query.class), any(TransactionConfig.class), any());
+        verify(session).runRx(any(Query.class), any(TransactionConfig.class), any(), any());
         verify(session).releaseConnectionAsync();
     }
 
@@ -146,16 +148,16 @@ public class InternalReactiveSessionTest {
         var tx = mock(UnmanagedTransaction.class);
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
 
-        when(session.beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork)))
+        when(session.beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork), any()))
                 .thenReturn(completedFuture(tx));
-        var rxSession = new InternalReactiveSession(session);
+        var rxSession = new InternalReactiveSession(session, NoopObservationProvider.getInstance());
 
         // When
         var rxTx = flowPublisherToFlux(beginTx.apply(rxSession));
         StepVerifier.create(Mono.from(rxTx)).expectNextCount(1).verifyComplete();
 
         // Then
-        verify(session).beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork));
+        verify(session).beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork), any());
     }
 
     @ParameterizedTest
@@ -167,18 +169,18 @@ public class InternalReactiveSessionTest {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
 
         // Run failed with error
-        when(session.beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork)))
+        when(session.beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork), any()))
                 .thenReturn(failedFuture(error));
         when(session.releaseConnectionAsync()).thenReturn(Futures.completedWithNull());
 
-        var rxSession = new InternalReactiveSession(session);
+        var rxSession = new InternalReactiveSession(session, NoopObservationProvider.getInstance());
 
         // When
         var rxTx = flowPublisherToFlux(beginTx.apply(rxSession));
         var txFuture = Mono.from(rxTx).toFuture();
 
         // Then
-        verify(session).beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork));
+        verify(session).beginTransactionAsync(any(TransactionConfig.class), isNull(), eq(apiTelemetryWork), any());
         RuntimeException t = assertThrows(CompletionException.class, () -> Futures.getNow(txFuture));
         MatcherAssert.assertThat(t.getCause(), equalTo(error));
         verify(session).releaseConnectionAsync();
@@ -190,13 +192,13 @@ public class InternalReactiveSessionTest {
         var retryCount = 2;
         var session = mock(NetworkSession.class);
         var tx = mock(UnmanagedTransaction.class);
-        when(tx.closeAsync(false)).thenReturn(completedWithNull());
+        when(tx.closeAsync(false, NoopObservation.getInstance())).thenReturn(completedWithNull());
 
         when(session.beginTransactionAsync(
-                        any(AccessMode.class), any(TransactionConfig.class), any(ApiTelemetryWork.class)))
+                        any(AccessMode.class), any(TransactionConfig.class), any(ApiTelemetryWork.class), any()))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(retryCount));
-        var rxSession = new InternalReactiveSession(session);
+        var rxSession = new InternalReactiveSession(session, NoopObservationProvider.getInstance());
 
         // When
         var strings = rxSession.<String>executeRead(t -> JdkFlowAdapter.publisherToFlowPublisher(
@@ -209,8 +211,8 @@ public class InternalReactiveSessionTest {
         // Then
         verify(session, times(retryCount + 1))
                 .beginTransactionAsync(
-                        any(AccessMode.class), any(TransactionConfig.class), any(ApiTelemetryWork.class));
-        verify(tx, times(retryCount + 1)).closeAsync(false);
+                        any(AccessMode.class), any(TransactionConfig.class), any(ApiTelemetryWork.class), any());
+        verify(tx, times(retryCount + 1)).closeAsync(false, NoopObservation.getInstance());
     }
 
     @Test
@@ -219,14 +221,14 @@ public class InternalReactiveSessionTest {
         var retryCount = 2;
         var session = mock(NetworkSession.class);
         var tx = mock(UnmanagedTransaction.class);
-        when(tx.closeAsync(false)).thenReturn(completedWithNull());
-        when(tx.closeAsync(true)).thenReturn(completedWithNull());
+        when(tx.closeAsync(false, NoopObservation.getInstance())).thenReturn(completedWithNull());
+        when(tx.closeAsync(true, NoopObservation.getInstance())).thenReturn(completedWithNull());
 
         when(session.beginTransactionAsync(
-                        any(AccessMode.class), any(TransactionConfig.class), any(ApiTelemetryWork.class)))
+                        any(AccessMode.class), any(TransactionConfig.class), any(ApiTelemetryWork.class), any()))
                 .thenReturn(completedFuture(tx));
         when(session.retryLogic()).thenReturn(new FixedRetryLogic(retryCount));
-        var rxSession = new InternalReactiveSession(session);
+        var rxSession = new InternalReactiveSession(session, NoopObservationProvider.getInstance());
 
         // When
         var count = new AtomicInteger();
@@ -246,16 +248,16 @@ public class InternalReactiveSessionTest {
         // Then
         verify(session, times(retryCount + 1))
                 .beginTransactionAsync(
-                        any(AccessMode.class), any(TransactionConfig.class), any(ApiTelemetryWork.class));
-        verify(tx, times(retryCount)).closeAsync(false);
-        verify(tx).closeAsync(true);
+                        any(AccessMode.class), any(TransactionConfig.class), any(ApiTelemetryWork.class), any());
+        verify(tx, times(retryCount)).closeAsync(false, NoopObservation.getInstance());
+        verify(tx).closeAsync(true, NoopObservation.getInstance());
     }
 
     @Test
     void shouldDelegateBookmarks() {
         // Given
         var session = mock(NetworkSession.class);
-        var rxSession = new InternalReactiveSession(session);
+        var rxSession = new InternalReactiveSession(session, NoopObservationProvider.getInstance());
 
         // When
         rxSession.lastBookmarks();
@@ -269,15 +271,15 @@ public class InternalReactiveSessionTest {
     void shouldDelegateClose() {
         // Given
         var session = mock(NetworkSession.class);
-        when(session.closeAsync()).thenReturn(completedWithNull());
-        var rxSession = new InternalReactiveSession(session);
+        when(session.closeAsync(NoopObservation.getInstance())).thenReturn(completedWithNull());
+        var rxSession = new InternalReactiveSession(session, NoopObservationProvider.getInstance());
 
         // When
         var publisher = rxSession.<Void>close();
 
         // Then
         StepVerifier.create(JdkFlowAdapter.flowPublisherToFlux(publisher)).verifyComplete();
-        verify(session).closeAsync();
+        verify(session).closeAsync(NoopObservation.getInstance());
         verifyNoMoreInteractions(session);
     }
 
@@ -286,7 +288,7 @@ public class InternalReactiveSessionTest {
     void shouldDelegateExecuteReadToRetryLogic(ExecuteVariation executeVariation) {
         // GIVEN
         var networkSession = mock(NetworkSession.class);
-        ReactiveSession session = new InternalReactiveSession(networkSession);
+        ReactiveSession session = new InternalReactiveSession(networkSession, NoopObservationProvider.getInstance());
         var logic = mock(RetryLogic.class);
         var expected = "";
         given(networkSession.retryLogic()).willReturn(logic);
@@ -312,7 +314,7 @@ public class InternalReactiveSessionTest {
         var session = mock(NetworkSession.class);
         var expectedBookmarks = Set.of(mock(Bookmark.class));
         given(session.lastBookmarks()).willReturn(expectedBookmarks);
-        var reactiveSession = new InternalReactiveSession(session);
+        var reactiveSession = new InternalReactiveSession(session, NoopObservationProvider.getInstance());
 
         // When
         var bookmarks = reactiveSession.lastBookmarks();

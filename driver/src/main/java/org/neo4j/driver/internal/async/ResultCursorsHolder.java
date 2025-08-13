@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.FailableCursor;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.util.Futures;
 
 public class ResultCursorsHolder {
@@ -45,20 +46,20 @@ public class ResultCursorsHolder {
         });
     }
 
-    CompletionStage<Throwable> retrieveNotConsumedError() {
+    CompletionStage<Throwable> retrieveNotConsumedError(Observation parentObservation) {
         List<CompletionStage<? extends FailableCursor>> cursorStages;
         synchronized (this) {
             cursorStages = List.copyOf(this.cursorStages);
         }
-        var failures = retrieveAllFailures(cursorStages);
+        var failures = retrieveAllFailures(cursorStages, parentObservation);
         return CompletableFuture.allOf(failures).thenApply(ignore -> findFirstFailure(failures));
     }
 
     @SuppressWarnings("unchecked")
     private static CompletableFuture<Throwable>[] retrieveAllFailures(
-            List<CompletionStage<? extends FailableCursor>> cursorStages) {
+            List<CompletionStage<? extends FailableCursor>> cursorStages, Observation parentObservation) {
         return cursorStages.stream()
-                .map(ResultCursorsHolder::retrieveFailure)
+                .map(result -> retrieveFailure(result, parentObservation))
                 .map(CompletionStage::toCompletableFuture)
                 .toArray(CompletableFuture[]::new);
     }
@@ -73,9 +74,11 @@ public class ResultCursorsHolder {
                 .orElse(null);
     }
 
-    private static CompletionStage<Throwable> retrieveFailure(CompletionStage<? extends FailableCursor> cursorStage) {
+    private static CompletionStage<Throwable> retrieveFailure(
+            CompletionStage<? extends FailableCursor> cursorStage, Observation parentObservation) {
         return cursorStage
                 .exceptionally(cursor -> null)
-                .thenCompose(cursor -> cursor == null ? completedWithNull() : cursor.discardAllFailureAsync());
+                .thenCompose(cursor ->
+                        cursor == null ? completedWithNull() : cursor.discardAllFailureAsync(parentObservation));
     }
 }

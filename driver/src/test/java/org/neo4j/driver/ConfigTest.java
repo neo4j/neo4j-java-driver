@@ -43,7 +43,9 @@ import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.logging.Slf4jLogging;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.net.ServerAddressResolver;
+import org.neo4j.driver.observation.ObservationProvider;
 import org.neo4j.driver.testutil.TestUtil;
 
 class ConfigTest {
@@ -354,30 +356,6 @@ class ConfigTest {
     }
 
     @Test
-    void shouldNotHaveMeterRegistryByDefault() {
-        var config = Config.builder().build();
-        var metricsAdapter = config.metricsAdapter();
-
-        assertEquals(MetricsAdapter.DEV_NULL, metricsAdapter);
-        assertFalse(config.isMetricsEnabled());
-    }
-
-    @Test
-    void shouldNotAcceptNullMeterRegistry() {
-        var builder = Config.builder();
-        assertThrows(NullPointerException.class, () -> builder.withMetricsAdapter(null));
-    }
-
-    @Test
-    void shouldSetMetricsAdapter() {
-        var config = Config.builder().withMetricsAdapter(MetricsAdapter.DEFAULT).build();
-        var metricsAdapter = config.metricsAdapter();
-
-        assertEquals(MetricsAdapter.DEFAULT, metricsAdapter);
-        assertTrue(config.isMetricsEnabled());
-    }
-
-    @Test
     void shouldSetRoutingTablePurgeDelayMillis() {
         // GIVEN
         var delay = 1000L;
@@ -422,10 +400,8 @@ class ConfigTest {
                     .withoutEncryption()
                     .withTrustStrategy(Config.TrustStrategy.trustCustomCertificateSignedBy(new File("doesntMatter")))
                     .withUserAgent("user-agent")
-                    .withDriverMetrics()
                     .withRoutingTablePurgeDelay(50000, TimeUnit.MILLISECONDS)
                     .withLeakedSessionsLogging()
-                    .withMetricsAdapter(MetricsAdapter.MICROMETER)
                     .withNotificationConfig(NotificationConfig.defaultConfig()
                             .enableMinimumSeverity(NotificationSeverity.WARNING)
                             .disableCategories(
@@ -455,8 +431,6 @@ class ConfigTest {
                     config.trustStrategy().revocationCheckingStrategy(),
                     verify.trustStrategy().revocationCheckingStrategy());
             assertEquals(config.userAgent(), verify.userAgent());
-            assertEquals(config.isMetricsEnabled(), verify.isMetricsEnabled());
-            assertEquals(config.metricsAdapter(), verify.metricsAdapter());
             assertEquals(config.maxTransactionRetryTimeMillis(), verify.maxTransactionRetryTimeMillis());
             assertEquals(config.logLeakedSessions(), verify.logLeakedSessions());
             assertEquals(
@@ -565,5 +539,27 @@ class ConfigTest {
                 .build();
 
         assertEquals(Set.of(NotificationClassification.SECURITY), config.disabledNotificationClassifications());
+    }
+
+    @Test
+    void shouldHaveNoObservationProviderByDefault() {
+        assertTrue(Config.defaultConfig().observationProvider().isEmpty());
+    }
+
+    @Test
+    void shouldSetObservationProvider() {
+        var observationProvider = mock(DriverObservationProvider.class);
+        var config =
+                Config.builder().withObservationProvider(observationProvider).build();
+
+        assertEquals(observationProvider, config.observationProvider().orElse(null));
+    }
+
+    @Test
+    void shouldRejectUnknownObservationProvider() {
+        var observationProvider = mock(ObservationProvider.class);
+
+        assertThrows(
+                IllegalArgumentException.class, () -> Config.builder().withObservationProvider(observationProvider));
     }
 }

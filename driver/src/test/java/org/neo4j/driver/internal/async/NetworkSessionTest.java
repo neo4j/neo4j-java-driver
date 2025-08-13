@@ -85,11 +85,13 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
+import org.neo4j.driver.internal.observation.NoopObservation;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.value.BoltValueFactory;
@@ -106,7 +108,7 @@ class NetworkSessionTest {
         given(connection.close()).willReturn(completedFuture(null));
         given(connection.valueFactory()).willReturn(mock(BoltValueFactory.class));
         connectionProvider = mock(DriverBoltConnectionSource.class);
-        given(connectionProvider.getConnection(any()))
+        given(connectionProvider.getConnection(any(), any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
                     var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
                     parameters.databaseNameListener().accept(parameters.databaseName());
@@ -118,7 +120,8 @@ class NetworkSessionTest {
     @Test
     void shouldFlushOnRunAsync() {
         setupSuccessfulAutocommitRunAndPull(connection);
-        await(session.runAsync(new Query("RETURN 1"), TransactionConfig.empty()));
+        await(session.runAsync(
+                new Query("RETURN 1"), TransactionConfig.empty(), NoopObservation.getInstance(), ResultCursor.class));
 
         verifyAutocommitRunAndPull(connection, "RETURN 1");
     }
@@ -126,7 +129,11 @@ class NetworkSessionTest {
     @Test
     void shouldFlushOnRunRx() {
         setupSuccessfulAutocommitRunAndPull(connection);
-        await(session.runRx(new Query("RETURN 1"), TransactionConfig.empty(), CompletableFuture.completedStage(null)));
+        await(session.runRx(
+                new Query("RETURN 1"),
+                TransactionConfig.empty(),
+                CompletableFuture.completedStage(null),
+                NoopObservation.getInstance()));
 
         verifyAutocommitRunRx(connection, "RETURN 1");
     }
@@ -171,7 +178,7 @@ class NetworkSessionTest {
                                 handler.onComplete();
                             }
                         }));
-        await(beginTransaction(session).closeAsync());
+        await(beginTransaction(session).closeAsync(NoopObservation.getInstance()));
 
         // When
         var tx = beginTransaction(session);
@@ -221,7 +228,7 @@ class NetworkSessionTest {
                                 handler.onComplete();
                             }
                         }));
-        await(beginTransaction(session).closeAsync());
+        await(beginTransaction(session).closeAsync(NoopObservation.getInstance()));
         Mockito.reset(connection);
         setupSuccessfulAutocommitRunAndPull(connection);
         given(connection.valueFactory()).willReturn(mock(BoltValueFactory.class));
@@ -290,7 +297,7 @@ class NetworkSessionTest {
 
         run(session, query);
 
-        verify(connectionProvider).getConnection(any());
+        verify(connectionProvider).getConnection(any(), any());
     }
 
     @Test
@@ -308,7 +315,7 @@ class NetworkSessionTest {
     void resetDoesNothingWhenNoTransactionAndNoConnection() {
         await(session.resetAsync());
 
-        verify(connectionProvider, never()).getConnection(any());
+        verify(connectionProvider, never()).getConnection(any(), any());
     }
 
     @Test
@@ -317,7 +324,7 @@ class NetworkSessionTest {
 
         close(session);
 
-        verify(connectionProvider, never()).getConnection(any());
+        verify(connectionProvider, never()).getConnection(any(), any());
     }
 
     @Test
@@ -326,7 +333,7 @@ class NetworkSessionTest {
         var tx = beginTransaction(session);
 
         assertNotNull(tx);
-        verify(connectionProvider).getConnection(any());
+        verify(connectionProvider).getConnection(any(), any());
     }
 
     @Test
@@ -365,7 +372,7 @@ class NetworkSessionTest {
         var bookmarks = session.lastBookmarks();
         assertTrue(bookmarks.isEmpty());
 
-        await(tx.commitAsync());
+        await(tx.commitAsync(NoopObservation.getInstance()));
         assertEquals(Collections.singleton(bookmarkAfterCommit), session.lastBookmarks());
     }
 
@@ -412,13 +419,13 @@ class NetworkSessionTest {
                             }
                         }));
         var tx = beginTransaction(session);
-        verify(connectionProvider).getConnection(any());
+        verify(connectionProvider).getConnection(any(), any());
         verifyBegin(connection);
         var query = "RETURN 42";
-        await(tx.runAsync(new Query(query)));
+        await(tx.runAsync(new Query(query), NoopObservation.getInstance(), ResultCursor.class));
 
         verifyRunAndPull(connection, query);
-        await(tx.closeAsync());
+        await(tx.closeAsync(NoopObservation.getInstance()));
         verify(connection).close();
     }
 
@@ -435,7 +442,8 @@ class NetworkSessionTest {
                 .writeAndFlush(
                         any(),
                         ArgumentMatchers.<List<Message>>argThat(
-                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage));
+                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage),
+                        any());
     }
 
     @Test
@@ -477,13 +485,13 @@ class NetworkSessionTest {
                         }));
 
         var tx1 = beginTransaction(session);
-        await(tx1.commitAsync());
+        await(tx1.commitAsync(NoopObservation.getInstance()));
         assertEquals(Collections.singleton(bookmark1), session.lastBookmarks());
 
         var tx2 = beginTransaction(session);
         verifyBegin(connection, times(2));
         verifyCommitTx(connection);
-        await(tx2.commitAsync());
+        await(tx2.commitAsync(NoopObservation.getInstance()));
 
         assertEquals(Collections.singleton(bookmark2), session.lastBookmarks());
     }
@@ -504,7 +512,7 @@ class NetworkSessionTest {
         var session2 = newSession(connectionProvider, mode);
         beginTransaction(session2);
         var argument = ArgumentCaptor.forClass(RoutedBoltConnectionParameters.class);
-        verify(connectionProvider).getConnection(argument.capture());
+        verify(connectionProvider).getConnection(argument.capture(), any());
         assertEquals(
                 switch (mode) {
                     case READ -> org.neo4j.bolt.connection.AccessMode.READ;
@@ -531,7 +539,7 @@ class NetworkSessionTest {
     void shouldDoNothingWhenClosingWithoutAcquiredConnection() {
         var error = new RuntimeException("Hi");
         Mockito.reset(connectionProvider);
-        given(connectionProvider.getConnection(any())).willReturn(failedFuture(error));
+        given(connectionProvider.getConnection(any(), any())).willReturn(failedFuture(error));
 
         var e = assertThrows(Exception.class, () -> run(session, "RETURN 1"));
         assertEquals(error, e);
@@ -543,7 +551,7 @@ class NetworkSessionTest {
     void shouldRunAfterRunFailure() {
         var error = new RuntimeException("Hi");
         Mockito.reset(connectionProvider);
-        given(connectionProvider.getConnection(any()))
+        given(connectionProvider.getConnection(any(), any()))
                 .willReturn(failedFuture(error))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
                     var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
@@ -560,7 +568,7 @@ class NetworkSessionTest {
 
         run(session, query);
 
-        verify(connectionProvider, times(2)).getConnection(any());
+        verify(connectionProvider, times(2)).getConnection(any(), any());
         verifyAutocommitRunAndPull(connection, query);
     }
 
@@ -571,14 +579,15 @@ class NetworkSessionTest {
         given(connection1.writeAndFlush(
                         any(),
                         ArgumentMatchers.<List<Message>>argThat(
-                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage)))
+                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage),
+                        any()))
                 .willReturn(CompletableFuture.failedStage(error));
         given(connection1.close()).willReturn(CompletableFuture.completedStage(null));
         var connection2 = connectionMock(new BoltProtocolVersion(5, 0));
         given(connection2.close()).willReturn(CompletableFuture.completedStage(null));
 
         Mockito.reset(connectionProvider);
-        given(connectionProvider.getConnection(any()))
+        given(connectionProvider.getConnection(any(), any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
                     var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
                     parameters.databaseNameListener().accept(parameters.databaseName());
@@ -600,7 +609,7 @@ class NetworkSessionTest {
 
         run(session, query);
 
-        verify(connectionProvider, times(2)).getConnection(any());
+        verify(connectionProvider, times(2)).getConnection(any(), any());
         verifyBegin(connection1);
         verifyAutocommitRunAndPull(connection2, "RETURN 2");
     }
@@ -612,7 +621,8 @@ class NetworkSessionTest {
         given(connection1.writeAndFlush(
                         any(),
                         ArgumentMatchers.<List<Message>>argThat(
-                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage)))
+                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage),
+                        any()))
                 .willReturn(CompletableFuture.failedStage(error));
         given(connection1.close()).willReturn(CompletableFuture.completedStage(null));
         var connection2 = connectionMock(new BoltProtocolVersion(5, 0));
@@ -630,7 +640,7 @@ class NetworkSessionTest {
         }));
 
         Mockito.reset(connectionProvider);
-        given(connectionProvider.getConnection(any()))
+        given(connectionProvider.getConnection(any(), any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
                     var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
                     parameters.databaseNameListener().accept(parameters.databaseName());
@@ -650,7 +660,7 @@ class NetworkSessionTest {
 
         beginTransaction(session);
 
-        verify(connectionProvider, times(2)).getConnection(any());
+        verify(connectionProvider, times(2)).getConnection(any(), any());
         verifyBegin(connection1);
         verifyBegin(connection2);
     }
@@ -659,7 +669,7 @@ class NetworkSessionTest {
     void shouldBeginTxAfterRunFailureToAcquireConnection() {
         var error = new RuntimeException("Hi");
         Mockito.reset(connectionProvider);
-        given(connectionProvider.getConnection(any()))
+        given(connectionProvider.getConnection(any(), any()))
                 .willReturn(failedFuture(error))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
                     var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
@@ -673,13 +683,14 @@ class NetworkSessionTest {
 
         beginTransaction(session);
 
-        verify(connectionProvider, times(2)).getConnection(any());
+        verify(connectionProvider, times(2)).getConnection(any(), any());
         then(connection)
                 .should()
                 .writeAndFlush(
                         any(),
                         ArgumentMatchers.<List<Message>>argThat(
-                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage));
+                                messages -> messages.size() == 1 && messages.get(0) instanceof BeginMessage),
+                        any());
     }
 
     @Test
@@ -714,11 +725,11 @@ class NetworkSessionTest {
         var tx = beginTransaction(session);
 
         assertTrue(tx.isOpen());
-        then(connection).should(never()).writeAndFlush(any(), any(ResetMessage.class));
+        then(connection).should(never()).writeAndFlush(any(), any(ResetMessage.class), any());
 
         await(session.resetAsync());
 
-        then(connection).should().writeAndFlush(any(), eq(List.of(Messages.reset())));
+        then(connection).should().writeAndFlush(any(), eq(List.of(Messages.reset())), any());
     }
 
     @ParameterizedTest
@@ -756,15 +767,19 @@ class NetworkSessionTest {
         if (telemetryDisabled) {
             then(connection)
                     .should(never())
-                    .writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(messages -> messages.stream()
-                            .anyMatch(msg -> msg instanceof TelemetryMessage)));
+                    .writeAndFlush(
+                            any(),
+                            ArgumentMatchers.<List<Message>>argThat(
+                                    messages -> messages.stream().anyMatch(msg -> msg instanceof TelemetryMessage)),
+                            any());
         } else {
             then(connection)
                     .should()
                     .writeAndFlush(
                             any(),
                             ArgumentMatchers.<List<Message>>argThat(messages ->
-                                    messages.contains(Messages.telemetry(TelemetryApi.UNMANAGED_TRANSACTION))));
+                                    messages.contains(Messages.telemetry(TelemetryApi.UNMANAGED_TRANSACTION))),
+                            any());
         }
     }
 
@@ -806,15 +821,19 @@ class NetworkSessionTest {
         if (telemetryDisabled) {
             then(connection)
                     .should(never())
-                    .writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(messages -> messages.stream()
-                            .anyMatch(msg -> msg instanceof TelemetryMessage)));
+                    .writeAndFlush(
+                            any(),
+                            ArgumentMatchers.<List<Message>>argThat(
+                                    messages -> messages.stream().anyMatch(msg -> msg instanceof TelemetryMessage)),
+                            any());
         } else {
             then(connection)
                     .should()
                     .writeAndFlush(
                             any(),
                             ArgumentMatchers.<List<Message>>argThat(messages ->
-                                    messages.contains(Messages.telemetry(TelemetryApi.AUTO_COMMIT_TRANSACTION))));
+                                    messages.contains(Messages.telemetry(TelemetryApi.AUTO_COMMIT_TRANSACTION))),
+                            any());
         }
     }
 
@@ -822,7 +841,8 @@ class NetworkSessionTest {
         given(connection.writeAndFlush(
                         any(),
                         ArgumentMatchers.<List<Message>>argThat(
-                                argument -> argument.size() == 1 && argument.get(0) instanceof BeginMessage)))
+                                argument -> argument.size() == 1 && argument.get(0) instanceof BeginMessage),
+                        any()))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
                     var handler = (DriverResponseHandler) invocation.getArguments()[0];
                     handler.onBeginSummary(mock(BeginSummary.class));
@@ -832,15 +852,17 @@ class NetworkSessionTest {
     }
 
     private static void run(NetworkSession session, String query) {
-        await(session.runAsync(new Query(query), TransactionConfig.empty()));
+        await(session.runAsync(
+                new Query(query), TransactionConfig.empty(), NoopObservation.getInstance(), ResultCursor.class));
     }
 
     private static UnmanagedTransaction beginTransaction(NetworkSession session) {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
-        return await(session.beginTransactionAsync(TransactionConfig.empty(), apiTelemetryWork));
+        return await(session.beginTransactionAsync(
+                TransactionConfig.empty(), apiTelemetryWork, NoopObservation.getInstance()));
     }
 
     private static void close(NetworkSession session) {
-        await(session.closeAsync());
+        await(session.closeAsync(NoopObservation.getInstance()));
     }
 }

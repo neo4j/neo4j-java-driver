@@ -17,8 +17,10 @@
 package org.neo4j.driver.internal;
 
 import static java.util.Collections.emptyMap;
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.observe;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.AccessMode;
@@ -32,14 +34,18 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.Futures;
 
 public class InternalSession extends AbstractQueryRunner implements Session {
     private final NetworkSession session;
+    private final DriverObservationProvider observationProvider;
 
-    public InternalSession(NetworkSession session) {
+    public InternalSession(NetworkSession session, DriverObservationProvider observationProvider) {
         this.session = session;
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     @Override
@@ -59,13 +65,16 @@ public class InternalSession extends AbstractQueryRunner implements Session {
 
     @Override
     public Result run(Query query, TransactionConfig config) {
-        var cursor = Futures.blockingGet(
-                session.runAsync(query, config),
-                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while running query in session"));
+        var runObservation = observationProvider.sessionRun(Session.class, query.text(), query.parameters());
+        return observe(runObservation, () -> {
+            var cursor = Futures.blockingGet(
+                    session.runAsync(query, config, runObservation, Result.class),
+                    () -> terminateConnectionOnThreadInterrupt("Thread interrupted while running query in session"));
 
-        // query executed, it is safe to obtain a connection in a blocking way
-        var connection = Futures.getNow(session.connectionAsync());
-        return new InternalResult(connection, cursor);
+            // query executed, it is safe to obtain a connection in a blocking way
+            var connection = Futures.getNow(session.connectionAsync());
+            return new InternalResult(connection, cursor);
+        });
     }
 
     @Override
@@ -75,9 +84,12 @@ public class InternalSession extends AbstractQueryRunner implements Session {
 
     @Override
     public void close() {
-        Futures.blockingGet(
-                session.closeAsync(),
-                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while closing the session"));
+        var closeObservation = observationProvider.sessionClose(Session.class);
+        observe(
+                closeObservation,
+                () -> Futures.blockingGet(
+                        session.closeAsync(closeObservation),
+                        () -> terminateConnectionOnThreadInterrupt("Thread interrupted while closing the session")));
     }
 
     @Override
@@ -91,10 +103,14 @@ public class InternalSession extends AbstractQueryRunner implements Session {
     }
 
     public Transaction beginTransaction(TransactionConfig config, String txType) {
-        var tx = Futures.blockingGet(
-                session.beginTransactionAsync(config, txType, new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION)),
-                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while starting a transaction"));
-        return new InternalTransaction(tx);
+        var beginTransaction = observationProvider.beginTransaction(Transaction.class);
+        return observe(beginTransaction, () -> {
+            var tx = Futures.blockingGet(
+                    session.beginTransactionAsync(
+                            config, txType, new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION), beginTransaction),
+                    () -> terminateConnectionOnThreadInterrupt("Thread interrupted while starting a transaction"));
+            return new InternalTransaction(tx, observationProvider, null);
+        });
     }
 
     @Override
@@ -140,8 +156,9 @@ public class InternalSession extends AbstractQueryRunner implements Session {
         // it is unsafe to execute retries in the event loop threads because this can cause a deadlock
         // event loop thread will bock and wait for itself to read some data
         var apiTelemetryWork = new ApiTelemetryWork(telemetryApi);
-        return session.retryLogic().retry(() -> {
-            try (var tx = beginTransaction(mode, config, apiTelemetryWork, flush)) {
+        var executeObservation = observationProvider.sessionExecute(Session.class, mode);
+        return observe(executeObservation, () -> session.retryLogic().retry(() -> {
+            try (var tx = beginTransaction(mode, config, apiTelemetryWork, flush, executeObservation)) {
 
                 var result = work.execute(new DelegatingTransactionContext(tx));
                 if (result instanceof Result) {
@@ -162,15 +179,19 @@ public class InternalSession extends AbstractQueryRunner implements Session {
                 }
                 return result;
             }
-        });
+        }));
     }
 
-    private Transaction beginTransaction(
-            AccessMode mode, TransactionConfig config, ApiTelemetryWork apiTelemetryWork, boolean flush) {
+    private InternalTransaction beginTransaction(
+            AccessMode mode,
+            TransactionConfig config,
+            ApiTelemetryWork apiTelemetryWork,
+            boolean flush,
+            Observation parentObservation) {
         var tx = Futures.blockingGet(
-                session.beginTransactionAsync(mode, config, null, apiTelemetryWork, flush),
+                session.beginTransactionAsync(mode, config, null, apiTelemetryWork, flush, parentObservation),
                 () -> terminateConnectionOnThreadInterrupt("Thread interrupted while starting a transaction"));
-        return new InternalTransaction(tx);
+        return new InternalTransaction(tx, observationProvider, parentObservation);
     }
 
     private void terminateConnectionOnThreadInterrupt(String reason) {

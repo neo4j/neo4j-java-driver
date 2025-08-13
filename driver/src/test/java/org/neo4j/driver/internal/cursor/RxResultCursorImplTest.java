@@ -41,6 +41,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.DatabaseBookmark;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
+import org.neo4j.driver.internal.observation.NoopObservation;
 
 class RxResultCursorImplTest {
     @Mock
@@ -77,11 +78,13 @@ class RxResultCursorImplTest {
         BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
 
         // when
-        cursor.installRecordConsumer(recordConsumer);
+        cursor.installRecordConsumer(recordConsumer, NoopObservation.getInstance());
 
         // then
         then(recordConsumer).should().accept(null, runError);
-        assertNotNull(cursor.summaryAsync().toCompletableFuture().join());
+        assertNotNull(cursor.summaryAsync(NoopObservation.getInstance())
+                .toCompletableFuture()
+                .join());
     }
 
     @ParameterizedTest
@@ -97,7 +100,7 @@ class RxResultCursorImplTest {
         }
 
         // when
-        var summary = cursor.summaryAsync().toCompletableFuture();
+        var summary = cursor.summaryAsync(NoopObservation.getInstance()).toCompletableFuture();
 
         // then
         assertEquals(

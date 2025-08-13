@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,15 +28,13 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
-import java.time.Clock;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.QueryConfig;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 
 class InternalDriverTest {
@@ -87,35 +84,9 @@ class InternalDriverTest {
     }
 
     @Test
-    @SuppressWarnings("resource")
-    void shouldThrowClientExceptionIfMetricsNotEnabled() {
-        // Given
-        var driver = newDriver(false);
-
-        // When
-        var error = assertThrows(ClientException.class, driver::metrics);
-
-        // Then
-        assertTrue(error.getMessage().contains("Driver metrics are not enabled."));
-    }
-
-    @Test
-    @SuppressWarnings("resource")
-    void shouldReturnMetricsIfMetricsEnabled() {
-        // Given
-        var driver = newDriver(true);
-
-        // When
-        var metrics = driver.metrics();
-
-        // Then we shall have no problem to get the metrics
-        assertNotNull(metrics);
-    }
-
-    @Test
     void shouldCreateExecutableQuery() {
         // Given
-        var driver = newDriver(true);
+        var driver = newDriver();
         var query = "string";
 
         // When
@@ -133,9 +104,9 @@ class InternalDriverTest {
         return new InternalDriver(
                 BoltSecurityPlanManager.insecure(),
                 sessionFactory,
-                DevNullMetricsProvider.INSTANCE,
                 true,
-                DEV_NULL_LOGGING);
+                DEV_NULL_LOGGING,
+                NoopObservationProvider.getInstance());
     }
 
     private static SessionFactory sessionFactoryMock() {
@@ -144,15 +115,15 @@ class InternalDriverTest {
         return sessionFactory;
     }
 
-    private static InternalDriver newDriver(boolean isMetricsEnabled) {
+    private static InternalDriver newDriver() {
         var sessionFactory = sessionFactoryMock();
         var config = Config.defaultConfig();
-        if (isMetricsEnabled) {
-            config = Config.builder().withDriverMetrics().build();
-        }
 
-        var metricsProvider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
         return new InternalDriver(
-                BoltSecurityPlanManager.insecure(), sessionFactory, metricsProvider, true, DEV_NULL_LOGGING);
+                BoltSecurityPlanManager.insecure(),
+                sessionFactory,
+                true,
+                DEV_NULL_LOGGING,
+                NoopObservationProvider.getInstance());
     }
 }

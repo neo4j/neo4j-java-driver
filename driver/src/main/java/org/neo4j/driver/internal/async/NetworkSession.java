@@ -80,6 +80,9 @@ import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCacheKey;
 import org.neo4j.driver.internal.logging.PrefixedLogger;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.NoopObservation;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
@@ -112,6 +115,7 @@ public class NetworkSession {
     private final AuthTokenManager authTokenManager;
     private final HomeDatabaseCache homeDatabaseCache;
     private final HomeDatabaseCacheKey homeDatabaseKey;
+    private final DriverObservationProvider observationProvider;
 
     public NetworkSession(
             DriverBoltConnectionSource boltConnectionProvider,
@@ -127,7 +131,8 @@ public class NetworkSession {
             AuthToken overrideAuthToken,
             boolean telemetryDisabled,
             AuthTokenManager authTokenManager,
-            HomeDatabaseCache homeDatabaseCache) {
+            HomeDatabaseCache homeDatabaseCache,
+            DriverObservationProvider observationProvider) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         this.boltConnectionProvider = Objects.requireNonNull(boltConnectionProvider);
@@ -149,12 +154,14 @@ public class NetworkSession {
         this.authTokenManager = authTokenManager;
         this.homeDatabaseCache = Objects.requireNonNull(homeDatabaseCache);
         this.homeDatabaseKey = HomeDatabaseCacheKey.of(overrideAuthToken, impersonatedUser);
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
-    public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config) {
+    public CompletionStage<ResultCursor> runAsync(
+            Query query, TransactionConfig config, Observation parentObservation, Class<?> resultType) {
         ensureSessionIsOpen();
         var disposable = ensureNoOpenTxBeforeRunningQuery()
-                .thenCompose(ignore -> acquireConnection(mode))
+                .thenCompose(ignore -> acquireConnection(mode, parentObservation))
                 .thenCompose(connection -> {
                     var parameters = query.parameters().asMap(Values::value);
                     var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.AUTO_COMMIT_TRANSACTION);
@@ -167,7 +174,9 @@ public class NetworkSession {
                             true,
                             null,
                             this::handleDatabaseName,
-                            null);
+                            null,
+                            observationProvider,
+                            resultType);
                     var cursorStage = CompletableFuture.completedStage(null)
                             .thenCompose(ignored -> {
                                 var messages = new ArrayList<Message>(3);
@@ -176,7 +185,7 @@ public class NetworkSession {
                                         .ifPresent(messages::add);
                                 messages.add(newRunMessage(connection, query, parameters, config));
                                 messages.add(Messages.pull(-1, fetchSize));
-                                return connection.writeAndFlush(resultCursor, messages);
+                                return connection.writeAndFlush(resultCursor, messages, parentObservation);
                             })
                             .thenCompose(ignored -> resultCursor.resultCursor())
                             .handle((resultCursorImpl, throwable) -> {
@@ -205,10 +214,13 @@ public class NetworkSession {
     }
 
     public CompletionStage<RxResultCursor> runRx(
-            Query query, TransactionConfig config, CompletionStage<RxResultCursor> cursorPublishStage) {
+            Query query,
+            TransactionConfig config,
+            CompletionStage<RxResultCursor> cursorPublishStage,
+            Observation parentObservation) {
         ensureSessionIsOpen();
         var newResultCursorStage = ensureNoOpenTxBeforeRunningQuery()
-                .thenCompose(ignore -> acquireConnection(mode))
+                .thenCompose(ignore -> acquireConnection(mode, parentObservation))
                 .thenCompose(connection -> {
                     var parameters = query.parameters().asMap(Values::value);
                     var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.AUTO_COMMIT_TRANSACTION);
@@ -223,7 +235,7 @@ public class NetworkSession {
                                         .getTelemetryMessageIfEnabled(connection)
                                         .ifPresent(messages::add);
                                 messages.add(newRunMessage(connection, query, parameters, config));
-                                return connection.writeAndFlush(responseHandler, messages);
+                                return connection.writeAndFlush(responseHandler, messages, parentObservation);
                             })
                             .thenCompose(ignored -> responseHandler.cursorFuture)
                             .handle((resultCursor, throwable) -> {
@@ -255,18 +267,21 @@ public class NetworkSession {
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
-            TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
-        return beginTransactionAsync(mode, config, null, apiTelemetryWork, true);
+            TransactionConfig config, ApiTelemetryWork apiTelemetryWork, Observation parentObservation) {
+        return beginTransactionAsync(mode, config, null, apiTelemetryWork, true, parentObservation);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
-            TransactionConfig config, String txType, ApiTelemetryWork apiTelemetryWork) {
-        return this.beginTransactionAsync(mode, config, txType, apiTelemetryWork, true);
+            TransactionConfig config, String txType, ApiTelemetryWork apiTelemetryWork, Observation parentObservation) {
+        return this.beginTransactionAsync(mode, config, txType, apiTelemetryWork, true, parentObservation);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
-            org.neo4j.driver.AccessMode mode, TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
-        return beginTransactionAsync(mode, config, null, apiTelemetryWork, true);
+            org.neo4j.driver.AccessMode mode,
+            TransactionConfig config,
+            ApiTelemetryWork apiTelemetryWork,
+            Observation parentObservation) {
+        return beginTransactionAsync(mode, config, null, apiTelemetryWork, true, parentObservation);
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
@@ -274,14 +289,15 @@ public class NetworkSession {
             TransactionConfig config,
             String txType,
             ApiTelemetryWork apiTelemetryWork,
-            boolean flush) {
+            boolean flush,
+            Observation parentObservation) {
         ensureSessionIsOpen();
 
         apiTelemetryWork.setEnabled(!telemetryDisabled);
 
         // create a chain that acquires connection and starts a transaction
         var newTransactionStage = ensureNoOpenTxBeforeStartingTx()
-                .thenCompose(ignore -> acquireConnection(mode))
+                .thenCompose(ignore -> acquireConnection(mode, parentObservation))
                 .thenCompose(connection -> {
                     var tx = new UnmanagedTransaction(
                             connection,
@@ -293,8 +309,9 @@ public class NetworkSession {
                             notificationConfig,
                             apiTelemetryWork,
                             this::handleDatabaseName,
-                            logging);
-                    return tx.beginAsync(determineBookmarks(true), config, txType, flush);
+                            logging,
+                            observationProvider);
+                    return tx.beginAsync(determineBookmarks(true), config, txType, flush, parentObservation);
                 });
 
         // update the reference to the only known transaction
@@ -338,7 +355,8 @@ public class NetworkSession {
                                                 future.complete(null);
                                             }
                                         },
-                                        Messages.reset())
+                                        Messages.reset(),
+                                        NoopObservation.getInstance())
                                 .thenCompose(ignored -> future);
                     } else {
                         return completedWithNull();
@@ -373,18 +391,18 @@ public class NetworkSession {
         return open.get();
     }
 
-    public CompletionStage<Void> closeAsync() {
+    public CompletionStage<Void> closeAsync(Observation parentObservation) {
         if (open.compareAndSet(true, false)) {
             return resultCursorStage
                     .thenCompose(cursor -> {
                         if (cursor != null) {
                             // there exists a cursor with potentially unconsumed error, try to extract and propagate it
-                            return cursor.discardAllFailureAsync();
+                            return cursor.discardAllFailureAsync(parentObservation);
                         }
                         // no result cursor exists so no error exists
                         return completedWithNull();
                     })
-                    .thenCompose(cursorError -> closeTransactionAndReleaseConnection()
+                    .thenCompose(cursorError -> closeTransactionAndReleaseConnection(parentObservation)
                             .thenApply(txCloseError -> {
                                 // now we have cursor error, active transaction has been closed and connection has been
                                 // released
@@ -412,11 +430,12 @@ public class NetworkSession {
         homeDatabaseCache.put(homeDatabaseKey, name);
     }
 
-    private CompletionStage<BoltConnectionWithCloseTracking> acquireConnection(AccessMode mode) {
+    private CompletionStage<BoltConnectionWithCloseTracking> acquireConnection(
+            AccessMode mode, Observation parentObservation) {
         var overrideAuthToken = connectionContext.overrideAuthToken();
         var authTokenManager = overrideAuthToken != null ? NoopAuthTokenManager.INSTANCE : this.authTokenManager;
-        var newConnectionStage = pulledResultCursorStage(connectionStage)
-                .thenCompose(ignored -> acquireAdaptedConnection(mode))
+        var newConnectionStage = pulledResultCursorStage(connectionStage, parentObservation)
+                .thenCompose(ignored -> acquireAdaptedConnection(mode, parentObservation))
                 .thenApply(connection ->
                         (DriverBoltConnection) new BoltConnectionWithAuthTokenManager(connection, authTokenManager))
                 .thenApply(BoltConnectionWithCloseTracking::new)
@@ -458,7 +477,8 @@ public class NetworkSession {
         }
     }
 
-    private CompletionStage<DriverBoltConnection> acquireAdaptedConnection(AccessMode mode) {
+    private CompletionStage<DriverBoltConnection> acquireAdaptedConnection(
+            AccessMode mode, Observation parentObservation) {
         var databaseName = connectionContext.databaseNameFuture().getNow(null);
         var impersonatedUser = connectionContext.impersonatedUser();
         var minVersion = minBoltVersion(connectionContext);
@@ -491,18 +511,18 @@ public class NetworkSession {
                 .withBookmarks(bookmarks)
                 .withImpersonatedUser(impersonatedUser)
                 .build();
-        return boltConnectionProvider.getConnection(parameters);
+        return boltConnectionProvider.getConnection(parameters, parentObservation);
     }
 
     private CompletionStage<Void> pulledResultCursorStage(
-            CompletionStage<BoltConnectionWithCloseTracking> connectionStage) {
+            CompletionStage<BoltConnectionWithCloseTracking> connectionStage, Observation parentObservation) {
         return resultCursorStage
                 .thenCompose(cursor -> {
                     if (cursor == null) {
                         return completedWithNull();
                     }
                     // make sure previous result is fully consumed and connection is released back to the pool
-                    return cursor.pullAllFailureAsync();
+                    return cursor.pullAllFailureAsync(parentObservation);
                 })
                 .thenCompose(error -> {
                     if (error == null) {
@@ -520,12 +540,12 @@ public class NetworkSession {
                 });
     }
 
-    private CompletionStage<Throwable> closeTransactionAndReleaseConnection() {
+    private CompletionStage<Throwable> closeTransactionAndReleaseConnection(Observation parentObservation) {
         return existingTransactionOrNull()
                 .thenCompose(tx -> {
                     if (tx != null) {
                         // there exists an open transaction, let's close it and propagate the error, if any
-                        return tx.closeAsync()
+                        return tx.closeAsync(parentObservation)
                                 .thenApply(ignore -> (Throwable) null)
                                 .exceptionally(Function.identity());
                     }

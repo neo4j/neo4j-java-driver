@@ -19,6 +19,7 @@ package org.neo4j.driver.internal;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,7 +33,6 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.ExecutableQuery;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.Metrics;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Session;
@@ -42,8 +42,7 @@ import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
-import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -57,6 +56,7 @@ public class InternalDriver implements Driver {
             BookmarkManagers.defaultManager(BookmarkManagerConfig.builder().build());
     private final BoltSecurityPlanManager securityPlanManager;
     private final SessionFactory sessionFactory;
+    private final DriverObservationProvider observationProvider;
 
     @SuppressWarnings("deprecation")
     private final Logger log;
@@ -64,19 +64,18 @@ public class InternalDriver implements Driver {
     private final boolean telemetryDisabled;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private final MetricsProvider metricsProvider;
 
     InternalDriver(
             BoltSecurityPlanManager securityPlanManager,
             SessionFactory sessionFactory,
-            MetricsProvider metricsProvider,
             boolean telemetryDisabled,
-            @SuppressWarnings("deprecation") Logging logging) {
+            @SuppressWarnings("deprecation") Logging logging,
+            DriverObservationProvider observationProvider) {
         this.securityPlanManager = securityPlanManager;
         this.sessionFactory = sessionFactory;
-        this.metricsProvider = metricsProvider;
         this.log = logging.getLog(getClass());
         this.telemetryDisabled = telemetryDisabled;
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     @Override
@@ -97,30 +96,20 @@ public class InternalDriver implements Driver {
         requireNonNull(sessionClass, "sessionConfig must not be null");
         T session;
         if (Session.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalSession(newSession(sessionConfig, sessionAuthToken));
+            session = (T) new InternalSession(newSession(sessionConfig, sessionAuthToken), observationProvider);
         } else if (AsyncSession.class.isAssignableFrom(sessionClass)) {
-            session = (T) new InternalAsyncSession(newSession(sessionConfig, sessionAuthToken));
+            session = (T) new InternalAsyncSession(newSession(sessionConfig, sessionAuthToken), observationProvider);
         } else if (org.neo4j.driver.reactive.ReactiveSession.class.isAssignableFrom(sessionClass)) {
             session = (T) new org.neo4j.driver.internal.reactive.InternalReactiveSession(
-                    newSession(sessionConfig, sessionAuthToken));
+                    newSession(sessionConfig, sessionAuthToken), observationProvider);
         } else if (org.neo4j.driver.reactivestreams.ReactiveSession.class.isAssignableFrom(sessionClass)) {
             session = (T) new org.neo4j.driver.internal.reactivestreams.InternalReactiveSession(
-                    newSession(sessionConfig, sessionAuthToken));
+                    newSession(sessionConfig, sessionAuthToken), observationProvider);
         } else {
             throw new IllegalArgumentException(
                     String.format("Unsupported session type '%s'", sessionClass.getCanonicalName()));
         }
         return session;
-    }
-
-    @Override
-    public Metrics metrics() {
-        return metricsProvider.metrics();
-    }
-
-    @Override
-    public boolean isMetricsEnabled() {
-        return metricsProvider != DevNullMetricsProvider.INSTANCE;
     }
 
     @Override

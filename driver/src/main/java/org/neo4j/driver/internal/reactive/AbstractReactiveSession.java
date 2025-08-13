@@ -16,6 +16,7 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.observeStreams;
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
 import static org.neo4j.driver.internal.reactive.RxUtils.createSingleItemPublisher;
 
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
@@ -36,6 +38,8 @@ import org.neo4j.driver.internal.GqlStatusError;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
@@ -56,19 +60,20 @@ public abstract class AbstractReactiveSession<S> {
 
     protected abstract S createTransaction(UnmanagedTransaction unmanagedTransaction);
 
-    protected abstract Publisher<Void> closeTransaction(S transaction, boolean commit);
+    protected abstract Publisher<Void> closeTransaction(S transaction, boolean commit, Observation parentObservation);
 
-    Publisher<S> doBeginTransaction(TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
-        return doBeginTransaction(config, null, apiTelemetryWork);
+    Publisher<S> doBeginTransaction(
+            TransactionConfig config, ApiTelemetryWork apiTelemetryWork, Observation parentObservation) {
+        return doBeginTransaction(config, null, apiTelemetryWork, parentObservation);
     }
 
     @SuppressWarnings("DuplicatedCode")
     protected Publisher<S> doBeginTransaction(
-            TransactionConfig config, String txType, ApiTelemetryWork apiTelemetryWork) {
+            TransactionConfig config, String txType, ApiTelemetryWork apiTelemetryWork, Observation parentObservation) {
         return createSingleItemPublisher(
                 () -> {
                     var txFuture = new CompletableFuture<S>();
-                    session.beginTransactionAsync(config, txType, apiTelemetryWork)
+                    session.beginTransactionAsync(config, txType, apiTelemetryWork, parentObservation)
                             .whenComplete((tx, completionError) -> {
                                 if (tx != null) {
                                     txFuture.complete(createTransaction(tx));
@@ -80,16 +85,20 @@ public abstract class AbstractReactiveSession<S> {
                 },
                 () -> new IllegalStateException(
                         "Unexpected condition, begin transaction call has completed successfully with transaction being null"),
-                tx -> Mono.fromDirect(closeTransaction(tx, false)).subscribe());
+                tx -> Mono.fromDirect(closeTransaction(tx, false, parentObservation))
+                        .subscribe());
     }
 
     @SuppressWarnings("DuplicatedCode")
     private Publisher<S> beginTransaction(
-            AccessMode mode, TransactionConfig config, ApiTelemetryWork apiTelemetryWork) {
+            AccessMode mode,
+            TransactionConfig config,
+            ApiTelemetryWork apiTelemetryWork,
+            Observation parentObservation) {
         return createSingleItemPublisher(
                 () -> {
                     var txFuture = new CompletableFuture<S>();
-                    session.beginTransactionAsync(mode, config, apiTelemetryWork)
+                    session.beginTransactionAsync(mode, config, apiTelemetryWork, parentObservation)
                             .whenComplete((tx, completionError) -> {
                                 if (tx != null) {
                                     txFuture.complete(createTransaction(tx));
@@ -101,11 +110,17 @@ public abstract class AbstractReactiveSession<S> {
                 },
                 () -> new IllegalStateException(
                         "Unexpected condition, begin transaction call has completed successfully with transaction being null"),
-                tx -> Mono.fromDirect(closeTransaction(tx, false)).subscribe());
+                tx -> Mono.fromDirect(closeTransaction(tx, false, parentObservation))
+                        .subscribe());
     }
 
     protected <T> Publisher<T> runTransaction(
-            AccessMode mode, Function<S, ? extends Publisher<T>> work, TransactionConfig config) {
+            AccessMode mode,
+            Function<S, ? extends Publisher<T>> work,
+            TransactionConfig config,
+            Class<? extends BaseSession> sessionType,
+            DriverObservationProvider observationProvider) {
+        var executeObservation = observationProvider.sessionExecute(sessionType, mode);
         work = work.andThen(publisher -> Flux.from(publisher).handle((value, sink) -> {
             if (value instanceof ReactiveResult) {
                 var message = String.format(
@@ -136,13 +151,15 @@ public abstract class AbstractReactiveSession<S> {
         }));
 
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.MANAGED_TRANSACTION);
+
         var repeatableWork = Flux.usingWhen(
-                beginTransaction(mode, config, apiTelemetryWork),
-                work,
-                tx -> closeTransaction(tx, true),
-                (tx, error) -> closeTransaction(tx, false),
-                (tx) -> closeTransaction(tx, false));
-        return session.retryLogic().retryRx(repeatableWork);
+                        beginTransaction(mode, config, apiTelemetryWork, executeObservation),
+                        work,
+                        tx -> closeTransaction(tx, true, executeObservation),
+                        (tx, error) -> closeTransaction(tx, false, executeObservation),
+                        (tx) -> closeTransaction(tx, false, executeObservation))
+                .contextWrite(executeObservation::writeReactiveContext);
+        return observeStreams(executeObservation, session.retryLogic().retryRx(repeatableWork));
     }
 
     private <T> void releaseConnectionBeforeReturning(CompletableFuture<T> returnFuture, Throwable completionError) {
@@ -166,12 +183,16 @@ public abstract class AbstractReactiveSession<S> {
         return session.lastBookmarks();
     }
 
-    protected <T> Publisher<T> run(Query query, TransactionConfig config, Function<RxResultCursor, T> cursorToResult) {
+    protected <T> Publisher<T> run(
+            Query query,
+            TransactionConfig config,
+            Function<RxResultCursor, T> cursorToResult,
+            Observation parentObservation) {
         var cursorPublishFuture = new CompletableFuture<RxResultCursor>();
         var cursorReference = new AtomicReference<RxResultCursor>();
 
         return createSingleItemPublisher(
-                        () -> runAsStage(query, config, cursorPublishFuture)
+                        () -> runAsStage(query, config, cursorPublishFuture, parentObservation)
                                 .thenApply(cursor -> {
                                     cursorReference.set(cursor);
                                     return cursor;
@@ -195,10 +216,13 @@ public abstract class AbstractReactiveSession<S> {
     }
 
     private CompletionStage<RxResultCursor> runAsStage(
-            Query query, TransactionConfig config, CompletionStage<RxResultCursor> finalStage) {
+            Query query,
+            TransactionConfig config,
+            CompletionStage<RxResultCursor> finalStage,
+            Observation parentObservation) {
         CompletionStage<RxResultCursor> cursorStage;
         try {
-            cursorStage = session.runRx(query, config, finalStage);
+            cursorStage = session.runRx(query, config, finalStage, parentObservation);
         } catch (Throwable t) {
             cursorStage = CompletableFuture.failedFuture(t);
         }
@@ -233,7 +257,7 @@ public abstract class AbstractReactiveSession<S> {
         });
     }
 
-    protected <T> Publisher<T> doClose() {
-        return createEmptyPublisher(session::closeAsync);
+    protected <T> Publisher<T> doClose(Observation parentObservation) {
+        return createEmptyPublisher(() -> session.closeAsync(parentObservation));
     }
 }

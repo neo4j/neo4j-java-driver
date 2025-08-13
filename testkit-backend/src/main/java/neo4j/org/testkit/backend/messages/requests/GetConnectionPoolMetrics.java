@@ -16,7 +16,6 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
@@ -54,22 +53,15 @@ public class GetConnectionPoolMetrics implements TestkitRequest {
 
     private ConnectionPoolMetrics getConnectionPoolMetrics(TestkitState testkitState) {
         var driverHolder = testkitState.getDriverHolder(data.getDriverId());
-        @SuppressWarnings("resource")
-        var metrics = driverHolder.driver().metrics();
+        var metrics = driverHolder.metrics();
         var poolMetrics = metrics.connectionPoolMetrics().stream()
                 .filter(pm -> {
-                    // Brute forcing the access via reflections avoid having the InternalConnectionPoolMetrics a public
-                    // class
-                    BoltServerAddress poolAddress;
-                    try {
-                        var m = pm.getClass().getDeclaredMethod("getAddress");
-                        m.setAccessible(true);
-                        poolAddress = (BoltServerAddress) m.invoke(pm);
-                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                        return false;
-                    }
+                    var id = pm.id();
+                    var addressParts = id.split("-")[0].split(":");
+                    var host = addressParts[0];
+                    var port = addressParts.length > 1 ? Integer.parseInt(addressParts[1]) : 7687;
                     var address = new BoltServerAddress(data.getAddress());
-                    return address.host().equals(poolAddress.host()) && address.port() == poolAddress.port();
+                    return address.host().equals(host) && address.port() == port;
                 })
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -77,7 +69,8 @@ public class GetConnectionPoolMetrics implements TestkitRequest {
         return createResponse(poolMetrics);
     }
 
-    private ConnectionPoolMetrics createResponse(org.neo4j.driver.ConnectionPoolMetrics poolMetrics) {
+    private ConnectionPoolMetrics createResponse(
+            org.neo4j.driver.observation.metrics.ConnectionPoolMetrics poolMetrics) {
         return ConnectionPoolMetrics.builder()
                 .data(ConnectionPoolMetrics.ConnectionPoolMetricsBody.builder()
                         .inUse(poolMetrics.inUse())

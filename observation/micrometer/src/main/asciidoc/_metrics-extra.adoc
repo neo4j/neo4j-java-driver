@@ -1,0 +1,116 @@
+[[observability-metrics-extra]]
+=== Observability - Metrics Extra
+
+Below are metrics managed by `org.neo4j.driver.observation.micrometer.ConnectionPoolMetricsHandler`.
+Note that this handler MUST be registered with `io.micrometer.observation.ObservationRegistry` to enable it.
+
+[[observability-metrics-extra-pool-connection-count]]
+==== Connection Pool Count
+
+____
+Shows how many connections are `used` or `idle` in the connection pool.
+____
+
+
+**Metric name** `db.client.connection.count`. **Type** `gauge`.
+
+
+
+.Low cardinality Keys
+[cols="a,a"]
+|===
+|Name | Description
+|`db.system.name` _(required)_|The DBMS product name. It is always *neo4j*.
+|`db.client.connection.pool.name` _(required)_|The pool name in the following format: *host[:port]-id*. Note that the port part is optional if default scheme port is used.
+|`db.client.connection.state` _(required)_|The connection state, either `idle` or `used`.
+|===
+
+
+
+[[observability-metrics-extra-pooled-connection-creating]]
+==== Pooled Connection Creating
+
+____
+Shows how many connections are being created by connection pool.
+____
+
+
+**Metric name** `neo4j.db.client.connection.creating.requests`. **Type** `gauge`.
+
+
+
+.Low cardinality Keys
+[cols="a,a"]
+|===
+|Name | Description
+|`db.system.name` _(required)_|The DBMS product name. It is always *neo4j*.
+|`db.client.connection.pool.name` _(required)_|The pool name in the following format: *host[:port]-id*. Note that the port part is optional if default scheme port is used.
+|===
+
+
+
+[[observability-metrics-extra-pooled-connection-pending-requests]]
+==== Pooled Connection Pending Requests
+
+____
+Shows the number of pending requests for pooled connection.
+____
+
+
+**Metric name** `db.client.connection.pending.requests`. **Type** `gauge`.
+
+
+
+.Low cardinality Keys
+[cols="a,a"]
+|===
+|Name | Description
+|`db.system.name` _(required)_|The DBMS product name. It is always *neo4j*.
+|`db.client.connection.pool.name` _(required)_|The pool name in the following format: *host[:port]-id*. Note that the port part is optional if default scheme port is used.
+|===
+
+
+
+[[observability-metrics-extra-connection-max]]
+==== Connection Pool Max
+
+____
+Shows the maximum connections allowed in the connection pool.
+____
+
+
+**Metric name** `db.client.connection.max`. **Type** `gauge`.
+
+
+
+.Low cardinality Keys
+[cols="a,a"]
+|===
+|Name | Description
+|`db.system.name` _(required)_|The DBMS product name. It is always *neo4j*.
+|`db.client.connection.pool.name` _(required)_|The pool name in the following format: *host[:port]-id*. Note that the port part is optional if default scheme port is used.
+|===
+
+
+
+[[observability-metrics-extra-pool-connection-timeouts]]
+==== Connection Pool Timeouts
+
+____
+Shows how many requests failed with timeout.
+____
+
+
+**Metric name** `db.client.connection.timeouts`. **Type** `counter`.
+
+
+
+.Low cardinality Keys
+[cols="a,a"]
+|===
+|Name | Description
+|`db.system.name` _(required)_|The DBMS product name. It is always *neo4j*.
+|`db.client.connection.pool.name` _(required)_|The pool name in the following format: *host[:port]-id*. Note that the port part is optional if default scheme port is used.
+|===
+
+

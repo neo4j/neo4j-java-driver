@@ -85,6 +85,7 @@ import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
 import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.value.BoltValueFactory;
@@ -232,22 +233,26 @@ public final class TestUtil {
                 null,
                 telemetryDisabled,
                 mock(AuthTokenManager.class),
-                mock());
+                mock(),
+                NoopObservationProvider.getInstance());
     }
 
     public static void setupConnectionAnswers(DriverBoltConnection connection, List<MessageHandler> messageHandlers) {
         for (var messageHandler : messageHandlers) {
-            given(connection.writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(messages -> {
-                        if (messages == null
-                                || messages.size()
-                                        != messageHandler.messageTypes().size()) {
-                            return false;
-                        }
-                        return IntStream.range(0, messages.size()).allMatch(i -> messageHandler
-                                .messageTypes()
-                                .get(i)
-                                .isAssignableFrom(messages.get(i).getClass()));
-                    })))
+            given(connection.writeAndFlush(
+                            any(),
+                            ArgumentMatchers.<List<Message>>argThat(messages -> {
+                                if (messages == null
+                                        || messages.size()
+                                                != messageHandler.messageTypes().size()) {
+                                    return false;
+                                }
+                                return IntStream.range(0, messages.size()).allMatch(i -> messageHandler
+                                        .messageTypes()
+                                        .get(i)
+                                        .isAssignableFrom(messages.get(i).getClass()));
+                            }),
+                            any()))
                     .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
                         var handler = (DriverResponseHandler) invocation.getArguments()[0];
                         messageHandler.handle(handler);
@@ -263,16 +268,21 @@ public final class TestUtil {
     }
 
     public static void verifyAutocommitRunRx(DriverBoltConnection connection, String query) {
-        then(connection).should().writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(argument -> {
-            var runMessage = (RunMessage) argument.get(0);
-            return runMessage.query().equals(query);
-        }));
+        then(connection)
+                .should()
+                .writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(argument -> {
+                            var runMessage = (RunMessage) argument.get(0);
+                            return runMessage.query().equals(query);
+                        }),
+                        any());
     }
 
     public static void verifyRun(DriverBoltConnection connection, String query) {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
-        then(connection).should(atLeastOnce()).writeAndFlush(any(), captor.capture());
+        then(connection).should(atLeastOnce()).writeAndFlush(any(), captor.capture(), any());
         var messages = captor.getValue();
         assertInstanceOf(RunMessage.class, messages.get(0));
         assertEquals(query, ((RunMessage) messages.get(0)).query());
@@ -281,7 +291,7 @@ public final class TestUtil {
     public static void verifyRunAndPull(DriverBoltConnection connection, String query) {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
-        then(connection).should(atLeastOnce()).writeAndFlush(any(), captor.capture());
+        then(connection).should(atLeastOnce()).writeAndFlush(any(), captor.capture(), any());
         var messages = captor.getAllValues().get(1);
         assertInstanceOf(RunMessage.class, messages.get(0));
         assertEquals(query, ((RunMessage) messages.get(0)).query());
@@ -289,11 +299,16 @@ public final class TestUtil {
     }
 
     public static void verifyAutocommitRunAndPull(DriverBoltConnection connection, String query) {
-        then(connection).should().writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(argument -> {
-            var runMessage = (RunMessage) argument.get(0);
-            var pullMessage = (PullMessage) argument.get(1);
-            return runMessage.query().equals(query) && pullMessage != null;
-        }));
+        then(connection)
+                .should()
+                .writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(argument -> {
+                            var runMessage = (RunMessage) argument.get(0);
+                            var pullMessage = (PullMessage) argument.get(1);
+                            return runMessage.query().equals(query) && pullMessage != null;
+                        }),
+                        any());
     }
 
     public static void verifyCommitTx(DriverBoltConnection connection, VerificationMode mode) {
@@ -301,7 +316,8 @@ public final class TestUtil {
                 .writeAndFlush(
                         any(),
                         ArgumentMatchers.<List<Message>>argThat(
-                                messages -> messages.size() == 1 && messages.get(0) instanceof CommitMessage));
+                                messages -> messages.size() == 1 && messages.get(0) instanceof CommitMessage),
+                        any());
     }
 
     public static void verifyCommitTx(DriverBoltConnection connection) {
@@ -314,7 +330,8 @@ public final class TestUtil {
                 .writeAndFlush(
                         any(),
                         ArgumentMatchers.<List<Message>>argThat(
-                                messages -> messages.size() == 1 && messages.get(0) instanceof RollbackMessage));
+                                messages -> messages.size() == 1 && messages.get(0) instanceof RollbackMessage),
+                        any());
     }
 
     public static void verifyRollbackTx(DriverBoltConnection connection) {
@@ -327,7 +344,8 @@ public final class TestUtil {
                         any(),
                         ArgumentMatchers.<List<Message>>argThat(messages -> messages.size() == 2
                                 && messages.get(0) instanceof RunMessage
-                                && messages.get(1) instanceof PullMessage)))
+                                && messages.get(1) instanceof PullMessage),
+                        any()))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
                     var handler = (DriverResponseHandler) invocation.getArgument(0);
                     handler.onError(error);
@@ -343,7 +361,7 @@ public final class TestUtil {
     public static void verifyBegin(DriverBoltConnection connection, VerificationMode mode) {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
-        then(connection).should(atLeastOnce()).writeAndFlush(any(), captor.capture());
+        then(connection).should(atLeastOnce()).writeAndFlush(any(), captor.capture(), any());
         var messages = captor.getAllValues().get(0);
         assertInstanceOf(BeginMessage.class, messages.get(0));
     }
@@ -353,7 +371,7 @@ public final class TestUtil {
     }
 
     public static void setupFailingCommit(DriverBoltConnection connection, int times) {
-        given(connection.writeAndFlush(any(), any(CommitMessage.class)))
+        given(connection.writeAndFlush(any(), any(CommitMessage.class), any()))
                 .willAnswer(new Answer<CompletionStage<Void>>() {
                     int invoked;
 
@@ -376,7 +394,7 @@ public final class TestUtil {
     }
 
     public static void setupFailingRollback(DriverBoltConnection connection, int times) {
-        given(connection.writeAndFlush(any(), any(RollbackMessage.class)))
+        given(connection.writeAndFlush(any(), any(RollbackMessage.class), any()))
                 .willAnswer(new Answer<CompletionStage<Void>>() {
                     int invoked;
 
@@ -399,7 +417,8 @@ public final class TestUtil {
                         any(),
                         ArgumentMatchers.<List<Message>>argThat(messages -> messages.size() == 2
                                 && messages.get(0) instanceof RunMessage
-                                && messages.get(1) instanceof PullMessage)))
+                                && messages.get(1) instanceof PullMessage),
+                        any()))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
                     var handler = (DriverResponseHandler) invocation.getArgument(0);
                     var runSummary = mock(RunSummary.class);
@@ -414,15 +433,18 @@ public final class TestUtil {
     }
 
     public static void setupSuccessfulAutocommitRunAndPull(DriverBoltConnection connection) {
-        given(connection.writeAndFlush(any(), ArgumentMatchers.<List<Message>>argThat(argument -> {
-                    if (argument.size() == 1) {
-                        return argument.get(0) instanceof RunMessage;
-                    } else if (argument.size() == 2) {
-                        return argument.get(0) instanceof RunMessage && argument.get(1) instanceof PullMessage;
-                    } else {
-                        return false;
-                    }
-                })))
+        given(connection.writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(argument -> {
+                            if (argument.size() == 1) {
+                                return argument.get(0) instanceof RunMessage;
+                            } else if (argument.size() == 2) {
+                                return argument.get(0) instanceof RunMessage && argument.get(1) instanceof PullMessage;
+                            } else {
+                                return false;
+                            }
+                        }),
+                        any()))
                 .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
                     var handler = (DriverResponseHandler) invocation.getArgument(0);
                     var runSummary = mock(RunSummary.class);

@@ -16,32 +16,43 @@
  */
 package org.neo4j.driver.internal.async;
 
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.observeAsync;
+
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.Observation;
 
 public class InternalAsyncTransaction extends AsyncAbstractQueryRunner implements AsyncTransaction {
     private final UnmanagedTransaction tx;
+    private final DriverObservationProvider observationProvider;
 
-    public InternalAsyncTransaction(UnmanagedTransaction tx) {
+    public InternalAsyncTransaction(
+            UnmanagedTransaction tx, DriverObservationProvider observationProvider, Observation parentObservation) {
         this.tx = tx;
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     @Override
     public CompletionStage<Void> commitAsync() {
-        return tx.commitAsync();
+        var commitObservation = observationProvider.transactionCommit(AsyncTransaction.class);
+        return observeAsync(commitObservation, () -> tx.commitAsync(commitObservation));
     }
 
     @Override
     public CompletionStage<Void> rollbackAsync() {
-        return tx.rollbackAsync();
+        var rollbackObservation = observationProvider.transactionRollback(AsyncTransaction.class);
+        return observeAsync(rollbackObservation, () -> tx.rollbackAsync(rollbackObservation));
     }
 
     @Override
     public CompletionStage<Void> closeAsync() {
-        return tx.closeAsync();
+        var closeObservation = observationProvider.transactionClose(AsyncTransaction.class);
+        return observeAsync(closeObservation, () -> tx.closeAsync(closeObservation));
     }
 
     @Override
@@ -51,7 +62,9 @@ public class InternalAsyncTransaction extends AsyncAbstractQueryRunner implement
 
     @Override
     public CompletionStage<ResultCursor> runAsync(Query query) {
-        return tx.runAsync(query);
+        var runObservation =
+                observationProvider.transactionRun(AsyncTransaction.class, query.text(), query.parameters());
+        return observeAsync(runObservation, () -> tx.runAsync(query, runObservation, ResultCursor.class));
     }
 
     public boolean isOpen() {

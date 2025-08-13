@@ -16,10 +16,14 @@
  */
 package org.neo4j.driver.internal.adaptedbolt;
 
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.scoped;
+
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.bolt.connection.BoltConnectionSource;
 import org.neo4j.bolt.connection.RoutedBoltConnectionParameters;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 
 public class AdaptingDriverBoltConnectionSource implements DriverBoltConnectionSource {
@@ -27,28 +31,33 @@ public class AdaptingDriverBoltConnectionSource implements DriverBoltConnectionS
     private final ErrorMapper errorMapper;
     private final BoltValueFactory boltValueFactory;
     private final boolean routed;
+    private final DriverObservationProvider observationProvider;
 
     public AdaptingDriverBoltConnectionSource(
             BoltConnectionSource<RoutedBoltConnectionParameters> delegate,
             ErrorMapper errorMapper,
             BoltValueFactory boltValueFactory,
-            boolean routed) {
+            boolean routed,
+            DriverObservationProvider observationProvider) {
         this.delegate = Objects.requireNonNull(delegate);
         this.errorMapper = Objects.requireNonNull(errorMapper);
         this.boltValueFactory = Objects.requireNonNull(boltValueFactory);
         this.routed = routed;
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     @Override
-    public CompletionStage<DriverBoltConnection> getConnection(RoutedBoltConnectionParameters parameters) {
-        return delegate.getConnection(parameters)
+    public CompletionStage<DriverBoltConnection> getConnection(
+            RoutedBoltConnectionParameters parameters, Observation parentObservation) {
+        return scoped(observationProvider, parentObservation, () -> delegate.getConnection(parameters))
                 .exceptionally(errorMapper::mapAndThrow)
                 .thenApply(boltConnection -> new AdaptingDriverBoltConnection(
                         boltConnection,
                         routed || boltConnection.serverSideRoutingEnabled()
                                 ? new RoutedErrorMapper(boltConnection.serverAddress(), parameters.accessMode())
                                 : errorMapper,
-                        boltValueFactory));
+                        boltValueFactory,
+                        observationProvider));
     }
 
     @Override

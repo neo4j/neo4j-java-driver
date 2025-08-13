@@ -17,17 +17,18 @@
 package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.internal.observation.Observation;
 
 public interface FailableCursor {
     /**
      * Discarding all unconsumed records and returning failure if there is any pull errors.
      */
-    CompletionStage<Throwable> discardAllFailureAsync();
+    CompletionStage<Throwable> discardAllFailureAsync(Observation parentObservation);
 
     /**
      * Pulling all unconsumed records into memory and returning failure if there is any pull errors.
      */
-    CompletionStage<Throwable> pullAllFailureAsync();
+    CompletionStage<Throwable> pullAllFailureAsync(Observation parentObservation);
 
     CompletionStage<Void> consumed();
 }

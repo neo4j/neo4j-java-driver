@@ -65,6 +65,9 @@ import org.neo4j.driver.internal.cursor.DisposableResultCursorImpl;
 import org.neo4j.driver.internal.cursor.ResultCursorImpl;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.NoopObservation;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.internal.util.Futures;
@@ -125,6 +128,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
 
     private final ApiTelemetryWork apiTelemetryWork;
     private final Consumer<String> databaseNameConsumer;
+    private final DriverObservationProvider observationProvider;
     private Message[] beginMessages;
 
     public UnmanagedTransaction(
@@ -137,7 +141,8 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             NotificationConfig notificationConfig,
             ApiTelemetryWork apiTelemetryWork,
             Consumer<String> databaseNameConsumer,
-            @SuppressWarnings("deprecation") Logging logging) {
+            @SuppressWarnings("deprecation") Logging logging,
+            DriverObservationProvider observationProvider) {
         this(
                 connection,
                 databaseName,
@@ -149,7 +154,8 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                 notificationConfig,
                 apiTelemetryWork,
                 databaseNameConsumer,
-                logging);
+                logging,
+                observationProvider);
     }
 
     protected UnmanagedTransaction(
@@ -163,7 +169,8 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             NotificationConfig notificationConfig,
             ApiTelemetryWork apiTelemetryWork,
             Consumer<String> databaseNameConsumer,
-            @SuppressWarnings("deprecation") Logging logging) {
+            @SuppressWarnings("deprecation") Logging logging,
+            DriverObservationProvider observationProvider) {
         this.logging = logging;
         this.connection = new TerminationAwareBoltConnection(logging, connection, this, this::markTerminated);
         this.databaseName = databaseName;
@@ -175,11 +182,16 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         this.notificationConfig = notificationConfig;
         this.apiTelemetryWork = apiTelemetryWork;
         this.databaseNameConsumer = Objects.requireNonNull(databaseNameConsumer);
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     // flush = false is only supported for async mode with a single subsequent run
     public CompletionStage<UnmanagedTransaction> beginAsync(
-            Set<Bookmark> initialBookmarks, TransactionConfig config, String txType, boolean flush) {
+            Set<Bookmark> initialBookmarks,
+            TransactionConfig config,
+            String txType,
+            boolean flush,
+            Observation parentObservation) {
         var bookmarks = initialBookmarks.stream().map(Bookmark::value).collect(Collectors.toSet());
         return CompletableFuture.completedStage(null)
                 .thenApply(ignored -> {
@@ -200,7 +212,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                     if (flush) {
                         var responseHandler = new BeginResponseHandler(apiTelemetryWork, databaseNameConsumer);
                         connection
-                                .writeAndFlush(responseHandler, messages)
+                                .writeAndFlush(responseHandler, messages, parentObservation)
                                 .thenCompose(ignored -> responseHandler.summaryFuture)
                                 .whenComplete((summary, throwable) -> {
                                     if (throwable != null) {
@@ -230,23 +242,23 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                 });
     }
 
-    public CompletionStage<Void> closeAsync() {
-        return closeAsync(false);
+    public CompletionStage<Void> closeAsync(Observation parentObservation) {
+        return closeAsync(false, parentObservation);
     }
 
-    public CompletionStage<Void> closeAsync(boolean commit) {
-        return closeAsync(commit, true);
+    public CompletionStage<Void> closeAsync(boolean commit, Observation parentObservation) {
+        return closeAsync(commit, true, parentObservation);
     }
 
-    public CompletionStage<Void> commitAsync() {
-        return closeAsync(true, false);
+    public CompletionStage<Void> commitAsync(Observation parentObservation) {
+        return closeAsync(true, false, parentObservation);
     }
 
-    public CompletionStage<Void> rollbackAsync() {
-        return closeAsync(false, false);
+    public CompletionStage<Void> rollbackAsync(Observation parentObservation) {
+        return closeAsync(false, false, parentObservation);
     }
 
-    public CompletionStage<ResultCursor> runAsync(Query query) {
+    public CompletionStage<ResultCursor> runAsync(Query query, Observation parentObservation, Class<?> resultType) {
         ensureCanRunQueries();
         var parameters = query.parameters().asMap(Values::value);
         var resultCursor = new ResultCursorImpl(
@@ -257,12 +269,14 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                 false,
                 beginFuture,
                 databaseNameConsumer,
-                apiTelemetryWork);
+                apiTelemetryWork,
+                observationProvider,
+                resultType);
         var flushStage = CompletableFuture.completedStage(null).thenCompose(ignored -> {
             var messages = List.of(
                     Messages.run(query.text(), connection.valueFactory().toBoltMap(parameters)),
                     Messages.pull(-1, fetchSize));
-            return connection.writeAndFlush(resultCursor, messages);
+            return connection.writeAndFlush(resultCursor, messages, parentObservation);
         });
         return beginFuture.thenCompose(ignored -> {
             var cursorStage = flushStage
@@ -273,14 +287,15 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         });
     }
 
-    public CompletionStage<RxResultCursor> runRx(Query query) {
+    public CompletionStage<RxResultCursor> runRx(Query query, Observation parentObservation) {
         ensureCanRunQueries();
         var parameters = query.parameters().asMap(Values::value);
         var responseHandler = new RunRxResponseHandler(logging, apiTelemetryWork, beginFuture, connection, query);
         var flushStage = CompletableFuture.completedStage(null)
                 .thenCompose(runMessage -> connection.writeAndFlush(
                         responseHandler,
-                        Messages.run(query.text(), connection.valueFactory().toBoltMap(parameters))));
+                        Messages.run(query.text(), connection.valueFactory().toBoltMap(parameters)),
+                        parentObservation));
         return beginFuture.thenCompose(ignored -> {
             var cursorStage = flushStage.thenCompose(flushResult -> responseHandler.cursorFuture);
             resultCursors.add(cursorStage);
@@ -345,7 +360,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
                     return terminationStage != null ? terminationStage : completedFuture(null);
                 } else {
                     markTerminated(null);
-                    terminationStage = connection.reset();
+                    terminationStage = connection.reset(NoopObservation.getInstance());
                     return terminationStage;
                 }
             }
@@ -408,7 +423,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         });
     }
 
-    private CompletionStage<Void> doCommitAsync(Throwable cursorFailure) {
+    private CompletionStage<Void> doCommitAsync(Throwable cursorFailure, Observation parentObservation) {
         ClientException exception = executeWithLock(
                 lock,
                 () -> state == State.TERMINATED
@@ -428,7 +443,7 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             var commitSummary = new CompletableFuture<CommitSummary>();
             var responseHandler = new BasicResponseHandler();
             connection
-                    .writeAndFlush(responseHandler, Messages.commit())
+                    .writeAndFlush(responseHandler, Messages.commit(), parentObservation)
                     .thenCompose(ignored -> responseHandler.summaries())
                     .whenComplete((summaries, throwable) -> {
                         if (throwable != null) {
@@ -459,14 +474,14 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
         }
     }
 
-    private CompletionStage<Void> doRollbackAsync() {
+    private CompletionStage<Void> doRollbackAsync(Observation parentObservation) {
         if (executeWithLock(lock, () -> state) == State.TERMINATED) {
             return completedWithNull();
         } else {
             var rollbackFuture = new CompletableFuture<Void>();
             var responseHandler = new BasicResponseHandler();
             connection
-                    .writeAndFlush(responseHandler, Messages.rollback())
+                    .writeAndFlush(responseHandler, Messages.rollback(), parentObservation)
                     .thenCompose(ignored -> responseHandler.summaries())
                     .whenComplete((summaries, throwable) -> {
                         if (throwable != null) {
@@ -526,7 +541,8 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
     }
 
     @SuppressWarnings("DuplicatedCode")
-    private CompletionStage<Void> closeAsync(boolean commit, boolean completeWithNullIfNotOpen) {
+    private CompletionStage<Void> closeAsync(
+            boolean commit, boolean completeWithNullIfNotOpen, Observation parentObservation) {
         var stage = executeWithLock(lock, () -> {
             CompletionStage<Void> resultStage = null;
             if (completeWithNullIfNotOpen && !isOpen()) {
@@ -588,13 +604,15 @@ public class UnmanagedTransaction implements TerminationAwareStateLockingExecuto
             Function<Throwable, CompletionStage<Void>> targetAction;
             if (commit) {
                 targetFuture = commitFuture;
-                targetAction = throwable -> doCommitAsync(throwable).handle(handleCommitOrRollback(throwable));
+                targetAction = throwable ->
+                        doCommitAsync(throwable, parentObservation).handle(handleCommitOrRollback(throwable));
             } else {
                 targetFuture = rollbackFuture;
-                targetAction = throwable -> doRollbackAsync().handle(handleCommitOrRollback(throwable));
+                targetAction =
+                        throwable -> doRollbackAsync(parentObservation).handle(handleCommitOrRollback(throwable));
             }
             resultCursors
-                    .retrieveNotConsumedError()
+                    .retrieveNotConsumedError(parentObservation)
                     .thenCompose(targetAction)
                     .handle((ignored, throwable) -> handleTransactionCompletion(commit, throwable))
                     .thenCompose(Function.identity())

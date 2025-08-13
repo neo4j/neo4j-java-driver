@@ -19,7 +19,7 @@
   <properties>
     <rootDir>${project.basedir}/..</rootDir>
     <api.classes.directory>${basedir}/target/classes-without-jpms</api.classes.directory>
-    <maven.compiler.xlint.extras>,-try</maven.compiler.xlint.extras>
+    <maven.compiler.xlint.extras>,-try,-module</maven.compiler.xlint.extras>
     <surefire.jpms.args>--add-reads org.neo4j.driver=io.netty.common --add-reads org.neo4j.driver=org.bouncycastle.provider --add-reads org.neo4j.driver=org.bouncycastle.pkix</surefire.jpms.args>
     <failsafe.parallelizable.jpms.args>--add-opens org.neo4j.driver/org.neo4j.driver.internal.util=ALL-UNNAMED --add-opens org.neo4j.driver/org.neo4j.driver.internal.async=ALL-UNNAMED --add-reads org.neo4j.driver=io.netty.common  --add-reads org.neo4j.driver=org.bouncycastle.provider --add-reads org.neo4j.driver=org.bouncycastle.pkix</failsafe.parallelizable.jpms.args>
     <failsafe.sequential.jpms.args>--add-reads org.neo4j.driver=org.bouncycastle.provider --add-reads org.neo4j.driver=org.bouncycastle.pkix</failsafe.sequential.jpms.args>
@@ -55,11 +55,6 @@
     </dependency>
 
     <!-- Optional and / or provided dependencies -->
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-core</artifactId>
-      <optional>true</optional>
-    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -176,7 +171,6 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.3.0</version>
           <executions>
             <execution>
               <id>copy-classes-excluding-jpms</id>

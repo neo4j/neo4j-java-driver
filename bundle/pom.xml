@@ -20,7 +20,7 @@
   <properties>
     <moduleName>org.neo4j.driver</moduleName>
     <rootDir>${project.basedir}/..</rootDir>
-    <maven.compiler.xlint.extras>,-try</maven.compiler.xlint.extras>
+    <maven.compiler.xlint.extras>,-try,-module</maven.compiler.xlint.extras>
     <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
 
@@ -34,11 +34,6 @@
     </dependency>
 
     <!-- Optional and / or provided dependencies, as they are not transitive to the original driver they must be declared again. -->
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-core</artifactId>
-      <optional>true</optional>
-    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -93,7 +88,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>3.2.0</version>
         <executions>
           <execution>
             <id>copy-appCtx</id>

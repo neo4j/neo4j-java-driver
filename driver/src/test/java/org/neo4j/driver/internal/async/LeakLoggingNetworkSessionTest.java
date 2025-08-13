@@ -52,10 +52,13 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
+import org.neo4j.driver.internal.observation.NoopObservation;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.testutil.TestUtil;
@@ -84,7 +87,11 @@ class LeakLoggingNetworkSessionTest {
         }));
         given(connection.close()).willReturn(completedFuture(null));
         var session = newSession(logging, connection);
-        session.runAsync(new Query("query"), TransactionConfig.empty())
+        session.runAsync(
+                        new Query("query"),
+                        TransactionConfig.empty(),
+                        NoopObservation.getInstance(),
+                        ResultCursor.class)
                 .toCompletableFuture()
                 .join()
                 .consumeAsync()
@@ -120,7 +127,7 @@ class LeakLoggingNetworkSessionTest {
         var session = newSession(logging, connection);
         // begin transaction to make session obtain a connection
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
-        session.beginTransactionAsync(TransactionConfig.empty(), apiTelemetryWork)
+        session.beginTransactionAsync(TransactionConfig.empty(), apiTelemetryWork, NoopObservation.getInstance())
                 .toCompletableFuture()
                 .join();
 
@@ -163,12 +170,13 @@ class LeakLoggingNetworkSessionTest {
                 null,
                 true,
                 AuthTokenManagers.basic(AuthTokens::none),
-                mock());
+                mock(),
+                NoopObservationProvider.getInstance());
     }
 
     private static DriverBoltConnectionSource connectionProviderMock(DriverBoltConnection connection) {
         var provider = mock(DriverBoltConnectionSource.class);
-        when(provider.getConnection(any())).thenReturn(CompletableFuture.completedFuture(connection));
+        when(provider.getConnection(any(), any())).thenReturn(CompletableFuture.completedFuture(connection));
         return provider;
     }
 }

@@ -29,10 +29,14 @@ module org.neo4j.driver {
     exports org.neo4j.driver.util;
     exports org.neo4j.driver.exceptions;
     exports org.neo4j.driver.exceptions.value;
+    exports org.neo4j.driver.mapping;
+    exports org.neo4j.driver.observation;
+    exports org.neo4j.driver.internal.observation to
+            org.neo4j.driver.observation.metrics,
+            org.neo4j.driver.observation.micrometer;
 
     requires transitive java.logging;
     requires transitive org.reactivestreams;
-    requires static micrometer.core;
     requires static org.graalvm.nativeimage;
     requires static org.slf4j;
     requires static java.management;

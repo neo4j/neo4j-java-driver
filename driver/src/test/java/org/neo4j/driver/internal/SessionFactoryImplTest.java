@@ -29,6 +29,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 
@@ -73,6 +74,7 @@ class SessionFactoryImplTest {
                 new FixedRetryLogic(0),
                 config,
                 mock(AuthTokenManager.class),
-                mock());
+                mock(),
+                NoopObservationProvider.getInstance());
     }
 }

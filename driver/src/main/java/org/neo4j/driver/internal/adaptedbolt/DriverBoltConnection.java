@@ -22,14 +22,17 @@ import org.neo4j.bolt.connection.AuthInfo;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.BoltServerAddress;
 import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 
 public interface DriverBoltConnection {
-    default CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, Message messages) {
-        return writeAndFlush(handler, List.of(messages));
+    default CompletionStage<Void> writeAndFlush(
+            DriverResponseHandler handler, Message messages, Observation parentObservation) {
+        return writeAndFlush(handler, List.of(messages), parentObservation);
     }
 
-    CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, List<Message> messages);
+    CompletionStage<Void> writeAndFlush(
+            DriverResponseHandler handler, List<Message> messages, Observation parentObservation);
 
     CompletionStage<Void> write(List<Message> messages);
 

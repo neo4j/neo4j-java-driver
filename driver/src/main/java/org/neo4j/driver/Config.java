@@ -36,10 +36,13 @@ import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.InternalNotificationConfig;
 import org.neo4j.driver.internal.RoutingSettings;
 import org.neo4j.driver.internal.SecuritySettings;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.net.ServerAddressResolver;
-import org.neo4j.driver.util.Experimental;
+import org.neo4j.driver.observation.ObservationProvider;
 import org.neo4j.driver.util.Immutable;
+import org.neo4j.driver.util.Preview;
 import org.neo4j.driver.util.Resource;
 
 /**
@@ -145,10 +148,6 @@ public final class Config implements Serializable {
      */
     @SuppressWarnings("deprecation")
     private final NotificationConfig notificationConfig;
-    /**
-     * The {@link MetricsAdapter}.
-     */
-    private final MetricsAdapter metricsAdapter;
 
     /**
      * Specify if telemetry collection is disabled.
@@ -156,6 +155,12 @@ public final class Config implements Serializable {
      * By default, the driver will send anonymous usage statistics to the server it connects to if the server requests those.
      */
     private final boolean telemetryDisabled;
+    /**
+     * The {@link ObservationProvider} if configured.
+     * @since 6.0.0
+     */
+    @Preview(name = "Observability")
+    private final transient ObservationProvider observationProvider;
 
     private Config(ConfigBuilder builder) {
         this.logging = builder.logging;
@@ -177,8 +182,8 @@ public final class Config implements Serializable {
         this.notificationConfig = builder.notificationConfig;
 
         this.eventLoopThreads = builder.eventLoopThreads;
-        this.metricsAdapter = builder.metricsAdapter;
         this.telemetryDisabled = builder.telemetryDisabled;
+        this.observationProvider = builder.observationProvider;
     }
 
     /**
@@ -345,6 +350,7 @@ public final class Config implements Serializable {
 
     /**
      * Returns a set of disabled notification classifications.
+     *
      * @return the {@link Set} of disabled {@link NotificationClassification}
      * @since 5.22.0
      */
@@ -365,24 +371,6 @@ public final class Config implements Serializable {
      */
     public int eventLoopThreads() {
         return eventLoopThreads;
-    }
-
-    /**
-     * Returns whether the metrics is enabled or not on this driver.
-     *
-     * @return if the metrics is enabled or not on this driver
-     */
-    public boolean isMetricsEnabled() {
-        return this.metricsAdapter != MetricsAdapter.DEV_NULL;
-    }
-
-    /**
-     * Returns the {@link MetricsAdapter}.
-     *
-     * @return the metrics adapter
-     */
-    public MetricsAdapter metricsAdapter() {
-        return this.metricsAdapter;
     }
 
     /**
@@ -407,6 +395,16 @@ public final class Config implements Serializable {
     }
 
     /**
+     * Returns the {@link ObservationProvider} if it is configured.
+     * @return an {@link Optional} with {@link ObservationProvider} if configured or {@link Optional#empty()} otherwise
+     * @since 6.0.0
+     */
+    @Preview(name = "Observability")
+    public Optional<ObservationProvider> observationProvider() {
+        return Optional.ofNullable(observationProvider);
+    }
+
+    /**
      * Used to build new config instances
      */
     public static final class ConfigBuilder {
@@ -425,9 +423,9 @@ public final class Config implements Serializable {
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis(30);
         private long maxTransactionRetryTimeMillis = ExponentialBackoffRetryLogic.DEFAULT_MAX_RETRY_TIME_MS;
         private ServerAddressResolver resolver;
-        private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
         private long fetchSize = 1000;
         private int eventLoopThreads = 0;
+        private ObservationProvider observationProvider;
 
         @SuppressWarnings("deprecation")
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
@@ -744,44 +742,18 @@ public final class Config implements Serializable {
         }
 
         /**
-         * Enable driver metrics backed by internal basic implementation. The metrics can be obtained afterwards via {@link Driver#metrics()}.
-         *
-         * @return this builder.
+         * Sets the {@link ObservationProvider} that the driver should use.
+         * @param observationProvider the {@link ObservationProvider} or {@code null} to disable
+         * @return this builder
+         * @since 6.0.0
          */
-        public ConfigBuilder withDriverMetrics() {
-            return withMetricsEnabled(true);
-        }
-
-        /**
-         * Disable driver metrics. When disabled, driver metrics cannot be accessed via {@link Driver#metrics()}.
-         *
-         * @return this builder.
-         */
-        public ConfigBuilder withoutDriverMetrics() {
-            return withMetricsEnabled(false);
-        }
-
-        private ConfigBuilder withMetricsEnabled(boolean enabled) {
-            if (!enabled) {
-                withMetricsAdapter(MetricsAdapter.DEV_NULL);
-            } else if (this.metricsAdapter == null || this.metricsAdapter == MetricsAdapter.DEV_NULL) {
-                withMetricsAdapter(MetricsAdapter.DEFAULT);
+        @Preview(name = "Observability")
+        public ConfigBuilder withObservationProvider(ObservationProvider observationProvider) {
+            this.observationProvider =
+                    Objects.requireNonNullElseGet(observationProvider, NoopObservationProvider::getInstance);
+            if (!(observationProvider instanceof DriverObservationProvider)) {
+                throw new IllegalArgumentException("Unssupported observation provider");
             }
-            return this;
-        }
-
-        /**
-         * Enable driver metrics with given {@link MetricsAdapter}.
-         * <p>
-         * {@link MetricsAdapter#MICROMETER} enables implementation based on <a href="https://micrometer.io">Micrometer</a>. The metrics can be obtained
-         * afterwards via Micrometer means and {@link Driver#metrics()}. Micrometer must be on classpath when using this option.
-         *
-         * @param metricsAdapter the metrics adapter to use. Use {@link MetricsAdapter#DEV_NULL} to disable metrics.
-         * @return this builder.
-         */
-        @Experimental
-        public ConfigBuilder withMetricsAdapter(MetricsAdapter metricsAdapter) {
-            this.metricsAdapter = Objects.requireNonNull(metricsAdapter, "metricsAdapter");
             return this;
         }
 

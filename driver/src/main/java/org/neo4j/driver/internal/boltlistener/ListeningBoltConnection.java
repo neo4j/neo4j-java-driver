@@ -28,6 +28,7 @@ import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.BoltServerAddress;
 import org.neo4j.bolt.connection.ResponseHandler;
 import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.bolt.connection.observation.ImmutableObservation;
 
 final class ListeningBoltConnection implements BoltConnection {
     private final BoltConnection delegate;
@@ -39,8 +40,9 @@ final class ListeningBoltConnection implements BoltConnection {
     }
 
     @Override
-    public CompletionStage<Void> writeAndFlush(ResponseHandler handler, List<Message> messages) {
-        return delegate.writeAndFlush(handler, messages);
+    public CompletionStage<Void> writeAndFlush(
+            ResponseHandler handler, List<Message> messages, ImmutableObservation parentObservation) {
+        return delegate.writeAndFlush(handler, messages, parentObservation);
     }
 
     @Override

@@ -55,6 +55,7 @@ import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.summary.PullSummary;
 import org.neo4j.driver.internal.cursor.DisposableResultCursorImpl;
 import org.neo4j.driver.internal.cursor.ResultCursorImpl;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.util.Pair;
 
@@ -345,7 +346,17 @@ class InternalResultTest {
         when(connection.protocolVersion()).thenReturn(new BoltProtocolVersion(4, 3));
         when(connection.serverAgent()).thenReturn("Neo4j/4.2.5");
 
-        var resultCursor = new ResultCursorImpl(connection, query, -1, ignored -> {}, false, null, ignored -> {}, null);
+        var resultCursor = new ResultCursorImpl(
+                connection,
+                query,
+                -1,
+                ignored -> {},
+                false,
+                null,
+                ignored -> {},
+                null,
+                NoopObservationProvider.getInstance(),
+                Result.class);
         var runSummary = mock(RunSummary.class);
         given(runSummary.keys()).willReturn(asList("k1", "k2"));
         resultCursor.onRunSummary(runSummary);

@@ -18,9 +18,11 @@ package org.neo4j.driver.internal.adaptedbolt;
 
 import java.util.concurrent.CompletionStage;
 import org.neo4j.bolt.connection.RoutedBoltConnectionParameters;
+import org.neo4j.driver.internal.observation.Observation;
 
 public interface DriverBoltConnectionSource {
-    CompletionStage<DriverBoltConnection> getConnection(RoutedBoltConnectionParameters parameters);
+    CompletionStage<DriverBoltConnection> getConnection(
+            RoutedBoltConnectionParameters parameters, Observation parentObservation);
 
     CompletionStage<Void> verifyConnectivity();
 

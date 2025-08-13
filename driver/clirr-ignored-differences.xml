@@ -848,5 +848,62 @@
         <method>java.util.Optional rawClassification()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Config</className>
+        <differenceType>7002</differenceType>
+        <method>boolean isMetricsEnabled()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Config</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.MetricsAdapter metricsAdapter()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Config$ConfigBuilder</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.Config$ConfigBuilder withDriverMetrics()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Config$ConfigBuilder</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.Config$ConfigBuilder withMetricsAdapter(org.neo4j.driver.MetricsAdapter)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Config$ConfigBuilder</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.Config$ConfigBuilder withoutDriverMetrics()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/ConnectionPoolMetrics</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>boolean isMetricsEnabled()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.Metrics metrics()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Metrics</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/MetricsAdapter</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
 
 </differences>

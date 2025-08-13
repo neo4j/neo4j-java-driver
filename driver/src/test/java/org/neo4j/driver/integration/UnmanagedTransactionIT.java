@@ -42,6 +42,7 @@ import org.neo4j.driver.exceptions.TransactionTerminatedException;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.observation.NoopObservation;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.testutil.DatabaseExtension;
 import org.neo4j.driver.testutil.ParallelizableIT;
@@ -61,7 +62,7 @@ class UnmanagedTransactionIT {
 
     @AfterEach
     void tearDown() {
-        session.closeAsync();
+        session.closeAsync(NoopObservation.getInstance());
     }
 
     private UnmanagedTransaction beginTransaction() {
@@ -70,24 +71,28 @@ class UnmanagedTransactionIT {
 
     private UnmanagedTransaction beginTransaction(NetworkSession session) {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
-        return await(session.beginTransactionAsync(TransactionConfig.empty(), apiTelemetryWork));
+        return await(session.beginTransactionAsync(
+                TransactionConfig.empty(), apiTelemetryWork, NoopObservation.getInstance()));
     }
 
     private ResultCursor sessionRun(NetworkSession session, Query query) {
-        return await(session.runAsync(query, TransactionConfig.empty()));
+        return await(
+                session.runAsync(query, TransactionConfig.empty(), NoopObservation.getInstance(), ResultCursor.class));
     }
 
     private void txRun(UnmanagedTransaction tx, String query) {
-        await(tx.runAsync(new Query(query)));
+        await(tx.runAsync(new Query(query), NoopObservation.getInstance(), ResultCursor.class));
     }
 
     @Test
     void shouldDoNothingWhenCommittedSecondTime() {
         var tx = beginTransaction();
 
-        assertNull(await(tx.commitAsync()));
+        assertNull(await(tx.commitAsync(NoopObservation.getInstance())));
 
-        assertTrue(tx.commitAsync().toCompletableFuture().isDone());
+        assertTrue(tx.commitAsync(NoopObservation.getInstance())
+                .toCompletableFuture()
+                .isDone());
         assertFalse(tx.isOpen());
     }
 
@@ -95,9 +100,9 @@ class UnmanagedTransactionIT {
     void shouldFailToCommitAfterRollback() {
         var tx = beginTransaction();
 
-        assertNull(await(tx.rollbackAsync()));
+        assertNull(await(tx.rollbackAsync(NoopObservation.getInstance())));
 
-        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.commitAsync(NoopObservation.getInstance())));
         assertEquals("Can't commit, transaction has been rolled back", e.getMessage());
         assertFalse(tx.isOpen());
     }
@@ -108,7 +113,8 @@ class UnmanagedTransactionIT {
 
         tx.markTerminated(null);
 
-        var e = assertThrows(TransactionTerminatedException.class, () -> await(tx.commitAsync()));
+        var e = assertThrows(
+                TransactionTerminatedException.class, () -> await(tx.commitAsync(NoopObservation.getInstance())));
         assertThat(e.getMessage(), startsWith("Transaction can't be committed"));
     }
 
@@ -116,9 +122,11 @@ class UnmanagedTransactionIT {
     void shouldDoNothingWhenRolledBackSecondTime() {
         var tx = beginTransaction();
 
-        assertNull(await(tx.rollbackAsync()));
+        assertNull(await(tx.rollbackAsync(NoopObservation.getInstance())));
 
-        assertTrue(tx.rollbackAsync().toCompletableFuture().isDone());
+        assertTrue(tx.rollbackAsync(NoopObservation.getInstance())
+                .toCompletableFuture()
+                .isDone());
         assertFalse(tx.isOpen());
     }
 
@@ -126,9 +134,9 @@ class UnmanagedTransactionIT {
     void shouldFailToRollbackAfterCommit() {
         var tx = beginTransaction();
 
-        assertNull(await(tx.commitAsync()));
+        assertNull(await(tx.commitAsync(NoopObservation.getInstance())));
 
-        var e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync()));
+        var e = assertThrows(ClientException.class, () -> await(tx.rollbackAsync(NoopObservation.getInstance())));
         assertEquals("Can't rollback, transaction has been committed", e.getMessage());
         assertFalse(tx.isOpen());
     }
@@ -139,7 +147,7 @@ class UnmanagedTransactionIT {
 
         tx.markTerminated(null);
 
-        assertNull(await(tx.rollbackAsync()));
+        assertNull(await(tx.rollbackAsync(NoopObservation.getInstance())));
         assertFalse(tx.isOpen());
     }
 
@@ -162,14 +170,16 @@ class UnmanagedTransactionIT {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
 
         // commit should fail, make session forget about this transaction and release the connection to the pool
-        var e = assertThrows(TransactionTerminatedException.class, () -> await(tx1.commitAsync()));
+        var e = assertThrows(
+                TransactionTerminatedException.class, () -> await(tx1.commitAsync(NoopObservation.getInstance())));
         assertThat(e.getMessage(), startsWith("Transaction can't be committed"));
 
-        await(session.beginTransactionAsync(TransactionConfig.empty(), apiTelemetryWork)
-                .thenCompose(tx -> tx.runAsync(new Query("CREATE (:Node {id: 42})"))
+        await(session.beginTransactionAsync(TransactionConfig.empty(), apiTelemetryWork, NoopObservation.getInstance())
+                .thenCompose(tx -> tx.runAsync(
+                                new Query("CREATE (:Node {id: 42})"), NoopObservation.getInstance(), ResultCursor.class)
                         .thenCompose(ResultCursor::consumeAsync)
                         .thenApply(ignore -> tx))
-                .thenCompose(UnmanagedTransaction::commitAsync));
+                .thenCompose(tx -> tx.commitAsync(NoopObservation.getInstance())));
 
         assertEquals(1, countNodesWithId(42));
     }

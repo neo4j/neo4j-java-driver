@@ -16,11 +16,16 @@
  */
 package org.neo4j.driver.internal.reactivestreams;
 
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.observeStreams;
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.observeStreamsWithoutStart;
+
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.reactive.AbstractReactiveTransaction;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
 import org.neo4j.driver.reactivestreams.ReactiveTransaction;
@@ -29,33 +34,42 @@ import reactor.core.publisher.Mono;
 
 public class InternalReactiveTransaction extends AbstractReactiveTransaction
         implements ReactiveTransaction, BaseReactiveQueryRunner {
-    protected InternalReactiveTransaction(UnmanagedTransaction tx) {
+    private final DriverObservationProvider observationProvider;
+
+    protected InternalReactiveTransaction(UnmanagedTransaction tx, DriverObservationProvider observationProvider) {
         super(tx);
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     @Override
     @SuppressWarnings({"DuplicatedCode"})
     public Publisher<ReactiveResult> run(Query query) {
+        var runObservation = observationProvider
+                .transactionRun(ReactiveTransaction.class, query.text(), query.parameters())
+                .start();
         CompletionStage<RxResultCursor> cursorStage;
         try {
-            cursorStage = tx.runRx(query);
+            cursorStage = tx.runRx(query, runObservation);
         } catch (Throwable t) {
             cursorStage = CompletableFuture.failedFuture(t);
         }
 
-        return Mono.fromCompletionStage(cursorStage)
-                .flatMap(cursor -> {
-                    Mono<RxResultCursor> publisher;
-                    var runError = cursor.getRunError();
-                    if (runError != null) {
-                        publisher = Mono.error(runError);
-                        tx.markTerminated(runError);
-                    } else {
-                        publisher = Mono.just(cursor);
-                    }
-                    return publisher;
-                })
-                .map(InternalReactiveResult::new);
+        return observeStreamsWithoutStart(
+                runObservation,
+                Mono.fromCompletionStage(cursorStage)
+                        .flatMap(cursor -> {
+                            Mono<RxResultCursor> publisher;
+                            var runError = cursor.getRunError();
+                            if (runError != null) {
+                                publisher = Mono.error(runError);
+                                tx.markTerminated(runError);
+                            } else {
+                                publisher = Mono.just(cursor);
+                            }
+                            return publisher;
+                        })
+                        .map(result -> new InternalReactiveResult(result, observationProvider)),
+                false);
     }
 
     /**
@@ -73,17 +87,20 @@ public class InternalReactiveTransaction extends AbstractReactiveTransaction
 
     @Override
     public <T> Publisher<T> commit() {
-        return doCommit();
+        var commitObservation = observationProvider.transactionCommit(ReactiveTransaction.class);
+        return observeStreams(commitObservation, doCommit(commitObservation));
     }
 
     @Override
     public <T> Publisher<T> rollback() {
-        return doRollback();
+        var rollbackObservation = observationProvider.transactionRollback(ReactiveTransaction.class);
+        return observeStreams(rollbackObservation, doRollback(rollbackObservation));
     }
 
     @Override
     public Publisher<Void> close() {
-        return doClose();
+        var closeObservation = observationProvider.transactionClose(ReactiveTransaction.class);
+        return observeStreams(closeObservation, doClose(closeObservation));
     }
 
     @Override

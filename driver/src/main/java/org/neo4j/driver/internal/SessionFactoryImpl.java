@@ -39,6 +39,7 @@ import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 
@@ -54,6 +55,7 @@ public class SessionFactoryImpl implements SessionFactory {
     private final long defaultFetchSize;
     private final AuthTokenManager authTokenManager;
     private final HomeDatabaseCache homeDatabaseCache;
+    private final DriverObservationProvider observationProvider;
 
     @SuppressWarnings("deprecation")
     SessionFactoryImpl(
@@ -62,7 +64,8 @@ public class SessionFactoryImpl implements SessionFactory {
             RetryLogic retryLogic,
             Config config,
             AuthTokenManager authTokenManager,
-            HomeDatabaseCache homeDatabaseCache) {
+            HomeDatabaseCache homeDatabaseCache,
+            DriverObservationProvider observationProvider) {
         this.securityPlanManager = Objects.requireNonNull(securityPlanManager);
         this.connectionSource = connectionSource;
         this.leakedSessionsLoggingEnabled = config.logLeakedSessions();
@@ -71,6 +74,7 @@ public class SessionFactoryImpl implements SessionFactory {
         this.defaultFetchSize = config.fetchSize();
         this.authTokenManager = authTokenManager;
         this.homeDatabaseCache = Objects.requireNonNull(homeDatabaseCache);
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     @SuppressWarnings("deprecation")
@@ -172,7 +176,8 @@ public class SessionFactoryImpl implements SessionFactory {
                         authToken,
                         telemetryDisabled,
                         authTokenManager,
-                        homeDatabaseCache)
+                        homeDatabaseCache,
+                        observationProvider)
                 : new NetworkSession(
                         connectionProvider,
                         retryLogic,
@@ -187,7 +192,8 @@ public class SessionFactoryImpl implements SessionFactory {
                         authToken,
                         telemetryDisabled,
                         authTokenManager,
-                        homeDatabaseCache);
+                        homeDatabaseCache,
+                        observationProvider);
     }
 
     public DriverBoltConnectionSource getConnectionSource() {

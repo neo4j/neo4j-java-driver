@@ -17,10 +17,13 @@
 package org.neo4j.driver.internal.async;
 
 import static java.util.Collections.emptyMap;
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.observeAsync;
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.scoped;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -35,14 +38,18 @@ import org.neo4j.driver.async.AsyncTransactionCallback;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.GqlStatusError;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.Futures;
 
 public class InternalAsyncSession extends AsyncAbstractQueryRunner implements AsyncSession {
     private final NetworkSession session;
+    private final DriverObservationProvider observationProvider;
 
-    public InternalAsyncSession(NetworkSession session) {
+    public InternalAsyncSession(NetworkSession session, DriverObservationProvider observationProvider) {
         this.session = session;
+        this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     @Override
@@ -63,12 +70,14 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
 
     @Override
     public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config) {
-        return session.runAsync(query, config);
+        var runObservation = observationProvider.sessionRun(AsyncSession.class, query.text(), query.parameters());
+        return observeAsync(runObservation, () -> session.runAsync(query, config, runObservation, ResultCursor.class));
     }
 
     @Override
     public CompletionStage<Void> closeAsync() {
-        return session.closeAsync();
+        var closeObservation = observationProvider.sessionClose(AsyncSession.class);
+        return observeAsync(closeObservation, () -> session.closeAsync(closeObservation));
     }
 
     @Override
@@ -78,8 +87,10 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
 
     @Override
     public CompletionStage<AsyncTransaction> beginTransactionAsync(TransactionConfig config) {
-        return session.beginTransactionAsync(config, new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION))
-                .thenApply(InternalAsyncTransaction::new);
+        var beginObservation = observationProvider.beginTransaction(AsyncTransaction.class);
+        return observeAsync(beginObservation, () -> session.beginTransactionAsync(
+                        config, new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION), beginObservation)
+                .thenApply(tx -> new InternalAsyncTransaction(tx, observationProvider, null)));
     }
 
     @Override
@@ -102,32 +113,34 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     private <T> CompletionStage<T> transactionAsync(
             AccessMode mode, AsyncTransactionCallback<CompletionStage<T>> work, TransactionConfig config) {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.MANAGED_TRANSACTION);
-        return session.retryLogic().retryAsync(() -> {
+        var executeObservation = observationProvider.sessionExecute(AsyncSession.class, mode);
+        return observeAsync(executeObservation, () -> session.retryLogic().retryAsync(() -> {
             var resultFuture = new CompletableFuture<T>();
-            var txFuture = session.beginTransactionAsync(mode, config, apiTelemetryWork);
+            var txFuture = session.beginTransactionAsync(mode, config, apiTelemetryWork, executeObservation);
 
             txFuture.whenComplete((tx, completionError) -> {
                 var error = Futures.completionExceptionCause(completionError);
                 if (error != null) {
                     resultFuture.completeExceptionally(error);
                 } else {
-                    executeWork(resultFuture, tx, work);
+                    executeWork(resultFuture, tx, work, executeObservation);
                 }
             });
 
             return resultFuture;
-        });
+        }));
     }
 
     private <T> void executeWork(
             CompletableFuture<T> resultFuture,
             UnmanagedTransaction tx,
-            AsyncTransactionCallback<CompletionStage<T>> work) {
-        var workFuture = safeExecuteWork(tx, work);
+            AsyncTransactionCallback<CompletionStage<T>> work,
+            Observation parentObservation) {
+        var workFuture = safeExecuteWork(tx, work, parentObservation);
         workFuture.whenComplete((result, completionError) -> {
             var error = Futures.completionExceptionCause(completionError);
             if (error != null) {
-                closeTxAfterFailedTransactionWork(tx, resultFuture, error);
+                closeTxAfterFailedTransactionWork(tx, resultFuture, error, parentObservation);
             } else if (result instanceof ResultCursor) {
                 var message = String.format(
                         "%s is not a valid return value, it should be consumed before producing a return value",
@@ -139,20 +152,25 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
                         message,
                         GqlStatusError.DIAGNOSTIC_RECORD,
                         null);
-                closeTxAfterFailedTransactionWork(tx, resultFuture, error);
+                closeTxAfterFailedTransactionWork(tx, resultFuture, error, parentObservation);
             } else {
-                closeTxAfterSucceededTransactionWork(tx, resultFuture, result);
+                closeTxAfterSucceededTransactionWork(tx, resultFuture, result, parentObservation);
             }
         });
     }
 
     private <T> CompletionStage<T> safeExecuteWork(
-            UnmanagedTransaction tx, AsyncTransactionCallback<CompletionStage<T>> work) {
+            UnmanagedTransaction tx, AsyncTransactionCallback<CompletionStage<T>> work, Observation parentObservation) {
         // given work might fail in both async and sync way
         // async failure will result in a failed future being returned
         // sync failure will result in an exception being thrown
         try {
-            var result = work.execute(new DelegatingAsyncTransactionContext(new InternalAsyncTransaction(tx)));
+            var result = scoped(
+                    observationProvider,
+                    parentObservation,
+                    () -> work.execute(new DelegatingAsyncTransactionContext(
+                            new InternalAsyncTransaction(tx, observationProvider, parentObservation))));
+            ;
 
             // protect from given transaction function returning null
             return result == null ? completedWithNull() : result;
@@ -163,8 +181,11 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     private <T> void closeTxAfterFailedTransactionWork(
-            UnmanagedTransaction tx, CompletableFuture<T> resultFuture, Throwable error) {
-        tx.closeAsync().whenComplete((ignored, rollbackError) -> {
+            UnmanagedTransaction tx,
+            CompletableFuture<T> resultFuture,
+            Throwable error,
+            Observation parentObservation) {
+        tx.closeAsync(parentObservation).whenComplete((ignored, rollbackError) -> {
             if (rollbackError != null) {
                 error.addSuppressed(rollbackError);
             }
@@ -173,8 +194,8 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     private <T> void closeTxAfterSucceededTransactionWork(
-            UnmanagedTransaction tx, CompletableFuture<T> resultFuture, T result) {
-        tx.closeAsync(true).whenComplete((ignored, completionError) -> {
+            UnmanagedTransaction tx, CompletableFuture<T> resultFuture, T result, Observation parentObservation) {
+        tx.closeAsync(true, parentObservation).whenComplete((ignored, completionError) -> {
             var commitError = Futures.completionExceptionCause(completionError);
             if (commitError != null) {
                 resultFuture.completeExceptionally(commitError);

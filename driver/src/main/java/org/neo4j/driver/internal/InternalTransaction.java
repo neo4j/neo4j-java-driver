@@ -16,46 +16,74 @@
  */
 package org.neo4j.driver.internal;
 
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.observe;
+
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.Observation;
 import org.neo4j.driver.internal.util.Futures;
 
 public class InternalTransaction extends AbstractQueryRunner implements Transaction {
     private final UnmanagedTransaction tx;
+    private final DriverObservationProvider observationProvider;
+    private final Observation parentObservation;
 
-    public InternalTransaction(UnmanagedTransaction tx) {
+    public InternalTransaction(
+            UnmanagedTransaction tx, DriverObservationProvider observationProvider, Observation parentObservation) {
         this.tx = tx;
+        this.observationProvider = Objects.requireNonNull(observationProvider);
+        this.parentObservation = parentObservation;
     }
 
     @Override
     public void commit() {
-        Futures.blockingGet(
-                tx.commitAsync(),
-                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while committing the transaction"));
+        observeWithParentOrSupplier(
+                parentObservation,
+                () -> observationProvider.transactionCommit(Transaction.class),
+                (observation) -> Futures.blockingGet(
+                        tx.commitAsync(observation),
+                        () -> terminateConnectionOnThreadInterrupt(
+                                "Thread interrupted while committing the transaction")));
     }
 
     @Override
     public void rollback() {
-        Futures.blockingGet(
-                tx.rollbackAsync(),
-                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while rolling back the transaction"));
+        observeWithParentOrSupplier(
+                parentObservation,
+                () -> observationProvider.transactionRollback(Transaction.class),
+                (observation) -> Futures.blockingGet(
+                        tx.rollbackAsync(observation),
+                        () -> terminateConnectionOnThreadInterrupt(
+                                "Thread interrupted while rolling back the transaction")));
     }
 
     @Override
     public void close() {
-        Futures.blockingGet(
-                tx.closeAsync(),
-                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while closing the transaction"));
+        observeWithParentOrSupplier(
+                parentObservation,
+                () -> observationProvider.transactionClose(Transaction.class),
+                (observation) -> Futures.blockingGet(
+                        tx.closeAsync(observation),
+                        () -> terminateConnectionOnThreadInterrupt(
+                                "Thread interrupted while closing the transaction")));
     }
 
     @Override
     public Result run(Query query) {
-        var cursor = Futures.blockingGet(
-                tx.runAsync(query),
-                () -> terminateConnectionOnThreadInterrupt("Thread interrupted while running query in transaction"));
-        return new InternalResult(null, cursor);
+        var runObservation = observationProvider.transactionRun(Transaction.class, query.text(), query.parameters());
+        return observe(runObservation, () -> {
+            var cursor = Futures.blockingGet(
+                    tx.runAsync(query, runObservation, Result.class),
+                    () -> terminateConnectionOnThreadInterrupt(
+                            "Thread interrupted while running query in transaction"));
+            return new InternalResult(null, cursor);
+        });
     }
 
     @Override
@@ -69,9 +97,9 @@ public class InternalTransaction extends AbstractQueryRunner implements Transact
      * Terminates the transaction by sending the Bolt {@code RESET} message and waiting for its response as long as the
      * transaction has not already been terminated, is not closed or closing.
      *
-     * @since 5.11
      * @throws org.neo4j.driver.exceptions.ClientException if the transaction is closed or is closing
      * @see org.neo4j.driver.exceptions.TransactionTerminatedException
+     * @since 5.11
      */
     public void terminate() {
         Futures.blockingGet(
@@ -81,5 +109,15 @@ public class InternalTransaction extends AbstractQueryRunner implements Transact
 
     private void terminateConnectionOnThreadInterrupt(String reason) {
         tx.connection().forceClose(reason);
+    }
+
+    private static void observeWithParentOrSupplier(
+            Observation parentObservation, Supplier<Observation> observationSupplier, Consumer<Observation> runnable) {
+        if (parentObservation != null) {
+            runnable.accept(parentObservation);
+        } else {
+            var observation = observationSupplier.get();
+            observe(observation, () -> runnable.accept(observation));
+        }
     }
 }

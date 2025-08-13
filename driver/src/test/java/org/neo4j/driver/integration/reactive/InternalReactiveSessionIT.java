@@ -27,6 +27,7 @@ import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.bolt.connection.TelemetryApi;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.internal.observation.NoopObservation;
 import org.neo4j.driver.internal.reactive.InternalReactiveSession;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
@@ -59,7 +60,8 @@ class InternalReactiveSessionIT {
         // GIVEN
         var txConfig = TransactionConfig.empty();
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION);
-        var txMono = Mono.fromDirect(flowPublisherToFlux(session.beginTransaction(txConfig, txType, apiTelemetryWork)));
+        var txMono = Mono.fromDirect(
+                session.beginTransaction(txConfig, txType, apiTelemetryWork, NoopObservation.getInstance()));
         Function<ReactiveTransaction, Mono<ResultSummary>> txUnit =
                 tx -> Mono.fromDirect(flowPublisherToFlux(tx.run("RETURN 1")))
                         .flatMap(result -> Mono.fromDirect(flowPublisherToFlux(result.consume())));

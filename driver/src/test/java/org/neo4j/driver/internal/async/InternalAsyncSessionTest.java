@@ -87,6 +87,7 @@ import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnection;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.DriverResponseHandler;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -103,14 +104,14 @@ class InternalAsyncSessionTest {
         connection = connectionMock(new BoltProtocolVersion(4, 0));
         given(connection.close()).willReturn(completedFuture(null));
         connectionProvider = mock(DriverBoltConnectionSource.class);
-        given(connectionProvider.getConnection(any()))
+        given(connectionProvider.getConnection(any(), any()))
                 .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
                     var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
                     parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection);
                 });
         session = newSession(connectionProvider);
-        asyncSession = new InternalAsyncSession(session);
+        asyncSession = new InternalAsyncSession(session, NoopObservationProvider.getInstance());
     }
 
     private static Stream<Function<AsyncSession, CompletionStage<ResultCursor>>> allSessionRunMethods() {
@@ -271,7 +272,7 @@ class InternalAsyncSessionTest {
     @Test
     void shouldReturnBookmark() {
         session = newSession(connectionProvider, Collections.singleton(Bookmark.from("Bookmark1")));
-        asyncSession = new InternalAsyncSession(session);
+        asyncSession = new InternalAsyncSession(session, NoopObservationProvider.getInstance());
 
         assertThat(asyncSession.lastBookmarks(), equalTo(session.lastBookmarks()));
     }
@@ -282,7 +283,7 @@ class InternalAsyncSessionTest {
             throws ExecutionException, InterruptedException {
         // GIVEN
         var networkSession = mock(NetworkSession.class);
-        AsyncSession session = new InternalAsyncSession(networkSession);
+        AsyncSession session = new InternalAsyncSession(networkSession, NoopObservationProvider.getInstance());
         var logic = mock(RetryLogic.class);
         var expected = "";
         given(networkSession.retryLogic()).willReturn(logic);
@@ -342,7 +343,7 @@ class InternalAsyncSessionTest {
         var e = assertThrows(Exception.class, () -> executeTransaction(asyncSession, transactionMode, work));
         assertEquals(error, e);
 
-        verify(connectionProvider).getConnection(any());
+        verify(connectionProvider).getConnection(any(), any());
         verifyBegin(connection);
         verifyRollbackTx(connection);
     }
@@ -391,7 +392,7 @@ class InternalAsyncSessionTest {
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);
-        asyncSession = new InternalAsyncSession(session);
+        asyncSession = new InternalAsyncSession(session, NoopObservationProvider.getInstance());
 
         var work = spy(new TxWork(failures, new SessionExpiredException("")));
         int answer = executeTransaction(asyncSession, mode, work);
@@ -440,7 +441,7 @@ class InternalAsyncSessionTest {
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);
-        asyncSession = new InternalAsyncSession(session);
+        asyncSession = new InternalAsyncSession(session, NoopObservationProvider.getInstance());
 
         var work = spy(new TxWork(43));
         int answer = executeTransaction(asyncSession, mode, work);
@@ -482,7 +483,7 @@ class InternalAsyncSessionTest {
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);
-        asyncSession = new InternalAsyncSession(session);
+        asyncSession = new InternalAsyncSession(session, NoopObservationProvider.getInstance());
 
         var work = spy(new TxWork(failures, new SessionExpiredException("Oh!")));
 
@@ -496,7 +497,8 @@ class InternalAsyncSessionTest {
                 .writeAndFlush(
                         any(),
                         ArgumentMatchers.<List<Message>>argThat(
-                                messages -> messages.size() == 1 && messages.get(0) instanceof CommitMessage));
+                                messages -> messages.size() == 1 && messages.get(0) instanceof CommitMessage),
+                        any());
         verifyRollbackTx(connection, times(failures));
     }
 
@@ -532,7 +534,7 @@ class InternalAsyncSessionTest {
 
         RetryLogic retryLogic = new FixedRetryLogic(retries);
         session = newSession(connectionProvider, retryLogic);
-        asyncSession = new InternalAsyncSession(session);
+        asyncSession = new InternalAsyncSession(session, NoopObservationProvider.getInstance());
 
         var work = spy(new TxWork(42));
 
