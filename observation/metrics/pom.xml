@@ -16,6 +16,7 @@
     <description>The Neo4j Java Driver Observation module providing metrics.</description>
 
     <properties>
+        <javadoc.failOnWarnings>false</javadoc.failOnWarnings>
         <maven.deploy.skip>false</maven.deploy.skip>
     </properties>
 
@@ -49,6 +50,15 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <scm>
         <connection>scm:git:git://github.com/neo4j/neo4j-java-driver.git</connection>

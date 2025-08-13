@@ -19,6 +19,7 @@
         <micrometer-docs-generator.inputPath>${project.build.sourceDirectory}/org/neo4j/driver/observation/micrometer</micrometer-docs-generator.inputPath>
         <micrometer-docs-generator.inclusionPattern>.*</micrometer-docs-generator.inclusionPattern>
         <micrometer-docs-generator.outputPath>${project.build.directory}/docs</micrometer-docs-generator.outputPath>
+        <javadoc.failOnWarnings>false</javadoc.failOnWarnings>
         <maven.deploy.skip>false</maven.deploy.skip>
     </properties>
 
@@ -129,6 +130,10 @@
                         <type>jar</type>
                     </dependency>
                 </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
