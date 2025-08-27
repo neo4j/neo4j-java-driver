@@ -142,27 +142,25 @@
         <profile>
             <id>generate-html</id>
             <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.asciidoctor</groupId>
-                            <artifactId>asciidoctor-maven-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>asciidoc-to-html</id>
-                                    <phase>prepare-package</phase>
-                                    <goals>
-                                        <goal>process-asciidoc</goal>
-                                    </goals>
-                                    <configuration>
-                                        <sourceDirectory>${project.build.directory}/docs</sourceDirectory>
-                                        <outputDirectory>${project.build.directory}/html</outputDirectory>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
+                <plugins>
+                    <plugin>
+                        <groupId>org.asciidoctor</groupId>
+                        <artifactId>asciidoctor-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>asciidoc-to-html</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>process-asciidoc</goal>
+                                </goals>
+                                <configuration>
+                                    <sourceDirectory>${project.build.directory}/docs</sourceDirectory>
+                                    <outputDirectory>${project.build.directory}/html</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
             </build>
         </profile>
     </profiles>
