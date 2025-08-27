@@ -61,26 +61,7 @@ public class StartTest implements TestkitRequest {
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.test_partial_summary_contains_updates$", "Does not contain updates because value is zero");
         COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.test_supports_multi_db$", "Database is None");
-        var skipMessage = "Driver handles connection acquisition timeout differently";
-        COMMON_SKIP_PATTERN_TO_REASON.put(
-                "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_encompass_the_handshake_time.*$", skipMessage);
-        COMMON_SKIP_PATTERN_TO_REASON.put(
-                "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_router_handshake_has_own_timeout_too_slow$",
-                skipMessage);
-        COMMON_SKIP_PATTERN_TO_REASON.put(
-                "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_fail_when_acquisition_timeout_is_reached_first.*$",
-                skipMessage);
-        COMMON_SKIP_PATTERN_TO_REASON.put(
-                "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_encompass_the_version_handshake_(in_time|time_out)$",
-                skipMessage);
-        COMMON_SKIP_PATTERN_TO_REASON.put(
-                "^.*\\.TestHomeDbMixedCluster\\.test_connection_acquisition_timeout_during_fallback$", skipMessage);
-        COMMON_SKIP_PATTERN_TO_REASON.put(
-                "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_does_encompass_router_route_response$", skipMessage);
-        COMMON_SKIP_PATTERN_TO_REASON.put(
-                "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_router_handshake_shares_acquisition_timeout$",
-                skipMessage);
-        skipMessage = "This test needs updating to implement expected behaviour";
+        var skipMessage = "This test needs updating to implement expected behaviour";
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestAuthenticationSchemes[^.]+\\.test_custom_scheme_empty$", skipMessage);
         skipMessage = "Driver does not implement optimization for qid in explicit transaction";

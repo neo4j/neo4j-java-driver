@@ -335,6 +335,7 @@ public class DriverFactory {
                 clock,
                 loggingProvider,
                 uri,
+                config.connectionAcquisitionTimeoutMillis(),
                 List.of(AuthTokenManagerExecutionException.class),
                 observationProvider);
     }
@@ -381,7 +382,8 @@ public class DriverFactory {
                     boltAgent,
                     userAgent,
                     connectTimeoutMillis,
-                    notificationConfig);
+                    notificationConfig,
+                    PooledBoltConnectionSource.TimeoutPolicy.DEFAULT);
         };
     }
 

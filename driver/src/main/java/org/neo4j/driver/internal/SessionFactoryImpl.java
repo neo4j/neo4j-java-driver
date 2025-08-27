@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeoutException;
 import org.neo4j.bolt.connection.DatabaseName;
 import org.neo4j.bolt.connection.SecurityPlan;
 import org.neo4j.driver.AccessMode;
@@ -35,6 +37,7 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -42,6 +45,7 @@ import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
+import org.neo4j.driver.internal.util.Futures;
 
 public class SessionFactoryImpl implements SessionFactory {
     private final BoltSecurityPlanManager securityPlanManager;
@@ -125,7 +129,20 @@ public class SessionFactoryImpl implements SessionFactory {
 
     @Override
     public CompletionStage<Void> verifyConnectivity() {
-        return connectionSource.verifyConnectivity();
+        return connectionSource.verifyConnectivity().exceptionally(throwable -> {
+            throwable = Futures.completionExceptionCause(throwable);
+            if (throwable instanceof TimeoutException) {
+                throw new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(throwable.getMessage()),
+                        "N/A",
+                        throwable.getMessage(),
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        throwable);
+            } else {
+                throw new CompletionException(throwable);
+            }
+        });
     }
 
     @Override

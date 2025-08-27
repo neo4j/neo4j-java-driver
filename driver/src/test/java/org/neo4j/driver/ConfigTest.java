@@ -246,12 +246,11 @@ class ConfigTest {
     }
 
     @Test
-    void shouldAllowNegativeConnectionAcquisitionTimeout() {
-        var config = Config.builder()
-                .withConnectionAcquisitionTimeout(-42, TimeUnit.HOURS)
-                .build();
+    void shouldRejectNegativeConnectionAcquisitionTimeout() {
+        var builder = Config.builder();
 
-        assertEquals(-1, config.connectionAcquisitionTimeoutMillis());
+        assertThrows(
+                IllegalArgumentException.class, () -> builder.withConnectionAcquisitionTimeout(-42, TimeUnit.HOURS));
     }
 
     @Test
