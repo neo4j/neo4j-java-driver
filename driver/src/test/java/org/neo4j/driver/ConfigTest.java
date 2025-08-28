@@ -562,4 +562,11 @@ class ConfigTest {
         assertThrows(
                 IllegalArgumentException.class, () -> Config.builder().withObservationProvider(observationProvider));
     }
+
+    @Test
+    void shouldAllowNullObservationProvider() {
+        var config = Config.builder().withObservationProvider(null).build();
+
+        assertTrue(config.observationProvider().isEmpty());
+    }
 }

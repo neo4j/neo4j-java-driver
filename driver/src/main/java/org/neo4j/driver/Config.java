@@ -37,7 +37,6 @@ import org.neo4j.driver.internal.InternalNotificationConfig;
 import org.neo4j.driver.internal.RoutingSettings;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
-import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.observation.ObservationProvider;
@@ -749,11 +748,10 @@ public final class Config implements Serializable {
          */
         @Preview(name = "Observability")
         public ConfigBuilder withObservationProvider(ObservationProvider observationProvider) {
-            this.observationProvider =
-                    Objects.requireNonNullElseGet(observationProvider, NoopObservationProvider::getInstance);
-            if (!(observationProvider instanceof DriverObservationProvider)) {
+            if (observationProvider != null && !(observationProvider instanceof DriverObservationProvider)) {
                 throw new IllegalArgumentException("Unssupported observation provider");
             }
+            this.observationProvider = observationProvider;
             return this;
         }
 
