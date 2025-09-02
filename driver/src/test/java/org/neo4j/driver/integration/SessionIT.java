@@ -646,7 +646,7 @@ class SessionIT {
         var maxPoolSize = 3;
         var config = Config.builder()
                 .withMaxConnectionPoolSize(maxPoolSize)
-                .withConnectionAcquisitionTimeout(0, TimeUnit.SECONDS)
+                .withConnectionAcquisitionTimeout(100, TimeUnit.MILLISECONDS)
                 .withMaxTransactionRetryTime(42, TimeUnit.DAYS) // retry for a really long time
                 .withEventLoopThreads(1)
                 .build();
@@ -660,7 +660,7 @@ class SessionIT {
         var invocations = new AtomicInteger();
         var e = assertThrows(
                 ClientException.class, () -> driver.session().executeWrite(tx -> invocations.incrementAndGet()));
-        assertThat(e, is(connectionAcquisitionTimeoutError(0)));
+        assertThat(e, is(connectionAcquisitionTimeoutError(100)));
 
         // work should never be invoked
         assertEquals(0, invocations.get());

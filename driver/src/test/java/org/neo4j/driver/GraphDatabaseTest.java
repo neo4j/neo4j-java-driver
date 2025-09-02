@@ -20,16 +20,17 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.testutil.TestUtil;
@@ -56,9 +57,12 @@ class GraphDatabaseTest {
             @SuppressWarnings("resource")
             final var driver = GraphDatabase.driver(
                     "bolt://localhost:" + serverSocket.getLocalPort(),
-                    Config.builder().withConnectionTimeout(1, SECONDS).build());
+                    Config.builder()
+                            .withConnectionTimeout(1, SECONDS)
+                            .withConnectionAcquisitionTimeout(1, SECONDS)
+                            .build());
             try {
-                assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
+                assertThrows(Neo4jException.class, driver::verifyConnectivity);
             } finally {
                 // clear interrupted flag
                 Thread.interrupted();
@@ -171,27 +175,20 @@ class GraphDatabaseTest {
         try (var server = new ServerSocket(0)) // server that accepts connections but does not reply
         {
             var connectionTimeoutMillis = 1_000;
-            var config = createConfig(encrypted, connectionTimeoutMillis);
+            var configBuilder = Config.builder()
+                    .withConnectionTimeout(connectionTimeoutMillis, MILLISECONDS)
+                    .withConnectionAcquisitionTimeout(connectionTimeoutMillis, MILLISECONDS);
+            if (encrypted) {
+                configBuilder.withEncryption();
+            } else {
+                configBuilder.withoutEncryption();
+            }
             @SuppressWarnings("resource")
-            final var driver = GraphDatabase.driver(URI.create("bolt://localhost:" + server.getLocalPort()), config);
+            final var driver = GraphDatabase.driver(
+                    URI.create("bolt://localhost:" + server.getLocalPort()), configBuilder.build());
 
-            var e = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
-            assertEquals(e.getMessage(), "Unable to establish connection in " + connectionTimeoutMillis + "ms");
+            var e = assertThrows(Neo4jException.class, driver::verifyConnectivity);
+            assertInstanceOf(TimeoutException.class, e.getCause());
         }
-    }
-
-    private static Config createConfig(boolean encrypted, int timeoutMillis) {
-        @SuppressWarnings("deprecation")
-        var configBuilder = Config.builder()
-                .withConnectionTimeout(timeoutMillis, MILLISECONDS)
-                .withLogging(DEV_NULL_LOGGING);
-
-        if (encrypted) {
-            configBuilder.withEncryption();
-        } else {
-            configBuilder.withoutEncryption();
-        }
-
-        return configBuilder.build();
     }
 }

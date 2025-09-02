@@ -68,7 +68,7 @@ class EncryptionIT {
 
     @Test
     void shouldFailWithEncryptionWhenItIsDisabledInTheDatabase() {
-        testMismatchingEncryption(BoltTlsLevel.DISABLED, true, "Unable to write Bolt handshake to");
+        testMismatchingEncryption(BoltTlsLevel.DISABLED, true, "SSL handshake with");
     }
 
     @Test

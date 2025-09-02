@@ -554,27 +554,34 @@ public final class Config implements Serializable {
         }
 
         /**
-         * Configure maximum amount of time connection acquisition will attempt to acquire a connection from the
-         * connection pool. This timeout only kicks in when all existing connections are being used and no new
-         * connections can be created because maximum connection pool size has been reached.
+         * Sets the maximum amount of time the driver will wait to acquire a connection suitable for a given purpose.
          * <p>
-         * Exception is raised when connection can't be acquired within configured time.
+         * In some situations the driver may need to do multiple actions and potentially acquire multiple connections to
+         * get a suitable one. For instance, when client-side routing is used, home database resolution is required,
+         * liveness checks are needed, etc.
          * <p>
-         * Default value is 60 seconds. Negative values are allowed and result in unlimited acquisition timeout. Value
-         * of {@code 0} is allowed and results in no timeout and immediate failure when connection is unavailable.
+         * An exception is raised when connection can't be acquired within configured time.
+         * <p>
+         * Timeout value should be greater or equal to zero and represent a valid {@code long} value when converted to
+         * {@link TimeUnit#MILLISECONDS milliseconds}.
+         * <p>
+         * Default value is 60 seconds. {@literal 0} value disables timeout.
+         * <p>
+         * This timeout should be bigger than {@link ConfigBuilder#withConnectionTimeout(long, TimeUnit)}.
          *
          * @param value the acquisition timeout
          * @param unit  the unit in which the duration is given
          * @return this builder
          * @see #withMaxConnectionPoolSize(int)
+         * @see #withConnectionTimeout(long, TimeUnit)
          */
         public ConfigBuilder withConnectionAcquisitionTimeout(long value, TimeUnit unit) {
             var valueInMillis = unit.toMillis(value);
-            if (value >= 0) {
-                this.connectionAcquisitionTimeoutMillis = valueInMillis;
-            } else {
-                this.connectionAcquisitionTimeoutMillis = -1;
+            if (valueInMillis < 0) {
+                throw new IllegalArgumentException(format(
+                        "The connection acquisition timeout may not be smaller than 0, but was %d %s.", value, unit));
             }
+            this.connectionAcquisitionTimeoutMillis = valueInMillis;
             return this;
         }
 
