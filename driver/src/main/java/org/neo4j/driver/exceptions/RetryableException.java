@@ -16,10 +16,18 @@
  */
 package org.neo4j.driver.exceptions;
 
+import org.neo4j.driver.Session;
+
 /**
  * A marker interface for retryable exceptions.
  * <p>
- * This indicates whether an operation that resulted in retryable exception is worth retrying.
+ * This indicates whether an operation that resulted in retryable exception might be resolved by retrying.
+ * <p>
+ * <b>Note</b> that some database requests executed via implicit transaction API (like, {@link Session#run(String)}),
+ * might not be idempotent irrispective of this marker interface as its main focus is on the error type and not
+ * individual database request. An example of such database request is
+ * <a href="https://neo4j.com/docs/cypher-manual/current/subqueries/subqueries-in-transactions/">CALL {} IN TRANSACTIONS</a>.
+ *
  * @since 5.0
  */
 public interface RetryableException {}
