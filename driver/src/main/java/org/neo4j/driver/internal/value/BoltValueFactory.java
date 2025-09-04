@@ -29,16 +29,19 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.values.Node;
 import org.neo4j.bolt.connection.values.Path;
 import org.neo4j.bolt.connection.values.Relationship;
 import org.neo4j.bolt.connection.values.Segment;
+import org.neo4j.bolt.connection.values.Type;
 import org.neo4j.bolt.connection.values.Value;
 import org.neo4j.bolt.connection.values.ValueFactory;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.internal.InternalUnsupportedTypeData;
 
 public class BoltValueFactory implements ValueFactory {
     private static final BoltValueFactory INSTANCE = new BoltValueFactory();
@@ -263,6 +266,15 @@ public class BoltValueFactory implements ValueFactory {
             throw new AssertionError("Unsupported type: " + elements.getClass());
         }
         return value;
+    }
+
+    @Override
+    public Value unsupportedTypeData(String name, BoltProtocolVersion minBoltVersion, Map<String, Value> extra) {
+        var message = extra.get("message");
+        var messageString =
+                message != null ? message.boltValueType().equals(Type.STRING) ? message.asString() : null : null;
+        return (InternalValue)
+                Values.value((Object) new InternalUnsupportedTypeData(name, minBoltVersion.toString(), messageString));
     }
 
     @Override

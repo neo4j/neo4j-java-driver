@@ -57,7 +57,8 @@ public enum TypeConstructor {
     DATE_TIME,
     DURATION,
     NULL,
-    VECTOR;
+    VECTOR,
+    UNSUPPORTED;
 
     private static TypeConstructor typeConstructorOf(Value value) {
         return ((InternalValue) value).typeConstructor();

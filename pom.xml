@@ -25,7 +25,7 @@
     <parallelizable.it.forkCount>2</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
-    <surefire.and.failsafe.version>3.5.3</surefire.and.failsafe.version>
+    <surefire.and.failsafe.version>3.5.4</surefire.and.failsafe.version>
     <surefire.jpms.args/>
     <failsafe.parallelizable.jpms.args/>
     <failsafe.sequential.jpms.args/>
@@ -34,7 +34,7 @@
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <!-- Versions -->
-    <neo4j-bolt-connection-bom.version>8.4.0</neo4j-bolt-connection-bom.version>
+    <neo4j-bolt-connection-bom.version>9.0.0</neo4j-bolt-connection-bom.version>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
@@ -43,11 +43,11 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2025.0.0-M7</reactor-bom.version>
-    <slf4j-api.version>2.1.0-alpha1</slf4j-api.version>
+    <reactor-bom.version>2024.0.10</reactor-bom.version>
+    <slf4j-api.version>2.0.17</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
-    <mockito-core.version>5.19.0</mockito-core.version>
-    <junit.version>6.0.0-RC2</junit.version>
+    <mockito-core.version>5.20.0</mockito-core.version>
+    <junit.version>6.0.0-RC3</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.11.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
@@ -55,12 +55,12 @@
     <commons-compress.version>1.28.0</commons-compress.version>
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
     <commons-codec.version>1.19.0</commons-codec.version>
-    <bouncycastle-jdk18on.version>1.81</bouncycastle-jdk18on.version>
+    <bouncycastle-jdk18on.version>1.82</bouncycastle-jdk18on.version>
     <logback-classic.version>1.5.18</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
     <jackson.version>2.20.0</jackson.version>
-    <lombok.version>1.18.40</lombok.version>
-    <svm.version>24.2.2</svm.version>
+    <lombok.version>1.18.42</lombok.version>
+    <svm.version>25.0.0</svm.version>
     <micrometer.version>1.15.2</micrometer.version>
     <micrometer-docs-generator.version>1.0.4</micrometer-docs-generator.version>
     <blockhound.version>1.0.14.RELEASE</blockhound.version>
