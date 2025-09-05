@@ -366,6 +366,15 @@ public class DriverFactory {
                     boltConnectionProviderFactory);
             var listeningBoltConnectionProvider = BoltConnectionListener.listeningBoltConnectionProvider(
                     boltConnectionProvider, boltConnectionListener);
+            var connectTimeoutMillisAdjusted = connectTimeoutMillis;
+            var connectionAcquisitionTimeoutMillis = config.connectionAcquisitionTimeoutMillis();
+            if (connectTimeoutMillisAdjusted == 0 && connectionAcquisitionTimeoutMillis > 0) {
+                connectTimeoutMillisAdjusted = (int) connectionAcquisitionTimeoutMillis;
+                if (connectTimeoutMillisAdjusted != connectionAcquisitionTimeoutMillis) {
+                    throw new IllegalStateException(
+                            "Failed to determine connection timeout from acquisition timeout due to overflow, set connection timeout to non zero value");
+                }
+            }
             return new PooledBoltConnectionSource(
                     loggingProvider,
                     clock,
@@ -374,14 +383,14 @@ public class DriverFactory {
                     authTokenManager,
                     createSecurityPlanSupplierWithHostname(securityPlanSupplier, expectedVerificationHostname),
                     config.maxConnectionPoolSize(),
-                    config.connectionAcquisitionTimeoutMillis(),
+                    connectionAcquisitionTimeoutMillis,
                     config.maxConnectionLifetimeMillis(),
                     config.idleTimeBeforeConnectionTest(),
                     observationProvider,
                     routingContextAddress,
                     boltAgent,
                     userAgent,
-                    connectTimeoutMillis,
+                    connectTimeoutMillisAdjusted,
                     notificationConfig,
                     PooledBoltConnectionSource.TimeoutPolicy.DEFAULT);
         };
