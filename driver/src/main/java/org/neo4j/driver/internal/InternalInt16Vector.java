@@ -16,10 +16,22 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.types.LongVector;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.neo4j.driver.types.Int16Vector;
 
-public final class InternalLongVector extends AbstractArrayVector<long[]> implements LongVector {
-    public InternalLongVector(long[] elements) {
+public final class InternalInt16Vector extends AbstractArrayVector<short[]> implements Int16Vector {
+    public InternalInt16Vector(short[] elements) {
         super(elements);
+    }
+
+    @Override
+    protected Stream<? extends Number> elementsStream() {
+        return IntStream.range(0, this.elements.length).mapToObj(i -> this.elements[i]);
+    }
+
+    @Override
+    protected String neo4jElementType() {
+        return "INTEGER16";
     }
 }

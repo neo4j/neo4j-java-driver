@@ -17,22 +17,32 @@
 package org.neo4j.driver.types;
 
 import org.neo4j.driver.Values;
-import org.neo4j.driver.internal.InternalLongVector;
+import org.neo4j.driver.internal.InternalInt8Vector;
 import org.neo4j.driver.util.Preview;
 
 /**
- * Represents Neo4j Vector type that holds a sequence of {@code long} values.
+ * Represents Neo4j Vector type that holds a sequence of {@code byte} values.
  *
  * @since 6.0.0
  * @see Vector
  * @see Values
  */
 @Preview(name = "Neo4j Vector")
-public sealed interface LongVector extends Vector permits InternalLongVector {
+public sealed interface Int8Vector extends Vector permits InternalInt8Vector {
     /**
      * Returns array with vector elements.
      *
      * @return the array with vector elements
      */
-    long[] toArray();
+    byte[] toArray();
+
+    /**
+     * Returns Neo4j Vector as a {@link String}.
+     * <p>
+     * For example: <pre>vector([0], 1, INTEGER8 NOT NULL)</pre>
+     *
+     * @return the string value
+     */
+    @Override
+    String toString();
 }

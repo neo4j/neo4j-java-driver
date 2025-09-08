@@ -24,19 +24,19 @@ import org.neo4j.driver.util.Preview;
  * <p>
  * Values that represent vectors be created using the following methods:
  * <ul>
- *     <li>{@link Values#vector(byte[])} - returns {@link ByteVector}</li>
- *     <li>{@link Values#vector(short[])} - returns {@link ShortVector}</li>
- *     <li>{@link Values#vector(int[])} - returns {@link IntVector}</li>
- *     <li>{@link Values#vector(long[])} - returns {@link LongVector}</li>
- *     <li>{@link Values#vector(float[])} - returns {@link FloatVector}</li>
- *     <li>{@link Values#vector(double[])} - returns {@link DoubleVector}</li>
+ *     <li>{@link Values#vector(byte[])} - returns {@link Int8Vector}</li>
+ *     <li>{@link Values#vector(short[])} - returns {@link Int16Vector}</li>
+ *     <li>{@link Values#vector(int[])} - returns {@link Int32Vector}</li>
+ *     <li>{@link Values#vector(long[])} - returns {@link Int64Vector}</li>
+ *     <li>{@link Values#vector(float[])} - returns {@link Float32Vector}</li>
+ *     <li>{@link Values#vector(double[])} - returns {@link Float64Vector}</li>
  * </ul>
  *
  * @see Values
  * @since 6.0.0
  */
 @Preview(name = "Neo4j Vector")
-public sealed interface Vector permits ByteVector, DoubleVector, FloatVector, IntVector, LongVector, ShortVector {
+public sealed interface Vector permits Int8Vector, Int16Vector, Int32Vector, Int64Vector, Float32Vector, Float64Vector {
     /**
      * Returns the element type.
      *

@@ -14,25 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.types;
+package org.neo4j.driver.internal;
 
-import org.neo4j.driver.Values;
-import org.neo4j.driver.internal.InternalFloatVector;
-import org.neo4j.driver.util.Preview;
+import java.util.Arrays;
+import java.util.stream.Stream;
+import org.neo4j.driver.types.Int32Vector;
 
-/**
- * Represents Neo4j Vector type that holds a sequence of {@code float} values.
- *
- * @since 6.0.0
- * @see Vector
- * @see Values
- */
-@Preview(name = "Neo4j Vector")
-public sealed interface FloatVector extends Vector permits InternalFloatVector {
-    /**
-     * Returns array with vector elements.
-     *
-     * @return the array with vector elements
-     */
-    float[] toArray();
+public final class InternalInt32Vector extends AbstractArrayVector<int[]> implements Int32Vector {
+    public InternalInt32Vector(int[] elements) {
+        super(elements);
+    }
+
+    @Override
+    protected Stream<? extends Number> elementsStream() {
+        return Arrays.stream(elements).boxed();
+    }
+
+    @Override
+    protected String neo4jElementType() {
+        return "INTEGER32";
+    }
 }

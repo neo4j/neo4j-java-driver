@@ -16,10 +16,22 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.types.DoubleVector;
+import java.util.Arrays;
+import java.util.stream.Stream;
+import org.neo4j.driver.types.Float64Vector;
 
-public final class InternalDoubleVector extends AbstractArrayVector<double[]> implements DoubleVector {
-    public InternalDoubleVector(double[] elements) {
+public final class InternalFloat64Vector extends AbstractArrayVector<double[]> implements Float64Vector {
+    public InternalFloat64Vector(double[] elements) {
         super(elements);
+    }
+
+    @Override
+    protected Stream<? extends Number> elementsStream() {
+        return Arrays.stream(elements).boxed();
+    }
+
+    @Override
+    protected String neo4jElementType() {
+        return "FLOAT";
     }
 }

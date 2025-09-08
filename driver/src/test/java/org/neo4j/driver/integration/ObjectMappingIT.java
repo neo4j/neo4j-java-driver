@@ -41,6 +41,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.value.ValueException;
+import org.neo4j.driver.internal.InternalFloat64Vector;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPoint2D;
@@ -50,6 +51,7 @@ import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.mapping.Property;
+import org.neo4j.driver.types.Float64Vector;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.Point;
 
@@ -74,6 +76,7 @@ final class ObjectMappingIT {
         var javaDuration = Duration.of(1000, ChronoUnit.MINUTES);
         var point2d = (Point) new InternalPoint2D(0, 0, 0);
         var point3d = (Point) new InternalPoint3D(0, 0, 0, 0);
+        var vector = new InternalFloat64Vector(new double[] {0.0, 100.0});
 
         var properties = Map.ofEntries(
                 Map.entry("string", Values.value(string)),
@@ -97,7 +100,8 @@ final class ObjectMappingIT {
                 Map.entry("period", Values.value(period)),
                 Map.entry("javaDuration", Values.value(javaDuration)),
                 Map.entry("point2d", Values.value(point2d)),
-                Map.entry("point3d", Values.value(point3d)));
+                Map.entry("point3d", Values.value(point3d)),
+                Map.entry("vector", Values.value(vector)));
 
         // when
         var valueHolder = valueFunction.apply(properties);
@@ -120,6 +124,7 @@ final class ObjectMappingIT {
         assertEquals(javaDuration, valueHolder.javaDuration());
         assertEquals(point2d, valueHolder.point2d());
         assertEquals(point3d, valueHolder.point3d());
+        assertEquals(vector, valueHolder.vector());
     }
 
     static Stream<Arguments> shouldMapValueArgs() {
@@ -161,7 +166,8 @@ final class ObjectMappingIT {
             Period period,
             Duration javaDuration,
             Point point2d,
-            Point point3d) {}
+            Point point3d,
+            Float64Vector vector) {}
 
     public record StringValueHolder(String string) {}
 

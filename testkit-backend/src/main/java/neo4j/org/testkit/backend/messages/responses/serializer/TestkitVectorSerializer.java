@@ -28,12 +28,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import neo4j.org.testkit.backend.messages.VectorType;
 import org.neo4j.driver.internal.value.VectorValue;
-import org.neo4j.driver.types.ByteVector;
-import org.neo4j.driver.types.DoubleVector;
-import org.neo4j.driver.types.FloatVector;
-import org.neo4j.driver.types.IntVector;
-import org.neo4j.driver.types.LongVector;
-import org.neo4j.driver.types.ShortVector;
+import org.neo4j.driver.types.Float32Vector;
+import org.neo4j.driver.types.Float64Vector;
+import org.neo4j.driver.types.Int16Vector;
+import org.neo4j.driver.types.Int32Vector;
+import org.neo4j.driver.types.Int64Vector;
+import org.neo4j.driver.types.Int8Vector;
 import org.neo4j.driver.types.Vector;
 
 public class TestkitVectorSerializer extends StdSerializer<VectorValue> {
@@ -51,29 +51,29 @@ public class TestkitVectorSerializer extends StdSerializer<VectorValue> {
         String data;
         var vector = vectorValue.as(Vector.class);
         switch (vector) {
-            case ByteVector byteVector -> {
+            case Int8Vector int8Vector -> {
                 dtype = VectorType.BYTE.getName();
-                data = toHexString(byteVector.toArray());
+                data = toHexString(int8Vector.toArray());
             }
-            case ShortVector shortVector -> {
+            case Int16Vector int16Vector -> {
                 dtype = VectorType.SHORT.getName();
-                data = toHexString(shortVector.toArray());
+                data = toHexString(int16Vector.toArray());
             }
-            case IntVector intVector -> {
+            case Int32Vector int32Vector -> {
                 dtype = VectorType.INT.getName();
-                data = toHexString(intVector.toArray());
+                data = toHexString(int32Vector.toArray());
             }
-            case LongVector longVector -> {
+            case Int64Vector int64Vector -> {
                 dtype = VectorType.LONG.getName();
-                data = toHexString(longVector.toArray());
+                data = toHexString(int64Vector.toArray());
             }
-            case FloatVector floatVector -> {
+            case Float32Vector float32Vector -> {
                 dtype = VectorType.FLOAT.getName();
-                data = toHexString(floatVector.toArray());
+                data = toHexString(float32Vector.toArray());
             }
-            case DoubleVector doubleVector -> {
+            case Float64Vector float64Vector -> {
                 dtype = VectorType.DOUBLE.getName();
-                data = toHexString(doubleVector.toArray());
+                data = toHexString(float64Vector.toArray());
             }
             default -> throw new IllegalArgumentException(
                     "Unsupported vector type: " + vector.getClass().getName());

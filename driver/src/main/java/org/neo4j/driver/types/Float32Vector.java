@@ -17,22 +17,32 @@
 package org.neo4j.driver.types;
 
 import org.neo4j.driver.Values;
-import org.neo4j.driver.internal.InternalDoubleVector;
+import org.neo4j.driver.internal.InternalFloat32Vector;
 import org.neo4j.driver.util.Preview;
 
 /**
- * Represents Neo4j Vector type that holds a sequence of {@code double} values.
+ * Represents Neo4j Vector type that holds a sequence of {@code float} values.
  *
  * @since 6.0.0
  * @see Vector
  * @see Values
  */
 @Preview(name = "Neo4j Vector")
-public sealed interface DoubleVector extends Vector permits InternalDoubleVector {
+public sealed interface Float32Vector extends Vector permits InternalFloat32Vector {
     /**
      * Returns array with vector elements.
      *
      * @return the array with vector elements
      */
-    double[] toArray();
+    float[] toArray();
+
+    /**
+     * Returns Neo4j Vector as a {@link String}.
+     * <p>
+     * For example: <pre>vector([0.0], 1, FLOAT32 NOT NULL)</pre>
+     *
+     * @return the string value
+     */
+    @Override
+    String toString();
 }

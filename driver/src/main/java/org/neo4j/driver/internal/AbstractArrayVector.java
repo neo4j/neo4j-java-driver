@@ -18,6 +18,8 @@ package org.neo4j.driver.internal;
 
 import java.lang.reflect.Array;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.neo4j.bolt.connection.values.Vector;
 
 public abstract class AbstractArrayVector<T> implements Vector {
@@ -31,6 +33,7 @@ public abstract class AbstractArrayVector<T> implements Vector {
         this.elements = arraycopy(elements);
     }
 
+    @Override
     public Class<?> elementType() {
         return elementType;
     }
@@ -48,6 +51,10 @@ public abstract class AbstractArrayVector<T> implements Vector {
         return elements;
     }
 
+    protected abstract Stream<? extends Number> elementsStream();
+
+    protected abstract String neo4jElementType();
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
@@ -64,10 +71,8 @@ public abstract class AbstractArrayVector<T> implements Vector {
 
     @Override
     public String toString() {
-        return "AbstractArrayVector{" + "elementType="
-                + elementType + ", length="
-                + length + ", elements="
-                + elements + '}';
+        var value = elementsStream().map(Number::toString).collect(Collectors.joining(", ", "[", "]"));
+        return "vector(%s, %d, %s NOT NULL)".formatted(value, length, neo4jElementType());
     }
 
     @SuppressWarnings({"unchecked", "SuspiciousSystemArraycopy"})

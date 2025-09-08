@@ -43,15 +43,15 @@ import java.util.stream.Stream;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.internal.GqlStatusError;
-import org.neo4j.driver.internal.InternalByteVector;
-import org.neo4j.driver.internal.InternalDoubleVector;
-import org.neo4j.driver.internal.InternalFloatVector;
-import org.neo4j.driver.internal.InternalIntVector;
+import org.neo4j.driver.internal.InternalFloat32Vector;
+import org.neo4j.driver.internal.InternalFloat64Vector;
+import org.neo4j.driver.internal.InternalInt16Vector;
+import org.neo4j.driver.internal.InternalInt32Vector;
+import org.neo4j.driver.internal.InternalInt64Vector;
+import org.neo4j.driver.internal.InternalInt8Vector;
 import org.neo4j.driver.internal.InternalIsoDuration;
-import org.neo4j.driver.internal.InternalLongVector;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
-import org.neo4j.driver.internal.InternalShortVector;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.BytesValue;
 import org.neo4j.driver.internal.value.DateTimeValue;
@@ -1064,7 +1064,7 @@ public final class Values {
      */
     @Preview(name = "Neo4j Vector")
     public static Value vector(byte[] elements) {
-        return value(new InternalByteVector(elements));
+        return value(new InternalInt8Vector(elements));
     }
 
     /**
@@ -1076,7 +1076,7 @@ public final class Values {
      */
     @Preview(name = "Neo4j Vector")
     public static Value vector(short[] elements) {
-        return value(new InternalShortVector(elements));
+        return value(new InternalInt16Vector(elements));
     }
 
     /**
@@ -1088,7 +1088,7 @@ public final class Values {
      */
     @Preview(name = "Neo4j Vector")
     public static Value vector(int[] elements) {
-        return value(new InternalIntVector(elements));
+        return value(new InternalInt32Vector(elements));
     }
 
     /**
@@ -1100,7 +1100,7 @@ public final class Values {
      */
     @Preview(name = "Neo4j Vector")
     public static Value vector(long[] elements) {
-        return value(new InternalLongVector(elements));
+        return value(new InternalInt64Vector(elements));
     }
 
     /**
@@ -1112,7 +1112,7 @@ public final class Values {
      */
     @Preview(name = "Neo4j Vector")
     public static Value vector(float[] elements) {
-        return value(new InternalFloatVector(elements));
+        return value(new InternalFloat32Vector(elements));
     }
 
     /**
@@ -1124,7 +1124,7 @@ public final class Values {
      */
     @Preview(name = "Neo4j Vector")
     public static Value vector(double[] elements) {
-        return value(new InternalDoubleVector(elements));
+        return value(new InternalFloat64Vector(elements));
     }
 
     private static Value value(Vector vector) {

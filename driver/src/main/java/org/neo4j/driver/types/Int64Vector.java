@@ -17,22 +17,32 @@
 package org.neo4j.driver.types;
 
 import org.neo4j.driver.Values;
-import org.neo4j.driver.internal.InternalShortVector;
+import org.neo4j.driver.internal.InternalInt64Vector;
 import org.neo4j.driver.util.Preview;
 
 /**
- * Represents Neo4j Vector type that holds a sequence of {@code short} values.
+ * Represents Neo4j Vector type that holds a sequence of {@code long} values.
  *
  * @since 6.0.0
  * @see Vector
  * @see Values
  */
 @Preview(name = "Neo4j Vector")
-public sealed interface ShortVector extends Vector permits InternalShortVector {
+public sealed interface Int64Vector extends Vector permits InternalInt64Vector {
     /**
      * Returns array with vector elements.
      *
      * @return the array with vector elements
      */
-    short[] toArray();
+    long[] toArray();
+
+    /**
+     * Returns Neo4j Vector as a {@link String}.
+     * <p>
+     * For example: <pre>vector([0], 1, INTEGER NOT NULL)</pre>
+     *
+     * @return the string value
+     */
+    @Override
+    String toString();
 }
