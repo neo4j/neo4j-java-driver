@@ -935,11 +935,4 @@
         <differenceType>8001</differenceType>
     </difference>
 
-    <difference>
-        <className>org/neo4j/driver/types/Vector</className>
-        <differenceType>7006</differenceType>
-        <method>java.lang.Class elementType()</method>
-        <to>org.neo4j.driver.types.Vector$ElementType</to>
-    </difference>
-
 </differences>
