@@ -16,10 +16,22 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.types.ShortVector;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.neo4j.driver.types.Float32Vector;
 
-public final class InternalShortVector extends AbstractArrayVector<short[]> implements ShortVector {
-    public InternalShortVector(short[] elements) {
+public final class InternalFloat32Vector extends AbstractArrayVector<float[]> implements Float32Vector {
+    public InternalFloat32Vector(float[] elements) {
         super(elements);
+    }
+
+    @Override
+    protected Stream<? extends Number> elementsStream() {
+        return IntStream.range(0, this.elements.length).mapToObj(i -> this.elements[i]);
+    }
+
+    @Override
+    protected String neo4jElementType() {
+        return "FLOAT32";
     }
 }

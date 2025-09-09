@@ -42,6 +42,7 @@ import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.Type;
 import org.neo4j.driver.types.TypeSystem;
+import org.neo4j.driver.types.Vector;
 import org.neo4j.driver.util.Immutable;
 import org.neo4j.driver.util.Preview;
 
@@ -678,6 +679,10 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
      *         <tr>
      *             <td>{@link TypeSystem#RELATIONSHIP}</td>
      *             <td>{@link Relationship}</td>
+     *         </tr>
+     *         <tr>
+     *             <td>{@link TypeSystem#VECTOR}</td>
+     *             <td>{@link Vector}</td>
      *         </tr>
      *     </tbody>
      * </table>

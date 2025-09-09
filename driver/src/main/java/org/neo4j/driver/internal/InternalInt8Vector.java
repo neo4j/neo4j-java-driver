@@ -16,10 +16,22 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.types.FloatVector;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.neo4j.driver.types.Int8Vector;
 
-public final class InternalFloatVector extends AbstractArrayVector<float[]> implements FloatVector {
-    public InternalFloatVector(float[] elements) {
+public final class InternalInt8Vector extends AbstractArrayVector<byte[]> implements Int8Vector {
+    public InternalInt8Vector(byte[] elements) {
         super(elements);
+    }
+
+    @Override
+    protected Stream<? extends Number> elementsStream() {
+        return IntStream.range(0, this.elements.length).mapToObj(i -> this.elements[i]);
+    }
+
+    @Override
+    protected String neo4jElementType() {
+        return "INTEGER8";
     }
 }

@@ -23,12 +23,12 @@ import java.io.IOException;
 import java.io.Serial;
 import java.util.Arrays;
 import neo4j.org.testkit.backend.messages.VectorType;
-import org.neo4j.driver.internal.InternalByteVector;
-import org.neo4j.driver.internal.InternalDoubleVector;
-import org.neo4j.driver.internal.InternalFloatVector;
-import org.neo4j.driver.internal.InternalIntVector;
-import org.neo4j.driver.internal.InternalLongVector;
-import org.neo4j.driver.internal.InternalShortVector;
+import org.neo4j.driver.internal.InternalFloat32Vector;
+import org.neo4j.driver.internal.InternalFloat64Vector;
+import org.neo4j.driver.internal.InternalInt16Vector;
+import org.neo4j.driver.internal.InternalInt32Vector;
+import org.neo4j.driver.internal.InternalInt64Vector;
+import org.neo4j.driver.internal.InternalInt8Vector;
 import org.neo4j.driver.types.Vector;
 
 public class TestkitCypherVectorDeserializer extends StdDeserializer<Vector> {
@@ -47,12 +47,12 @@ public class TestkitCypherVectorDeserializer extends StdDeserializer<Vector> {
     public Vector deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         var data = mapper.mapData(p, ctxt, new CypherVectorData());
         return switch (VectorType.of(data.dtype)) {
-            case BYTE -> new InternalByteVector(deserializeToBytes(data.data));
-            case SHORT -> new InternalShortVector(deserializeToShorts(data.data));
-            case INT -> new InternalIntVector(deserializeToIntegers(data.data));
-            case LONG -> new InternalLongVector(deserializeToLongs(data.data));
-            case FLOAT -> new InternalFloatVector(deserializeToFloats(data.data));
-            case DOUBLE -> new InternalDoubleVector(deserializeToDoubles(data.data));
+            case BYTE -> new InternalInt8Vector(deserializeToBytes(data.data));
+            case SHORT -> new InternalInt16Vector(deserializeToShorts(data.data));
+            case INT -> new InternalInt32Vector(deserializeToIntegers(data.data));
+            case LONG -> new InternalInt64Vector(deserializeToLongs(data.data));
+            case FLOAT -> new InternalFloat32Vector(deserializeToFloats(data.data));
+            case DOUBLE -> new InternalFloat64Vector(deserializeToDoubles(data.data));
         };
     }
 

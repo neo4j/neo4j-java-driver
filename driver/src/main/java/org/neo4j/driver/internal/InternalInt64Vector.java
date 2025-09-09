@@ -16,10 +16,22 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.types.ByteVector;
+import java.util.Arrays;
+import java.util.stream.Stream;
+import org.neo4j.driver.types.Int64Vector;
 
-public final class InternalByteVector extends AbstractArrayVector<byte[]> implements ByteVector {
-    public InternalByteVector(byte[] elements) {
+public final class InternalInt64Vector extends AbstractArrayVector<long[]> implements Int64Vector {
+    public InternalInt64Vector(long[] elements) {
         super(elements);
+    }
+
+    @Override
+    protected Stream<? extends Number> elementsStream() {
+        return Arrays.stream(elements).boxed();
+    }
+
+    @Override
+    protected String neo4jElementType() {
+        return "INTEGER";
     }
 }

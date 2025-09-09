@@ -18,12 +18,12 @@ package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.AbstractArrayVector;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.types.ByteVector;
-import org.neo4j.driver.types.DoubleVector;
-import org.neo4j.driver.types.FloatVector;
-import org.neo4j.driver.types.IntVector;
-import org.neo4j.driver.types.LongVector;
-import org.neo4j.driver.types.ShortVector;
+import org.neo4j.driver.types.Float32Vector;
+import org.neo4j.driver.types.Float64Vector;
+import org.neo4j.driver.types.Int16Vector;
+import org.neo4j.driver.types.Int32Vector;
+import org.neo4j.driver.types.Int64Vector;
+import org.neo4j.driver.types.Int8Vector;
 import org.neo4j.driver.types.Type;
 import org.neo4j.driver.types.Vector;
 
@@ -44,12 +44,12 @@ public class VectorValue extends ObjectValueAdapter<Vector> {
 
     @Override
     public <T> T as(Class<T> targetClass) {
-        if (targetClass.isAssignableFrom(ByteVector.class)
-                || targetClass.isAssignableFrom(ShortVector.class)
-                || targetClass.isAssignableFrom(IntVector.class)
-                || targetClass.isAssignableFrom(LongVector.class)
-                || targetClass.isAssignableFrom(FloatVector.class)
-                || targetClass.isAssignableFrom(DoubleVector.class)) {
+        if (targetClass.isAssignableFrom(Int8Vector.class)
+                || targetClass.isAssignableFrom(Int16Vector.class)
+                || targetClass.isAssignableFrom(Int32Vector.class)
+                || targetClass.isAssignableFrom(Int64Vector.class)
+                || targetClass.isAssignableFrom(Float32Vector.class)
+                || targetClass.isAssignableFrom(Float64Vector.class)) {
             return targetClass.cast(asObject());
         } else if (targetClass.isArray()) {
             var arrayVector = (AbstractArrayVector<?>) asObject();
@@ -64,17 +64,6 @@ public class VectorValue extends ObjectValueAdapter<Vector> {
 
     @Override
     public org.neo4j.bolt.connection.values.Vector asBoltVector() {
-        var vector = (AbstractArrayVector<?>) asObject();
-        return new org.neo4j.bolt.connection.values.Vector() {
-            @Override
-            public Class<?> elementType() {
-                return vector.elementType();
-            }
-
-            @Override
-            public Object elements() {
-                return vector.elements();
-            }
-        };
+        return (AbstractArrayVector<?>) asObject();
     }
 }

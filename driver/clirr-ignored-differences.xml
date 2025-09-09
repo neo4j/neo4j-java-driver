@@ -905,5 +905,34 @@
         <differenceType>8001</differenceType>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/types/ByteVector</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/types/ShortVector</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/types/IntVector</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/types/LongVector</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/types/FloatVector</className>
+        <differenceType>8001</differenceType>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/types/DoubleVector</className>
+        <differenceType>8001</differenceType>
+    </difference>
 
 </differences>

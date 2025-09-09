@@ -77,14 +77,14 @@ import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.mapping.Vector;
-import org.neo4j.driver.types.ByteVector;
-import org.neo4j.driver.types.DoubleVector;
-import org.neo4j.driver.types.FloatVector;
-import org.neo4j.driver.types.IntVector;
+import org.neo4j.driver.types.Float32Vector;
+import org.neo4j.driver.types.Float64Vector;
+import org.neo4j.driver.types.Int16Vector;
+import org.neo4j.driver.types.Int32Vector;
+import org.neo4j.driver.types.Int64Vector;
+import org.neo4j.driver.types.Int8Vector;
 import org.neo4j.driver.types.IsoDuration;
-import org.neo4j.driver.types.LongVector;
 import org.neo4j.driver.types.Point;
-import org.neo4j.driver.types.ShortVector;
 
 class ValuesTest {
     @Test
@@ -589,17 +589,17 @@ class ValuesTest {
         var point2d = new InternalPoint2D(0, 0, 0);
         var point3d = new InternalPoint3D(0, 0, 0, 0);
         var byteVector = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        var byteVectorObject = Values.vector(byteVector).as(ByteVector.class);
+        var byteVectorObject = Values.vector(byteVector).as(Int8Vector.class);
         var shortVector = new short[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        var shortVectorObject = Values.vector(shortVector).as(ShortVector.class);
+        var shortVectorObject = Values.vector(shortVector).as(Int16Vector.class);
         var intVector = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        var intVectorObject = Values.vector(intVector).as(IntVector.class);
+        var intVectorObject = Values.vector(intVector).as(Int32Vector.class);
         var longVector = new long[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        var longVectorObject = Values.vector(longVector).as(LongVector.class);
+        var longVectorObject = Values.vector(longVector).as(Int64Vector.class);
         var floatVector = new float[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        var floatVectorObject = Values.vector(floatVector).as(FloatVector.class);
+        var floatVectorObject = Values.vector(floatVector).as(Float32Vector.class);
         var doubleVector = new double[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        var doubleVectorObject = Values.vector(doubleVector).as(DoubleVector.class);
+        var doubleVectorObject = Values.vector(doubleVector).as(Float64Vector.class);
         var valueHolder = new ValueHolder(
                 string,
                 null,
@@ -652,35 +652,37 @@ class ValuesTest {
         assertEquals(point2d, mapValue.get("point2d").as(Point.class));
         assertEquals(point3d, mapValue.get("point3d").as(Point.class));
         assertArrayEquals(
-                byteVector, mapValue.get("byteVector").as(ByteVector.class).toArray());
+                byteVector, mapValue.get("int8Vector").as(Int8Vector.class).toArray());
         assertArrayEquals(
                 byteVector,
-                mapValue.get("byteVectorObject").as(ByteVector.class).toArray());
+                mapValue.get("int8VectorObject").as(Int8Vector.class).toArray());
         assertArrayEquals(
-                shortVector, mapValue.get("shortVector").as(ShortVector.class).toArray());
+                shortVector, mapValue.get("int16Vector").as(Int16Vector.class).toArray());
         assertArrayEquals(
                 shortVector,
-                mapValue.get("shortVectorObject").as(ShortVector.class).toArray());
+                mapValue.get("int16VectorObject").as(Int16Vector.class).toArray());
         assertArrayEquals(
-                intVector, mapValue.get("intVector").as(IntVector.class).toArray());
+                intVector, mapValue.get("int32Vector").as(Int32Vector.class).toArray());
         assertArrayEquals(
-                intVector, mapValue.get("intVectorObject").as(IntVector.class).toArray());
+                intVector,
+                mapValue.get("int32VectorObject").as(Int32Vector.class).toArray());
         assertArrayEquals(
-                longVector, mapValue.get("longVector").as(LongVector.class).toArray());
+                longVector, mapValue.get("int64Vector").as(Int64Vector.class).toArray());
         assertArrayEquals(
                 longVector,
-                mapValue.get("longVectorObject").as(LongVector.class).toArray());
-        assertArrayEquals(
-                floatVector, mapValue.get("floatVector").as(FloatVector.class).toArray());
+                mapValue.get("int64VectorObject").as(Int64Vector.class).toArray());
         assertArrayEquals(
                 floatVector,
-                mapValue.get("floatVectorObject").as(FloatVector.class).toArray());
+                mapValue.get("float32Vector").as(Float32Vector.class).toArray());
+        assertArrayEquals(
+                floatVector,
+                mapValue.get("float32VectorObject").as(Float32Vector.class).toArray());
         assertArrayEquals(
                 doubleVector,
-                mapValue.get("doubleVector").as(DoubleVector.class).toArray());
+                mapValue.get("float64Vector").as(Float64Vector.class).toArray());
         assertArrayEquals(
                 doubleVector,
-                mapValue.get("doubleVectorObject").as(DoubleVector.class).toArray());
+                mapValue.get("float64VectorObject").as(Float64Vector.class).toArray());
         assertEquals(valueHolder, mapValue.as(ValueHolder.class));
     }
 
@@ -701,18 +703,18 @@ class ValuesTest {
             Duration javaDuration,
             Point point2d,
             Point point3d,
-            @Vector byte[] byteVector,
-            ByteVector byteVectorObject,
-            @Vector short[] shortVector,
-            ShortVector shortVectorObject,
-            @Vector int[] intVector,
-            IntVector intVectorObject,
-            @Vector long[] longVector,
-            LongVector longVectorObject,
-            @Vector float[] floatVector,
-            FloatVector floatVectorObject,
-            @Vector double[] doubleVector,
-            DoubleVector doubleVectorObject) {
+            @Vector byte[] int8Vector,
+            Int8Vector int8VectorObject,
+            @Vector short[] int16Vector,
+            Int16Vector int16VectorObject,
+            @Vector int[] int32Vector,
+            Int32Vector int32VectorObject,
+            @Vector long[] int64Vector,
+            Int64Vector int64VectorObject,
+            @Vector float[] float32Vector,
+            Float32Vector float32VectorObject,
+            @Vector double[] float64Vector,
+            Float64Vector float64VectorObject) {
         @Override
         public boolean equals(Object o) {
             if (o == null || getClass() != o.getClass()) return false;
@@ -727,24 +729,24 @@ class ValuesTest {
                     && Objects.equals(point3d, that.point3d)
                     && Objects.equals(date, that.date)
                     && Objects.equals(time, that.time)
-                    && Objects.deepEquals(intVector, that.intVector)
+                    && Objects.deepEquals(int32Vector, that.int32Vector)
                     && Objects.equals(nullValue, that.nullValue)
-                    && Objects.deepEquals(byteVector, that.byteVector)
-                    && Objects.deepEquals(longVector, that.longVector)
-                    && Objects.deepEquals(shortVector, that.shortVector)
-                    && Objects.deepEquals(floatVector, that.floatVector)
+                    && Objects.deepEquals(int8Vector, that.int8Vector)
+                    && Objects.deepEquals(int64Vector, that.int64Vector)
+                    && Objects.deepEquals(int16Vector, that.int16Vector)
+                    && Objects.deepEquals(float32Vector, that.float32Vector)
                     && Objects.equals(duration, that.duration)
                     && Objects.equals(javaDuration, that.javaDuration)
-                    && Objects.deepEquals(doubleVector, that.doubleVector)
+                    && Objects.deepEquals(float64Vector, that.float64Vector)
                     && Objects.equals(dateTime, that.dateTime)
-                    && Objects.equals(intVectorObject, that.intVectorObject)
+                    && Objects.equals(int32VectorObject, that.int32VectorObject)
                     && Objects.equals(listWithString, that.listWithString)
                     && Objects.equals(localDateTime, that.localDateTime)
-                    && Objects.equals(byteVectorObject, that.byteVectorObject)
-                    && Objects.equals(longVectorObject, that.longVectorObject)
-                    && Objects.equals(shortVectorObject, that.shortVectorObject)
-                    && Objects.equals(floatVectorObject, that.floatVectorObject)
-                    && Objects.equals(doubleVectorObject, that.doubleVectorObject);
+                    && Objects.equals(int8VectorObject, that.int8VectorObject)
+                    && Objects.equals(int64VectorObject, that.int64VectorObject)
+                    && Objects.equals(int16VectorObject, that.int16VectorObject)
+                    && Objects.equals(float32VectorObject, that.float32VectorObject)
+                    && Objects.equals(float64VectorObject, that.float64VectorObject);
         }
 
         @Override
@@ -766,18 +768,18 @@ class ValuesTest {
                     javaDuration,
                     point2d,
                     point3d,
-                    Arrays.hashCode(byteVector),
-                    byteVectorObject,
-                    Arrays.hashCode(shortVector),
-                    shortVectorObject,
-                    Arrays.hashCode(intVector),
-                    intVectorObject,
-                    Arrays.hashCode(longVector),
-                    longVectorObject,
-                    Arrays.hashCode(floatVector),
-                    floatVectorObject,
-                    Arrays.hashCode(doubleVector),
-                    doubleVectorObject);
+                    Arrays.hashCode(int8Vector),
+                    int8VectorObject,
+                    Arrays.hashCode(int16Vector),
+                    int16VectorObject,
+                    Arrays.hashCode(int32Vector),
+                    int32VectorObject,
+                    Arrays.hashCode(int64Vector),
+                    int64VectorObject,
+                    Arrays.hashCode(float32Vector),
+                    float32VectorObject,
+                    Arrays.hashCode(float64Vector),
+                    float64VectorObject);
         }
     }
 }
