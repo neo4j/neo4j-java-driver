@@ -34,20 +34,20 @@
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <!-- Versions -->
-    <neo4j-bolt-connection-bom.version>8.2.0</neo4j-bolt-connection-bom.version>
+    <neo4j-bolt-connection-bom.version>8.3.0</neo4j-bolt-connection-bom.version>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.2.3.Final</netty-bom.version>
+    <netty-bom.version>4.2.6.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2025.0.0-M6</reactor-bom.version>
+    <reactor-bom.version>2025.0.0-M7</reactor-bom.version>
     <slf4j-api.version>2.1.0-alpha1</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
-    <mockito-core.version>5.18.0</mockito-core.version>
-    <junit.version>6.0.0-M2</junit.version>
+    <mockito-core.version>5.19.0</mockito-core.version>
+    <junit.version>6.0.0-RC2</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.11.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
@@ -58,12 +58,12 @@
     <bouncycastle-jdk18on.version>1.81</bouncycastle-jdk18on.version>
     <logback-classic.version>1.5.18</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
-    <jackson.version>2.20.0-rc1</jackson.version>
-    <lombok.version>1.18.38</lombok.version>
+    <jackson.version>2.20.0</jackson.version>
+    <lombok.version>1.18.40</lombok.version>
     <svm.version>24.2.2</svm.version>
     <micrometer.version>1.15.2</micrometer.version>
     <micrometer-docs-generator.version>1.0.4</micrometer-docs-generator.version>
-    <blockhound.version>1.0.13.RELEASE</blockhound.version>
+    <blockhound.version>1.0.14.RELEASE</blockhound.version>
     <testcontainers.version>1.21.3</testcontainers.version>
     <build-resources.version>2024-12.1</build-resources.version>
     <!-- To be overwritten by child projects -->
