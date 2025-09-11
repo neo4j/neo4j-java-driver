@@ -361,7 +361,7 @@ public class DriverFactory {
                     eventLoopGroup,
                     clock,
                     loggingProvider,
-                    config.eventLoopThreads(),
+                    config,
                     observationProvider,
                     boltConnectionProviderFactory);
             var listeningBoltConnectionProvider = BoltConnectionListener.listeningBoltConnectionProvider(
@@ -401,20 +401,21 @@ public class DriverFactory {
             ScheduledExecutorService eventLoopGroup,
             Clock clock,
             LoggingProvider loggingProvider,
-            int eventLoopThreads,
+            Config config,
             BoltObservationProvider observationProvider,
             BoltConnectionProviderFactory boltConnectionProviderFactory) {
         var additionalConfig = new HashMap<String, Object>();
         additionalConfig.put("clock", clock);
         if (eventLoopGroup != null) {
             additionalConfig.put("eventLoopGroup", eventLoopGroup);
-        } else if (eventLoopThreads > 0) {
-            additionalConfig.put("eventLoopThreads", eventLoopThreads);
+        } else if (config.eventLoopThreads() > 0) {
+            additionalConfig.put("eventLoopThreads", config.eventLoopThreads());
         }
         var localAddress = localAddress();
         if (localAddress != null) {
             additionalConfig.put("localAddress", localAddress);
         }
+        additionalConfig.put("enableFastOpen", config.isTcpFastOpenEnabled());
         return boltConnectionProviderFactory.create(
                 loggingProvider, BoltValueFactory.getInstance(), observationProvider, additionalConfig);
     }

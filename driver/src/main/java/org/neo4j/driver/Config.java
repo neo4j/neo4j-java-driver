@@ -40,6 +40,7 @@ import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.observation.ObservationProvider;
+import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
 import org.neo4j.driver.util.Preview;
 import org.neo4j.driver.util.Resource;
@@ -156,10 +157,21 @@ public final class Config implements Serializable {
     private final boolean telemetryDisabled;
     /**
      * The {@link ObservationProvider} if configured.
+     *
      * @since 6.0.0
      */
     @Preview(name = "Observability")
     private final transient ObservationProvider observationProvider;
+
+    /**
+     * Defines whether the driver should try using TCP Fast Open if the runtime supports it. This option is ignored
+     * when the conditions described in {@link ConfigBuilder#withTcpFastOpenEnabled(boolean)} are not met.
+     * <p>
+     * <b>This option is experimental.</b>
+     * @since 6.0.0
+     */
+    @Experimental
+    private final boolean tcpFastOpenEnabled;
 
     private Config(ConfigBuilder builder) {
         this.logging = builder.logging;
@@ -183,6 +195,7 @@ public final class Config implements Serializable {
         this.eventLoopThreads = builder.eventLoopThreads;
         this.telemetryDisabled = builder.telemetryDisabled;
         this.observationProvider = builder.observationProvider;
+        this.tcpFastOpenEnabled = builder.tcpFastOpenEnabled;
     }
 
     /**
@@ -404,6 +417,22 @@ public final class Config implements Serializable {
     }
 
     /**
+     * Returns whether the driver should try using TCP Fast Open if the runtime supports it. This option is ignored
+     * when the conditions described in {@link ConfigBuilder#withTcpFastOpenEnabled(boolean)} are not met.
+     * <p>
+     * <b>This option is experimental.</b>
+     * <p>
+     * The default is {@literal false}.
+     *
+     * @return {@literal true} to enable and {@literal false} to disable
+     * @since 6.0.0
+     */
+    @Experimental
+    public boolean isTcpFastOpenEnabled() {
+        return tcpFastOpenEnabled;
+    }
+
+    /**
      * Used to build new config instances
      */
     public static final class ConfigBuilder {
@@ -425,6 +454,7 @@ public final class Config implements Serializable {
         private long fetchSize = 1000;
         private int eventLoopThreads = 0;
         private ObservationProvider observationProvider;
+        private boolean tcpFastOpenEnabled;
 
         @SuppressWarnings("deprecation")
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
@@ -871,6 +901,57 @@ public final class Config implements Serializable {
          */
         public ConfigBuilder withTelemetryDisabled(boolean telemetryDisabled) {
             this.telemetryDisabled = telemetryDisabled;
+            return this;
+        }
+
+        /**
+         * Sets whether the driver should try using TCP Fast Open if the runtime supports it. This option is ignored
+         * when the conditions described below are not met.
+         * <p>
+         * <b>This option is experimental.</b>
+         * <p>
+         * The default is {@literal false}.
+         * <p>
+         * The TCP Fast Open is only supported when all of the following is true:
+         * <ul>
+         *     <li>The system the driver is running on supports and has TCP Fast Open enabled.</li>
+         *     <li>One of the following connection URI schemes is used:
+         *     <ul>
+         *           <li>neo4j</li>
+         *           <li>neo4j+s</li>
+         *           <li>neo4j+ssc</li>
+         *           <li>bolt</li>
+         *           <li>bolt+s</li>
+         *           <li>bolt+ssc</li>
+         *     </ul>
+         *     </li>
+         *     <li>One of the following Netty Native Transports that is compatible with the system the driver is running
+         *     on is added to the runtime by the user:
+         *     <ul>
+         *         <li>netty-transport-native-io_uring (Netty 4.2+ only)</li>
+         *         <li>netty-transport-native-epoll</li>
+         *         <li>netty-transport-native-kqueue</li>
+         *     </ul>
+         *     </li>
+         * </ul>
+         * <p>
+         * Even when all of the above is true, it is important to make sure that the endpoint the driver connects to
+         * also supports and has TCP Fast Open enabled. Otherwise, an extra slight overhead is likely and end-to-end TCP
+         * Fast Open benefits will not be available.
+         * <p>
+         * A working TCP Fast Open setup enables the driver to start one of the following during TCP handshake by
+         * sending early data:
+         * <ul>
+         *     <li>Bolt Handshake (for connections not needing encryption)</li>
+         *     <li>TLS Handshake (for connections needing encryption)</li>
+         * </ul>
+         * @param enabled {@literal true} to enable and {@literal false} to disable
+         * @return this builder
+         * @since 6.0.0
+         */
+        @Experimental
+        public ConfigBuilder withTcpFastOpenEnabled(boolean enabled) {
+            this.tcpFastOpenEnabled = enabled;
             return this;
         }
 
