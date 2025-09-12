@@ -25,7 +25,7 @@
     <parallelizable.it.forkCount>2</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
-    <surefire.and.failsafe.version>3.0.0-M6</surefire.and.failsafe.version>
+    <surefire.and.failsafe.version>3.5.3</surefire.and.failsafe.version>
     <!-- Skip deployment by default for everything in this project. -->
     <maven.deploy.skip>true</maven.deploy.skip>
 
@@ -34,7 +34,7 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.119.Final</netty-bom.version>
+    <netty-bom.version>4.1.127.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
@@ -44,16 +44,16 @@
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
     <mockito-core.version>4.11.0</mockito-core.version>
     <junit.version>5.9.3</junit.version>
-    <testng-engine.version>1.0.5</testng-engine.version>
+    <testng-engine.version>1.0.6</testng-engine.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
-    <bouncycastle-jdk18on.version>1.80</bouncycastle-jdk18on.version>
+    <bouncycastle-jdk18on.version>1.81</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
-    <jackson.version>2.18.3</jackson.version>
-    <lombok.version>1.18.36</lombok.version>
-    <svm.version>21.3.13</svm.version>
-    <micrometer.version>1.13.11</micrometer.version>
-    <testcontainers.version>1.20.5</testcontainers.version>
-    <build-resources.version>4.4.41</build-resources.version>
+    <jackson.version>2.20.0</jackson.version>
+    <lombok.version>1.18.40</lombok.version>
+    <svm.version>21.3.15</svm.version>
+    <micrometer.version>1.15.4</micrometer.version>
+    <testcontainers.version>1.21.3</testcontainers.version>
+    <build-resources.version>4.4.45</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
