@@ -648,7 +648,7 @@ class AsyncSessionIT {
     @Test
     void shouldNotPropagateRunFailureWhenClosed() {
         assumeTrue(neo4j.isNeo4j44OrEarlier());
-        session.runAsync("RETURN 10 / 0");
+        session.runAsync("not query");
 
         await(session.closeAsync());
     }
@@ -656,9 +656,9 @@ class AsyncSessionIT {
     @Test
     void shouldPropagateRunFailureImmediately() {
         assumeTrue(neo4j.isNeo4j44OrEarlier());
-        ClientException e = assertThrows(ClientException.class, () -> await(session.runAsync("RETURN 10 / 0")));
+        ClientException e = assertThrows(ClientException.class, () -> await(session.runAsync("not query")));
 
-        assertThat(e.getMessage(), containsString("/ by zero"));
+        assertThat(e.getMessage(), containsString("not query"));
     }
 
     @Test

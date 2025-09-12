@@ -680,9 +680,9 @@ class SessionIT {
     void shouldThrowRunFailureImmediatelyAndCloseSuccessfully() {
         assumeTrue(neo4j.isNeo4j44OrEarlier());
         try (Session session = neo4j.driver().session()) {
-            ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN 10 / 0"));
+            ClientException e = assertThrows(ClientException.class, () -> session.run("not query"));
 
-            assertThat(e.getMessage(), containsString("/ by zero"));
+            assertThat(e.getMessage(), containsString("not query"));
         }
     }
 
@@ -712,9 +712,9 @@ class SessionIT {
         try (Session session = neo4j.driver().session()) {
             session.run("CREATE ()");
             session.run("CREATE ()");
-            ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN 10 / 0"));
+            ClientException e = assertThrows(ClientException.class, () -> session.run("not query"));
 
-            assertThat(e.getMessage(), containsString("/ by zero"));
+            assertThat(e.getMessage(), containsString("not query"));
         }
     }
 
@@ -724,8 +724,8 @@ class SessionIT {
         try (Session session = neo4j.driver().session()) {
             session.run("CREATE ()");
             session.run("CREATE ()");
-            ClientException e = assertThrows(ClientException.class, () -> session.run("RETURN 10 / 0"));
-            assertThat(e.getMessage(), containsString("/ by zero"));
+            ClientException e = assertThrows(ClientException.class, () -> session.run("not query"));
+            assertThat(e.getMessage(), containsString("not query"));
             session.run("CREATE ()");
         }
     }
@@ -737,8 +737,8 @@ class SessionIT {
         session.run("CREATE ()");
 
         ClientException e = assertThrows(
-                ClientException.class, () -> session.run("RETURN 10 / 0").consume());
-        assertThat(e.getMessage(), containsString("/ by zero"));
+                ClientException.class, () -> session.run("not query").consume());
+        assertThat(e.getMessage(), containsString("not query"));
 
         session.run("CREATE ()");
 
