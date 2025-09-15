@@ -415,7 +415,7 @@ public class DriverFactory {
         if (localAddress != null) {
             additionalConfig.put("localAddress", localAddress);
         }
-        additionalConfig.put("enableFastOpen", config.isTcpFastOpenEnabled());
+        additionalConfig.put("enableFastOpen", config.isTryTcpFastOpen());
         return boltConnectionProviderFactory.create(
                 loggingProvider, BoltValueFactory.getInstance(), observationProvider, additionalConfig);
     }

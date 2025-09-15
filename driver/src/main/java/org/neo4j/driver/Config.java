@@ -165,13 +165,13 @@ public final class Config implements Serializable {
 
     /**
      * Defines whether the driver should try using TCP Fast Open if the runtime supports it. This option is ignored
-     * when the conditions described in {@link ConfigBuilder#withTcpFastOpenEnabled(boolean)} are not met.
+     * when the conditions described in {@link ConfigBuilder#withTryTcpFastOpen(boolean)} are not met.
      * <p>
      * <b>This option is experimental.</b>
      * @since 6.0.0
      */
     @Experimental
-    private final boolean tcpFastOpenEnabled;
+    private final boolean tryTcpFastOpen;
 
     private Config(ConfigBuilder builder) {
         this.logging = builder.logging;
@@ -195,7 +195,7 @@ public final class Config implements Serializable {
         this.eventLoopThreads = builder.eventLoopThreads;
         this.telemetryDisabled = builder.telemetryDisabled;
         this.observationProvider = builder.observationProvider;
-        this.tcpFastOpenEnabled = builder.tcpFastOpenEnabled;
+        this.tryTcpFastOpen = builder.tryTcpFastOpen;
     }
 
     /**
@@ -418,7 +418,7 @@ public final class Config implements Serializable {
 
     /**
      * Returns whether the driver should try using TCP Fast Open if the runtime supports it. This option is ignored
-     * when the conditions described in {@link ConfigBuilder#withTcpFastOpenEnabled(boolean)} are not met.
+     * when the conditions described in {@link ConfigBuilder#withTryTcpFastOpen(boolean)} are not met.
      * <p>
      * <b>This option is experimental.</b>
      * <p>
@@ -428,8 +428,8 @@ public final class Config implements Serializable {
      * @since 6.0.0
      */
     @Experimental
-    public boolean isTcpFastOpenEnabled() {
-        return tcpFastOpenEnabled;
+    public boolean isTryTcpFastOpen() {
+        return tryTcpFastOpen;
     }
 
     /**
@@ -454,7 +454,7 @@ public final class Config implements Serializable {
         private long fetchSize = 1000;
         private int eventLoopThreads = 0;
         private ObservationProvider observationProvider;
-        private boolean tcpFastOpenEnabled;
+        private boolean tryTcpFastOpen;
 
         @SuppressWarnings("deprecation")
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
@@ -950,8 +950,8 @@ public final class Config implements Serializable {
          * @since 6.0.0
          */
         @Experimental
-        public ConfigBuilder withTcpFastOpenEnabled(boolean enabled) {
-            this.tcpFastOpenEnabled = enabled;
+        public ConfigBuilder withTryTcpFastOpen(boolean enabled) {
+            this.tryTcpFastOpen = enabled;
             return this;
         }
 
