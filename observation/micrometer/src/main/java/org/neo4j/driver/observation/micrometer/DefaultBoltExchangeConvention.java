@@ -18,6 +18,7 @@ package org.neo4j.driver.observation.micrometer;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DefaultBoltExchangeConvention implements BoltExchangeConvention {
@@ -43,12 +44,17 @@ public class DefaultBoltExchangeConvention implements BoltExchangeConvention {
 
     @Override
     public KeyValues getLowCardinalityKeyValues(BoltExchangeContext context) {
-        return KeyValues.of(
-                DB_SYSTEM_NAME,
-                NETWORK_PROTOCOL_NAME,
-                boltVersion(context),
-                serverAddress(context),
-                serverPort(context));
+        return KeyValues.of(DB_SYSTEM_NAME, NETWORK_PROTOCOL_NAME, boltVersion(context), serverAddress(context))
+                .and(extraLowCardinalityKeyValues(context));
+    }
+
+    private KeyValues extraLowCardinalityKeyValues(BoltExchangeContext context) {
+        var list = new ArrayList<KeyValue>();
+        var serverPort = serverPort(context);
+        if (serverPort != null) {
+            list.add(serverPort);
+        }
+        return KeyValues.of(list);
     }
 
     @Override
@@ -66,8 +72,11 @@ public class DefaultBoltExchangeConvention implements BoltExchangeConvention {
     }
 
     private KeyValue serverPort(BoltExchangeContext context) {
-        return Neo4jDriverDocumentation.BoltExchangeLowCardinalityKeyNames.SERVER_PORT.withValue(
-                String.valueOf(context.port()));
+        var port = context.port();
+        return port >= 0
+                ? Neo4jDriverDocumentation.BoltExchangeLowCardinalityKeyNames.SERVER_PORT.withValue(
+                        String.valueOf(port))
+                : null;
     }
 
     private KeyValue messages(BoltExchangeContext context) {
