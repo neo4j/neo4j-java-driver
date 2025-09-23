@@ -269,7 +269,7 @@ public class BoltValueFactory implements ValueFactory {
     }
 
     @Override
-    public Value unsupportedTypeData(String name, BoltProtocolVersion minBoltVersion, Map<String, Value> extra) {
+    public Value unsupportedType(String name, BoltProtocolVersion minBoltVersion, Map<String, Value> extra) {
         var message = extra.get("message");
         var messageString =
                 message != null ? message.boltValueType().equals(Type.STRING) ? message.asString() : null : null;
