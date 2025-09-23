@@ -105,7 +105,7 @@ final class ObjectMappingIT {
                 Map.entry("point2d", Values.value(point2d)),
                 Map.entry("point3d", Values.value(point3d)),
                 Map.entry("vector", Values.value(vector)),
-                Map.entry("unsupportedType", Values.value(unsupportedType)));
+                Map.entry("unsupportedType", Values.value((Object) unsupportedType)));
 
         // when
         var valueHolder = valueFunction.apply(properties);
