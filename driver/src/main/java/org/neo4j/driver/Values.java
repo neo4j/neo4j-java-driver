@@ -501,6 +501,9 @@ public final class Values {
      */
     @Preview(name = "Object mapping")
     public static Value value(java.lang.Record record) {
+        if (record instanceof UnsupportedType unsupportedType) {
+            return value(unsupportedType);
+        }
         var recordComponents = record.getClass().getRecordComponents();
         Map<String, Value> val = new HashMap<>(recordComponents.length);
         for (var recordComponent : recordComponents) {
