@@ -45,6 +45,7 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.Type;
+import org.neo4j.driver.types.UnsupportedType;
 
 public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue implements InternalValue {
     @Override
@@ -303,6 +304,11 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     @Override
     public Point asPoint() {
         throw new Uncoercible(type().name(), "Point");
+    }
+
+    @Override
+    public UnsupportedType asUnsupportedType() {
+        throw new Uncoercible(type().name(), "UnsupportedType");
     }
 
     @Override

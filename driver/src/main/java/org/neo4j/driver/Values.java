@@ -67,6 +67,7 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
+import org.neo4j.driver.internal.value.UnsupportedTypeValue;
 import org.neo4j.driver.internal.value.VectorValue;
 import org.neo4j.driver.mapping.Property;
 import org.neo4j.driver.types.Entity;
@@ -77,6 +78,7 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.TypeSystem;
+import org.neo4j.driver.types.UnsupportedType;
 import org.neo4j.driver.types.Vector;
 import org.neo4j.driver.util.Preview;
 
@@ -181,6 +183,9 @@ public final class Values {
         }
         if (value instanceof Vector vector) {
             return value(vector);
+        }
+        if (value instanceof UnsupportedType) {
+            return value((UnsupportedType) value);
         }
 
         if (value instanceof List<?>) {
@@ -496,6 +501,9 @@ public final class Values {
      */
     @Preview(name = "Object mapping")
     public static Value value(java.lang.Record record) {
+        if (record instanceof UnsupportedType unsupportedType) {
+            return value(unsupportedType);
+        }
         var recordComponents = record.getClass().getRecordComponents();
         Map<String, Value> val = new HashMap<>(recordComponents.length);
         for (var recordComponent : recordComponents) {
@@ -1148,5 +1156,9 @@ public final class Values {
             throw new IllegalArgumentException(
                     "Unsupported vector element type: " + array.getClass().getName());
         }
+    }
+
+    private static Value value(UnsupportedType unsupportedType) {
+        return new UnsupportedTypeValue(unsupportedType);
     }
 }
