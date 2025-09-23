@@ -17,10 +17,10 @@
 package org.neo4j.driver.internal;
 
 import java.util.Optional;
-import org.neo4j.driver.types.UnsupportedTypeData;
+import org.neo4j.driver.types.UnsupportedType;
 
-public record InternalUnsupportedTypeData(String name, String minProtocolVersion, String messageValue)
-        implements UnsupportedTypeData {
+public record InternalUnsupportedType(String name, String minProtocolVersion, String messageValue)
+        implements UnsupportedType {
     @Override
     public Optional<String> message() {
         return Optional.ofNullable(messageValue);

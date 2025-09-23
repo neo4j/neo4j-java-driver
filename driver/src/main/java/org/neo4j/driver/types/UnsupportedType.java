@@ -27,7 +27,7 @@ import java.util.Optional;
  *
  * @since 6.0.0
  */
-public interface UnsupportedTypeData {
+public interface UnsupportedType {
     /**
      * Returns the type name.
      * @return the type name

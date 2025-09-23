@@ -23,22 +23,22 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.io.Serial;
-import org.neo4j.driver.internal.value.UnsupportedTypeDataValue;
-import org.neo4j.driver.types.UnsupportedTypeData;
+import org.neo4j.driver.internal.value.UnsupportedTypeValue;
+import org.neo4j.driver.types.UnsupportedType;
 
-public class TestkitUnsupportedValueSerializer extends StdSerializer<UnsupportedTypeDataValue> {
+public class TestkitUnsupportedValueSerializer extends StdSerializer<UnsupportedTypeValue> {
     @Serial
     private static final long serialVersionUID = 4655180729235865377L;
 
     public TestkitUnsupportedValueSerializer() {
-        super(UnsupportedTypeDataValue.class);
+        super(UnsupportedTypeValue.class);
     }
 
     @Override
     public void serialize(
-            UnsupportedTypeDataValue unsupportedTypeDataValue, JsonGenerator gen, SerializerProvider serializerProvider)
+            UnsupportedTypeValue unsupportedTypeValue, JsonGenerator gen, SerializerProvider serializerProvider)
             throws IOException {
-        var unknown = unsupportedTypeDataValue.as(UnsupportedTypeData.class);
+        var unknown = unsupportedTypeValue.as(UnsupportedType.class);
         cypherObject(gen, "CypherUnsupportedType", () -> {
             gen.writeFieldName("name");
             gen.writeString(unknown.name());

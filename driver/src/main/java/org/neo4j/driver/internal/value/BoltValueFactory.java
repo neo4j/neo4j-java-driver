@@ -41,7 +41,7 @@ import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.InternalUnsupportedTypeData;
+import org.neo4j.driver.internal.InternalUnsupportedType;
 
 public class BoltValueFactory implements ValueFactory {
     private static final BoltValueFactory INSTANCE = new BoltValueFactory();
@@ -274,7 +274,7 @@ public class BoltValueFactory implements ValueFactory {
         var messageString =
                 message != null ? message.boltValueType().equals(Type.STRING) ? message.asString() : null : null;
         return (InternalValue)
-                Values.value((Object) new InternalUnsupportedTypeData(name, minBoltVersion.toString(), messageString));
+                Values.value((Object) new InternalUnsupportedType(name, minBoltVersion.toString(), messageString));
     }
 
     @Override

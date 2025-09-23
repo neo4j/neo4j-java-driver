@@ -169,15 +169,15 @@ public interface TypeSystem {
      * Returns a {@link Type} instance representing an unsupported type.
      * <p>
      * An unsupported type may occur when a new type is introduced in the Neo4j server and the driver is connected over
-     * an older Bolt Protocol version that does not support this type. The {@link UnsupportedTypeData} object provides
-     * information about the unsupported type and the {@link UnsupportedTypeData#minProtocolVersion()} needed to support
-     * it. However, the {@link UnsupportedTypeData} object itself requires at least Bolt Protocol 6.0.
+     * an older Bolt Protocol version that does not support this type. The {@link UnsupportedType} object provides
+     * information about the unsupported type and the {@link UnsupportedType#minProtocolVersion()} needed to support
+     * it. However, the {@link UnsupportedType} object itself requires at least Bolt Protocol 6.0.
      * <p>
      * Note that the unsupported type MUST NOT be sent to the server.
      *
      * @return the type instance
      * @since 6.0.0
-     * @see UnsupportedTypeData
+     * @see UnsupportedType
      */
     Type UNSUPPORTED();
 }

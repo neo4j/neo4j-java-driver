@@ -67,7 +67,7 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
-import org.neo4j.driver.internal.value.UnsupportedTypeDataValue;
+import org.neo4j.driver.internal.value.UnsupportedTypeValue;
 import org.neo4j.driver.internal.value.VectorValue;
 import org.neo4j.driver.mapping.Property;
 import org.neo4j.driver.types.Entity;
@@ -78,7 +78,7 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.TypeSystem;
-import org.neo4j.driver.types.UnsupportedTypeData;
+import org.neo4j.driver.types.UnsupportedType;
 import org.neo4j.driver.types.Vector;
 import org.neo4j.driver.util.Preview;
 
@@ -184,8 +184,8 @@ public final class Values {
         if (value instanceof Vector vector) {
             return value(vector);
         }
-        if (value instanceof UnsupportedTypeData) {
-            return value((UnsupportedTypeData) value);
+        if (value instanceof UnsupportedType) {
+            return value((UnsupportedType) value);
         }
 
         if (value instanceof List<?>) {
@@ -1155,7 +1155,7 @@ public final class Values {
         }
     }
 
-    private static Value value(UnsupportedTypeData unsupportedTypeData) {
-        return new UnsupportedTypeDataValue(unsupportedTypeData);
+    private static Value value(UnsupportedType unsupportedType) {
+        return new UnsupportedTypeValue(unsupportedType);
     }
 }

@@ -42,7 +42,7 @@ import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.Type;
 import org.neo4j.driver.types.TypeSystem;
-import org.neo4j.driver.types.UnsupportedTypeData;
+import org.neo4j.driver.types.UnsupportedType;
 import org.neo4j.driver.types.Vector;
 import org.neo4j.driver.util.Immutable;
 import org.neo4j.driver.util.Preview;
@@ -497,13 +497,13 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     Point asPoint();
 
     /**
-     * Returns the value as an {@link UnsupportedTypeData}, if possible.
+     * Returns the value as an {@link UnsupportedType}, if possible.
      *
-     * @return the value as a {@link UnsupportedTypeData}, if possible
+     * @return the value as a {@link UnsupportedType}, if possible
      * @throws Uncoercible if value types are incompatible
      * @since 6.0.0
      */
-    UnsupportedTypeData asUnsupportedTypeData();
+    UnsupportedType asUnsupportedType();
 
     /**
      * Returns the value as a {@link LocalDate}, if possible.
@@ -696,7 +696,7 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
      *         </tr>
      *         <tr>
      *             <td>{@link TypeSystem#UNSUPPORTED}</td>
-     *             <td>{@link UnsupportedTypeData}</td>
+     *             <td>{@link UnsupportedType}</td>
      *         </tr>
      *     </tbody>
      * </table>

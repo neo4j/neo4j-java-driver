@@ -48,14 +48,14 @@ import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.InternalUnsupportedTypeData;
+import org.neo4j.driver.internal.InternalUnsupportedType;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.mapping.Property;
 import org.neo4j.driver.types.Float64Vector;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.Point;
-import org.neo4j.driver.types.UnsupportedTypeData;
+import org.neo4j.driver.types.UnsupportedType;
 
 final class ObjectMappingIT {
     @ParameterizedTest
@@ -79,7 +79,7 @@ final class ObjectMappingIT {
         var point2d = (Point) new InternalPoint2D(0, 0, 0);
         var point3d = (Point) new InternalPoint3D(0, 0, 0, 0);
         var vector = new InternalFloat64Vector(new double[] {0.0, 100.0});
-        var unsupportedTypeData = new InternalUnsupportedTypeData("name", "99.99", "message");
+        var unsupportedTypeData = new InternalUnsupportedType("name", "99.99", "message");
 
         var properties = Map.ofEntries(
                 Map.entry("string", Values.value(string)),
@@ -129,7 +129,7 @@ final class ObjectMappingIT {
         assertEquals(point2d, valueHolder.point2d());
         assertEquals(point3d, valueHolder.point3d());
         assertEquals(vector, valueHolder.vector());
-        assertEquals(unsupportedTypeData, valueHolder.unsupportedTypeData());
+        assertEquals(unsupportedTypeData, valueHolder.unsupportedType());
     }
 
     static Stream<Arguments> shouldMapValueArgs() {
@@ -173,7 +173,7 @@ final class ObjectMappingIT {
             Point point2d,
             Point point3d,
             Float64Vector vector,
-            UnsupportedTypeData unsupportedTypeData) {}
+            UnsupportedType unsupportedType) {}
 
     public record StringValueHolder(String string) {}
 
