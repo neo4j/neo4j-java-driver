@@ -26,11 +26,11 @@ import java.io.Serial;
 import org.neo4j.driver.internal.value.UnsupportedTypeValue;
 import org.neo4j.driver.types.UnsupportedType;
 
-public class TestkitUnsupportedValueSerializer extends StdSerializer<UnsupportedTypeValue> {
+public class TestkitUnsupportedTypeValueSerializer extends StdSerializer<UnsupportedTypeValue> {
     @Serial
     private static final long serialVersionUID = 4655180729235865377L;
 
-    public TestkitUnsupportedValueSerializer() {
+    public TestkitUnsupportedTypeValueSerializer() {
         super(UnsupportedTypeValue.class);
     }
 
