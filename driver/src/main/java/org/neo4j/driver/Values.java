@@ -67,7 +67,7 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
-import org.neo4j.driver.internal.value.UnsupportedValue;
+import org.neo4j.driver.internal.value.UnsupportedTypeDataValue;
 import org.neo4j.driver.internal.value.VectorValue;
 import org.neo4j.driver.mapping.Property;
 import org.neo4j.driver.types.Entity;
@@ -1156,6 +1156,6 @@ public final class Values {
     }
 
     private static Value value(UnsupportedTypeData unsupportedTypeData) {
-        return new UnsupportedValue(unsupportedTypeData);
+        return new UnsupportedTypeDataValue(unsupportedTypeData);
     }
 }

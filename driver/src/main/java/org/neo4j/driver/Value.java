@@ -497,6 +497,15 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     Point asPoint();
 
     /**
+     * Returns the value as an {@link UnsupportedTypeData}, if possible.
+     *
+     * @return the value as a {@link UnsupportedTypeData}, if possible
+     * @throws Uncoercible if value types are incompatible
+     * @since 6.0.0
+     */
+    UnsupportedTypeData asUnsupportedTypeData();
+
+    /**
      * Returns the value as a {@link LocalDate}, if possible.
      *
      * @param defaultValue default to this value if the value is a {@link NullValue}

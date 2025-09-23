@@ -19,8 +19,8 @@ package org.neo4j.driver.internal.value;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.types.UnsupportedTypeData;
 
-public final class UnsupportedValue extends ObjectValueAdapter<UnsupportedTypeData> {
-    public UnsupportedValue(UnsupportedTypeData adapted) {
+public final class UnsupportedTypeDataValue extends ObjectValueAdapter<UnsupportedTypeData> {
+    public UnsupportedTypeDataValue(UnsupportedTypeData adapted) {
         super(adapted);
     }
 
@@ -32,6 +32,11 @@ public final class UnsupportedValue extends ObjectValueAdapter<UnsupportedTypeDa
     @Override
     public org.neo4j.driver.types.Type type() {
         return InternalTypeSystem.TYPE_SYSTEM.UNSUPPORTED();
+    }
+
+    @Override
+    public UnsupportedTypeData asUnsupportedTypeData() {
+        return asObject();
     }
 
     @Override

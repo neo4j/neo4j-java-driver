@@ -56,7 +56,7 @@ import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.TimeValue;
-import org.neo4j.driver.internal.value.UnsupportedValue;
+import org.neo4j.driver.internal.value.UnsupportedTypeDataValue;
 import org.neo4j.driver.internal.value.VectorValue;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.Vector;
@@ -88,6 +88,6 @@ public class TestkitModule extends SimpleModule {
         this.addSerializer(PathValue.class, new TestkitPathValueSerializer());
         this.addSerializer(RelationshipValue.class, new TestkitRelationshipValueSerializer());
         this.addSerializer(VectorValue.class, new TestkitVectorSerializer());
-        this.addSerializer(UnsupportedValue.class, new TestkitUnsupportedValueSerializer());
+        this.addSerializer(UnsupportedTypeDataValue.class, new TestkitUnsupportedValueSerializer());
     }
 }
