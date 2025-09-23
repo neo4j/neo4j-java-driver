@@ -43,6 +43,11 @@ public class VectorValue extends ObjectValueAdapter<Vector> {
     }
 
     @Override
+    public Vector asVector() {
+        return asObject();
+    }
+
+    @Override
     public <T> T as(Class<T> targetClass) {
         if (targetClass.isAssignableFrom(Int8Vector.class)
                 || targetClass.isAssignableFrom(Int16Vector.class)
