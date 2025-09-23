@@ -947,4 +947,10 @@
         <method>org.neo4j.driver.types.UnsupportedType asUnsupportedType()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Value</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.types.Vector asVector()</method>
+    </difference>
+
 </differences>

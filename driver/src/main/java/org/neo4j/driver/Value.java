@@ -497,6 +497,16 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     Point asPoint();
 
     /**
+     * Returns the value as an {@link Vector}, if possible.
+     *
+     * @return the value as a {@link Vector}, if possible
+     * @throws Uncoercible if value types are incompatible
+     * @since 6.0.0
+     */
+    @Preview(name = "Neo4j Vector")
+    Vector asVector();
+
+    /**
      * Returns the value as an {@link UnsupportedType}, if possible.
      *
      * @return the value as a {@link UnsupportedType}, if possible

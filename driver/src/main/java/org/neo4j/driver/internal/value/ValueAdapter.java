@@ -307,6 +307,11 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     }
 
     @Override
+    public org.neo4j.driver.types.Vector asVector() {
+        throw new Uncoercible(type().name(), "Vector");
+    }
+
+    @Override
     public UnsupportedType asUnsupportedType() {
         throw new Uncoercible(type().name(), "UnsupportedType");
     }
