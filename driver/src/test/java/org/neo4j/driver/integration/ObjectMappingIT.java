@@ -79,7 +79,7 @@ final class ObjectMappingIT {
         var point2d = (Point) new InternalPoint2D(0, 0, 0);
         var point3d = (Point) new InternalPoint3D(0, 0, 0, 0);
         var vector = new InternalFloat64Vector(new double[] {0.0, 100.0});
-        var unsupportedTypeData = new InternalUnsupportedType("name", "99.99", "message");
+        var unsupportedType = new InternalUnsupportedType("name", "99.99", "message");
 
         var properties = Map.ofEntries(
                 Map.entry("string", Values.value(string)),
@@ -105,7 +105,7 @@ final class ObjectMappingIT {
                 Map.entry("point2d", Values.value(point2d)),
                 Map.entry("point3d", Values.value(point3d)),
                 Map.entry("vector", Values.value(vector)),
-                Map.entry("unsupportedTypeData", Values.value(unsupportedTypeData)));
+                Map.entry("unsupportedType", Values.value(unsupportedType)));
 
         // when
         var valueHolder = valueFunction.apply(properties);
@@ -129,7 +129,7 @@ final class ObjectMappingIT {
         assertEquals(point2d, valueHolder.point2d());
         assertEquals(point3d, valueHolder.point3d());
         assertEquals(vector, valueHolder.vector());
-        assertEquals(unsupportedTypeData, valueHolder.unsupportedType());
+        assertEquals(unsupportedType, valueHolder.unsupportedType());
     }
 
     static Stream<Arguments> shouldMapValueArgs() {
