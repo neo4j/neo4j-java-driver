@@ -308,7 +308,7 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
 
     @Override
     public UnsupportedType asUnsupportedType() {
-        throw new Uncoercible(type().name(), "UnsupportedTypeData");
+        throw new Uncoercible(type().name(), "UnsupportedType");
     }
 
     @Override
