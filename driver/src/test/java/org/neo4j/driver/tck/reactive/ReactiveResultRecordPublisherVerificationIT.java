@@ -77,7 +77,7 @@ public class ReactiveResultRecordPublisherVerificationIT extends PublisherVerifi
     public Publisher<Record> createFailedPublisher() {
         var session = driver.session(ReactiveSession.class);
         // Please note that this publisher fails on run stage.
-        return Mono.fromDirect(flowPublisherToFlux(session.run("RETURN 5/0")))
+        return Mono.fromDirect(flowPublisherToFlux(session.run("not query")))
                 .flatMapMany(r -> Flux.from(flowPublisherToFlux(r.records())));
     }
 }
