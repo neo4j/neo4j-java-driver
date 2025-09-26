@@ -25,7 +25,7 @@
     <parallelizable.it.forkCount>2</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
-    <surefire.and.failsafe.version>3.5.3</surefire.and.failsafe.version>
+    <surefire.and.failsafe.version>3.5.4</surefire.and.failsafe.version>
     <surefire.jpms.args/>
     <failsafe.parallelizable.jpms.args/>
     <failsafe.sequential.jpms.args/>
@@ -38,29 +38,29 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.2.2.Final</netty-bom.version>
+    <netty-bom.version>4.2.6.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
     <reactor-bom.version>2023.0.19</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
-    <mockito-core.version>5.18.0</mockito-core.version>
-    <junit.version>5.13.3</junit.version>
+    <mockito-core.version>5.20.0</mockito-core.version>
+    <junit.version>5.13.4</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.11.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <!-- supply a newer version than the one supplied by the jarchivelib 1.2.0 -->
-    <commons-compress.version>1.27.1</commons-compress.version>
+    <commons-compress.version>1.28.0</commons-compress.version>
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
-    <commons-codec.version>1.18.0</commons-codec.version>
-    <bouncycastle-jdk18on.version>1.81</bouncycastle-jdk18on.version>
+    <commons-codec.version>1.19.0</commons-codec.version>
+    <bouncycastle-jdk18on.version>1.82</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
-    <jackson.version>2.19.1</jackson.version>
-    <lombok.version>1.18.38</lombok.version>
-    <svm.version>24.2.1</svm.version>
-    <micrometer.version>1.15.2</micrometer.version>
-    <blockhound.version>1.0.13.RELEASE</blockhound.version>
+    <jackson.version>2.20.0</jackson.version>
+    <lombok.version>1.18.42</lombok.version>
+    <svm.version>24.2.2</svm.version>
+    <micrometer.version>1.15.4</micrometer.version>
+    <blockhound.version>1.0.14.RELEASE</blockhound.version>
     <testcontainers.version>1.21.3</testcontainers.version>
     <build-resources.version>2024-12.1</build-resources.version>
     <!-- To be overwritten by child projects -->
