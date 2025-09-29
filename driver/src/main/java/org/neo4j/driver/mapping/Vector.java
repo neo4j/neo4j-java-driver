@@ -20,7 +20,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Marks the annotated array as Neo4j Vector.
@@ -38,5 +37,4 @@ import org.neo4j.driver.util.Preview;
  */
 @Target({ElementType.PARAMETER, ElementType.RECORD_COMPONENT})
 @Retention(RetentionPolicy.RUNTIME)
-@Preview(name = "Neo4j Vector")
 public @interface Vector {}

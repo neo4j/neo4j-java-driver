@@ -19,7 +19,6 @@ package org.neo4j.driver.types;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
 import org.neo4j.driver.util.Immutable;
-import org.neo4j.driver.util.Preview;
 
 /**
  * A listing of all database types this driver can handle.
@@ -162,7 +161,6 @@ public interface TypeSystem {
      * @return the type instance
      * @since 6.0.0
      */
-    @Preview(name = "Neo4j Vector")
     Type VECTOR();
 
     /**
