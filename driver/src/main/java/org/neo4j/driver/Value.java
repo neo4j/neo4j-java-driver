@@ -503,7 +503,6 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
      * @throws Uncoercible if value types are incompatible
      * @since 6.0.0
      */
-    @Preview(name = "Neo4j Vector")
     Vector asVector();
 
     /**

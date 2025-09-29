@@ -18,7 +18,6 @@ package org.neo4j.driver.types;
 
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.InternalInt16Vector;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Represents Neo4j Vector type that holds a sequence of {@code short} values.
@@ -27,7 +26,6 @@ import org.neo4j.driver.util.Preview;
  * @see Vector
  * @see Values
  */
-@Preview(name = "Neo4j Vector")
 public sealed interface Int16Vector extends Vector permits InternalInt16Vector {
     /**
      * Returns array with vector elements.

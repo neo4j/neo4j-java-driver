@@ -18,7 +18,6 @@ package org.neo4j.driver.types;
 
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.InternalInt32Vector;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Represents Neo4j Vector type that holds a sequence of {@code int} values.
@@ -27,7 +26,6 @@ import org.neo4j.driver.util.Preview;
  * @see Vector
  * @see Values
  */
-@Preview(name = "Neo4j Vector")
 public sealed interface Int32Vector extends Vector permits InternalInt32Vector {
     /**
      * Returns array with vector elements.

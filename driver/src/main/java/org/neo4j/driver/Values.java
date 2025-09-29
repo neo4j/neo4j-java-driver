@@ -1070,7 +1070,6 @@ public final class Values {
      * @return the vector value
      * @since 6.0.0
      */
-    @Preview(name = "Neo4j Vector")
     public static Value vector(byte[] elements) {
         return value(new InternalInt8Vector(elements));
     }
@@ -1082,7 +1081,6 @@ public final class Values {
      * @return the vector value
      * @since 6.0.0
      */
-    @Preview(name = "Neo4j Vector")
     public static Value vector(short[] elements) {
         return value(new InternalInt16Vector(elements));
     }
@@ -1094,7 +1092,6 @@ public final class Values {
      * @return the vector value
      * @since 6.0.0
      */
-    @Preview(name = "Neo4j Vector")
     public static Value vector(int[] elements) {
         return value(new InternalInt32Vector(elements));
     }
@@ -1106,7 +1103,6 @@ public final class Values {
      * @return the vector value
      * @since 6.0.0
      */
-    @Preview(name = "Neo4j Vector")
     public static Value vector(long[] elements) {
         return value(new InternalInt64Vector(elements));
     }
@@ -1118,7 +1114,6 @@ public final class Values {
      * @return the vector value
      * @since 6.0.0
      */
-    @Preview(name = "Neo4j Vector")
     public static Value vector(float[] elements) {
         return value(new InternalFloat32Vector(elements));
     }
@@ -1130,7 +1125,6 @@ public final class Values {
      * @return the vector value
      * @since 6.0.0
      */
-    @Preview(name = "Neo4j Vector")
     public static Value vector(double[] elements) {
         return value(new InternalFloat64Vector(elements));
     }

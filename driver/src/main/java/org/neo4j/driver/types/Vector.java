@@ -17,7 +17,6 @@
 package org.neo4j.driver.types;
 
 import org.neo4j.driver.Values;
-import org.neo4j.driver.util.Preview;
 
 /**
  * Represents Neo4j Vector type.
@@ -35,7 +34,6 @@ import org.neo4j.driver.util.Preview;
  * @see Values
  * @since 6.0.0
  */
-@Preview(name = "Neo4j Vector")
 public sealed interface Vector permits Int8Vector, Int16Vector, Int32Vector, Int64Vector, Float32Vector, Float64Vector {
     /**
      * Returns the element type.
