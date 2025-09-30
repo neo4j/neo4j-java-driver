@@ -6,18 +6,12 @@ It works with both single instance and clustered databases.
 
 Network communication is handled using [Bolt Protocol](https://7687.org/).
 
-## Versioning
-
-Starting with 5.0, the Neo4j Drivers will be moving to a monthly release cadence. A minor version will be released on 
-the last Friday of each month so as to maintain versioning consistency with the core product (Neo4j DBMS) which has also moved to a monthly cadence.
-
-As a policy, patch versions will not be released except on rare occasions. Bug fixes and updates will go into the latest minor version and users should upgrade to that. Driver upgrades within a major version will never contain breaking API changes.
-
 ## Supported Driver Series
 
 | Driver Series | Supported Java Runtime versions | Status                      | Changelog                                                             |
 |---------------|---------------------------------|-----------------------------|-----------------------------------------------------------------------|
-| 5.x           | 17                              | Primary development branch. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/5.x-changelog) |
+| 6.x           | 17                              | Primary development branch. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/6.x-changelog) |
+| 5.x           | 17                              | Maintenance.                | [link](https://github.com/neo4j/neo4j-java-driver/wiki/5.x-changelog) |
 | 4.4           | 8, 11                           | Maintenance.                | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.4-changelog) |
 
 ## Server Compatibility
@@ -111,6 +105,8 @@ This section targets users who would like to compile the driver source code on t
 Before contributing to this project, please take a few minutes to read our [Contribution Guide](https://github.com/neo4j/neo4j-java-driver/blob/1.6/CONTRIBUTING.md#want-to-contribute).
 
 ### Java Version
+
+For the 6.x Driver Series, the source code _must_ compile on Java 21 for Java 17 runtime.
 
 For the 5.x Driver Series, the source code _must_ compile on Java 17.
 
