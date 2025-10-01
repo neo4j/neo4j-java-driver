@@ -34,7 +34,7 @@
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <!-- Versions -->
-    <neo4j-bolt-connection-bom.version>10.0.0</neo4j-bolt-connection-bom.version>
+    <neo4j-bolt-connection-bom.version>10.0.1</neo4j-bolt-connection-bom.version>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
@@ -47,7 +47,7 @@
     <slf4j-api.version>2.0.17</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
     <mockito-core.version>5.20.0</mockito-core.version>
-    <junit.version>6.0.0-RC3</junit.version>
+    <junit.version>6.0.0</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.11.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
@@ -56,7 +56,7 @@
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
     <commons-codec.version>1.19.0</commons-codec.version>
     <bouncycastle-jdk18on.version>1.82</bouncycastle-jdk18on.version>
-    <logback-classic.version>1.5.18</logback-classic.version>
+    <logback-classic.version>1.5.19</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
     <jackson.version>2.20.0</jackson.version>
     <lombok.version>1.18.42</lombok.version>

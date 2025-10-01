@@ -36,6 +36,10 @@ public interface UnsupportedType {
 
     /**
      * The minimum Bolt Protocol version needed to support this type.
+     * <p>
+     * Note: Bolt versions are not generally equivalent to driver versions. See
+     * <a href="https://neo4j.com/docs/java-manual/current/data-types/">the manual</a> for which driver version is
+     * required for new types.
      * @return the minimum Bolt Protocol version
      */
     String minProtocolVersion();
