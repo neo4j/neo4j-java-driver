@@ -22,9 +22,4 @@ Apache Software License, Version 2.0
   micrometer-commons
   micrometer-core
   micrometer-observation
-  Neo4j Bolt Connection (Provider SPI)
-  Non-Blocking Reactive Foundation for the JVM
-
-MIT No Attribution License
-  reactive-streams
 
