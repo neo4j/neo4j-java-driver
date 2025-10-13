@@ -25,24 +25,7 @@
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
             <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.neo4j.bolt</groupId>
-                    <artifactId>neo4j-bolt-connection-netty</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.neo4j.bolt</groupId>
-                    <artifactId>neo4j-bolt-connection-pooled</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.neo4j.bolt</groupId>
-                    <artifactId>neo4j-bolt-connection-routed</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.projectreactor</groupId>
-                    <artifactId>reactor-core</artifactId>
-                </exclusion>
-            </exclusions>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
