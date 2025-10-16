@@ -39,11 +39,11 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.2.6.Final</netty-bom.version>
+    <netty-bom.version>4.2.7.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2024.0.10</reactor-bom.version>
+    <reactor-bom.version>2024.0.11</reactor-bom.version>
     <slf4j-api.version>2.0.17</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
     <mockito-core.version>5.20.0</mockito-core.version>
@@ -63,7 +63,7 @@
     <svm.version>25.0.0</svm.version>
     <micrometer.version>1.15.2</micrometer.version>
     <micrometer-docs-generator.version>1.0.4</micrometer-docs-generator.version>
-    <blockhound.version>1.0.14.RELEASE</blockhound.version>
+    <blockhound.version>1.0.15.RELEASE</blockhound.version>
     <testcontainers.version>1.21.3</testcontainers.version>
     <build-resources.version>2024-12.1</build-resources.version>
     <!-- To be overwritten by child projects -->
