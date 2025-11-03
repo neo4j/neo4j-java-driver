@@ -47,7 +47,7 @@
     <slf4j-api.version>2.0.17</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
     <mockito-core.version>5.20.0</mockito-core.version>
-    <junit.version>6.0.0</junit.version>
+    <junit.version>6.0.1</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.11.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
@@ -56,11 +56,11 @@
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
     <commons-codec.version>1.19.0</commons-codec.version>
     <bouncycastle-jdk18on.version>1.82</bouncycastle-jdk18on.version>
-    <logback-classic.version>1.5.19</logback-classic.version>
+    <logback-classic.version>1.5.20</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
-    <jackson.version>2.20.0</jackson.version>
+    <jackson.version>2.20.1</jackson.version>
     <lombok.version>1.18.42</lombok.version>
-    <svm.version>25.0.0</svm.version>
+    <svm.version>25.0.1</svm.version>
     <micrometer.version>1.15.2</micrometer.version>
     <micrometer-docs-generator.version>1.0.4</micrometer-docs-generator.version>
     <blockhound.version>1.0.15.RELEASE</blockhound.version>
