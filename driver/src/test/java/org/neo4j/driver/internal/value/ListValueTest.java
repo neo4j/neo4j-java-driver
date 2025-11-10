@@ -20,6 +20,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.value;
 
 import java.time.LocalDateTime;
@@ -155,6 +157,20 @@ class ListValueTest {
         }
         var values = Values.value(array);
         assertArrayEquals(array, values.as(long[][].class));
+    }
+
+    @Test
+    void shouldSupportMultipleIterations() {
+        var list = Values.value("a", "b");
+        var values = list.values();
+        for (var i = 0; i < 2; i++) {
+            var iterator = values.iterator();
+            assertTrue(iterator.hasNext());
+            assertEquals("a", iterator.next().asString());
+            assertTrue(iterator.hasNext());
+            assertEquals("b", iterator.next().asString());
+            assertFalse(iterator.hasNext());
+        }
     }
 
     private ListValue listValue(Value... values) {

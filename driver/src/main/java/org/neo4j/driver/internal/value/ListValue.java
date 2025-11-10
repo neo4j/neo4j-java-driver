@@ -112,17 +112,19 @@ public class ListValue extends ValueAdapter {
 
     @Override
     public <T> Iterable<T> values(final Function<Value, T> mapFunction) {
-        var iterator = values.iterator();
-        return () -> new Iterator<>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
+        return () -> {
+            var iterator = values.iterator();
+            return new Iterator<>() {
+                @Override
+                public boolean hasNext() {
+                    return iterator.hasNext();
+                }
 
-            @Override
-            public T next() {
-                return mapFunction.apply(iterator.next());
-            }
+                @Override
+                public T next() {
+                    return mapFunction.apply(iterator.next());
+                }
+            };
         };
     }
 
