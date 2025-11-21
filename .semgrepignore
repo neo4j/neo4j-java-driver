@@ -1,0 +1,16 @@
+:include .gitignore
+
+.git
+
+src/test
+
+benchkit
+benchkit-backend
+
+driver-it
+examples
+
+testkit
+testkit-backend
+testkit-tests
+
