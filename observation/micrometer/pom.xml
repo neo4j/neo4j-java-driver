@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver-parent</artifactId>
-        <version>6.2-SNAPSHOT</version>
+        <version>6.3-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -16,6 +16,7 @@
     <description>The Neo4j Java Driver Observation module integrating with Micrometer Observation API.</description>
 
     <properties>
+        <micrometer.version>1.17.1</micrometer.version>
         <micrometer-docs-generator.inputPath>${project.build.sourceDirectory}/org/neo4j/driver/observation/micrometer</micrometer-docs-generator.inputPath>
         <micrometer-docs-generator.inclusionPattern>.*</micrometer-docs-generator.inclusionPattern>
         <micrometer-docs-generator.outputPath>${project.build.directory}/docs</micrometer-docs-generator.outputPath>

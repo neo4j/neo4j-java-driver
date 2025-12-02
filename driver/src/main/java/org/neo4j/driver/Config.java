@@ -25,6 +25,7 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.encryption.PropertyEncryptionProfile;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.InternalNotificationConfig;
 import org.neo4j.driver.internal.RoutingSettings;
@@ -181,6 +183,13 @@ public final class Config implements Serializable {
      */
     private final boolean autoCommitRetriesDisabled;
 
+    /**
+     * The list of {@link PropertyEncryptionProfile} instances.
+     * @since 6.3.0
+     */
+    @Preview(name = "Property Encryption")
+    private final transient Set<PropertyEncryptionProfile> propertyEncryptionProfiles;
+
     private Config(ConfigBuilder builder) {
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
@@ -205,6 +214,7 @@ public final class Config implements Serializable {
         this.observationProvider = builder.observationProvider;
         this.tryTcpFastOpen = builder.tryTcpFastOpen;
         this.autoCommitRetriesDisabled = builder.autoCommitRetriesDisabled;
+        this.propertyEncryptionProfiles = builder.propertyEncryptionProfiles;
     }
 
     /**
@@ -452,6 +462,19 @@ public final class Config implements Serializable {
     }
 
     /**
+     * Returns the set of {@link PropertyEncryptionProfile} instances configured for the driver.
+     * <p>
+     * Each profile is identified by its unique {@link PropertyEncryptionProfile#name() name}.
+     *
+     * @return the configured property encryption profiles
+     * @since 6.3.0
+     */
+    @Preview(name = "Property Encryption")
+    public Set<PropertyEncryptionProfile> propertyEncryptionProfiles() {
+        return propertyEncryptionProfiles;
+    }
+
+    /**
      * Used to build new config instances
      */
     public static final class ConfigBuilder {
@@ -475,6 +498,7 @@ public final class Config implements Serializable {
         private ObservationProvider observationProvider;
         private boolean tryTcpFastOpen;
         private boolean autoCommitRetriesDisabled;
+        private Set<PropertyEncryptionProfile> propertyEncryptionProfiles = Set.of();
 
         @SuppressWarnings("deprecation")
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
@@ -806,9 +830,41 @@ public final class Config implements Serializable {
         @Preview(name = "Observability")
         public ConfigBuilder withObservationProvider(ObservationProvider observationProvider) {
             if (observationProvider != null && !(observationProvider instanceof DriverObservationProvider)) {
-                throw new IllegalArgumentException("Unssupported observation provider");
+                throw new IllegalArgumentException("Unsupported observation provider");
             }
             this.observationProvider = observationProvider;
+            return this;
+        }
+
+        /**
+         * Configures the property encryption profiles that the driver should use.
+         * <p>
+         * Each profile must have a unique {@link PropertyEncryptionProfile#name() name}. The profiles are identified by
+         * name when selecting a property encryption profile for encryption.
+         * <p>
+         * If {@code null} is provided, no property encryption profiles are configured.
+         *
+         * @param propertyEncryptionProfiles the property encryption profiles, must not contain {@code null} entries and
+         * each profile must have a unique {@link PropertyEncryptionProfile#name() name}
+         * @return this builder
+         * @throws IllegalArgumentException when multiple profiles have the same name
+         * @since 6.3.0
+         */
+        @Preview(name = "Property Encryption")
+        public ConfigBuilder withPropertyEncryptionProfiles(PropertyEncryptionProfile... propertyEncryptionProfiles) {
+            if (propertyEncryptionProfiles == null) {
+                this.propertyEncryptionProfiles = Set.of();
+            } else {
+                var names = new HashSet<String>(propertyEncryptionProfiles.length);
+                for (var profile : propertyEncryptionProfiles) {
+                    Objects.requireNonNull(profile, "profile entries must not be null");
+                    if (!names.add(profile.name())) {
+                        throw new IllegalArgumentException(
+                                "Duplicate property encryption profile name found: " + profile.name());
+                    }
+                }
+                this.propertyEncryptionProfiles = Set.of(propertyEncryptionProfiles);
+            }
             return this;
         }
 

@@ -1,0 +1,64 @@
+Copyright (c) "Neo4j"
+Neo4j Sweden AB [https://neo4j.com]
+
+This file is part of Neo4j.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Full license texts are found in LICENSES.txt.
+
+
+Third-party licenses
+--------------------
+
+Apache Software License, Version 2.0
+  Core functionality for the Reactor Netty library
+  HTTP functionality for the Reactor Netty library
+  Jackson datatype: JSR310
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
+  Java Native Access
+  Java Native Access Platform
+  Netty/Buffer
+  Netty/Codec
+  Netty/Codec/Base
+  Netty/Codec/Compression
+  Netty/Codec/DNS
+  Netty/Codec/HTTP
+  Netty/Codec/HTTP2
+  Netty/Codec/Marshalling
+  Netty/Codec/Protobuf
+  Netty/Codec/Socks
+  Netty/Common
+  Netty/Handler
+  Netty/Handler/Proxy
+  Netty/Resolver
+  Netty/Resolver/DNS
+  Netty/TomcatNative [BoringSSL - Static]
+  Netty/TomcatNative [OpenSSL - Classes]
+  Netty/Transport
+  Netty/Transport/Native/Unix/Common
+  Non-Blocking Reactive Foundation for the JVM
+
+MIT License
+  Microsoft Azure client library for Identity
+  Microsoft Azure client library for KeyVault Keys
+  Microsoft Azure Java Core Library
+  Microsoft Azure Java JSON Library
+  Microsoft Azure Java XML Library
+  Microsoft Azure Netty HTTP Client Library
+  msal4j
+  msal4j-persistence-extension
+  SLF4J API Module
+
+MIT No Attribution License
+  reactive-streams
+

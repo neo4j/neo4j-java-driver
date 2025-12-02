@@ -17,7 +17,10 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.encryption.BasePropertyEncryption;
+import org.neo4j.driver.encryption.PropertyEncryption;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
+import org.neo4j.driver.util.Preview;
 
 /**
  * Accessor for a specific Neo4j graph database.
@@ -54,6 +57,42 @@ import org.neo4j.driver.exceptions.UnsupportedFeatureException;
  * </table>
  */
 public interface Driver extends AutoCloseable {
+
+    /**
+     * Returns Neo4j Property Encryption implementation.
+     *
+     * @return Neo4j Property Encryption implementation
+     * @since 6.3.0
+     */
+    @Preview(name = "Property Encryption")
+    default PropertyEncryption propertyEncryption() {
+        return propertyEncryption(PropertyEncryption.class);
+    }
+
+    /**
+     * Returns Neo4j Property Encryption implementation of a supported type.
+     * <p>
+     * Supported types are:
+     * <ul>
+     *     <li>{@link PropertyEncryption} - synchronous</li>
+     *     <li>{@link org.neo4j.driver.encryption.async.AsyncPropertyEncryption} - asynchronous</li>
+     *     <li>{@link org.neo4j.driver.encryption.reactive.ReactivePropertyEncryption} - reactive using Flow API</li>
+     *     <li>{@link org.neo4j.driver.encryption.reactivestreams.ReactivePropertyEncryption} - reactive using Reactive
+     *     Streams API</li>
+     * </ul>
+     *
+     * @param propertyEncryptionClass Neo4j Property Encryption type class, must not be {@literal null}
+     * @return Neo4j Property Encryption implementation
+     * @param <T> Neo4j Property Encryption type
+     * @since 6.3.0
+     * @see PropertyEncryption
+     * @see org.neo4j.driver.encryption.async.AsyncPropertyEncryption
+     * @see org.neo4j.driver.encryption.reactive.ReactivePropertyEncryption
+     * @see org.neo4j.driver.encryption.reactivestreams.ReactivePropertyEncryption
+     */
+    @Preview(name = "Property Encryption")
+    <T extends BasePropertyEncryption> T propertyEncryption(Class<T> propertyEncryptionClass);
+
     /**
      * Creates a new {@link ExecutableQuery} instance that executes a query in a managed transaction with automatic retries on
      * retryable errors.

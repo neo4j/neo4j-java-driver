@@ -5,7 +5,7 @@
 
   <groupId>org.neo4j.driver</groupId>
   <artifactId>neo4j-java-driver-parent</artifactId>
-  <version>6.2-SNAPSHOT</version>
+  <version>6.3-SNAPSHOT</version>
 
   <packaging>pom</packaging>
   <name>Neo4j Java Driver Project</name>
@@ -35,20 +35,20 @@
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <!-- Versions -->
-    <neo4j-bolt-connection-bom.version>12.0.0</neo4j-bolt-connection-bom.version>
+    <neo4j-bolt-connection-bom.version>12.1.0</neo4j-bolt-connection-bom.version>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.2.16.Final</netty-bom.version>
+    <netty-bom.version>4.2.18.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
     <reactor-bom.version>2024.0.18</reactor-bom.version>
-    <slf4j-api.version>2.0.18</slf4j-api.version>
+    <slf4j-api.version>2.0.19</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
     <mockito-core.version>5.23.0</mockito-core.version>
-    <junit.version>6.1.2</junit.version>
+    <junit.version>6.1.3</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.12.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
@@ -56,13 +56,12 @@
     <commons-compress.version>1.28.0</commons-compress.version>
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
     <commons-codec.version>1.22.1</commons-codec.version>
-    <bouncycastle-jdk18on.version>1.85</bouncycastle-jdk18on.version>
-    <logback-classic.version>1.6.1</logback-classic.version>
+    <bouncycastle-jdk18on.version>1.86</bouncycastle-jdk18on.version>
+    <logback-classic.version>1.6.3</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
-    <jackson.version>2.22.1</jackson.version>
-    <lombok.version>1.18.46</lombok.version>
-    <svm.version>25.0.4</svm.version>
-    <micrometer.version>1.17.0</micrometer.version>
+    <jackson.version>2.22.2</jackson.version>
+    <lombok.version>1.18.48</lombok.version>
+    <svm.version>25.0.4.1.1</svm.version>
     <micrometer-docs-generator.version>1.0.4</micrometer-docs-generator.version>
     <blockhound.version>1.0.17.RELEASE</blockhound.version>
     <testcontainers.version>2.0.5</testcontainers.version>
@@ -76,6 +75,7 @@
     <module>driver</module>
     <module>bundle</module>
     <module>observation</module>
+    <module>encryption</module>
     <module>driver-it</module>
     <module>examples</module>
     <module>testkit-backend</module>

@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.neo4j.driver</groupId>
     <artifactId>neo4j-java-driver-parent</artifactId>
-    <version>6.2-SNAPSHOT</version>
+    <version>6.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>neo4j-java-driver</artifactId>
@@ -32,6 +32,10 @@
     <dependency>
       <groupId>org.neo4j.bolt</groupId>
       <artifactId>neo4j-bolt-connection</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.bolt</groupId>
+      <artifactId>neo4j-bolt-connection-codec</artifactId>
     </dependency>
     <dependency>
       <groupId>org.neo4j.bolt</groupId>
