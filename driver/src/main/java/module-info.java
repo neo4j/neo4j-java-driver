@@ -34,10 +34,15 @@ module org.neo4j.driver {
     exports org.neo4j.driver.internal.observation to
             org.neo4j.driver.observation.metrics,
             org.neo4j.driver.observation.micrometer;
+    exports org.neo4j.driver.property_encryption;
+    exports org.neo4j.driver.property_encryption.async;
+    exports org.neo4j.driver.property_encryption.reactive;
+    exports org.neo4j.driver.property_encryption.reactivestreams;
 
     requires org.neo4j.bolt.connection;
     requires org.neo4j.bolt.connection.pooled;
     requires org.neo4j.bolt.connection.routed;
+    requires org.neo4j.bolt.connection.codec;
     requires reactor.core;
     requires transitive java.logging;
     requires transitive org.reactivestreams;
@@ -47,4 +52,8 @@ module org.neo4j.driver {
     requires static reactor.blockhound;
 
     uses org.neo4j.bolt.connection.BoltConnectionProviderFactory;
+    uses org.neo4j.bolt.connection.codec.packstream.PackStreamEncoderFactory;
+    uses org.neo4j.bolt.connection.codec.packstream.PackStreamDecoderFactory;
+    uses org.neo4j.bolt.connection.codec.value_encoding.ValueEncoderFactory;
+    uses org.neo4j.bolt.connection.codec.value_encoding.ValueDecoderFactory;
 }

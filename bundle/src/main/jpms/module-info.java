@@ -34,6 +34,10 @@ module org.neo4j.driver {
     exports org.neo4j.driver.internal.observation to
             org.neo4j.driver.observation.metrics,
             org.neo4j.driver.observation.micrometer;
+    exports org.neo4j.driver.property_encryption;
+    exports org.neo4j.driver.property_encryption.async;
+    exports org.neo4j.driver.property_encryption.reactive;
+    exports org.neo4j.driver.property_encryption.reactivestreams;
 
     requires transitive java.logging;
     requires transitive org.reactivestreams;
@@ -45,4 +49,16 @@ module org.neo4j.driver {
     uses org.neo4j.driver.internal.shaded.bolt.connection.BoltConnectionProviderFactory;
     provides org.neo4j.driver.internal.shaded.bolt.connection.BoltConnectionProviderFactory with
             org.neo4j.driver.internal.shaded.bolt.connection.netty.NettyBoltConnectionProviderFactory;
+    uses org.neo4j.driver.internal.shaded.bolt.connection.codec.packstream.PackStreamEncoderFactory;
+    provides org.neo4j.driver.internal.shaded.bolt.connection.codec.packstream.PackStreamEncoderFactory with
+            org.neo4j.driver.internal.shaded.bolt.connection.codec.impl.packstream.PackStreamEncoderFactoryImpl;
+    uses org.neo4j.driver.internal.shaded.bolt.connection.codec.packstream.PackStreamDecoderFactory;
+    provides org.neo4j.driver.internal.shaded.bolt.connection.codec.packstream.PackStreamDecoderFactory with
+            org.neo4j.driver.internal.shaded.bolt.connection.codec.impl.packstream.PackStreamDecoderFactoryImpl;
+    uses org.neo4j.driver.internal.shaded.bolt.connection.codec.value_encoding.ValueEncoderFactory;
+    provides org.neo4j.driver.internal.shaded.bolt.connection.codec.value_encoding.ValueEncoderFactory with
+            org.neo4j.driver.internal.shaded.bolt.connection.codec.impl.value_encoding.ValueEncoderFactoryImpl;
+    uses org.neo4j.driver.internal.shaded.bolt.connection.codec.value_encoding.ValueDecoderFactory;
+    provides org.neo4j.driver.internal.shaded.bolt.connection.codec.value_encoding.ValueDecoderFactory with
+            org.neo4j.driver.internal.shaded.bolt.connection.codec.impl.value_encoding.ValueDecoderFactoryImpl;
 }

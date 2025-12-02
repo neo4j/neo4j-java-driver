@@ -32,6 +32,7 @@ import org.neo4j.driver.internal.observation.BoltHandleObservation;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.observation.HttpExchangeObservation;
 import org.neo4j.driver.internal.observation.Observation;
+import org.neo4j.driver.property_encryption.BasePropertyEncryption;
 import org.neo4j.driver.types.MapAccessor;
 
 final class DriverMicrometerObservationProvider implements MicrometerObservationProvider, DriverObservationProvider {
@@ -126,6 +127,92 @@ final class DriverMicrometerObservationProvider implements MicrometerObservation
     @Override
     public Observation resultRecords(Class<?> resultType) {
         return from(DefaultResultRecordsConvention.INSTANCE, () -> new ResultRecordsContext(resultType));
+    }
+
+    @Override
+    public Observation encryptToBytes(Class<? extends BasePropertyEncryption> propertyEncryptionType) {
+        return from(DefaultEncryptToBytesConvention.INSTANCE, () -> new EncryptToBytesContext(propertyEncryptionType));
+    }
+
+    @Override
+    public Observation decrypt(Class<? extends BasePropertyEncryption> propertyEncryptionType) {
+        return from(DefaultDecryptConvention.INSTANCE, () -> new DecryptContext(propertyEncryptionType));
+    }
+
+    @Override
+    public Observation createEncapsulatedKey(Class<?> encapsulatedKeyManagerType, String alias) {
+        return from(
+                DefaultCreateEncapsulatedKeyConvention.INSTANCE,
+                () -> new CreateEncapsulatedKeyContext(encapsulatedKeyManagerType, alias));
+    }
+
+    @Override
+    public Observation findEncapsulatedKeyByAlias(Class<?> encapsulatedKeyManagerType, String alias) {
+        return from(
+                DefaultFindEncapsulatedKeyByAliasConvention.INSTANCE,
+                () -> new FindEncapsulatedKeyByAliasContext(encapsulatedKeyManagerType, alias));
+    }
+
+    @Override
+    public Observation setEncapsulatedKeyAlias(Class<?> encapsulatedKeyManagerType, String id, String alias) {
+        return from(
+                DefaultSetEncapsulatedKeyAliasConvention.INSTANCE,
+                () -> new SetEncapsulatedKeyAliasContext(encapsulatedKeyManagerType, id, alias));
+    }
+
+    @Override
+    public Observation deleteEncapsulatedKey(Class<?> encapsulatedKeyManagerType, String id) {
+        return from(
+                DefaultDeleteEncapsulatedKeyConvention.INSTANCE,
+                () -> new DeleteEncapsulatedKeyContext(encapsulatedKeyManagerType, id));
+    }
+
+    @Override
+    public Observation keyEncapsulationServiceEncapsulate() {
+        return from(
+                DefaultKeyEncapsulationServiceEncapsulateConvention.INSTANCE,
+                KeyEncapsulationServiceEncapsulateContext::new);
+    }
+
+    @Override
+    public Observation keyEncapsulationServiceDecapsulate() {
+        return from(
+                DefaultKeyEncapsulationServiceDecapsulateConvention.INSTANCE,
+                KeyEncapsulationServiceDecapsulateContext::new);
+    }
+
+    @Override
+    public Observation encapsulatedKeyRepositoryFindById() {
+        return from(
+                DefaultEncapsulatedKeyRepositoryFindByIdConvention.INSTANCE,
+                EncapsulatedKeyRepositoryFindByIdContext::new);
+    }
+
+    @Override
+    public Observation encapsulatedKeyRepositoryFindByAlias() {
+        return from(
+                DefaultEncapsulatedKeyRepositoryFindByAliasConvention.INSTANCE,
+                EncapsulatedKeyRepositoryFindByAliasContext::new);
+    }
+
+    @Override
+    public Observation encapsulatedKeyRepositoryCreate() {
+        return from(
+                DefaultEncapsulatedKeyRepositoryCreateConvention.INSTANCE, EncapsulatedKeyRepositoryCreateContext::new);
+    }
+
+    @Override
+    public Observation encapsulatedKeyRepositorySetAliasById() {
+        return from(
+                DefaultEncapsulatedKeyRepositorySetAliasByIdConvention.INSTANCE,
+                EncapsulatedKeyRepositorySetAliasByIdContext::new);
+    }
+
+    @Override
+    public Observation encapsulatedKeyRepositoryDeleteById() {
+        return from(
+                DefaultEncapsulatedKeyRepositoryDeleteByIdConvention.INSTANCE,
+                EncapsulatedKeyRepositoryDeleteByIdContext::new);
     }
 
     @Override

@@ -977,4 +977,16 @@
         <method>java.util.Optional queryProfile()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.property_encryption.PropertyEncryption propertyEncryption()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.property_encryption.BasePropertyEncryption propertyEncryption(java.lang.Class)</method>
+    </difference>
+
 </differences>

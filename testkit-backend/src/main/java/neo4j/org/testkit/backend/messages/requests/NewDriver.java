@@ -16,34 +16,46 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AuthTokenUtil;
+import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitClock;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.DriverHolder;
+import neo4j.org.testkit.backend.messages.requests.deserializer.HexByteArrayDeserializer;
 import neo4j.org.testkit.backend.messages.responses.DomainNameResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.ResolverResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider;
 import org.neo4j.bolt.connection.DefaultDomainNameResolver;
 import org.neo4j.bolt.connection.DomainNameResolver;
 import org.neo4j.driver.AuthTokenManager;
@@ -60,6 +72,13 @@ import org.neo4j.driver.internal.security.SecurityPlans;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.observation.metrics.MetricsObservationProvider;
+import org.neo4j.driver.property_encryption.EncapsulatedKeyRecord;
+import org.neo4j.driver.property_encryption.EncapsulatedKeyRecordRepository;
+import org.neo4j.driver.property_encryption.EncapsulatedKeyRecords;
+import org.neo4j.driver.property_encryption.EnvelopePropertyEncryptionProfile;
+import org.neo4j.driver.property_encryption.KeyEncapsulationService;
+import org.neo4j.driver.property_encryption.KeyEncapsulationServices;
+import org.neo4j.driver.property_encryption.PropertyEncryptionProfile;
 import reactor.core.publisher.Mono;
 
 @Setter
@@ -123,6 +142,12 @@ public class NewDriver implements TestkitRequest {
                                 certificateData.getPassword()))
                         .map(ClientCertificateManagers::rotating))
                 .orElse(null);
+        try {
+            configBuilder.withPropertyEncryptionProfiles(
+                    configurePropertyEncryptionProfiles(data.getPropertyEncryptionProfiles()));
+        } catch (IllegalArgumentException e) {
+            throw new CustomDriverError(e);
+        }
         org.neo4j.driver.Driver driver;
         var config = configBuilder.build();
         try {
@@ -140,6 +165,45 @@ public class NewDriver implements TestkitRequest {
         }
         testkitState.addDriverHolder(id, new DriverHolder(driver, config, metrics));
         return Driver.builder().data(Driver.DriverBody.builder().id(id).build()).build();
+    }
+
+    private PropertyEncryptionProfile[] configurePropertyEncryptionProfiles(Set<EncryptionProfile> profiles) {
+        if (profiles == null) {
+            return null;
+        }
+        var provider = new BouncyCastleFipsProvider();
+        SecureRandom secureRandom;
+        try {
+            secureRandom = SecureRandom.getInstance("NONCEANDIV", provider);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        return profiles.stream()
+                .map(profile -> {
+                    var masterKey = Optional.ofNullable(profile.getKek())
+                            .map(bytes -> (SecretKey) new SecretKeySpec(bytes, "AES"))
+                            .orElseGet(() -> {
+                                KeyGenerator keyGenerator;
+                                try {
+                                    keyGenerator = KeyGenerator.getInstance("AES");
+                                } catch (NoSuchAlgorithmException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                keyGenerator.init(256);
+                                return keyGenerator.generateKey();
+                            });
+                    KeyEncapsulationService encapsulationService;
+                    try {
+                        encapsulationService = KeyEncapsulationServices.local(masterKey, provider, secureRandom);
+                    } catch (NoSuchAlgorithmException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return EnvelopePropertyEncryptionProfile.builder(
+                                    profile.getName(), encapsulationService, new InMemoryKeyRecordRepository())
+                            .withCryptoContext(provider, secureRandom)
+                            .build();
+                })
+                .toArray(PropertyEncryptionProfile[]::new);
     }
 
     @Override
@@ -300,6 +364,68 @@ public class NewDriver implements TestkitRequest {
         private String clientCertificateProviderId;
         private Long maxConnectionLifetimeMs;
         private boolean disableAutoCommitRetries;
+        private Set<EncryptionProfile> propertyEncryptionProfiles;
+    }
+
+    @Setter
+    @Getter
+    public static class EncryptionProfile {
+        private String name;
+
+        @JsonDeserialize(using = HexByteArrayDeserializer.class)
+        private byte[] kek;
+    }
+
+    public static class InMemoryKeyRecordRepository implements EncapsulatedKeyRecordRepository {
+        private Map<String, Key> idToKey = new HashMap<>();
+        private Map<String, String> aliasToId = new HashMap<>();
+
+        @Override
+        public CompletionStage<EncapsulatedKeyRecord> findById(String id) {
+            var key = idToKey.get(id);
+            if (key == null) {
+                return CompletableFuture.completedFuture(null);
+            }
+            var alias = aliasToId.entrySet().stream()
+                    .filter(entry -> entry.getValue().equals(id))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .orElse(null);
+            return CompletableFuture.completedStage(
+                    EncapsulatedKeyRecords.create(id, alias, key.encapsulation(), key.metadata()));
+        }
+
+        @Override
+        public CompletionStage<EncapsulatedKeyRecord> findByAlias(String alias) {
+            var id = aliasToId.get(alias);
+            return findById(id);
+        }
+
+        public CompletionStage<EncapsulatedKeyRecord> save(
+                String id, String alias, byte[] encapsulation, Map<String, String> metadata) {
+            idToKey.put(id, new Key(encapsulation, metadata));
+            aliasToId.put(alias, id);
+            return CompletableFuture.completedStage(EncapsulatedKeyRecords.create(id, alias, encapsulation, metadata));
+        }
+
+        @Override
+        public CompletionStage<EncapsulatedKeyRecord> create(
+                String alias, byte[] encapsulation, Map<String, String> metadata) {
+            return save(UUID.randomUUID().toString(), alias, encapsulation, metadata);
+        }
+
+        @Override
+        public CompletionStage<Void> setAliasById(String id, String alias) {
+            return null;
+        }
+
+        @Override
+        public CompletionStage<Void> deleteById(String id) {
+            idToKey.remove(id);
+            return CompletableFuture.completedStage(null);
+        }
+
+        private record Key(byte[] encapsulation, Map<String, String> metadata) {}
     }
 
     @RequiredArgsConstructor

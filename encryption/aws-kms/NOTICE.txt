@@ -1,0 +1,54 @@
+Copyright (c) "Neo4j"
+Neo4j Sweden AB [https://neo4j.com]
+
+This file is part of Neo4j.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Full license texts are found in LICENSES.txt.
+
+
+Third-party licenses
+--------------------
+
+Apache Software License, Version 2.0
+  AWS Event Stream
+  AWS Java SDK :: Annotations
+  AWS Java SDK :: Auth
+  AWS Java SDK :: AWS Core
+  AWS Java SDK :: Checksums
+  AWS Java SDK :: Checksums SPI
+  AWS Java SDK :: Core :: Protocols :: AWS Json Protocol
+  AWS Java SDK :: Core :: Protocols :: Json Utils
+  AWS Java SDK :: Core :: Protocols :: Protocol Core
+  AWS Java SDK :: Endpoints SPI
+  AWS Java SDK :: HTTP Auth
+  AWS Java SDK :: HTTP Auth AWS
+  AWS Java SDK :: HTTP Auth Event Stream
+  AWS Java SDK :: HTTP Auth SPI
+  AWS Java SDK :: HTTP Client Interface
+  AWS Java SDK :: Identity SPI
+  AWS Java SDK :: Metrics SPI
+  AWS Java SDK :: Profiles
+  AWS Java SDK :: Regions
+  AWS Java SDK :: Retries
+  AWS Java SDK :: Retries API
+  AWS Java SDK :: SDK Core
+  AWS Java SDK :: Services :: AWS KMS
+  AWS Java SDK :: Third Party :: Jackson-core
+  AWS Java SDK :: Utilities
+  AWS Java SDK :: Utils Lite
+
+MIT License
+  SLF4J API Module
+
+MIT No Attribution License
+  reactive-streams
+

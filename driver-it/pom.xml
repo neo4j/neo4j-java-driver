@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver-parent</artifactId>
-        <version>6.2-SNAPSHOT</version>
+        <version>6.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>neo4j-java-driver-it</artifactId>
@@ -21,6 +21,12 @@
         <module>log4j-it</module>
         <module>slf4j-log4j-it</module>
         <module>jul-to-slf4j-log4j-it</module>
+        <module>encryption-common-it</module>
+        <module>encryption-google-cloud-kms-it</module>
+        <module>encryption-aws-kms-it</module>
+        <module>encryption-azure-keyvault-it</module>
+        <module>encryption-local-bc-fips</module>
+        <module>encryption-kyber-it</module>
     </modules>
 
     <dependencyManagement>
@@ -31,6 +37,18 @@
                 <version>${log4j.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <scope>test</scope>
+                <version>${testcontainers.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>neo4j</artifactId>
+                <scope>test</scope>
+                <version>${testcontainers.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

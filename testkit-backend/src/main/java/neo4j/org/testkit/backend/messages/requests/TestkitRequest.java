@@ -76,7 +76,11 @@ import reactor.core.publisher.Mono;
     @JsonSubTypes.Type(VerifyAuthentication.class),
     @JsonSubTypes.Type(NewClientCertificateProvider.class),
     @JsonSubTypes.Type(ClientCertificateProviderCompleted.class),
-    @JsonSubTypes.Type(ClientCertificateProviderClose.class)
+    @JsonSubTypes.Type(ClientCertificateProviderClose.class),
+    @JsonSubTypes.Type(CreateEncapsulatedKey.class),
+    @JsonSubTypes.Type(EncryptToBytes.class),
+    @JsonSubTypes.Type(Decrypt.class),
+    @JsonSubTypes.Type(ImportEncapsulatedKey.class)
 })
 public interface TestkitRequest {
     TestkitResponse process(TestkitState testkitState);

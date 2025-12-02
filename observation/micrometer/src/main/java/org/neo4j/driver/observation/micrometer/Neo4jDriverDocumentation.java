@@ -20,11 +20,19 @@ import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
+import java.util.Map;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionCallback;
+import org.neo4j.driver.property_encryption.EncapsulatedKeyManager;
+import org.neo4j.driver.property_encryption.EncapsulatedKeyRecordRepository;
+import org.neo4j.driver.property_encryption.KeyEncapsulationOptions;
+import org.neo4j.driver.property_encryption.KeyEncapsulationService;
+import org.neo4j.driver.property_encryption.PropertyDecryptionRequest;
+import org.neo4j.driver.property_encryption.PropertyEncryption;
+import org.neo4j.driver.property_encryption.PropertyEncryptionRequest;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
 
 enum Neo4jDriverDocumentation implements ObservationDocumentation {
@@ -272,6 +280,221 @@ enum Neo4jDriverDocumentation implements ObservationDocumentation {
         @Override
         public KeyName[] getLowCardinalityKeyNames() {
             return ResultConsumeLowCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link PropertyEncryption#encryptToBytes(PropertyEncryptionRequest)} execution.
+     * <p>
+     * This also applies to the alternative property encryption types.
+     */
+    PROPERTY_ENCRYPTION_ENCRYPT_TO_BYTES {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultEncryptToBytesConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return EncryptToBytesLowCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link PropertyEncryption#decrypt(PropertyDecryptionRequest)} execution.
+     * <p>
+     * This also applies to the alternative property encryption types.
+     */
+    PROPERTY_ENCRYPTION_DECRYPT {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultDecryptConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return DecryptLowCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link EncapsulatedKeyManager#create(String, KeyEncapsulationOptions)} execution.
+     * <p>
+     * This also applies to the other variants of this method, including those of the alternative encapsulated key
+     * manager types.
+     */
+    CREATE_ENCAPSULATED_KEY {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultCreateEncapsulatedKeyConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return CreateEncapsulatedKeyLowCardinalityKeyNames.values();
+        }
+
+        @Override
+        public KeyName[] getHighCardinalityKeyNames() {
+            return CreateEncapsulatedKeyHighCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link EncapsulatedKeyManager#findByAlias(String)} execution.
+     * <p>
+     * This also applies to the alternative encapsulated key manager types.
+     */
+    FIND_ENCAPSULATED_KEY {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultFindEncapsulatedKeyByAliasConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return FindEncapsulatedKeyByAliasLowCardinalityKeyNames.values();
+        }
+
+        @Override
+        public KeyName[] getHighCardinalityKeyNames() {
+            return FindEncapsulatedKeyByAliasHighCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link EncapsulatedKeyManager#setAliasById(String, String)} execution.
+     * <p>
+     * This also applies to the alternative encapsulated key manager types.
+     */
+    SET_ENCAPSULATED_KEY_ALIAS {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultSetEncapsulatedKeyAliasConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return SetEncapsulatedKeyAliasLowCardinalityKeyNames.values();
+        }
+
+        @Override
+        public KeyName[] getHighCardinalityKeyNames() {
+            return SetEncapsulatedKeyAliasHighCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link EncapsulatedKeyManager#findByAlias(String)} execution.
+     * <p>
+     * This also applies to the alternative encapsulated key manager types.
+     */
+    DELETE_ENCAPSULATED_KEY {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultDeleteEncapsulatedKeyConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return DeleteEncapsulatedKeyLowCardinalityKeyNames.values();
+        }
+
+        @Override
+        public KeyName[] getHighCardinalityKeyNames() {
+            return DeleteEncapsulatedKeyHighCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link KeyEncapsulationService#encapsulate(KeyEncapsulationOptions)} execution.
+     */
+    KEY_ENCAPSULATION_SERVICE_ENCAPSULATE {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultKeyEncapsulationServiceEncapsulateConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return KeyEncapsulationServiceEncapsulateLowCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link KeyEncapsulationService#decapsulate(byte[], Map)} execution.
+     */
+    KEY_ENCAPSULATION_SERVICE_DECAPSULATE {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultKeyEncapsulationServiceDecapsulateConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return KeyEncapsulationServiceDecapsulateLowCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link EncapsulatedKeyRecordRepository#findById(String)} execution.
+     */
+    KEY_REPOSITORY_FIND_BY_ID {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultEncapsulatedKeyRepositoryFindByIdConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return EncapsulatedKeyRepositoryFindByIdLowCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link EncapsulatedKeyRecordRepository#findByAlias(String)} execution.
+     */
+    KEY_REPOSITORY_FIND_BY_ALIAS {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultEncapsulatedKeyRepositoryFindByAliasConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return EncapsulatedKeyRepositoryFindByAliasLowCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link EncapsulatedKeyRecordRepository#create(String, byte[], Map)} execution.
+     */
+    KEY_REPOSITORY_CREATE {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultEncapsulatedKeyRepositoryCreateConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return EncapsulatedKeyRepositoryCreateLowCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link EncapsulatedKeyRecordRepository#setAliasById(String, String)} execution.
+     */
+    KEY_REPOSITORY_FIND_SET_ALIAS_BY_ID {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultEncapsulatedKeyRepositorySetAliasByIdConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return EncapsulatedKeyRepositorySetAliasByIdLowCardinalityKeyNames.values();
+        }
+    },
+    /**
+     * Observes {@link EncapsulatedKeyRecordRepository#deleteById(String)} execution.
+     */
+    KEY_REPOSITORY_FIND_DELETE_BY_ID {
+        @Override
+        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+            return DefaultEncapsulatedKeyRepositoryDeleteByIdConvention.class;
+        }
+
+        @Override
+        public KeyName[] getLowCardinalityKeyNames() {
+            return EncapsulatedKeyRepositoryDeleteByIdLowCardinalityKeyNames.values();
         }
     },
     /**
@@ -786,6 +1009,288 @@ enum Neo4jDriverDocumentation implements ObservationDocumentation {
             @Override
             public String asString() {
                 return "neo4j.result.type";
+            }
+        }
+    }
+
+    enum EncryptToBytesLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        },
+        /**
+         * The property encryption type.
+         */
+        PROPERTY_ENCRYPTION_TYPE {
+            @Override
+            public String asString() {
+                return "neo4j.property.encryption.type";
+            }
+        }
+    }
+
+    enum DecryptLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        },
+        /**
+         * The property encryption type.
+         */
+        PROPERTY_ENCRYPTION_TYPE {
+            @Override
+            public String asString() {
+                return "neo4j.property.encryption.type";
+            }
+        }
+    }
+
+    enum CreateEncapsulatedKeyLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        },
+        /**
+         * The encapsulated key manager type.
+         */
+        ENCAPSULATED_KEY_MANAGER_TYPE {
+            @Override
+            public String asString() {
+                return "neo4j.property.encryption.encapsulated.key.manager.type";
+            }
+        }
+    }
+
+    enum CreateEncapsulatedKeyHighCardinalityKeyNames implements KeyName {
+        /**
+         * The key alias if available.
+         */
+        KEY_ALIAS {
+            @Override
+            public String asString() {
+                return "neo4j.property.encryption.encapsulated.key.alias";
+            }
+
+            @Override
+            public boolean isRequired() {
+                return false;
+            }
+        }
+    }
+
+    enum FindEncapsulatedKeyByAliasLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        },
+        /**
+         * The encapsulated key manager type.
+         */
+        ENCAPSULATED_KEY_MANAGER_TYPE {
+            @Override
+            public String asString() {
+                return "neo4j.property.encryption.encapsulated.key.manager.type";
+            }
+        }
+    }
+
+    enum FindEncapsulatedKeyByAliasHighCardinalityKeyNames implements KeyName {
+        /**
+         * The key alias if available.
+         */
+        KEY_ALIAS {
+            @Override
+            public String asString() {
+                return "neo4j.property.encryption.encapsulated.key.alias";
+            }
+
+            @Override
+            public boolean isRequired() {
+                return false;
+            }
+        }
+    }
+
+    enum DeleteEncapsulatedKeyLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        },
+        /**
+         * The encapsulated key manager type.
+         */
+        ENCAPSULATED_KEY_MANAGER_TYPE {
+            @Override
+            public String asString() {
+                return "neo4j.property.encryption.encapsulated.key.manager.type";
+            }
+        }
+    }
+
+    enum DeleteEncapsulatedKeyHighCardinalityKeyNames implements KeyName {
+        /**
+         * The key id.
+         */
+        KEY_ID {
+            @Override
+            public String asString() {
+                return "neo4j.property.encryption.encapsulated.key.id";
+            }
+        }
+    }
+
+    enum SetEncapsulatedKeyAliasLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        },
+        /**
+         * The encapsulated key manager type.
+         */
+        ENCAPSULATED_KEY_MANAGER_TYPE {
+            @Override
+            public String asString() {
+                return "neo4j.property.encryption.encapsulated.key.manager.type";
+            }
+        }
+    }
+
+    enum SetEncapsulatedKeyAliasHighCardinalityKeyNames implements KeyName {
+        /**
+         * The key id.
+         */
+        KEY_ID {
+            @Override
+            public String asString() {
+                return "neo4j.property.encryption.encapsulated.key.id";
+            }
+        },
+        /**
+         * The key alias if available.
+         */
+        KEY_ALIAS {
+            @Override
+            public String asString() {
+                return "neo4j.property.encryption.encapsulated.key.alias";
+            }
+
+            @Override
+            public boolean isRequired() {
+                return false;
+            }
+        }
+    }
+
+    enum KeyEncapsulationServiceEncapsulateLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        }
+    }
+
+    enum KeyEncapsulationServiceDecapsulateLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        }
+    }
+
+    enum EncapsulatedKeyRepositoryFindByIdLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        }
+    }
+
+    enum EncapsulatedKeyRepositoryFindByAliasLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        }
+    }
+
+    enum EncapsulatedKeyRepositoryCreateLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        }
+    }
+
+    enum EncapsulatedKeyRepositorySetAliasByIdLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
+            }
+        }
+    }
+
+    enum EncapsulatedKeyRepositoryDeleteByIdLowCardinalityKeyNames implements KeyName {
+        /**
+         * The DBMS product name. It is always <b>neo4j</b>.
+         */
+        DB_SYSTEM_NAME {
+            @Override
+            public String asString() {
+                return "db.system.name";
             }
         }
     }
