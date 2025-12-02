@@ -11,6 +11,7 @@ Apache Software License, Version 2.0
   Neo4j Bolt Connection (Pooled Source impl)
   Neo4j Bolt Connection (Provider SPI)
   Neo4j Bolt Connection (Routed Source impl)
+  Neo4j Bolt Connection Codec
   Netty/Buffer
   Netty/Codec/Base
   Netty/Codec/Compression

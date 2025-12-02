@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver-parent</artifactId>
-        <version>6.2-SNAPSHOT</version>
+        <version>6.3-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -31,7 +31,7 @@
         <!-- Debug logging for backend messages. Empty string - off, Non-empty string - on. -->
         <testkit.debug.reqres/>
 
-        <docker-maven-plugin.version>0.48.1</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.49.0</docker-maven-plugin.version>
         <docker.showLogs>true</docker.showLogs>
     </properties>
 

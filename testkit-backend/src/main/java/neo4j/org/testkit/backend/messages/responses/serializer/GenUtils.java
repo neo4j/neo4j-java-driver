@@ -91,6 +91,7 @@ public final class GenUtils {
             case "CypherDuration" -> IsoDuration.class;
             case "CypherVector" -> Vector.class;
             case "CypherUUID" -> UUID.class;
+            case "CypherBytes" -> byte[].class;
             default -> null;
         };
     }

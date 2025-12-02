@@ -29,6 +29,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Config;
@@ -106,7 +107,8 @@ class InternalDriverTest {
                 sessionFactory,
                 true,
                 DEV_NULL_LOGGING,
-                NoopObservationProvider.getInstance());
+                NoopObservationProvider.getInstance(),
+                Map.of());
     }
 
     private static SessionFactory sessionFactoryMock() {
@@ -124,6 +126,7 @@ class InternalDriverTest {
                 sessionFactory,
                 true,
                 DEV_NULL_LOGGING,
-                NoopObservationProvider.getInstance());
+                NoopObservationProvider.getInstance(),
+                Map.of());
     }
 }

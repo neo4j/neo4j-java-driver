@@ -25,6 +25,7 @@ import java.time.Clock;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -65,6 +66,8 @@ import org.neo4j.driver.internal.boltlistener.BoltConnectionListener;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.observation.NoopObservationProvider;
+import org.neo4j.driver.internal.property_encryption.EncryptionHandler;
+import org.neo4j.driver.internal.property_encryption.EnvelopeEncryptionHandler;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
@@ -73,6 +76,7 @@ import org.neo4j.driver.internal.security.SecurityPlans;
 import org.neo4j.driver.internal.util.DriverInfoUtil;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.property_encryption.PropertyEncryptionProfile.Envelope;
 
 public class DriverFactory {
     public static final String NO_ROUTING_CONTEXT_ERROR_MESSAGE =
@@ -431,7 +435,27 @@ public class DriverFactory {
                 config.isTelemetryDisabled(),
                 config.logging(),
                 (DriverObservationProvider)
-                        config.observationProvider().orElseGet(NoopObservationProvider::getInstance));
+                        config.observationProvider().orElseGet(NoopObservationProvider::getInstance),
+                createEncryptionHandlers(config));
+    }
+
+    @SuppressWarnings("deprecation")
+    private Map<String, EncryptionHandler> createEncryptionHandlers(Config config) {
+        return config.propertyEncryptionProfiles().stream()
+                .map(profile -> {
+                    if (profile instanceof Envelope encryptionProfile) {
+                        return new EnvelopeEncryptionHandler(
+                                encryptionProfile.name(),
+                                encryptionProfile.defaultKeyReference(),
+                                encryptionProfile.encapsulationService(),
+                                encryptionProfile.keyRepository(),
+                                BoltValueFactory.getInstance(),
+                                config.logging());
+                    } else {
+                        throw new IllegalArgumentException("Unknown profile: " + profile);
+                    }
+                })
+                .collect(Collectors.toMap(EncryptionHandler::profileName, Function.identity()));
     }
 
     /**

@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver-it</artifactId>
-        <version>6.2-SNAPSHOT</version>
+        <version>6.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>neo4j-java-driver-log4j-it</artifactId>

@@ -5,7 +5,7 @@
 
   <groupId>org.neo4j.driver</groupId>
   <artifactId>neo4j-java-driver-parent</artifactId>
-  <version>6.2-SNAPSHOT</version>
+  <version>6.3-SNAPSHOT</version>
 
   <packaging>pom</packaging>
   <name>Neo4j Java Driver Project</name>
@@ -35,12 +35,12 @@
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <!-- Versions -->
-    <neo4j-bolt-connection-bom.version>12.0.0</neo4j-bolt-connection-bom.version>
+    <neo4j-bolt-connection-bom.version>12.1-SNAPSHOT</neo4j-bolt-connection-bom.version>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.2.16.Final</netty-bom.version>
+    <netty-bom.version>4.2.17.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
@@ -48,7 +48,7 @@
     <slf4j-api.version>2.0.18</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
     <mockito-core.version>5.23.0</mockito-core.version>
-    <junit.version>6.1.2</junit.version>
+    <junit.version>6.1.3</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.12.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
@@ -76,6 +76,7 @@
     <module>driver</module>
     <module>bundle</module>
     <module>observation</module>
+    <module>encryption</module>
     <module>driver-it</module>
     <module>examples</module>
     <module>testkit-backend</module>

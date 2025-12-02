@@ -18,6 +18,10 @@ package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
+import org.neo4j.driver.property_encryption.BaseEncapsulatedKeyManager;
+import org.neo4j.driver.property_encryption.BasePropertyEncryption;
+import org.neo4j.driver.property_encryption.PropertyEncryption;
+import org.neo4j.driver.util.Preview;
 
 /**
  * Accessor for a specific Neo4j graph database.
@@ -54,6 +58,31 @@ import org.neo4j.driver.exceptions.UnsupportedFeatureException;
  * </table>
  */
 public interface Driver extends AutoCloseable {
+
+    /**
+     * Returns a new {@link PropertyEncryption} instance for Neo4j Property encryption.
+     *
+     * @return property encryption instance
+     * @since 6.3.0
+     */
+    @Preview(name = "Property Encryption")
+    default PropertyEncryption propertyEncryption() {
+        return propertyEncryption(PropertyEncryption.class);
+    }
+
+    /**
+     * Returns a new {@link BasePropertyEncryption} instance of a supported subtype for Neo4j Property encryption.
+     *
+     * @param propertyEncryptionClass property encryption type class, must not be {@literal null}
+     * @return property encryption instance
+     * @param <T> property encryption type
+     * @param <S> encapsulated key manager type
+     * @since 6.3.0
+     */
+    @Preview(name = "Property Encryption")
+    <T extends BasePropertyEncryption<S>, S extends BaseEncapsulatedKeyManager> T propertyEncryption(
+            Class<T> propertyEncryptionClass);
+
     /**
      * Creates a new {@link ExecutableQuery} instance that executes a query in a managed transaction with automatic retries on
      * retryable errors.

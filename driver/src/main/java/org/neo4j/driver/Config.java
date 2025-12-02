@@ -40,6 +40,7 @@ import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.observation.ObservationProvider;
+import org.neo4j.driver.property_encryption.PropertyEncryptionProfile;
 import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
 import org.neo4j.driver.util.Preview;
@@ -181,6 +182,13 @@ public final class Config implements Serializable {
      */
     private final boolean autoCommitRetriesDisabled;
 
+    /**
+     * The list of {@link PropertyEncryptionProfile} instances.
+     * @since 6.3.0
+     */
+    @Preview(name = "Property Encryption")
+    private final transient List<PropertyEncryptionProfile> propertyEncryptionProfiles;
+
     private Config(ConfigBuilder builder) {
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
@@ -205,6 +213,7 @@ public final class Config implements Serializable {
         this.observationProvider = builder.observationProvider;
         this.tryTcpFastOpen = builder.tryTcpFastOpen;
         this.autoCommitRetriesDisabled = builder.autoCommitRetriesDisabled;
+        this.propertyEncryptionProfiles = builder.propertyEncryptionProfiles;
     }
 
     /**
@@ -452,6 +461,16 @@ public final class Config implements Serializable {
     }
 
     /**
+     * Returns the list of {@link PropertyEncryptionProfile} instances.
+     * @return the list of property encryption profiles
+     * @since 6.3.0
+     */
+    @Preview(name = "Property Encryption")
+    public List<PropertyEncryptionProfile> propertyEncryptionProfiles() {
+        return propertyEncryptionProfiles;
+    }
+
+    /**
      * Used to build new config instances
      */
     public static final class ConfigBuilder {
@@ -475,6 +494,7 @@ public final class Config implements Serializable {
         private ObservationProvider observationProvider;
         private boolean tryTcpFastOpen;
         private boolean autoCommitRetriesDisabled;
+        private List<PropertyEncryptionProfile> propertyEncryptionProfiles = List.of();
 
         @SuppressWarnings("deprecation")
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
@@ -809,6 +829,22 @@ public final class Config implements Serializable {
                 throw new IllegalArgumentException("Unssupported observation provider");
             }
             this.observationProvider = observationProvider;
+            return this;
+        }
+
+        /**
+         * Sets the list of {@link PropertyEncryptionProfile} instance.
+         * @param propertyEncryptionProfiles the property encryption profiles
+         * @return this builder
+         * @since 6.3.0
+         */
+        @Preview(name = "Property Encryption")
+        public ConfigBuilder withPropertyEncryptionProfiles(PropertyEncryptionProfile... propertyEncryptionProfiles) {
+            if (propertyEncryptionProfiles == null) {
+                this.propertyEncryptionProfiles = List.of();
+            } else {
+                this.propertyEncryptionProfiles = List.of(propertyEncryptionProfiles);
+            }
             return this;
         }
 
