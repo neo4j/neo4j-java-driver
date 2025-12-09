@@ -1,16 +1,16 @@
 :include .gitignore
 
-.git
+/.git/
 
-src/test
+**/src/test/
 
-benchkit
-benchkit-backend
+/benchkit/
+/benchkit-backend/
 
-driver-it
-examples
+/driver-it/
+/examples/
 
-testkit
-testkit-backend
-testkit-tests
+/testkit/
+/testkit-backend/
+/testkit-tests/
 
