@@ -58,7 +58,7 @@
     <bouncycastle-jdk18on.version>1.83</bouncycastle-jdk18on.version>
     <logback-classic.version>1.5.32</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
-    <jackson.version>2.21.0</jackson.version>
+    <jackson.version>2.21.1</jackson.version>
     <lombok.version>1.18.42</lombok.version>
     <svm.version>25.0.2</svm.version>
     <micrometer.version>1.15.2</micrometer.version>
