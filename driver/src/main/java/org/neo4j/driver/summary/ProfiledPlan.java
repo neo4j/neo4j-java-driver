@@ -24,12 +24,27 @@ import java.util.List;
  * @since 1.0
  */
 public interface ProfiledPlan extends Plan {
+
+    /**
+     * Returns whether the number of times this part of the plan touched the underlying data stores was recorded.
+     *
+     * @return if the number of times this part of the plan touched the underlying data stores was recorded
+     */
+    boolean hasDbHits();
+
     /**
      * Returns the number of times this part of the plan touched the underlying data stores.
      *
      * @return the number of times this part of the plan touched the underlying data stores
      */
     long dbHits();
+
+    /**
+     * Returns whether the number of records this part of the plan produced was recorded.
+     *
+     * @return if the number of records this part of the plan produced was recorded
+     */
+    boolean hasRecords();
 
     /**
      * Returns the number of records this part of the plan produced.
@@ -65,6 +80,13 @@ public interface ProfiledPlan extends Plan {
      * @return the ratio of page cache hits to total number of lookups or 0 if no data is available
      */
     double pageCacheHitRatio();
+
+    /**
+     * Returns whether the amount of time spent in the associated execution step was recorded.
+     *
+     * @return if the amount of time spent in the associated execution step was recorded
+     */
+    boolean hasTime();
 
     /**
      * Returns the amount of time spent in the associated execution step.

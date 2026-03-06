@@ -953,4 +953,22 @@
         <method>org.neo4j.driver.types.Vector asVector()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/summary/ProfiledPlan</className>
+        <differenceType>7012</differenceType>
+        <method>boolean hasDbHits()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/ProfiledPlan</className>
+        <differenceType>7012</differenceType>
+        <method>boolean hasRecords()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/ProfiledPlan</className>
+        <differenceType>7012</differenceType>
+        <method>boolean hasTime()</method>
+    </difference>
+
 </differences>

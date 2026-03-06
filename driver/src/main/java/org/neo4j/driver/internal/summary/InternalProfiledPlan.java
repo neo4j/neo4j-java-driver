@@ -19,15 +19,21 @@ package org.neo4j.driver.internal.summary;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.summary.ProfiledPlan;
 
 public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements ProfiledPlan {
+
+    private final boolean hasDbHits;
     private final long dbHits;
+    private final boolean hasRecords;
     private final long records;
+    private final boolean hasPageCacheStats;
     private final long pageCacheHits;
     private final long pageCacheMisses;
     private final double pageCacheHitRatio;
+    private final boolean hasTime;
     private final long time;
 
     protected InternalProfiledPlan(
@@ -35,24 +41,42 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
             Map<String, Value> arguments,
             List<String> identifiers,
             List<ProfiledPlan> children,
+            boolean hasDbHits,
             long dbHits,
+            boolean hasRecords,
             long records,
+            boolean hasPageCacheStats,
             long pageCacheHits,
             long pageCacheMisses,
             double pageCacheHitRatio,
+            boolean hasTime,
             long time) {
         super(operatorType, arguments, identifiers, children);
+        this.hasDbHits = hasDbHits;
         this.dbHits = dbHits;
+        this.hasRecords = hasRecords;
         this.records = records;
+        this.hasPageCacheStats = hasPageCacheStats;
         this.pageCacheHits = pageCacheHits;
         this.pageCacheMisses = pageCacheMisses;
         this.pageCacheHitRatio = pageCacheHitRatio;
+        this.hasTime = hasTime;
         this.time = time;
+    }
+
+    @Override
+    public boolean hasDbHits() {
+        return hasDbHits;
     }
 
     @Override
     public long dbHits() {
         return dbHits;
+    }
+
+    @Override
+    public boolean hasRecords() {
+        return hasRecords;
     }
 
     @Override
@@ -62,7 +86,7 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
 
     @Override
     public boolean hasPageCacheStats() {
-        return pageCacheHits > 0 || pageCacheMisses > 0 || pageCacheHitRatio > 0;
+        return hasPageCacheStats;
     }
 
     @Override
@@ -81,6 +105,11 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
     }
 
     @Override
+    public boolean hasTime() {
+        return hasTime;
+    }
+
+    @Override
     public long time() {
         return time;
     }
@@ -91,11 +120,16 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
                     arguments,
                     identifiers,
                     children,
+                    originalPlanValue.containsKey("dbHits"),
                     originalPlanValue.get("dbHits").asLong(0),
+                    originalPlanValue.containsKey("rows"),
                     originalPlanValue.get("rows").asLong(0),
+                    Stream.of("pageCacheHits", "pageCacheMisses", "pageCacheHitRatio")
+                            .anyMatch(originalPlanValue::containsKey),
                     originalPlanValue.get("pageCacheHits").asLong(0),
                     originalPlanValue.get("pageCacheMisses").asLong(0),
                     originalPlanValue.get("pageCacheHitRatio").asDouble(0),
+                    originalPlanValue.containsKey("time"),
                     originalPlanValue.get("time").asLong(0));
 
     /**

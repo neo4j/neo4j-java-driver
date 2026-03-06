@@ -16,6 +16,7 @@
  */
 package neo4j.org.testkit.backend.messages.responses;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
@@ -178,18 +179,22 @@ public class Summary implements TestkitResponse {
     @Getter
     @SuperBuilder
     public static class Profile extends Plan {
-        private long dbHits;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private Long dbHits;
 
-        private long rows;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private Long rows;
 
-        private boolean hasPageCacheStats;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private Long pageCacheHits;
 
-        private long pageCacheHits;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private Long pageCacheMisses;
 
-        private long pageCacheMisses;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private Double pageCacheHitRatio;
 
-        private double pageCacheHitRatio;
-
-        private long time;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private Long time;
     }
 }
