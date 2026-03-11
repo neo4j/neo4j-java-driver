@@ -182,8 +182,6 @@ public class Summary implements TestkitResponse {
 
         private long rows;
 
-        private boolean hasPageCacheStats;
-
         private long pageCacheHits;
 
         private long pageCacheMisses;
