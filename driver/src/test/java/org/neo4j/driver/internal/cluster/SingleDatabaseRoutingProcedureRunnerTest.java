@@ -52,12 +52,14 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.net.ServerAddress;
 
 class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest {
     @Test
     void shouldCallGetRoutingTableWithEmptyMap() {
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner(RoutingContext.EMPTY);
-        RoutingProcedureResponse response = await(runner.run(connection(), defaultDatabase(), empty(), null));
+        RoutingProcedureResponse response =
+                await(runner.run(connection(), ServerAddress.of("localhost", 7687), defaultDatabase(), empty(), null));
 
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());
@@ -76,7 +78,8 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         RoutingContext context = new RoutingContext(uri);
 
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner(context);
-        RoutingProcedureResponse response = await(runner.run(connection(), defaultDatabase(), empty(), null));
+        RoutingProcedureResponse response =
+                await(runner.run(connection(), ServerAddress.of("localhost", 7687), defaultDatabase(), empty(), null));
 
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());
@@ -94,7 +97,10 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     @MethodSource("invalidDatabaseNames")
     void shouldErrorWhenDatabaseIsNotAbsent(String db) throws Throwable {
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner(RoutingContext.EMPTY);
-        assertThrows(FatalDiscoveryException.class, () -> await(runner.run(connection(), database(db), empty(), null)));
+        assertThrows(
+                FatalDiscoveryException.class,
+                () -> await(
+                        runner.run(connection(), ServerAddress.of("localhost", 7687), database(db), empty(), null)));
     }
 
     SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner(RoutingContext context) {

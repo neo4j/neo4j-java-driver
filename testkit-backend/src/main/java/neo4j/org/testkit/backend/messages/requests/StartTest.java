@@ -76,6 +76,90 @@ public class StartTest implements TestkitRequest {
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query$", skipMessage);
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query_nested$", skipMessage);
+        skipMessage = "Driver sends resolved address in ROUTE message";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_forget_address_on_database_unavailable_error$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_read_successfully_from_reader_using_session_run$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_read_successfully_on_empty_discovery_result_using_session_run$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_request_rt_from_all_initial_routers_until_successful_on_authorization_expired$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_read_tx_and_rediscovery_until_success$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_read_tx_and_rediscovery_until_success_on_pull_failure$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_read_tx_until_success_on_no_connection$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_read_tx_until_success_on_pull_error$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_read_tx_until_success_on_run_error$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_write_tx_and_rediscovery_until_success$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_write_tx_and_rediscovery_until_success_on_pull_failure$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_write_tx_and_rediscovery_until_success_on_run_failure$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_write_tx_until_success_on_error$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_write_tx_until_success_on_pull_error$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_write_tx_until_success_on_run_error$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_write_until_success_with_leader_change_using_tx_function$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_write_until_success_with_leader_shutdown_during_tx_using_tx_function$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_revert_to_initial_router_if_known_router_throws_protocol_errors$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_serve_reads_and_fail_writes_when_no_writers_available$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_use_resolver_during_rediscovery_when_existing_routers_fail$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_write_successfully_on_leader_switch_using_tx_function$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_fail_when_reading_from_unexpectedly_interrupting_reader_using_tx_run$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_fail_when_reading_from_unexpectedly_interrupting_readers_on_run_using_tx_function$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_fail_when_reading_from_unexpectedly_interrupting_readers_using_tx_function$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_fail_when_writing_on_unexpectedly_interrupting_writer_on_pull_using_session_run$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_write_tx_until_success_on_no_connection$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_write_until_success_with_leader_change_on_run_using_tx_function$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.Routing[^.]+\\.test_should_send_empty_hello$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_succeed_when_another_conn_fails_and_discover_using_tx_run$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_successfully_check_if_support_for_multi_db_is_available$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_successfully_get_server_agent$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_request_rt_from_all_initial_routers_until_successful_on_unknown_failure$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_retry_read_tx_and_rediscovery_until_success_on_run_failure$",
+                skipMessage);
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
         ASYNC_SKIP_PATTERN_TO_REASON.put(

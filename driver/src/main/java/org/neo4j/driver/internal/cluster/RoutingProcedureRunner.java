@@ -22,6 +22,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.net.ServerAddress;
 
 /**
  * Interface which defines the standard way to get the routing table
@@ -31,11 +32,16 @@ public interface RoutingProcedureRunner {
      * Run the calls to the server
      *
      * @param connection       The connection which will be used to call the server
+     * @param address          The router address to include in routing context
      * @param databaseName     The database name
      * @param bookmark         The bookmark used to query the routing information
      * @param impersonatedUser The impersonated user, should be {@code null} for non-impersonated requests
      * @return The routing table
      */
     CompletionStage<RoutingProcedureResponse> run(
-            Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser);
+            Connection connection,
+            ServerAddress address,
+            DatabaseName databaseName,
+            Bookmark bookmark,
+            String impersonatedUser);
 }

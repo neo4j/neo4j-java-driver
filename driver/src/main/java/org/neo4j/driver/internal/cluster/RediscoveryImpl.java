@@ -281,8 +281,8 @@ public class RediscoveryImpl implements Rediscovery {
                 .thenApply(address -> addAndReturn(seenServers, address))
                 .thenCompose(connectionPool::acquire)
                 .thenApply(connection -> ImpersonationUtil.ensureImpersonationSupport(connection, impersonatedUser))
-                .thenCompose(connection ->
-                        provider.getClusterComposition(connection, routingTable.database(), bookmark, impersonatedUser))
+                .thenCompose(connection -> provider.getClusterComposition(
+                        connection, routerAddress, routingTable.database(), bookmark, impersonatedUser))
                 .handle((response, error) -> {
                     Throwable cause = Futures.completionExceptionCause(error);
                     if (cause != null) {

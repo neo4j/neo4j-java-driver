@@ -51,13 +51,15 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.ReadOnlyBookmarkHolder;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.net.ServerAddress;
 
 class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest {
     @ParameterizedTest
     @ValueSource(strings = {"", SYSTEM_DATABASE_NAME, " this is a db name "})
     void shouldCallGetRoutingTableWithEmptyMapOnSystemDatabaseForDatabase(String db) {
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner(RoutingContext.EMPTY);
-        RoutingProcedureResponse response = await(runner.run(connection(), database(db), empty(), null));
+        RoutingProcedureResponse response =
+                await(runner.run(connection(), ServerAddress.of("localhost", 7687), database(db), empty(), null));
 
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());
@@ -77,7 +79,8 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         RoutingContext context = new RoutingContext(uri);
 
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner(context);
-        RoutingProcedureResponse response = await(runner.run(connection(), database(db), empty(), null));
+        RoutingProcedureResponse response =
+                await(runner.run(connection(), ServerAddress.of("localhost", 7687), database(db), empty(), null));
 
         assertTrue(response.isSuccess());
         assertEquals(1, response.records().size());

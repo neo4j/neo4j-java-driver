@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,6 +48,7 @@ import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.handlers.RouteMessageResponseHandler;
 import org.neo4j.driver.internal.messaging.request.RouteMessage;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.util.TestUtil;
 
 class RouteMessageRoutingProcedureRunnerTest {
@@ -77,7 +77,8 @@ class RouteMessageRoutingProcedureRunnerTest {
         CompletableFuture<Void> releaseConnectionFuture = CompletableFuture.completedFuture(null);
         doReturn(releaseConnectionFuture).when(connection).release();
 
-        RoutingProcedureResponse response = TestUtil.await(runner.run(connection, databaseName, null, null));
+        RoutingProcedureResponse response =
+                TestUtil.await(runner.run(connection, ServerAddress.of("localhost", 7687), databaseName, null, null));
 
         assertNotNull(response);
         assertTrue(response.isSuccess());
@@ -104,8 +105,8 @@ class RouteMessageRoutingProcedureRunnerTest {
         CompletableFuture<Void> releaseConnectionFuture = CompletableFuture.completedFuture(null);
         doReturn(releaseConnectionFuture).when(connection).release();
 
-        RoutingProcedureResponse response =
-                TestUtil.await(runner.run(connection, DatabaseNameUtil.defaultDatabase(), null, null));
+        RoutingProcedureResponse response = TestUtil.await(runner.run(
+                connection, ServerAddress.of("localhost", 7687), DatabaseNameUtil.defaultDatabase(), null, null));
 
         assertNotNull(response);
         assertFalse(response.isSuccess());
@@ -124,8 +125,13 @@ class RouteMessageRoutingProcedureRunnerTest {
             RoutingContext routingContext,
             Bookmark bookmark,
             DatabaseName databaseName) {
-        Map<String, Value> context = routingContext.toMap().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> Values.value(entry.getValue())));
+        Map<String, Value> context = new HashMap<>();
+        routingContext.toMap().entrySet().stream()
+                .filter(entry -> !entry.getKey().equals(RoutingContext.ROUTING_ADDRESS_KEY))
+                .forEach(entry -> context.put(entry.getKey(), Values.value(entry.getValue())));
+        if (routingContext.toMap().containsKey(RoutingContext.ROUTING_ADDRESS_KEY)) {
+            context.put(RoutingContext.ROUTING_ADDRESS_KEY, Values.value("localhost:7687"));
+        }
 
         verify(connection)
                 .writeAndFlush(
