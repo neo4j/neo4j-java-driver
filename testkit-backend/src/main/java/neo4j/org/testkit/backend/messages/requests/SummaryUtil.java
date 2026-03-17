@@ -166,7 +166,6 @@ public class SummaryUtil {
                 .identifiers(plan.identifiers())
                 .dbHits(plan.dbHits())
                 .rows(plan.records())
-                .hasPageCacheStats(plan.hasPageCacheStats())
                 .pageCacheHits(plan.pageCacheHits())
                 .pageCacheMisses(plan.pageCacheMisses())
                 .pageCacheHitRatio(plan.pageCacheHitRatio())
