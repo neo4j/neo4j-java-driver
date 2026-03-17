@@ -77,6 +77,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
+import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 class RediscoveryTest {
@@ -552,7 +553,11 @@ class RediscoveryTest {
             Map<BoltServerAddress, Object> responsesByAddress) {
         ClusterCompositionProvider provider = mock(ClusterCompositionProvider.class);
         when(provider.getClusterComposition(
-                        any(Connection.class), any(DatabaseName.class), any(InternalBookmark.class), any()))
+                        any(Connection.class),
+                        any(ServerAddress.class),
+                        any(DatabaseName.class),
+                        any(InternalBookmark.class),
+                        any()))
                 .then(invocation -> {
                     Connection connection = invocation.getArgument(0);
                     BoltServerAddress address = connection.serverAddress();

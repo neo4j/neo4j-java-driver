@@ -34,6 +34,7 @@ import org.neo4j.driver.exceptions.value.ValueException;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.net.ServerAddress;
 
 public class RoutingProcedureClusterCompositionProvider implements ClusterCompositionProvider {
     private static final String PROTOCOL_ERROR_MESSAGE = "Failed to parse '%s' result received from server due to ";
@@ -64,7 +65,11 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
 
     @Override
     public CompletionStage<ClusterComposition> getClusterComposition(
-            Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser) {
+            Connection connection,
+            ServerAddress address,
+            DatabaseName databaseName,
+            Bookmark bookmark,
+            String impersonatedUser) {
         RoutingProcedureRunner runner;
 
         if (supportsRouteMessage(connection)) {
@@ -75,7 +80,8 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
             runner = singleDatabaseRoutingProcedureRunner;
         }
 
-        return runner.run(connection, databaseName, bookmark, impersonatedUser).thenApply(this::processRoutingResponse);
+        return runner.run(connection, address, databaseName, bookmark, impersonatedUser)
+                .thenApply(this::processRoutingResponse);
     }
 
     private ClusterComposition processRoutingResponse(RoutingProcedureResponse response) {

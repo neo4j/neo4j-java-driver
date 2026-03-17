@@ -29,7 +29,7 @@ import org.neo4j.driver.internal.Scheme;
 
 public class RoutingContext {
     public static final RoutingContext EMPTY = new RoutingContext();
-    private static final String ROUTING_ADDRESS_KEY = "address";
+    public static final String ROUTING_ADDRESS_KEY = "address";
 
     private final Map<String, String> context;
     private final boolean isServerRoutingEnabled;

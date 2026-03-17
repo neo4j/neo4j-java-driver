@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.net.ServerAddress;
 
 abstract class AbstractRoutingProcedureRunnerTest {
     @Test
@@ -45,7 +46,8 @@ abstract class AbstractRoutingProcedureRunnerTest {
         SingleDatabaseRoutingProcedureRunner runner =
                 singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY, failedFuture(error));
 
-        RoutingProcedureResponse response = await(runner.run(connection(), defaultDatabase(), empty(), null));
+        RoutingProcedureResponse response =
+                await(runner.run(connection(), ServerAddress.of("localhost", 7687), defaultDatabase(), empty(), null));
 
         assertFalse(response.isSuccess());
         assertEquals(error, response.error());
@@ -57,8 +59,10 @@ abstract class AbstractRoutingProcedureRunnerTest {
         SingleDatabaseRoutingProcedureRunner runner =
                 singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY, failedFuture(error));
 
-        Exception e =
-                assertThrows(Exception.class, () -> await(runner.run(connection(), defaultDatabase(), empty(), null)));
+        Exception e = assertThrows(
+                Exception.class,
+                () -> await(runner.run(
+                        connection(), ServerAddress.of("localhost", 7687), defaultDatabase(), empty(), null)));
         assertEquals(error, e);
     }
 
@@ -67,7 +71,8 @@ abstract class AbstractRoutingProcedureRunnerTest {
         SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner(RoutingContext.EMPTY);
 
         Connection connection = connection();
-        RoutingProcedureResponse response = await(runner.run(connection, defaultDatabase(), empty(), null));
+        RoutingProcedureResponse response =
+                await(runner.run(connection, ServerAddress.of("localhost", 7687), defaultDatabase(), empty(), null));
 
         assertTrue(response.isSuccess());
         verify(connection).release();
@@ -81,7 +86,9 @@ abstract class AbstractRoutingProcedureRunnerTest {
         Connection connection = connection(failedFuture(releaseError));
 
         RuntimeException e = assertThrows(
-                RuntimeException.class, () -> await(runner.run(connection, defaultDatabase(), empty(), null)));
+                RuntimeException.class,
+                () -> await(
+                        runner.run(connection, ServerAddress.of("localhost", 7687), defaultDatabase(), empty(), null)));
         assertEquals(releaseError, e);
         verify(connection).release();
     }

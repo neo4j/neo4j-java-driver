@@ -39,6 +39,7 @@ import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.handlers.RouteMessageResponseHandler;
 import org.neo4j.driver.internal.messaging.request.RouteMessage;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.net.ServerAddress;
 
 /**
  * This implementation of the {@link RoutingProcedureRunner} access the routing procedure
@@ -61,10 +62,21 @@ public class RouteMessageRoutingProcedureRunner implements RoutingProcedureRunne
 
     @Override
     public CompletionStage<RoutingProcedureResponse> run(
-            Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser) {
+            Connection connection,
+            ServerAddress address,
+            DatabaseName databaseName,
+            Bookmark bookmark,
+            String impersonatedUser) {
         CompletableFuture<Map<String, Value>> completableFuture = createCompletableFuture.get();
 
         DirectConnection directConnection = toDirectConnection(connection, databaseName, impersonatedUser);
+        Map<String, Value> routingContext = this.routingContext;
+        if (routingContext.containsKey(RoutingContext.ROUTING_ADDRESS_KEY)) {
+            routingContext = new HashMap<>(routingContext);
+            routingContext.put(
+                    RoutingContext.ROUTING_ADDRESS_KEY,
+                    Values.value(String.format("%s:%d", address.host(), address.port())));
+        }
         directConnection.writeAndFlush(
                 new RouteMessage(
                         routingContext, bookmark, databaseName.databaseName().orElse(null), impersonatedUser),

@@ -22,8 +22,13 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.net.ServerAddress;
 
 public interface ClusterCompositionProvider {
     CompletionStage<ClusterComposition> getClusterComposition(
-            Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser);
+            Connection connection,
+            ServerAddress address,
+            DatabaseName databaseName,
+            Bookmark bookmark,
+            String impersonatedUser);
 }

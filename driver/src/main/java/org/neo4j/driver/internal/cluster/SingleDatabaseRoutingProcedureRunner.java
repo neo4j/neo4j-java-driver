@@ -40,6 +40,7 @@ import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.net.ServerAddress;
 
 /**
  * This implementation of the {@link RoutingProcedureRunner} works with single database versions of Neo4j calling
@@ -59,7 +60,11 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
 
     @Override
     public CompletionStage<RoutingProcedureResponse> run(
-            Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser) {
+            Connection connection,
+            ServerAddress address,
+            DatabaseName databaseName,
+            Bookmark bookmark,
+            String impersonatedUser) {
         DirectConnection delegate = connection(connection);
         Query procedure = procedureQuery(connection.serverVersion(), databaseName);
         BookmarkHolder bookmarkHolder = bookmarkHolder(bookmark);
