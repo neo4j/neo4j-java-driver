@@ -39,6 +39,8 @@ import static org.neo4j.driver.summary.QueryType.SCHEMA_WRITE;
 import static org.neo4j.driver.summary.QueryType.WRITE_ONLY;
 
 import java.util.Map;
+import java.util.OptionalDouble;
+import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
@@ -165,7 +167,7 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithProfiledPlan() {
-        var profile = value(parameters(
+        var rawProfile = value(parameters(
                 "operatorType", "ProduceResult",
                 "args", parameters("a", 42),
                 "identifiers", values("a", "b"),
@@ -179,24 +181,26 @@ class MetadataExtractorTest {
                                 "identifiers", values("y", "z"),
                                 "rows", value(2),
                                 "dbHits", value(4)))));
-        var metadata = singletonMap("profile", profile);
+        var metadata = singletonMap("profile", rawProfile);
 
         var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
 
         assertTrue(summary.hasPlan());
         assertTrue(summary.hasProfile());
-        assertEquals("ProduceResult", summary.profile().operatorType());
-        assertEquals(singletonMap("a", value(42)), summary.profile().arguments());
-        assertEquals(asList("a", "b"), summary.profile().identifiers());
-        assertEquals(424242, summary.profile().records());
-        assertEquals(242424, summary.profile().dbHits());
-        assertEquals(999, summary.profile().time());
-        assertFalse(summary.profile().hasPageCacheStats());
-        assertEquals(0, summary.profile().pageCacheHitRatio());
-        assertEquals(0, summary.profile().pageCacheMisses());
-        assertEquals(0, summary.profile().pageCacheHits());
+        @SuppressWarnings("deprecation")
+        var profile = summary.profile();
+        assertEquals("ProduceResult", profile.operatorType());
+        assertEquals(singletonMap("a", value(42)), profile.arguments());
+        assertEquals(asList("a", "b"), profile.identifiers());
+        assertEquals(424242, profile.records());
+        assertEquals(242424, profile.dbHits());
+        assertEquals(999, profile.time());
+        assertFalse(profile.hasPageCacheStats());
+        assertEquals(0, profile.pageCacheHitRatio());
+        assertEquals(0, profile.pageCacheMisses());
+        assertEquals(0, profile.pageCacheHits());
 
-        var children = summary.profile().children();
+        var children = profile.children();
         assertEquals(1, children.size());
         var child = children.get(0);
 
@@ -208,10 +212,64 @@ class MetadataExtractorTest {
     }
 
     @Test
+    void shouldBuildResultSummaryWithProfile() {
+        var rawProfile = value(parameters(
+                "operatorType",
+                "ProduceResult",
+                "args",
+                parameters("a", 42),
+                "identifiers",
+                values("a", "b"),
+                "rows",
+                value(424242),
+                "dbHits",
+                value(242424),
+                "time",
+                value(999),
+                "children",
+                values(parameters(
+                        "operatorType", "LabelScan",
+                        "args", parameters("x", 1),
+                        "identifiers", values("y", "z"),
+                        "rows", value(2),
+                        "dbHits", value(4)))));
+        var metadata = singletonMap("profile", rawProfile);
+
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
+
+        assertTrue(summary.hasPlan());
+        assertTrue(summary.hasProfile());
+        var profile = summary.queryProfile();
+        assertEquals("ProduceResult", profile.operatorType());
+        assertEquals(singletonMap("a", value(42)), profile.arguments());
+        assertEquals(asList("a", "b"), profile.identifiers());
+        assertEquals(OptionalLong.of(424242), profile.rows());
+        assertEquals(OptionalLong.of(242424), profile.dbHits());
+        assertEquals(OptionalLong.of(999), profile.time());
+        assertEquals(OptionalDouble.empty(), profile.pageCacheHitRatio());
+        assertEquals(OptionalLong.empty(), profile.pageCacheMisses());
+        assertEquals(OptionalLong.empty(), profile.pageCacheHits());
+
+        var children = profile.children();
+        assertEquals(1, children.size());
+        var child = children.get(0);
+
+        assertEquals("LabelScan", child.operatorType());
+        assertEquals(singletonMap("x", value(1)), child.arguments());
+        assertEquals(asList("y", "z"), child.identifiers());
+        assertEquals(OptionalLong.of(2), child.rows());
+        assertEquals(OptionalLong.of(4), child.dbHits());
+        assertEquals(OptionalLong.empty(), child.time());
+    }
+
+    @Test
     void shouldBuildResultSummaryWithoutProfiledPlan() {
         var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), false, null);
         assertFalse(summary.hasProfile());
-        assertNull(summary.profile());
+        @SuppressWarnings("deprecation")
+        var profile = summary.profile();
+        assertNull(profile);
+        assertNull(summary.queryProfile());
     }
 
     @Test

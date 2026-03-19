@@ -22,29 +22,16 @@ import java.util.List;
  * This is the same as a regular {@link Plan} - except this plan has been executed, meaning it also contains detailed information about how much work each
  * step of the plan incurred on the database.
  * @since 1.0
+ * @deprecated superseded by {@link Profile}.
  */
+@Deprecated
 public interface ProfiledPlan extends Plan {
-
-    /**
-     * Returns whether the number of times this part of the plan touched the underlying data stores was recorded.
-     *
-     * @return if the number of times this part of the plan touched the underlying data stores was recorded
-     */
-    boolean hasDbHits();
-
     /**
      * Returns the number of times this part of the plan touched the underlying data stores.
      *
      * @return the number of times this part of the plan touched the underlying data stores
      */
     long dbHits();
-
-    /**
-     * Returns whether the number of records this part of the plan produced was recorded.
-     *
-     * @return if the number of records this part of the plan produced was recorded
-     */
-    boolean hasRecords();
 
     /**
      * Returns the number of records this part of the plan produced.
@@ -82,13 +69,6 @@ public interface ProfiledPlan extends Plan {
     double pageCacheHitRatio();
 
     /**
-     * Returns whether the amount of time spent in the associated execution step was recorded.
-     *
-     * @return if the amount of time spent in the associated execution step was recorded
-     */
-    boolean hasTime();
-
-    /**
      * Returns the amount of time spent in the associated execution step.
      *
      * @return the amount of time spent in the associated execution step
@@ -96,5 +76,5 @@ public interface ProfiledPlan extends Plan {
     long time();
 
     @Override
-    List<ProfiledPlan> children();
+    List<? extends ProfiledPlan> children();
 }

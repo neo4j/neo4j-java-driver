@@ -53,6 +53,7 @@ import org.neo4j.driver.internal.summary.InternalGqlStatusObject;
 import org.neo4j.driver.internal.summary.InternalInputPosition;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
+import org.neo4j.driver.internal.summary.InternalProfile;
 import org.neo4j.driver.internal.summary.InternalProfiledPlan;
 import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
@@ -62,6 +63,7 @@ import org.neo4j.driver.summary.GqlStatusObject;
 import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
+import org.neo4j.driver.summary.Profile;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
@@ -150,6 +152,7 @@ public class MetadataExtractor {
                 extractCounters(metadata),
                 extractPlan(metadata),
                 extractProfiledPlan(metadata),
+                extractProfile(metadata),
                 notifications,
                 gqlStatusObjects,
                 resultAvailableAfter,
@@ -206,10 +209,19 @@ public class MetadataExtractor {
         return null;
     }
 
+    @SuppressWarnings("deprecation")
     private static ProfiledPlan extractProfiledPlan(Map<String, Value> metadata) {
         var profiledPlanValue = metadata.get("profile");
         if (profiledPlanValue != null) {
             return InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(profiledPlanValue);
+        }
+        return null;
+    }
+
+    private static Profile extractProfile(Map<String, Value> metadata) {
+        var profileValue = metadata.get("profile");
+        if (profileValue != null) {
+            return InternalProfile.PROFILE_FROM_VALUE.apply(profileValue);
         }
         return null;
     }

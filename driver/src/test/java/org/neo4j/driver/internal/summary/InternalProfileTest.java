@@ -21,11 +21,12 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalDouble;
+import java.util.OptionalLong;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.FloatValue;
@@ -33,9 +34,9 @@ import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.summary.ProfiledPlan;
+import org.neo4j.driver.summary.Profile;
 
-class InternalProfiledPlanTest {
+class InternalProfileTest {
 
     @Test
     void shouldHandlePlanWithNoChildren() {
@@ -43,7 +44,7 @@ class InternalProfiledPlanTest {
         Value value = new MapValue(createPlanMap());
 
         // WHEN
-        var plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(value);
+        var plan = InternalProfile.PROFILE_FROM_VALUE.apply(value);
 
         // THEN
         verifyPlan(plan);
@@ -57,7 +58,7 @@ class InternalProfiledPlanTest {
         Value value = new MapValue(planMap);
 
         // WHEN
-        var plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(value);
+        var plan = InternalProfile.PROFILE_FROM_VALUE.apply(value);
 
         // THEN
         for (var child : plan.children()) {
@@ -81,15 +82,49 @@ class InternalProfiledPlanTest {
         return map;
     }
 
-    @SuppressWarnings("deprecation")
-    private void verifyPlan(ProfiledPlan plan) {
-        assertThat(plan.dbHits(), equalTo(42L));
-        assertThat(plan.records(), equalTo(1337L));
-        assertTrue(plan.hasPageCacheStats());
-        assertThat(plan.pageCacheHits(), equalTo(1234L));
-        assertThat(plan.pageCacheMisses(), equalTo(3456L));
-        assertThat(plan.pageCacheHitRatio(), equalTo(0.123));
-        assertThat(plan.time(), equalTo(999L));
+    private void verifyPlan(Profile plan) {
+        assertThat(plan.dbHits(), equalTo(OptionalLong.of(42)));
+        assertThat(plan.rows(), equalTo(OptionalLong.of(1337)));
+        assertThat(plan.pageCacheHits(), equalTo(OptionalLong.of(1234)));
+        assertThat(plan.pageCacheMisses(), equalTo(OptionalLong.of(3456)));
+        assertThat(plan.pageCacheHitRatio(), equalTo(OptionalDouble.of(0.123)));
+        assertThat(plan.time(), equalTo(OptionalLong.of(999)));
+        assertThat(plan.operatorType(), equalTo("AwesomeOperator"));
+        assertThat(plan.identifiers(), equalTo(asList("n1", "n2")));
+        assertThat(plan.arguments().values(), hasItem(new StringValue("CYPHER 1337")));
+        assertThat(plan.children(), empty());
+    }
+
+    @Test
+    void shouldHandlePlanWithoutStats() {
+        // GIVEN
+        var planMap = createPlanMapWithoutStats();
+        Value value = new MapValue(planMap);
+
+        // WHEN
+        var plan = InternalProfile.PROFILE_FROM_VALUE.apply(value);
+
+        // THEN
+        verifyPlanWithoutStats(plan);
+    }
+
+    private Map<String, Value> createPlanMapWithoutStats() {
+        Map<String, Value> map = new HashMap<>();
+        map.put("operatorType", new StringValue("AwesomeOperator"));
+        map.put("identifiers", new ListValue(List.of(new StringValue("n1"), new StringValue("n2"))));
+        Map<String, Value> args = new HashMap<>();
+        args.put("version", new StringValue("CYPHER 1337"));
+        map.put("args", new MapValue(args));
+        return map;
+    }
+
+    private void verifyPlanWithoutStats(Profile plan) {
+        assertThat(plan.dbHits(), equalTo(OptionalLong.empty()));
+        assertThat(plan.rows(), equalTo(OptionalLong.empty()));
+        assertThat(plan.pageCacheHits(), equalTo(OptionalLong.empty()));
+        assertThat(plan.pageCacheMisses(), equalTo(OptionalLong.empty()));
+        assertThat(plan.pageCacheHitRatio(), equalTo(OptionalDouble.empty()));
+        assertThat(plan.time(), equalTo(OptionalLong.empty()));
         assertThat(plan.operatorType(), equalTo("AwesomeOperator"));
         assertThat(plan.identifiers(), equalTo(asList("n1", "n2")));
         assertThat(plan.arguments().values(), hasItem(new StringValue("CYPHER 1337")));

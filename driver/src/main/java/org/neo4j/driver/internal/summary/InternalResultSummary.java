@@ -25,6 +25,7 @@ import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.GqlStatusObject;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
+import org.neo4j.driver.summary.Profile;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
@@ -37,7 +38,11 @@ public class InternalResultSummary implements ResultSummary {
     private final QueryType queryType;
     private final SummaryCounters counters;
     private final Plan plan;
-    private final ProfiledPlan profile;
+
+    @SuppressWarnings("deprecation")
+    private final ProfiledPlan profiledPlan;
+
+    private final Profile profile;
 
     @SuppressWarnings("deprecation")
     private final List<Notification> notifications;
@@ -54,7 +59,8 @@ public class InternalResultSummary implements ResultSummary {
             QueryType queryType,
             SummaryCounters counters,
             Plan plan,
-            ProfiledPlan profile,
+            @SuppressWarnings("deprecation") ProfiledPlan profiledPlan,
+            Profile profile,
             @SuppressWarnings("deprecation") List<Notification> notifications,
             Set<GqlStatusObject> gqlStatusObjects,
             long resultAvailableAfter,
@@ -65,6 +71,7 @@ public class InternalResultSummary implements ResultSummary {
         this.queryType = queryType;
         this.counters = counters;
         this.plan = resolvePlan(plan, profile);
+        this.profiledPlan = profiledPlan;
         this.profile = profile;
         this.notifications = Objects.requireNonNull(notifications);
         this.gqlStatusObjects = Objects.requireNonNull(gqlStatusObjects);
@@ -103,7 +110,13 @@ public class InternalResultSummary implements ResultSummary {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public ProfiledPlan profile() {
+        return profiledPlan;
+    }
+
+    @Override
+    public Profile queryProfile() {
         return profile;
     }
 
@@ -170,7 +183,7 @@ public class InternalResultSummary implements ResultSummary {
                 queryType,
                 counters,
                 plan,
-                profile,
+                profiledPlan,
                 gqlStatusObjects,
                 resultAvailableAfter,
                 resultConsumedAfter);
@@ -184,7 +197,7 @@ public class InternalResultSummary implements ResultSummary {
                 + databaseInfo + ", queryType="
                 + queryType + ", counters="
                 + counters + ", plan="
-                + plan + ", profile="
+                + plan + ", queryProfile="
                 + profile + ", gqlStatusObjects="
                 + gqlStatusObjects + ", resultAvailableAfter="
                 + resultAvailableAfter + ", resultConsumedAfter="
@@ -195,10 +208,10 @@ public class InternalResultSummary implements ResultSummary {
      * Profiled plan is a superset of plan. This method returns profiled plan if plan is {@code null}.
      *
      * @param plan the given plan, possibly {@code null}.
-     * @param profiledPlan the given profiled plan, possibly {@code null}.
+     * @param profile the given plan, possibly {@code null}.
      * @return available plan.
      */
-    private static Plan resolvePlan(Plan plan, ProfiledPlan profiledPlan) {
-        return plan == null ? profiledPlan : plan;
+    private static Plan resolvePlan(Plan plan, Profile profile) {
+        return plan == null ? profile : plan;
     }
 }

@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.SessionConfig.forDatabase;
 
+import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -219,13 +220,31 @@ class SummaryIT {
         assertTrue(
                 summary.hasPlan()); // Profile is a superset of plan, so plan should be available as well if profile is
         // available
-        assertEquals(summary.plan(), summary.profile());
-
+        @SuppressWarnings("deprecation")
         var profile = summary.profile();
+        assertEquals(summary.plan(), profile);
 
         assertEquals(0, profile.time());
         assertEquals(0, profile.dbHits());
         assertEquals(1, profile.records());
+    }
+
+    @Test
+    void shouldContainProfiledQuery() {
+        // When
+        var summary = session.run("PROFILE RETURN 1").consume();
+
+        // Then
+        assertTrue(summary.hasProfile());
+        assertTrue(
+                summary.hasPlan()); // Profile is a superset of plan, so plan should be available as well if profile is
+        // available
+        var profile = summary.queryProfile();
+        assertEquals(summary.plan(), profile);
+
+        assertEquals(OptionalLong.empty(), profile.time());
+        assertEquals(OptionalLong.empty(), profile.dbHits());
+        assertEquals(OptionalLong.of(1), profile.rows());
     }
 
     @Test

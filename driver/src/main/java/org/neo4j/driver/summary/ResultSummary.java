@@ -85,8 +85,21 @@ public interface ResultSummary {
      * available here.
      *
      * @return profiled query plan for the executed query if available, otherwise null
+     * @deprecated superseded by {@link ResultSummary#queryProfile()}
      */
+    @Deprecated
     ProfiledPlan profile();
+
+    /**
+     * This describes how the database did execute your query.
+     * <p>
+     * If the query you executed {@link #hasProfile() was profiled}, the query plan will contain detailed
+     * information about what each step of the plan did. That more in-depth version of the query plan becomes
+     * available here.
+     *
+     * @return profiled query plan for the executed query if available, otherwise null
+     */
+    Profile queryProfile();
 
     /**
      * A list of notifications that might arise when executing the query.

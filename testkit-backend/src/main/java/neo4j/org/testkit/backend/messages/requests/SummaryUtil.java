@@ -19,6 +19,8 @@ package neo4j.org.testkit.backend.messages.requests;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalDouble;
+import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -27,7 +29,7 @@ import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.summary.GqlNotification;
 import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Plan;
-import org.neo4j.driver.summary.ProfiledPlan;
+import org.neo4j.driver.summary.Profile;
 import org.neo4j.driver.summary.QueryType;
 
 public class SummaryUtil {
@@ -116,7 +118,7 @@ public class SummaryUtil {
                 .notifications(notifications)
                 .gqlStatusObjects(gqlStatusObjects)
                 .plan(toPlan(summary.plan()))
-                .profile(toProfile(summary.profile()))
+                .profile(toProfile(summary.queryProfile()))
                 .queryType(toQueryType(summary.queryType()))
                 .resultAvailableAfter(
                         summary.resultAvailableAfter(TimeUnit.MILLISECONDS) == -1
@@ -154,7 +156,7 @@ public class SummaryUtil {
                 .build();
     }
 
-    private static Summary.Profile toProfile(ProfiledPlan plan) {
+    private static Summary.Profile toProfile(Profile plan) {
         if (plan == null) {
             return null;
         }
@@ -164,14 +166,22 @@ public class SummaryUtil {
                 .operatorType(plan.operatorType())
                 .args(args)
                 .identifiers(plan.identifiers())
-                .dbHits(plan.hasDbHits() ? plan.dbHits() : null)
-                .rows(plan.hasRecords() ? plan.records() : null)
-                .pageCacheHits(plan.hasPageCacheStats() ? plan.pageCacheHits() : null)
-                .pageCacheMisses(plan.hasPageCacheStats() ? plan.pageCacheMisses() : null)
-                .pageCacheHitRatio(plan.hasPageCacheStats() ? plan.pageCacheHitRatio() : null)
-                .time(plan.hasTime() ? plan.time() : null)
+                .dbHits(boxOptionalLong(plan.dbHits()))
+                .rows(boxOptionalLong(plan.rows()))
+                .pageCacheHits(boxOptionalLong(plan.pageCacheHits()))
+                .pageCacheMisses(boxOptionalLong(plan.pageCacheMisses()))
+                .pageCacheHitRatio(boxOptionalDouble(plan.pageCacheHitRatio()))
+                .time(boxOptionalLong(plan.time()))
                 .children(plan.children().stream().map(SummaryUtil::toProfile).collect(Collectors.toList()))
                 .build();
+    }
+
+    private static Long boxOptionalLong(OptionalLong value) {
+        return value.isPresent() ? value.getAsLong() : null;
+    }
+
+    private static Double boxOptionalDouble(OptionalDouble value) {
+        return value.isPresent() ? value.getAsDouble() : null;
     }
 
     private static String toQueryType(QueryType type) {
