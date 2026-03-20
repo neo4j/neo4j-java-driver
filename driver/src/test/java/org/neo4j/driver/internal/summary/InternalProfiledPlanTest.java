@@ -60,7 +60,7 @@ class InternalProfiledPlanTest {
         var plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(value);
 
         // THEN
-        for (var child : plan.children()) {
+        for (@SuppressWarnings("deprecation") var child : plan.children()) {
             verifyPlan(child);
         }
     }
@@ -82,7 +82,7 @@ class InternalProfiledPlanTest {
     }
 
     @SuppressWarnings("deprecation")
-    private void verifyPlan(ProfiledPlan plan) {
+    private void verifyPlan(@SuppressWarnings("deprecation") ProfiledPlan plan) {
         assertThat(plan.dbHits(), equalTo(42L));
         assertThat(plan.records(), equalTo(1337L));
         assertTrue(plan.hasPageCacheStats());

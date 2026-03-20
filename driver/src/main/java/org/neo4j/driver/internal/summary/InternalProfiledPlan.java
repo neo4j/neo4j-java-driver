@@ -23,9 +23,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.summary.ProfiledPlan;
 
 @SuppressWarnings("deprecation")
-interface DeprecatedProfiledPlan extends ProfiledPlan {}
-
-public class InternalProfiledPlan extends InternalPlan<InternalProfiledPlan> implements DeprecatedProfiledPlan {
+public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements ProfiledPlan {
     private final long dbHits;
     private final long records;
     private final long pageCacheHits;
@@ -33,11 +31,11 @@ public class InternalProfiledPlan extends InternalPlan<InternalProfiledPlan> imp
     private final double pageCacheHitRatio;
     private final long time;
 
-    private InternalProfiledPlan(
+    protected InternalProfiledPlan(
             String operatorType,
             Map<String, Value> arguments,
             List<String> identifiers,
-            List<InternalProfiledPlan> children,
+            List<ProfiledPlan> children,
             long dbHits,
             long records,
             long pageCacheHits,
@@ -88,7 +86,7 @@ public class InternalProfiledPlan extends InternalPlan<InternalProfiledPlan> imp
         return time;
     }
 
-    private static final PlanCreator<InternalProfiledPlan> PROFILED_PLAN =
+    private static final PlanCreator<ProfiledPlan> PROFILED_PLAN =
             (operatorType, arguments, identifiers, children, originalPlanValue) -> new InternalProfiledPlan(
                     operatorType,
                     arguments,
@@ -104,5 +102,5 @@ public class InternalProfiledPlan extends InternalPlan<InternalProfiledPlan> imp
     /**
      * Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` query
      */
-    public static final Function<Value, InternalProfiledPlan> PROFILED_PLAN_FROM_VALUE = new Converter<>(PROFILED_PLAN);
+    public static final Function<Value, ProfiledPlan> PROFILED_PLAN_FROM_VALUE = new Converter<>(PROFILED_PLAN);
 }

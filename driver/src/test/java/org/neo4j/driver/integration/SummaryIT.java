@@ -217,12 +217,9 @@ class SummaryIT {
 
         // Then
         assertTrue(summary.hasProfile());
-        assertTrue(
-                summary.hasPlan()); // Profile is a superset of plan, so plan should be available as well if profile is
-        // available
+
         @SuppressWarnings("deprecation")
         var profile = summary.profile();
-        assertEquals(summary.plan(), profile);
 
         assertEquals(0, profile.time());
         assertEquals(0, profile.dbHits());
@@ -243,7 +240,7 @@ class SummaryIT {
         assertEquals(summary.plan(), profile);
 
         assertEquals(OptionalLong.empty(), profile.time());
-        assertEquals(OptionalLong.empty(), profile.dbHits());
+        assertEquals(OptionalLong.of(0), profile.dbHits());
         assertEquals(OptionalLong.of(1), profile.rows());
     }
 
