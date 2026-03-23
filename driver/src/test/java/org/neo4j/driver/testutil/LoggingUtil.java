@@ -36,7 +36,7 @@ public class LoggingUtil {
                     var message = (String) invocationOnMock.getArgument(0);
                     if (message.contains("C: ") || message.contains("S: ")) {
                         var formattedMessage = String.format(
-                                LocalDateTime.now() + " " + message,
+                                LocalDateTime.now() + " " + message.replace("%d", "%s"),
                                 invocationOnMock.getArgument(1).toString());
                         messages.add(formattedMessage);
                     }
