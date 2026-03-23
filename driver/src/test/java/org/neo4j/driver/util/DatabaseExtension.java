@@ -243,18 +243,18 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     }
 
     public boolean isNeo4j44OrEarlier() {
-        return isNeo4jVersionOrEarlier(4, 4);
+        return isNeo4jVersionOrEarlier(4);
     }
 
-    private boolean isNeo4jVersionOrEarlier(int major, int minor) {
+    private boolean isNeo4jVersionOrEarlier(int minor) {
         try (Session session = driver.session()) {
-            String neo4jVersion = session.readTransaction(
-                    tx -> tx.run("CALL dbms.components() YIELD versions " + "RETURN versions[0] AS version")
-                            .single()
-                            .get("version")
-                            .asString());
+            String neo4jVersion = session.readTransaction(tx -> tx.run("CALL dbms.components() YIELD name, versions\n"
+                            + "WHERE name = 'Neo4j Kernel'\n" + "RETURN versions[0] AS version")
+                    .single()
+                    .get("version")
+                    .asString());
             String[] versions = neo4jVersion.split("\\.");
-            return parseInt(versions[0]) <= major && parseInt(versions[1]) <= minor;
+            return parseInt(versions[0]) <= 4 && parseInt(versions[1]) <= minor;
         }
     }
 

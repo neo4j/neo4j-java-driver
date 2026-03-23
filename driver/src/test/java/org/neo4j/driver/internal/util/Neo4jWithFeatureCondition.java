@@ -77,7 +77,7 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition {
         if (driver != null) {
             try (Session session = driver.session()) {
                 String value = session.run("CALL dbms.components() YIELD edition")
-                        .single()
+                        .next()
                         .get("edition")
                         .asString();
                 boolean editionMatches = edition.matches(value);
