@@ -352,7 +352,10 @@ public final class TestUtil {
     }
 
     public static void setupFailingCommit(DriverBoltConnection connection, int times) {
-        given(connection.writeAndFlush(any(), any(CommitMessage.class)))
+        given(connection.writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(
+                                messages -> messages.size() == 1 && messages.get(0) instanceof CommitMessage)))
                 .willAnswer(new Answer<CompletionStage<Void>>() {
                     int invoked;
 
@@ -375,7 +378,10 @@ public final class TestUtil {
     }
 
     public static void setupFailingRollback(DriverBoltConnection connection, int times) {
-        given(connection.writeAndFlush(any(), any(RollbackMessage.class)))
+        given(connection.writeAndFlush(
+                        any(),
+                        ArgumentMatchers.<List<Message>>argThat(
+                                messages -> messages.size() == 1 && messages.get(0) instanceof RollbackMessage)))
                 .willAnswer(new Answer<CompletionStage<Void>>() {
                     int invoked;
 
