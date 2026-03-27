@@ -60,6 +60,7 @@ import org.neo4j.driver.internal.adaptedbolt.BoltAuthTokenManager;
 import org.neo4j.driver.internal.adaptedbolt.BoltObservationProvider;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.ErrorMapper;
+import org.neo4j.driver.internal.adaptedbolt.ProviderClosingBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.SingleRoutedBoltConnectionSource;
 import org.neo4j.driver.internal.boltlistener.BoltConnectionListener;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
@@ -271,9 +272,11 @@ public class DriverFactory {
         }
         var routingContextAddress = "%s:%d".formatted(uri.getHost(), uri.getPort() != -1 ? uri.getPort() : 7687);
 
+        var boltConnectionProvider =
+                createBoltConnectionProvider(eventLoopGroup, clock, loggingProvider, config.eventLoopThreads());
         var pooledSourceSupplierFactory = createPooledBoltConnectionSource(
                 config,
-                eventLoopGroup,
+                boltConnectionProvider,
                 clock,
                 loggingProvider,
                 boltConnectionListener,
@@ -301,7 +304,7 @@ public class DriverFactory {
         } else {
             boltConnectionSource = new SingleRoutedBoltConnectionSource(pooledSourceSupplierFactory.create(uri, null));
         }
-        return boltConnectionSource;
+        return new ProviderClosingBoltConnectionSource(boltConnectionSource, boltConnectionProvider);
     }
 
     private RoutedBoltConnectionSource createRoutedBoltConnectionProvider(
@@ -334,7 +337,7 @@ public class DriverFactory {
 
     private BoltConnectionSourceFactory createPooledBoltConnectionSource(
             Config config,
-            ScheduledExecutorService eventLoopGroup,
+            BoltConnectionProvider boltConnectionProvider,
             Clock clock,
             LoggingProvider loggingProvider,
             BoltConnectionListener boltConnectionListener,
@@ -347,8 +350,6 @@ public class DriverFactory {
             SecurityPlanSupplier securityPlanSupplier,
             NotificationConfig notificationConfig) {
         return (uri, expectedVerificationHostname) -> {
-            var boltConnectionProvider =
-                    createBoltConnectionProvider(eventLoopGroup, clock, loggingProvider, config.eventLoopThreads());
             var listeningBoltConnectionProvider = BoltConnectionListener.listeningBoltConnectionProvider(
                     boltConnectionProvider, boltConnectionListener);
             return new PooledBoltConnectionSource(
