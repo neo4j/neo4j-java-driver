@@ -20,6 +20,8 @@ package org.neo4j.driver;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.parameters;
 
@@ -110,5 +112,19 @@ class QueryTest {
     @Test
     void shouldProhibitEmptyQuery() {
         assertThrows(IllegalArgumentException.class, () -> new Query(""));
+    }
+
+    @Test
+    void shouldAllowNullParamsValue() {
+        Query query = new Query("MATCH (n) RETURN n", (Value) null);
+        assertNotNull(query);
+        assertEquals(Values.EmptyMap, query.parameters());
+    }
+
+    @Test
+    void shouldAllowNullParamsMap() {
+        Query query = new Query("MATCH (n) RETURN n", (Map<String, Object>) null);
+        assertNotNull(query);
+        assertEquals(Values.EmptyMap, query.parameters());
     }
 }
