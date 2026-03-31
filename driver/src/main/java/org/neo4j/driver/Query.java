@@ -68,7 +68,7 @@ public class Query {
      * @param parameters the parameter map
      */
     public Query(String text, Map<String, Object> parameters) {
-        this(text, Values.value(parameters));
+        this(text, parameters == null ? Values.EmptyMap : Values.value(parameters));
     }
 
     /**
