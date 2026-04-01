@@ -38,12 +38,15 @@ import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
-import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.metrics.DriverMetricsObservationProvider;
+import org.neo4j.driver.internal.metrics.MicrometerMetricsObservationProvider;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.reactive.InternalRxSession;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
@@ -66,17 +69,17 @@ public class InternalDriver implements Driver {
     private final boolean telemetryDisabled;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private final MetricsProvider metricsProvider;
+    private final DriverObservationProvider observationProvider;
 
     InternalDriver(
             BoltSecurityPlanManager securityPlanManager,
             SessionFactory sessionFactory,
-            MetricsProvider metricsProvider,
+            DriverObservationProvider observationProvider,
             boolean telemetryDisabled,
             Logging logging) {
         this.securityPlanManager = securityPlanManager;
         this.sessionFactory = sessionFactory;
-        this.metricsProvider = metricsProvider;
+        this.observationProvider = observationProvider;
         this.log = logging.getLog(getClass());
         this.telemetryDisabled = telemetryDisabled;
     }
@@ -119,12 +122,27 @@ public class InternalDriver implements Driver {
 
     @Override
     public Metrics metrics() {
-        return metricsProvider.metrics();
+        if (observationProvider instanceof DriverMetricsObservationProvider driverMetricsObservationProvider) {
+            return driverMetricsObservationProvider.metrics();
+        } else if (observationProvider
+                instanceof MicrometerMetricsObservationProvider micrometerMetricsObservationProvider) {
+            return micrometerMetricsObservationProvider.metrics();
+        } else {
+            var message =
+                    "Driver metrics are not enabled. You need to enable driver metrics in driver configuration in order to access them.";
+            throw new ClientException(
+                    GqlStatusError.UNKNOWN.getStatus(),
+                    GqlStatusError.UNKNOWN.getStatusDescription(message),
+                    "N/A",
+                    message,
+                    GqlStatusError.DIAGNOSTIC_RECORD,
+                    null);
+        }
     }
 
     @Override
     public boolean isMetricsEnabled() {
-        return metricsProvider != DevNullMetricsProvider.INSTANCE;
+        return observationProvider != NoopObservationProvider.getInstance();
     }
 
     @Override

@@ -16,25 +16,17 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import java.time.Clock;
-import org.neo4j.bolt.connection.MetricsListener;
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.Metrics;
+import java.util.Objects;
 
-public final class InternalMetricsProvider implements MetricsProvider {
-    private final InternalMetrics metrics;
+final class PoolConnectionCloseObservation extends AbstractObservation {
+    private final InternalConnectionPoolMetrics metrics;
 
-    public InternalMetricsProvider(Clock clock, Logging logging) {
-        this.metrics = new InternalMetrics(clock, logging);
+    PoolConnectionCloseObservation(InternalConnectionPoolMetrics metrics) {
+        this.metrics = Objects.requireNonNull(metrics);
     }
 
     @Override
-    public Metrics metrics() {
-        return metrics;
-    }
-
-    @Override
-    public MetricsListener metricsListener() {
-        return metrics;
+    public void stop() {
+        metrics.afterClosed();
     }
 }

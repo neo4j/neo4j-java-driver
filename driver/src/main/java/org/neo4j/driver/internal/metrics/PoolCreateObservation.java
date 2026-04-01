@@ -16,16 +16,19 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.bolt.connection.ListenerEvent;
+import java.util.Objects;
 
-enum DevNullListenerEvent implements ListenerEvent<Long> {
-    INSTANCE;
+final class PoolCreateObservation extends AbstractObservation {
+    private final InternalMetrics metrics;
+    private final String id;
+
+    PoolCreateObservation(InternalMetrics metrics, String id) {
+        this.metrics = Objects.requireNonNull(metrics);
+        this.id = Objects.requireNonNull(id);
+    }
 
     @Override
-    public void start() {}
-
-    @Override
-    public Long getSample() {
-        return 0L;
+    public void stop() {
+        metrics.registerPoolMetrics(id);
     }
 }

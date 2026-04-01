@@ -24,15 +24,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntSupplier;
 import org.neo4j.bolt.connection.BoltServerAddress;
-import org.neo4j.bolt.connection.ListenerEvent;
 import org.neo4j.driver.ConnectionPoolMetrics;
 
-final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsListener, ConnectionPoolMetrics {
+final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetrics {
     public static final String PREFIX = "neo4j.driver.connections";
     public static final String IN_USE = PREFIX + ".in.use";
     public static final String IDLE = PREFIX + ".idle";
@@ -45,8 +44,8 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     public static final String CREATION = PREFIX + ".creation";
     public static final String USAGE = PREFIX + ".usage";
 
-    private final IntSupplier inUseSupplier;
-    private final IntSupplier idleSupplier;
+    private final AtomicInteger inUse = new AtomicInteger();
+    private final AtomicInteger idle = new AtomicInteger();
 
     private final String id;
 
@@ -59,33 +58,21 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     private final Timer totalConnectionTimer;
     private final Timer totalInUseTimer;
 
-    MicrometerConnectionPoolMetrics(
-            String poolId,
-            BoltServerAddress address,
-            IntSupplier inUseSupplier,
-            IntSupplier idleSupplier,
-            MeterRegistry registry) {
-        this(poolId, address, inUseSupplier, idleSupplier, registry, Tags.empty());
+    MicrometerConnectionPoolMetrics(String poolId, URI uri, MeterRegistry registry) {
+        this(poolId, uri, registry, Tags.empty());
     }
 
-    MicrometerConnectionPoolMetrics(
-            String poolId,
-            BoltServerAddress address,
-            IntSupplier inUseSupplier,
-            IntSupplier idleSupplier,
-            MeterRegistry registry,
-            Iterable<Tag> initialTags) {
+    MicrometerConnectionPoolMetrics(String poolId, URI uri, MeterRegistry registry, Iterable<Tag> initialTags) {
         Objects.requireNonNull(poolId);
-        Objects.requireNonNull(address);
-        Objects.requireNonNull(inUseSupplier);
-        Objects.requireNonNull(idleSupplier);
+        Objects.requireNonNull(uri);
         Objects.requireNonNull(registry);
 
         this.id = poolId;
-        this.inUseSupplier = inUseSupplier;
-        this.idleSupplier = idleSupplier;
-        Iterable<Tag> tags =
-                Tags.concat(initialTags, "address", String.format("%s:%d", address.connectionHost(), address.port()));
+        var port = uri.getPort();
+        if (port == -1) {
+            port = BoltServerAddress.DEFAULT_PORT;
+        }
+        Iterable<Tag> tags = Tags.concat(initialTags, "address", String.format("%s:%d", uri.getHost(), port));
 
         Gauge.builder(IN_USE, this::inUse).tags(tags).register(registry);
         Gauge.builder(IDLE, this::idle).tags(tags).register(registry);
@@ -99,60 +86,51 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
         totalInUseTimer = Timer.builder(USAGE).tags(tags).register(registry);
     }
 
-    @Override
-    public void beforeCreating(ListenerEvent<?> connEvent) {
+    public void beforeCreating() {
         creating.incrementAndGet();
-        connEvent.start();
     }
 
-    @Override
     public void afterFailedToCreate() {
         failedToCreate.increment();
         creating.decrementAndGet();
     }
 
-    @Override
-    public void afterCreated(ListenerEvent<?> connEvent) {
+    public void afterCreated(Timer.Sample sample) {
         creating.decrementAndGet();
-        var sample = ((MicrometerTimerListenerEvent) connEvent).getSample();
         sample.stop(totalConnectionTimer);
+        idle.incrementAndGet();
     }
 
-    @Override
     public void afterClosed() {
+        idle.decrementAndGet();
         closed.increment();
     }
 
-    @Override
-    public void beforeAcquiringOrCreating(ListenerEvent<?> acquireEvent) {
-        acquireEvent.start();
+    public void beforeAcquiringOrCreating() {
         acquiring.incrementAndGet();
     }
 
-    @Override
     public void afterAcquiringOrCreating() {
         acquiring.decrementAndGet();
     }
 
-    @Override
-    public void afterAcquiredOrCreated(ListenerEvent<?> acquireEvent) {
-        var sample = ((MicrometerTimerListenerEvent) acquireEvent).getSample();
+    public void afterAcquiredOrCreated(Timer.Sample sample) {
+        acquiring.decrementAndGet();
         sample.stop(totalAcquisitionTimer);
     }
 
-    @Override
     public void afterTimedOutToAcquireOrCreate() {
         timedOutToAcquire.increment();
     }
 
-    @Override
-    public void acquired(ListenerEvent<?> inUseEvent) {
-        inUseEvent.start();
+    public void onAcquired() {
+        inUse.incrementAndGet();
+        idle.decrementAndGet();
     }
 
-    @Override
-    public void released(ListenerEvent<?> inUseEvent) {
-        var sample = ((MicrometerTimerListenerEvent) inUseEvent).getSample();
+    public void released(Timer.Sample sample) {
+        inUse.decrementAndGet();
+        idle.incrementAndGet();
         sample.stop(totalInUseTimer);
     }
 
@@ -163,12 +141,12 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
 
     @Override
     public int inUse() {
-        return inUseSupplier.getAsInt();
+        return inUse.get();
     }
 
     @Override
     public int idle() {
-        return idleSupplier.getAsInt();
+        return idle.get();
     }
 
     @Override

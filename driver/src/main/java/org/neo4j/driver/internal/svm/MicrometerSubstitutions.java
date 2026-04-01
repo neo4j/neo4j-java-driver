@@ -22,10 +22,10 @@ import java.time.Clock;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
-import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
+import org.neo4j.driver.internal.metrics.DriverMetricsObservationProvider;
+import org.neo4j.driver.internal.metrics.MicrometerMetricsObservationProvider;
+import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 
 @TargetClass(DriverFactory.class)
 final class Target_org_neo4j_driver_internal_DriverFactory {
@@ -39,25 +39,25 @@ final class Target_org_neo4j_driver_internal_DriverFactory {
      */
     @Substitute
     @SuppressWarnings("ProtectedMemberInFinalClass")
-    protected static MetricsProvider getOrCreateMetricsProvider(Config config, Clock clock) {
+    protected static DriverObservationProvider getOrCreateObservationProvider(Config config, Clock clock) {
         var metricsAdapter = config.metricsAdapter();
         if (metricsAdapter == null) {
             metricsAdapter = config.isMetricsEnabled() ? MetricsAdapter.DEFAULT : MetricsAdapter.DEV_NULL;
         }
         switch (metricsAdapter) {
             case DEV_NULL -> {
-                return DevNullMetricsProvider.INSTANCE;
+                return NoopObservationProvider.getInstance();
             }
             case DEFAULT -> {
-                return new InternalMetricsProvider(clock, config.logging());
+                return new DriverMetricsObservationProvider(clock);
             }
             case MICROMETER -> {
                 try {
                     @SuppressWarnings("unused")
                     var metricsClass = Class.forName("io.micrometer.core.instrument.Metrics");
-                    return MicrometerMetricsProvider.forGlobalRegistry();
+                    return new MicrometerMetricsObservationProvider();
                 } catch (ClassNotFoundException e) {
-                    return DevNullMetricsProvider.INSTANCE;
+                    return NoopObservationProvider.getInstance();
                 }
             }
         }
