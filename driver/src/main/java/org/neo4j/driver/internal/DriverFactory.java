@@ -59,6 +59,7 @@ import org.neo4j.driver.internal.adaptedbolt.BoltConnectionProviderFactoryLoader
 import org.neo4j.driver.internal.adaptedbolt.BoltObservationProvider;
 import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.ErrorMapper;
+import org.neo4j.driver.internal.adaptedbolt.ProviderClosingBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.SingleRoutedBoltConnectionSource;
 import org.neo4j.driver.internal.boltlistener.BoltConnectionListener;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
@@ -278,9 +279,11 @@ public class DriverFactory {
         }
         var routingContextAddress = "%s:%d".formatted(uri.getHost(), uri.getPort() != -1 ? uri.getPort() : 7687);
 
+        var boltConnectionProvider = createBoltConnectionProvider(
+                eventLoopGroup, clock, loggingProvider, config, observationProvider, boltConnectionProviderFactory);
         var pooledSourceSupplierFactory = createPooledBoltConnectionSource(
                 config,
-                eventLoopGroup,
+                boltConnectionProvider,
                 clock,
                 loggingProvider,
                 boltConnectionListener,
@@ -291,8 +294,7 @@ public class DriverFactory {
                 observationProvider,
                 authTokenManager,
                 securityPlanSupplier,
-                notificationConfig,
-                boltConnectionProviderFactory);
+                notificationConfig);
         if (Scheme.isRoutingScheme(uri.getScheme())) {
             boltConnectionSource = createRoutedBoltConnectionProvider(
                     config,
@@ -309,7 +311,7 @@ public class DriverFactory {
         } else {
             boltConnectionSource = new SingleRoutedBoltConnectionSource(pooledSourceSupplierFactory.create(uri, null));
         }
-        return boltConnectionSource;
+        return new ProviderClosingBoltConnectionSource(boltConnectionSource, boltConnectionProvider);
     }
 
     private RoutedBoltConnectionSource createRoutedBoltConnectionProvider(
@@ -342,7 +344,7 @@ public class DriverFactory {
 
     private BoltConnectionSourceFactory createPooledBoltConnectionSource(
             Config config,
-            ScheduledExecutorService eventLoopGroup,
+            BoltConnectionProvider boltConnectionProvider,
             Clock clock,
             LoggingProvider loggingProvider,
             BoltConnectionListener boltConnectionListener,
@@ -353,17 +355,8 @@ public class DriverFactory {
             BoltObservationProvider observationProvider,
             org.neo4j.bolt.connection.pooled.AuthTokenManager authTokenManager,
             SecurityPlanSupplier securityPlanSupplier,
-            NotificationConfig notificationConfig,
-            BoltConnectionProviderFactory boltConnectionProviderFactory) {
+            NotificationConfig notificationConfig) {
         return (uri, expectedVerificationHostname) -> {
-            var boltConnectionProvider = createBoltConnectionProvider(
-                    uri,
-                    eventLoopGroup,
-                    clock,
-                    loggingProvider,
-                    config,
-                    observationProvider,
-                    boltConnectionProviderFactory);
             var listeningBoltConnectionProvider = BoltConnectionListener.listeningBoltConnectionProvider(
                     boltConnectionProvider, boltConnectionListener);
             var connectTimeoutMillisAdjusted = connectTimeoutMillis;
@@ -397,7 +390,6 @@ public class DriverFactory {
     }
 
     private BoltConnectionProvider createBoltConnectionProvider(
-            URI uri,
             ScheduledExecutorService eventLoopGroup,
             Clock clock,
             LoggingProvider loggingProvider,
