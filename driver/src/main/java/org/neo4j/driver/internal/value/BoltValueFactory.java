@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.values.Node;
 import org.neo4j.bolt.connection.values.Path;
 import org.neo4j.bolt.connection.values.Relationship;
@@ -247,6 +248,11 @@ public class BoltValueFactory implements ValueFactory {
     @Override
     public Value vector(Class<?> elementType, Object elements) {
         throw new UnsupportedOperationException("Vector is not supported");
+    }
+
+    @Override
+    public Value unsupportedType(String name, BoltProtocolVersion minProtocolVersion, Map<String, Value> extra) {
+        throw new UnsupportedOperationException("UnsupportedType is not supported");
     }
 
     @Override
