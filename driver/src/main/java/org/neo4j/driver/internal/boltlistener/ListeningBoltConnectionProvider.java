@@ -26,6 +26,7 @@ import org.neo4j.bolt.connection.BoltConnectionProvider;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.NotificationConfig;
 import org.neo4j.bolt.connection.SecurityPlan;
+import org.neo4j.bolt.connection.observation.ImmutableObservation;
 
 final class ListeningBoltConnectionProvider implements BoltConnectionProvider {
     private final BoltConnectionProvider delegate;
@@ -47,7 +48,8 @@ final class ListeningBoltConnectionProvider implements BoltConnectionProvider {
             SecurityPlan securityPlan,
             AuthToken authToken,
             BoltProtocolVersion minVersion,
-            NotificationConfig notificationConfig) {
+            NotificationConfig notificationConfig,
+            ImmutableObservation parentObservation) {
         return delegate.connect(
                         uri,
                         routingContextAddress,
@@ -57,7 +59,8 @@ final class ListeningBoltConnectionProvider implements BoltConnectionProvider {
                         securityPlan,
                         authToken,
                         minVersion,
-                        notificationConfig)
+                        notificationConfig,
+                        parentObservation)
                 .thenApply(boltConnection -> {
                     boltConnection = new ListeningBoltConnection(boltConnection, boltConnectionListener);
                     boltConnectionListener.onOpen(boltConnection);

@@ -33,7 +33,7 @@
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <!-- Versions -->
-    <neo4j-bolt-connection-bom.version>6.0.2</neo4j-bolt-connection-bom.version>
+    <neo4j-bolt-connection-bom.version>7.0.0</neo4j-bolt-connection-bom.version>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->

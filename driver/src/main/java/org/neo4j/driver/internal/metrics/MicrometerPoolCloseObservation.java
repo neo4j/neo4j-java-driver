@@ -16,20 +16,19 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.bolt.connection.MetricsListener;
-import org.neo4j.driver.Metrics;
+import java.util.Objects;
 
-/**
- * An adapter that collects driver metrics via {@link MetricsListener} and publishes them via {@link Metrics} instance.
- */
-public interface MetricsProvider {
-    /**
-     * @return The actual metrics type to use
-     */
-    Metrics metrics();
+final class MicrometerPoolCloseObservation extends AbstractObservation {
+    private final MicrometerMetrics metrics;
+    private final String id;
 
-    /**
-     * @return A listener that will be notified on certain events so that it can collect metrics about them.
-     */
-    MetricsListener metricsListener();
+    MicrometerPoolCloseObservation(MicrometerMetrics metrics, String id) {
+        this.metrics = Objects.requireNonNull(metrics);
+        this.id = Objects.requireNonNull(id);
+    }
+
+    @Override
+    public void stop() {
+        metrics.deregisterPoolMetrics(id);
+    }
 }

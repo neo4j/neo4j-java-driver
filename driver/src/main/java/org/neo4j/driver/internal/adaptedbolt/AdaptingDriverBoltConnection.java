@@ -24,6 +24,7 @@ import org.neo4j.bolt.connection.BoltConnection;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.BoltServerAddress;
 import org.neo4j.bolt.connection.message.Message;
+import org.neo4j.driver.internal.observation.NoopObservation;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 
 final class AdaptingDriverBoltConnection implements DriverBoltConnection {
@@ -41,7 +42,10 @@ final class AdaptingDriverBoltConnection implements DriverBoltConnection {
     @Override
     public CompletionStage<Void> writeAndFlush(DriverResponseHandler handler, List<Message> messages) {
         return connection
-                .writeAndFlush(new AdaptingDriverResponseHandler(handler, errorMapper, boltValueFactory), messages)
+                .writeAndFlush(
+                        new AdaptingDriverResponseHandler(handler, errorMapper, boltValueFactory),
+                        messages,
+                        new BoltObservation(NoopObservation.getInstance()))
                 .exceptionally(errorMapper::mapAndThrow);
     }
 

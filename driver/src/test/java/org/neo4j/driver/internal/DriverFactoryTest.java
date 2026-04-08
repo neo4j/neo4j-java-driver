@@ -45,9 +45,9 @@ import org.neo4j.driver.internal.adaptedbolt.DriverBoltConnectionSource;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
-import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
-import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
-import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
+import org.neo4j.driver.internal.metrics.DriverMetricsObservationProvider;
+import org.neo4j.driver.internal.metrics.MicrometerMetricsObservationProvider;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
@@ -106,9 +106,9 @@ class DriverFactoryTest {
         // Given
         var config = Config.builder().withoutDriverMetrics().build();
         // When
-        var provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
+        var provider = DriverFactory.getOrCreateObservationProvider(config, Clock.systemUTC());
         // Then
-        assertThat(provider, is(equalTo(DevNullMetricsProvider.INSTANCE)));
+        assertThat(provider, is(equalTo(NoopObservationProvider.getInstance())));
     }
 
     @Test
@@ -117,9 +117,9 @@ class DriverFactoryTest {
         var config =
                 Config.builder().withDriverMetrics().withLogging(Logging.none()).build();
         // When
-        var provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
+        var provider = DriverFactory.getOrCreateObservationProvider(config, Clock.systemUTC());
         // Then
-        assertThat(provider instanceof InternalMetricsProvider, is(true));
+        assertThat(provider instanceof DriverMetricsObservationProvider, is(true));
     }
 
     @Test
@@ -131,9 +131,9 @@ class DriverFactoryTest {
                 .withLogging(Logging.none())
                 .build();
         // When
-        var provider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
+        var provider = DriverFactory.getOrCreateObservationProvider(config, Clock.systemUTC());
         // Then
-        assertThat(provider instanceof MicrometerMetricsProvider, is(true));
+        assertThat(provider instanceof MicrometerMetricsObservationProvider, is(true));
     }
 
     private Driver createDriver(String uri, DriverFactory driverFactory) {

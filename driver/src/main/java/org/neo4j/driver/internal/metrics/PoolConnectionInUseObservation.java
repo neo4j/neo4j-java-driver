@@ -17,23 +17,29 @@
 package org.neo4j.driver.internal.metrics;
 
 import java.time.Clock;
-import org.neo4j.bolt.connection.ListenerEvent;
+import java.util.Objects;
+import org.neo4j.driver.internal.observation.Observation;
 
-final class TimeRecorderListenerEvent implements ListenerEvent<Long> {
+final class PoolConnectionInUseObservation extends AbstractObservation {
+    private final InternalConnectionPoolMetrics metrics;
     private final Clock clock;
-    private long startTime;
+    private volatile long start;
 
-    TimeRecorderListenerEvent(Clock clock) {
-        this.clock = clock;
+    PoolConnectionInUseObservation(InternalConnectionPoolMetrics metrics, Clock clock) {
+        this.metrics = Objects.requireNonNull(metrics);
+        this.clock = Objects.requireNonNull(clock);
     }
 
     @Override
-    public void start() {
-        startTime = clock.millis();
+    public Observation start() {
+        metrics.onAcquired();
+        start = clock.millis();
+        return this;
     }
 
     @Override
-    public Long getSample() {
-        return clock.millis() - startTime;
+    public void stop() {
+        var duration = clock.millis() - start;
+        metrics.released(duration);
     }
 }

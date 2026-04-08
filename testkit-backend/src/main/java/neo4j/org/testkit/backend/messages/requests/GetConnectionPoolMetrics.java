@@ -16,7 +16,6 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
@@ -63,16 +62,7 @@ public class GetConnectionPoolMetrics implements TestkitRequest {
         var metrics = driverHolder.driver().metrics();
         var poolMetrics = metrics.connectionPoolMetrics().stream()
                 .filter(pm -> {
-                    // Brute forcing the access via reflections avoid having the InternalConnectionPoolMetrics a public
-                    // class
-                    BoltServerAddress poolAddress;
-                    try {
-                        var m = pm.getClass().getDeclaredMethod("getAddress");
-                        m.setAccessible(true);
-                        poolAddress = (BoltServerAddress) m.invoke(pm);
-                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                        return false;
-                    }
+                    var poolAddress = new BoltServerAddress(pm.id().split("-")[0]);
                     var address = new BoltServerAddress(data.getAddress());
                     return address.host().equals(poolAddress.host()) && address.port() == poolAddress.port();
                 })

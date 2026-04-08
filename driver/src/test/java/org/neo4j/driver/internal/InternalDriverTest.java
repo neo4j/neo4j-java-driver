@@ -37,7 +37,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
+import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 
 class InternalDriverTest {
@@ -133,7 +133,7 @@ class InternalDriverTest {
         return new InternalDriver(
                 BoltSecurityPlanManager.insecure(),
                 sessionFactory,
-                DevNullMetricsProvider.INSTANCE,
+                NoopObservationProvider.getInstance(),
                 true,
                 DEV_NULL_LOGGING);
     }
@@ -151,7 +151,7 @@ class InternalDriverTest {
             config = Config.builder().withDriverMetrics().build();
         }
 
-        var metricsProvider = DriverFactory.getOrCreateMetricsProvider(config, Clock.systemUTC());
+        var metricsProvider = DriverFactory.getOrCreateObservationProvider(config, Clock.systemUTC());
         return new InternalDriver(
                 BoltSecurityPlanManager.insecure(), sessionFactory, metricsProvider, true, DEV_NULL_LOGGING);
     }
