@@ -327,6 +327,7 @@ public class DriverFactory {
                 clock,
                 loggingProvider,
                 uri,
+                0,
                 List.of(AuthTokenManagerExecutionException.class),
                 observationProvider);
     }
@@ -366,7 +367,8 @@ public class DriverFactory {
                     boltAgent,
                     userAgent,
                     connectTimeoutMillis,
-                    notificationConfig);
+                    notificationConfig,
+                    PooledBoltConnectionSource.TimeoutPolicy.LEGACY);
         };
     }
 
@@ -387,6 +389,7 @@ public class DriverFactory {
             additionalConfig.put("localAddress", localAddress);
         }
         additionalConfig.put("maxVersion", new BoltProtocolVersion(5, 8));
+        additionalConfig.put("nettyTransport", "nio");
         return new NettyBoltConnectionProviderFactory()
                 .create(
                         loggingProvider,
