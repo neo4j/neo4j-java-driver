@@ -176,7 +176,7 @@ class GraphDatabaseTest {
             final var driver = GraphDatabase.driver(URI.create("bolt://localhost:" + server.getLocalPort()), config);
 
             var e = assertThrows(ServiceUnavailableException.class, driver::verifyConnectivity);
-            assertEquals(e.getMessage(), "Unable to establish connection in " + connectionTimeoutMillis + "ms");
+            assertEquals(e.getMessage(), "Unable to initialise connection in " + connectionTimeoutMillis + "ms");
         }
     }
 
