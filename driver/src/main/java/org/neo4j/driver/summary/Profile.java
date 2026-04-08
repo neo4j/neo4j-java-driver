@@ -56,9 +56,9 @@ public interface Profile extends Plan {
     OptionalLong pageCacheMisses();
 
     /**
-     * Returns the ratio of page cache hits to total number of lookups or 0 if no data is available.
+     * Returns the ratio of page cache hits to total number of lookups if it was recorded.
      *
-     * @return the ratio of page cache hits to total number of lookups or 0 if no data is available
+     * @return the ratio of page cache hits to total number of lookups if it was recorded
      */
     OptionalDouble pageCacheHitRatio();
 
