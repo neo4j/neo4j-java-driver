@@ -26,18 +26,20 @@ import org.neo4j.driver.internal.security.InternalAuthToken;
 public class AuthTokenUtil {
     public static AuthToken parseAuthToken(AuthorizationToken authTokenO) {
         return switch (authTokenO.getTokens().getScheme()) {
-            case "basic" -> AuthTokens.basic(
-                    authTokenO.getTokens().getPrincipal(),
-                    authTokenO.getTokens().getCredentials(),
-                    authTokenO.getTokens().getRealm());
+            case "basic" ->
+                AuthTokens.basic(
+                        authTokenO.getTokens().getPrincipal(),
+                        authTokenO.getTokens().getCredentials(),
+                        authTokenO.getTokens().getRealm());
             case "bearer" -> AuthTokens.bearer(authTokenO.getTokens().getCredentials());
             case "kerberos" -> AuthTokens.kerberos(authTokenO.getTokens().getCredentials());
-            default -> AuthTokens.custom(
-                    authTokenO.getTokens().getPrincipal(),
-                    authTokenO.getTokens().getCredentials(),
-                    authTokenO.getTokens().getRealm(),
-                    authTokenO.getTokens().getScheme(),
-                    authTokenO.getTokens().getParameters());
+            default ->
+                AuthTokens.custom(
+                        authTokenO.getTokens().getPrincipal(),
+                        authTokenO.getTokens().getCredentials(),
+                        authTokenO.getTokens().getRealm(),
+                        authTokenO.getTokens().getScheme(),
+                        authTokenO.getTokens().getParameters());
         };
     }
 

@@ -249,14 +249,11 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
 
     private boolean isNeo4jVersionOrEarlier(int minor) {
         try (var session = driver.session()) {
-            var neo4jVersion = session.executeRead(tx -> tx.run(
-                            """
+            var neo4jVersion = session.executeRead(
+                    tx -> tx.run("""
                                     CALL dbms.components() YIELD name, versions
                                     WHERE name = 'Neo4j Kernel'
-                                    RETURN versions[0] AS version""")
-                    .single()
-                    .get("version")
-                    .asString());
+                                    RETURN versions[0] AS version""").single().get("version").asString());
             var versions = neo4jVersion.split("\\.");
             return parseInt(versions[0]) <= 4 && parseInt(versions[1]) <= minor;
         }

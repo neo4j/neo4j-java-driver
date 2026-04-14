@@ -15,6 +15,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <enforce.java.version>25</enforce.java.version>
     <maven.compiler.release>17</maven.compiler.release>
     <maven.compiler.xlint.extras/>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
@@ -286,6 +287,13 @@
         </pluginManagement>
       </build>
     </profile>
+
+    <profile>
+      <id>java21</id>
+      <properties>
+        <enforce.java.version>21</enforce.java.version>
+      </properties>
+    </profile>
   </profiles>
 
   <build>
@@ -443,7 +451,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>2.44.0</version>
+          <version>3.4.0</version>
           <executions>
             <execution>
               <goals>
@@ -460,7 +468,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.6.3</version>
           <dependencies>
             <dependency>
               <groupId>de.skuzzle.enforcer</groupId>
@@ -477,6 +485,9 @@
           </executions>
           <configuration>
             <rules>
+              <requireJavaVersion>
+                <version>${enforce.java.version}</version>
+              </requireJavaVersion>
               <RestrictImports>
                 <reason>Star imports are not allowed, please configure your editor to substitute them with fully qualified imports.</reason>
                 <bannedImport>**.'*'</bannedImport>

@@ -41,14 +41,12 @@ class LoadCSVIT {
             var csvFileUrl = createLocalIrisData(session);
 
             // When
-            var query = neo4j.isNeo4j44OrEarlier()
-                    ? """
+            var query = neo4j.isNeo4j44OrEarlier() ? """
                     USING PERIODIC COMMIT 40
                     LOAD CSV WITH HEADERS FROM $csvFileUrl AS l
                     MATCH (c:Class {name: l.class_name})
                     CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l.petal_length, petal_width: l.petal_width})
-                    CREATE (c)<-[:HAS_CLASS]-(s) RETURN count(*) AS c"""
-                    : """
+                    CREATE (c)<-[:HAS_CLASS]-(s) RETURN count(*) AS c""" : """
                     LOAD CSV WITH HEADERS FROM $csvFileUrl AS l
                     CALL {
                     WITH l
@@ -75,8 +73,7 @@ class LoadCSVIT {
 
     private static final String[] IRIS_CLASS_NAMES = new String[] {"Iris-setosa", "Iris-versicolor", "Iris-virginica"};
 
-    private static final String IRIS_DATA =
-            """
+    private static final String IRIS_DATA = """
                     sepal_length,sepal_width,petal_length,petal_width,class_name
                     5.1,3.5,1.4,0.2,Iris-setosa
                     4.9,3.0,1.4,0.2,Iris-setosa
