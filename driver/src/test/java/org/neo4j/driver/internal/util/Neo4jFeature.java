@@ -25,6 +25,7 @@ public enum Neo4jFeature {
     SERVER_SIDE_ROUTING_ENABLED_BY_DEFAULT(new Version(5, 0, 0)),
     BOLT_V3(new Version(3, 5, 0)),
     BOLT_V4(new Version(4, 0, 0)),
+    BOLT_V44(new Version(4, 4, 0)),
     BOLT_V51(new Version(5, 5, 0));
 
     private final Version availableFromVersion;
