@@ -421,10 +421,8 @@ public class CommonValueUnpacker implements ValueUnpacker {
         return ZonedDateTime.of(localDateTime, zoneId);
     }
 
-    private ZonedDateTime newZonedDateTimeUsingUtcBaseline(long epochSecondLocal, int nano, ZoneId zoneId) {
-        Instant instant = Instant.ofEpochSecond(epochSecondLocal, nano);
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, zoneId);
-        return ZonedDateTime.of(localDateTime, zoneId);
+    ZonedDateTime newZonedDateTimeUsingUtcBaseline(long epochSecondLocal, int nano, ZoneId zoneId) {
+        return Instant.ofEpochSecond(epochSecondLocal, nano).atZone(zoneId);
     }
 
     private ProtocolException instantiateExceptionForUnknownType(byte type) {

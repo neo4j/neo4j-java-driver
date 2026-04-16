@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.Values.isoDuration;
 import static org.neo4j.driver.Values.ofOffsetDateTime;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V44;
 import static org.neo4j.driver.internal.util.Neo4jFeature.TEMPORAL_TYPES;
 
 import java.time.LocalDate;
@@ -322,6 +323,18 @@ class TemporalTypesIT {
         testDurationToString(-40, 2_123_456_789, "P0M0DT-37.876543211S");
         testDurationToString(40, -2_123_456_789, "P0M0DT37.876543211S");
         testDurationToString(-40, -2_123_456_789, "P0M0DT-42.123456789S");
+    }
+
+    @EnabledOnNeo4jWith(BOLT_V44)
+    @Test
+    void shouldUnpackValidDateTimeZoneId() {
+        String date = "2025-10-26T02:30:00+01:00[Europe/Stockholm]";
+        String query = String.format("RETURN datetime('%s') AS dt", date);
+        Result result = session.run(query);
+
+        assertEquals(
+                ZonedDateTime.parse(date).withLaterOffsetAtOverlap(),
+                result.single().get(0).asZonedDateTime());
     }
 
     private static <T> void testSendAndReceiveRandomValues(Supplier<T> valueSupplier, Function<Value, T> converter) {
