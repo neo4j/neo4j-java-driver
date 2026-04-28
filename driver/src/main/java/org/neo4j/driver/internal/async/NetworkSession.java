@@ -49,6 +49,7 @@ import org.neo4j.bolt.connection.message.Message;
 import org.neo4j.bolt.connection.message.Messages;
 import org.neo4j.bolt.connection.message.RunMessage;
 import org.neo4j.bolt.connection.summary.RunSummary;
+import org.neo4j.bolt.connection.summary.TelemetrySummary;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokenManager;
@@ -88,6 +89,7 @@ import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.telemetry.ApiTelemetryWork;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.BoltValueFactory;
+import org.neo4j.driver.types.TypeSystem;
 
 public class NetworkSession {
     private final DriverBoltConnectionSource boltConnectionProvider;
@@ -115,6 +117,7 @@ public class NetworkSession {
     private final AuthTokenManager authTokenManager;
     private final HomeDatabaseCache homeDatabaseCache;
     private final HomeDatabaseCacheKey homeDatabaseKey;
+    private final boolean autoCommitRetriesDisabled;
     private final DriverObservationProvider observationProvider;
 
     public NetworkSession(
@@ -132,6 +135,7 @@ public class NetworkSession {
             boolean telemetryDisabled,
             AuthTokenManager authTokenManager,
             HomeDatabaseCache homeDatabaseCache,
+            boolean autoCommitRetriesDisabled,
             DriverObservationProvider observationProvider) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
@@ -154,63 +158,106 @@ public class NetworkSession {
         this.authTokenManager = authTokenManager;
         this.homeDatabaseCache = Objects.requireNonNull(homeDatabaseCache);
         this.homeDatabaseKey = HomeDatabaseCacheKey.of(overrideAuthToken, impersonatedUser);
+        this.autoCommitRetriesDisabled = autoCommitRetriesDisabled;
         this.observationProvider = Objects.requireNonNull(observationProvider);
     }
 
     public CompletionStage<ResultCursor> runAsync(
             Query query, TransactionConfig config, Observation parentObservation, Class<?> resultType) {
         ensureSessionIsOpen();
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.AUTO_COMMIT_TRANSACTION);
+        apiTelemetryWork.setEnabled(!telemetryDisabled);
         var disposable = ensureNoOpenTxBeforeRunningQuery()
-                .thenCompose(ignore -> acquireConnection(mode, parentObservation))
-                .thenCompose(connection -> {
-                    var parameters = query.parameters().asMap(Values::value);
-                    var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.AUTO_COMMIT_TRANSACTION);
-                    apiTelemetryWork.setEnabled(!telemetryDisabled);
-                    var resultCursor = new ResultCursorImpl(
-                            connection,
-                            query,
-                            fetchSize,
-                            this::handleNewBookmark,
-                            true,
-                            null,
-                            this::handleDatabaseName,
-                            null,
-                            observationProvider,
-                            resultType);
-                    var cursorStage = CompletableFuture.completedStage(null)
-                            .thenCompose(ignored -> {
-                                var messages = new ArrayList<Message>(3);
-                                apiTelemetryWork
-                                        .getTelemetryMessageIfEnabled(connection)
-                                        .ifPresent(messages::add);
-                                messages.add(newRunMessage(connection, query, parameters, config));
-                                messages.add(Messages.pull(-1, fetchSize));
-                                return connection.writeAndFlush(resultCursor, messages, parentObservation);
-                            })
-                            .thenCompose(ignored -> resultCursor.resultCursor())
-                            .handle((resultCursorImpl, throwable) -> {
-                                var error = completionExceptionCause(throwable);
-                                if (error != null) {
-                                    return connection.close().<ResultCursorImpl>handle((ignored, closeError) -> {
+                .thenCompose(ignored -> autoCommitRun(
+                        query,
+                        config,
+                        apiTelemetryWork,
+                        autoCommitRetriesDisabled,
+                        false,
+                        parentObservation,
+                        resultType))
+                .thenApply(DisposableResultCursorImpl::new);
+        resultCursorStage = disposable.exceptionally(error -> null);
+        return disposable.thenApply(Function.identity());
+    }
+
+    private CompletionStage<ResultCursorImpl> autoCommitRun(
+            Query query,
+            TransactionConfig config,
+            ApiTelemetryWork apiTelemetryWork,
+            boolean autoCommitRetriesDisabled,
+            boolean skipPull,
+            Observation parentObservation,
+            Class<?> resultType) {
+        return acquireConnection(mode, parentObservation, skipPull).thenCompose(connection -> {
+            var parameters = query.parameters().asMap(Values::value);
+            var resultCursor = new ResultCursorImpl(
+                    connection,
+                    query,
+                    fetchSize,
+                    this::handleNewBookmark,
+                    true,
+                    null,
+                    this::handleDatabaseName,
+                    apiTelemetryWork,
+                    observationProvider,
+                    resultType);
+            var telemetryEnabled = apiTelemetryWork.getTelemetryMessageIfEnabled(connection);
+            var mayRetry = new AtomicBoolean();
+            return CompletableFuture.completedStage(null)
+                    .thenCompose(ignored -> {
+                        var messages = new ArrayList<Message>(3);
+                        telemetryEnabled.ifPresent(messages::add);
+                        messages.add(newRunMessage(connection, query, parameters, config));
+                        messages.add(Messages.pull(-1, fetchSize));
+                        return connection.writeAndFlush(resultCursor, messages, parentObservation);
+                    })
+                    .thenCompose(ignored -> resultCursor.resultCursor().exceptionally(resultCursorThrowable -> {
+                        if (telemetryEnabled.isPresent()) {
+                            if (apiTelemetryWork.acknowledged().get()) {
+                                mayRetry.set(isIdempotent(completionExceptionCause(resultCursorThrowable)));
+                            }
+                        } else {
+                            mayRetry.set(isIdempotent(completionExceptionCause(resultCursorThrowable)));
+                        }
+                        if (resultCursorThrowable instanceof RuntimeException runtimeException) {
+                            throw runtimeException;
+                        } else {
+                            throw new CompletionException(resultCursorThrowable);
+                        }
+                    }))
+                    .handle((resultCursorImpl, throwable) -> {
+                        var error = completionExceptionCause(throwable);
+                        if (error != null) {
+                            return connection
+                                    .close()
+                                    .handle((ignored, closeError) -> {
                                         if (closeError != null) {
                                             error.addSuppressed(closeError);
+                                        }
+                                        if (!autoCommitRetriesDisabled && mayRetry.get()) {
+                                            return autoCommitRun(
+                                                    query,
+                                                    config,
+                                                    apiTelemetryWork,
+                                                    true,
+                                                    true,
+                                                    parentObservation,
+                                                    resultType);
                                         }
                                         if (error instanceof RuntimeException runtimeException) {
                                             throw runtimeException;
                                         } else {
                                             throw new CompletionException(error);
                                         }
-                                    });
-                                } else {
-                                    return CompletableFuture.completedStage(resultCursorImpl);
-                                }
-                            })
-                            .thenCompose(Function.identity())
-                            .thenApply(DisposableResultCursorImpl::new);
-                    return cursorStage.thenApply(Function.identity());
-                });
-        resultCursorStage = disposable.exceptionally(error -> null);
-        return disposable.thenApply(Function.identity());
+                                    })
+                                    .thenCompose(Function.identity());
+                        } else {
+                            return CompletableFuture.completedStage(resultCursorImpl);
+                        }
+                    })
+                    .thenCompose(Function.identity());
+        });
     }
 
     public CompletionStage<RxResultCursor> runRx(
@@ -219,51 +266,85 @@ public class NetworkSession {
             CompletionStage<RxResultCursor> cursorPublishStage,
             Observation parentObservation) {
         ensureSessionIsOpen();
+        var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.AUTO_COMMIT_TRANSACTION);
+        apiTelemetryWork.setEnabled(!telemetryDisabled);
         var newResultCursorStage = ensureNoOpenTxBeforeRunningQuery()
-                .thenCompose(ignore -> acquireConnection(mode, parentObservation))
-                .thenCompose(connection -> {
-                    var parameters = query.parameters().asMap(Values::value);
-                    var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.AUTO_COMMIT_TRANSACTION);
-                    apiTelemetryWork.setEnabled(!telemetryDisabled);
-                    var runFailed = new AtomicBoolean(false);
-                    var responseHandler = new RunRxResponseHandler(
-                            logging, connection, query, this::handleNewBookmark, runFailed, this::handleDatabaseName);
-                    var cursorStage = CompletableFuture.completedStage(null)
-                            .thenCompose(ignored -> {
-                                var messages = new ArrayList<Message>(2);
-                                apiTelemetryWork
-                                        .getTelemetryMessageIfEnabled(connection)
-                                        .ifPresent(messages::add);
-                                messages.add(newRunMessage(connection, query, parameters, config));
-                                return connection.writeAndFlush(responseHandler, messages, parentObservation);
-                            })
-                            .thenCompose(ignored -> responseHandler.cursorFuture)
-                            .handle((resultCursor, throwable) -> {
-                                var error = completionExceptionCause(throwable);
-                                if (error != null) {
-                                    return connection.close().<RxResultCursor>handle((ignored, closeError) -> {
+                .thenCompose(ignore -> autoCommitRunRx(
+                        query, config, apiTelemetryWork, autoCommitRetriesDisabled, false, parentObservation));
+        resultCursorStage = newResultCursorStage
+                .thenCompose(cursor -> cursor == null ? CompletableFuture.completedFuture(null) : cursorPublishStage)
+                .exceptionally(throwable -> null);
+        return newResultCursorStage;
+    }
+
+    private CompletionStage<RxResultCursor> autoCommitRunRx(
+            Query query,
+            TransactionConfig config,
+            ApiTelemetryWork apiTelemetryWork,
+            boolean autoCommitRetriesDisabled,
+            boolean skipPull,
+            Observation parentObservation) {
+        return acquireConnection(mode, parentObservation, skipPull).thenCompose(connection -> {
+            var parameters = query.parameters().asMap(Values::value);
+            var runFailed = new AtomicBoolean(false);
+            var telemetryEnabled = apiTelemetryWork.getTelemetryMessageIfEnabled(connection);
+            var responseHandler = new RunRxResponseHandler(
+                    logging,
+                    connection,
+                    query,
+                    this::handleNewBookmark,
+                    runFailed,
+                    this::handleDatabaseName,
+                    apiTelemetryWork);
+            return CompletableFuture.completedStage(null)
+                    .thenCompose(ignored -> {
+                        var messages = new ArrayList<Message>(2);
+                        apiTelemetryWork
+                                .getTelemetryMessageIfEnabled(connection)
+                                .ifPresent(messages::add);
+                        messages.add(newRunMessage(connection, query, parameters, config));
+                        return connection.writeAndFlush(responseHandler, messages, parentObservation);
+                    })
+                    .thenCompose(ignored -> responseHandler.cursorFuture)
+                    .handle((resultCursor, throwable) -> {
+                        if (resultCursor != null) {
+                            throwable = responseHandler.error;
+                        }
+                        var error = completionExceptionCause(throwable);
+                        if (error != null) {
+                            return connection
+                                    .close()
+                                    .handle((ignored, closeError) -> {
                                         if (closeError != null) {
                                             error.addSuppressed(closeError);
+                                        }
+                                        var mayRetry = false;
+                                        if (telemetryEnabled.isPresent()) {
+                                            if (apiTelemetryWork.acknowledged().get()) {
+                                                mayRetry = isIdempotent(error);
+                                            }
+                                        } else {
+                                            mayRetry = isIdempotent(error);
+                                        }
+                                        if (!autoCommitRetriesDisabled && mayRetry) {
+                                            return autoCommitRunRx(
+                                                    query, config, apiTelemetryWork, true, true, parentObservation);
                                         }
                                         if (error instanceof RuntimeException runtimeException) {
                                             throw runtimeException;
                                         } else {
                                             throw new CompletionException(error);
                                         }
-                                    });
-                                } else if (runFailed.get()) {
-                                    return connection.close().handle((ignored1, ignored2) -> resultCursor);
-                                } else {
-                                    return CompletableFuture.completedStage(resultCursor);
-                                }
-                            })
-                            .thenCompose(Function.identity());
-                    return cursorStage.thenApply(Function.identity());
-                });
-        resultCursorStage = newResultCursorStage
-                .thenCompose(cursor -> cursor == null ? CompletableFuture.completedFuture(null) : cursorPublishStage)
-                .exceptionally(throwable -> null);
-        return newResultCursorStage;
+                                    })
+                                    .thenCompose(Function.identity());
+                        } else if (runFailed.get()) {
+                            return connection.close().handle((ignored1, ignored2) -> resultCursor);
+                        } else {
+                            return CompletableFuture.completedStage(resultCursor);
+                        }
+                    })
+                    .thenCompose(Function.identity());
+        });
     }
 
     public CompletionStage<UnmanagedTransaction> beginTransactionAsync(
@@ -297,7 +378,7 @@ public class NetworkSession {
 
         // create a chain that acquires connection and starts a transaction
         var newTransactionStage = ensureNoOpenTxBeforeStartingTx()
-                .thenCompose(ignore -> acquireConnection(mode, parentObservation))
+                .thenCompose(ignore -> acquireConnection(mode, parentObservation, false))
                 .thenCompose(connection -> {
                     var tx = new UnmanagedTransaction(
                             connection,
@@ -431,10 +512,12 @@ public class NetworkSession {
     }
 
     private CompletionStage<BoltConnectionWithCloseTracking> acquireConnection(
-            AccessMode mode, Observation parentObservation) {
+            AccessMode mode, Observation parentObservation, boolean skipPull) {
         var overrideAuthToken = connectionContext.overrideAuthToken();
         var authTokenManager = overrideAuthToken != null ? NoopAuthTokenManager.INSTANCE : this.authTokenManager;
-        var newConnectionStage = pulledResultCursorStage(connectionStage, parentObservation)
+        var newConnectionStage = (skipPull
+                        ? CompletableFuture.<BoltConnectionWithCloseTracking>completedStage(null)
+                        : pulledResultCursorStage(connectionStage, parentObservation))
                 .thenCompose(ignored -> acquireAdaptedConnection(mode, parentObservation))
                 .thenApply(connection ->
                         (DriverBoltConnection) new BoltConnectionWithAuthTokenManager(connection, authTokenManager))
@@ -663,6 +746,16 @@ public class NetworkSession {
         };
     }
 
+    private static boolean isIdempotent(Throwable throwable) {
+        if (throwable instanceof Neo4jException neo4jException) {
+            var val = neo4jException.diagnosticRecord().get("_idempotent");
+            if (val != null && val.hasType(TypeSystem.getDefault().BOOLEAN())) {
+                return val.asBoolean();
+            }
+        }
+        return false;
+    }
+
     /**
      * The {@link NetworkSessionConnectionContext#mode} can be mutable for a session connection context
      */
@@ -720,6 +813,7 @@ public class NetworkSession {
         private final Consumer<DatabaseBookmark> bookmarkConsumer;
         private final AtomicBoolean runFailed;
         private final Consumer<String> databaseNameConsumer;
+        private final ApiTelemetryWork apiTelemetryWork;
         private RunSummary runSummary;
         private Throwable error;
         private int ignoredCount;
@@ -730,13 +824,15 @@ public class NetworkSession {
                 Query query,
                 Consumer<DatabaseBookmark> bookmarkConsumer,
                 AtomicBoolean runFailed,
-                Consumer<String> databaseNameConsumer) {
+                Consumer<String> databaseNameConsumer,
+                ApiTelemetryWork apiTelemetryWork) {
             this.logging = logging;
             this.connection = connection;
             this.query = query;
             this.bookmarkConsumer = bookmarkConsumer;
             this.runFailed = runFailed;
             this.databaseNameConsumer = Objects.requireNonNull(databaseNameConsumer);
+            this.apiTelemetryWork = apiTelemetryWork;
         }
 
         @Override
@@ -749,6 +845,13 @@ public class NetworkSession {
                     // higher order error has occurred
                     error = throwable;
                 }
+            }
+        }
+
+        @Override
+        public void onTelemetrySummary(TelemetrySummary summary) {
+            if (apiTelemetryWork != null) {
+                apiTelemetryWork.acknowledge();
             }
         }
 

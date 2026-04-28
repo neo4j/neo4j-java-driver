@@ -60,6 +60,7 @@ public class SessionFactoryImpl implements SessionFactory {
     private final AuthTokenManager authTokenManager;
     private final HomeDatabaseCache homeDatabaseCache;
     private final DriverObservationProvider observationProvider;
+    private final boolean defaultAutoCommitRetriesDisabled;
 
     @SuppressWarnings("deprecation")
     SessionFactoryImpl(
@@ -79,6 +80,7 @@ public class SessionFactoryImpl implements SessionFactory {
         this.authTokenManager = authTokenManager;
         this.homeDatabaseCache = Objects.requireNonNull(homeDatabaseCache);
         this.observationProvider = Objects.requireNonNull(observationProvider);
+        this.defaultAutoCommitRetriesDisabled = config.isAutoCommitRetriesDisabled();
     }
 
     @SuppressWarnings("deprecation")
@@ -100,7 +102,12 @@ public class SessionFactoryImpl implements SessionFactory {
                 overrideAuthToken,
                 telemetryDisabled,
                 authTokenManager,
-                homeDatabaseCache);
+                homeDatabaseCache,
+                switch (sessionConfig.autoCommitRetriesMode()) {
+                    case DEFAULT -> defaultAutoCommitRetriesDisabled;
+                    case DISABLED -> true;
+                    case ENABLED -> false;
+                });
     }
 
     private Set<Bookmark> toDistinctSet(Iterable<Bookmark> bookmarks) {
@@ -175,7 +182,8 @@ public class SessionFactoryImpl implements SessionFactory {
             AuthToken authToken,
             boolean telemetryDisabled,
             AuthTokenManager authTokenManager,
-            HomeDatabaseCache homeDatabaseCache) {
+            HomeDatabaseCache homeDatabaseCache,
+            boolean disableAutoCommitRetries) {
         Objects.requireNonNull(bookmarks, "bookmarks may not be null");
         Objects.requireNonNull(bookmarkManager, "bookmarkManager may not be null");
         return leakedSessionsLoggingEnabled
@@ -194,6 +202,7 @@ public class SessionFactoryImpl implements SessionFactory {
                         telemetryDisabled,
                         authTokenManager,
                         homeDatabaseCache,
+                        disableAutoCommitRetries,
                         observationProvider)
                 : new NetworkSession(
                         connectionProvider,
@@ -210,6 +219,7 @@ public class SessionFactoryImpl implements SessionFactory {
                         telemetryDisabled,
                         authTokenManager,
                         homeDatabaseCache,
+                        disableAutoCommitRetries,
                         observationProvider);
     }
 

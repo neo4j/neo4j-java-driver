@@ -36,6 +36,7 @@ import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AutoCommitRetriesMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.NotificationClassification;
 import org.neo4j.driver.SessionConfig;
@@ -106,6 +107,11 @@ public class NewSession implements TestkitRequest {
                         .map(NotificationClassification::valueOf)
                         .collect(Collectors.toSet()))
                 .ifPresent(builder::withDisabledNotificationClassifications);
+        Optional.ofNullable(data.disableAutoCommitRetries)
+                .ifPresentOrElse(
+                        disable -> builder.withAutoCommitRetriesMode(
+                                disable ? AutoCommitRetriesMode.DISABLED : AutoCommitRetriesMode.ENABLED),
+                        () -> builder.withAutoCommitRetriesMode(AutoCommitRetriesMode.DEFAULT));
 
         var userSwitchAuthToken = data.getAuthorizationToken() != null
                 ? AuthTokenUtil.parseAuthToken(data.getAuthorizationToken())
@@ -173,6 +179,7 @@ public class NewSession implements TestkitRequest {
         private String notificationsMinSeverity;
         private Set<String> notificationsDisabledCategories;
         private AuthorizationToken authorizationToken;
+        private Boolean disableAutoCommitRetries;
     }
 
     @FunctionalInterface
