@@ -299,9 +299,7 @@ public class NetworkSession {
             return CompletableFuture.completedStage(null)
                     .thenCompose(ignored -> {
                         var messages = new ArrayList<Message>(2);
-                        apiTelemetryWork
-                                .getTelemetryMessageIfEnabled(connection)
-                                .ifPresent(messages::add);
+                        telemetryEnabled.ifPresent(messages::add);
                         messages.add(newRunMessage(connection, query, parameters, config));
                         return connection.writeAndFlush(responseHandler, messages, parentObservation);
                     })
