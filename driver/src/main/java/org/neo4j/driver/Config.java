@@ -173,6 +173,14 @@ public final class Config implements Serializable {
     @Experimental
     private final boolean tryTcpFastOpen;
 
+    /**
+     * Defines whether automatic retries that apply to {@link Session#run(String)} and its overload variants are
+     * disabled.
+     *
+     * @since 6.1.0
+     */
+    private final boolean autoCommitRetriesDisabled;
+
     private Config(ConfigBuilder builder) {
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
@@ -196,6 +204,7 @@ public final class Config implements Serializable {
         this.telemetryDisabled = builder.telemetryDisabled;
         this.observationProvider = builder.observationProvider;
         this.tryTcpFastOpen = builder.tryTcpFastOpen;
+        this.autoCommitRetriesDisabled = builder.autoCommitRetriesDisabled;
     }
 
     /**
@@ -433,6 +442,16 @@ public final class Config implements Serializable {
     }
 
     /**
+     * Returns whether automatic retries that apply to {@link Session#run(String)} and its overload variants are disabled.
+     *
+     * @return {@code true} if retries are disabled or {@code false} otherwise
+     * @since 6.1.0
+     */
+    public boolean isAutoCommitRetriesDisabled() {
+        return autoCommitRetriesDisabled;
+    }
+
+    /**
      * Used to build new config instances
      */
     public static final class ConfigBuilder {
@@ -455,6 +474,7 @@ public final class Config implements Serializable {
         private int eventLoopThreads = 0;
         private ObservationProvider observationProvider;
         private boolean tryTcpFastOpen;
+        private boolean autoCommitRetriesDisabled;
 
         @SuppressWarnings("deprecation")
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
@@ -952,6 +972,28 @@ public final class Config implements Serializable {
         @Experimental
         public ConfigBuilder withTryTcpFastOpen(boolean enabled) {
             this.tryTcpFastOpen = enabled;
+            return this;
+        }
+
+        /**
+         * Disables automatic retries that apply to {@link Session#run(String)} and its overload variants.
+         * <p>
+         * Retries are limited to a specific set of errors. Namely, those errors marked as idempotent by the DBMS, i.e.,
+         * errors that are guaranteed to not have altered the state of any database. At the time of writing, this set
+         * encompasses only admission control errors.
+         * <p>
+         * When set to {@literal true}, calls will fail without retrying when receiving an error from the server, even when
+         * only idempotent work has occurred. By default, these calls will be rerun with a one-shot retry to avoid
+         * friction when encountering rate limiting and other errors that can be safely retried.
+         * <p>
+         * Default value: {@literal false}.
+         *
+         * @param retriesDisabled {@code true} if retries are disabled or {@code false} otherwise
+         * @return this builder
+         * @since 6.1.0
+         */
+        public ConfigBuilder withAutoCommitRetriesDisabled(boolean retriesDisabled) {
+            this.autoCommitRetriesDisabled = retriesDisabled;
             return this;
         }
 

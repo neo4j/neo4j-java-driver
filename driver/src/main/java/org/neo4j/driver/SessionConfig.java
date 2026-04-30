@@ -72,6 +72,14 @@ public final class SessionConfig implements Serializable {
     @SuppressWarnings("deprecation")
     private final NotificationConfig notificationConfig;
 
+    /**
+     * The {@link AutoCommitRetriesMode} for automatic retries that apply to {@link Session#run(String)} and its
+     * overload variants.
+     *
+     * @since 6.1.0
+     */
+    private final AutoCommitRetriesMode autoCommitRetriesMode;
+
     private SessionConfig(Builder builder) {
         this.bookmarks = builder.bookmarks;
         this.defaultAccessMode = builder.defaultAccessMode;
@@ -80,6 +88,7 @@ public final class SessionConfig implements Serializable {
         this.impersonatedUser = builder.impersonatedUser;
         this.bookmarkManager = builder.bookmarkManager;
         this.notificationConfig = builder.notificationConfig;
+        this.autoCommitRetriesMode = builder.autoCommitRetriesMode;
     }
 
     /**
@@ -204,6 +213,17 @@ public final class SessionConfig implements Serializable {
                 : Collections.emptySet();
     }
 
+    /**
+     * Returns {@link AutoCommitRetriesMode} for automatic retries that apply to {@link Session#run(String)} and its
+     * overload variants.
+     *
+     * @return the {@link AutoCommitRetriesMode}
+     * @since 6.1.0
+     */
+    public AutoCommitRetriesMode autoCommitRetriesMode() {
+        return autoCommitRetriesMode;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -219,12 +239,20 @@ public final class SessionConfig implements Serializable {
                 && Objects.equals(fetchSize, that.fetchSize)
                 && Objects.equals(impersonatedUser, that.impersonatedUser)
                 && Objects.equals(bookmarkManager, that.bookmarkManager)
-                && Objects.equals(notificationConfig, that.notificationConfig);
+                && Objects.equals(notificationConfig, that.notificationConfig)
+                && Objects.equals(autoCommitRetriesMode, that.autoCommitRetriesMode);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(bookmarks, defaultAccessMode, database, impersonatedUser, bookmarkManager);
+        return Objects.hash(
+                bookmarks,
+                defaultAccessMode,
+                database,
+                impersonatedUser,
+                bookmarkManager,
+                notificationConfig,
+                autoCommitRetriesMode);
     }
 
     @Override
@@ -232,9 +260,16 @@ public final class SessionConfig implements Serializable {
         return String.format(
                 """
                 SessionParameters{bookmarks=%s, defaultAccessMode=%s, database='%s', fetchSize=%d, impersonatedUser=%s, \
-                bookmarkManager=%s}\
+                bookmarkManager=%s, notificationConfig=%s, disableAutoCommitRetries=%s}\
                 """,
-                bookmarks, defaultAccessMode, database, fetchSize, impersonatedUser, bookmarkManager);
+                bookmarks,
+                defaultAccessMode,
+                database,
+                fetchSize,
+                impersonatedUser,
+                bookmarkManager,
+                notificationConfig,
+                autoCommitRetriesMode);
     }
 
     /**
@@ -247,6 +282,7 @@ public final class SessionConfig implements Serializable {
         private String database = null;
         private String impersonatedUser = null;
         private BookmarkManager bookmarkManager;
+        private AutoCommitRetriesMode autoCommitRetriesMode = AutoCommitRetriesMode.DEFAULT;
 
         @SuppressWarnings("deprecation")
         private NotificationConfig notificationConfig = NotificationConfig.defaultConfig();
@@ -473,6 +509,29 @@ public final class SessionConfig implements Serializable {
                             .map(NotificationCategory.class::cast)
                             .collect(Collectors.toSet());
             notificationConfig = notificationConfig.disableCategories(disabledCategories);
+            return this;
+        }
+
+        /**
+         * Sets {@link AutoCommitRetriesMode} for automatic retries that apply to {@link Session#run(String)} and its
+         * overload variants.
+         * <p>
+         * Retries are limited to a specific set of errors. Namely, those errors marked as idempotent by the DBMS, i.e.,
+         * errors that are guaranteed to not have altered the state of any database. At the time of writing, this set
+         * encompasses only admission control errors.
+         * <p>
+         * When set to {@link AutoCommitRetriesMode#DISABLED}, calls will fail without retrying when receiving an error
+         * from the server, even when only idempotent work has occurred.
+         * <p>
+         * Default value: {@link AutoCommitRetriesMode#DEFAULT}, which delegates to the driver level
+         * {@link Config#isAutoCommitRetriesDisabled()} value.
+         *
+         * @param autoCommitRetriesMode the {@link AutoCommitRetriesMode}
+         * @return this builder
+         * @since 6.1.0
+         */
+        public Builder withAutoCommitRetriesMode(AutoCommitRetriesMode autoCommitRetriesMode) {
+            this.autoCommitRetriesMode = Objects.requireNonNull(autoCommitRetriesMode);
             return this;
         }
 

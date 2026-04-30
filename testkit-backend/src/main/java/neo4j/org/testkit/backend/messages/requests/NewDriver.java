@@ -111,6 +111,7 @@ public class NewDriver implements TestkitRequest {
                 .ifPresent(configBuilder::withDisabledNotificationClassifications);
         Optional.ofNullable(data.maxConnectionLifetimeMs)
                 .ifPresent(timeout -> configBuilder.withMaxConnectionLifetime(timeout, TimeUnit.MILLISECONDS));
+        configBuilder.withAutoCommitRetriesDisabled(data.disableAutoCommitRetries);
         var metrics = MetricsObservationProvider.newInstance(configBuilder).metrics();
         var clientCertificateManager = Optional.ofNullable(data.getClientCertificateProviderId())
                 .map(testkitState::getClientCertificateManager)
@@ -298,6 +299,7 @@ public class NewDriver implements TestkitRequest {
         private ClientCertificate clientCertificate;
         private String clientCertificateProviderId;
         private Long maxConnectionLifetimeMs;
+        private boolean disableAutoCommitRetries;
     }
 
     @RequiredArgsConstructor

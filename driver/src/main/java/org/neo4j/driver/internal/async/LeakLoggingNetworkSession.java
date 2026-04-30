@@ -53,6 +53,7 @@ public class LeakLoggingNetworkSession extends NetworkSession {
             boolean telemetryDisabled,
             AuthTokenManager authTokenManager,
             HomeDatabaseCache homeDatabaseCache,
+            boolean autoCommitRetriesDisabled,
             DriverObservationProvider observationProvider) {
         super(
                 connectionProvider,
@@ -69,6 +70,7 @@ public class LeakLoggingNetworkSession extends NetworkSession {
                 telemetryDisabled,
                 authTokenManager,
                 homeDatabaseCache,
+                autoCommitRetriesDisabled,
                 observationProvider);
         this.stackTrace = captureStackTrace();
     }
