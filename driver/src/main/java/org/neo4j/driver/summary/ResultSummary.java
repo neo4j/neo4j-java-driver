@@ -98,6 +98,7 @@ public interface ResultSummary {
      * available here.
      *
      * @return profiled query plan for the executed query if available, otherwise null
+     * @since 6.2.0
      */
     Profile queryProfile();
 

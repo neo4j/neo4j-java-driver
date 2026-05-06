@@ -23,7 +23,7 @@ import java.util.OptionalLong;
 /**
  * This is the same as a regular {@link Plan} - except this plan has been executed, meaning it also contains detailed information about how much work each
  * step of the plan incurred on the database.
- * @since 6.1
+ * @since 6.2.0
  */
 public interface Profile extends Plan {
 
