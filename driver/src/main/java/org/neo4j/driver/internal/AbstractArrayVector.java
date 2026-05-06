@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,12 +62,12 @@ public abstract class AbstractArrayVector<T> implements Vector {
         var that = (AbstractArrayVector<?>) o;
         return length == that.length
                 && Objects.equals(elementType, that.elementType)
-                && Objects.equals(elements, that.elements);
+                && Objects.deepEquals(elements, that.elements);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(elementType, length, elements);
+        return Objects.hash(elementType, length, arrayHashCode(elements));
     }
 
     @Override
@@ -80,5 +81,17 @@ public abstract class AbstractArrayVector<T> implements Vector {
         var result = (T) Array.newInstance(elementType, length);
         System.arraycopy(elements, 0, result, 0, length);
         return result;
+    }
+
+    private static int arrayHashCode(Object array) {
+        if (array instanceof byte[] value) return Arrays.hashCode(value);
+        if (array instanceof short[] value) return Arrays.hashCode(value);
+        if (array instanceof int[] value) return Arrays.hashCode(value);
+        if (array instanceof long[] value) return Arrays.hashCode(value);
+        if (array instanceof float[] value) return Arrays.hashCode(value);
+        if (array instanceof double[] value) return Arrays.hashCode(value);
+        if (array instanceof char[] value) return Arrays.hashCode(value);
+        if (array instanceof boolean[] value) return Arrays.hashCode(value);
+        return Arrays.deepHashCode((Object[]) array);
     }
 }
