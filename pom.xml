@@ -25,7 +25,7 @@
     <parallelizable.it.forkCount>2</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
-    <surefire.and.failsafe.version>3.5.3</surefire.and.failsafe.version>
+    <surefire.and.failsafe.version>3.5.6</surefire.and.failsafe.version>
     <!-- Skip deployment by default for everything in this project. -->
     <maven.deploy.skip>true</maven.deploy.skip>
 
@@ -34,7 +34,7 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.132.Final</netty-bom.version>
+    <netty-bom.version>4.1.134.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
@@ -48,9 +48,9 @@
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk18on.version>1.84</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
-    <jackson.version>2.21.2</jackson.version>
-    <lombok.version>1.18.44</lombok.version>
-    <svm.version>21.3.17</svm.version>
+    <jackson.version>2.21.4</jackson.version>
+    <lombok.version>1.18.46</lombok.version>
+    <svm.version>21.3.18</svm.version>
     <micrometer.version>1.16.5</micrometer.version>
     <testcontainers.version>1.21.4</testcontainers.version>
     <build-resources.version>4.4.48</build-resources.version>
