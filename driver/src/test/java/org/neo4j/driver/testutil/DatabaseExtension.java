@@ -50,9 +50,9 @@ import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.testutil.CertificateUtil.CertificateKeyPair;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.neo4j.Neo4jContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
@@ -71,7 +71,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     private static final GenericContainer<?> nginx;
     private static final Map<String, String> defaultConfig;
 
-    private static Neo4jContainer<?> neo4jContainer;
+    private static Neo4jContainer neo4jContainer;
     private static Driver driver;
     private static boolean nginxRunning;
 
@@ -283,7 +283,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
     }
 
     @SuppressWarnings("resource")
-    private static Neo4jContainer<?> setupNeo4jContainer(File cert, File key, Map<String, String> config) {
+    private static Neo4jContainer setupNeo4jContainer(File cert, File key, Map<String, String> config) {
         var neo4JVersion = Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("2025");
 
         var extendedNeo4jImage = new ImageFromDockerfile()
@@ -298,7 +298,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         var extendedNeo4jImageAsSubstitute =
                 DockerImageName.parse(extendedNeo4jImage.get()).asCompatibleSubstituteFor("neo4j");
 
-        neo4jContainer = new Neo4jContainer<>(extendedNeo4jImageAsSubstitute)
+        neo4jContainer = new Neo4jContainer(extendedNeo4jImageAsSubstitute)
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
                 .withNetwork(network)
                 .withNetworkAliases("neo4j");
