@@ -116,16 +116,19 @@ public class SecurityPlans {
             var hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();
             var revocationCheckingStrategy = trustStrategy.revocationCheckingStrategy();
             return switch (trustStrategy.strategy()) {
-                case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES -> SecurityPlanImpl.forCustomCASignedCertificates(
-                        trustStrategy.certFiles(),
-                        hostnameVerificationEnabled,
-                        revocationCheckingStrategy,
-                        clientCertificateManager,
-                        logging);
-                case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES -> SecurityPlanImpl.forSystemCASignedCertificates(
-                        hostnameVerificationEnabled, revocationCheckingStrategy, clientCertificateManager, logging);
-                case TRUST_ALL_CERTIFICATES -> SecurityPlanImpl.forAllCertificates(
-                        hostnameVerificationEnabled, revocationCheckingStrategy, clientCertificateManager, logging);
+                case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES ->
+                    SecurityPlanImpl.forCustomCASignedCertificates(
+                            trustStrategy.certFiles(),
+                            hostnameVerificationEnabled,
+                            revocationCheckingStrategy,
+                            clientCertificateManager,
+                            logging);
+                case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES ->
+                    SecurityPlanImpl.forSystemCASignedCertificates(
+                            hostnameVerificationEnabled, revocationCheckingStrategy, clientCertificateManager, logging);
+                case TRUST_ALL_CERTIFICATES ->
+                    SecurityPlanImpl.forAllCertificates(
+                            hostnameVerificationEnabled, revocationCheckingStrategy, clientCertificateManager, logging);
             };
         } else {
             return insecure();

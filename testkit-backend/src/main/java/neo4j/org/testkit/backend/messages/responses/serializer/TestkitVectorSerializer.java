@@ -75,8 +75,9 @@ public class TestkitVectorSerializer extends StdSerializer<VectorValue> {
                 dtype = VectorType.DOUBLE.getName();
                 data = toHexString(float64Vector.toArray());
             }
-            default -> throw new IllegalArgumentException(
-                    "Unsupported vector type: " + vector.getClass().getName());
+            default ->
+                throw new IllegalArgumentException(
+                        "Unsupported vector type: " + vector.getClass().getName());
         }
 
         cypherObject(gen, "CypherVector", () -> {

@@ -56,8 +56,10 @@ class RoutedErrorMapper extends ErrorMapper {
                                     .map(this::mapGqlCause)
                                     .orElse(null));
                 }
-                case WRITE -> new SessionExpiredException(
-                        format("Server at %s no longer accepts writes", address), boltFailureException);};
+                case WRITE ->
+                    new SessionExpiredException(
+                            format("Server at %s no longer accepts writes", address), boltFailureException);
+            };
         } else {
             result = super.mapBoltFailureException(boltFailureException);
         }
