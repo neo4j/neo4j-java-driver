@@ -162,7 +162,6 @@ public class SummaryUtil {
         return profile.map(SummaryUtil::toProfile).orElse(null);
     }
 
-
     private static Summary.Profile toProfile(Profile profile) {
         Map<String, Object> args = new HashMap<>();
         profile.arguments().forEach((key, value) -> args.put(key, value.asObject()));
@@ -176,7 +175,8 @@ public class SummaryUtil {
                 .pageCacheMisses(boxOptionalLong(profile.pageCacheMisses()))
                 .pageCacheHitRatio(boxOptionalDouble(profile.pageCacheHitRatio()))
                 .time(boxOptionalProfileTime(profile.time()))
-                .children(profile.children().stream().map(SummaryUtil::toProfile).collect(Collectors.toList()))
+                .children(
+                        profile.children().stream().map(SummaryUtil::toProfile).collect(Collectors.toList()))
                 .build();
     }
 

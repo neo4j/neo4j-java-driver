@@ -165,13 +165,15 @@ class MetadataExtractorTest {
         assertEquals(0, child.children().size());
     }
 
-
     @Test
     void shouldBuildResultSummaryWithQueryPlan() {
         var rawPlan = value(parameters(
-                "operatorType", "Projection",
-                "args", parameters("n", 42),
-                "identifiers", values("a", "b"),
+                "operatorType",
+                "Projection",
+                "args",
+                parameters("n", 42),
+                "identifiers",
+                values("a", "b"),
                 "children",
                 values(parameters(
                         "operatorType", "AllNodeScan",
