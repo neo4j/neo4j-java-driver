@@ -16,9 +16,11 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
@@ -118,7 +120,7 @@ public class SummaryUtil {
                 .notifications(notifications)
                 .gqlStatusObjects(gqlStatusObjects)
                 .plan(toPlan(summary.plan()))
-                .profile(toProfile(summary.queryProfile()))
+                .profile(toOptionalProfile(summary.queryProfile()))
                 .queryType(toQueryType(summary.queryType()))
                 .resultAvailableAfter(
                         summary.resultAvailableAfter(TimeUnit.MILLISECONDS) == -1
@@ -156,23 +158,25 @@ public class SummaryUtil {
                 .build();
     }
 
-    private static Summary.Profile toProfile(Profile plan) {
-        if (plan == null) {
-            return null;
-        }
+    private static Summary.Profile toOptionalProfile(Optional<Profile> profile) {
+        return profile.map(SummaryUtil::toProfile).orElse(null);
+    }
+
+
+    private static Summary.Profile toProfile(Profile profile) {
         Map<String, Object> args = new HashMap<>();
-        plan.arguments().forEach((key, value) -> args.put(key, value.asObject()));
+        profile.arguments().forEach((key, value) -> args.put(key, value.asObject()));
         return Summary.Profile.builder()
-                .operatorType(plan.operatorType())
+                .operatorType(profile.operatorType())
                 .args(args)
-                .identifiers(plan.identifiers())
-                .dbHits(boxOptionalLong(plan.dbHits()))
-                .rows(boxOptionalLong(plan.rows()))
-                .pageCacheHits(boxOptionalLong(plan.pageCacheHits()))
-                .pageCacheMisses(boxOptionalLong(plan.pageCacheMisses()))
-                .pageCacheHitRatio(boxOptionalDouble(plan.pageCacheHitRatio()))
-                .time(boxOptionalLong(plan.time()))
-                .children(plan.children().stream().map(SummaryUtil::toProfile).collect(Collectors.toList()))
+                .identifiers(profile.identifiers())
+                .dbHits(boxOptionalLong(profile.dbHits()))
+                .rows(boxOptionalLong(profile.rows()))
+                .pageCacheHits(boxOptionalLong(profile.pageCacheHits()))
+                .pageCacheMisses(boxOptionalLong(profile.pageCacheMisses()))
+                .pageCacheHitRatio(boxOptionalDouble(profile.pageCacheHitRatio()))
+                .time(boxOptionalProfileTime(profile.time()))
+                .children(profile.children().stream().map(SummaryUtil::toProfile).collect(Collectors.toList()))
                 .build();
     }
 
@@ -182,6 +186,10 @@ public class SummaryUtil {
 
     private static Double boxOptionalDouble(OptionalDouble value) {
         return value.isPresent() ? value.getAsDouble() : null;
+    }
+
+    private static Long boxOptionalProfileTime(Optional<Duration> value) {
+        return value.isPresent() ? value.get().toNanos() : null;
     }
 
     private static String toQueryType(QueryType type) {

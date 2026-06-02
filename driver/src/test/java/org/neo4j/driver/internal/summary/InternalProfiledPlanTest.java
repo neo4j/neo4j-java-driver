@@ -57,10 +57,13 @@ class InternalProfiledPlanTest {
         Value value = new MapValue(planMap);
 
         // WHEN
+        @SuppressWarnings("deprecation")
         var plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(value);
 
         // THEN
-        for (@SuppressWarnings("deprecation") var child : plan.children()) {
+        @SuppressWarnings("deprecation")
+        var children = plan.children();
+        for (@SuppressWarnings("deprecation") var child : children) {
             verifyPlan(child);
         }
     }
@@ -81,7 +84,6 @@ class InternalProfiledPlanTest {
         return map;
     }
 
-    @SuppressWarnings("deprecation")
     private void verifyPlan(@SuppressWarnings("deprecation") ProfiledPlan plan) {
         assertThat(plan.dbHits(), equalTo(42L));
         assertThat(plan.records(), equalTo(1337L));

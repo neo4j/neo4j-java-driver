@@ -38,7 +38,9 @@ import static org.neo4j.driver.summary.QueryType.READ_WRITE;
 import static org.neo4j.driver.summary.QueryType.SCHEMA_WRITE;
 import static org.neo4j.driver.summary.QueryType.WRITE_ONLY;
 
+import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
@@ -130,7 +132,7 @@ class MetadataExtractorTest {
 
     @Test
     void shouldBuildResultSummaryWithPlan() {
-        var plan = value(parameters(
+        var rawPlan = value(parameters(
                 "operatorType", "Projection",
                 "args", parameters("n", 42),
                 "identifiers", values("a", "b"),
@@ -139,16 +141,54 @@ class MetadataExtractorTest {
                                 "operatorType", "AllNodeScan",
                                 "args", parameters("x", 4242),
                                 "identifiers", values("n", "t", "f")))));
-        var metadata = singletonMap("plan", plan);
+        var metadata = singletonMap("plan", rawPlan);
 
         var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
 
-        assertTrue(summary.hasPlan());
-        assertEquals("Projection", summary.plan().operatorType());
-        assertEquals(singletonMap("n", value(42)), summary.plan().arguments());
-        assertEquals(asList("a", "b"), summary.plan().identifiers());
+        @SuppressWarnings("deprecation")
+        var hasPlan = summary.hasPlan();
+        @SuppressWarnings("deprecation")
+        var plan = summary.plan();
 
-        var children = summary.plan().children();
+        assertTrue(hasPlan);
+        assertEquals("Projection", plan.operatorType());
+        assertEquals(singletonMap("n", value(42)), plan.arguments());
+        assertEquals(asList("a", "b"), plan.identifiers());
+
+        var children = plan.children();
+        assertEquals(1, children.size());
+        var child = children.get(0);
+
+        assertEquals("AllNodeScan", child.operatorType());
+        assertEquals(singletonMap("x", value(4242)), child.arguments());
+        assertEquals(asList("n", "t", "f"), child.identifiers());
+        assertEquals(0, child.children().size());
+    }
+
+
+    @Test
+    void shouldBuildResultSummaryWithQueryPlan() {
+        var rawPlan = value(parameters(
+                "operatorType", "Projection",
+                "args", parameters("n", 42),
+                "identifiers", values("a", "b"),
+                "children",
+                values(parameters(
+                        "operatorType", "AllNodeScan",
+                        "args", parameters("x", 4242),
+                        "identifiers", values("n", "t", "f")))));
+        var metadata = singletonMap("plan", rawPlan);
+
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
+
+        assertTrue(summary.queryPlan().isPresent());
+        var plan = summary.queryPlan().get();
+
+        assertEquals("Projection", plan.operatorType());
+        assertEquals(singletonMap("n", value(42)), plan.arguments());
+        assertEquals(asList("a", "b"), plan.identifiers());
+
+        var children = plan.children();
         assertEquals(1, children.size());
         var child = children.get(0);
 
@@ -161,12 +201,25 @@ class MetadataExtractorTest {
     @Test
     void shouldBuildResultSummaryWithoutPlan() {
         var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), false, null);
-        assertFalse(summary.hasPlan());
-        assertNull(summary.plan());
+
+        @SuppressWarnings("deprecation")
+        var hasPlan = summary.hasPlan();
+        @SuppressWarnings("deprecation")
+        var plan = summary.plan();
+
+        assertFalse(hasPlan);
+        assertNull(plan);
     }
 
     @Test
-    void shouldBuildResultSummaryWithProfiledPlan() {
+    void shouldBuildResultSummaryWithoutQueryPlan() {
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), false, null);
+
+        assertTrue(summary.queryPlan().isEmpty());
+    }
+
+    @Test
+    void shouldBuildResultSummaryWithProfile() {
         var rawProfile = value(parameters(
                 "operatorType", "ProduceResult",
                 "args", parameters("a", 42),
@@ -185,10 +238,15 @@ class MetadataExtractorTest {
 
         var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
 
-        assertTrue(summary.hasPlan());
-        assertTrue(summary.hasProfile());
+        @SuppressWarnings("deprecation")
+        var hasPlan = summary.hasPlan();
+        @SuppressWarnings("deprecation")
+        var hasProfile = summary.hasProfile();
         @SuppressWarnings("deprecation")
         var profile = summary.profile();
+
+        assertTrue(hasPlan);
+        assertTrue(hasProfile);
         assertEquals("ProduceResult", profile.operatorType());
         assertEquals(singletonMap("a", value(42)), profile.arguments());
         assertEquals(asList("a", "b"), profile.identifiers());
@@ -212,7 +270,7 @@ class MetadataExtractorTest {
     }
 
     @Test
-    void shouldBuildResultSummaryWithProfile() {
+    void shouldBuildResultSummaryWithQueryProfile() {
         var rawProfile = value(parameters(
                 "operatorType",
                 "ProduceResult",
@@ -237,15 +295,16 @@ class MetadataExtractorTest {
 
         var summary = extractor.extractSummary(query(), connectionMock(), 42, metadata, false, null);
 
-        assertTrue(summary.hasPlan());
-        assertTrue(summary.hasProfile());
-        var profile = summary.queryProfile();
+        assertTrue(summary.queryPlan().isPresent());
+        assertTrue(summary.queryProfile().isPresent());
+        var profile = summary.queryProfile().get();
+
         assertEquals("ProduceResult", profile.operatorType());
         assertEquals(singletonMap("a", value(42)), profile.arguments());
         assertEquals(asList("a", "b"), profile.identifiers());
         assertEquals(OptionalLong.of(424242), profile.rows());
         assertEquals(OptionalLong.of(242424), profile.dbHits());
-        assertEquals(OptionalLong.of(999), profile.time());
+        assertEquals(Optional.of(Duration.ofNanos(999)), profile.time());
         assertEquals(OptionalDouble.empty(), profile.pageCacheHitRatio());
         assertEquals(OptionalLong.empty(), profile.pageCacheMisses());
         assertEquals(OptionalLong.empty(), profile.pageCacheHits());
@@ -259,17 +318,27 @@ class MetadataExtractorTest {
         assertEquals(asList("y", "z"), child.identifiers());
         assertEquals(OptionalLong.of(2), child.rows());
         assertEquals(OptionalLong.of(4), child.dbHits());
-        assertEquals(OptionalLong.empty(), child.time());
+        assertEquals(Optional.empty(), child.time());
     }
 
     @Test
-    void shouldBuildResultSummaryWithoutProfiledPlan() {
+    void shouldBuildResultSummaryWithoutProfile() {
         var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), false, null);
-        assertFalse(summary.hasProfile());
+
+        @SuppressWarnings("deprecation")
+        var hasProfile = summary.hasProfile();
         @SuppressWarnings("deprecation")
         var profile = summary.profile();
+
+        assertFalse(hasProfile);
         assertNull(profile);
-        assertNull(summary.queryProfile());
+    }
+
+    @Test
+    void shouldBuildResultSummaryWithoutQueryProfile() {
+        var summary = extractor.extractSummary(query(), connectionMock(), 42, emptyMap(), false, null);
+
+        assertTrue(summary.queryProfile().isEmpty());
     }
 
     @Test

@@ -22,10 +22,12 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
+import java.util.Optional;
 import java.util.OptionalLong;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
@@ -88,7 +90,7 @@ class InternalProfileTest {
         assertThat(plan.pageCacheHits(), equalTo(OptionalLong.of(1234)));
         assertThat(plan.pageCacheMisses(), equalTo(OptionalLong.of(3456)));
         assertThat(plan.pageCacheHitRatio(), equalTo(OptionalDouble.of(0.123)));
-        assertThat(plan.time(), equalTo(OptionalLong.of(999)));
+        assertThat(plan.time(), equalTo(Optional.of(Duration.ofNanos(999))));
         assertThat(plan.operatorType(), equalTo("AwesomeOperator"));
         assertThat(plan.identifiers(), equalTo(asList("n1", "n2")));
         assertThat(plan.arguments().values(), hasItem(new StringValue("CYPHER 1337")));
@@ -124,7 +126,7 @@ class InternalProfileTest {
         assertThat(plan.pageCacheHits(), equalTo(OptionalLong.empty()));
         assertThat(plan.pageCacheMisses(), equalTo(OptionalLong.empty()));
         assertThat(plan.pageCacheHitRatio(), equalTo(OptionalDouble.empty()));
-        assertThat(plan.time(), equalTo(OptionalLong.empty()));
+        assertThat(plan.time(), equalTo(Optional.empty()));
         assertThat(plan.operatorType(), equalTo("AwesomeOperator"));
         assertThat(plan.identifiers(), equalTo(asList("n1", "n2")));
         assertThat(plan.arguments().values(), hasItem(new StringValue("CYPHER 1337")));

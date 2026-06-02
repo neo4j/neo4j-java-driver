@@ -16,7 +16,9 @@
  */
 package org.neo4j.driver.summary;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
 
@@ -67,7 +69,7 @@ public interface Profile extends Plan {
      *
      * @return the amount of time spent in the associated execution step if it was recorded
      */
-    OptionalLong time();
+    Optional<Duration> time();
 
     @Override
     List<? extends Profile> children();

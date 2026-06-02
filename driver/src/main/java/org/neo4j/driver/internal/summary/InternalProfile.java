@@ -16,8 +16,10 @@
  */
 package org.neo4j.driver.internal.summary;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.function.Function;
@@ -31,7 +33,7 @@ public class InternalProfile extends InternalPlan<Profile> implements Profile {
     private final OptionalLong pageCacheHits;
     private final OptionalLong pageCacheMisses;
     private final OptionalDouble pageCacheHitRatio;
-    private final OptionalLong time;
+    private final Optional<Duration> time;
 
     protected InternalProfile(
             String operatorType,
@@ -43,7 +45,7 @@ public class InternalProfile extends InternalPlan<Profile> implements Profile {
             OptionalLong pageCacheHits,
             OptionalLong pageCacheMisses,
             OptionalDouble pageCacheHitRatio,
-            OptionalLong time) {
+            Optional<Duration> time) {
         super(operatorType, arguments, identifiers, children);
         this.dbHits = dbHits;
         this.rows = rows;
@@ -79,7 +81,7 @@ public class InternalProfile extends InternalPlan<Profile> implements Profile {
     }
 
     @Override
-    public OptionalLong time() {
+    public Optional<Duration> time() {
         return time;
     }
 
@@ -106,7 +108,7 @@ public class InternalProfile extends InternalPlan<Profile> implements Profile {
                             .computeOrDefault(v -> OptionalDouble.of(v.asDouble()), OptionalDouble.empty()),
                     originalPlanValue
                             .get("time")
-                            .computeOrDefault(v -> OptionalLong.of(v.asLong()), OptionalLong.empty()));
+                            .computeOrDefault(v -> Optional.of(Duration.ofNanos(v.asLong())), Optional.empty()));
 
     /**
      * Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` query

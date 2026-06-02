@@ -956,7 +956,13 @@
     <difference>
         <className>org/neo4j/driver/summary/ResultSummary</className>
         <differenceType>7012</differenceType>
-        <method>org.neo4j.driver.summary.Profile queryProfile()</method>
+        <method>java.util.Optional queryPlan()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/ResultSummary</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.Optional queryProfile()</method>
     </difference>
 
 </differences>

@@ -17,6 +17,7 @@
 package org.neo4j.driver.summary;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.Query;
@@ -60,21 +61,27 @@ public interface ResultSummary {
      * Returns {@code true} if the result contained a query plan, i.e. is the summary of a Cypher "PROFILE" or "EXPLAIN" query.
      *
      * @return {@code true} if the result contained a query plan, i.e. is the summary of a Cypher "PROFILE" or "EXPLAIN" query
+     * @deprecated use {@link ResultSummary#queryPlan()}{@link Optional#isPresent() .isPresent()} instead.
      */
+    @Deprecated
     boolean hasPlan();
 
     /**
      * Returns {@code true} if the result contained profiling information, i.e. is the summary of a Cypher "PROFILE" query.
      *
      * @return {@code true} if the result contained profiling information, i.e. is the summary of a Cypher "PROFILE" query
+     * @deprecated use {@link ResultSummary#queryProfile()}{@link Optional#isPresent() .isPresent()} instead.
      */
+    @Deprecated
     boolean hasProfile();
 
     /**
      * This describes how the database will execute your query.
      *
      * @return query plan for the executed query if available, otherwise null
+     * @deprecated superseded by {@link ResultSummary#queryPlan()}.
      */
+    @Deprecated
     Plan plan();
 
     /**
@@ -91,16 +98,27 @@ public interface ResultSummary {
     ProfiledPlan profile();
 
     /**
-     * This describes how the database did execute your query.
-     * <p>
-     * If the query you executed {@link #hasProfile() was profiled}, the query plan will contain detailed
-     * information about what each step of the plan did. That more in-depth version of the query plan becomes
-     * available here.
+     * This describes how the database will execute your query.
      *
-     * @return profiled query plan for the executed query if available, otherwise null
+     * @return query plan for the executed query if available
      * @since 6.2.0
      */
-    Profile queryProfile();
+    default Optional<Plan> queryPlan() {
+        return Optional.empty();
+    }
+
+    /**
+     * This describes how the database did execute your query.
+     * <p>
+     * If the query you executed was profiled, the query plan will contain detailed information about
+     * what each step of the plan did. That more in-depth version of the query plan becomes available here.
+     *
+     * @return profiled query plan for the executed query if available
+     * @since 6.2.0
+     */
+    default Optional<Profile> queryProfile() {
+        return Optional.empty();
+    }
 
     /**
      * A list of notifications that might arise when executing the query.

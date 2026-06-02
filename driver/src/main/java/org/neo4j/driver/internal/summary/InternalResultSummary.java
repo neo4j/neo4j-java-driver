@@ -18,6 +18,7 @@ package org.neo4j.driver.internal.summary;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.Query;
@@ -95,16 +96,19 @@ public class InternalResultSummary implements ResultSummary {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public boolean hasPlan() {
         return plan != null;
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public boolean hasProfile() {
         return profile != null;
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Plan plan() {
         return plan;
     }
@@ -116,8 +120,13 @@ public class InternalResultSummary implements ResultSummary {
     }
 
     @Override
-    public Profile queryProfile() {
-        return profile;
+    public Optional<Plan> queryPlan() {
+        return Optional.ofNullable(plan);
+    }
+
+    @Override
+    public Optional<Profile> queryProfile() {
+        return Optional.ofNullable(profile);
     }
 
     @SuppressWarnings("deprecation")
