@@ -16,6 +16,7 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Arrays;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.neo4j.driver.types.Float32Vector;
@@ -33,5 +34,10 @@ public final class InternalFloat32Vector extends AbstractArrayVector<float[]> im
     @Override
     protected String neo4jElementType() {
         return "FLOAT32";
+    }
+
+    @Override
+    int elementsHashCode() {
+        return Arrays.hashCode(elements);
     }
 }

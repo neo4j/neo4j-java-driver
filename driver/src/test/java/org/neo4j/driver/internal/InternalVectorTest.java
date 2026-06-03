@@ -16,12 +16,12 @@
  */
 package org.neo4j.driver.internal;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class InternalVectorTest {
 
@@ -34,11 +34,12 @@ class InternalVectorTest {
 
     private static Stream<Arguments> vectors() {
         return Stream.of(
-                Arguments.of(new InternalInt8Vector(new byte[] {1, 2, 3}), new InternalInt8Vector(new byte[] {1, 2, 3})),
                 Arguments.of(
-                        new InternalInt16Vector(new short[] {1, 2, 3}),
-                        new InternalInt16Vector(new short[] {1, 2, 3})),
-                Arguments.of(new InternalInt32Vector(new int[] {1, 2, 3}), new InternalInt32Vector(new int[] {1, 2, 3})),
+                        new InternalInt8Vector(new byte[] {1, 2, 3}), new InternalInt8Vector(new byte[] {1, 2, 3})),
+                Arguments.of(
+                        new InternalInt16Vector(new short[] {1, 2, 3}), new InternalInt16Vector(new short[] {1, 2, 3})),
+                Arguments.of(
+                        new InternalInt32Vector(new int[] {1, 2, 3}), new InternalInt32Vector(new int[] {1, 2, 3})),
                 Arguments.of(
                         new InternalInt64Vector(new long[] {1L, 2L, 3L}),
                         new InternalInt64Vector(new long[] {1L, 2L, 3L})),

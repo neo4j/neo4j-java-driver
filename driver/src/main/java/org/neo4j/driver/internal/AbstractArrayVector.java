@@ -17,7 +17,6 @@
 package org.neo4j.driver.internal;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,7 +66,7 @@ public abstract class AbstractArrayVector<T> implements Vector {
 
     @Override
     public int hashCode() {
-        return Objects.hash(elementType, length, arrayHashCode(elements));
+        return Objects.hash(elementType, length, elementsHashCode());
     }
 
     @Override
@@ -83,15 +82,5 @@ public abstract class AbstractArrayVector<T> implements Vector {
         return result;
     }
 
-    private static int arrayHashCode(Object array) {
-        if (array instanceof byte[] value) return Arrays.hashCode(value);
-        if (array instanceof short[] value) return Arrays.hashCode(value);
-        if (array instanceof int[] value) return Arrays.hashCode(value);
-        if (array instanceof long[] value) return Arrays.hashCode(value);
-        if (array instanceof float[] value) return Arrays.hashCode(value);
-        if (array instanceof double[] value) return Arrays.hashCode(value);
-        if (array instanceof char[] value) return Arrays.hashCode(value);
-        if (array instanceof boolean[] value) return Arrays.hashCode(value);
-        return Arrays.deepHashCode((Object[]) array);
-    }
+    abstract int elementsHashCode();
 }

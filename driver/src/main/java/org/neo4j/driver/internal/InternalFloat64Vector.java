@@ -34,4 +34,9 @@ public final class InternalFloat64Vector extends AbstractArrayVector<double[]> i
     protected String neo4jElementType() {
         return "FLOAT";
     }
+
+    @Override
+    int elementsHashCode() {
+        return Arrays.hashCode(elements);
+    }
 }
