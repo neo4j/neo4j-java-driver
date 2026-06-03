@@ -28,13 +28,13 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.driver.testutil.TestUtil;
-import org.testcontainers.containers.Neo4jContainer;
+import org.testcontainers.neo4j.Neo4jContainer;
 
 public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEachCallback, AfterAllCallback {
     private static final String CLUSTER_URI_SYSTEM_PROPERTY_NAME = "externalClusterUri";
     private static final String NEO4J_USER_PASSWORD_PROPERTY_NAME = "neo4jUserPassword";
 
-    private Neo4jContainer<?> neo4jContainer;
+    private Neo4jContainer neo4jContainer;
     private URI clusterUri;
 
     public LocalOrRemoteClusterExtension() {
@@ -61,7 +61,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
         } else {
             var neo4JVersion =
                     Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
-            neo4jContainer = new Neo4jContainer<>(String.format("neo4j:%s-enterprise", neo4JVersion))
+            neo4jContainer = new Neo4jContainer(String.format("neo4j:%s-enterprise", neo4JVersion))
                     .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes");
             neo4jContainer.start();
 
