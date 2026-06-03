@@ -23,7 +23,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.net.ServerAddress;
-import org.testcontainers.containers.Neo4jContainer;
+import org.testcontainers.neo4j.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -43,7 +43,7 @@ class RoutingExamplesIT {
 
     @Container
     @SuppressWarnings("resource")
-    private static final Neo4jContainer<?> NEO4J_CONTAINER = new Neo4jContainer<>(
+    private static final Neo4jContainer NEO4J_CONTAINER = new Neo4jContainer(
                     String.format("neo4j:%s-enterprise", NEO4J_VERSION))
             .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
             // in this testing deployment the server runs inside a container and its Bolt port is exposed to the test(s)

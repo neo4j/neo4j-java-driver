@@ -79,7 +79,8 @@ public class GetFeatures implements TestkitRequest {
             "Feature:API:Driver:MaxConnectionLifetime",
             "Optimization:HomeDatabaseCache",
             "Feature:Bolt:HandshakeManifestV1",
-            "Feature:API:Type.UnsupportedType"));
+            "Feature:API:Type.UnsupportedType",
+            "Feature:IdempotentRetries"));
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:3.0",

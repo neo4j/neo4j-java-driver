@@ -119,6 +119,7 @@ class ParametersTest {
                 false,
                 mock(AuthTokenManager.class),
                 mock(),
+                false,
                 NoopObservationProvider.getInstance());
         return new InternalSession(session, NoopObservationProvider.getInstance());
     }

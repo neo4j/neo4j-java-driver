@@ -40,14 +40,14 @@ class InternalNotificationTest {
         return Arrays.stream(NotificationClassification.values())
                 .map(notificationClassification -> switch (notificationClassification) {
                     case HINT -> Arguments.of(notificationClassification.toString(), NotificationCategory.HINT);
-                    case UNRECOGNIZED -> Arguments.of(
-                            notificationClassification.toString(), NotificationCategory.UNRECOGNIZED);
-                    case UNSUPPORTED -> Arguments.of(
-                            notificationClassification.toString(), NotificationCategory.UNSUPPORTED);
-                    case PERFORMANCE -> Arguments.of(
-                            notificationClassification.toString(), NotificationCategory.PERFORMANCE);
-                    case DEPRECATION -> Arguments.of(
-                            notificationClassification.toString(), NotificationCategory.DEPRECATION);
+                    case UNRECOGNIZED ->
+                        Arguments.of(notificationClassification.toString(), NotificationCategory.UNRECOGNIZED);
+                    case UNSUPPORTED ->
+                        Arguments.of(notificationClassification.toString(), NotificationCategory.UNSUPPORTED);
+                    case PERFORMANCE ->
+                        Arguments.of(notificationClassification.toString(), NotificationCategory.PERFORMANCE);
+                    case DEPRECATION ->
+                        Arguments.of(notificationClassification.toString(), NotificationCategory.DEPRECATION);
                     case SECURITY -> Arguments.of(notificationClassification.toString(), NotificationCategory.SECURITY);
                     case TOPOLOGY -> Arguments.of(notificationClassification.toString(), NotificationCategory.TOPOLOGY);
                     case GENERIC -> Arguments.of(notificationClassification.toString(), NotificationCategory.GENERIC);

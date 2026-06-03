@@ -234,6 +234,7 @@ public final class TestUtil {
                 telemetryDisabled,
                 mock(AuthTokenManager.class),
                 mock(),
+                false,
                 NoopObservationProvider.getInstance());
     }
 

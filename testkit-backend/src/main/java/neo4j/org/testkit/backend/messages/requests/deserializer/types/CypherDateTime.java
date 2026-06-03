@@ -65,7 +65,8 @@ public class CypherDateTime implements CypherType {
     }
 
     private ZonedDateTime getZonedDateTime() {
-        var dateTime = ZonedDateTime.of(year, month, day, hour, minute, second, nano, ZoneId.of(zoneId));
+        var localDateTime = LocalDateTime.of(year, month, day, hour, minute, second, nano);
+        var dateTime = ZonedDateTime.ofLocal(localDateTime, ZoneId.of(zoneId), ZoneOffset.ofTotalSeconds(offset));
         if (dateTime.getOffset().getTotalSeconds() != offset) {
             throw new RuntimeException(String.format(
                     "TestKit's and driver's tz info diverge. "

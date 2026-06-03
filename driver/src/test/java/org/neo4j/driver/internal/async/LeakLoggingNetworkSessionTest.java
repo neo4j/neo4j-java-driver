@@ -171,6 +171,7 @@ class LeakLoggingNetworkSessionTest {
                 true,
                 AuthTokenManagers.basic(AuthTokens::none),
                 mock(),
+                false,
                 NoopObservationProvider.getInstance());
     }
 

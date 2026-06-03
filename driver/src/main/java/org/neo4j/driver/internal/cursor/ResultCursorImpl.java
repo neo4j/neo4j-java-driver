@@ -216,13 +216,14 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                                 GqlStatusError.DIAGNOSTIC_RECORD,
                                 null));
                     }
-                    case FAILED -> stageExposingError(METADATA_EXTRACTOR.extractSummary(
-                            query,
-                            boltConnection,
-                            runSummary.resultAvailableAfter(),
-                            Collections.emptyMap(),
-                            legacyNotifications,
-                            null));
+                    case FAILED ->
+                        stageExposingError(METADATA_EXTRACTOR.extractSummary(
+                                query,
+                                boltConnection,
+                                runSummary.resultAvailableAfter(),
+                                Collections.emptyMap(),
+                                legacyNotifications,
+                                null));
                     case SUCCEEDED -> CompletableFuture.completedStage(summary);
                 };
         var future = new CompletableFuture<ResultSummary>();
@@ -486,13 +487,16 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                             GqlStatusError.DIAGNOSTIC_RECORD,
                             null));
                 }
-                case FAILED -> stageExposingError(null).thenApply(ignored -> {
-                    throw new NoSuchRecordException("Cannot retrieve a single record, because this result is empty.");
-                });
-                case SUCCEEDED -> records.size() == 1
-                        ? CompletableFuture.completedFuture(records.poll())
-                        : CompletableFuture.failedStage(new NoSuchRecordException(
-                                "Cannot retrieve a single record, because this result is empty."));
+                case FAILED ->
+                    stageExposingError(null).thenApply(ignored -> {
+                        throw new NoSuchRecordException(
+                                "Cannot retrieve a single record, because this result is empty.");
+                    });
+                case SUCCEEDED ->
+                    records.size() == 1
+                            ? CompletableFuture.completedFuture(records.poll())
+                            : CompletableFuture.failedStage(new NoSuchRecordException(
+                                    "Cannot retrieve a single record, because this result is empty."));
             };
         }
     }
@@ -519,10 +523,11 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                 });
             }
             case FAILED -> listAsync().thenApply(ignored -> null);
-            case SUCCEEDED -> listAsync().thenApply(list -> {
-                list.forEach(action);
-                return summary;
-            });
+            case SUCCEEDED ->
+                listAsync().thenApply(list -> {
+                    list.forEach(action);
+                    return summary;
+                });
         };
     }
 
