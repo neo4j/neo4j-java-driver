@@ -40,4 +40,9 @@ public final class InternalInt8Vector extends AbstractArrayVector<byte[]> implem
     int elementsHashCode() {
         return Arrays.hashCode(elements);
     }
+
+    @Override
+    boolean elementsEquals(Object other) {
+        return Arrays.equals(elements, ((InternalInt8Vector) other).elements);
+    }
 }

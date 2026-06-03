@@ -59,9 +59,7 @@ public abstract class AbstractArrayVector<T> implements Vector {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         var that = (AbstractArrayVector<?>) o;
-        return length == that.length
-                && Objects.equals(elementType, that.elementType)
-                && Objects.deepEquals(elements, that.elements);
+        return length == that.length && Objects.equals(elementType, that.elementType) && elementsEquals(o);
     }
 
     @Override
@@ -83,4 +81,6 @@ public abstract class AbstractArrayVector<T> implements Vector {
     }
 
     abstract int elementsHashCode();
+
+    abstract boolean elementsEquals(Object other);
 }

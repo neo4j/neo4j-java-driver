@@ -40,4 +40,9 @@ public final class InternalFloat32Vector extends AbstractArrayVector<float[]> im
     int elementsHashCode() {
         return Arrays.hashCode(elements);
     }
+
+    @Override
+    boolean elementsEquals(Object other) {
+        return Arrays.equals(elements, ((InternalFloat32Vector) other).elements);
+    }
 }

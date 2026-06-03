@@ -40,4 +40,9 @@ public final class InternalInt16Vector extends AbstractArrayVector<short[]> impl
     int elementsHashCode() {
         return Arrays.hashCode(elements);
     }
+
+    @Override
+    boolean elementsEquals(Object other) {
+        return Arrays.equals(elements, ((InternalInt16Vector) other).elements);
+    }
 }

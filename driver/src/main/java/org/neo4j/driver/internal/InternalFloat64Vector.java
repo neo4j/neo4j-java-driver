@@ -39,4 +39,9 @@ public final class InternalFloat64Vector extends AbstractArrayVector<double[]> i
     int elementsHashCode() {
         return Arrays.hashCode(elements);
     }
+
+    @Override
+    boolean elementsEquals(Object other) {
+        return Arrays.equals(elements, ((InternalFloat64Vector) other).elements);
+    }
 }

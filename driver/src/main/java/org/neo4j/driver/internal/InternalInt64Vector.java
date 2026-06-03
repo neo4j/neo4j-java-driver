@@ -39,4 +39,9 @@ public final class InternalInt64Vector extends AbstractArrayVector<long[]> imple
     int elementsHashCode() {
         return Arrays.hashCode(elements);
     }
+
+    @Override
+    boolean elementsEquals(Object other) {
+        return Arrays.equals(elements, ((InternalInt64Vector) other).elements);
+    }
 }
