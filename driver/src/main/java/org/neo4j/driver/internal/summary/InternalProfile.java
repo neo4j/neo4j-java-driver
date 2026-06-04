@@ -28,24 +28,24 @@ import org.neo4j.driver.summary.Profile;
 
 public class InternalProfile extends InternalPlan<Profile> implements Profile {
 
-    private final OptionalLong dbHits;
-    private final OptionalLong rows;
-    private final OptionalLong pageCacheHits;
-    private final OptionalLong pageCacheMisses;
-    private final OptionalDouble pageCacheHitRatio;
-    private final Optional<Duration> time;
+    private final Long dbHits;
+    private final Long rows;
+    private final Long pageCacheHits;
+    private final Long pageCacheMisses;
+    private final Double pageCacheHitRatio;
+    private final Duration time;
 
     protected InternalProfile(
             String operatorType,
             Map<String, Value> arguments,
             List<String> identifiers,
             List<Profile> children,
-            OptionalLong dbHits,
-            OptionalLong rows,
-            OptionalLong pageCacheHits,
-            OptionalLong pageCacheMisses,
-            OptionalDouble pageCacheHitRatio,
-            Optional<Duration> time) {
+            Long dbHits,
+            Long rows,
+            Long pageCacheHits,
+            Long pageCacheMisses,
+            Double pageCacheHitRatio,
+            Duration time) {
         super(operatorType, arguments, identifiers, children);
         this.dbHits = dbHits;
         this.rows = rows;
@@ -57,32 +57,32 @@ public class InternalProfile extends InternalPlan<Profile> implements Profile {
 
     @Override
     public OptionalLong dbHits() {
-        return dbHits;
+        return dbHits == null ? OptionalLong.empty() : OptionalLong.of(dbHits);
     }
 
     @Override
     public OptionalLong rows() {
-        return rows;
+        return rows == null ? OptionalLong.empty() : OptionalLong.of(rows);
     }
 
     @Override
     public OptionalLong pageCacheHits() {
-        return pageCacheHits;
+        return pageCacheHits == null ? OptionalLong.empty() : OptionalLong.of(pageCacheHits);
     }
 
     @Override
     public OptionalLong pageCacheMisses() {
-        return pageCacheMisses;
+        return pageCacheMisses == null ? OptionalLong.empty() : OptionalLong.of(pageCacheMisses);
     }
 
     @Override
     public OptionalDouble pageCacheHitRatio() {
-        return pageCacheHitRatio;
+        return pageCacheHitRatio == null ? OptionalDouble.empty() : OptionalDouble.of(pageCacheHitRatio);
     }
 
     @Override
     public Optional<Duration> time() {
-        return time;
+        return Optional.ofNullable(time);
     }
 
     private static final PlanCreator<Profile> PROFILE =
@@ -91,24 +91,12 @@ public class InternalProfile extends InternalPlan<Profile> implements Profile {
                     arguments,
                     identifiers,
                     children,
-                    originalPlanValue
-                            .get("dbHits")
-                            .computeOrDefault(v -> OptionalLong.of(v.asLong()), OptionalLong.empty()),
-                    originalPlanValue
-                            .get("rows")
-                            .computeOrDefault(v -> OptionalLong.of(v.asLong()), OptionalLong.empty()),
-                    originalPlanValue
-                            .get("pageCacheHits")
-                            .computeOrDefault(v -> OptionalLong.of(v.asLong()), OptionalLong.empty()),
-                    originalPlanValue
-                            .get("pageCacheMisses")
-                            .computeOrDefault(v -> OptionalLong.of(v.asLong()), OptionalLong.empty()),
-                    originalPlanValue
-                            .get("pageCacheHitRatio")
-                            .computeOrDefault(v -> OptionalDouble.of(v.asDouble()), OptionalDouble.empty()),
-                    originalPlanValue
-                            .get("time")
-                            .computeOrDefault(v -> Optional.of(Duration.ofNanos(v.asLong())), Optional.empty()));
+                    originalPlanValue.get("dbHits").computeOrDefault(Value::asLong, null),
+                    originalPlanValue.get("rows").computeOrDefault(Value::asLong, null),
+                    originalPlanValue.get("pageCacheHits").computeOrDefault(Value::asLong, null),
+                    originalPlanValue.get("pageCacheMisses").computeOrDefault(Value::asLong, null),
+                    originalPlanValue.get("pageCacheHitRatio").computeOrDefault(Value::asDouble, null),
+                    originalPlanValue.get("time").computeOrDefault(v -> Duration.ofNanos(v.asLong()), null));
 
     /**
      * Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` query

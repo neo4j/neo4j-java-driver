@@ -39,10 +39,6 @@ public class InternalResultSummary implements ResultSummary {
     private final QueryType queryType;
     private final SummaryCounters counters;
     private final Plan plan;
-
-    @SuppressWarnings("deprecation")
-    private final ProfiledPlan profiledPlan;
-
     private final Profile profile;
 
     @SuppressWarnings("deprecation")
@@ -60,7 +56,6 @@ public class InternalResultSummary implements ResultSummary {
             QueryType queryType,
             SummaryCounters counters,
             Plan plan,
-            @SuppressWarnings("deprecation") ProfiledPlan profiledPlan,
             Profile profile,
             @SuppressWarnings("deprecation") List<Notification> notifications,
             Set<GqlStatusObject> gqlStatusObjects,
@@ -72,7 +67,6 @@ public class InternalResultSummary implements ResultSummary {
         this.queryType = queryType;
         this.counters = counters;
         this.plan = resolvePlan(plan, profile);
-        this.profiledPlan = profiledPlan;
         this.profile = profile;
         this.notifications = Objects.requireNonNull(notifications);
         this.gqlStatusObjects = Objects.requireNonNull(gqlStatusObjects);
@@ -116,7 +110,7 @@ public class InternalResultSummary implements ResultSummary {
     @Override
     @SuppressWarnings("deprecation")
     public ProfiledPlan profile() {
-        return profiledPlan;
+        return InternalProfiledPlan.wrapProfile(profile);
     }
 
     @Override
@@ -192,7 +186,7 @@ public class InternalResultSummary implements ResultSummary {
                 queryType,
                 counters,
                 plan,
-                profiledPlan,
+                profile,
                 gqlStatusObjects,
                 resultAvailableAfter,
                 resultConsumedAfter);

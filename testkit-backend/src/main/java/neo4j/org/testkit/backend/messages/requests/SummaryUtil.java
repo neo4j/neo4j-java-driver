@@ -20,9 +20,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -120,7 +117,7 @@ public class SummaryUtil {
                 .notifications(notifications)
                 .gqlStatusObjects(gqlStatusObjects)
                 .plan(toPlan(summary.plan()))
-                .profile(toOptionalProfile(summary.queryProfile()))
+                .profile(summary.queryProfile().map(SummaryUtil::toProfile).orElse(null))
                 .queryType(toQueryType(summary.queryType()))
                 .resultAvailableAfter(
                         summary.resultAvailableAfter(TimeUnit.MILLISECONDS) == -1
@@ -158,10 +155,6 @@ public class SummaryUtil {
                 .build();
     }
 
-    private static Summary.Profile toOptionalProfile(Optional<Profile> profile) {
-        return profile.map(SummaryUtil::toProfile).orElse(null);
-    }
-
     private static Summary.Profile toProfile(Profile profile) {
         Map<String, Object> args = new HashMap<>();
         profile.arguments().forEach((key, value) -> args.put(key, value.asObject()));
@@ -169,27 +162,18 @@ public class SummaryUtil {
                 .operatorType(profile.operatorType())
                 .args(args)
                 .identifiers(profile.identifiers())
-                .dbHits(boxOptionalLong(profile.dbHits()))
-                .rows(boxOptionalLong(profile.rows()))
-                .pageCacheHits(boxOptionalLong(profile.pageCacheHits()))
-                .pageCacheMisses(boxOptionalLong(profile.pageCacheMisses()))
-                .pageCacheHitRatio(boxOptionalDouble(profile.pageCacheHitRatio()))
-                .time(boxOptionalProfileTime(profile.time()))
+                .dbHits(profile.dbHits().stream().boxed().findFirst().orElse(null))
+                .rows(profile.rows().stream().boxed().findFirst().orElse(null))
+                .pageCacheHits(
+                        profile.pageCacheHits().stream().boxed().findFirst().orElse(null))
+                .pageCacheMisses(
+                        profile.pageCacheMisses().stream().boxed().findFirst().orElse(null))
+                .pageCacheHitRatio(
+                        profile.pageCacheHitRatio().stream().boxed().findFirst().orElse(null))
+                .time(profile.time().map(Duration::toNanos).orElse(null))
                 .children(
                         profile.children().stream().map(SummaryUtil::toProfile).collect(Collectors.toList()))
                 .build();
-    }
-
-    private static Long boxOptionalLong(OptionalLong value) {
-        return value.isPresent() ? value.getAsLong() : null;
-    }
-
-    private static Double boxOptionalDouble(OptionalDouble value) {
-        return value.isPresent() ? value.getAsDouble() : null;
-    }
-
-    private static Long boxOptionalProfileTime(Optional<Duration> value) {
-        return value.isPresent() ? value.get().toNanos() : null;
     }
 
     private static String toQueryType(QueryType type) {

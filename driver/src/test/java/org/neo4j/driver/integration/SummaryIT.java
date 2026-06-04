@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.SessionConfig.forDatabase;
@@ -81,6 +82,12 @@ class SummaryIT {
         assertThat(summary.queryType(), equalTo(QueryType.READ_ONLY));
         assertThat(summary.query().text(), equalTo(query));
         assertThat(summary.query().parameters(), equalTo(parameters));
+        @SuppressWarnings("deprecation")
+        var hasPlan = summary.hasPlan();
+        assertFalse(hasPlan);
+        @SuppressWarnings("deprecation")
+        var hasProfile = summary.hasProfile();
+        assertFalse(hasProfile);
         assertTrue(summary.queryPlan().isEmpty());
         assertTrue(summary.queryProfile().isEmpty());
         assertThat(summary, equalTo(result.consume()));

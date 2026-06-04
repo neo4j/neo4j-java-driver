@@ -16,14 +16,15 @@
  */
 package org.neo4j.driver.internal.summary;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.summary.Profile;
 import org.neo4j.driver.summary.ProfiledPlan;
 
 @SuppressWarnings("deprecation")
-public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements ProfiledPlan {
+public class InternalProfiledPlan extends InternalPlan<InternalProfiledPlan> implements ProfiledPlan {
     private final long dbHits;
     private final long records;
     private final long pageCacheHits;
@@ -35,7 +36,7 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
             String operatorType,
             Map<String, Value> arguments,
             List<String> identifiers,
-            List<ProfiledPlan> children,
+            List<InternalProfiledPlan> children,
             long dbHits,
             long records,
             long pageCacheHits,
@@ -86,21 +87,22 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
         return time;
     }
 
-    private static final PlanCreator<ProfiledPlan> PROFILED_PLAN =
-            (operatorType, arguments, identifiers, children, originalPlanValue) -> new InternalProfiledPlan(
-                    operatorType,
-                    arguments,
-                    identifiers,
-                    children,
-                    originalPlanValue.get("dbHits").asLong(0),
-                    originalPlanValue.get("rows").asLong(0),
-                    originalPlanValue.get("pageCacheHits").asLong(0),
-                    originalPlanValue.get("pageCacheMisses").asLong(0),
-                    originalPlanValue.get("pageCacheHitRatio").asDouble(0),
-                    originalPlanValue.get("time").asLong(0));
-
-    /**
-     * Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` query
-     */
-    public static final Function<Value, ProfiledPlan> PROFILED_PLAN_FROM_VALUE = new Converter<>(PROFILED_PLAN);
+    protected static InternalProfiledPlan wrapProfile(Profile profile) {
+        if (profile == null) {
+            return null;
+        }
+        return new InternalProfiledPlan(
+                profile.operatorType(),
+                profile.arguments(),
+                profile.identifiers(),
+                profile.children().stream()
+                        .map(InternalProfiledPlan::wrapProfile)
+                        .toList(),
+                profile.dbHits().orElse(0L),
+                profile.rows().orElse(0L),
+                profile.pageCacheHits().orElse(0L),
+                profile.pageCacheMisses().orElse(0L),
+                profile.pageCacheHitRatio().orElse(0.0),
+                profile.time().map(Duration::toNanos).orElse(0L));
+    }
 }

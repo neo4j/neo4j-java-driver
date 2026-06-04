@@ -76,5 +76,5 @@ public interface ProfiledPlan extends Plan {
     long time();
 
     @Override
-    List<ProfiledPlan> children();
+    List<? extends ProfiledPlan> children();
 }

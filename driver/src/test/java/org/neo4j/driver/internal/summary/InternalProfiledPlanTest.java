@@ -43,7 +43,8 @@ class InternalProfiledPlanTest {
         Value value = new MapValue(createPlanMap());
 
         // WHEN
-        var plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(value);
+        @SuppressWarnings("deprecation")
+        var plan = loadProfiledPlan(value);
 
         // THEN
         verifyPlan(plan);
@@ -58,7 +59,7 @@ class InternalProfiledPlanTest {
 
         // WHEN
         @SuppressWarnings("deprecation")
-        var plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(value);
+        var plan = loadProfiledPlan(value);
 
         // THEN
         @SuppressWarnings("deprecation")
@@ -96,5 +97,13 @@ class InternalProfiledPlanTest {
         assertThat(plan.identifiers(), equalTo(asList("n1", "n2")));
         assertThat(plan.arguments().values(), hasItem(new StringValue("CYPHER 1337")));
         assertThat(plan.children(), empty());
+    }
+
+    @SuppressWarnings("deprecation")
+    private InternalProfiledPlan loadProfiledPlan(Value value) {
+        var profile = InternalProfile.PROFILE_FROM_VALUE.apply(value);
+        @SuppressWarnings("deprecation")
+        var profiledPlan = InternalProfiledPlan.wrapProfile(profile);
+        return profiledPlan;
     }
 }
