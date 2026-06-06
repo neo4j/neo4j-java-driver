@@ -58,7 +58,8 @@ public enum TypeConstructor {
     DURATION,
     NULL,
     VECTOR,
-    UNSUPPORTED;
+    UNSUPPORTED,
+    UUID;
 
     private static TypeConstructor typeConstructorOf(Value value) {
         return ((InternalValue) value).typeConstructor();

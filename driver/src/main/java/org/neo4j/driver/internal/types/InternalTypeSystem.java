@@ -37,6 +37,7 @@ import static org.neo4j.driver.internal.types.TypeConstructor.RELATIONSHIP;
 import static org.neo4j.driver.internal.types.TypeConstructor.STRING;
 import static org.neo4j.driver.internal.types.TypeConstructor.TIME;
 import static org.neo4j.driver.internal.types.TypeConstructor.UNSUPPORTED;
+import static org.neo4j.driver.internal.types.TypeConstructor.UUID;
 import static org.neo4j.driver.internal.types.TypeConstructor.VECTOR;
 
 import org.neo4j.driver.Value;
@@ -74,6 +75,7 @@ public class InternalTypeSystem implements TypeSystem {
     private final TypeRepresentation nullType = constructType(NULL);
     private final TypeRepresentation vectorType = constructType(VECTOR);
     private final TypeRepresentation unsupportedType = constructType(UNSUPPORTED);
+    private final TypeRepresentation uuidType = constructType(UUID);
 
     private InternalTypeSystem() {}
 
@@ -185,6 +187,11 @@ public class InternalTypeSystem implements TypeSystem {
     @Override
     public Type UNSUPPORTED() {
         return unsupportedType;
+    }
+
+    @Override
+    public Type UUID() {
+        return uuidType;
     }
 
     private TypeRepresentation constructType(TypeConstructor tyCon) {
