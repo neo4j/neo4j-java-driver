@@ -46,6 +46,8 @@ public class TestkitValueSerializer extends StdSerializer<Value> {
             cypherObject(gen, "CypherFloat", value.asDouble());
         } else if (InternalTypeSystem.TYPE_SYSTEM.STRING().isTypeOf(value)) {
             cypherObject(gen, "CypherString", value.asString());
+        } else if (InternalTypeSystem.TYPE_SYSTEM.UUID().isTypeOf(value)) {
+            cypherObject(gen, "CypherUUID", value.asUUID());
         }
     }
 }

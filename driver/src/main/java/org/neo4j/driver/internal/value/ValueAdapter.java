@@ -28,6 +28,7 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import org.neo4j.bolt.connection.values.Vector;
 import org.neo4j.driver.Value;
@@ -314,6 +315,11 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     @Override
     public UnsupportedType asUnsupportedType() {
         throw new Uncoercible(type().name(), "UnsupportedType");
+    }
+
+    @Override
+    public UUID asUUID() {
+        throw new Uncoercible(type().name(), "UUID");
     }
 
     @Override

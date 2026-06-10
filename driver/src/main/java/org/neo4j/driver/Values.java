@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -67,6 +68,7 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
+import org.neo4j.driver.internal.value.UUIDValue;
 import org.neo4j.driver.internal.value.UnsupportedTypeValue;
 import org.neo4j.driver.internal.value.VectorValue;
 import org.neo4j.driver.mapping.Property;
@@ -186,6 +188,9 @@ public final class Values {
         }
         if (value instanceof UnsupportedType) {
             return value((UnsupportedType) value);
+        }
+        if (value instanceof UUID) {
+            return value((UUID) value);
         }
 
         if (value instanceof List<?>) {
@@ -734,6 +739,17 @@ public final class Values {
      */
     private static Value value(Point point) {
         return new PointValue(point);
+    }
+
+    /**
+     * Returns a value from {@link UUID}.
+     *
+     * @param val the UUID value
+     * @return the value
+     * @since 6.2.0
+     */
+    public static Value value(UUID val) {
+        return new UUIDValue(val);
     }
 
     /**

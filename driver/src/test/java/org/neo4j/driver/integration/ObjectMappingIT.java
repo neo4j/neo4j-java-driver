@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
@@ -80,6 +81,7 @@ final class ObjectMappingIT {
         var point3d = (Point) new InternalPoint3D(0, 0, 0, 0);
         var vector = new InternalFloat64Vector(new double[] {0.0, 100.0});
         var unsupportedType = new InternalUnsupportedType("name", "99.99", "message");
+        var uuid = UUID.randomUUID();
 
         var properties = Map.ofEntries(
                 Map.entry("string", Values.value(string)),
@@ -105,7 +107,8 @@ final class ObjectMappingIT {
                 Map.entry("point2d", Values.value(point2d)),
                 Map.entry("point3d", Values.value(point3d)),
                 Map.entry("vector", Values.value(vector)),
-                Map.entry("unsupportedType", Values.value(unsupportedType)));
+                Map.entry("unsupportedType", Values.value(unsupportedType)),
+                Map.entry("uuid", Values.value(uuid)));
 
         // when
         var valueHolder = valueFunction.apply(properties);
@@ -130,6 +133,7 @@ final class ObjectMappingIT {
         assertEquals(point3d, valueHolder.point3d());
         assertEquals(vector, valueHolder.vector());
         assertEquals(unsupportedType, valueHolder.unsupportedType());
+        assertEquals(uuid, valueHolder.uuid());
     }
 
     static Stream<Arguments> shouldMapValueArgs() {
@@ -173,7 +177,8 @@ final class ObjectMappingIT {
             Point point2d,
             Point point3d,
             Float64Vector vector,
-            UnsupportedType unsupportedType) {}
+            UnsupportedType unsupportedType,
+            UUID uuid) {}
 
     public record StringValueHolder(String string) {}
 

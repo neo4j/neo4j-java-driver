@@ -45,6 +45,7 @@ public class GetFeatures implements TestkitRequest {
             "Feature:Bolt:5.7",
             "Feature:Bolt:5.8",
             "Feature:Bolt:6.0",
+            "Feature:Bolt:6.1",
             "AuthorizationExpiredTreatment",
             "ConfHint:connection.recv_timeout_seconds",
             "Feature:Auth:Bearer",
@@ -79,7 +80,8 @@ public class GetFeatures implements TestkitRequest {
             "Optimization:HomeDatabaseCache",
             "Feature:Bolt:HandshakeManifestV1",
             "Feature:API:Type.UnsupportedType",
-            "Feature:IdempotentRetries"));
+            "Feature:IdempotentRetries",
+            "Feature:API:Type.UUID"));
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:3.0",
