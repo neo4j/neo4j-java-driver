@@ -26,6 +26,7 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.value.LossyCoercion;
@@ -515,6 +516,15 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     UnsupportedType asUnsupportedType();
 
     /**
+     * Returns the value as a {@link UUID}, if possible.
+     *
+     * @return the value as a {@link UUID}, if possible
+     * @throws Uncoercible if value types are incompatible
+     * @since 6.2.0
+     */
+    UUID asUUID();
+
+    /**
      * Returns the value as a {@link LocalDate}, if possible.
      *
      * @param defaultValue default to this value if the value is a {@link NullValue}
@@ -706,6 +716,10 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
      *         <tr>
      *             <td>{@link TypeSystem#UNSUPPORTED}</td>
      *             <td>{@link UnsupportedType}</td>
+     *         </tr>
+     *         <tr>
+     *             <td>{@link TypeSystem#UUID()}</td>
+     *             <td>{@link UUID}</td>
      *         </tr>
      *     </tbody>
      * </table>

@@ -178,4 +178,12 @@ public interface TypeSystem {
      * @see UnsupportedType
      */
     Type UNSUPPORTED();
+
+    /**
+     * Returns a {@link Type} instance representing a UUID type.
+     *
+     * @return the type instance
+     * @since 6.2.0
+     */
+    Type UUID();
 }

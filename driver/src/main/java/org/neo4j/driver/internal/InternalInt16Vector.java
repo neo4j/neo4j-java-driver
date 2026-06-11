@@ -16,6 +16,7 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Arrays;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.neo4j.driver.types.Int16Vector;
@@ -33,5 +34,15 @@ public final class InternalInt16Vector extends AbstractArrayVector<short[]> impl
     @Override
     protected String neo4jElementType() {
         return "INTEGER16";
+    }
+
+    @Override
+    int elementsHashCode() {
+        return Arrays.hashCode(elements);
+    }
+
+    @Override
+    boolean elementsEquals(Object other) {
+        return Arrays.equals(elements, ((InternalInt16Vector) other).elements);
     }
 }

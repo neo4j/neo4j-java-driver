@@ -34,4 +34,14 @@ public final class InternalInt32Vector extends AbstractArrayVector<int[]> implem
     protected String neo4jElementType() {
         return "INTEGER32";
     }
+
+    @Override
+    int elementsHashCode() {
+        return Arrays.hashCode(elements);
+    }
+
+    @Override
+    boolean elementsEquals(Object other) {
+        return Arrays.equals(elements, ((InternalInt32Vector) other).elements);
+    }
 }

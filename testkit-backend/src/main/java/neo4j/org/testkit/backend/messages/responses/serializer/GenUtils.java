@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherDateTime;
@@ -89,6 +90,7 @@ public final class GenUtils {
             case "CypherDate" -> LocalDate.class;
             case "CypherDuration" -> IsoDuration.class;
             case "CypherVector" -> Vector.class;
+            case "CypherUUID" -> UUID.class;
             default -> null;
         };
     }
