@@ -24,7 +24,7 @@ import org.neo4j.driver.summary.Profile;
 import org.neo4j.driver.summary.ProfiledPlan;
 
 @SuppressWarnings("deprecation")
-public class InternalProfiledPlan extends InternalPlan<InternalProfiledPlan> implements ProfiledPlan {
+public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements ProfiledPlan {
     private final long dbHits;
     private final long records;
     private final long pageCacheHits;
@@ -36,7 +36,7 @@ public class InternalProfiledPlan extends InternalPlan<InternalProfiledPlan> imp
             String operatorType,
             Map<String, Value> arguments,
             List<String> identifiers,
-            List<InternalProfiledPlan> children,
+            List<ProfiledPlan> children,
             long dbHits,
             long records,
             long pageCacheHits,
@@ -96,7 +96,7 @@ public class InternalProfiledPlan extends InternalPlan<InternalProfiledPlan> imp
                 profile.arguments(),
                 profile.identifiers(),
                 profile.children().stream()
-                        .map(InternalProfiledPlan::wrapProfile)
+                        .map(child -> (ProfiledPlan) InternalProfiledPlan.wrapProfile(child))
                         .toList(),
                 profile.dbHits().orElse(0L),
                 profile.rows().orElse(0L),
