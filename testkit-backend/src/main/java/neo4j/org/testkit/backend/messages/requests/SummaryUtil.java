@@ -16,6 +16,7 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -27,7 +28,7 @@ import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.summary.GqlNotification;
 import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Plan;
-import org.neo4j.driver.summary.ProfiledPlan;
+import org.neo4j.driver.summary.QueryProfile;
 import org.neo4j.driver.summary.QueryType;
 
 public class SummaryUtil {
@@ -116,7 +117,7 @@ public class SummaryUtil {
                 .notifications(notifications)
                 .gqlStatusObjects(gqlStatusObjects)
                 .plan(toPlan(summary.plan()))
-                .profile(toProfile(summary.profile()))
+                .profile(summary.queryProfile().map(SummaryUtil::toProfile).orElse(null))
                 .queryType(toQueryType(summary.queryType()))
                 .resultAvailableAfter(
                         summary.resultAvailableAfter(TimeUnit.MILLISECONDS) == -1
@@ -154,23 +155,24 @@ public class SummaryUtil {
                 .build();
     }
 
-    private static Summary.Profile toProfile(ProfiledPlan plan) {
-        if (plan == null) {
-            return null;
-        }
+    private static Summary.Profile toProfile(QueryProfile profile) {
         Map<String, Object> args = new HashMap<>();
-        plan.arguments().forEach((key, value) -> args.put(key, value.asObject()));
+        profile.arguments().forEach((key, value) -> args.put(key, value.asObject()));
         return Summary.Profile.builder()
-                .operatorType(plan.operatorType())
+                .operatorType(profile.operatorType())
                 .args(args)
-                .identifiers(plan.identifiers())
-                .dbHits(plan.dbHits())
-                .rows(plan.records())
-                .pageCacheHits(plan.pageCacheHits())
-                .pageCacheMisses(plan.pageCacheMisses())
-                .pageCacheHitRatio(plan.pageCacheHitRatio())
-                .time(plan.time())
-                .children(plan.children().stream().map(SummaryUtil::toProfile).collect(Collectors.toList()))
+                .identifiers(profile.identifiers())
+                .dbHits(profile.dbHits().stream().boxed().findFirst().orElse(null))
+                .rows(profile.rows().stream().boxed().findFirst().orElse(null))
+                .pageCacheHits(
+                        profile.pageCacheHits().stream().boxed().findFirst().orElse(null))
+                .pageCacheMisses(
+                        profile.pageCacheMisses().stream().boxed().findFirst().orElse(null))
+                .pageCacheHitRatio(
+                        profile.pageCacheHitRatio().stream().boxed().findFirst().orElse(null))
+                .time(profile.time().map(Duration::toNanos).orElse(null))
+                .children(
+                        profile.children().stream().map(SummaryUtil::toProfile).collect(Collectors.toList()))
                 .build();
     }
 

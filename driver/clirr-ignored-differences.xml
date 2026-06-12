@@ -965,4 +965,16 @@
         <method>java.util.UUID asUUID()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/summary/ResultSummary</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.Optional queryPlan()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/ResultSummary</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.Optional queryProfile()</method>
+    </difference>
+
 </differences>

@@ -53,7 +53,6 @@ public class StartTest implements TestkitRequest {
                 "Contains updates because value is over zero");
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.test_partial_summary_not_contains_updates$", "Contains updates because value is over zero");
-        COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.test_profile$", "Missing stats are reported with 0 value");
         COMMON_SKIP_PATTERN_TO_REASON.put("^.*\\.test_server_info$", "Address includes domain name");
         COMMON_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.test_partial_summary_contains_system_updates$",

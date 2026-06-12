@@ -53,7 +53,7 @@ import org.neo4j.driver.internal.summary.InternalGqlStatusObject;
 import org.neo4j.driver.internal.summary.InternalInputPosition;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
-import org.neo4j.driver.internal.summary.InternalProfiledPlan;
+import org.neo4j.driver.internal.summary.InternalQueryProfile;
 import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
@@ -62,7 +62,7 @@ import org.neo4j.driver.summary.GqlStatusObject;
 import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
-import org.neo4j.driver.summary.ProfiledPlan;
+import org.neo4j.driver.summary.QueryProfile;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.ServerInfo;
@@ -149,7 +149,7 @@ public class MetadataExtractor {
                 extractQueryType(metadata),
                 extractCounters(metadata),
                 extractPlan(metadata),
-                extractProfiledPlan(metadata),
+                extractProfile(metadata),
                 notifications,
                 gqlStatusObjects,
                 resultAvailableAfter,
@@ -206,10 +206,10 @@ public class MetadataExtractor {
         return null;
     }
 
-    private static ProfiledPlan extractProfiledPlan(Map<String, Value> metadata) {
-        var profiledPlanValue = metadata.get("profile");
-        if (profiledPlanValue != null) {
-            return InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply(profiledPlanValue);
+    private static QueryProfile extractProfile(Map<String, Value> metadata) {
+        var profileValue = metadata.get("profile");
+        if (profileValue != null) {
+            return InternalQueryProfile.PROFILE_FROM_VALUE.apply(profileValue);
         }
         return null;
     }

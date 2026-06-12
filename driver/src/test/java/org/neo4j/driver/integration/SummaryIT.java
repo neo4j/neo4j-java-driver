@@ -27,6 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.SessionConfig.forDatabase;
 
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,8 +82,14 @@ class SummaryIT {
         assertThat(summary.queryType(), equalTo(QueryType.READ_ONLY));
         assertThat(summary.query().text(), equalTo(query));
         assertThat(summary.query().parameters(), equalTo(parameters));
-        assertFalse(summary.hasPlan());
-        assertFalse(summary.hasProfile());
+        @SuppressWarnings("deprecation")
+        var hasPlan = summary.hasPlan();
+        assertFalse(hasPlan);
+        @SuppressWarnings("deprecation")
+        var hasProfile = summary.hasProfile();
+        assertFalse(hasProfile);
+        assertTrue(summary.queryPlan().isEmpty());
+        assertTrue(summary.queryProfile().isEmpty());
         assertThat(summary, equalTo(result.consume()));
     }
 
@@ -200,9 +208,29 @@ class SummaryIT {
         var summary = session.run("EXPLAIN MATCH (n) RETURN 1").consume();
 
         // Then
-        assertTrue(summary.hasPlan());
+        @SuppressWarnings("deprecation")
+        var hasPlan = summary.hasPlan();
+        assertTrue(hasPlan);
 
+        @SuppressWarnings("deprecation")
         var plan = summary.plan();
+
+        assertThat(plan.operatorType(), notNullValue());
+        assertThat(plan.identifiers().size(), greaterThan(0));
+        assertThat(plan.arguments().size(), greaterThan(0));
+        assertThat(plan.children().size(), greaterThan(0));
+    }
+
+    @Test
+    void shouldContainCorrectQueryPlan() {
+        // When
+        var summary = session.run("EXPLAIN MATCH (n) RETURN 1").consume();
+
+        // Then
+        assertTrue(summary.queryPlan().isPresent());
+
+        var plan = summary.queryPlan().get();
+
         assertThat(plan.operatorType(), notNullValue());
         assertThat(plan.identifiers().size(), greaterThan(0));
         assertThat(plan.arguments().size(), greaterThan(0));
@@ -215,17 +243,33 @@ class SummaryIT {
         var summary = session.run("PROFILE RETURN 1").consume();
 
         // Then
-        assertTrue(summary.hasProfile());
-        assertTrue(
-                summary.hasPlan()); // Profile is a superset of plan, so plan should be available as well if profile is
-        // available
-        assertEquals(summary.plan(), summary.profile());
+        @SuppressWarnings("deprecation")
+        var hasProfile = summary.hasProfile();
+        assertTrue(hasProfile);
 
+        @SuppressWarnings("deprecation")
         var profile = summary.profile();
 
         assertEquals(0, profile.time());
         assertEquals(0, profile.dbHits());
         assertEquals(1, profile.records());
+    }
+
+    @Test
+    void shouldContainProfiledQuery() {
+        // When
+        var summary = session.run("PROFILE RETURN 1").consume();
+
+        // Then
+        assertTrue(summary.queryProfile().isPresent());
+        // Profile is a superset of plan, so plan should be available as well if profile is available
+        assertTrue(summary.queryPlan().isPresent());
+        var profile = summary.queryProfile().get();
+        assertEquals(summary.queryPlan().get(), profile);
+
+        assertEquals(Optional.empty(), profile.time());
+        assertEquals(OptionalLong.of(0), profile.dbHits());
+        assertEquals(OptionalLong.of(1), profile.rows());
     }
 
     @Test

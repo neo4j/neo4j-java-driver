@@ -18,6 +18,7 @@ package org.neo4j.driver.internal.summary;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.Query;
@@ -26,6 +27,7 @@ import org.neo4j.driver.summary.GqlStatusObject;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
+import org.neo4j.driver.summary.QueryProfile;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.ServerInfo;
@@ -37,7 +39,7 @@ public class InternalResultSummary implements ResultSummary {
     private final QueryType queryType;
     private final SummaryCounters counters;
     private final Plan plan;
-    private final ProfiledPlan profile;
+    private final QueryProfile profile;
 
     @SuppressWarnings("deprecation")
     private final List<Notification> notifications;
@@ -54,7 +56,7 @@ public class InternalResultSummary implements ResultSummary {
             QueryType queryType,
             SummaryCounters counters,
             Plan plan,
-            ProfiledPlan profile,
+            QueryProfile profile,
             @SuppressWarnings("deprecation") List<Notification> notifications,
             Set<GqlStatusObject> gqlStatusObjects,
             long resultAvailableAfter,
@@ -88,23 +90,32 @@ public class InternalResultSummary implements ResultSummary {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public boolean hasPlan() {
         return plan != null;
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public boolean hasProfile() {
         return profile != null;
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Plan plan() {
         return plan;
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public ProfiledPlan profile() {
-        return profile;
+        return InternalProfiledPlan.wrapProfile(profile);
+    }
+
+    @Override
+    public Optional<QueryProfile> queryProfile() {
+        return Optional.ofNullable(profile);
     }
 
     @SuppressWarnings("deprecation")
@@ -184,7 +195,7 @@ public class InternalResultSummary implements ResultSummary {
                 + databaseInfo + ", queryType="
                 + queryType + ", counters="
                 + counters + ", plan="
-                + plan + ", profile="
+                + plan + ", queryProfile="
                 + profile + ", gqlStatusObjects="
                 + gqlStatusObjects + ", resultAvailableAfter="
                 + resultAvailableAfter + ", resultConsumedAfter="
@@ -195,10 +206,10 @@ public class InternalResultSummary implements ResultSummary {
      * Profiled plan is a superset of plan. This method returns profiled plan if plan is {@code null}.
      *
      * @param plan the given plan, possibly {@code null}.
-     * @param profiledPlan the given profiled plan, possibly {@code null}.
+     * @param profile the given plan, possibly {@code null}.
      * @return available plan.
      */
-    private static Plan resolvePlan(Plan plan, ProfiledPlan profiledPlan) {
-        return plan == null ? profiledPlan : plan;
+    private static Plan resolvePlan(Plan plan, QueryProfile profile) {
+        return plan == null ? profile : plan;
     }
 }

@@ -76,6 +76,7 @@ public class GetFeatures implements TestkitRequest {
             "Feature:API:RetryableExceptions",
             "Feature:API:SSLClientCertificate",
             "Feature:API:Summary:GqlStatusObjects",
+            "Feature:API:Summary:Profile:OptionalStats",
             "Feature:API:Driver:MaxConnectionLifetime",
             "Optimization:HomeDatabaseCache",
             "Feature:Bolt:HandshakeManifestV1",
