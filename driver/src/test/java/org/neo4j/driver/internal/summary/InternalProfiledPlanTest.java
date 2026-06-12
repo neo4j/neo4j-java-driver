@@ -101,7 +101,7 @@ class InternalProfiledPlanTest {
 
     @SuppressWarnings("deprecation")
     private InternalProfiledPlan loadProfiledPlan(Value value) {
-        var profile = InternalProfile.PROFILE_FROM_VALUE.apply(value);
+        var profile = InternalQueryProfile.PROFILE_FROM_VALUE.apply(value);
         @SuppressWarnings("deprecation")
         var profiledPlan = InternalProfiledPlan.wrapProfile(profile);
         return profiledPlan;

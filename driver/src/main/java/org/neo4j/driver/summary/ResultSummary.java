@@ -116,7 +116,7 @@ public interface ResultSummary {
      * @return profiled query plan for the executed query if available
      * @since 6.2.0
      */
-    default Optional<Profile> queryProfile() {
+    default Optional<QueryProfile> queryProfile() {
         return Optional.empty();
     }
 

@@ -20,8 +20,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.summary.Profile;
 import org.neo4j.driver.summary.ProfiledPlan;
+import org.neo4j.driver.summary.QueryProfile;
 
 @SuppressWarnings("deprecation")
 public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements ProfiledPlan {
@@ -87,7 +87,7 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
         return time;
     }
 
-    protected static InternalProfiledPlan wrapProfile(Profile profile) {
+    protected static InternalProfiledPlan wrapProfile(QueryProfile profile) {
         if (profile == null) {
             return null;
         }

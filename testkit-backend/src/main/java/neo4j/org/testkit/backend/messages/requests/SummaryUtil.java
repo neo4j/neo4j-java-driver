@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.summary.GqlNotification;
 import org.neo4j.driver.summary.InputPosition;
 import org.neo4j.driver.summary.Plan;
-import org.neo4j.driver.summary.Profile;
+import org.neo4j.driver.summary.QueryProfile;
 import org.neo4j.driver.summary.QueryType;
 
 public class SummaryUtil {
@@ -155,7 +155,7 @@ public class SummaryUtil {
                 .build();
     }
 
-    private static Summary.Profile toProfile(Profile profile) {
+    private static Summary.Profile toProfile(QueryProfile profile) {
         Map<String, Object> args = new HashMap<>();
         profile.arguments().forEach((key, value) -> args.put(key, value.asObject()));
         return Summary.Profile.builder()

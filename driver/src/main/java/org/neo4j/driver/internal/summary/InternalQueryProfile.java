@@ -24,9 +24,9 @@ import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.function.Function;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.summary.Profile;
+import org.neo4j.driver.summary.QueryProfile;
 
-public class InternalProfile extends InternalPlan<Profile> implements Profile {
+public class InternalQueryProfile extends InternalPlan<QueryProfile> implements QueryProfile {
 
     private final Long dbHits;
     private final Long rows;
@@ -35,11 +35,11 @@ public class InternalProfile extends InternalPlan<Profile> implements Profile {
     private final Double pageCacheHitRatio;
     private final Duration time;
 
-    protected InternalProfile(
+    protected InternalQueryProfile(
             String operatorType,
             Map<String, Value> arguments,
             List<String> identifiers,
-            List<Profile> children,
+            List<QueryProfile> children,
             Long dbHits,
             Long rows,
             Long pageCacheHits,
@@ -85,8 +85,8 @@ public class InternalProfile extends InternalPlan<Profile> implements Profile {
         return Optional.ofNullable(time);
     }
 
-    private static final PlanCreator<Profile> PROFILE =
-            (operatorType, arguments, identifiers, children, originalPlanValue) -> new InternalProfile(
+    private static final PlanCreator<QueryProfile> PROFILE =
+            (operatorType, arguments, identifiers, children, originalPlanValue) -> new InternalQueryProfile(
                     operatorType,
                     arguments,
                     identifiers,
@@ -101,5 +101,5 @@ public class InternalProfile extends InternalPlan<Profile> implements Profile {
     /**
      * Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` query
      */
-    public static final Function<Value, Profile> PROFILE_FROM_VALUE = new Converter<>(PROFILE);
+    public static final Function<Value, QueryProfile> PROFILE_FROM_VALUE = new Converter<>(PROFILE);
 }

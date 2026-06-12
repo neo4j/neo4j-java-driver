@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.summary.Profile;
+import org.neo4j.driver.summary.QueryProfile;
 
 class InternalProfileTest {
 
@@ -46,7 +46,7 @@ class InternalProfileTest {
         Value value = new MapValue(createPlanMap());
 
         // WHEN
-        var plan = InternalProfile.PROFILE_FROM_VALUE.apply(value);
+        var plan = InternalQueryProfile.PROFILE_FROM_VALUE.apply(value);
 
         // THEN
         verifyPlan(plan);
@@ -60,7 +60,7 @@ class InternalProfileTest {
         Value value = new MapValue(planMap);
 
         // WHEN
-        var plan = InternalProfile.PROFILE_FROM_VALUE.apply(value);
+        var plan = InternalQueryProfile.PROFILE_FROM_VALUE.apply(value);
 
         // THEN
         for (var child : plan.children()) {
@@ -84,7 +84,7 @@ class InternalProfileTest {
         return map;
     }
 
-    private void verifyPlan(Profile plan) {
+    private void verifyPlan(QueryProfile plan) {
         assertThat(plan.dbHits(), equalTo(OptionalLong.of(42)));
         assertThat(plan.rows(), equalTo(OptionalLong.of(1337)));
         assertThat(plan.pageCacheHits(), equalTo(OptionalLong.of(1234)));
@@ -104,7 +104,7 @@ class InternalProfileTest {
         Value value = new MapValue(planMap);
 
         // WHEN
-        var plan = InternalProfile.PROFILE_FROM_VALUE.apply(value);
+        var plan = InternalQueryProfile.PROFILE_FROM_VALUE.apply(value);
 
         // THEN
         verifyPlanWithoutStats(plan);
@@ -120,7 +120,7 @@ class InternalProfileTest {
         return map;
     }
 
-    private void verifyPlanWithoutStats(Profile plan) {
+    private void verifyPlanWithoutStats(QueryProfile plan) {
         assertThat(plan.dbHits(), equalTo(OptionalLong.empty()));
         assertThat(plan.rows(), equalTo(OptionalLong.empty()));
         assertThat(plan.pageCacheHits(), equalTo(OptionalLong.empty()));

@@ -22,7 +22,7 @@ import java.util.List;
  * This is the same as a regular {@link Plan} - except this plan has been executed, meaning it also contains detailed information about how much work each
  * step of the plan incurred on the database.
  * @since 1.0
- * @deprecated superseded by {@link Profile}.
+ * @deprecated superseded by {@link QueryProfile}.
  */
 @Deprecated
 public interface ProfiledPlan extends Plan {

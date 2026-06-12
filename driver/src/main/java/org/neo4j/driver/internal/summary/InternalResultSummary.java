@@ -26,8 +26,8 @@ import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.GqlStatusObject;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
-import org.neo4j.driver.summary.Profile;
 import org.neo4j.driver.summary.ProfiledPlan;
+import org.neo4j.driver.summary.QueryProfile;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.ServerInfo;
@@ -39,7 +39,7 @@ public class InternalResultSummary implements ResultSummary {
     private final QueryType queryType;
     private final SummaryCounters counters;
     private final Plan plan;
-    private final Profile profile;
+    private final QueryProfile profile;
 
     @SuppressWarnings("deprecation")
     private final List<Notification> notifications;
@@ -56,7 +56,7 @@ public class InternalResultSummary implements ResultSummary {
             QueryType queryType,
             SummaryCounters counters,
             Plan plan,
-            Profile profile,
+            QueryProfile profile,
             @SuppressWarnings("deprecation") List<Notification> notifications,
             Set<GqlStatusObject> gqlStatusObjects,
             long resultAvailableAfter,
@@ -119,7 +119,7 @@ public class InternalResultSummary implements ResultSummary {
     }
 
     @Override
-    public Optional<Profile> queryProfile() {
+    public Optional<QueryProfile> queryProfile() {
         return Optional.ofNullable(profile);
     }
 
@@ -214,7 +214,7 @@ public class InternalResultSummary implements ResultSummary {
      * @param profile the given plan, possibly {@code null}.
      * @return available plan.
      */
-    private static Plan resolvePlan(Plan plan, Profile profile) {
+    private static Plan resolvePlan(Plan plan, QueryProfile profile) {
         return plan == null ? profile : plan;
     }
 }
