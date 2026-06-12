@@ -114,11 +114,6 @@ public class InternalResultSummary implements ResultSummary {
     }
 
     @Override
-    public Optional<Plan> queryPlan() {
-        return Optional.ofNullable(plan);
-    }
-
-    @Override
     public Optional<QueryProfile> queryProfile() {
         return Optional.ofNullable(profile);
     }

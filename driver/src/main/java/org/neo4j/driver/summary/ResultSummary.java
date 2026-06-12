@@ -104,7 +104,7 @@ public interface ResultSummary {
      * @since 6.2.0
      */
     default Optional<Plan> queryPlan() {
-        return Optional.empty();
+        return Optional.ofNullable(plan());
     }
 
     /**
@@ -117,7 +117,7 @@ public interface ResultSummary {
      * @since 6.2.0
      */
     default Optional<QueryProfile> queryProfile() {
-        return Optional.empty();
+        throw new UnsupportedOperationException("queryProfile is not supported");
     }
 
     /**
