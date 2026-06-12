@@ -21,13 +21,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
+import org.neo4j.driver.internal.summary.InternalQueryProfile;
 
 /**
  * This is the same as a regular {@link Plan} - except this plan has been executed, meaning it also contains detailed information about how much work each
  * step of the plan incurred on the database.
  * @since 6.2.0
  */
-public interface QueryProfile extends Plan {
+public sealed interface QueryProfile extends Plan permits InternalQueryProfile {
 
     /**
      * Returns the number of times this part of the plan touched the underlying data stores if it was recorded.

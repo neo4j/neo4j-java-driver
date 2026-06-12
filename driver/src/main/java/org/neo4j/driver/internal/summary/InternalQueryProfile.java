@@ -26,7 +26,7 @@ import java.util.function.Function;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.summary.QueryProfile;
 
-public class InternalQueryProfile extends InternalPlan<QueryProfile> implements QueryProfile {
+public final class InternalQueryProfile extends InternalPlan<QueryProfile> implements QueryProfile {
 
     private final Long dbHits;
     private final Long rows;
@@ -35,7 +35,7 @@ public class InternalQueryProfile extends InternalPlan<QueryProfile> implements 
     private final Double pageCacheHitRatio;
     private final Duration time;
 
-    protected InternalQueryProfile(
+    InternalQueryProfile(
             String operatorType,
             Map<String, Value> arguments,
             List<String> identifiers,
