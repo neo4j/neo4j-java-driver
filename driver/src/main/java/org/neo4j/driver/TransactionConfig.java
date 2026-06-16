@@ -206,7 +206,7 @@ public final class TransactionConfig implements Serializable {
          * Set the transaction metadata. Specified metadata will be attached to the executing transaction and visible in the output of
          * {@code dbms.listQueries} and {@code dbms.listTransactions} procedures. It will also get logged to the {@code query.log}.
          * <p>
-         * This functionality makes it easier to tag transactions and is equivalent to {@code dbms.setTXMetaData} procedure.
+         * This functionality makes it easier to tag transactions and is equivalent to {@code tx.setMetaData} procedure.
          * <p>
          * Provided value should not be {@code null}.
          *
