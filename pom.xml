@@ -34,24 +34,24 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.134.Final</netty-bom.version>
+    <netty-bom.version>4.1.135.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2023.0.11</reactor-bom.version>
+    <reactor-bom.version>2023.0.19</reactor-bom.version>
     <rxjava.version>2.2.21</rxjava.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
     <mockito-core.version>4.11.0</mockito-core.version>
-    <junit.version>5.9.3</junit.version>
+    <junit.version>5.14.4</junit.version>
     <testng-engine.version>1.1.0</testng-engine.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk18on.version>1.84</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
-    <jackson.version>2.21.4</jackson.version>
+    <jackson.version>2.22.0</jackson.version>
     <lombok.version>1.18.46</lombok.version>
     <svm.version>21.3.18</svm.version>
-    <micrometer.version>1.16.5</micrometer.version>
+    <micrometer.version>1.17.0</micrometer.version>
     <testcontainers.version>1.21.4</testcontainers.version>
     <build-resources.version>4.4.48</build-resources.version>
     <!-- To be overwritten by child projects -->
@@ -146,10 +146,11 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter</artifactId>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
         <version>${junit.version}</version>
-        <scope>test</scope>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.junit.support</groupId>
@@ -367,7 +368,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.6.2</version>
         </plugin>
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
@@ -493,6 +494,48 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
           <version>2.7</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>versions-maven-plugin</artifactId>
+          <version>2.21.0</version>
+          <configuration>
+            <generateBackupPoms>false</generateBackupPoms>
+            <allowMajorUpdates>false</allowMajorUpdates>
+            <ruleSet>
+              <ignoreVersions>
+                <ignoreVersion>
+                  <type>regex</type>
+                  <version>^.*-(M\d+|alpha\d+|beta\d+|RC\d+)$</version>
+                </ignoreVersion>
+              </ignoreVersions>
+
+              <rules>
+                <rule>
+                  <groupId>io.netty</groupId>
+                  <artifactId>netty-bom</artifactId>
+                  <ignoreVersions>
+                    <ignoreVersion>
+                      <type>regex</type>
+                      <!-- 4.1.*.Final only -->
+                      <version>^(?!4\.1\.\d+\.Final$).*$</version>
+                    </ignoreVersion>
+                  </ignoreVersions>
+                </rule>
+                <rule>
+                  <groupId>ch.qos.logback</groupId>
+                  <artifactId>logback-classic</artifactId>
+                  <ignoreVersions>
+                    <ignoreVersion>
+                      <type>regex</type>
+                      <!-- 1.2.* only as newer does not support SLF4J 1.* -->
+                      <version>^(?!1\.2\.\d+$).*$</version>
+                    </ignoreVersion>
+                  </ignoreVersions>
+                </rule>
+              </rules>
+            </ruleSet>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
