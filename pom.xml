@@ -15,7 +15,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <enforce.java.version>25</enforce.java.version>
+    <enforce.java.version>26</enforce.java.version>
     <maven.compiler.release>17</maven.compiler.release>
     <maven.compiler.xlint.extras/>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
@@ -57,7 +57,7 @@
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
     <commons-codec.version>1.22.0</commons-codec.version>
     <bouncycastle-jdk18on.version>1.84</bouncycastle-jdk18on.version>
-    <logback-classic.version>1.5.34</logback-classic.version>
+    <logback-classic.version>1.5.35</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
     <jackson.version>2.22.0</jackson.version>
     <lombok.version>1.18.46</lombok.version>
@@ -66,7 +66,7 @@
     <micrometer-docs-generator.version>1.0.4</micrometer-docs-generator.version>
     <blockhound.version>1.0.17.RELEASE</blockhound.version>
     <testcontainers.version>2.0.5</testcontainers.version>
-    <build-resources.version>2026.02.5</build-resources.version>
+    <build-resources.version>2026.06.1</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
@@ -289,9 +289,9 @@
     </profile>
 
     <profile>
-      <id>java21</id>
+      <id>java25</id>
       <properties>
-        <enforce.java.version>21</enforce.java.version>
+        <enforce.java.version>25</enforce.java.version>
       </properties>
     </profile>
   </profiles>
@@ -640,11 +640,6 @@
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
-          <artifactId>versions-maven-plugin</artifactId>
-          <version>2.15.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
           <artifactId>flatten-maven-plugin</artifactId>
           <version>1.7.3</version>
         </plugin>
@@ -657,6 +652,37 @@
           <groupId>org.asciidoctor</groupId>
           <artifactId>asciidoctor-maven-plugin</artifactId>
           <version>3.2.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>versions-maven-plugin</artifactId>
+          <version>2.21.0</version>
+          <configuration>
+            <generateBackupPoms>false</generateBackupPoms>
+            <allowMajorUpdates>false</allowMajorUpdates>
+            <ruleSet>
+              <ignoreVersions>
+                <ignoreVersion>
+                  <type>regex</type>
+                  <version>^.*-(M\d+|alpha\d+|beta\d+|RC\d+)$</version>
+                </ignoreVersion>
+              </ignoreVersions>
+
+              <rules>
+                <rule>
+                  <groupId>io.netty</groupId>
+                  <artifactId>netty-bom</artifactId>
+                  <ignoreVersions>
+                    <ignoreVersion>
+                      <type>regex</type>
+                      <!-- 4.2.*.Final only -->
+                      <version>^(?!4\.2\.\d+\.Final$).*$</version>
+                    </ignoreVersion>
+                  </ignoreVersions>
+                </rule>
+              </rules>
+            </ruleSet>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
