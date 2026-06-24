@@ -39,7 +39,9 @@ public class SessionConfig implements Serializable {
 
     private static final SessionConfig EMPTY = builder().build();
 
+    @SuppressWarnings("serial")
     private final Iterable<Bookmark> bookmarks;
+
     private final AccessMode defaultAccessMode;
     private final String database;
     private final Long fetchSize;

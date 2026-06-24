@@ -48,6 +48,7 @@ public class InternalServerInfo implements ServerInfo {
         return address;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public String version() {
         return version;

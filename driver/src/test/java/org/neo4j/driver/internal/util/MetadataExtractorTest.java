@@ -118,6 +118,7 @@ class MetadataExtractorTest {
         assertEquals(query, summary.query());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldBuildResultSummaryWithServerInfo() {
         Connection connection = connectionMock(new BoltServerAddress("server:42"), v4_0_0);

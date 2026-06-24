@@ -21,17 +21,22 @@ package org.neo4j.driver.util;
 /**
  * Immutable pair of a key and a value
  *
+ * @param <K> the Java type of the key
  * @param <V> the Java type of the contained value
  * @since 1.0
  */
 @Immutable
 public interface Pair<K, V> {
     /**
+     * Returns the property key.
+     *
      * @return the property key
      */
     K key();
 
     /**
+     * Returns the property value.
+     *
      * @return the property value
      */
     V value();

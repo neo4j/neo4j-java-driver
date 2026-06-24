@@ -35,13 +35,11 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.platform.commons.support.HierarchyTraversalMode;
 import org.junit.platform.commons.support.ReflectionSupport;
-import org.neo4j.driver.internal.RevocationStrategy;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.logging.JULogging;
@@ -282,19 +280,20 @@ class ConfigTest {
     void shouldEnableAndDisableCertificateRevocationChecksOnTestStrategy() {
         Config.TrustStrategy trustStrategy = Config.TrustStrategy.trustSystemCertificates();
         assertEquals(RevocationCheckingStrategy.NO_CHECKS, trustStrategy.revocationCheckingStrategy());
-        assertEquals(RevocationStrategy.NO_CHECKS, trustStrategy.revocationStrategy());
+        assertEquals(org.neo4j.driver.internal.RevocationStrategy.NO_CHECKS, trustStrategy.revocationStrategy());
 
         assertSame(trustStrategy, trustStrategy.withoutCertificateRevocationChecks());
         assertEquals(RevocationCheckingStrategy.NO_CHECKS, trustStrategy.revocationCheckingStrategy());
-        assertEquals(RevocationStrategy.NO_CHECKS, trustStrategy.revocationStrategy());
+        assertEquals(org.neo4j.driver.internal.RevocationStrategy.NO_CHECKS, trustStrategy.revocationStrategy());
 
         assertSame(trustStrategy, trustStrategy.withStrictRevocationChecks());
         assertEquals(RevocationCheckingStrategy.STRICT, trustStrategy.revocationCheckingStrategy());
-        assertEquals(RevocationStrategy.STRICT, trustStrategy.revocationStrategy());
+        assertEquals(org.neo4j.driver.internal.RevocationStrategy.STRICT, trustStrategy.revocationStrategy());
 
         assertSame(trustStrategy, trustStrategy.withVerifyIfPresentRevocationChecks());
         assertEquals(RevocationCheckingStrategy.VERIFY_IF_PRESENT, trustStrategy.revocationCheckingStrategy());
-        assertEquals(RevocationStrategy.VERIFY_IF_PRESENT, trustStrategy.revocationStrategy());
+        assertEquals(
+                org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT, trustStrategy.revocationStrategy());
     }
 
     @Test
@@ -387,89 +386,83 @@ class ConfigTest {
         assertTrue(config.isMetricsEnabled());
     }
 
-    @Nested
-    class SerializationTest {
-        @Test
-        void shouldSerialize() throws Exception {
-            Config config = Config.builder()
-                    .withMaxConnectionPoolSize(123)
-                    .withConnectionTimeout(6543L, TimeUnit.MILLISECONDS)
-                    .withConnectionAcquisitionTimeout(5432L, TimeUnit.MILLISECONDS)
-                    .withConnectionLivenessCheckTimeout(4321L, TimeUnit.MILLISECONDS)
-                    .withMaxConnectionLifetime(4711, TimeUnit.MILLISECONDS)
-                    .withMaxTransactionRetryTime(3210L, TimeUnit.MILLISECONDS)
-                    .withFetchSize(9876L)
-                    .withEventLoopThreads(4)
-                    .withoutEncryption()
-                    .withTrustStrategy(Config.TrustStrategy.trustCustomCertificateSignedBy(new File("doesntMatter")))
-                    .withUserAgent("user-agent")
-                    .withDriverMetrics()
-                    .withRoutingTablePurgeDelay(50000, TimeUnit.MILLISECONDS)
-                    .withLeakedSessionsLogging()
-                    .withMetricsAdapter(MetricsAdapter.MICROMETER)
-                    .build();
+    @SuppressWarnings("deprecation")
+    @Test
+    void shouldSerialize() throws Exception {
+        Config config = Config.builder()
+                .withMaxConnectionPoolSize(123)
+                .withConnectionTimeout(6543L, TimeUnit.MILLISECONDS)
+                .withConnectionAcquisitionTimeout(5432L, TimeUnit.MILLISECONDS)
+                .withConnectionLivenessCheckTimeout(4321L, TimeUnit.MILLISECONDS)
+                .withMaxConnectionLifetime(4711, TimeUnit.MILLISECONDS)
+                .withMaxTransactionRetryTime(3210L, TimeUnit.MILLISECONDS)
+                .withFetchSize(9876L)
+                .withEventLoopThreads(4)
+                .withoutEncryption()
+                .withTrustStrategy(Config.TrustStrategy.trustCustomCertificateSignedBy(new File("doesntMatter")))
+                .withUserAgent("user-agent")
+                .withDriverMetrics()
+                .withRoutingTablePurgeDelay(50000, TimeUnit.MILLISECONDS)
+                .withLeakedSessionsLogging()
+                .withMetricsAdapter(MetricsAdapter.MICROMETER)
+                .build();
 
-            Config verify = TestUtil.serializeAndReadBack(config, Config.class);
+        Config verify = TestUtil.serializeAndReadBack(config, Config.class);
 
-            assertEquals(config.maxConnectionPoolSize(), verify.maxConnectionPoolSize());
-            assertEquals(config.connectionTimeoutMillis(), verify.connectionTimeoutMillis());
-            assertEquals(config.connectionAcquisitionTimeoutMillis(), verify.connectionAcquisitionTimeoutMillis());
-            assertEquals(config.idleTimeBeforeConnectionTest(), verify.idleTimeBeforeConnectionTest());
-            assertEquals(config.maxConnectionLifetimeMillis(), verify.maxConnectionLifetimeMillis());
-            assertNotNull(verify.retrySettings());
-            assertSame(DevNullLogging.DEV_NULL_LOGGING, verify.logging());
-            assertEquals(
-                    config.retrySettings().maxRetryTimeMs(),
-                    verify.retrySettings().maxRetryTimeMs());
-            assertEquals(config.fetchSize(), verify.fetchSize());
-            assertEquals(config.eventLoopThreads(), verify.eventLoopThreads());
-            assertEquals(config.encrypted(), verify.encrypted());
-            assertEquals(
-                    config.trustStrategy().strategy(), verify.trustStrategy().strategy());
-            assertEquals(
-                    config.trustStrategy().certFiles(), verify.trustStrategy().certFiles());
-            assertEquals(
-                    config.trustStrategy().isHostnameVerificationEnabled(),
-                    verify.trustStrategy().isHostnameVerificationEnabled());
-            assertEquals(
-                    config.trustStrategy().revocationStrategy(),
-                    verify.trustStrategy().revocationStrategy());
-            assertEquals(config.userAgent(), verify.userAgent());
-            assertEquals(config.isMetricsEnabled(), verify.isMetricsEnabled());
-            assertEquals(config.metricsAdapter(), verify.metricsAdapter());
-            assertEquals(
-                    config.routingSettings().routingTablePurgeDelayMs(),
-                    verify.routingSettings().routingTablePurgeDelayMs());
-            assertEquals(config.logLeakedSessions(), verify.logLeakedSessions());
-        }
+        assertEquals(config.maxConnectionPoolSize(), verify.maxConnectionPoolSize());
+        assertEquals(config.connectionTimeoutMillis(), verify.connectionTimeoutMillis());
+        assertEquals(config.connectionAcquisitionTimeoutMillis(), verify.connectionAcquisitionTimeoutMillis());
+        assertEquals(config.idleTimeBeforeConnectionTest(), verify.idleTimeBeforeConnectionTest());
+        assertEquals(config.maxConnectionLifetimeMillis(), verify.maxConnectionLifetimeMillis());
+        assertNotNull(verify.retrySettings());
+        assertSame(DevNullLogging.DEV_NULL_LOGGING, verify.logging());
+        assertEquals(
+                config.retrySettings().maxRetryTimeMs(), verify.retrySettings().maxRetryTimeMs());
+        assertEquals(config.fetchSize(), verify.fetchSize());
+        assertEquals(config.eventLoopThreads(), verify.eventLoopThreads());
+        assertEquals(config.encrypted(), verify.encrypted());
+        assertEquals(config.trustStrategy().strategy(), verify.trustStrategy().strategy());
+        assertEquals(config.trustStrategy().certFiles(), verify.trustStrategy().certFiles());
+        assertEquals(
+                config.trustStrategy().isHostnameVerificationEnabled(),
+                verify.trustStrategy().isHostnameVerificationEnabled());
+        assertEquals(
+                config.trustStrategy().revocationStrategy(),
+                verify.trustStrategy().revocationStrategy());
+        assertEquals(config.userAgent(), verify.userAgent());
+        assertEquals(config.isMetricsEnabled(), verify.isMetricsEnabled());
+        assertEquals(config.metricsAdapter(), verify.metricsAdapter());
+        assertEquals(
+                config.routingSettings().routingTablePurgeDelayMs(),
+                verify.routingSettings().routingTablePurgeDelayMs());
+        assertEquals(config.logLeakedSessions(), verify.logLeakedSessions());
+    }
 
-        @Test
-        void shouldSerializeSerializableLogging() throws IOException, ClassNotFoundException {
-            Config config = Config.builder()
-                    .withLogging(Logging.javaUtilLogging(Level.ALL))
-                    .build();
+    @Test
+    void shouldSerializeSerializableLogging() throws IOException, ClassNotFoundException {
+        Config config =
+                Config.builder().withLogging(Logging.javaUtilLogging(Level.ALL)).build();
 
-            Config verify = TestUtil.serializeAndReadBack(config, Config.class);
-            Logging logging = verify.logging();
-            assertInstanceOf(JULogging.class, logging);
+        Config verify = TestUtil.serializeAndReadBack(config, Config.class);
+        Logging logging = verify.logging();
+        assertInstanceOf(JULogging.class, logging);
 
-            List<Field> loggingLevelFields = ReflectionSupport.findFields(
-                    JULogging.class, f -> "loggingLevel".equals(f.getName()), HierarchyTraversalMode.TOP_DOWN);
-            assertFalse(loggingLevelFields.isEmpty());
-            loggingLevelFields.forEach(field -> {
-                try {
-                    field.setAccessible(true);
-                    assertEquals(Level.ALL, field.get(logging));
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
+        List<Field> loggingLevelFields = ReflectionSupport.findFields(
+                JULogging.class, f -> "loggingLevel".equals(f.getName()), HierarchyTraversalMode.TOP_DOWN);
+        assertFalse(loggingLevelFields.isEmpty());
+        loggingLevelFields.forEach(field -> {
+            try {
+                field.setAccessible(true);
+                assertEquals(Level.ALL, field.get(logging));
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
 
-        @ParameterizedTest
-        @ValueSource(classes = {DevNullLogging.class, JULogging.class, ConsoleLogging.class, Slf4jLogging.class})
-        void officialLoggingProvidersShouldBeSerializable(Class<? extends Logging> loggingClass) {
-            assertTrue(Serializable.class.isAssignableFrom(loggingClass));
-        }
+    @ParameterizedTest
+    @ValueSource(classes = {DevNullLogging.class, JULogging.class, ConsoleLogging.class, Slf4jLogging.class})
+    void officialLoggingProvidersShouldBeSerializable(Class<? extends Logging> loggingClass) {
+        assertTrue(Serializable.class.isAssignableFrom(loggingClass));
     }
 }

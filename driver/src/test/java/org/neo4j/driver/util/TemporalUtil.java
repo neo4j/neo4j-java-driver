@@ -66,7 +66,8 @@ public final class TemporalUtil {
             "Pacific/Easter",
             "America/Ciudad_Juarez",
             "Europe/Kyiv", // might have issues when running with dated TZ db
-            "America/Mazatlan");
+            "America/Mazatlan",
+            "America/Coyhaique");
 
     private TemporalUtil() {}
 

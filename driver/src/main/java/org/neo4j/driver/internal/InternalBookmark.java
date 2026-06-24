@@ -33,6 +33,7 @@ public final class InternalBookmark implements Bookmark, Serializable {
 
     private static final InternalBookmark EMPTY = new InternalBookmark(Collections.emptySet());
 
+    @SuppressWarnings("serial")
     private final Set<String> values;
 
     private InternalBookmark(Set<String> values) {

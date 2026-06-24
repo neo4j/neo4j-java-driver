@@ -92,6 +92,8 @@ public interface MapAccessor {
     Map<String, Object> asMap();
 
     /**
+     * Return the underlying map as a map of string keys and values converted using the supplied function.
+     *
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
      * @param <T> the type of map values

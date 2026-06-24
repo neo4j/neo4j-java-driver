@@ -36,27 +36,37 @@ import org.neo4j.driver.util.Immutable;
 @Immutable
 public interface ResultSummary {
     /**
-     * @return query that has been executed
+     * Returns the query that has been executed.
+     *
+     * @return the query that has been executed
      */
     Query query();
 
     /**
-     * @return counters for operations the query triggered
+     * Returns the counters for operations the query triggered.
+     *
+     * @return the counters for operations the query triggered
      */
     SummaryCounters counters();
 
     /**
-     * @return type of query that has been executed
+     * Returns the type of query that has been executed.
+     *
+     * @return the type of query that has been executed
      */
     QueryType queryType();
 
     /**
-     * @return true if the result contained a query plan, i.e. is the summary of a Cypher "PROFILE" or "EXPLAIN" query
+     * Returns {@code true} if the result contained a query plan, i.e. is the summary of a Cypher "PROFILE" or "EXPLAIN" query.
+     *
+     * @return {@code true} if the result contained a query plan, i.e. is the summary of a Cypher "PROFILE" or "EXPLAIN" query
      */
     boolean hasPlan();
 
     /**
-     * @return true if the result contained profiling information, i.e. is the summary of a Cypher "PROFILE" query
+     * Returns {@code true} if the result contained profiling information, i.e. is the summary of a Cypher "PROFILE" query.
+     *
+     * @return {@code true} if the result contained profiling information, i.e. is the summary of a Cypher "PROFILE" query
      */
     boolean hasProfile();
 

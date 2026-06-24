@@ -67,16 +67,19 @@ final class Target_org_neo4j_driver_internal_shaded_io_netty_handler_codec_compr
         return new JdkZlibEncoder(compressionLevel, dictionary);
     }
 
+    @SuppressWarnings("deprecation")
     @Substitute
     public static ZlibDecoder newZlibDecoder() {
         return new JdkZlibDecoder();
     }
 
+    @SuppressWarnings("deprecation")
     @Substitute
     public static ZlibDecoder newZlibDecoder(ZlibWrapper wrapper) {
         return new JdkZlibDecoder(wrapper);
     }
 
+    @SuppressWarnings("deprecation")
     @Substitute
     public static ZlibDecoder newZlibDecoder(byte[] dictionary) {
         return new JdkZlibDecoder(dictionary);

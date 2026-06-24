@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -56,6 +55,18 @@ class SecuritySettingsTest {
 
     private static Stream<String> allSecureSchemes() {
         return Stream.concat(selfSignedSchemes(), systemCertSchemes());
+    }
+
+    Method isCustomized = ReflectionSupport.findMethod(SecuritySettings.class, "isCustomized")
+            .orElseThrow(() -> new RuntimeException("This test requires isCustomized to be present."));
+
+    boolean isCustomized(SecuritySettings securitySettings) {
+        isCustomized.setAccessible(true);
+        try {
+            return (boolean) isCustomized.invoke(securitySettings);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @ParameterizedTest
@@ -208,111 +219,96 @@ class SecuritySettingsTest {
         assertEquals(NO_CHECKS, securityPlan.revocationCheckingStrategy());
     }
 
-    @Nested
-    class SerializationTests {
-        Method isCustomized = ReflectionSupport.findMethod(SecuritySettings.class, "isCustomized")
-                .orElseThrow(() -> new RuntimeException("This test requires isCustomized to be present."));
+    @Test
+    void defaultSettingsShouldNotBeCustomizedWhenReadBack() throws IOException, ClassNotFoundException {
+        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        boolean isCustomized(SecuritySettings securitySettings) {
-            isCustomized.setAccessible(true);
-            try {
-                return (boolean) isCustomized.invoke(securitySettings);
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        assertFalse(isCustomized(securitySettings));
 
-        @Test
-        void defaultSettingsShouldNotBeCustomizedWhenReadBack() throws IOException, ClassNotFoundException {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
+        SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
-            assertFalse(isCustomized(securitySettings));
+        assertFalse(isCustomized(verify));
+    }
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
+    @Test
+    void defaultsShouldBeCheckCorrect() throws IOException, ClassNotFoundException {
+        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                .withoutEncryption()
+                .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
+                .build();
 
-            assertFalse(isCustomized(verify));
-        }
+        // The settings are still equivalent to the defaults, even if the builder has been used. It is not
+        // customized.
+        assertFalse(isCustomized(securitySettings));
 
-        @Test
-        void defaultsShouldBeCheckCorrect() throws IOException, ClassNotFoundException {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                    .withoutEncryption()
-                    .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
-                    .build();
+        SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
-            // The settings are still equivalent to the defaults, even if the builder has been used. It is not
-            // customized.
-            assertFalse(isCustomized(securitySettings));
+        assertFalse(isCustomized(verify));
+    }
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
+    @Test
+    void shouldReadBackChangedEncryption() throws IOException, ClassNotFoundException {
+        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                .withEncryption()
+                .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
+                .build();
 
-            assertFalse(isCustomized(verify));
-        }
+        assertTrue(isCustomized(securitySettings));
+        assertTrue(securitySettings.encrypted());
 
-        @Test
-        void shouldReadBackChangedEncryption() throws IOException, ClassNotFoundException {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                    .withEncryption()
-                    .withTrustStrategy(Config.TrustStrategy.trustSystemCertificates())
-                    .build();
+        SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
-            assertTrue(isCustomized(securitySettings));
-            assertTrue(securitySettings.encrypted());
+        assertTrue(isCustomized(verify));
+        assertTrue(securitySettings.encrypted());
+    }
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
+    @Test
+    void shouldReadBackChangedStrategey() throws IOException, ClassNotFoundException {
+        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                .withoutEncryption()
+                .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
+                .build();
 
-            assertTrue(isCustomized(verify));
-            assertTrue(securitySettings.encrypted());
-        }
+        // The settings are still equivalent to the defaults, even if the builder has been used. It is not
+        // customized.
+        assertTrue(isCustomized(securitySettings));
+        assertFalse(securitySettings.encrypted());
+        assertEquals(
+                Config.TrustStrategy.trustAllCertificates().strategy(),
+                securitySettings.trustStrategy().strategy());
 
-        @Test
-        void shouldReadBackChangedStrategey() throws IOException, ClassNotFoundException {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                    .withoutEncryption()
-                    .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
-                    .build();
+        SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
-            // The settings are still equivalent to the defaults, even if the builder has been used. It is not
-            // customized.
-            assertTrue(isCustomized(securitySettings));
-            assertFalse(securitySettings.encrypted());
-            assertEquals(
-                    Config.TrustStrategy.trustAllCertificates().strategy(),
-                    securitySettings.trustStrategy().strategy());
+        assertTrue(isCustomized(verify));
+        assertFalse(securitySettings.encrypted());
+        assertEquals(
+                Config.TrustStrategy.trustAllCertificates().strategy(),
+                securitySettings.trustStrategy().strategy());
+    }
 
-            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
+    @Test
+    void shouldReadBackChangedCertFile() throws IOException, ClassNotFoundException {
+        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                .withoutEncryption()
+                .withTrustStrategy(Config.TrustStrategy.trustCustomCertificateSignedBy(new File("some.cert")))
+                .build();
 
-            assertTrue(isCustomized(verify));
-            assertFalse(securitySettings.encrypted());
-            assertEquals(
-                    Config.TrustStrategy.trustAllCertificates().strategy(),
-                    securitySettings.trustStrategy().strategy());
-        }
+        // The settings are still equivalent to the defaults, even if the builder has been used. It is not
+        // customized.
+        assertTrue(isCustomized(securitySettings));
+        assertFalse(securitySettings.encrypted());
+        assertEquals(
+                Config.TrustStrategy.trustCustomCertificateSignedBy(new File("some.cert"))
+                        .strategy(),
+                securitySettings.trustStrategy().strategy());
 
-        @Test
-        void shouldReadBackChangedCertFile() throws IOException, ClassNotFoundException {
-            SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                    .withoutEncryption()
-                    .withTrustStrategy(Config.TrustStrategy.trustCustomCertificateSignedBy(new File("some.cert")))
-                    .build();
+        SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
 
-            // The settings are still equivalent to the defaults, even if the builder has been used. It is not
-            // customized.
-            assertTrue(isCustomized(securitySettings));
-            assertFalse(securitySettings.encrypted());
-            assertEquals(
-                    Config.TrustStrategy.trustCustomCertificateSignedBy(new File("some.cert"))
-                            .strategy(),
-                    securitySettings.trustStrategy().strategy());
-
-            SecuritySettings verify = TestUtil.serializeAndReadBack(securitySettings, SecuritySettings.class);
-
-            assertTrue(isCustomized(verify));
-            assertFalse(securitySettings.encrypted());
-            assertEquals(
-                    Config.TrustStrategy.trustCustomCertificateSignedBy(new File("some.cert"))
-                            .strategy(),
-                    securitySettings.trustStrategy().strategy());
-        }
+        assertTrue(isCustomized(verify));
+        assertFalse(securitySettings.encrypted());
+        assertEquals(
+                Config.TrustStrategy.trustCustomCertificateSignedBy(new File("some.cert"))
+                        .strategy(),
+                securitySettings.trustStrategy().strategy());
     }
 }
