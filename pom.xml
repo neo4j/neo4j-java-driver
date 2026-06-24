@@ -25,7 +25,7 @@
     <parallelizable.it.forkCount>2</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
-    <surefire.and.failsafe.version>3.5.5</surefire.and.failsafe.version>
+    <surefire.and.failsafe.version>3.5.6</surefire.and.failsafe.version>
     <surefire.jpms.args/>
     <failsafe.parallelizable.jpms.args/>
     <failsafe.sequential.jpms.args/>
@@ -33,12 +33,12 @@
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <!-- Versions -->
-    <neo4j-bolt-connection-bom.version>11.0.1</neo4j-bolt-connection-bom.version>
+    <neo4j-bolt-connection-bom.version>12.0.0</neo4j-bolt-connection-bom.version>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.2.12.Final</netty-bom.version>
+    <netty-bom.version>4.2.15.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
@@ -46,23 +46,23 @@
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
     <mockito-core.version>5.23.0</mockito-core.version>
-    <junit.version>5.14.3</junit.version>
+    <junit.version>5.14.4</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.12.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <!-- supply a newer version than the one supplied by the jarchivelib 1.2.0 -->
     <commons-compress.version>1.28.0</commons-compress.version>
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
-    <commons-codec.version>1.21.0</commons-codec.version>
+    <commons-codec.version>1.22.0</commons-codec.version>
     <bouncycastle-jdk18on.version>1.84</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
-    <jackson.version>2.21.2</jackson.version>
-    <lombok.version>1.18.44</lombok.version>
+    <jackson.version>2.22.0</jackson.version>
+    <lombok.version>1.18.46</lombok.version>
     <svm.version>24.2.2</svm.version>
-    <micrometer.version>1.15.11</micrometer.version>
-    <blockhound.version>1.0.16.RELEASE</blockhound.version>
+    <micrometer.version>1.17.0</micrometer.version>
+    <blockhound.version>1.0.17.RELEASE</blockhound.version>
     <testcontainers.version>1.21.4</testcontainers.version>
-    <build-resources.version>2026.02.5</build-resources.version>
+    <build-resources.version>2026.06.1</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
@@ -634,7 +634,44 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>versions-maven-plugin</artifactId>
-          <version>2.15.0</version>
+          <version>2.21.0</version>
+          <configuration>
+            <generateBackupPoms>false</generateBackupPoms>
+            <allowMajorUpdates>false</allowMajorUpdates>
+            <ruleSet>
+              <ignoreVersions>
+                <ignoreVersion>
+                  <type>regex</type>
+                  <version>^.*-(M\d+|alpha\d+|beta\d+|RC\d+)$</version>
+                </ignoreVersion>
+              </ignoreVersions>
+
+              <rules>
+                <rule>
+                  <groupId>io.netty</groupId>
+                  <artifactId>netty-bom</artifactId>
+                  <ignoreVersions>
+                    <ignoreVersion>
+                      <type>regex</type>
+                      <!-- 4.2.*.Final only -->
+                      <version>^(?!4\.2\.\d+\.Final$).*$</version>
+                    </ignoreVersion>
+                  </ignoreVersions>
+                </rule>
+                <rule>
+                  <groupId>ch.qos.logback</groupId>
+                  <artifactId>logback-classic</artifactId>
+                  <ignoreVersions>
+                    <ignoreVersion>
+                      <type>regex</type>
+                      <!-- 1.2.* only as newer does not support SLF4J 1.* -->
+                      <version>^(?!1\.2\.\d+$).*$</version>
+                    </ignoreVersion>
+                  </ignoreVersions>
+                </rule>
+              </rules>
+            </ruleSet>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>

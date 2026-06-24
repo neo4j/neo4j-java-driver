@@ -20,6 +20,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
 import org.neo4j.bolt.connection.values.IsoDuration;
 import org.neo4j.bolt.connection.values.Point;
 import org.neo4j.bolt.connection.values.Vector;
@@ -88,5 +89,10 @@ public interface InternalValue extends Value, AsValue, org.neo4j.bolt.connection
     @Override
     default Vector asBoltVector() {
         throw new UnsupportedOperationException("Vector is not supported");
+    }
+
+    @Override
+    default UUID asUUID() {
+        throw new UnsupportedOperationException("UUID is not supported");
     }
 }
