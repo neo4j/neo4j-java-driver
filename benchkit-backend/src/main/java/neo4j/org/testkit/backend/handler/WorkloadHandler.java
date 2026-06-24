@@ -60,8 +60,8 @@ public class WorkloadHandler {
                             case "executeQuery" -> executeQuery(workloadRequest);
                             case "sessionRun" -> sessionRun(workloadRequest);
                             case "executeRead", "executeWrite" -> execute(workloadRequest);
-                            default -> CompletableFuture.failedStage(
-                                    new IllegalArgumentException("Unknown workload type."));
+                            default ->
+                                CompletableFuture.failedStage(new IllegalArgumentException("Unknown workload type."));
                         },
                         executor)
                 .handle((ignored, throwable) -> {
@@ -87,10 +87,11 @@ public class WorkloadHandler {
             return CompletableFuture.failedStage(new IllegalArgumentException("Unknown routing."));
         }
         return switch (workloadRequest.getMode()) {
-            case "sequentialSessions" -> runAsStage(() -> executeQueriesSequentially(
-                    workloadRequest.getQueries(), workloadRequest.getDatabase(), routingControl));
-            case "parallelSessions" -> executeQueriesConcurrently(
-                    workloadRequest.getQueries(), workloadRequest.getDatabase(), routingControl);
+            case "sequentialSessions" ->
+                runAsStage(() -> executeQueriesSequentially(
+                        workloadRequest.getQueries(), workloadRequest.getDatabase(), routingControl));
+            case "parallelSessions" ->
+                executeQueriesConcurrently(workloadRequest.getQueries(), workloadRequest.getDatabase(), routingControl);
             default -> CompletableFuture.failedStage(new IllegalArgumentException("Unknown workload type."));
         };
     }
@@ -134,12 +135,14 @@ public class WorkloadHandler {
             return CompletableFuture.failedStage(new IllegalArgumentException("Unknown routing."));
         }
         return switch (workloadRequest.getMode()) {
-            case "sequentialSessions" -> runAsStage(() ->
-                    runInMultipleSessions(workloadRequest.getQueries(), workloadRequest.getDatabase(), accessMode));
-            case "sequentialTransactions" -> runAsStage(
-                    () -> runInSingleSession(workloadRequest.getQueries(), workloadRequest.getDatabase(), accessMode));
-            case "parallelSessions" -> runInConcurrentSessions(
-                    workloadRequest.getQueries(), workloadRequest.getDatabase(), accessMode);
+            case "sequentialSessions" ->
+                runAsStage(() ->
+                        runInMultipleSessions(workloadRequest.getQueries(), workloadRequest.getDatabase(), accessMode));
+            case "sequentialTransactions" ->
+                runAsStage(() ->
+                        runInSingleSession(workloadRequest.getQueries(), workloadRequest.getDatabase(), accessMode));
+            case "parallelSessions" ->
+                runInConcurrentSessions(workloadRequest.getQueries(), workloadRequest.getDatabase(), accessMode);
             default -> CompletableFuture.failedStage(new IllegalArgumentException("Unknown workload type."));
         };
     }
@@ -190,14 +193,17 @@ public class WorkloadHandler {
             return CompletableFuture.failedStage(new IllegalArgumentException("Unknown routing."));
         }
         return switch (workloadRequest.getMode()) {
-            case "sequentialSessions" -> runAsStage(() ->
-                    executeInMultipleSessions(runner, workloadRequest.getQueries(), workloadRequest.getDatabase()));
-            case "sequentialTransactions" -> runAsStage(
-                    () -> executeSingleSession(runner, workloadRequest.getQueries(), workloadRequest.getDatabase()));
-            case "sequentialQueries" -> runAsStage(() ->
-                    executeInSingleTransaction(runner, workloadRequest.getQueries(), workloadRequest.getDatabase()));
-            case "parallelSessions" -> executeConcurrently(
-                    runner, workloadRequest.getQueries(), workloadRequest.getDatabase());
+            case "sequentialSessions" ->
+                runAsStage(() ->
+                        executeInMultipleSessions(runner, workloadRequest.getQueries(), workloadRequest.getDatabase()));
+            case "sequentialTransactions" ->
+                runAsStage(() ->
+                        executeSingleSession(runner, workloadRequest.getQueries(), workloadRequest.getDatabase()));
+            case "sequentialQueries" ->
+                runAsStage(() -> executeInSingleTransaction(
+                        runner, workloadRequest.getQueries(), workloadRequest.getDatabase()));
+            case "parallelSessions" ->
+                executeConcurrently(runner, workloadRequest.getQueries(), workloadRequest.getDatabase());
             default -> CompletableFuture.failedStage(new IllegalArgumentException("Unknown workload type."));
         };
     }

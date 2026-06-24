@@ -55,6 +55,7 @@ public class Neo4jException extends RuntimeException {
      *
      * @since 5.26.0
      */
+    @SuppressWarnings("serial")
     private final Map<String, Value> diagnosticRecord;
     /**
      * The GQLSTATUS error classification.

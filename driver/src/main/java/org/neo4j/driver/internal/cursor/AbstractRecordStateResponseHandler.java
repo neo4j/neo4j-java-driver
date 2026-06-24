@@ -27,9 +27,8 @@ public abstract class AbstractRecordStateResponseHandler {
 
     protected synchronized GqlStatusObject generateGqlStatusObject(List<String> keys) {
         return switch (recordState) {
-            case NOT_REQUESTED -> keys.isEmpty()
-                    ? InternalGqlStatusObject.OMITTED_RESULT
-                    : InternalGqlStatusObject.NO_DATA_UNKNOWN;
+            case NOT_REQUESTED ->
+                keys.isEmpty() ? InternalGqlStatusObject.OMITTED_RESULT : InternalGqlStatusObject.NO_DATA_UNKNOWN;
             case HAD_RECORD -> InternalGqlStatusObject.SUCCESS;
             case REQUESTED -> {
                 var message = "Unexpected state: " + recordState;

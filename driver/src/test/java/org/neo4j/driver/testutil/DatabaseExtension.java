@@ -249,14 +249,11 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
 
     private boolean isNeo4jVersionOrEarlier(int minor) {
         try (var session = driver.session()) {
-            var neo4jVersion = session.executeRead(tx -> tx.run(
-                            """
+            var neo4jVersion = session.executeRead(
+                    tx -> tx.run("""
                                     CALL dbms.components() YIELD name, versions
                                     WHERE name = 'Neo4j Kernel'
-                                    RETURN versions[0] AS version""")
-                    .single()
-                    .get("version")
-                    .asString());
+                                    RETURN versions[0] AS version""").single().get("version").asString());
             var versions = neo4jVersion.split("\\.");
             return parseInt(versions[0]) <= 4 && parseInt(versions[1]) <= minor;
         }
@@ -287,7 +284,7 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
 
     @SuppressWarnings("resource")
     private static Neo4jContainer<?> setupNeo4jContainer(File cert, File key, Map<String, String> config) {
-        var neo4JVersion = Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
+        var neo4JVersion = Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("2025");
 
         var extendedNeo4jImage = new ImageFromDockerfile()
                 .withDockerfileFromBuilder(builder -> builder.from(String.format("neo4j:%s-enterprise", neo4JVersion))

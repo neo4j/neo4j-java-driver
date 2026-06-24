@@ -29,6 +29,7 @@ public class TestkitCypherDateDeserializer extends StdDeserializer<LocalDate> {
     @Serial
     private static final long serialVersionUID = 3489940766207129614L;
 
+    @SuppressWarnings("serial")
     private final TestkitCypherTypeMapper mapper;
 
     public TestkitCypherDateDeserializer() {

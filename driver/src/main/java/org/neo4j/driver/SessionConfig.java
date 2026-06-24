@@ -45,6 +45,7 @@ public final class SessionConfig implements Serializable {
     /**
      * The initial bookmarks.
      */
+    @SuppressWarnings("serial")
     private final Iterable<Bookmark> bookmarks;
     /**
      * The default type of access.
@@ -227,12 +228,10 @@ public final class SessionConfig implements Serializable {
 
     @Override
     public String toString() {
-        return String.format(
-                """
+        return String.format("""
                 SessionParameters{bookmarks=%s, defaultAccessMode=%s, database='%s', fetchSize=%d, impersonatedUser=%s, \
                 bookmarkManager=%s}\
-                """,
-                bookmarks, defaultAccessMode, database, fetchSize, impersonatedUser, bookmarkManager);
+                """, bookmarks, defaultAccessMode, database, fetchSize, impersonatedUser, bookmarkManager);
     }
 
     /**

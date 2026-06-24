@@ -67,6 +67,7 @@ public final class QueryConfig implements Serializable {
      * The transaction metadata.
      * @since 5.16
      */
+    @SuppressWarnings("serial")
     private final Map<String, Serializable> metadata;
 
     /**

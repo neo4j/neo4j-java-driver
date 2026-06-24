@@ -112,7 +112,7 @@ Before contributing to this project, please take a few minutes to read our [Cont
 
 ### Java Version
 
-For the 5.x Driver Series, the source code _must_ compile on Java 17.
+For the 5.x Driver Series, the source code _must_ compile on Java 26 for Java 17 runtime.
 
 For the 4.x Driver Series, the compilation requires Java 8.
 
