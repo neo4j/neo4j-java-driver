@@ -26,12 +26,14 @@ import org.neo4j.driver.util.Immutable;
 @Immutable
 public interface Type {
     /**
+     * Returns the name of the Cypher type (as defined by Cypher).
+     *
      * @return the name of the Cypher type (as defined by Cypher)
      */
     String name();
 
     /**
-     * Test if the given value has this type
+     * Test if the given value has this type.
      *
      * @param value the value
      * @return {@code true} if the value is a value of this type otherwise {@code false}

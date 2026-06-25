@@ -59,6 +59,7 @@ public class TestkitModule extends SimpleModule {
     @Serial
     private static final long serialVersionUID = 7051732358423895087L;
 
+    @SuppressWarnings("this-escape")
     public TestkitModule() {
         this.addDeserializer(List.class, new TestkitListDeserializer());
         this.addDeserializer(CypherDateTime.class, new TestkitCypherDateTimeDeserializer());

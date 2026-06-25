@@ -27,6 +27,7 @@ public class TestkitCypherTimeDeserializer extends StdDeserializer<CypherTime> {
     @Serial
     private static final long serialVersionUID = 8354352358618500970L;
 
+    @SuppressWarnings("serial")
     private final TestkitCypherTypeMapper mapper;
 
     public TestkitCypherTimeDeserializer() {
