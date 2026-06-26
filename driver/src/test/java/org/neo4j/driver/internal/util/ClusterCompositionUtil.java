@@ -55,10 +55,10 @@ public final class ClusterCompositionUtil {
         switch (servers.length) {
             case 3:
                 readers.addAll(servers[2]);
-                // no break on purpose
+            // no break on purpose
             case 2:
                 writers.addAll(servers[1]);
-                // no break on purpose
+            // no break on purpose
             case 1:
                 routers.addAll(servers[0]);
         }

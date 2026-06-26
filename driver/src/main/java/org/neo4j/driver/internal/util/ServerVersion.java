@@ -69,6 +69,7 @@ public class ServerVersion {
 
     public static ServerVersion version(Driver driver) {
         try (Session session = driver.session()) {
+            @SuppressWarnings("deprecation")
             String versionString = session.readTransaction(
                     tx -> tx.run("RETURN 1").consume().server().version());
             return version(versionString);

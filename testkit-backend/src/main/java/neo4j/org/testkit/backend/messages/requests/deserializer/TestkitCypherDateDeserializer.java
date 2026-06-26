@@ -27,7 +27,9 @@ import java.time.LocalDate;
 import java.util.Date;
 
 public class TestkitCypherDateDeserializer extends StdDeserializer<LocalDate> {
+    private static final long serialVersionUID = 3489940766207129614L;
 
+    @SuppressWarnings("serial")
     private final TestkitCypherTypeMapper mapper;
 
     public TestkitCypherDateDeserializer() {

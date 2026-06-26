@@ -15,8 +15,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+    <enforce.java.version>26</enforce.java.version>
+    <maven.compiler.release>8</maven.compiler.release>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
 
     <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
@@ -248,18 +248,6 @@
       </build>
     </profile>
 
-    <profile>
-      <id>java9</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <jdk>9</jdk>
-      </activation>
-      <properties>
-        <maven.compiler.source>9</maven.compiler.source>
-        <maven.compiler.target>9</maven.compiler.target>
-      </properties>
-    </profile>
-
     <!-- Disable parallel execution of integration tests with "-DsequentialITs" -->
     <profile>
       <id>sequentialIntegrationTests</id>
@@ -270,6 +258,13 @@
       </activation>
       <properties>
         <parallelizable.it.forkCount>1</parallelizable.it.forkCount>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>java25</id>
+      <properties>
+        <enforce.java.version>25</enforce.java.version>
       </properties>
     </profile>
   </profiles>
@@ -373,7 +368,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>2.21.0</version>
+          <version>3.4.0</version>
           <executions>
             <execution>
               <goals>
@@ -390,7 +385,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.6.3</version>
           <dependencies>
             <dependency>
               <groupId>de.skuzzle.enforcer</groupId>
@@ -407,6 +402,9 @@
           </executions>
           <configuration>
             <rules>
+              <requireJavaVersion>
+                <version>${enforce.java.version}</version>
+              </requireJavaVersion>
               <RestrictImports>
                 <reason>Star imports are not allowed, please configure your editor to substitute them with fully qualified imports.</reason>
                 <bannedImport>**.'*'</bannedImport>
@@ -552,10 +550,14 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.0</version>
+        <version>3.10.1</version>
         <configuration>
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
+          <compilerArgs>
+            <arg>-Werror</arg>
+            <arg>-Xlint:-options</arg>
+          </compilerArgs>
         </configuration>
       </plugin>
       <plugin>

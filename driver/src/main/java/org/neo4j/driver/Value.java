@@ -138,12 +138,16 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
      */
     Value get(int index);
 
-    /** @return The type of this value as defined in the Neo4j type system */
+    /**
+     * Returns the type of this value as defined in the Neo4j type system.
+     *
+     * @return the type of this value as defined in the Neo4j type system
+     */
     @Experimental
     Type type();
 
     /**
-     * Test if this value is a value of the given type
+     * Test if this value is a value of the given type.
      *
      * @param type the given type
      * @return type.isTypeOf( this )
@@ -152,16 +156,22 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     boolean hasType(Type type);
 
     /**
-     * @return {@code true} if the value is a Boolean value and has the value True.
+     * Returns {@code true} if the value is a Boolean value and has the value True.
+     *
+     * @return {@code true} if the value is a Boolean value and has the value True
      */
     boolean isTrue();
 
     /**
-     * @return {@code true} if the value is a Boolean value and has the value False.
+     * Returns {@code true} if the value is a Boolean value and has the value False.
+     *
+     * @return {@code true} if the value is a Boolean value and has the value False
      */
     boolean isFalse();
 
     /**
+     * Returns {@code true} if the value is a Null, otherwise {@code false}.
+     *
      * @return {@code true} if the value is a Null, otherwise {@code false}
      */
     boolean isNull();
@@ -211,47 +221,61 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     <T> T computeOrDefault(Function<Value, T> mapper, T defaultValue);
 
     /**
-     * @return the value as a Java boolean, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a Java boolean, if possible.
+     *
+     * @return the value as a Java boolean, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     boolean asBoolean();
 
     /**
-     * @param defaultValue return this value if the value is a {@link NullValue}.
-     * @return the value as a Java boolean, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a Java boolean, if possible.
+     *
+     * @param defaultValue return this value if the value is a {@link NullValue}
+     * @return the value as a Java boolean, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     boolean asBoolean(boolean defaultValue);
 
     /**
-     *  @return the value as a Java byte array, if possible.
-     *  @throws Uncoercible if value types are incompatible.
+     * Returns the value as a Java byte array, if possible.
+     *
+     * @return the value as a Java byte array, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     byte[] asByteArray();
 
     /**
-     *  @param defaultValue default to this value if the original value is a {@link NullValue}
-     *  @return the value as a Java byte array, if possible.
-     *  @throws Uncoercible if value types are incompatible.
+     * Returns the value as a Java byte array, if possible.
+     *
+     * @param defaultValue default to this value if the original value is a {@link NullValue}
+     * @return the value as a Java byte array, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     byte[] asByteArray(byte[] defaultValue);
 
     /**
-     *  @return the value as a Java String, if possible.
-     *  @throws Uncoercible if value types are incompatible.
+     * Returns the value as a Java String, if possible.
+     *
+     * @return the value as a Java String, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     String asString();
 
     /**
-     * @param defaultValue return this value if the value is null.
+     * Returns the value as a Java String, if possible.
+     *
+     * @param defaultValue return this value if the value is null
      * @return the value as a Java String, if possible
-     * @throws Uncoercible if value types are incompatible.
+     * @throws Uncoercible if value types are incompatible
      */
     String asString(String defaultValue);
 
     /**
-     * @return the value as a Java Number, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a Java Number, if possible.
+     *
+     * @return the value as a Java Number, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     Number asNumber();
 
@@ -347,6 +371,8 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     List<Object> asList(List<Object> defaultValue);
 
     /**
+     * Returns the value as a list of T obtained by mapping from the list elements, if possible.
+     *
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
      * @param <T> the type of target list elements
@@ -356,9 +382,11 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     <T> List<T> asList(Function<Value, T> mapFunction);
 
     /**
-     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
-     * @param <T> the type of target list elements
+     * Returns the value as a list of T obtained by mapping from the list elements, if possible.
+     *
+     * @param mapFunction  a function to map from Value to T. See {@link Values} for some predefined functions, such
+     *                     as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
+     * @param <T>          the type of target list elements
      * @param defaultValue default to this value if the value is a {@link NullValue}
      * @see Values for a long list of built-in conversion functions
      * @return the value as a list of T obtained by mapping from the list elements, if possible
@@ -366,130 +394,170 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     <T> List<T> asList(Function<Value, T> mapFunction, List<T> defaultValue);
 
     /**
-     * @return the value as a {@link Entity}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link Entity}, if possible.
+     *
+     * @return the value as a {@link Entity}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     Entity asEntity();
 
     /**
-     * @return the value as a {@link Node}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link Node}, if possible.
+     *
+     * @return the value as a {@link Node}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     Node asNode();
 
     /**
-     * @return the value as a {@link Relationship}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link Relationship}, if possible.
+     *
+     * @return the value as a {@link Relationship}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     Relationship asRelationship();
 
     /**
-     * @return the value as a {@link Path}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link Path}, if possible.
+     *
+     * @return the value as a {@link Path}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     Path asPath();
 
     /**
-     * @return the value as a {@link LocalDate}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link LocalDate}, if possible.
+     *
+     * @return the value as a {@link LocalDate}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     LocalDate asLocalDate();
 
     /**
-     * @return the value as a {@link OffsetTime}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link OffsetTime}, if possible.
+     *
+     * @return the value as a {@link OffsetTime}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     OffsetTime asOffsetTime();
 
     /**
-     * @return the value as a {@link LocalTime}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link LocalTime}, if possible.
+     *
+     * @return the value as a {@link LocalTime}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     LocalTime asLocalTime();
 
     /**
-     * @return the value as a {@link LocalDateTime}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link LocalDateTime}, if possible.
+     *
+     * @return the value as a {@link LocalDateTime}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     LocalDateTime asLocalDateTime();
 
     /**
-     * @return the value as a {@link java.time.OffsetDateTime}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link java.time.OffsetDateTime}, if possible.
+     *
+     * @return the value as a {@link java.time.OffsetDateTime}, if possible
+     * @throws Uncoercible       if value types are incompatible
      */
     OffsetDateTime asOffsetDateTime();
 
     /**
-     * @return the value as a {@link ZonedDateTime}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link ZonedDateTime}, if possible.
+     *
+     * @return the value as a {@link ZonedDateTime}, if possible
+     * @throws Uncoercible       if value types are incompatible
      */
     ZonedDateTime asZonedDateTime();
 
     /**
-     * @return the value as a {@link IsoDuration}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link IsoDuration}, if possible.
+     *
+     * @return the value as a {@link IsoDuration}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     IsoDuration asIsoDuration();
 
     /**
-     * @return the value as a {@link Point}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * Returns the value as a {@link Point}, if possible.
+     *
+     * @return the value as a {@link Point}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     Point asPoint();
 
     /**
+     * Returns the value as a {@link LocalDate}, if possible.
+     *
      * @param defaultValue default to this value if the value is a {@link NullValue}
-     * @return the value as a {@link LocalDate}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * @return the value as a {@link LocalDate}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     LocalDate asLocalDate(LocalDate defaultValue);
 
     /**
+     * Returns the value as a {@link OffsetTime}, if possible.
+     *
      * @param defaultValue default to this value if the value is a {@link NullValue}
-     * @return the value as a {@link OffsetTime}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * @return the value as a {@link OffsetTime}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     OffsetTime asOffsetTime(OffsetTime defaultValue);
 
     /**
+     * Returns the value as a {@link LocalTime}, if possible.
+     *
      * @param defaultValue default to this value if the value is a {@link NullValue}
-     * @return the value as a {@link LocalTime}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * @return the value as a {@link LocalTime}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     LocalTime asLocalTime(LocalTime defaultValue);
 
     /**
+     * Returns the value as a {@link LocalDateTime}, if possible.
+     *
      * @param defaultValue default to this value if the value is a {@link NullValue}
-     * @return the value as a {@link LocalDateTime}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * @return the value as a {@link LocalDateTime}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     LocalDateTime asLocalDateTime(LocalDateTime defaultValue);
 
     /**
+     * Returns the value as a {@link OffsetDateTime}, if possible.
+     *
      * @param defaultValue default to this value if the value is a {@link NullValue}
-     * @return the value as a {@link OffsetDateTime}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * @return the value as a {@link OffsetDateTime}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     OffsetDateTime asOffsetDateTime(OffsetDateTime defaultValue);
 
     /**
+     * Returns the value as a {@link ZonedDateTime}, if possible.
+     *
      * @param defaultValue default to this value if the value is a {@link NullValue}
-     * @return the value as a {@link ZonedDateTime}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * @return the value as a {@link ZonedDateTime}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     ZonedDateTime asZonedDateTime(ZonedDateTime defaultValue);
 
     /**
+     * Returns the value as a {@link IsoDuration}, if possible.
+     *
      * @param defaultValue default to this value if the value is a {@link NullValue}
-     * @return the value as a {@link IsoDuration}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * @return the value as a {@link IsoDuration}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     IsoDuration asIsoDuration(IsoDuration defaultValue);
 
     /**
+     * Returns the value as a {@link Point}, if possible.
+     *
      * @param defaultValue default to this value if the value is a {@link NullValue}
-     * @return the value as a {@link Point}, if possible.
-     * @throws Uncoercible if value types are incompatible.
+     * @return the value as a {@link Point}, if possible
+     * @throws Uncoercible if value types are incompatible
      */
     Point asPoint(Point defaultValue);
 
@@ -505,9 +573,11 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue {
     Map<String, Object> asMap(Map<String, Object> defaultValue);
 
     /**
-     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
-     * @param <T> the type of map values
+     * Returns the value as a map from string keys to values of type T obtained from mapping he original map values, if possible.
+     *
+     * @param mapFunction  a function to map from Value to T. See {@link Values} for some predefined functions, such
+     *                     as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
+     * @param <T>          the type of map values
      * @param defaultValue default to this value if the value is a {@link NullValue}
      * @see Values for a long list of built-in conversion functions
      * @return the value as a map from string keys to values of type T obtained from mapping he original map values, if possible

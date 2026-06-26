@@ -26,6 +26,9 @@ import java.io.IOException;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherDateTime;
 
 public class TestkitCypherDateTimeDeserializer extends StdDeserializer<CypherDateTime> {
+    private static final long serialVersionUID = 8980981682742682436L;
+
+    @SuppressWarnings("serial")
     private final TestkitCypherTypeMapper mapper;
 
     public TestkitCypherDateTimeDeserializer() {

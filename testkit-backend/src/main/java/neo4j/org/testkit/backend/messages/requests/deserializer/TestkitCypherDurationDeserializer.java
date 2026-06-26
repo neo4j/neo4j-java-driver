@@ -27,6 +27,9 @@ import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.types.IsoDuration;
 
 public class TestkitCypherDurationDeserializer extends StdDeserializer<IsoDuration> {
+    private static final long serialVersionUID = 3128342779161014747L;
+
+    @SuppressWarnings("serial")
     private final TestkitCypherTypeMapper mapper;
 
     public TestkitCypherDurationDeserializer() {

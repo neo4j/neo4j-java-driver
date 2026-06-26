@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import org.neo4j.driver.internal.RevocationStrategy;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -74,7 +73,10 @@ public class Config implements Serializable {
 
     private static final Config EMPTY = builder().build();
 
-    /** User defined logging */
+    /**
+     * User defined logging
+     */
+    @SuppressWarnings("serial")
     private final Logging logging;
 
     private final boolean logLeakedSessions;
@@ -94,6 +96,8 @@ public class Config implements Serializable {
 
     private final int connectionTimeoutMillis;
     private final RetrySettings retrySettings;
+
+    @SuppressWarnings("serial")
     private final ServerAddressResolver resolver;
 
     private final int eventLoopThreads;
@@ -161,7 +165,9 @@ public class Config implements Serializable {
     }
 
     /**
-     * @return the configured connection timeout value in milliseconds.
+     * Returns the configured connection timeout value in milliseconds.
+     *
+     * @return the configured connection timeout value in milliseconds
      */
     public int connectionTimeoutMillis() {
         return connectionTimeoutMillis;
@@ -176,14 +182,18 @@ public class Config implements Serializable {
     }
 
     /**
-     * @return indicator for encrypted communication.
+     * Returns indicator for encrypted communication.
+     *
+     * @return indicator for encrypted communication
      */
     public boolean encrypted() {
         return securitySettings.encrypted();
     }
 
     /**
-     * @return the strategy to use to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
+     * Returns the strategy to use to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
+     *
+     * @return the strategy to use to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to
      */
     public TrustStrategy trustStrategy() {
         return securitySettings.trustStrategy();
@@ -208,7 +218,9 @@ public class Config implements Serializable {
     }
 
     /**
-     * @return A config with all default settings
+     * Returns the config with all default settings.
+     *
+     * @return the config with all default settings
      */
     public static Config defaultConfig() {
         return EMPTY;
@@ -238,7 +250,9 @@ public class Config implements Serializable {
     }
 
     /**
-     * @return if the metrics is enabled or not on this driver.
+     * Returns whether the metrics is enabled or not on this driver.
+     *
+     * @return if the metrics is enabled or not on this driver
      */
     public boolean isMetricsEnabled() {
         return this.metricsAdapter != MetricsAdapter.DEV_NULL;
@@ -249,6 +263,8 @@ public class Config implements Serializable {
     }
 
     /**
+     * Returns the user_agent configured for this driver.
+     *
      * @return the user_agent configured for this driver
      */
     public String userAgent() {
@@ -770,7 +786,12 @@ public class Config implements Serializable {
         }
 
         private final Strategy strategy;
+        /**
+         * The configured certificate files.
+         */
+        @SuppressWarnings("serial")
         private final List<File> certFiles;
+
         private boolean hostnameVerificationEnabled = true;
         private RevocationCheckingStrategy revocationCheckingStrategy = RevocationCheckingStrategy.NO_CHECKS;
 
@@ -893,17 +914,17 @@ public class Config implements Serializable {
          * @deprecated superseded by {@link TrustStrategy#revocationCheckingStrategy()}
          */
         @Deprecated
-        public RevocationStrategy revocationStrategy() {
-            RevocationStrategy revocationStrategy;
+        public org.neo4j.driver.internal.RevocationStrategy revocationStrategy() {
+            org.neo4j.driver.internal.RevocationStrategy revocationStrategy;
             switch (this.revocationCheckingStrategy) {
                 case VERIFY_IF_PRESENT:
-                    revocationStrategy = RevocationStrategy.VERIFY_IF_PRESENT;
+                    revocationStrategy = org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
                     break;
                 case STRICT:
-                    revocationStrategy = RevocationStrategy.STRICT;
+                    revocationStrategy = org.neo4j.driver.internal.RevocationStrategy.STRICT;
                     break;
                 case NO_CHECKS:
-                    revocationStrategy = RevocationStrategy.NO_CHECKS;
+                    revocationStrategy = org.neo4j.driver.internal.RevocationStrategy.NO_CHECKS;
                     break;
                 default:
                     throw new IllegalStateException("Failed to map RevocationCheckingStrategy to RevocationStrategy.");

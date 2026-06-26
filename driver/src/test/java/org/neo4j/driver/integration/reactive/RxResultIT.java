@@ -199,6 +199,7 @@ class RxResultIT {
         StepVerifier.create(rs.records()).expectComplete().verify();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void shouldOnlyErrorRecordAfterFailure() {
         // Given

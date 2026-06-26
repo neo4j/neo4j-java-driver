@@ -24,15 +24,12 @@ import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.jdk.JDK11OrLater;
 import com.oracle.svm.core.jdk.JDK8OrEarlier;
 import io.netty.bootstrap.AbstractBootstrapConfig;
-import io.netty.bootstrap.ChannelFactory;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.DefaultChannelPromise;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
 import io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior;
-import io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator;
-import io.netty.handler.ssl.JdkApplicationProtocolNegotiator;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.JdkLoggerFactory;
@@ -72,7 +69,8 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_Alp
     public SSLEngine wrapSslEngine(
             SSLEngine engine,
             ByteBufAllocator alloc,
-            JdkApplicationProtocolNegotiator applicationNegotiator,
+            @SuppressWarnings("deprecation")
+                    io.netty.handler.ssl.JdkApplicationProtocolNegotiator applicationNegotiator,
             boolean isServer) {
         return (SSLEngine)
                 (Object) new Target_io_netty_handler_ssl_JdkAlpnSslEngine(engine, applicationNegotiator, isServer);
@@ -87,7 +85,8 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_Alp
     public SSLEngine wrapSslEngine(
             SSLEngine engine,
             ByteBufAllocator alloc,
-            JdkApplicationProtocolNegotiator applicationNegotiator,
+            @SuppressWarnings("deprecation")
+                    io.netty.handler.ssl.JdkApplicationProtocolNegotiator applicationNegotiator,
             boolean isServer) {
         if (Target_io_netty_handler_ssl_JettyAlpnSslEngine.isAvailable()) {
             return isServer
@@ -111,14 +110,14 @@ final class Target_io_netty_handler_ssl_JettyAlpnSslEngine {
     @Substitute
     @SuppressWarnings("deprecation")
     static Target_io_netty_handler_ssl_JettyAlpnSslEngine newClientEngine(
-            SSLEngine engine, JdkApplicationProtocolNegotiator applicationNegotiator) {
+            SSLEngine engine, io.netty.handler.ssl.JdkApplicationProtocolNegotiator applicationNegotiator) {
         return null;
     }
 
     @Substitute
     @SuppressWarnings("deprecation")
     static Target_io_netty_handler_ssl_JettyAlpnSslEngine newServerEngine(
-            SSLEngine engine, JdkApplicationProtocolNegotiator applicationNegotiator) {
+            SSLEngine engine, io.netty.handler.ssl.JdkApplicationProtocolNegotiator applicationNegotiator) {
         return null;
     }
 }
@@ -130,7 +129,7 @@ final class Target_io_netty_handler_ssl_JdkAlpnSslEngine {
     @SuppressWarnings("deprecation")
     Target_io_netty_handler_ssl_JdkAlpnSslEngine(
             final SSLEngine engine,
-            final JdkApplicationProtocolNegotiator applicationNegotiator,
+            final io.netty.handler.ssl.JdkApplicationProtocolNegotiator applicationNegotiator,
             final boolean isServer) {}
 }
 
@@ -144,16 +143,18 @@ final class Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator 
 @TargetClass(className = "io.netty.handler.ssl.JdkSslContext")
 final class Target_io_netty_handler_ssl_JdkSslContext {
 
+    @SuppressWarnings("deprecation")
     @Substitute
-    static JdkApplicationProtocolNegotiator toNegotiator(ApplicationProtocolConfig config, boolean isServer) {
+    static io.netty.handler.ssl.JdkApplicationProtocolNegotiator toNegotiator(
+            ApplicationProtocolConfig config, boolean isServer) {
         if (config == null) {
-            return (JdkApplicationProtocolNegotiator)
+            return (io.netty.handler.ssl.JdkApplicationProtocolNegotiator)
                     (Object) Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
         }
 
         switch (config.protocol()) {
             case NONE:
-                return (JdkApplicationProtocolNegotiator)
+                return (io.netty.handler.ssl.JdkApplicationProtocolNegotiator)
                         (Object) Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
             case ALPN:
                 if (isServer) {
@@ -173,9 +174,11 @@ final class Target_io_netty_handler_ssl_JdkSslContext {
                     //                }
                     SelectorFailureBehavior behavior = config.selectorFailureBehavior();
                     if (behavior == SelectorFailureBehavior.FATAL_ALERT)
-                        return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
+                        return new io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator(
+                                true, config.supportedProtocols());
                     else if (behavior == SelectorFailureBehavior.NO_ADVERTISE)
-                        return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
+                        return new io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator(
+                                false, config.supportedProtocols());
                     else {
                         throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
                                 .append(config.selectorFailureBehavior())
@@ -185,9 +188,11 @@ final class Target_io_netty_handler_ssl_JdkSslContext {
                 } else {
                     switch (config.selectedListenerFailureBehavior()) {
                         case ACCEPT:
-                            return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
+                            return new io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator(
+                                    false, config.supportedProtocols());
                         case FATAL_ALERT:
-                            return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
+                            return new io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator(
+                                    true, config.supportedProtocols());
                         default:
                             throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
                                     .append(config.selectedListenerFailureBehavior())
@@ -211,8 +216,9 @@ final class Target_io_netty_handler_ssl_JdkSslContext {
 @TargetClass(className = "io.netty.bootstrap.AbstractBootstrap")
 final class Target_io_netty_bootstrap_AbstractBootstrap {
 
+    @SuppressWarnings("deprecation")
     @Alias
-    private ChannelFactory channelFactory;
+    private io.netty.bootstrap.ChannelFactory channelFactory;
 
     @Alias
     void init(Channel channel) throws Exception {}

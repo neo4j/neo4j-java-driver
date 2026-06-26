@@ -39,7 +39,9 @@ import org.neo4j.driver.util.Immutable;
 @Immutable
 public interface Plan {
     /**
-     * @return the operation this plan is performing.
+     * Returns the operation this plan is performing.
+     *
+     * @return the operation this plan is performing
      */
     String operatorType();
 
@@ -47,14 +49,15 @@ public interface Plan {
      * Many {@link #operatorType() operators} have arguments defining their specific behavior. This map contains
      * those arguments.
      *
-     * @return the arguments for the {@link #operatorType() operator} used.
+     * @return the arguments for the {@link #operatorType() operator} used
      */
     Map<String, Value> arguments();
 
     /**
      * Identifiers used by this part of the plan. These can be both identifiers introduce by you, or automatically
      * generated identifiers.
-     * @return a list of identifiers used by this plan.
+     *
+     * @return a list of identifiers used by this plan
      */
     List<String> identifiers();
 
@@ -62,7 +65,8 @@ public interface Plan {
      * As noted in the class-level javadoc, a plan is a tree, where each child is another plan. The children are where
      * this part of the plan gets its input records - unless this is an {@link #operatorType() operator} that introduces
      * new records on its own.
-     * @return zero or more child plans.
+     *
+     * @return zero or more child plans
      */
     List<? extends Plan> children();
 }

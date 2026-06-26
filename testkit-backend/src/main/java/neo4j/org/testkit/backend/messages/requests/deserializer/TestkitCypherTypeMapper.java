@@ -34,6 +34,7 @@ public class TestkitCypherTypeMapper {
                 || token == JsonToken.VALUE_NUMBER_INT
                 || token == JsonToken.VALUE_STRING) {
             if (token == JsonToken.VALUE_NUMBER_INT) {
+                @SuppressWarnings("deprecation")
                 String field = p.getCurrentName();
                 if (fieldIsType(data, field, Long.class)) {
                     setField(data, field, p.getLongValue());
@@ -43,6 +44,7 @@ public class TestkitCypherTypeMapper {
                     throw new RuntimeException("Unhandled field type: " + field);
                 }
             } else if (token == JsonToken.VALUE_STRING) {
+                @SuppressWarnings("deprecation")
                 String field = p.getCurrentName();
                 String value = p.getValueAsString();
                 setField(data, field, value);

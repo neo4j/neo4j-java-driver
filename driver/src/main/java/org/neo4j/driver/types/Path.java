@@ -52,7 +52,11 @@ public interface Path extends Iterable<Path.Segment> {
      * }
      */
     interface Segment {
-        /** @return the relationship underlying this path segment */
+        /**
+         * Returns the relationship underlying this path segment.
+         *
+         * @return the relationship underlying this path segment
+         */
         Relationship relationship();
 
         /**
@@ -68,24 +72,40 @@ public interface Path extends Iterable<Path.Segment> {
         Node end();
     }
 
-    /** @return the start node of this path */
+    /**
+     * Returns the start node of this path.
+     *
+     * @return the start node of this path
+     */
     Node start();
 
-    /** @return the end node of this path */
+    /**
+     * Returns the end node of this path.
+     *
+     * @return the end node of this path
+     */
     Node end();
 
-    /** @return the number of segments in this path, which will be the same as the number of relationships */
+    /**
+     * Returns the number of segments in this path, which will be the same as the number of relationships.
+     *
+     * @return the number of segments in this path, which will be the same as the number of relationships
+     */
     int length();
 
     /**
+     * Returns {@code true} if the specified node is contained in this path.
+     *
      * @param node the node to check for
-     * @return true if the specified node is contained in this path
+     * @return {@code true} if the specified node is contained in this path
      */
     boolean contains(Node node);
 
     /**
+     * Returns {@code true} if the specified relationship is contained in this path.
+     *
      * @param relationship the relationship to check for
-     * @return true if the specified relationship is contained in this path
+     * @return {@code true} if the specified relationship is contained in this path
      */
     boolean contains(Relationship relationship);
 

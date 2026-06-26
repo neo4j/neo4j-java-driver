@@ -40,6 +40,7 @@ public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String, 
         super(typeClass);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public Map<String, Object> deserialize(JsonParser p, DeserializationContext ctxt)
             throws IOException, JsonProcessingException {
