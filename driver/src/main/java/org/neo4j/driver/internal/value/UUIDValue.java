@@ -27,14 +27,14 @@ public final class UUIDValue extends ValueAdapter {
 
     public UUIDValue(UUID val) {
         if (val == null) {
-            throw new IllegalArgumentException("Cannot construct StringValue from null");
+            throw new IllegalArgumentException("Cannot construct UUIDValue from null");
         }
         this.val = val;
     }
 
     @Override
-    public String asObject() {
-        return asString();
+    public UUID asObject() {
+        return asUUID();
     }
 
     @Override
