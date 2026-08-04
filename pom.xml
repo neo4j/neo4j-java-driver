@@ -40,7 +40,7 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.2.15.Final</netty-bom.version>
+    <netty-bom.version>4.2.16.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
@@ -48,25 +48,25 @@
     <slf4j-api.version>2.0.18</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
     <mockito-core.version>5.23.0</mockito-core.version>
-    <junit.version>6.1.0</junit.version>
+    <junit.version>6.1.2</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.12.0</testng.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <!-- supply a newer version than the one supplied by the jarchivelib 1.2.0 -->
     <commons-compress.version>1.28.0</commons-compress.version>
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
-    <commons-codec.version>1.22.0</commons-codec.version>
-    <bouncycastle-jdk18on.version>1.84</bouncycastle-jdk18on.version>
-    <logback-classic.version>1.5.35</logback-classic.version>
+    <commons-codec.version>1.22.1</commons-codec.version>
+    <bouncycastle-jdk18on.version>1.85</bouncycastle-jdk18on.version>
+    <logback-classic.version>1.6.1</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
-    <jackson.version>2.22.0</jackson.version>
+    <jackson.version>2.22.1</jackson.version>
     <lombok.version>1.18.46</lombok.version>
-    <svm.version>25.0.3</svm.version>
+    <svm.version>25.0.4</svm.version>
     <micrometer.version>1.17.0</micrometer.version>
     <micrometer-docs-generator.version>1.0.4</micrometer-docs-generator.version>
     <blockhound.version>1.0.17.RELEASE</blockhound.version>
     <testcontainers.version>2.0.5</testcontainers.version>
-    <build-resources.version>2026.06.1</build-resources.version>
+    <build-resources.version>2026.07.1</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
