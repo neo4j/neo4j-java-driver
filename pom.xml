@@ -39,7 +39,7 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.2.15.Final</netty-bom.version>
+    <netty-bom.version>4.2.17.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
@@ -54,16 +54,16 @@
     <!-- supply a newer version than the one supplied by the jarchivelib 1.2.0 -->
     <commons-compress.version>1.28.0</commons-compress.version>
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
-    <commons-codec.version>1.22.0</commons-codec.version>
-    <bouncycastle-jdk18on.version>1.84</bouncycastle-jdk18on.version>
+    <commons-codec.version>1.22.1</commons-codec.version>
+    <bouncycastle-jdk18on.version>1.85</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
-    <jackson.version>2.22.0</jackson.version>
+    <jackson.version>2.22.1</jackson.version>
     <lombok.version>1.18.46</lombok.version>
     <svm.version>24.2.2</svm.version>
     <micrometer.version>1.17.0</micrometer.version>
     <blockhound.version>1.0.17.RELEASE</blockhound.version>
     <testcontainers.version>1.21.4</testcontainers.version>
-    <build-resources.version>2026.06.1</build-resources.version>
+    <build-resources.version>2026.07.1</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
