@@ -23,6 +23,7 @@ import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.observation.ObservationProvider;
+import org.neo4j.driver.property_encryption.BasePropertyEncryption;
 import org.neo4j.driver.types.MapAccessor;
 
 public interface DriverObservationProvider extends ObservationProvider {
@@ -53,6 +54,32 @@ public interface DriverObservationProvider extends ObservationProvider {
     Observation resultConsume(Class<?> resultType);
 
     Observation resultRecords(Class<?> resultType);
+
+    Observation encryptToBytes(Class<? extends BasePropertyEncryption> propertyEncryptionType);
+
+    Observation decrypt(Class<? extends BasePropertyEncryption> propertyEncryptionType);
+
+    Observation createEncapsulatedKey(Class<?> encapsulatedKeyManagerType, String alias);
+
+    Observation findEncapsulatedKeyByAlias(Class<?> encapsulatedKeyManagerType, String alias);
+
+    Observation setEncapsulatedKeyAlias(Class<?> encapsulatedKeyManagerType, String id, String alias);
+
+    Observation deleteEncapsulatedKey(Class<?> encapsulatedKeyManagerType, String id);
+
+    Observation keyEncapsulationServiceEncapsulate();
+
+    Observation keyEncapsulationServiceDecapsulate();
+
+    Observation encapsulatedKeyRepositoryFindById();
+
+    Observation encapsulatedKeyRepositoryFindByAlias();
+
+    Observation encapsulatedKeyRepositoryCreate();
+
+    Observation encapsulatedKeyRepositorySetAliasById();
+
+    Observation encapsulatedKeyRepositoryDeleteById();
 
     Observation connectionPoolCreate(String id, URI uri, int maxSize);
 

@@ -18,6 +18,7 @@ package org.neo4j.driver.internal;
 
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,13 +30,20 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.testutil.TestUtil.await;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.observation.NoopObservationProvider;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
+import org.neo4j.driver.property_encryption.BasePropertyEncryption;
+import org.neo4j.driver.property_encryption.PropertyEncryption;
+import org.neo4j.driver.property_encryption.async.AsyncPropertyEncryption;
+import org.neo4j.driver.property_encryption.reactive.ReactivePropertyEncryption;
 
 class InternalDriverTest {
     @Test
@@ -100,13 +108,48 @@ class InternalDriverTest {
         assertEquals(QueryConfig.defaultConfig(), executableQuery.config());
     }
 
+    @Test
+    void shouldReturnPropertyEncryption() {
+        // Given
+        var driver = newDriver();
+
+        // When
+        var propertyEncryption = driver.propertyEncryption();
+
+        // Then
+        assertNotNull(propertyEncryption);
+        assertInstanceOf(PropertyEncryption.class, propertyEncryption);
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            classes = {
+                PropertyEncryption.class,
+                AsyncPropertyEncryption.class,
+                ReactivePropertyEncryption.class,
+                org.neo4j.driver.property_encryption.reactivestreams.ReactivePropertyEncryption.class
+            })
+    <T extends BasePropertyEncryption> void shouldReturnPropertyEncryption(Class<T> propertyEncryptionClass) {
+        // Given
+        var driver = newDriver();
+
+        // When
+        var propertyEncryption = driver.propertyEncryption(propertyEncryptionClass);
+
+        // Then
+        assertNotNull(propertyEncryption);
+        assertInstanceOf(propertyEncryptionClass, propertyEncryption);
+    }
+
     private static InternalDriver newDriver(SessionFactory sessionFactory) {
         return new InternalDriver(
                 BoltSecurityPlanManager.insecure(),
                 sessionFactory,
                 true,
                 DEV_NULL_LOGGING,
-                NoopObservationProvider.getInstance());
+                NoopObservationProvider.getInstance(),
+                Map.of(),
+                mock());
     }
 
     private static SessionFactory sessionFactoryMock() {
@@ -124,6 +167,8 @@ class InternalDriverTest {
                 sessionFactory,
                 true,
                 DEV_NULL_LOGGING,
-                NoopObservationProvider.getInstance());
+                NoopObservationProvider.getInstance(),
+                Map.of(),
+                mock());
     }
 }

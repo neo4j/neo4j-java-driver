@@ -30,6 +30,7 @@ import static org.neo4j.driver.RevocationCheckingStrategy.VERIFY_IF_PRESENT;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -46,6 +47,8 @@ import org.neo4j.driver.internal.logging.Slf4jLogging;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.observation.ObservationProvider;
+import org.neo4j.driver.property_encryption.EnvelopePropertyEncryptionProfile;
+import org.neo4j.driver.property_encryption.PropertyEncryptionProfile;
 import org.neo4j.driver.testutil.TestUtil;
 
 class ConfigTest {
@@ -567,5 +570,60 @@ class ConfigTest {
         var config = Config.builder().withObservationProvider(null).build();
 
         assertTrue(config.observationProvider().isEmpty());
+    }
+
+    @Test
+    void shouldHaveNoEncryptionProfilesByDefault() {
+        // Given
+        var config = Config.defaultConfig();
+
+        // When & Then
+        assertTrue(config.propertyEncryptionProfiles().isEmpty());
+    }
+
+    @Test
+    void shouldSetEncryptionProfiles() {
+        // Given
+        var profiles = Set.of(
+                EnvelopePropertyEncryptionProfile.builder("profile-0", mock(), mock())
+                        .build(),
+                EnvelopePropertyEncryptionProfile.builder("profile-1", mock(), mock())
+                        .build());
+        var config = Config.builder()
+                .withPropertyEncryptionProfiles(profiles.toArray(PropertyEncryptionProfile[]::new))
+                .build();
+
+        // When
+        var actualProfiles = config.propertyEncryptionProfiles();
+
+        // Then
+        assertEquals(profiles, actualProfiles);
+    }
+
+    @Test
+    void shouldRejectDuplicateEncryptionProfileNames() {
+        // Given
+        var profiles = Set.of(
+                EnvelopePropertyEncryptionProfile.builder("profile-0", mock(), mock())
+                        .build(),
+                EnvelopePropertyEncryptionProfile.builder("profile-1", mock(), mock())
+                        .build());
+
+        // When & Then
+        assertThrows(IllegalArgumentException.class, () -> Config.builder()
+                .withPropertyEncryptionProfiles(profiles.toArray(PropertyEncryptionProfile[]::new)));
+    }
+
+    @Test
+    void shouldRejectNullEncryptionProfileElement() {
+        // Given
+        var profiles = new HashSet<PropertyEncryptionProfile>();
+        profiles.add(EnvelopePropertyEncryptionProfile.builder("profile-0", mock(), mock())
+                .build());
+        profiles.add(null);
+
+        // When & Then
+        assertThrows(NullPointerException.class, () -> Config.builder()
+                .withPropertyEncryptionProfiles(profiles.toArray(PropertyEncryptionProfile[]::new)));
     }
 }

@@ -25,6 +25,7 @@ import java.time.Clock;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,6 +43,9 @@ import org.neo4j.bolt.connection.DomainNameResolver;
 import org.neo4j.bolt.connection.LoggingProvider;
 import org.neo4j.bolt.connection.NotificationConfig;
 import org.neo4j.bolt.connection.RoutedBoltConnectionParameters;
+import org.neo4j.bolt.connection.codec.packstream.struct.EncryptedStructureDecoder;
+import org.neo4j.bolt.connection.codec.packstream.struct.EncryptedStructureEncoder;
+import org.neo4j.bolt.connection.codec.value_encoding.ValueEncodingSchemeVersion;
 import org.neo4j.bolt.connection.pooled.PooledBoltConnectionSource;
 import org.neo4j.bolt.connection.pooled.SecurityPlanSupplier;
 import org.neo4j.bolt.connection.routed.BoltConnectionSourceFactory;
@@ -53,6 +57,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.adaptedbolt.AdaptingDriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.BoltAuthTokenManager;
 import org.neo4j.driver.internal.adaptedbolt.BoltConnectionProviderFactoryLoader;
@@ -65,6 +70,13 @@ import org.neo4j.driver.internal.boltlistener.BoltConnectionListener;
 import org.neo4j.driver.internal.homedb.HomeDatabaseCache;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.observation.NoopObservationProvider;
+import org.neo4j.driver.internal.property_encryption.AEADEncryption;
+import org.neo4j.driver.internal.property_encryption.EnvelopePropertyEncryptionHandler;
+import org.neo4j.driver.internal.property_encryption.PackStreamDecoderFactoryLoader;
+import org.neo4j.driver.internal.property_encryption.PackStreamEncoderFactoryLoader;
+import org.neo4j.driver.internal.property_encryption.PropertyEncryptionHandler;
+import org.neo4j.driver.internal.property_encryption.ValueDecoderFactoryLoader;
+import org.neo4j.driver.internal.property_encryption.ValueEncoderFactoryLoader;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
@@ -73,6 +85,7 @@ import org.neo4j.driver.internal.security.SecurityPlans;
 import org.neo4j.driver.internal.util.DriverInfoUtil;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.property_encryption.EnvelopePropertyEncryptionProfile;
 
 public class DriverFactory {
     public static final String NO_ROUTING_CONTEXT_ERROR_MESSAGE =
@@ -425,13 +438,59 @@ public class DriverFactory {
     @SuppressWarnings("deprecation")
     protected InternalDriver createDriver(
             BoltSecurityPlanManager securityPlanManager, SessionFactory sessionFactory, Config config) {
+        var aeadEncryption = createAEADEncryption(config);
+        var observationProvider = (DriverObservationProvider)
+                config.observationProvider().orElseGet(NoopObservationProvider::getInstance);
         return new InternalDriver(
                 securityPlanManager,
                 sessionFactory,
                 config.isTelemetryDisabled(),
                 config.logging(),
-                (DriverObservationProvider)
-                        config.observationProvider().orElseGet(NoopObservationProvider::getInstance));
+                observationProvider,
+                createEncryptionHandlers(aeadEncryption, config, observationProvider),
+                aeadEncryption);
+    }
+
+    private Map<String, PropertyEncryptionHandler> createEncryptionHandlers(
+            AEADEncryption aeadEncryption, Config config, DriverObservationProvider observationProvider) {
+        return config.propertyEncryptionProfiles().stream()
+                .map(profile -> {
+                    if (profile instanceof EnvelopePropertyEncryptionProfile encryptionProfile) {
+                        return new EnvelopePropertyEncryptionHandler(
+                                encryptionProfile, aeadEncryption, createClock(), observationProvider);
+                    } else {
+                        throw new ClientException("Unknown profile: " + profile);
+                    }
+                })
+                .collect(Collectors.toMap(
+                        PropertyEncryptionHandler::profileName, Function.identity(), (existing, duplicate) -> {
+                            throw new ClientException(
+                                    "Duplicate property encryption profile name found: " + existing.profileName());
+                        }));
+    }
+
+    private AEADEncryption createAEADEncryption(Config config) {
+        @SuppressWarnings("deprecation")
+        var logging = config.logging();
+
+        var valueEncoderFactoryLoader = new ValueEncoderFactoryLoader(logging);
+        var valueEncoderFactory = valueEncoderFactoryLoader.factory();
+        var valueEncoder = valueEncoderFactory.create(ValueEncodingSchemeVersion.V1_0);
+
+        var valueDecoderFactoryLoader = new ValueDecoderFactoryLoader(logging);
+        var valueDecoderFactory = valueDecoderFactoryLoader.factory();
+        var valueDecoder = valueDecoderFactory.create(ValueEncodingSchemeVersion.V1_0, BoltValueFactory.getInstance());
+
+        var packStreamEncoderFactoryLoader = new PackStreamEncoderFactoryLoader(logging);
+        var packStreamEncoderFactory = packStreamEncoderFactoryLoader.factory();
+        var packStreamEncoder = packStreamEncoderFactory.create(Set.of(EncryptedStructureEncoder.getInstance()));
+
+        var packStreamDecoderFactoryLoader = new PackStreamDecoderFactoryLoader(logging);
+        var packStreamDecoderFactory = packStreamDecoderFactoryLoader.factory();
+        var packStreamDecoder = packStreamDecoderFactory.create(
+                BoltValueFactory.getInstance(), Set.of(EncryptedStructureDecoder.getInstance()));
+
+        return new AEADEncryption(valueEncoder, valueDecoder, packStreamEncoder, packStreamDecoder);
     }
 
     /**

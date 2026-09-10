@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.io.Serial;
+import java.util.HexFormat;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 
@@ -48,6 +49,8 @@ public class TestkitValueSerializer extends StdSerializer<Value> {
             cypherObject(gen, "CypherString", value.asString());
         } else if (InternalTypeSystem.TYPE_SYSTEM.UUID().isTypeOf(value)) {
             cypherObject(gen, "CypherUUID", value.asUUID());
+        } else if (InternalTypeSystem.TYPE_SYSTEM.BYTES().isTypeOf(value)) {
+            cypherObject(gen, "CypherBytes", HexFormat.ofDelimiter(" ").formatHex(value.asByteArray()));
         }
     }
 }

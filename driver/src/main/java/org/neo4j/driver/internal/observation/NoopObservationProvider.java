@@ -22,6 +22,7 @@ import java.util.function.BiConsumer;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.BaseSession;
+import org.neo4j.driver.property_encryption.BasePropertyEncryption;
 import org.neo4j.driver.types.MapAccessor;
 
 public class NoopObservationProvider implements DriverObservationProvider {
@@ -100,6 +101,71 @@ public class NoopObservationProvider implements DriverObservationProvider {
 
     @Override
     public Observation resultRecords(Class<?> resultType) {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation encryptToBytes(Class<? extends BasePropertyEncryption> propertyEncryptionType) {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation decrypt(Class<? extends BasePropertyEncryption> propertyEncryptionType) {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation createEncapsulatedKey(Class<?> encapsulatedKeyManagerType, String alias) {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation findEncapsulatedKeyByAlias(Class<?> encapsulatedKeyManagerType, String alias) {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation setEncapsulatedKeyAlias(Class<?> encapsulatedKeyManagerType, String id, String alias) {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation deleteEncapsulatedKey(Class<?> encapsulatedKeyManagerType, String id) {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation keyEncapsulationServiceEncapsulate() {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation keyEncapsulationServiceDecapsulate() {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation encapsulatedKeyRepositoryFindById() {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation encapsulatedKeyRepositoryFindByAlias() {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation encapsulatedKeyRepositoryCreate() {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation encapsulatedKeyRepositorySetAliasById() {
+        return NoopObservation.getInstance();
+    }
+
+    @Override
+    public Observation encapsulatedKeyRepositoryDeleteById() {
         return NoopObservation.getInstance();
     }
 

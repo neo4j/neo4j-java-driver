@@ -26,6 +26,7 @@ Apache Software License, Version 2.0
   Neo4j Bolt Connection (Pooled Source impl)
   Neo4j Bolt Connection (Provider SPI)
   Neo4j Bolt Connection (Routed Source impl)
+  Neo4j Bolt Connection Codec
   Netty/Buffer
   Netty/Codec/Base
   Netty/Common
@@ -35,6 +36,9 @@ Apache Software License, Version 2.0
   Netty/Transport
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
+
+Bouncy Castle License
+  Bouncy Castle Provider (FIPS Distribution)
 
 MIT No Attribution License
   reactive-streams

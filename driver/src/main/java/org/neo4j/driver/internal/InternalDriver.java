@@ -19,6 +19,7 @@ package org.neo4j.driver.internal;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -43,8 +44,17 @@ import org.neo4j.driver.exceptions.UnsupportedFeatureException;
 import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.property_encryption.AEADEncryption;
+import org.neo4j.driver.internal.property_encryption.InternalPropertyEncryption;
+import org.neo4j.driver.internal.property_encryption.PropertyEncryptionHandler;
+import org.neo4j.driver.internal.property_encryption.async.InternalAsyncPropertyEncryption;
+import org.neo4j.driver.internal.property_encryption.reactive.InternalReactivePropertyEncryption;
 import org.neo4j.driver.internal.security.BoltSecurityPlanManager;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.property_encryption.BasePropertyEncryption;
+import org.neo4j.driver.property_encryption.PropertyEncryption;
+import org.neo4j.driver.property_encryption.async.AsyncPropertyEncryption;
+import org.neo4j.driver.property_encryption.reactive.ReactivePropertyEncryption;
 
 public class InternalDriver implements Driver {
     private static final Set<String> INVALID_TOKEN_CODES = Set.of(
@@ -57,6 +67,11 @@ public class InternalDriver implements Driver {
     private final BoltSecurityPlanManager securityPlanManager;
     private final SessionFactory sessionFactory;
     private final DriverObservationProvider observationProvider;
+    private final Map<String, PropertyEncryptionHandler> nameToPropertyEncryptionHandler;
+    private final AEADEncryption aeadEncryption;
+
+    @SuppressWarnings("deprecation")
+    private final Logging logging;
 
     @SuppressWarnings("deprecation")
     private final Logger log;
@@ -70,12 +85,43 @@ public class InternalDriver implements Driver {
             SessionFactory sessionFactory,
             boolean telemetryDisabled,
             @SuppressWarnings("deprecation") Logging logging,
-            DriverObservationProvider observationProvider) {
+            DriverObservationProvider observationProvider,
+            Map<String, PropertyEncryptionHandler> nameToPropertyEncryptionHandler,
+            AEADEncryption aeadEncryption) {
         this.securityPlanManager = securityPlanManager;
         this.sessionFactory = sessionFactory;
+        this.logging = logging;
         this.log = logging.getLog(getClass());
         this.telemetryDisabled = telemetryDisabled;
         this.observationProvider = Objects.requireNonNull(observationProvider);
+        this.nameToPropertyEncryptionHandler = Objects.requireNonNull(nameToPropertyEncryptionHandler);
+        this.aeadEncryption = Objects.requireNonNull(aeadEncryption);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends BasePropertyEncryption> T propertyEncryption(Class<T> propertyEncryptionClass) {
+        Objects.requireNonNull(propertyEncryptionClass);
+        if (PropertyEncryption.class.isAssignableFrom(propertyEncryptionClass)) {
+            return (T) new InternalPropertyEncryption(
+                    nameToPropertyEncryptionHandler, aeadEncryption, observationProvider);
+        } else if (AsyncPropertyEncryption.class.isAssignableFrom(propertyEncryptionClass)) {
+            return (T) new InternalAsyncPropertyEncryption(
+                    nameToPropertyEncryptionHandler, aeadEncryption, observationProvider);
+        } else if (ReactivePropertyEncryption.class.isAssignableFrom(propertyEncryptionClass)) {
+            return (T) new InternalReactivePropertyEncryption(
+                    nameToPropertyEncryptionHandler, aeadEncryption, observationProvider);
+        } else if (org.neo4j.driver.property_encryption.reactivestreams.ReactivePropertyEncryption.class
+                .isAssignableFrom(propertyEncryptionClass)) {
+            return (T)
+                    new org.neo4j.driver.internal.property_encryption.reactivestreams
+                            .InternalReactivePropertyEncryption(
+                            nameToPropertyEncryptionHandler, aeadEncryption, observationProvider);
+        } else {
+            throw new IllegalArgumentException(String.format(
+                    "Unsupported %s type '%s'",
+                    BasePropertyEncryption.class.getSimpleName(), propertyEncryptionClass.getCanonicalName()));
+        }
     }
 
     @Override
