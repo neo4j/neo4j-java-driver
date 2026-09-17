@@ -33,7 +33,7 @@ public interface PropertyEncryption extends BasePropertyEncryption {
      * Encrypts the value according to the provided {@link PropertyEncryptionRequest}.
      *
      * @param encryptionRequest the encryption request, must not be {@literal null}
-     * @return the encrypted bytes
+     * @return the encoded encrypted value with its metadata
      */
     byte[] encryptToBytes(PropertyEncryptionRequest encryptionRequest);
 
