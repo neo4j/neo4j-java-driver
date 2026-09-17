@@ -61,10 +61,7 @@ public final class InternalPropertyEncryptionRequest extends AbstractPropertyReq
 
     @Override
     public Builder.AADStep withAAD(Value aad) {
-        if (value == null || TYPE_SYSTEM.NULL().isTypeOf(value)) {
-            // Both null and NULL values disable AAD
-            return this;
-        }
+        Objects.requireNonNull(aad);
         validateAad(aad);
         this.aad = aad;
         return this;

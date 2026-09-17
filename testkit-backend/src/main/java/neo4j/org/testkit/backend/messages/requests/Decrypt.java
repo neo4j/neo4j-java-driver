@@ -80,7 +80,7 @@ public class Decrypt implements TestkitRequest {
     private PropertyDecryptionRequest buildPropertyDecryptionRequest(
             BasePropertyEncryption encryption, DecryptBody data) {
         var aadStep = PropertyDecryptionRequest.builder().fromValue(data.getValue());
-        var buildStep = data.isUsePersistedAad() ? aadStep.withPersistedAAD() : aadStep.withAAD(data.getAad());
+        var buildStep = data.isUsePersistedAad() ? aadStep.withoutExternalAAD() : aadStep.withAAD(data.getAad());
         return buildStep.build();
     }
 

@@ -40,13 +40,13 @@ public final class InternalPropertyDecryptionRequest extends AbstractPropertyReq
 
     @Override
     public Builder.BuildStep withAAD(Value aad) {
-        validate(aad);
+        validateAad(aad);
         this.aad = aad;
         return this;
     }
 
     @Override
-    public Builder.BuildStep withPersistedAAD() {
+    public Builder.BuildStep withoutExternalAAD() {
         this.aad = null;
         return this;
     }

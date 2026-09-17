@@ -78,6 +78,10 @@ abstract class AbstractPropertyRequest {
     protected void validateAad(Value value) {
         Objects.requireNonNull(value);
 
+        if (TYPE_SYSTEM.NULL().isTypeOf(value)) {
+            throw new IllegalArgumentException("NULL is not supported");
+        }
+
         if (isScalarPropertyValue(value)) {
             return;
         }

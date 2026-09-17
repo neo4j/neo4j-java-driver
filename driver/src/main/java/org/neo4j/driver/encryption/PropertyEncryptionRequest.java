@@ -24,6 +24,7 @@ import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.UUID;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
@@ -364,7 +365,7 @@ public interface PropertyEncryptionRequest {
              *     <li>{@link TypeSystem#UUID()}</li>
              * </ul>
              *
-             * @param aad the AAD value, both {@literal null} and {@link TypeSystem#NULL()} disable AAD
+             * @param aad the AAD value, must not be {@literal null}
              * @return the next builder step
              */
             ProfileStep withAAD(Value aad);
@@ -382,30 +383,33 @@ public interface PropertyEncryptionRequest {
             /**
              * Adds the supplied value as AAD for encryption request.
              *
-             * @param aad the AAD value, {@literal null} disables AAD
+             * @param aad the AAD value, must not be {@literal null}
              * @return the next builder step
              */
             default ProfileStep withAAD(LocalDate aad) {
+                Objects.requireNonNull(aad);
                 return withAAD(Values.value(aad));
             }
 
             /**
              * Adds the supplied value as AAD for encryption request.
              *
-             * @param aad the AAD value, {@literal null} disables AAD
+             * @param aad the AAD value, must not be {@literal null}
              * @return the next builder step
              */
             default ProfileStep withAAD(OffsetTime aad) {
+                Objects.requireNonNull(aad);
                 return withAAD(Values.value(aad));
             }
 
             /**
              * Adds the supplied value as AAD for encryption request.
              *
-             * @param aad the AAD value, {@literal null} disables AAD
+             * @param aad the AAD value, must not be {@literal null}
              * @return the next builder step
              */
             default ProfileStep withAAD(LocalTime aad) {
+                Objects.requireNonNull(aad);
                 return withAAD(Values.value(aad));
             }
 
@@ -442,10 +446,11 @@ public interface PropertyEncryptionRequest {
             /**
              * Adds the supplied value as AAD for encryption request.
              *
-             * @param aad the AAD value, {@literal null} disables AAD
+             * @param aad the AAD value, must not be {@literal null}
              * @return the next builder step
              */
             default ProfileStep withAAD(Point aad) {
+                Objects.requireNonNull(aad);
                 return withAAD(Values.value(aad));
             }
 
@@ -455,30 +460,33 @@ public interface PropertyEncryptionRequest {
              * It is strongly recommended to normalize the value, for example using
              * {@link java.text.Normalizer.Form#NFC}, before passing it to the driver.
              *
-             * @param aad the AAD value, {@literal null} disables AAD
+             * @param aad the AAD value, must not be {@literal null}
              * @return the next builder step
              */
             default ProfileStep withAAD(String aad) {
+                Objects.requireNonNull(aad);
                 return withAAD(Values.value(aad));
             }
 
             /**
              * Adds the supplied value as AAD for encryption request.
              *
-             * @param aad the AAD value, {@literal null} disables AAD
+             * @param aad the AAD value, must not be {@literal null}
              * @return the next builder step
              */
             default ProfileStep withAAD(UUID aad) {
+                Objects.requireNonNull(aad);
                 return withAAD(Values.value(aad));
             }
 
             /**
              * Adds the supplied value as AAD for encryption request.
              *
-             * @param aad the AAD value, {@literal null} disables AAD
+             * @param aad the AAD value, must not be {@literal null}
              * @return the next builder step
              */
             default ProfileStep withAAD(byte[] aad) {
+                Objects.requireNonNull(aad);
                 return withAAD(Values.value(aad));
             }
         }

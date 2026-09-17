@@ -253,7 +253,7 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         given(keyRepository.findById(keyId)).willReturn(CompletableFuture.completedStage(encapsulatedKeyRecord));
         var decryptionRequest = PropertyDecryptionRequest.builder()
                 .fromValue(encryptedBytes)
-                .withPersistedAAD()
+                .withoutExternalAAD()
                 .build();
 
         // WHEN & THEN
@@ -280,7 +280,7 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         given(keyRepository.findById(keyId)).willReturn(CompletableFuture.completedStage(encapsulatedKeyRecord));
         var decryptionRequest = PropertyDecryptionRequest.builder()
                 .fromValue(encryptedBytes)
-                .withPersistedAAD()
+                .withoutExternalAAD()
                 .build();
 
         // WHEN & THEN
