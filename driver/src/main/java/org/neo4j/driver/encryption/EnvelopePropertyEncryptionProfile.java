@@ -39,8 +39,7 @@ import org.neo4j.driver.util.Preview;
  * is used during decryption unless AAD is explicitly supplied by the caller.
  * <p>
  * Both the {@link Provider} used for AES-GCM and the {@link SecureRandom} from which IVs are sourced are configurable.
- * If neither is provided, the driver uses the default provider selected by
- * {@link javax.crypto.Cipher#getInstance(String)} and {@link SecureRandom#getInstanceStrong()} respectively.
+ * If neither is explicitly provided, the Java runtime determines and provides them according to its configuration.
  * <p>
  * The encapsulation and associated metadata are stored in a user-provided {@link EncapsulatedKeyRecordRepository}.
  * When a property is encrypted, the driver obtains the corresponding encapsulated key from the repository and uses
@@ -193,6 +192,9 @@ public sealed interface EnvelopePropertyEncryptionProfile extends PropertyEncryp
 
     /**
      * Returns {@link CryptoContext} if set.
+     * <p>
+     * If no context is configured, the Java runtime selects the AES-GCM provider and secure random number generator
+     * according to its configuration.
      *
      * @return the crypto context
      */

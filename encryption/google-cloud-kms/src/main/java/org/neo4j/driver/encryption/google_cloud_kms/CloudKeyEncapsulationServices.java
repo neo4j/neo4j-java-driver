@@ -36,9 +36,12 @@ public final class CloudKeyEncapsulationServices {
      * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Google Cloud KMS to encapsulate and decapsulate those keys.
      * <p>
-     * Data key generation uses {@link javax.crypto.KeyGenerator#getInstance(String)}. Google Cloud KMS encrypts and
-     * decrypts the generated data keys using the key identified by the provided
-     * {@link CloudKmsKeyEncapsulationOptions}.
+     * The Java runtime determines and provides the {@link Provider} used for local AES data key generation according to
+     * its configuration. Google Cloud KMS encrypts and decrypts the generated data keys using the key identified by the
+     * provided {@link CloudKmsKeyEncapsulationOptions}.
+     * <p>
+     * The Google Cloud KMS client is used for communication with Google Cloud KMS. Google Cloud credentials are
+     * resolved by the client using the Google Cloud client default credential resolution mechanism.
      *
      * @param defaultOptions the default options, must not be {@literal null}
      * @throws NoSuchAlgorithmException when no AES algorithm is found
@@ -55,12 +58,11 @@ public final class CloudKeyEncapsulationServices {
      * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Google Cloud KMS to encapsulate and decapsulate those keys.
      * <p>
-     * Data key generation uses {@link javax.crypto.KeyGenerator#getInstance(String, Provider)} with the supplied
-     * {@link Provider}. Google Cloud KMS encrypts and decrypts the generated data keys using the key identified by the
-     * provided {@link CloudKmsKeyEncapsulationOptions}.
+     * The supplied {@link Provider} is used for local AES data key generation. Google Cloud KMS encrypts and decrypts
+     * the generated data keys using the key identified by the provided {@link CloudKmsKeyEncapsulationOptions}.
      * <p>
-     * The supplied {@link Provider} is used only for local AES data key generation. It does not affect cryptographic
-     * operations performed by Google Cloud KMS.
+     * The Google Cloud KMS client is used for communication with Google Cloud KMS. Google Cloud credentials are
+     * resolved by the client using the Google Cloud client default credential resolution mechanism.
      *
      * @param defaultOptions the default options, must not be {@literal null}
      * @param provider the {@link Provider} to use for cryptographic operations, must not be {@literal null}

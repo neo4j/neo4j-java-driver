@@ -34,9 +34,12 @@ public final class AWSKeyEncapsulationServices {
      * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses AWS KMS to encapsulate and decapsulate those keys.
      * <p>
-     * Data key generation uses {@link javax.crypto.KeyGenerator#getInstance(String)}. AWS KMS encrypts and decrypts
-     * the generated data keys using the KMS key identified by the provided
-     * {@link AwsKeyEncapsulationOptions}.
+     * The Java runtime determines and provides the {@link Provider} used for local AES data key generation according to
+     * its configuration. AWS KMS encrypts and decrypts the generated data keys using the KMS key identified by the
+     * provided {@link AwsKeyEncapsulationOptions}.
+     * <p>
+     * The AWS KMS client is used for communication with AWS KMS. AWS credentials are resolved by the client using the
+     * AWS SDK's default credential resolution mechanism.
      *
      * @param defaultOptions the default options, must not be {@literal null}
      * @throws NoSuchAlgorithmException when no AES algorithm is found
@@ -52,12 +55,11 @@ public final class AWSKeyEncapsulationServices {
      * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses AWS KMS to encapsulate and decapsulate those keys.
      * <p>
-     * Data key generation uses {@link javax.crypto.KeyGenerator#getInstance(String, Provider)} with the supplied
-     * {@link Provider}. AWS KMS encrypts and decrypts the generated data keys using the KMS key identified by the
-     * provided {@link AwsKeyEncapsulationOptions}.
+     * The supplied {@link Provider} is used for local AES data key generation. AWS KMS encrypts and decrypts the
+     * generated data keys using the KMS key identified by the provided {@link AwsKeyEncapsulationOptions}.
      * <p>
-     * The supplied {@link Provider} is used only for local AES data key generation. It does not affect cryptographic
-     * operations performed by AWS KMS.
+     * The AWS KMS client is used for communication with AWS KMS. AWS credentials are resolved by the client using the
+     * AWS SDK's default credential resolution mechanism.
      *
      * @param defaultOptions the default options, must not be {@literal null}
      * @param provider the {@link Provider} to use for cryptographic operations, must not be {@literal null}

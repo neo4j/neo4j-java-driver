@@ -35,9 +35,9 @@ public final class AzureKeyEncapsulationServices {
      * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Azure Key Vault to encapsulate and decapsulate those keys.
      * <p>
-     * Data key generation uses {@link javax.crypto.KeyGenerator#getInstance(String)}. Azure Key Vault encrypts and
-     * decrypts the generated data keys using the key identified by the provided
-     * {@link AzureEncapsulationOptions}.
+     * The Java runtime determines and provides the {@link Provider} used for local AES data key generation according to
+     * its configuration. Azure Key Vault encrypts and decrypts the generated data keys using the key identified by the
+     * provided {@link AzureEncapsulationOptions}.
      * <p>
      * The service caches up to 10 {@link CryptographyAsyncClient} instances, keyed by Azure Key Vault key id. When the
      * cache reaches its capacity, the least recently used client is evicted. To configure a different cache size,
@@ -57,9 +57,9 @@ public final class AzureKeyEncapsulationServices {
      * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Azure Key Vault to encapsulate and decapsulate those keys.
      * <p>
-     * Data key generation uses {@link javax.crypto.KeyGenerator#getInstance(String)}. Azure Key Vault encrypts and
-     * decrypts the generated data keys using the key identified by the provided
-     * {@link AzureEncapsulationOptions}.
+     * The Java runtime determines and provides the {@link Provider} used for local AES data key generation according to
+     * its configuration. Azure Key Vault encrypts and decrypts the generated data keys using the key identified by the
+     * provided {@link AzureEncapsulationOptions}.
      * <p>
      * The service caches {@link CryptographyAsyncClient} instances, keyed by Azure Key Vault key id. When the
      * cache reaches its capacity, the least recently used client is evicted. The maximum cache size is set by the
@@ -81,12 +81,10 @@ public final class AzureKeyEncapsulationServices {
      * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Azure Key Vault to encapsulate and decapsulate those keys.
      * <p>
-     * Data key generation uses {@link javax.crypto.KeyGenerator#getInstance(String, Provider)} with the supplied
-     * {@link Provider}. Azure Key Vault encrypts and decrypts the generated data keys using the key identified by the
-     * provided {@link AzureEncapsulationOptions}.
+     * The supplied {@link Provider} is used for local AES data key generation. Azure Key Vault encrypts and decrypts
+     * the generated data keys using the key identified by the provided {@link AzureEncapsulationOptions}.
      * <p>
-     * The supplied {@link Provider} is used only for local AES data key generation. It does not affect cryptographic
-     * operations performed by Azure Key Vault.
+     * Azure credentials are resolved using the Azure Identity library's default credential resolution mechanism.
      * <p>
      * The service caches up to 10 {@link CryptographyAsyncClient} instances, keyed by Azure Key Vault key id. When the
      * cache reaches its capacity, the least recently used client is evicted. To configure a different cache size,
@@ -108,12 +106,10 @@ public final class AzureKeyEncapsulationServices {
      * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Azure Key Vault to encapsulate and decapsulate those keys.
      * <p>
-     * Data key generation uses {@link javax.crypto.KeyGenerator#getInstance(String, Provider)} with the supplied
-     * {@link Provider}. Azure Key Vault encrypts and decrypts the generated data keys using the key identified by the
-     * provided {@link AzureEncapsulationOptions}.
+     * The supplied {@link Provider} is used for local AES data key generation. Azure Key Vault encrypts and decrypts
+     * the generated data keys using the key identified by the provided {@link AzureEncapsulationOptions}.
      * <p>
-     * The supplied {@link Provider} is used only for local AES data key generation. It does not affect cryptographic
-     * operations performed by Azure Key Vault.
+     * Azure credentials are resolved using the Azure Identity default credential resolution mechanism.
      * <p>
      * The service caches {@link CryptographyAsyncClient} instances, keyed by Azure Key Vault key id. When the
      * cache reaches its capacity, the least recently used client is evicted. The maximum cache size is set by the

@@ -44,9 +44,9 @@ public final class KeyEncapsulationServices {
      * encapsulation contains a 256-bit AES data encryption key protected by the master key, together with a 96-bit
      * (12-byte) initialization vector (IV) and a 128-bit (16-byte) authentication tag.
      * <p>
-     * AES key generation uses {@link javax.crypto.KeyGenerator#getInstance(String)}, AES-GCM uses
-     * {@link javax.crypto.Cipher#getInstance(String)}, and IVs are generated using
-     * {@link SecureRandom#getInstanceStrong()}.
+     * The Java runtime determines and provides the {@link Provider} and {@link SecureRandom} according to its
+     * configuration. The provider is used for AES key generation and AES-GCM operations, while the {@link SecureRandom}
+     * is used as the source of initialization vectors.
      *
      * @param masterKey the AES-256 master key, must not be {@literal null}
      * @return the new key encapsulation service
@@ -65,9 +65,8 @@ public final class KeyEncapsulationServices {
      * (12-byte) initialization vector (IV), sourced from the provided {@link SecureRandom}, and a 128-bit (16-byte)
      * authentication tag.
      * <p>
-     * The supplied {@link Provider} is used for the AES {@link javax.crypto.KeyGenerator} and
-     * {@link javax.crypto.Cipher} implementations. The supplied {@link SecureRandom} is used as the source of
-     * initialization vectors.
+     * The supplied {@link Provider} is used for AES key generation and AES-GCM operations. The supplied
+     * {@link SecureRandom} is used as the source of initialization vectors.
      *
      * @param masterKey      the AES-256 master key, must not be {@literal null}
      * @param provider       the {@link Provider} to use for cryptographic operations, must not be {@literal null}
